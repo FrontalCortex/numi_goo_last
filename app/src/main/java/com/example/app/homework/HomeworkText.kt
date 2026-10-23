@@ -57,6 +57,29 @@ object HomeworkText {
         return parts.joinToString(" · ")
     }
 
+    /**
+     * Kartlar için kısa özet: tür, basamak, soru ("Abaküslü · 2 basamak · 20 soru"). Sayı adedi ve
+     * hız ayrıntıda; listede her kartta beş parça bilgi okunmuyordu.
+     */
+    fun compactDetails(cfg: HomeworkConfig): String {
+        val parts = mutableListOf(appString(if (cfg.withAbacus) R.string.hw_with_abacus else R.string.hw_without_abacus))
+        parts += if (cfg.op == HomeworkOp.MUL) appString(R.string.hw_mul_digits, cfg.digits, cfg.digits2)
+        else appString(R.string.hw_digits, cfg.digits)
+        parts += appPlural(R.plurals.hw_questions, cfg.questionCount, cfg.questionCount)
+        return parts.joinToString(" · ")
+    }
+
+    /** Kartın solundaki işlem simgesi: renkli daire içinde +, − ya da ×. */
+    fun bindOpBadge(view: android.widget.TextView, op: HomeworkOp) {
+        val (symbol, color) = when (op) {
+            HomeworkOp.ADD -> "+" to 0xFF58CC02.toInt()
+            HomeworkOp.SUB -> "−" to 0xFFFF9600.toInt()
+            HomeworkOp.MUL -> "×" to 0xFFCE82FF.toInt()
+        }
+        view.text = symbol
+        (view.background?.mutate() as? android.graphics.drawable.GradientDrawable)?.setColor(color)
+    }
+
     /** 1500 → "1,5"; 100 → "0,1". Türkçede ondalık ayırıcı virgül. */
     fun formatSeconds(ms: Long): String =
         DecimalFormat("0.##", DecimalFormatSymbols(Locale("tr"))).format(ms / 1000.0)

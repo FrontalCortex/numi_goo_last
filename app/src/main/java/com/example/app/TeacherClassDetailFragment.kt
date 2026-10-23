@@ -68,9 +68,7 @@ class TeacherClassDetailFragment : Fragment() {
         binding.studentList.layoutManager = LinearLayoutManager(requireContext())
         binding.studentList.adapter = adapter
 
-        binding.btnCopyCode.setOnClickListener { copyCode() }
-        binding.btnShareCode.setOnClickListener { shareCode() }
-        binding.btnRegenerateCode.setOnClickListener { confirmRegenerate() }
+        binding.btnClassSettings.setOnClickListener { showSettingsSheet() }
         binding.btnInviteStudent.setOnClickListener { showInviteDialog() }
         binding.btnHomeworks.setOnClickListener {
             parentFragmentManager.beginTransaction()
@@ -88,7 +86,14 @@ class TeacherClassDetailFragment : Fragment() {
             current = c
             if (c == null) return@listenClass
             b.classTitle.text = c.name
-            b.joinCode.text = CourseClasses.formatCode(c.joinCode)
+            // Panel açıkken kod yenilenirse panel de güncel kodu göstersin.
+            settingsSheet?.findViewById<android.widget.TextView>(R.id.sheetJoinCode)?.text = CourseClasses.formatCode(c.joinCode)
+        }
+        listeners += com.example.app.homework.Homeworks.listenClassHomeworks(classId) { list ->
+            val b = _binding ?: return@listenClassHomeworks
+            val n = list?.size ?: 0
+            b.homeworksSubtitle.text = if (n == 0) appString(R.string.class_homeworks_none)
+            else appPlural(R.plurals.class_homeworks_count, n, n)
         }
         listeners += CourseClasses.listenMembers(classId) { members -> showMembers(members) }
         CourseClasses.listenPendingInvites(classId) { names ->
@@ -104,7 +109,7 @@ class TeacherClassDetailFragment : Fragment() {
         val list = members.orEmpty()
         b.studentsTitle.text = if (list.isEmpty()) appString(R.string.class_students_title)
         else "${appString(R.string.class_students_title)} (${list.size})"
-        b.studentEmpty.text = appString(if (members == null) R.string.class_generic_error else R.string.class_students_empty)
+        b.studentEmpty.text = appString(if (members == null) R.string.class_generic_error else R.string.class_students_empty_settings)
         b.studentEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
         adapter.submitList(list.map { it to avatarCache[it.uid] })
 
@@ -117,6 +122,33 @@ class TeacherClassDetailFragment : Fragment() {
                 adapter.submitList(adapter.currentList.map { (m, _) -> m to avatarCache[m.uid] })
             }
         }
+    }
+
+    private var settingsSheet: com.google.android.material.bottomsheet.BottomSheetDialog? = null
+
+    /**
+     * Sınıf ayarları: katılma kodu ve kod işlemleri. Kod ekranın üstünde sürekli durmuyor;
+     * öğretmen ona yalnızca öğrenci eklerken bakıyor (kullanıcı kararı 23.10.2026).
+     */
+    private fun showSettingsSheet() {
+        val c = current ?: return
+        val view = layoutInflater.inflate(R.layout.sheet_class_settings, null)
+        view.findViewById<android.widget.TextView>(R.id.sheetClassName).text =
+            listOf(c.name, c.courseName).filter { it.isNotBlank() }.joinToString(" · ")
+        view.findViewById<android.widget.TextView>(R.id.sheetJoinCode).text = CourseClasses.formatCode(c.joinCode)
+        view.findViewById<View>(R.id.sheetCopy).setOnClickListener { copyCode() }
+        view.findViewById<View>(R.id.sheetShare).setOnClickListener { shareCode() }
+        view.findViewById<View>(R.id.sheetRegenerate).setOnClickListener { confirmRegenerate() }
+        val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext())
+        dialog.setContentView(view)
+        // Malzeme kütüphanesinin beyaz kabı görünmesin; köşeler panelin kendi arka planından.
+        dialog.setOnShowListener {
+            dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+                ?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        }
+        dialog.setOnDismissListener { settingsSheet = null }
+        settingsSheet = dialog
+        dialog.show()
     }
 
     private fun copyCode() {
@@ -197,6 +229,8 @@ class TeacherClassDetailFragment : Fragment() {
     override fun onDestroyView() {
         listeners.forEach { it.remove() }
         listeners.clear()
+        settingsSheet?.dismiss()
+        settingsSheet = null
         binding.studentList.adapter = null
         _binding = null
         super.onDestroyView()

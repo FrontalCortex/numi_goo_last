@@ -41,6 +41,14 @@
     <string name="class_students_title">Öğrenciler</string>
     <string name="class_students_empty">Sınıfta henüz öğrenci yok. Kodu öğrencilerine ver ya da kullanıcı adıyla davet et.</string>
     <string name="class_invite_button">Öğrenci ekle</string>
+    <string name="class_invite_short">Ekle</string>
+    <string name="class_settings_title">Sınıf ayarları</string>
+    <string name="class_students_empty_settings">Sınıfta henüz öğrenci yok. Sağ üstteki ayarlardan katılma kodunu paylaş ya da Ekle ile kullanıcı adıyla davet et.</string>
+    <string name="class_homeworks_none">Henüz ödev yok · ilk ödevi ver</string>
+    <plurals name="class_homeworks_count">
+        <item quantity="one">%d ödev</item>
+        <item quantity="other">%d ödev</item>
+    </plurals>
     <string name="class_invite_title">Öğrenci ekle</string>
     <string name="class_invite_message">Öğrencinin kullanıcı adını yaz (profilinde @ ile görünen). Öğrenciye davet gider; kabul edince listede görünür.</string>
     <string name="class_invite_hint">Kullanıcı adı (ör. 835398VV)</string>

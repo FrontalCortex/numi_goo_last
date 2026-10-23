@@ -279,6 +279,10 @@ class HomeworkCreateFragment : Fragment() {
     /** Örnek soru arka planda: elde gerektiren ayarların sınırında üretim birkaç yüz ms sürebiliyor. */
     private fun refreshPreview() {
         val cfg = currentConfig()
+        // Üstteki özet kartı: öğretmen ödevi göndermeden adını ve ayarlarını tek bakışta görüyor.
+        binding.previewTitle.text = if (cfg.op != HomeworkOp.MUL && cfg.rules.isEmpty()) appString(R.string.hw_preview_pick_rule)
+        else HomeworkText.title(cfg)
+        binding.previewMeta.text = HomeworkText.details(cfg)
         previewJob?.cancel()
         val invalid = HomeworkEngine.validate(cfg)
         if (invalid != null) {

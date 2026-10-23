@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Bir sınıfın ayrıntısı: katılma kodu, öğrenci ekleme ve öğrenci listesi (bkz. TeacherClassDetailFragment). -->
+<!--
+  Bir sınıfın ekranı (bkz. TeacherClassDetailFragment): en üstte Ödevler kartı, altında öğrenciler.
+  Katılma kodu sağ üstteki ayar ikonunun açtığı alt panelde (sheet_class_settings).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -16,7 +19,7 @@
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="4dp"
-        android:paddingEnd="16dp">
+        android:paddingEnd="4dp">
 
         <ImageButton
             android:id="@+id/btnBack"
@@ -41,100 +44,89 @@
             android:textStyle="bold"
             tools:text="Cumartesi 10:00" />
 
-        <View
+        <ImageButton
+            android:id="@+id/btnClassSettings"
             android:layout_width="48dp"
-            android:layout_height="48dp" />
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/class_settings_title"
+            android:padding="12dp"
+            android:src="@drawable/setting_ic"
+            app:tint="@android:color/white" />
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#1A3040" />
-
-    <!-- Katılma kodu -->
-    <LinearLayout
+    <!-- Ödevler: sınıfın ana işi, en üstte -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnHomeworks"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="16dp"
-        android:background="@drawable/hint_background"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/class_join_code_title"
-            android:textColor="@color/dark_text_secondary"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/joinCode"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:fontFamily="monospace"
-            android:letterSpacing="0.08"
-            android:textColor="@color/dark_text"
-            android:textIsSelectable="true"
-            android:textSize="30sp"
-            android:textStyle="bold"
-            tools:text="ABC 234" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="@string/class_join_code_hint"
-            android:textColor="@color/dark_text_secondary"
-            android:textSize="12sp" />
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        app:cardBackgroundColor="@color/dark_secondary"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:orientation="horizontal">
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="16dp">
 
-            <TextView
-                android:id="@+id/btnCopyCode"
-                style="@style/ClassCodeAction"
-                android:text="@string/class_copy" />
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_icon_circle"
+                android:importantForAccessibility="no"
+                android:padding="11dp"
+                android:src="@drawable/book_icon" />
 
-            <TextView
-                android:id="@+id/btnShareCode"
-                style="@style/ClassCodeAction"
-                android:text="@string/class_share" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="14dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/btnRegenerateCode"
-                style="@style/ClassCodeAction"
-                android:text="@string/class_regenerate" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/hw_class_button"
+                    android:textColor="@android:color/white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/homeworksSubtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:alpha="0.85"
+                    android:textColor="@android:color/white"
+                    android:textSize="13sp"
+                    tools:text="3 ödev · 1'i herkes bitirdi" />
+            </LinearLayout>
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/dualingo_arrow_ic"
+                app:tint="@android:color/white" />
         </LinearLayout>
-    </LinearLayout>
-
-    <!-- Ödevler (bkz. homework/TeacherHomeworkListFragment) -->
-    <TextView
-        android:id="@+id/btnHomeworks"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="16dp"
-        android:background="@drawable/bg_button_outline"
-        android:foreground="?attr/selectableItemBackground"
-        android:gravity="center"
-        android:text="@string/hw_class_button"
-        android:textColor="@color/dark_primary"
-        android:textSize="15sp"
-        android:textStyle="bold" />
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Öğrenciler başlığı ve ekleme düğmesi -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="18dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="22dp"
         android:layout_marginEnd="16dp"
         android:gravity="center_vertical"
         android:orientation="horizontal">
@@ -146,29 +138,45 @@
             android:layout_weight="1"
             android:text="@string/class_students_title"
             android:textColor="@color/dark_text"
-            android:textSize="16sp"
+            android:textSize="17sp"
             android:textStyle="bold" />
 
-        <TextView
+        <LinearLayout
             android:id="@+id/btnInviteStudent"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_add_friend_btn"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_pill_primary"
+            android:clickable="true"
+            android:focusable="true"
             android:foreground="?attr/selectableItemBackground"
-            android:gravity="center"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:text="@string/class_invite_button"
-            android:textColor="@android:color/white"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="14dp">
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:importantForAccessibility="no"
+                android:src="@drawable/ic_person_add"
+                app:tint="@android:color/white" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/class_invite_short"
+                android:textColor="@android:color/white"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 
     <TextView
         android:id="@+id/pendingInvites"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="20dp"
         android:layout_marginTop="6dp"
         android:layout_marginEnd="16dp"
         android:textColor="@color/dark_text_secondary"
@@ -203,7 +211,7 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:padding="32dp"
-            android:text="@string/class_students_empty"
+            android:text="@string/class_students_empty_settings"
             android:textColor="@color/dark_text_secondary"
             android:textSize="15sp"
             android:visibility="gone" />

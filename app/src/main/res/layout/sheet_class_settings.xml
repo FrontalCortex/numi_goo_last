@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sınıf ayarları alt paneli: katılma kodu ve kod işlemleri (bkz. TeacherClassDetailFragment.showSettingsSheet). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_sheet_rounded"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="24dp">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_sheet_handle" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/class_settings_title"
+        android:textColor="@color/dark_text"
+        android:textSize="19sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/sheetClassName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/dark_text_secondary"
+        android:textSize="14sp"
+        tools:text="Cumartesi 10:00 · Sennin School" />
+
+    <!-- Kod kutusu -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_code_box"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:paddingTop="16dp"
+        android:paddingBottom="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/class_join_code_title"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/sheetJoinCode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:fontFamily="monospace"
+            android:letterSpacing="0.12"
+            android:textColor="@color/dark_text"
+            android:textIsSelectable="true"
+            android:textSize="34sp"
+            android:textStyle="bold"
+            tools:text="24M X5U" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="@string/class_join_code_hint"
+        android:textColor="@color/dark_text_secondary"
+        android:textSize="12sp" />
+
+    <!-- Kod işlemleri: ikon üstte, yazı altta -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/sheetCopy"
+            style="@style/ClassSheetAction">
+
+            <ImageView style="@style/ClassSheetActionIcon" android:src="@drawable/ic_hw_copy" />
+
+            <TextView style="@style/ClassSheetActionText" android:text="@string/class_copy" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/sheetShare"
+            style="@style/ClassSheetAction">
+
+            <ImageView style="@style/ClassSheetActionIcon" android:src="@drawable/ic_hw_share" />
+
+            <TextView style="@style/ClassSheetActionText" android:text="@string/class_share" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/sheetRegenerate"
+            style="@style/ClassSheetAction"
+            android:layout_marginEnd="0dp">
+
+            <ImageView style="@style/ClassSheetActionIcon" android:src="@drawable/ic_hw_refresh" />
+
+            <TextView style="@style/ClassSheetActionText" android:text="@string/class_regenerate" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

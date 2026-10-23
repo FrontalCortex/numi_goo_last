@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Öğretmenin yeni ödev formu (bkz. HomeworkCreateFragment). -->
+<!--
+  Öğretmenin yeni ödev formu (bkz. HomeworkCreateFragment). Üstte canlı özet (başlık + örnek soru),
+  altında bölüm kartları: İşlem, Konu, Ayarlar, Kime. Gönder düğmesi altta sabit.
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -43,246 +46,249 @@
             android:layout_height="48dp" />
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#1A3040" />
-
     <ScrollView
         android:id="@+id/formScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="12dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
 
-            <!-- İşlem -->
-            <TextView
-                style="@style/HomeworkFieldLabel"
-                android:layout_marginTop="0dp"
-                android:text="@string/hw_field_op" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/opAdd"
-                    style="@style/HomeworkOption"
-                    android:text="@string/hw_op_add" />
-
-                <TextView
-                    android:id="@+id/opSub"
-                    style="@style/HomeworkOption"
-                    android:text="@string/hw_op_sub" />
-
-                <TextView
-                    android:id="@+id/opMul"
-                    style="@style/HomeworkOption"
-                    android:layout_marginEnd="0dp"
-                    android:text="@string/hw_op_mul" />
-            </LinearLayout>
-
-            <!-- Konu (toplama / çıkarma) -->
-            <LinearLayout
-                android:id="@+id/rulesSection"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/HomeworkFieldLabel"
-                    android:text="@string/hw_field_rules" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/ruleDirect"
-                        style="@style/HomeworkOption"
-                        android:text="@string/hw_rule_direct" />
-
-                    <TextView
-                        android:id="@+id/ruleFive"
-                        style="@style/HomeworkOption"
-                        android:layout_marginEnd="0dp"
-                        android:text="@string/hw_rule_five" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/ruleTen"
-                        style="@style/HomeworkOption"
-                        android:text="@string/hw_rule_ten" />
-
-                    <TextView
-                        android:id="@+id/ruleBead"
-                        style="@style/HomeworkOption"
-                        android:layout_marginEnd="0dp"
-                        android:text="@string/hw_rule_bead" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/hw_field_rules_hint"
-                    android:textColor="@color/dark_text_secondary"
-                    android:textSize="12sp" />
-            </LinearLayout>
-
-            <!-- Tür -->
-            <TextView
-                style="@style/HomeworkFieldLabel"
-                android:text="@string/hw_field_type" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/typeAbacus"
-                    style="@style/HomeworkOption"
-                    android:text="@string/hw_with_abacus" />
-
-                <TextView
-                    android:id="@+id/typeMental"
-                    style="@style/HomeworkOption"
-                    android:layout_marginEnd="0dp"
-                    android:text="@string/hw_without_abacus" />
-            </LinearLayout>
-
-            <include
-                android:id="@+id/digitsStepper"
-                layout="@layout/view_hw_stepper" />
-
-            <include
-                android:id="@+id/digits2Stepper"
-                layout="@layout/view_hw_stepper" />
-
-            <include
-                android:id="@+id/countStepper"
-                layout="@layout/view_hw_stepper" />
-
-            <include
-                android:id="@+id/intervalStepper"
-                layout="@layout/view_hw_stepper" />
-
-            <include
-                android:id="@+id/questionsStepper"
-                layout="@layout/view_hw_stepper" />
-
-            <!-- Kime -->
-            <TextView
-                style="@style/HomeworkFieldLabel"
-                android:text="@string/hw_field_target" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/targetAll"
-                    style="@style/HomeworkOption"
-                    android:text="@string/hw_target_whole_class" />
-
-                <TextView
-                    android:id="@+id/targetSelect"
-                    style="@style/HomeworkOption"
-                    android:layout_marginEnd="0dp"
-                    android:text="@string/hw_target_select" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/targetInfo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:textColor="@color/dark_text_secondary"
-                android:textSize="12sp"
-                android:visibility="gone" />
-
-            <LinearLayout
-                android:id="@+id/studentChecks"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="vertical"
-                android:visibility="gone" />
-
-            <!-- Örnek soru -->
-            <LinearLayout
+            <!-- Canlı özet: ödevin başlığı ve örnek soru -->
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/previewCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="22dp"
-                android:background="@drawable/hint_background"
-                android:orientation="vertical"
-                android:padding="14dp">
+                android:layout_marginTop="4dp"
+                app:cardBackgroundColor="@color/dark_secondary"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="vertical"
+                    android:padding="16dp">
 
                     <TextView
-                        android:layout_width="0dp"
+                        android:id="@+id/previewTitle"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/hw_preview_title"
-                        android:textColor="@color/dark_text_secondary"
-                        android:textSize="13sp" />
+                        android:textColor="@android:color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        tools:text="5'lik ve 10'luk toplama" />
 
                     <TextView
-                        android:id="@+id/btnPreviewRefresh"
-                        android:layout_width="wrap_content"
-                        android:layout_height="32dp"
-                        android:background="?attr/selectableItemBackground"
-                        android:gravity="center"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
-                        android:text="@string/hw_preview_refresh"
-                        android:textColor="@color/dark_primary"
+                        android:id="@+id/previewMeta"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:alpha="0.85"
+                        android:textColor="@android:color/white"
                         android:textSize="13sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                        tools:text="Abaküslü · 2 basamak · 5 sayı · 1,5 sn · 20 soru" />
 
-                <TextView
-                    android:id="@+id/previewText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:fontFamily="monospace"
-                    android:textColor="@color/dark_text"
-                    android:textIsSelectable="true"
-                    android:textSize="16sp"
-                    tools:text="12 + 34 + 21 + 10 + 22 = 99" />
-            </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_icon_circle_rect"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="12dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="4dp"
+                        android:paddingBottom="8dp">
+
+                        <TextView
+                            android:id="@+id/previewText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="monospace"
+                            android:textColor="@android:color/white"
+                            android:textIsSelectable="true"
+                            android:textSize="15sp"
+                            tools:text="12 + 34 + 21 + 10 + 22 = 99" />
+
+                        <ImageButton
+                            android:id="@+id/btnPreviewRefresh"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/hw_preview_refresh"
+                            android:padding="9dp"
+                            android:src="@drawable/ic_hw_refresh"
+                            app:tint="@android:color/white" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- İşlem -->
+            <com.google.android.material.card.MaterialCardView style="@style/HomeworkSectionCard">
+
+                <LinearLayout style="@style/HomeworkSectionBody">
+
+                    <TextView style="@style/HomeworkSectionTitle" android:text="@string/hw_field_op" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:id="@+id/opAdd" style="@style/HomeworkOption" android:text="@string/hw_op_add" />
+
+                        <TextView android:id="@+id/opSub" style="@style/HomeworkOption" android:text="@string/hw_op_sub" />
+
+                        <TextView
+                            android:id="@+id/opMul"
+                            style="@style/HomeworkOption"
+                            android:layout_marginEnd="0dp"
+                            android:text="@string/hw_op_mul" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Konu (toplama / çıkarma) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/rulesSection"
+                style="@style/HomeworkSectionCard">
+
+                <LinearLayout style="@style/HomeworkSectionBody">
+
+                    <TextView style="@style/HomeworkSectionTitle" android:text="@string/hw_field_rules" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:id="@+id/ruleDirect" style="@style/HomeworkOption" android:text="@string/hw_rule_direct" />
+
+                        <TextView
+                            android:id="@+id/ruleFive"
+                            style="@style/HomeworkOption"
+                            android:layout_marginEnd="0dp"
+                            android:text="@string/hw_rule_five" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:id="@+id/ruleTen" style="@style/HomeworkOption" android:text="@string/hw_rule_ten" />
+
+                        <TextView
+                            android:id="@+id/ruleBead"
+                            style="@style/HomeworkOption"
+                            android:layout_marginEnd="0dp"
+                            android:text="@string/hw_rule_bead" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/hw_field_rules_hint"
+                        android:textColor="@color/dark_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Ayarlar: tür ve sayılar -->
+            <com.google.android.material.card.MaterialCardView style="@style/HomeworkSectionCard">
+
+                <LinearLayout style="@style/HomeworkSectionBody">
+
+                    <TextView style="@style/HomeworkSectionTitle" android:text="@string/hw_section_settings" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:id="@+id/typeAbacus" style="@style/HomeworkOption" android:text="@string/hw_with_abacus" />
+
+                        <TextView
+                            android:id="@+id/typeMental"
+                            style="@style/HomeworkOption"
+                            android:layout_marginEnd="0dp"
+                            android:text="@string/hw_without_abacus" />
+                    </LinearLayout>
+
+                    <include android:id="@+id/digitsStepper" layout="@layout/view_hw_stepper" />
+
+                    <include android:id="@+id/digits2Stepper" layout="@layout/view_hw_stepper" />
+
+                    <include android:id="@+id/countStepper" layout="@layout/view_hw_stepper" />
+
+                    <include android:id="@+id/intervalStepper" layout="@layout/view_hw_stepper" />
+
+                    <include android:id="@+id/questionsStepper" layout="@layout/view_hw_stepper" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Kime -->
+            <com.google.android.material.card.MaterialCardView style="@style/HomeworkSectionCard">
+
+                <LinearLayout style="@style/HomeworkSectionBody">
+
+                    <TextView style="@style/HomeworkSectionTitle" android:text="@string/hw_field_target" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <TextView android:id="@+id/targetAll" style="@style/HomeworkOption" android:text="@string/hw_target_whole_class" />
+
+                        <TextView
+                            android:id="@+id/targetSelect"
+                            style="@style/HomeworkOption"
+                            android:layout_marginEnd="0dp"
+                            android:text="@string/hw_target_select" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/targetInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textColor="@color/dark_text_secondary"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+
+                    <LinearLayout
+                        android:id="@+id/studentChecks"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="vertical"
+                        android:visibility="gone" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/formError"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
+                android:layout_marginTop="12dp"
+                android:gravity="center"
                 android:textColor="@color/dark_error"
                 android:textSize="13sp"
                 android:visibility="gone" />
@@ -291,14 +297,18 @@
 
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:layout_margin="16dp">
+        android:layout_height="56dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp">
 
         <TextView
             android:id="@+id/btnSend"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@drawable/bg_add_friend_btn"
+            android:background="@drawable/bg_hw_send"
+            android:elevation="2dp"
             android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:text="@string/hw_send"
@@ -311,6 +321,7 @@
             android:layout_width="28dp"
             android:layout_height="28dp"
             android:layout_gravity="center"
+            android:elevation="3dp"
             android:visibility="gone" />
     </FrameLayout>
 </LinearLayout>

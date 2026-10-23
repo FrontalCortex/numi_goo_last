@@ -1,68 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ödev formunda sayısal alan: etiket, − değer +, altında bilgi satırı (bkz. HomeworkCreateFragment.Stepper). -->
+<!--
+  Ödev formunda sayısal alan: etiket solda, − değer + sağda tek satır; altında bilgi ve uyarı
+  (bkz. HomeworkCreateFragment.Stepper).
+-->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginTop="18dp"
+    android:layout_marginTop="14dp"
     android:orientation="vertical">
-
-    <TextView
-        android:id="@+id/stepperLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/dark_text"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        tools:text="Sayı adedi" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="8dp"
+        android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
-            android:id="@+id/stepperMinus"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_hw_chip"
-            android:foreground="?attr/selectableItemBackground"
-            android:gravity="center"
-            android:text="−"
+            android:id="@+id/stepperLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:textColor="@color/dark_text"
-            android:textSize="22sp"
+            android:textSize="15sp"
+            tools:text="Sayı adedi" />
+
+        <TextView
+            android:id="@+id/stepperMinus"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_hw_round_button"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="−"
+            android:textColor="@color/dark_primary"
+            android:textSize="20sp"
             android:textStyle="bold" />
 
         <EditText
             android:id="@+id/stepperValue"
-            android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="10dp"
-            android:layout_marginEnd="10dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_edit_profile_input"
+            android:layout_width="64dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_hw_value"
             android:gravity="center"
             android:importantForAutofill="no"
             android:inputType="numberDecimal"
             android:maxLength="6"
             android:maxLines="1"
             android:textColor="@color/dark_text"
-            android:textSize="18sp"
+            android:textSize="17sp"
             android:textStyle="bold"
             tools:text="5" />
 
         <TextView
             android:id="@+id/stepperPlus"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="@drawable/bg_hw_chip"
-            android:foreground="?attr/selectableItemBackground"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:background="@drawable/bg_hw_round_button"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
+            android:includeFontPadding="false"
             android:text="+"
-            android:textColor="@color/dark_text"
-            android:textSize="22sp"
+            android:textColor="@color/dark_primary"
+            android:textSize="20sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -70,7 +73,7 @@
         android:id="@+id/stepperHint"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
+        android:layout_marginTop="4dp"
         android:textColor="@color/dark_text_secondary"
         android:textSize="12sp"
         android:visibility="gone"
@@ -82,7 +85,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
-        android:background="@drawable/hint_background"
+        android:background="@drawable/bg_hw_value"
         android:padding="10dp"
         android:textColor="@color/dark_warning"
         android:textSize="13sp"

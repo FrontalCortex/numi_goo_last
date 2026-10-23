@@ -18,7 +18,7 @@ import com.example.app.appPlural
 import com.example.app.appString
 import com.example.app.databinding.FragmentTeacherHomeworkListBinding
 import com.example.app.databinding.ItemFollowUserBinding
-import com.example.app.databinding.ItemTeacherClassBinding
+import com.example.app.databinding.ItemTeacherHomeworkBinding
 import com.google.firebase.firestore.ListenerRegistration
 
 private fun Fragment.openScreen(fragment: Fragment) {
@@ -61,45 +61,52 @@ class TeacherHomeworkListFragment : Fragment() {
     private var homeworks: List<Homeworks.Homework>? = null
 
     /**
-     * "12 öğrenciden 8'i bitirdi". Hedef ve bitirenler [Homeworks.Homework.targetUids] ve
-     * [Homeworks.Homework.doneCount]: sınıftan ayrılan öğrenci sayıya girmiyor.
+     * Bir kart: ödev ve bitirenler. Hedef ve bitirenler [Homeworks.Homework.targetUids] ve
+     * [Homeworks.Homework.doneCount]: sınıftan ayrılan öğrenci sayıya girmiyor. [total] null:
+     * üye listesi henüz gelmedi (çubuk gizli).
      */
-    private fun doneSummary(hw: Homeworks.Homework): String? {
-        val members = memberUids ?: return null
-        val total = hw.targetUids(members).size
-        if (total == 0) return null
-        val done = hw.doneCount(members)
-        return when (done) {
-            0 -> appString(R.string.hw_list_done_none, total)
-            total -> appString(R.string.hw_list_done_all, total)
-            else -> appString(R.string.hw_list_done_summary, total, HomeworkText.withAccusative(done))
-        }
-    }
+    private data class Row(val hw: Homeworks.Homework, val done: Int, val total: Int?)
 
     private fun submit() {
-        // Üye listesi gelmeden de çiziliyor; özet satırı üyeler gelince ekleniyor.
-        adapter.submitList(homeworks.orEmpty().map { it to doneSummary(it) })
+        val members = memberUids
+        adapter.submitList(homeworks.orEmpty().map { hw ->
+            if (members == null) Row(hw, 0, null) else Row(hw, hw.doneCount(members), hw.targetUids(members).size)
+        })
     }
 
-    private val adapter = object : ListAdapter<Pair<Homeworks.Homework, String?>, RecyclerView.ViewHolder>(
-        object : DiffUtil.ItemCallback<Pair<Homeworks.Homework, String?>>() {
-            override fun areItemsTheSame(a: Pair<Homeworks.Homework, String?>, b: Pair<Homeworks.Homework, String?>) =
-                a.first.id == b.first.id
-            override fun areContentsTheSame(a: Pair<Homeworks.Homework, String?>, b: Pair<Homeworks.Homework, String?>) = a == b
+    private val adapter = object : ListAdapter<Row, RecyclerView.ViewHolder>(
+        object : DiffUtil.ItemCallback<Row>() {
+            override fun areItemsTheSame(a: Row, b: Row) = a.hw.id == b.hw.id
+            override fun areContentsTheSame(a: Row, b: Row) = a == b
         },
     ) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-            val b = ItemTeacherClassBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            (b.root.layoutParams as? ViewGroup.MarginLayoutParams)?.apply { marginStart = dp(16); marginEnd = dp(16) }
+            val b = ItemTeacherHomeworkBinding.inflate(LayoutInflater.from(parent.context), parent, false)
             return object : RecyclerView.ViewHolder(b.root) {}.also { it.itemView.tag = b }
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val (hw, summary) = getItem(position)
-            val b = holder.itemView.tag as ItemTeacherClassBinding
-            b.className.text = HomeworkText.title(hw.config)
-            b.className.maxLines = 2
-            b.classMeta.text = listOfNotNull(HomeworkText.details(hw.config), targetLine(hw), summary).joinToString("\n")
+            val row = getItem(position)
+            val hw = row.hw
+            val b = holder.itemView.tag as ItemTeacherHomeworkBinding
+            HomeworkText.bindOpBadge(b.hwOpBadge, hw.config.op)
+            b.hwTitle.text = HomeworkText.title(hw.config)
+            b.hwMeta.text = HomeworkText.compactDetails(hw.config)
+            // Sınıfın tamamına verilen ödevde etiket yok (varsayılan); seçilenlere verildiyse kaç kişi.
+            b.hwTarget.visibility = if (hw.wholeClass) View.GONE else View.VISIBLE
+            b.hwTarget.text = targetLine(hw)
+            val total = row.total
+            b.hwDoneRow.visibility = if (total == null || total == 0) View.GONE else View.VISIBLE
+            if (total != null && total > 0) {
+                b.hwDoneBar.max = total
+                b.hwDoneBar.progress = row.done
+                b.hwDoneText.text = appString(R.string.hw_list_done_bar, row.done, total)
+                b.hwDoneRow.contentDescription = when (row.done) {
+                    0 -> appString(R.string.hw_list_done_none, total)
+                    total -> appString(R.string.hw_list_done_all, total)
+                    else -> appString(R.string.hw_list_done_summary, total, HomeworkText.withAccusative(row.done))
+                }
+            }
             b.root.setOnClickListener { openScreen(TeacherHomeworkDetailFragment.newInstance(hw.id, classId)) }
         }
     }
@@ -118,8 +125,14 @@ class TeacherHomeworkListFragment : Fragment() {
         binding.btnBack.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = adapter
-        binding.bottomButton.text = appString(R.string.hw_new_button)
-        binding.bottomButton.setOnClickListener { openScreen(HomeworkCreateFragment.newInstance(classId)) }
+        binding.fabNew.visibility = View.VISIBLE
+        binding.fabNew.setOnClickListener { openScreen(HomeworkCreateFragment.newInstance(classId)) }
+        // Liste kayarken düğme küçülüp yalnızca + kalıyor, kartların üstünü az kapatsın.
+        binding.list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
+                if (dy > 4) binding.fabNew.shrink() else if (dy < -4) binding.fabNew.extend()
+            }
+        })
 
         listener = Homeworks.listenClassHomeworks(classId) { list ->
             val b = _binding ?: return@listenClassHomeworks
@@ -214,10 +227,8 @@ class TeacherHomeworkDetailFragment : Fragment() {
         binding.list.layoutManager = LinearLayoutManager(requireContext())
         binding.list.adapter = adapter
         binding.sectionTitle.visibility = View.VISIBLE
-        binding.bottomButton.text = appString(R.string.hw_delete)
-        binding.bottomButton.setBackgroundResource(R.drawable.bg_button_outline)
-        binding.bottomButton.setTextColor(ContextCompat.getColor(requireContext(), R.color.dark_error))
-        binding.bottomButton.setOnClickListener { confirmDelete(homeworkId) }
+        binding.btnToolbarAction.visibility = View.VISIBLE
+        binding.btnToolbarAction.setOnClickListener { confirmDelete(homeworkId) }
 
         Homeworks.loadHomework(homeworkId) { hw ->
             val b = _binding ?: return@loadHomework
@@ -267,10 +278,10 @@ class TeacherHomeworkDetailFragment : Fragment() {
             .setTitle(appString(R.string.hw_delete_title))
             .setMessage(appString(R.string.hw_delete_message))
             .setPositiveButton(appString(R.string.hw_delete)) { _, _ ->
-                binding.bottomButton.isEnabled = false
+                binding.btnToolbarAction.isEnabled = false
                 Homeworks.delete(homeworkId) { error ->
                     if (!isAdded || _binding == null) return@delete
-                    binding.bottomButton.isEnabled = true
+                    binding.btnToolbarAction.isEnabled = true
                     Toast.makeText(requireContext(), error ?: appString(R.string.hw_deleted), Toast.LENGTH_SHORT).show()
                     if (error == null) parentFragmentManager.popBackStack()
                 }

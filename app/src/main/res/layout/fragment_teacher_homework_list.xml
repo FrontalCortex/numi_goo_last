@@ -41,9 +41,17 @@
             android:textStyle="bold"
             tools:text="Ödevler · Cmt 10:00" />
 
-        <View
+        <!-- Ayrıntıda: ödevi sil. Listede görünmez ama başlığın ortada kalması için yer tutar. -->
+        <ImageButton
+            android:id="@+id/btnToolbarAction"
             android:layout_width="48dp"
-            android:layout_height="48dp" />
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/hw_delete"
+            android:padding="12dp"
+            android:src="@drawable/ic_hw_delete"
+            android:visibility="invisible"
+            app:tint="@color/dark_error" />
     </LinearLayout>
 
     <View
@@ -115,7 +123,7 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:paddingTop="6dp"
-            android:paddingBottom="16dp" />
+            android:paddingBottom="96dp" />
 
         <ProgressBar
             android:id="@+id/loading"
@@ -133,18 +141,23 @@
             android:textColor="@color/dark_text_secondary"
             android:textSize="15sp"
             android:visibility="gone" />
-    </FrameLayout>
 
-    <TextView
-        android:id="@+id/bottomButton"
-        android:layout_width="match_parent"
-        android:layout_height="52dp"
-        android:layout_margin="16dp"
-        android:background="@drawable/bg_add_friend_btn"
-        android:foreground="?attr/selectableItemBackground"
-        android:gravity="center"
-        android:textColor="@android:color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        tools:text="+ Yeni ödev" />
+        <!-- Listede: yeni ödev. Ayrıntıda gizli. -->
+        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+            android:id="@+id/fabNew"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="20dp"
+            android:text="@string/hw_new_short"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:backgroundTint="#1CB0F6"
+            app:icon="@drawable/ic_hw_add"
+            app:iconTint="@android:color/white"
+            app:shapeAppearanceOverlay="@style/HomeworkFabShape" />
+    </FrameLayout>
 </LinearLayout>
