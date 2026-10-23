@@ -19,6 +19,9 @@ class ClassmateAdapter(
     private val onClick: (CourseClasses.ClassMember) -> Unit,
 ) : ListAdapter<Pair<CourseClasses.ClassMember, String?>, ClassmateAdapter.Holder>(Diff) {
 
+    /** Listenin başındaki öğretmenler: kullanıcı adı yerine "Öğretmen" yazıyor. */
+    var teacherUids: Set<String> = emptySet()
+
     private val avatarColors = listOf("#1CB0F6", "#CE82FF", "#FF9600", "#FF4B4B", "#00CD9C", "#2B70C9", "#FF6B97", "#8DC63F")
 
     object Diff : DiffUtil.ItemCallback<Pair<CourseClasses.ClassMember, String?>>() {
@@ -37,7 +40,11 @@ class ClassmateAdapter(
         val b = holder.binding
         val name = member.name.ifBlank { member.userId }
         b.tvUserName.text = if (member.uid == myUid) appString(R.string.hw_classmate_me, name) else name
-        b.tvUserCode.text = if (member.userId.isNotBlank()) "@${member.userId}" else ""
+        b.tvUserCode.text = when {
+            member.uid in teacherUids -> appString(R.string.hw_classmate_teacher)
+            member.userId.isNotBlank() -> "@${member.userId}"
+            else -> ""
+        }
         val avatar = AvatarView.drawableFor(b.root.context, avatarConfig, b.tvAvatarLetter.layoutParams.width)
         if (avatar != null) {
             b.tvAvatarLetter.text = ""

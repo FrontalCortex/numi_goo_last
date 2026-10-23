@@ -28,12 +28,12 @@
 
     <!-- Sınıf ayrıntısı -->
     <string name="class_join_code_title">Katılma kodu</string>
-    <string name="class_join_code_hint">Öğrenci uygulamada Ayarlar → Kursa katıl bölümüne bu kodu yazar.</string>
+    <string name="class_join_code_hint">Öğrenci uygulamada Ayarlar → Sınıfa katıl bölümüne bu kodu yazar.</string>
     <string name="class_copy">Kopyala</string>
     <string name="class_share">Paylaş</string>
     <string name="class_regenerate">Kodu yenile</string>
     <string name="class_copied">Kod kopyalandı</string>
-    <string name="class_share_text">Sorobit\'te \"%1$s\" sınıfıma katıl: uygulamada Ayarlar → Kursa katıl bölümüne %2$s kodunu yaz.</string>
+    <string name="class_share_text">Sorobit\'te \"%1$s\" sınıfıma katıl: uygulamada Ayarlar → Sınıfa katıl bölümüne %2$s kodunu yaz.</string>
     <string name="class_regenerate_title">Kod yenilensin mi?</string>
     <string name="class_regenerate_message">Eski kod hemen geçersiz olur. Sınıftaki öğrenciler sınıfta kalır; yeni katılacaklar yeni kodu kullanır.</string>
     <string name="class_regenerate_confirm">Yenile</string>
@@ -55,11 +55,11 @@
     <string name="class_generic_error">Bir sorun oldu. İnternet bağlantını kontrol edip tekrar dene.</string>
 
     <!-- Öğrenci: Ayarlar satırı ve Kurs ve sınıf ekranı (StudentClassFragment) -->
-    <string name="class_settings_header">Kurs</string>
-    <string name="class_settings_join">Kursa katıl</string>
+    <string name="class_settings_header">Sınıf</string>
+    <string name="class_settings_join">Sınıfa katıl</string>
     <string name="class_settings_my_class">Sınıfım</string>
     <string name="class_settings_invites">Seni bekleyen bir sınıf daveti var</string>
-    <string name="class_student_title">Kurs ve sınıf</string>
+    <string name="class_student_title">Sınıfım</string>
     <string name="class_student_current">Sınıfın</string>
     <string name="class_student_teacher">Öğretmenin: %1$s</string>
     <string name="class_student_info">Soruların doğrudan öğretmenine gider. Öğretmenin derslerdeki ilerlemeni görebilir.</string>

@@ -100,7 +100,7 @@
     <string name="hw_tab_homework">Ödevlerim</string>
     <string name="hw_student_empty">Öğretmenin henüz ödev vermedi.</string>
     <string name="hw_classmates_empty">Sınıfında henüz başka öğrenci yok.</string>
-    <string name="hw_class_info">%1$s\nÖğretmenin: %2$s</string>
+    <string name="hw_classmate_teacher">Öğretmen</string>
     <string name="hw_classmate_me">%1$s (sen)</string>
     <string name="hw_card_from">%1$s verdi</string>
     <string name="hw_card_progress">%1$d/%2$d adım</string>

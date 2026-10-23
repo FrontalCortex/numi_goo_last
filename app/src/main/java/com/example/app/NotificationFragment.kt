@@ -69,6 +69,8 @@ class NotificationFragment : Fragment() {
     private var homeworkWatcher: com.example.app.homework.HomeworkCard.Watcher? = null
     private var classmatesListener: ListenerRegistration? = null
     private val classmateAvatars = HashMap<String, String?>()
+    private var classTeachers: List<CourseClasses.ClassMember> = emptyList()
+    private var lastClassmates: List<CourseClasses.ClassMember> = emptyList()
     private val homeworkAdapter = com.example.app.homework.HomeworkCard.Adapter { item ->
         // Tam ekran katmanda: çocuk sorunun ortasında alt bardan başka sekmeye geçmesin.
         (activity as? MainActivity)?.showAbacusOverlayFragment(
@@ -388,26 +390,37 @@ class NotificationFragment : Fragment() {
             }
             else -> {
                 b.questionsRecyclerView.adapter = classmateAdapter
-                val title = listOf(c.name, c.courseName).filter { it.isNotBlank() }.joinToString(" · ")
-                b.studentClassInfo.text = if (c.teacherName.isBlank()) title
-                else appString(R.string.hw_class_info, title, c.teacherName)
+                b.studentClassName.text = c.name
+                b.studentClassMeta.text = listOf(
+                    c.courseName,
+                    appPlural(R.plurals.class_student_count, c.studentCount, c.studentCount),
+                ).filter { it.isNotBlank() }.joinToString(" · ")
                 b.emptyText.text = appString(R.string.hw_classmates_empty)
+                classTeachers = emptyList()
+                CourseClasses.loadTeachers(c.teacherUids) { teachers ->
+                    classTeachers = teachers
+                    if (_binding != null && studentMainTab == StudentMainTab.CLASS) showClassmates(lastClassmates)
+                }
                 classmatesListener = CourseClasses.listenMembers(c.id) { members -> showClassmates(members.orEmpty()) }
             }
         }
     }
 
+    /** Sınıfım listesi: önce öğretmen(ler), sonra öğrenciler. */
     private fun showClassmates(members: List<CourseClasses.ClassMember>) {
         val b = _binding ?: return
-        classmateAdapter.submitList(members.map { it to classmateAvatars[it.uid] })
+        lastClassmates = members
+        val rows = classTeachers + members.filter { m -> classTeachers.none { it.uid == m.uid } }
+        classmateAdapter.teacherUids = classTeachers.map { it.uid }.toSet()
+        classmateAdapter.submitList(rows.map { it to classmateAvatars[it.uid] })
         // Yalnızca kendisi varsa "henüz başka öğrenci yok".
         b.emptyText.visibility = if (members.none { it.uid != auth.currentUser?.uid }) View.VISIBLE else View.GONE
-        val missing = members.map { it.uid }.filterNot { classmateAvatars.containsKey(it) }
+        val missing = rows.map { it.uid }.filterNot { classmateAvatars.containsKey(it) }
         if (missing.isNotEmpty()) {
             CourseClasses.loadAvatars(missing) { avatars ->
                 classmateAvatars.putAll(avatars)
                 if (_binding == null || studentMainTab != StudentMainTab.CLASS) return@loadAvatars
-                classmateAdapter.submitList(members.map { it to classmateAvatars[it.uid] })
+                classmateAdapter.submitList(rows.map { it to classmateAvatars[it.uid] })
             }
         }
     }

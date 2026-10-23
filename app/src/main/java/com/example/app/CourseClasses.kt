@@ -139,6 +139,26 @@ object CourseClasses {
             }
     }
 
+    /**
+     * Öğretmenleri sınıf listesi satırına çevirir (ad ve kullanıcı adı `publicProfiles`'tan;
+     * öğretmenin `users` dokümanını öğrenci okuyamıyor). Okunamayan öğretmen atlanıyor.
+     */
+    fun loadTeachers(uids: List<String>, onResult: (List<ClassMember>) -> Unit) {
+        if (uids.isEmpty()) return onResult(emptyList())
+        val out = arrayOfNulls<ClassMember>(uids.size)
+        var pending = uids.size
+        uids.forEachIndexed { i, uid ->
+            db.collection("publicProfiles").document(uid).get()
+                .addOnCompleteListener { task ->
+                    task.result?.takeIf { it.exists() }?.let { d ->
+                        out[i] = ClassMember(uid, d.getString("name").orEmpty(), d.getString("userId").orEmpty(), 0L)
+                    }
+                    pending--
+                    if (pending == 0) onResult(out.filterNotNull())
+                }
+        }
+    }
+
     /** Avatarlar `publicProfiles`'tan; `members` dokümanında tutulmuyor (öğrenci değiştirebilir). */
     fun loadAvatars(uids: List<String>, onResult: (Map<String, String?>) -> Unit) {
         if (uids.isEmpty()) return onResult(emptyMap())
@@ -171,6 +191,9 @@ object CourseClasses {
         val name: String,
         val courseName: String,
         val teacherName: String,
+        /** Sınıfın öğretmenleri (Sorularım → Sınıfım'da listenin başında). */
+        val teacherUids: List<String> = emptyList(),
+        val studentCount: Int = 0,
     )
 
     data class ClassInvite(
@@ -203,6 +226,8 @@ object CourseClasses {
                                 name = c.getString("name").orEmpty(),
                                 courseName = c.getString("courseName").orEmpty(),
                                 teacherName = c.getString("ownerName").orEmpty(),
+                                teacherUids = (c.get("teacherUids") as? List<*>).orEmpty().filterIsInstance<String>(),
+                                studentCount = (c.getLong("studentCount") ?: 0L).toInt().coerceAtLeast(0),
                             ),
                             false,
                         )
