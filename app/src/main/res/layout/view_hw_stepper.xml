@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ödev formunda sayısal alan: etiket, − değer +, altında bilgi satırı (bkz. HomeworkCreateFragment.Stepper). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="18dp"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/stepperLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/dark_text"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        tools:text="Sayı adedi" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/stepperMinus"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_hw_chip"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:text="−"
+            android:textColor="@color/dark_text"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/stepperValue"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:layout_weight="1"
+            android:background="@drawable/bg_edit_profile_input"
+            android:gravity="center"
+            android:importantForAutofill="no"
+            android:inputType="numberDecimal"
+            android:maxLength="6"
+            android:maxLines="1"
+            android:textColor="@color/dark_text"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            tools:text="5" />
+
+        <TextView
+            android:id="@+id/stepperPlus"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_hw_chip"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:text="+"
+            android:textColor="@color/dark_text"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/stepperHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:textColor="@color/dark_text_secondary"
+        android:textSize="12sp"
+        android:visibility="gone"
+        tools:text="En fazla 9 · önerilen 4"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/stepperWarning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/hint_background"
+        android:padding="10dp"
+        android:textColor="@color/dark_warning"
+        android:textSize="13sp"
+        android:visibility="gone"
+        tools:text="Bu kurallarla 9 sayı seçersen bütün sayıların bütün basamakları 1 olur."
+        tools:visibility="visible" />
+</LinearLayout>

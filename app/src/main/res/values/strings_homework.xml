@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ödevler: öğretmenin ödev ekranları, öğrencinin Görevler kartı ve ödev oynatıcısı (bkz. homework/). -->
+<resources>
+    <!-- İşlem ve konu adları -->
+    <string name="hw_op_add">Toplama</string>
+    <string name="hw_op_sub">Çıkarma</string>
+    <string name="hw_op_mul">Çarpma</string>
+    <string name="hw_op_add_lower">toplama</string>
+    <string name="hw_op_sub_lower">çıkarma</string>
+    <string name="hw_rule_direct">Kuralsız</string>
+    <string name="hw_rule_five">5\'lik</string>
+    <string name="hw_rule_ten">10\'luk</string>
+    <string name="hw_rule_bead">Boncuk</string>
+    <string name="hw_and">ve</string>
+    <string name="hw_with_abacus">Abaküslü</string>
+    <string name="hw_without_abacus">Abaküssüz</string>
+    <string name="hw_digits">%1$d basamak</string>
+    <string name="hw_mul_digits">%1$d × %2$d basamak</string>
+    <string name="hw_mul_title">Çarpma (%1$d × %2$d basamak)</string>
+    <string name="hw_title">%1$s %2$s</string>
+    <plurals name="hw_numbers">
+        <item quantity="one">%d sayı</item>
+        <item quantity="other">%d sayı</item>
+    </plurals>
+    <plurals name="hw_sub_numbers">
+        <item quantity="one">%d sayı çıkarılır</item>
+        <item quantity="other">%d sayı çıkarılır</item>
+    </plurals>
+    <plurals name="hw_questions">
+        <item quantity="one">%d soru</item>
+        <item quantity="other">%d soru</item>
+    </plurals>
+    <string name="hw_seconds">%1$s sn</string>
+
+    <!-- Öğretmen: ödev listesi -->
+    <string name="hw_class_button">Ödevler</string>
+    <string name="hw_list_title">Ödevler · %1$s</string>
+    <string name="hw_list_empty">Bu sınıfa henüz ödev verilmedi.</string>
+    <string name="hw_new_button">+ Yeni ödev</string>
+    <string name="hw_target_whole_class">Tüm sınıf</string>
+    <plurals name="hw_target_students">
+        <item quantity="one">%d öğrenci</item>
+        <item quantity="other">%d öğrenci</item>
+    </plurals>
+
+    <!-- Öğretmen: ödev ayrıntısı -->
+    <string name="hw_detail_title">Ödev</string>
+    <string name="hw_detail_students">Öğrenciler</string>
+    <string name="hw_detail_not_started">Başlamadı</string>
+    <string name="hw_detail_progress">Adım %1$d/%2$d · %3$d/%4$d doğru</string>
+    <string name="hw_detail_done">Bitti · %1$d/%2$d doğru</string>
+    <string name="hw_delete">Ödevi sil</string>
+    <string name="hw_delete_title">Ödev silinsin mi?</string>
+    <string name="hw_delete_message">Ödev öğrencilerin listesinden kalkar ve ilerlemeleri silinir.</string>
+    <string name="hw_deleted">Ödev silindi.</string>
+    <string name="hw_left_class">Sınıftan ayrılmış</string>
+
+    <!-- Öğretmen: ödev oluşturma -->
+    <string name="hw_create_title">Yeni ödev</string>
+    <string name="hw_field_op">İşlem</string>
+    <string name="hw_field_rules">Konu</string>
+    <string name="hw_field_rules_hint">Birden fazla seçebilirsin; sorularda yalnızca seçtiğin kurallar çıkar.</string>
+    <string name="hw_field_type">Tür</string>
+    <string name="hw_field_digits">Basamak sayısı</string>
+    <string name="hw_field_digits1">1. sayının basamağı</string>
+    <string name="hw_field_digits2">2. sayının basamağı</string>
+    <string name="hw_field_count_add">Sayı adedi</string>
+    <string name="hw_field_count_sub">Çıkarılacak sayı adedi</string>
+    <string name="hw_field_count_sub_hint">Başlangıç sayısı hariç. Başlangıç sayısı, sonuç negatife düşmeyecek ve seçtiğin kurallar çalışılabilecek şekilde seçilir.</string>
+    <string name="hw_field_interval">Gösterilme hızı (sn)</string>
+    <string name="hw_field_interval_hint">Sayılar bu aralıkla tek tek gösterilir (0,1 – 30 sn).</string>
+    <string name="hw_field_questions">Soru adedi</string>
+    <string name="hw_field_questions_hint">10\'arlı adımlara bölünür: %1$d adım.</string>
+    <string name="hw_field_target">Kime</string>
+    <string name="hw_target_select">Öğrenci seç</string>
+    <string name="hw_target_none_selected">En az bir öğrenci seç.</string>
+    <string name="hw_target_no_students">Sınıfta henüz öğrenci yok; ödev sınıfa katılan herkese görünür.</string>
+    <string name="hw_count_max">En fazla %1$d</string>
+    <string name="hw_count_max_recommended">En fazla %1$d · önerilen %2$d</string>
+    <string name="hw_count_impossible">Bu kurallarla %1$d basamakta soru üretilemiyor. Basamağı ya da konuyu değiştir.</string>
+    <string name="hw_count_forced">Bu kurallarla %1$d sayı seçersen bütün sayıların bütün basamakları %2$s olur (ör. %3$s). Sağlıklı değer %4$d.</string>
+    <string name="hw_mul_capacity">İki sayının basamakları toplamı en fazla %1$d olabilir.</string>
+    <string name="hw_preview_title">Örnek soru</string>
+    <string name="hw_preview_refresh">Başka örnek</string>
+    <string name="hw_send">Ödevi gönder</string>
+    <string name="hw_sent">Ödev %1$d öğrenciye gönderildi.</string>
+    <string name="hw_invalid">Ayarları kontrol et.</string>
+
+    <!-- Bildirim kanalı: gece gelen ödev (MyFirebaseMessagingService, account_quiet) -->
+    <string name="notification_channel_account_quiet_name">Ödevler ve hesap (sessiz)</string>
+    <string name="notification_channel_account_quiet_desc">Gece gelen ödev bildirimleri — sessiz gösterilir</string>
+
+    <!-- Öğrenci: Görevler kartı -->
+    <string name="hw_card_title">Ödevlerim</string>
+    <string name="hw_card_from">%1$s verdi</string>
+    <string name="hw_card_progress">%1$d/%2$d adım</string>
+    <string name="hw_card_done">Tamamlandı ✓</string>
+
+    <!-- Öğrenci: ödev oynatıcısı -->
+    <string name="hw_player_quit_desc">Kapat</string>
+    <string name="hw_player_step">Adım %1$d/%2$d · Soru %3$d/%4$d</string>
+    <string name="hw_player_start">Başla</string>
+    <string name="hw_player_check">Kontrol</string>
+    <string name="hw_player_answer_hint">Cevabın</string>
+    <string name="hw_player_correct">Doğru!</string>
+    <string name="hw_player_wrong">Doğru cevap: %1$s</string>
+    <string name="hw_player_next">Devam</string>
+    <string name="hw_player_block_done">Adım bitti!</string>
+    <string name="hw_player_block_score">%1$d/%2$d doğru</string>
+    <string name="hw_player_next_block">Sonraki adım</string>
+    <string name="hw_player_finish">Bitir</string>
+    <string name="hw_player_all_done">Ödevin tamamlandı! 🎉</string>
+    <string name="hw_player_save_failed">İlerleme kaydedilemedi. İnternet bağlantını kontrol edip tekrar dene.</string>
+    <string name="hw_player_retry_save">Tekrar kaydet</string>
+    <string name="hw_player_unavailable">Bu ödev açılamıyor. Öğretmenine haber ver.</string>
+    <string name="hw_player_quit_title">Ödevden çıkılsın mı?</string>
+    <string name="hw_player_quit_message">Bu adımdaki cevapların kaydedilmez; adıma baştan başlarsın.</string>
+    <string name="hw_player_quit_confirm">Çık</string>
+</resources>

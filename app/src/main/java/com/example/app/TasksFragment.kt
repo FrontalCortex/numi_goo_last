@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentTasksBinding
 import com.example.app.databinding.ItemBulletinBugReportCardBinding
 import com.google.firebase.firestore.ListenerRegistration
@@ -114,6 +115,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         private const val VIEW_TYPE_DAILY_QUESTION = 1
         private const val VIEW_TYPE_MISSIONS = 2
         private const val VIEW_TYPE_BUG_REPORT = 3
+        private const val VIEW_TYPE_HOMEWORK = 4
 
         /**
          * Hangi alt bar sekmesi. İki sekme de bu fragment: Görevler (günlük soru, görev
@@ -233,6 +235,11 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         ) : BulletinRow() {
             override val id: String = "bug_report"
         }
+
+        /** Kurs öğretmeninin verdiği ödevler (bkz. homework/HomeworkCard). Yalnızca ödev varsa listede. */
+        data class Homework(val items: List<com.example.app.homework.HomeworkCard.Item>) : BulletinRow() {
+            override val id: String = "homework"
+        }
     }
 
     private class BulletinAdapter(
@@ -244,6 +251,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         private val onBrokenHeartHealFinished: () -> Unit,
         private val onBindMissions: (View) -> Unit,
         private val onBugReportClaim: (String) -> Unit,
+        private val onHomeworkClick: (com.example.app.homework.HomeworkCard.Item) -> Unit,
     ) : ListAdapter<BulletinRow, RecyclerView.ViewHolder>(
         object : DiffUtil.ItemCallback<BulletinRow>() {
             override fun areItemsTheSame(oldItem: BulletinRow, newItem: BulletinRow): Boolean =
@@ -258,6 +266,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
             is BulletinRow.Standard -> VIEW_TYPE_STANDARD
             is BulletinRow.Missions -> VIEW_TYPE_MISSIONS
             is BulletinRow.BugReport -> VIEW_TYPE_BUG_REPORT
+            is BulletinRow.Homework -> VIEW_TYPE_HOMEWORK
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -265,6 +274,9 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
             return when (viewType) {
                 VIEW_TYPE_MISSIONS -> object : RecyclerView.ViewHolder(
                     inflater.inflate(R.layout.item_missions_sections, parent, false),
+                ) {}
+                VIEW_TYPE_HOMEWORK -> object : RecyclerView.ViewHolder(
+                    inflater.inflate(R.layout.item_bulletin_homework_card, parent, false),
                 ) {}
                 VIEW_TYPE_BUG_REPORT -> BugReportVH(
                     ItemBulletinBugReportCardBinding.inflate(inflater, parent, false),
@@ -295,6 +307,8 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                 is BulletinRow.DailyQuestion -> (holder as DailyQuestionVH).bind(item.state)
                 is BulletinRow.Missions -> onBindMissions(holder.itemView)
                 is BulletinRow.BugReport -> (holder as BugReportVH).bind(item)
+                is BulletinRow.Homework ->
+                    com.example.app.homework.HomeworkCard.bind(holder.itemView, item.items, onHomeworkClick)
             }
         }
 
@@ -795,6 +809,11 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
             onBrokenHeartHealFinished = { onDailyQuestionBrokenHeartHealFinished() },
             onBindMissions = { row -> missionsSection.bind(row) },
             onBugReportClaim = { reportId -> claimBugReportReward(reportId) },
+            // Ödev öğretmenin verdiği iş: can harcamıyor, onaysız öğretmen kapısı da gerekmiyor
+            // (kart yalnızca sınıftaki öğrencide çıkıyor).
+            onHomeworkClick = { item ->
+                openAbacusContainerFragment(com.example.app.homework.HomeworkPlayerFragment.newInstance(item.homework.id))
+            },
         )
 
         binding.tasksRecycler.layoutManager = LinearLayoutManager(requireContext())
@@ -803,7 +822,25 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         if (isMissionsMode) {
             refreshDailyQuestionCard()
             startBugReportWatch()
+            startHomeworkWatch()
         }
+    }
+
+    // ── Ödevler kartı ──────────────────────────────────────────────────────
+
+    private var homeworkItems: List<com.example.app.homework.HomeworkCard.Item> = emptyList()
+    private var homeworkWatcher: com.example.app.homework.HomeworkCard.Watcher? = null
+
+    /** Yalnızca öğrencide; öğretmenin ödevleri sınıf ekranında. Bkz. [HomeworkCard.Watcher]. */
+    private fun startHomeworkWatch() {
+        if (AuthManager().also { it.initialize(requireContext()) }.getCurrentUserType() == AuthManager.ROLE_TEACHER) return
+        homeworkWatcher?.stop()
+        homeworkWatcher = com.example.app.homework.HomeworkCard.Watcher { items ->
+            if (items != homeworkItems) {
+                homeworkItems = items
+                if (_binding != null) submitBulletinList()
+            }
+        }.also { it.refreshClass() }
     }
 
     // ── Hata bildirimi kartı ───────────────────────────────────────────────
@@ -908,6 +945,8 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
         if (isMissionsMode && !dailyReturnDeferred) refreshDailyQuestionCard()
         // Görev ilerlemesi (ör. pratikten dönüşte çalışma süresi görevi) yeniden okunuyor.
         refreshMissions()
+        // Sınıfa katılıp/ayrılıp dönüldüyse ödev listesi yeni sınıfa geçsin.
+        if (isMissionsMode) homeworkWatcher?.refreshClass()
         val main = activity as? MainActivity
         main?.scheduleReconcileAbacusOverlayWhenTasksIsBase()
         main?.logTouchDiag("TasksFragment.onResume")
@@ -936,6 +975,8 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
     private fun submitBulletinList() {
         val rows = if (isMissionsMode) {
             buildList<BulletinRow> {
+                // Ödev en üstte: öğretmenin verdiği iş, çocuğun ilk göreceği şey olmalı.
+                if (homeworkItems.isNotEmpty()) add(BulletinRow.Homework(homeworkItems))
                 add(BulletinRow.Missions(missionsRevision))
                 add(BulletinRow.DailyQuestion(dailyCardState))
                 add(
@@ -3427,6 +3468,8 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         (activity as? MainActivity)?.setTasksReturnTouchBlock(false)
         bugReportListener?.remove()
         bugReportListener = null
+        homeworkWatcher?.stop()
+        homeworkWatcher = null
         // View hiyerarşisini bırak (fragment geri yığınında beklerken bellekte kalıyordu).
         _binding = null
     }

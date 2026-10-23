@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Öğretmenin yeni ödev formu (bkz. HomeworkCreateFragment). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/class_back_desc"
+            android:padding="12dp"
+            android:src="@drawable/ic_back_arrow"
+            app:tint="@android:color/white" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/hw_create_title"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="48dp" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1A3040" />
+
+    <ScrollView
+        android:id="@+id/formScroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- İşlem -->
+            <TextView
+                style="@style/HomeworkFieldLabel"
+                android:layout_marginTop="0dp"
+                android:text="@string/hw_field_op" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/opAdd"
+                    style="@style/HomeworkOption"
+                    android:text="@string/hw_op_add" />
+
+                <TextView
+                    android:id="@+id/opSub"
+                    style="@style/HomeworkOption"
+                    android:text="@string/hw_op_sub" />
+
+                <TextView
+                    android:id="@+id/opMul"
+                    style="@style/HomeworkOption"
+                    android:layout_marginEnd="0dp"
+                    android:text="@string/hw_op_mul" />
+            </LinearLayout>
+
+            <!-- Konu (toplama / çıkarma) -->
+            <LinearLayout
+                android:id="@+id/rulesSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/HomeworkFieldLabel"
+                    android:text="@string/hw_field_rules" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/ruleDirect"
+                        style="@style/HomeworkOption"
+                        android:text="@string/hw_rule_direct" />
+
+                    <TextView
+                        android:id="@+id/ruleFive"
+                        style="@style/HomeworkOption"
+                        android:layout_marginEnd="0dp"
+                        android:text="@string/hw_rule_five" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/ruleTen"
+                        style="@style/HomeworkOption"
+                        android:text="@string/hw_rule_ten" />
+
+                    <TextView
+                        android:id="@+id/ruleBead"
+                        style="@style/HomeworkOption"
+                        android:layout_marginEnd="0dp"
+                        android:text="@string/hw_rule_bead" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="@string/hw_field_rules_hint"
+                    android:textColor="@color/dark_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Tür -->
+            <TextView
+                style="@style/HomeworkFieldLabel"
+                android:text="@string/hw_field_type" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/typeAbacus"
+                    style="@style/HomeworkOption"
+                    android:text="@string/hw_with_abacus" />
+
+                <TextView
+                    android:id="@+id/typeMental"
+                    style="@style/HomeworkOption"
+                    android:layout_marginEnd="0dp"
+                    android:text="@string/hw_without_abacus" />
+            </LinearLayout>
+
+            <include
+                android:id="@+id/digitsStepper"
+                layout="@layout/view_hw_stepper" />
+
+            <include
+                android:id="@+id/digits2Stepper"
+                layout="@layout/view_hw_stepper" />
+
+            <include
+                android:id="@+id/countStepper"
+                layout="@layout/view_hw_stepper" />
+
+            <include
+                android:id="@+id/intervalStepper"
+                layout="@layout/view_hw_stepper" />
+
+            <include
+                android:id="@+id/questionsStepper"
+                layout="@layout/view_hw_stepper" />
+
+            <!-- Kime -->
+            <TextView
+                style="@style/HomeworkFieldLabel"
+                android:text="@string/hw_field_target" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/targetAll"
+                    style="@style/HomeworkOption"
+                    android:text="@string/hw_target_whole_class" />
+
+                <TextView
+                    android:id="@+id/targetSelect"
+                    style="@style/HomeworkOption"
+                    android:layout_marginEnd="0dp"
+                    android:text="@string/hw_target_select" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/targetInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <LinearLayout
+                android:id="@+id/studentChecks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="vertical"
+                android:visibility="gone" />
+
+            <!-- Örnek soru -->
+            <LinearLayout
+                android:id="@+id/previewCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:background="@drawable/hint_background"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/hw_preview_title"
+                        android:textColor="@color/dark_text_secondary"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/btnPreviewRefresh"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:text="@string/hw_preview_refresh"
+                        android:textColor="@color/dark_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/previewText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="monospace"
+                    android:textColor="@color/dark_text"
+                    android:textIsSelectable="true"
+                    android:textSize="16sp"
+                    tools:text="12 + 34 + 21 + 10 + 22 = 99" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/formError"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textColor="@color/dark_error"
+                android:textSize="13sp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_margin="16dp">
+
+        <TextView
+            android:id="@+id/btnSend"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/bg_add_friend_btn"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:text="@string/hw_send"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/sendProgress"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+    </FrameLayout>
+</LinearLayout>

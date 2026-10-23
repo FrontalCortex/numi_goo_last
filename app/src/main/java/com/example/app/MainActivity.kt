@@ -213,6 +213,9 @@ class MainActivity : AppCompatActivity() {
         /** Sınıf daveti bildiriminden gelindi: öğrenciye Kurs ekranı (StudentClassFragment) açılır. */
         const val EXTRA_OPEN_STUDENT_CLASS = "open_student_class"
 
+        /** Yeni ödev bildiriminden gelindi: Görevler sekmesi (Ödevlerim kartı en üstte) açılır. */
+        const val EXTRA_OPEN_HOMEWORKS = "open_homeworks"
+
         @Volatile
         var currentActivity: MainActivity? = null
         private const val PREFS_APP = "AppPrefs"
@@ -2926,7 +2929,8 @@ class MainActivity : AppCompatActivity() {
         val tasksFragment = fm.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
         val overlayToRemove = when (overlay) {
             is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment, is NewChestFragment,
-            is CupPathRoadFragment, is BugReportFragment, is BugReportAdminFragment -> overlay
+            is CupPathRoadFragment, is BugReportFragment, is BugReportAdminFragment,
+            is com.example.app.homework.HomeworkPlayerFragment -> overlay
             else -> null
         }
         if (tasksFragment == null || overlayToRemove == null) {
@@ -3026,7 +3030,7 @@ class MainActivity : AppCompatActivity() {
         // ekranlar hayalet sayılmamalı: hata bildirimi ekranı görsel seçilip dönülünce
         // kapanıyordu.
         if (hostVisible && (active is AbacusPracticeFragment || active is BugReportFragment ||
-                active is BugReportAdminFragment)
+                active is BugReportAdminFragment || active is com.example.app.homework.HomeworkPlayerFragment)
         ) {
             Log.d(MainActivityTouchDiag.LOG_TAG, "[$caller] skip — active ${active.javaClass.simpleName}")
             return
@@ -3879,6 +3883,14 @@ class MainActivity : AppCompatActivity() {
             if (auth.currentUser != null) {
                 changeFragment(NotificationFragment.newForTeacherPool())
             }
+            return
+        }
+
+        // Yeni ödev: Görevler sekmesi. Sekme seçimi alt barın kendi yolundan geçiyor (oturum ve
+        // bağlantı denetimi orada).
+        if (intent?.extras?.getBoolean(EXTRA_OPEN_HOMEWORKS) == true) {
+            intent?.removeExtra(EXTRA_OPEN_HOMEWORKS)
+            if (auth.currentUser != null) binding.bottomNavigationID.selectedItemId = R.id.tasks
             return
         }
 

@@ -113,6 +113,22 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Ödevler (bkz. homework/TeacherHomeworkListFragment) -->
+    <TextView
+        android:id="@+id/btnHomeworks"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_button_outline"
+        android:foreground="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:text="@string/hw_class_button"
+        android:textColor="@color/dark_primary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
     <!-- Öğrenciler başlığı ve ekleme düğmesi -->
     <LinearLayout
         android:layout_width="match_parent"

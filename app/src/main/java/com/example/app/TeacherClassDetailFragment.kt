@@ -72,6 +72,16 @@ class TeacherClassDetailFragment : Fragment() {
         binding.btnShareCode.setOnClickListener { shareCode() }
         binding.btnRegenerateCode.setOnClickListener { confirmRegenerate() }
         binding.btnInviteStudent.setOnClickListener { showInviteDialog() }
+        binding.btnHomeworks.setOnClickListener {
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                .replace(
+                    R.id.fragmentContainerID,
+                    com.example.app.homework.TeacherHomeworkListFragment.newInstance(classId, current?.name ?: binding.classTitle.text.toString()),
+                )
+                .addToBackStack(null)
+                .commit()
+        }
 
         listeners += CourseClasses.listenClass(classId) { c ->
             val b = _binding ?: return@listenClass

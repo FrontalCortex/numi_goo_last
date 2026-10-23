@@ -294,6 +294,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             if (type == TYPE_POOL) putExtra(MainActivity.EXTRA_OPEN_TEACHER_POOL, true)
             // Sınıf daveti: öğrenci doğrudan Kurs ekranına, davet kartının olduğu yere.
             if (topic == TOPIC_CLASS_INVITE) putExtra(MainActivity.EXTRA_OPEN_STUDENT_CLASS, true)
+            // Yeni ödev: Görevler sekmesi, Ödevlerim kartı en üstte.
+            if (type == TYPE_HOMEWORK) putExtra(MainActivity.EXTRA_OPEN_HOMEWORKS, true)
             // Soru durumu bildirimine dokunan öğrenci doğrudan sorusuna gitsin.
             // MainActivity ikisini birlikte bekliyor (bkz. handleOpenQuestionIdFromIntent).
             if (!questionId.isNullOrEmpty() && !recipientUid.isNullOrEmpty()) {
@@ -411,6 +413,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         const val CHANNEL_ID_ACCOUNT = "account"
         const val CHANNEL_ID_POOL = "pool"
         const val CHANNEL_ID_POOL_QUIET = "pool_quiet"
+        const val CHANNEL_ID_ACCOUNT_QUIET = "account_quiet"
 
         /**
          * Kanal kataloğu. Sunucunun gönderdiği `channel` alanı buradaki anahtarlarla
@@ -457,6 +460,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 R.string.notification_channel_pool_quiet_desc,
                 NotificationManager.IMPORTANCE_LOW,
             ),
+            // Gece gelen ödev bildirimi (sunucuda `homework` türü, quiet: silence → "account_quiet").
+            // Bu kanal olmasaydı bilinmeyen kanal sesli mesaj kanalının ayarlarına düşerdi.
+            CHANNEL_ID_ACCOUNT_QUIET to ChannelSpec(
+                R.string.notification_channel_account_quiet_name,
+                R.string.notification_channel_account_quiet_desc,
+                NotificationManager.IMPORTANCE_LOW,
+            ),
         )
 
         /** Sunucudaki tür adı → o türün varsayılan kanalı (`channel` alanı gelmezse). */
@@ -473,6 +483,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         /** Öğretmen havuzu bildirimi (functions/index.js: notifyTeacherPool). */
         private const val TYPE_POOL = "pool"
+        /** Yeni ödev (createHomework); bkz. functions/notifications.js `homework`. */
+        private const val TYPE_HOMEWORK = "homework"
         /** Sınıf daveti (inviteStudentToClass). Türü `account`; ayrıldığı yer konu etiketi. */
         private const val TOPIC_CLASS_INVITE = "class_invite"
         /**
@@ -489,6 +501,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             NotificationPrefs.STREAK -> 90_001
             NotificationPrefs.REWARD -> 90_002
             TYPE_POOL -> 90_004
+            // Kendi kimliği: hesap bildirimleriyle (90_003) birbirinin yerine geçmesinler.
+            TYPE_HOMEWORK -> 90_006
             else -> 90_003
         }
 
