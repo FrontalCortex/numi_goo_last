@@ -15,6 +15,11 @@
 //       → öğretmeni kurstan çıkarır: courseId silinir, açtığı sınıflar kapanır (archived) ve
 //         o sınıflarda bekleyen sorular genel havuza taşınır. Sınıflardaki öğrencilerin yeni
 //         soruları da genele düşer (kapanmış sınıf soru almıyor).
+//   node tools/kurs/kurs_ogretmeni_ata.js --bagimsiz 746609WU --yaz
+//       → BAĞIMSIZ ÖĞRETMEN: bir kursa bağlı olmadan kendi öğrencileriyle çalışan öğretmen için
+//         tek kişilik kurs. Kimlik kullanıcı adından (`ogretmen-746609wu`), ad öğretmenin
+//         adından gelir (öğrenci sınıf satırında bu adı görür); --ad ile değiştirilebilir.
+//         Tek öğretmen alır. Geri almak: --bagimsiz 746609WU --geri-al --yaz
 //   node tools/kurs/kurs_ogretmeni_ata.js --liste
 //       → kursları ve bağlı öğretmenleri listeler.
 //
@@ -24,18 +29,25 @@
 const { fail, openFirestore, loadClasses, normalizeName, usersByName } = require('./ortak');
 
 function parseArgs(argv) {
-  const out = { adlar: [], yaz: false, geriAl: false, liste: false, kurs: '', ad: '' };
+  const out = { adlar: [], yaz: false, geriAl: false, liste: false, bagimsiz: false, kurs: '', ad: '' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--yaz') out.yaz = true;
     else if (a === '--geri-al') out.geriAl = true;
     else if (a === '--liste') out.liste = true;
+    else if (a === '--bagimsiz') out.bagimsiz = true;
     else if (a === '--kurs') out.kurs = argv[++i] || '';
     else if (a === '--ad') out.ad = (argv[++i] || '').trim();
     else if (a.startsWith('--')) fail(`Bilinmeyen seçenek: ${a}`);
     else out.adlar.push(a);
   }
   if (out.liste) return out;
+  if (out.bagimsiz) {
+    // Kimlik ve ad öğretmenden çıkarılıyor (bkz. bagimsizKurs); burada yalnızca tek kişi şartı.
+    if (out.kurs) fail('--bagimsiz ile --kurs verilmez; kurs kimliği kullanıcı adından çıkarılır.');
+    if (out.adlar.length !== 1) fail('--bagimsiz tek bir öğretmen kullanıcı adı alır.');
+    return out;
+  }
   // Kurs kimliği Console'da ve betik çıktılarında elle okunuyor; kısa ve okunur olsun.
   if (!/^[a-z0-9-]{3,40}$/.test(out.kurs)) fail('--kurs küçük harf, rakam ve tire (3–40), ör. menar-kadikoy');
   if (!out.adlar.length) fail('En az bir öğretmen kullanıcı adı ver.');
@@ -50,9 +62,24 @@ async function liste(db) {
   if (courses.empty) console.log('Hiç kurs yok.');
   courses.docs.forEach((c) => {
     const bagli = teachers.docs.filter((t) => t.get('courseId') === c.id);
-    console.log(`${c.id}  "${c.get('name') || ''}"  (${bagli.length} öğretmen)`);
+    const tur = c.get('independent') === true ? '  [bağımsız öğretmen]' : '';
+    console.log(`${c.id}  "${c.get('name') || ''}"  (${bagli.length} öğretmen)${tur}`);
     bagli.forEach((t) => console.log(`    ${t.get('userId')}  ${t.get('name') || ''}${t.get('teacherApproved') === true ? '' : '  [onay bekliyor]'}`));
   });
+}
+
+/**
+ * Bağımsız öğretmenin tek kişilik kursu: kimlik `ogretmen-<kullanıcı adı>`, ad öğretmenin adı.
+ * Kullanıcı adı rakam + büyük harf (generateUniqueUserId), küçültünce kimlik kuralına uyuyor.
+ */
+function bagimsizKurs(opts, adaGore) {
+  const bulunan = adaGore.get(normalizeName(opts.adlar[0])) || [];
+  if (bulunan.length !== 1) fail(`${opts.adlar[0]}: ${bulunan.length ? `${bulunan.length} hesapta aynı ad` : 'bulunamadı'}`);
+  const u = bulunan[0].data();
+  if (u.role !== 'TEACHER') fail(`${opts.adlar[0]}: öğretmen değil (role=${u.role || '-'})`);
+  const kurs = `ogretmen-${normalizeName(u.userId)}`;
+  if (!/^[a-z0-9-]{3,40}$/.test(kurs)) fail(`Kullanıcı adından kurs kimliği çıkarılamadı: ${u.userId}`);
+  return { kurs, ad: opts.ad || String(u.name || u.userId).trim() };
 }
 
 async function main() {
@@ -61,6 +88,8 @@ async function main() {
   if (opts.liste) return liste(db);
 
   const classes = loadClasses();
+  const adaGore = await usersByName(db);
+  if (opts.bagimsiz) Object.assign(opts, bagimsizKurs(opts, adaGore));
   const courseRef = db.collection('courses').doc(opts.kurs);
   const courseSnap = await courseRef.get();
   if (!courseSnap.exists && opts.geriAl) fail(`Kurs yok: ${opts.kurs}`);
@@ -68,9 +97,7 @@ async function main() {
 
   console.log(opts.yaz ? 'Kip: YAZ\n' : 'Kip: KURU ÇALIŞMA (hiçbir şey yazılmayacak; yazmak için --yaz)\n');
   if (!courseSnap.exists) console.log(`Kurs açılacak: ${opts.kurs} "${opts.ad}"`);
-  else console.log(`Kurs: ${opts.kurs} "${courseSnap.get('name') || ''}"${opts.ad ? ` (ad "${opts.ad}" olarak güncellenecek)` : ''}`);
-
-  const adaGore = await usersByName(db);
+  else console.log(`Kurs: ${opts.kurs} "${courseSnap.get('name') || ''}"${opts.ad && opts.ad !== courseSnap.get('name') ? ` (ad "${opts.ad}" olarak güncellenecek)` : ''}`);
   const yapilacak = [];
   const atlanan = [];
   for (const ham of new Set(opts.adlar.map(normalizeName))) {
@@ -113,9 +140,11 @@ async function main() {
     return;
   }
 
-  if (!courseSnap.exists || opts.ad) {
+  if (!opts.geriAl && (!courseSnap.exists || opts.ad)) {
     await courseRef.set({
       name: opts.ad || courseSnap.get('name'),
+      // Yalnızca listede ayırt etmek için; kurallar ve fonksiyonlar iki kurs türünü aynı görüyor.
+      ...(opts.bagimsiz ? { independent: true } : {}),
       ...(courseSnap.exists ? {} : { createdAt: admin.firestore.FieldValue.serverTimestamp() }),
     }, { merge: true });
   }
