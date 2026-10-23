@@ -70,6 +70,7 @@ class TeacherClassDetailFragment : Fragment() {
 
         binding.btnClassSettings.setOnClickListener { showSettingsSheet() }
         binding.btnInviteStudent.setOnClickListener { showInviteDialog() }
+        com.example.app.homework.DepthPress.attach(binding.btnInviteStudent, binding.btnHomeworks)
         binding.btnHomeworks.setOnClickListener {
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
@@ -277,6 +278,10 @@ class TeacherClassDetailFragment : Fragment() {
             }
             b.btnFollowBack.visibility = View.GONE
             b.btnUnfollow.visibility = View.VISIBLE
+            // Bu ekranda X düğmesi de göçen düğme (satır düzeni takip listesiyle ortak, onu bozmuyoruz).
+            b.btnUnfollow.setBackgroundResource(R.drawable.bg_depth_close)
+            b.btnUnfollow.setPadding(b.btnUnfollow.paddingLeft, b.btnUnfollow.paddingLeft, b.btnUnfollow.paddingLeft, b.btnUnfollow.paddingLeft + (4 * b.root.resources.displayMetrics.density).toInt())
+            com.example.app.homework.DepthPress.attach(b.btnUnfollow)
             b.btnUnfollow.contentDescription = appString(R.string.class_remove_confirm)
             b.btnUnfollow.setOnClickListener { onRemove(member) }
             b.root.setOnClickListener { onClick(member) }

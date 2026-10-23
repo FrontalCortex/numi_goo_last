@@ -127,10 +127,19 @@ class TeacherHomeworkListFragment : Fragment() {
         binding.list.adapter = adapter
         binding.fabNew.visibility = View.VISIBLE
         binding.fabNew.setOnClickListener { openScreen(HomeworkCreateFragment.newInstance(classId)) }
+        DepthPress.attach(binding.fabNew)
         // Liste kayarken düğme küçülüp yalnızca + kalıyor, kartların üstünü az kapatsın.
         binding.list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
-                if (dy > 4) binding.fabNew.shrink() else if (dy < -4) binding.fabNew.extend()
+                val label = _binding?.fabNewLabel ?: return
+                val show = when {
+                    dy > 4 -> false
+                    dy < -4 -> true
+                    else -> return
+                }
+                if ((label.visibility == View.VISIBLE) == show) return
+                android.transition.TransitionManager.beginDelayedTransition(binding.root as ViewGroup)
+                label.visibility = if (show) View.VISIBLE else View.GONE
             }
         })
 

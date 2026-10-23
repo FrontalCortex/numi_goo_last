@@ -56,70 +56,64 @@
     </LinearLayout>
 
     <!-- Ödevler: sınıfın ana işi, en üstte -->
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:id="@+id/btnHomeworks"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
         android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_depth_card_homeworks"
         android:clickable="true"
         android:focusable="true"
-        android:foreground="?attr/selectableItemBackground"
-        app:cardBackgroundColor="@color/dark_secondary"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="20dp">
+
+        <ImageView
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_icon_circle"
+            android:importantForAccessibility="no"
+            android:padding="9dp"
+            android:src="@drawable/profile_book_ic3" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="16dp">
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-            <ImageView
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@drawable/bg_icon_circle"
-                android:importantForAccessibility="no"
-                android:padding="9dp"
-                android:src="@drawable/profile_book_ic3" />
-
-            <LinearLayout
-                android:layout_width="0dp"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="14dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
+                android:text="@string/hw_class_button"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/hw_class_button"
-                    android:textColor="@android:color/white"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/homeworksSubtitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:alpha="0.85"
-                    android:textColor="@android:color/white"
-                    android:textSize="13sp"
-                    tools:text="3 ödev · 1'i herkes bitirdi" />
-            </LinearLayout>
-
-            <ImageView
-                android:layout_width="18dp"
-                android:layout_height="18dp"
-                android:importantForAccessibility="no"
-                android:src="@drawable/dualingo_arrow_ic"
-                app:tint="@android:color/white" />
+            <TextView
+                android:id="@+id/homeworksSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:alpha="0.85"
+                android:textColor="@android:color/white"
+                android:textSize="13sp"
+                tools:text="3 ödev · 1'i herkes bitirdi" />
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+
+        <ImageView
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/dualingo_arrow_ic"
+            app:tint="@android:color/white" />
+    </LinearLayout>
 
     <!-- Öğrenciler başlığı ve ekleme düğmesi -->
     <LinearLayout
@@ -144,14 +138,14 @@
         <LinearLayout
             android:id="@+id/btnInviteStudent"
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:background="@drawable/bg_pill_primary"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_depth_pill_primary"
             android:clickable="true"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="12dp"
+            android:paddingBottom="4dp"
             android:paddingEnd="14dp">
 
             <ImageView
