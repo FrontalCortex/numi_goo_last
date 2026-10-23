@@ -255,6 +255,7 @@ class ProfileFragment : Fragment() {
             binding.otherUserProfileTopBar.setBackgroundColor(bg)
             binding.tvOtherUserProfileName.setTextColor(fg)
             binding.btnOtherUserProfileBack.setColorFilter(fg)
+            binding.btnStudentProgress.setColorFilter(fg)
             binding.otherUserTopDivider.setBackgroundColor(
                 androidx.core.graphics.ColorUtils.blendARGB(bg, Color.BLACK, 0.15f),
             )
@@ -569,6 +570,37 @@ class ProfileFragment : Fragment() {
                 binding.btnAddFriend.isEnabled = true
                 Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
+    }
+
+    /**
+     * Bakan kişi bu öğrencinin kurs öğretmeniyse üst çubuktaki ilerleme düğmesini açar.
+     *
+     * Karar öğrencinin `users` dokümanındaki `classTeacherUids`'ten (yalnızca sunucu yazıyor);
+     * aynı liste kurallarda raporun okunmasına izin veren tek şey (`isTeacherOfStudent`).
+     * `users` dokümanını yalnızca onaylı öğretmen okuyabildiği için öğrencide okuma hiç
+     * denenmiyor — reddedilecek bir okuma için ağa gitmeye gerek yok.
+     */
+    private fun showStudentProgressButtonIfMyStudent(studentUid: String) {
+        val myUid = auth.currentUser?.uid ?: return
+        if ((activity as? MainActivity)?.isApprovedTeacher() != true) return
+        firestore.collection("users").document(studentUid).get()
+            .addOnSuccessListener { doc ->
+                if (_binding == null || !isAdded) return@addOnSuccessListener
+                @Suppress("UNCHECKED_CAST")
+                val teachers = doc.get("classTeacherUids") as? List<String> ?: return@addOnSuccessListener
+                if (myUid !in teachers) return@addOnSuccessListener
+                binding.btnStudentProgress.visibility = View.VISIBLE
+                binding.btnStudentProgress.setOnClickListener {
+                    val name = binding.tvOtherUserProfileName.text?.toString().orEmpty()
+                        .ifBlank { doc.getString("name").orEmpty() }
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                        .replace(R.id.fragmentContainerID, ParentPanelFragment.newForStudent(studentUid, name))
+                        .addToBackStack(null)
+                        .commit()
+                }
+            }
+            .addOnFailureListener { e -> Log.w("ProfileFragment", "öğrenci dokümanı okunamadı", e) }
     }
 
     private fun openFollowScreen(startTab: Int) {
@@ -1275,6 +1307,7 @@ class ProfileFragment : Fragment() {
             binding.btnOtherUserProfileBack.setOnClickListener {
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }
+            targetUid?.let { showStudentProgressButtonIfMyStudent(it) }
 
             // Avatar tıklanamaz (dinleyici yalnızca kendi profilimizde kuruluyor)
             binding.avatarHeader.isClickable = false

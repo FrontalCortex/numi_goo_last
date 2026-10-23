@@ -15,14 +15,33 @@ import com.example.app.databinding.FragmentParentPanelBinding
  * çocuğun ilerlemesine dokunması için bir sebep yok.
  *
  * Girişte doğrulama yok: panel çocuğun kendi ilerlemesinden başka bir şey göstermiyor.
+ *
+ * Aynı ekran kurs öğretmenine öğrencisinin ilerlemesi olarak da açılıyor ([newForStudent],
+ * profildeki ilerleme düğmesinden). O zaman başlık "Veli Paneli" değil öğrencinin adı; boş
+ * rapor metni de veliye değil öğretmene yazılmış olanı.
  */
 class ParentPanelFragment : Fragment() {
+
+    companion object {
+        private const val ARG_STUDENT_UID = "student_uid"
+        private const val ARG_STUDENT_NAME = "student_name"
+
+        fun newForStudent(studentUid: String, studentName: String) = ParentPanelFragment().apply {
+            arguments = Bundle().apply {
+                putString(ARG_STUDENT_UID, studentUid)
+                putString(ARG_STUDENT_NAME, studentName)
+            }
+        }
+    }
 
     private var _binding: FragmentParentPanelBinding? = null
     private val binding: FragmentParentPanelBinding
         get() = _binding!!
 
     private val adapter = ParentReportAdapter()
+
+    /** Öğretmen öğrencisine bakıyorsa öğrencinin uid'si; veli panelinde null. */
+    private val studentUid: String? get() = arguments?.getString(ARG_STUDENT_UID)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,6 +58,10 @@ class ParentPanelFragment : Fragment() {
         binding.btnBack.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.parentPanelList.layoutManager = LinearLayoutManager(requireContext())
         binding.parentPanelList.adapter = adapter
+        if (studentUid != null) {
+            binding.parentPanelHeaderTitle.text =
+                appString(R.string.class_student_progress_title, arguments?.getString(ARG_STUDENT_NAME).orEmpty())
+        }
 
         // screen_view otomatik: NumiGooApplication her fragment resume'unda logluyor.
         load()
@@ -46,7 +69,7 @@ class ParentPanelFragment : Fragment() {
 
     private fun load() {
         showLoading()
-        ParentReportRepository.load { report, error ->
+        ParentReportRepository.load(studentUid) { report, error ->
             // Fragment kapanmış olabilir: Firestore geri çağrısı yaşam döngüsüne bakmaz.
             if (_binding == null || !isAdded) return@load
             when {
@@ -55,7 +78,10 @@ class ParentPanelFragment : Fragment() {
                     else appString(R.string.ui_ilerleme_bilgisi_alinamadi),
                 )
                 report.isEmpty -> showMessage(
-                    appString(R.string.ui_henuz_baslanmis_bir_ders_yok_cocugunuz)
+                    appString(
+                        if (studentUid != null) R.string.class_student_progress_empty
+                        else R.string.ui_henuz_baslanmis_bir_ders_yok_cocugunuz
+                    )
                 )
                 else -> showReport(report)
             }

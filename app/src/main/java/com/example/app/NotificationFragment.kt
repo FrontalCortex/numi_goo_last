@@ -35,6 +35,8 @@ class NotificationFragment : Fragment() {
     private enum class TeacherTab { POOL, CHATS, REPORTS }
     private enum class StudentTab { BEKLEYEN, COZULEN }
     private enum class ReportsSubTab { REPORTS, RESTRICTED }
+    /** Havuz: kurs öğretmeninin sınıflarının soruları ya da genel havuz (bkz. CourseClasses). */
+    private enum class PoolSubTab { MINE, GENERAL }
 
     private var _binding: FragmentNotificationBinding? = null
     private val binding get() = _binding!!
@@ -47,6 +49,14 @@ class NotificationFragment : Fragment() {
     private var teacherTab = TeacherTab.POOL
     private var studentTab = StudentTab.BEKLEYEN
     private var reportsSubTab = ReportsSubTab.REPORTS
+    private var poolSubTab: PoolSubTab? = null
+    /**
+     * Öğretmenin gördüğü havuzlar; öğretmen dokümanı okununca dolar. Havuz sorgusu buna göre
+     * kuruluyor ve kurallarla birebir aynı olmalı: kurallar sorguyu süzmüyor, izinsiz bir
+     * dokümana çarpabilecek sorguyu (ör. kurs öğretmeninin genel havuz sorgusu) tamamen
+     * reddediyor ve liste hiçbir hata göstermeden boş kalıyor.
+     */
+    private var poolVisibility: CourseClasses.PoolVisibility? = null
 
     private val adapter = QuestionListAdapter(
         onItemClick = { question -> onQuestionClick(question) },
@@ -76,6 +86,7 @@ class NotificationFragment : Fragment() {
         private const val KEY_TEACHER_TAB = "teacher_tab"
         private const val KEY_STUDENT_TAB = "student_tab"
         private const val KEY_REPORTS_SUB_TAB = "reports_sub_tab"
+        private const val KEY_POOL_SUB_TAB = "pool_sub_tab"
         private const val ARG_FORCE_TEACHER_CHATS = "force_teacher_chats"
         private const val ARG_FORCE_TEACHER_POOL = "force_teacher_pool"
         private const val ARG_FORCE_STUDENT_BEKLEYEN = "force_student_bekleyen"
@@ -144,6 +155,7 @@ class NotificationFragment : Fragment() {
         outState.putString(KEY_TEACHER_TAB, teacherTab.name)
         outState.putString(KEY_STUDENT_TAB, studentTab.name)
         outState.putString(KEY_REPORTS_SUB_TAB, reportsSubTab.name)
+        poolSubTab?.let { outState.putString(KEY_POOL_SUB_TAB, it.name) }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -174,6 +186,9 @@ class NotificationFragment : Fragment() {
             savedInstanceState.getString(KEY_REPORTS_SUB_TAB)?.let { name ->
                 kotlin.runCatching { reportsSubTab = ReportsSubTab.valueOf(name) }
             }
+            savedInstanceState.getString(KEY_POOL_SUB_TAB)?.let { name ->
+                kotlin.runCatching { poolSubTab = PoolSubTab.valueOf(name) }
+            }
         } else {
             if (forceTeacherChats) teacherTab = TeacherTab.CHATS
             if (forceStudentBekleyen) studentTab = StudentTab.BEKLEYEN
@@ -202,6 +217,7 @@ class NotificationFragment : Fragment() {
                         binding.teacherApprovalPendingContainer.visibility = View.GONE
                         binding.notificationTitle.visibility = View.GONE
                         binding.teacherTabContainer.visibility = View.VISIBLE
+                        setupPoolVisibility(CourseClasses.poolVisibilityOf(userDoc))
                         teacherSelectionMode = fromTeacherSelection
                         if (teacherSelectionMode) {
                             binding.tabPool.visibility = View.GONE
@@ -306,6 +322,7 @@ class NotificationFragment : Fragment() {
         listener = null
         removeRestrictedUserListeners()
         binding.reportsSubTabContainer.visibility = if (tab == TeacherTab.REPORTS) View.VISIBLE else View.GONE
+        updatePoolOptionsRow()
         binding.questionsRecyclerView.adapter = adapterForTeacherTab(tab)
         when (tab) {
             TeacherTab.POOL -> subscribeToPool()
@@ -447,7 +464,67 @@ class NotificationFragment : Fragment() {
         if (_binding != null) {
             binding.tabPool.visibility = View.VISIBLE
             binding.tabReports.visibility = View.VISIBLE
+            updatePoolOptionsRow()
         }
+    }
+
+    /**
+     * Öğretmen dokümanından gelen havuz görünürlüğünü kurar: hangi alt sekme açık başlar,
+     * alt sekmeler ve "Sınıflarım" düğmesi görünür mü.
+     */
+    private fun setupPoolVisibility(visibility: CourseClasses.PoolVisibility) {
+        poolVisibility = visibility
+        // Kaydedilmiş sekme artık görülemeyen bir havuzu gösteriyorsa (öğretmen "genel havuza
+        // yardım"ı kapattı) görülebilene düşüyor.
+        poolSubTab = when {
+            poolSubTab == PoolSubTab.MINE && visibility.classPool -> PoolSubTab.MINE
+            poolSubTab == PoolSubTab.GENERAL && visibility.generalPool -> PoolSubTab.GENERAL
+            visibility.classPool -> PoolSubTab.MINE
+            else -> PoolSubTab.GENERAL
+        }
+        binding.poolSubTabMine.setOnClickListener { switchPoolSubTab(PoolSubTab.MINE) }
+        binding.poolSubTabGeneral.setOnClickListener { switchPoolSubTab(PoolSubTab.GENERAL) }
+        binding.btnTeacherClasses.setOnClickListener { openTeacherClasses() }
+        updatePoolSubTabUi()
+        updatePoolOptionsRow()
+    }
+
+    /** Alt sekmeler yalnızca iki havuzu da gören öğretmende ve Havuz sekmesinde; düğme her sekmede. */
+    private fun updatePoolOptionsRow() {
+        val v = poolVisibility ?: return
+        val showSubTabs = v.classPool && v.generalPool && teacherTab == TeacherTab.POOL && !teacherSelectionMode
+        val showClasses = v.isCourseTeacher && !teacherSelectionMode
+        binding.poolSubTabContainer.visibility = if (showSubTabs) View.VISIBLE else View.GONE
+        binding.btnTeacherClasses.visibility = if (showClasses) View.VISIBLE else View.GONE
+        binding.poolOptionsRow.visibility = if (showSubTabs || showClasses) View.VISIBLE else View.GONE
+    }
+
+    private fun updatePoolSubTabUi() {
+        val selectedBg = R.drawable.bg_segment_selected
+        val selectedColor = android.graphics.Color.WHITE
+        val unselectedColor = requireContext().getColor(R.color.dark_text_secondary)
+        listOf(PoolSubTab.MINE to binding.poolSubTabMine, PoolSubTab.GENERAL to binding.poolSubTabGeneral)
+            .forEach { (tab, view) ->
+                view.setBackgroundResource(if (tab == poolSubTab) selectedBg else 0)
+                view.setTextColor(if (tab == poolSubTab) selectedColor else unselectedColor)
+            }
+    }
+
+    private fun switchPoolSubTab(tab: PoolSubTab) {
+        if (poolSubTab == tab) return
+        poolSubTab = tab
+        updatePoolSubTabUi()
+        listener?.remove()
+        listener = null
+        subscribeToPool()
+    }
+
+    private fun openTeacherClasses() {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+            .replace(R.id.fragmentContainerID, TeacherClassesFragment())
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun subscribeToPool() {
@@ -456,11 +533,20 @@ class NotificationFragment : Fragment() {
             binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = appString(R.string.ui_henuz_soru_yok)
-        val query = firestore.collection("questions")
+        val mine = poolSubTab == PoolSubTab.MINE && poolVisibility?.classPool == true
+        binding.emptyText.text = appString(if (mine) R.string.class_pool_empty_mine else R.string.ui_henuz_soru_yok)
+        // İki sorgu da kurallardaki `teacherReaches` ile birebir (bkz. [poolVisibility]):
+        // sınıf havuzu `classTeacherUids array-contains ben`, genel havuz `pool == general`.
+        // İkisinin de bileşik indeksi firestore.indexes.json'da.
+        val base = if (mine) {
+            firestore.collection("questions").whereArrayContains("classTeacherUids", uid)
+        } else {
+            firestore.collection("questions").whereEqualTo("pool", CourseClasses.POOL_GENERAL)
+        }
+        val query = base
             .whereEqualTo("status", StudentQuestion.STATUS_PENDING)
             // Soru havuzu: yalnızca oluşturulma zamanına göre sırala.
-            // Mevcut Firestore indeksini bozmayalım; DESC alıp client tarafında ASC'ye çeviriyoruz.
+            // DESC alıp client tarafında ASC'ye çeviriyoruz.
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
             if (e != null || _binding == null || !isAdded) return@addSnapshotListener

@@ -175,11 +175,15 @@ object ParentReportRepository {
     // ── Yükleme ─────────────────────────────────────────────────────────────
 
     /**
-     * Raporu kurar. Tüm okumalar kullanıcının kendi dokümanları üzerindedir; ek güvenlik
-     * kuralı gerekmez.
+     * Raporu kurar. Varsayılan olarak oturumdaki kullanıcının kendi dokümanları okunur.
+     *
+     * @param studentUid Kurs öğretmeni öğrencisinin raporuna bakarken öğrencinin uid'si. Okumaların
+     *   hepsi öğretmene açık: kullanıcı dokümanı, `badgeProgress` ve `lessonProgress` zaten öyleydi,
+     *   `lessonSuccessRateState` yalnızca öğrencinin kendi sınıfındaki öğretmene açıldı
+     *   (firestore.rules, `isTeacherOfStudent`).
      */
-    fun load(onResult: (Report?, Exception?) -> Unit) {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
+    fun load(studentUid: String? = null, onResult: (Report?, Exception?) -> Unit) {
+        val uid = studentUid ?: FirebaseAuth.getInstance().currentUser?.uid
         if (uid.isNullOrBlank()) {
             onResult(null, IllegalStateException("Oturum açık değil"))
             return

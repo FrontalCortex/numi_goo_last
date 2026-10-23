@@ -48,9 +48,21 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <View
+        <!--
+          Kurs öğretmeni kendi öğrencisinin profilinde: öğrencinin ilerleme raporu (veli paneli).
+          Görünmezken de yer tutuyor (invisible): adın ortada kalması için geri düğmesinin
+          karşılığı olan 48dp'lik boşluk bu.
+        -->
+        <ImageButton
+            android:id="@+id/btnStudentProgress"
             android:layout_width="48dp"
-            android:layout_height="48dp" />
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/class_student_progress_desc"
+            android:padding="12dp"
+            android:src="@drawable/ic_student_progress"
+            android:visibility="invisible"
+            app:tint="@android:color/white" />
 
     </LinearLayout>
 

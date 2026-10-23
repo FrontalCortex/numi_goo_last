@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kurs sınıfları: öğretmenin sınıf ve öğrenci ekranları, havuz alt sekmeleri, profildeki
+     ilerleme düğmesi (bkz. CourseClasses.kt, functions/classes.js). -->
+<resources>
+    <!-- Soru havuzu alt sekmeleri (NotificationFragment) -->
+    <string name="class_pool_tab_mine">Sınıfım</string>
+    <string name="class_pool_tab_general">Genel havuz</string>
+    <string name="class_classes_button">Sınıflarım</string>
+    <string name="class_pool_empty_mine">Sınıflarından bekleyen soru yok.</string>
+
+    <!-- Sınıflarım -->
+    <string name="class_list_title">Sınıflarım</string>
+    <string name="class_back_desc">Geri</string>
+    <string name="class_help_general_title">Genel havuza da yardım et</string>
+    <string name="class_help_general_desc">Açarsan, bir kursa bağlı olmayan öğrencilerin soruları da Havuz\'da \"Genel havuz\" sekmesinde görünür.</string>
+    <string name="class_list_empty">Henüz sınıfın yok. Bir sınıf aç, katılma kodunu öğrencilerine ver.</string>
+    <string name="class_new_button">+ Yeni sınıf</string>
+    <string name="class_new_title">Yeni sınıf</string>
+    <string name="class_new_hint">Sınıfın adı (ör. Cumartesi 10:00)</string>
+    <string name="class_new_create">Sınıfı aç</string>
+    <string name="class_cancel">Vazgeç</string>
+    <string name="class_created">Sınıf açıldı. Kod: %1$s</string>
+    <plurals name="class_student_count">
+        <item quantity="one">%d öğrenci</item>
+        <item quantity="other">%d öğrenci</item>
+    </plurals>
+    <string name="class_code_label">Kod: %1$s</string>
+
+    <!-- Sınıf ayrıntısı -->
+    <string name="class_join_code_title">Katılma kodu</string>
+    <string name="class_join_code_hint">Öğrenci uygulamada Ayarlar → Kursa katıl bölümüne bu kodu yazar.</string>
+    <string name="class_copy">Kopyala</string>
+    <string name="class_share">Paylaş</string>
+    <string name="class_regenerate">Kodu yenile</string>
+    <string name="class_copied">Kod kopyalandı</string>
+    <string name="class_share_text">Sorobit\'te \"%1$s\" sınıfıma katıl: uygulamada Ayarlar → Kursa katıl bölümüne %2$s kodunu yaz.</string>
+    <string name="class_regenerate_title">Kod yenilensin mi?</string>
+    <string name="class_regenerate_message">Eski kod hemen geçersiz olur. Sınıftaki öğrenciler sınıfta kalır; yeni katılacaklar yeni kodu kullanır.</string>
+    <string name="class_regenerate_confirm">Yenile</string>
+    <string name="class_regenerated">Yeni kod: %1$s</string>
+    <string name="class_students_title">Öğrenciler</string>
+    <string name="class_students_empty">Sınıfta henüz öğrenci yok. Kodu öğrencilerine ver ya da kullanıcı adıyla davet et.</string>
+    <string name="class_invite_button">Öğrenci ekle</string>
+    <string name="class_invite_title">Öğrenci ekle</string>
+    <string name="class_invite_message">Öğrencinin kullanıcı adını yaz (profilinde @ ile görünen). Öğrenciye davet gider; kabul edince listede görünür.</string>
+    <string name="class_invite_hint">Kullanıcı adı (ör. 835398VV)</string>
+    <string name="class_invite_send">Davet gönder</string>
+    <string name="class_invite_sent">%1$s adlı öğrenciye davet gönderildi.</string>
+    <string name="class_invite_already_member">%1$s zaten bu sınıfta.</string>
+    <string name="class_pending_invites">Davet bekleyen: %1$s</string>
+    <string name="class_remove_title">Sınıftan çıkarılsın mı?</string>
+    <string name="class_remove_message">%1$s sınıftan çıkar. Bekleyen soruları genel havuza geçer ve ilerlemesini artık göremezsin.</string>
+    <string name="class_remove_confirm">Çıkar</string>
+    <string name="class_removed">%1$s sınıftan çıkarıldı.</string>
+    <string name="class_generic_error">Bir sorun oldu. İnternet bağlantını kontrol edip tekrar dene.</string>
+
+    <!-- Profil ve ilerleme raporu -->
+    <string name="class_student_progress_desc">Öğrencinin ilerlemesi</string>
+    <string name="class_student_progress_title">%1$s — İlerleme</string>
+    <string name="class_student_progress_empty">Öğrenci henüz bir derse başlamadı. İlk dersi açtığında ilerlemesi burada görünecek.</string>
+</resources>

@@ -77,6 +77,75 @@
                 android:textColor="@color/dark_text_secondary" />
         </LinearLayout>
 
+        <!--
+          Kurs öğretmeni: havuz alt sekmeleri (yalnızca iki havuzu da görüyorsa) ve "Sınıflarım".
+          Üç sekmenin yanına sığmadığı için ayrı satırda (bkz. NotificationFragment.updatePoolOptionsRow).
+        -->
+        <LinearLayout
+            android:id="@+id/poolOptionsRow"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:id="@+id/poolSubTabContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_segment_control"
+                android:orientation="horizontal"
+                android:padding="3dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/poolSubTabMine"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:background="@drawable/bg_segment_selected"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="@string/class_pool_tab_mine"
+                    android:textColor="@android:color/white"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/poolSubTabGeneral"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:text="@string/class_pool_tab_general"
+                    android:textColor="@color/dark_text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/btnTeacherClasses"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:background="@drawable/bg_button_outline"
+                android:foreground="?attr/selectableItemBackground"
+                android:gravity="center"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:text="@string/class_classes_button"
+                android:textColor="@color/dark_primary"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+        </LinearLayout>
+
         <LinearLayout
             android:id="@+id/reportsSubTabContainer"
             android:layout_width="wrap_content"
