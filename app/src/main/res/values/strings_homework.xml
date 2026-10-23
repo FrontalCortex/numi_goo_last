@@ -43,6 +43,11 @@
         <item quantity="other">%d öğrenci</item>
     </plurals>
 
+    <!-- %2$s ekiyle birlikte sayı: "8\'i", "3\'ü", "6\'sı" (HomeworkText.withAccusative). -->
+    <string name="hw_list_done_summary">%1$d öğrenciden %2$s bitirdi</string>
+    <string name="hw_list_done_none">Henüz bitiren yok · %1$d öğrenci</string>
+    <string name="hw_list_done_all">Herkes bitirdi ✓ · %1$d öğrenci</string>
+
     <!-- Öğretmen: ödev ayrıntısı -->
     <string name="hw_detail_title">Ödev</string>
     <string name="hw_detail_students">Öğrenciler</string>
@@ -90,8 +95,13 @@
     <string name="notification_channel_account_quiet_name">Ödevler ve hesap (sessiz)</string>
     <string name="notification_channel_account_quiet_desc">Gece gelen ödev bildirimleri — sessiz gösterilir</string>
 
-    <!-- Öğrenci: Görevler kartı -->
+    <!-- Öğrenci: Sorularım → Ödevlerim / Sınıfım -->
     <string name="hw_card_title">Ödevlerim</string>
+    <string name="hw_tab_homework">Ödevlerim</string>
+    <string name="hw_student_empty">Öğretmenin henüz ödev vermedi.</string>
+    <string name="hw_classmates_empty">Sınıfında henüz başka öğrenci yok.</string>
+    <string name="hw_class_info">%1$s\nÖğretmenin: %2$s</string>
+    <string name="hw_classmate_me">%1$s (sen)</string>
     <string name="hw_card_from">%1$s verdi</string>
     <string name="hw_card_progress">%1$d/%2$d adım</string>
     <string name="hw_card_done">Tamamlandı ✓</string>

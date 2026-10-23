@@ -174,7 +174,9 @@ await check('sinif disi ogrenci okuyamaz', assertFails(getDoc(doc(s2, 'classes/c
 await check('baska ogretmen okuyamaz', assertFails(getDoc(doc(t2, 'classes/c1'))));
 await check('ogretmen sinifa yazamaz (yalniz CF)', assertFails(updateDoc(doc(t1, 'classes/c1'), { studentCount: 99 })));
 await check('ogretmen ogrenci listesini okur', assertSucceeds(getDocs(collection(t1, 'classes/c1/members'))));
-await check('ogrenci listeyi okuyamaz', assertFails(getDocs(collection(s1, 'classes/c1/members'))));
+await check('siniftaki ogrenci sinif arkadaslarini okur', assertSucceeds(getDocs(collection(s1, 'classes/c1/members'))));
+await check('sinif disi ogrenci listeyi okuyamaz', assertFails(getDocs(collection(s2, 'classes/c1/members'))));
+await check('baska sinifin ogretmeni listeyi okuyamaz', assertFails(getDocs(collection(t2, 'classes/c1/members'))));
 await check('ogretmen listeye yazamaz', assertFails(setDoc(doc(t1, 'classes/c1/members/s2'), { uid: 's2' })));
 await check('kod eslemesi okunamaz', assertFails(getDoc(doc(s2, 'classJoinCodes/ABC234'))));
 await check('kod eslemesi ogretmene de kapali', assertFails(getDoc(doc(t1, 'classJoinCodes/ABC234'))));

@@ -32,7 +32,22 @@ object Homeworks {
         val wholeClass: Boolean,
         val assignedUids: List<String>,
         val createdAtMs: Long,
-    )
+        /** Ödevi bitirenler; yalnızca sunucu yazıyor (onHomeworkProgressWritten). */
+        val doneUids: List<String> = emptyList(),
+    ) {
+        /**
+         * Ödevin hedefi: sınıfa verildiyse sınıfın ŞU ANKİ öğrencileri, seçilerek verildiyse
+         * seçilenler. Sunucunun bildirimindeki "8/12" de aynı hesap.
+         */
+        fun targetUids(memberUids: Collection<String>): List<String> =
+            if (wholeClass) memberUids.toList() else assignedUids
+
+        /** Hedefteki bitirenler (sınıftan ayrılanlar sayılmıyor). */
+        fun doneCount(memberUids: Collection<String>): Int {
+            val target = targetUids(memberUids).toSet()
+            return doneUids.toSet().count { it in target }
+        }
+    }
 
     data class Progress(
         val uid: String,
@@ -204,6 +219,7 @@ object Homeworks {
             wholeClass = d.getBoolean("wholeClass") == true,
             assignedUids = (d.get("assignedUids") as? List<String>).orEmpty(),
             createdAtMs = d.getLong("createdAtMs") ?: 0L,
+            doneUids = (d.get("doneUids") as? List<String>).orEmpty(),
         )
     }
 

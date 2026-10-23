@@ -67,6 +67,34 @@ object HomeworkText {
         return Math.round(v * 1000)
     }
 
+    /**
+     * Sayıya iyelik eki: 8 → "8'i", 3 → "3'ü", 6 → "6'sı", 12 → "12'si", 40 → "40'ı". Ek sayının
+     * OKUNUŞUNUN son kelimesine bakıyor (on iki → "iki" → 'si); sabit bir "'i" çoğu sayıda yanlıştı.
+     * Sınıf en fazla 60 kişi; 100'e kadar doğru.
+     */
+    fun withAccusative(n: Int): String {
+        val lastDigit = n % 10
+        val suffix = if (lastDigit != 0 || n == 0) {
+            when (lastDigit) {
+                0 -> "ı"          // sıfır
+                1, 5, 8 -> "i"    // bir, beş, sekiz
+                2, 7 -> "si"      // iki, yedi
+                3, 4 -> "ü"       // üç, dört
+                6 -> "sı"         // altı
+                else -> "u"       // dokuz
+            }
+        } else {
+            when ((n / 10) % 10) {
+                1, 3 -> "u"       // on, otuz
+                2, 5 -> "si"      // yirmi, elli
+                4, 6, 9 -> "ı"    // kırk, altmış, doksan
+                7, 8 -> "i"       // yetmiş, seksen
+                else -> "ü"       // yüz
+            }
+        }
+        return "$n'$suffix"
+    }
+
     /** Soruyu tek satır yazar: "12 + 34 + 21", "500 − 23 − 45", "23 × 4". */
     fun questionLine(q: HomeworkQuestion): String = when (q.op) {
         HomeworkOp.ADD -> q.numbers.joinToString(" + ")

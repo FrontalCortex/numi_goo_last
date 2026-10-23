@@ -110,9 +110,43 @@ async function main() {
   check('ilerleme de silindi', (await db.doc(`homeworks/${all.homeworkId}/studentProgress/${S1}`).get()).exists, false);
   check('olmayan ödev: hata değil', (await call('deleteHomework', T1, { homeworkId: all.homeworkId })).deleted, false);
 
+  console.log('\n=== BİTİŞ (onHomeworkProgressWritten) ===');
+  {
+    const functionsSdk = require('firebase-functions');
+    const done = await call('createHomework', T1, { classId: C1, config: { ...ADD, questionCount: 20 }, target: { wholeClass: true } });
+    const hwPath = `homeworks/${done.homeworkId}`;
+    // Tetikleyici emülatörde kendiliğinden çalışmıyor (yalnızca Firestore emülatörü); gerçek
+    // anlık görüntülerle elle çağrılıyor.
+    async function writeProgress(uid, data) {
+      const ref = db.doc(`${hwPath}/studentProgress/${uid}`);
+      const before = await ref.get();
+      await ref.set(data);
+      const after = await ref.get();
+      await fns.onHomeworkProgressWritten.run(
+        functionsSdk.Change.fromObjects(before, after),
+        { params: { homeworkId: done.homeworkId, studentUid: uid } },
+      );
+    }
+    await writeProgress(S1, { uid: S1, completedBlocks: 1, answered: 10, correct: 8, lastBlockCorrect: 8, updatedAtMs: 1 });
+    check('ilk adım: henüz bitmedi', (await db.doc(hwPath).get()).get('doneUids'), undefined);
+    await writeProgress(S1, { uid: S1, completedBlocks: 2, answered: 20, correct: 17, lastBlockCorrect: 9, updatedAtMs: 2 });
+    check('son adım: bitirenlere eklendi', (await db.doc(hwPath).get()).get('doneUids'), [S1]);
+    await writeProgress(S2, { uid: S2, completedBlocks: 2, answered: 20, correct: 20, lastBlockCorrect: 10, updatedAtMs: 3 });
+    check('ikinci öğrenci', ((await db.doc(hwPath).get()).get('doneUids') || []).sort(), [S1, S2].sort());
+    // Tetikleyici iki kez çalışsa da (aynı yazım) tekrar eklemez.
+    await writeProgress(S2, { uid: S2, completedBlocks: 2, answered: 20, correct: 20, lastBlockCorrect: 10, updatedAtMs: 4 });
+    check('tekrar: değişmedi', ((await db.doc(hwPath).get()).get('doneUids') || []).length, 2);
+
+    const h = require('../homework');
+    check('bildirim metni', h.doneNoticeText({ studentName: 'Ali', summary: "5'lik toplama", correct: 17, answered: 20, doneCount: 8, targetCount: 12 }),
+      { title: "Ödev tamamlandı: 5'lik toplama", body: 'Ali bitirdi · 17/20 doğru · 8/12 öğrenci bitirdi' });
+    check('ayrılan öğrenci sayılmaz', h.countDone(['a', 'b', 'x', 'a'], ['a', 'b', 'c']), 2);
+  }
+
   console.log('\n=== HESAP SİLME ===');
   await db.doc(`homeworks/${mul.homeworkId}/studentProgress/${S1}`).set({ uid: S1, completedBlocks: 1, answered: 7, correct: 7, lastBlockCorrect: 7, updatedAtMs: 1 });
-  check('silinen öğrencinin ilerlemesi', await fns._removeDeletedUserHomeworkProgress(S1), 1);
+  // İki ödevde ilerlemesi var: biri burada, biri bitiş testindeki ödevde.
+  check('silinen öğrencinin bütün ilerlemeleri', await fns._removeDeletedUserHomeworkProgress(S1), 2);
   check('ödevin kendisi duruyor', (await db.doc(`homeworks/${mul.homeworkId}`).get()).exists, true);
 
   console.log(`\n${pass} geçti, ${fail} hata`);

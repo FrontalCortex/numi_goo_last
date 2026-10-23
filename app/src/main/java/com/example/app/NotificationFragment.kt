@@ -37,6 +37,11 @@ class NotificationFragment : Fragment() {
     private enum class ReportsSubTab { REPORTS, RESTRICTED }
     /** Havuz: kurs öğretmeninin sınıflarının soruları ya da genel havuz (bkz. CourseClasses). */
     private enum class PoolSubTab { MINE, GENERAL }
+    /**
+     * Sınıftaki öğrencinin ana sekmeleri: Sorularım (Bekleyen/Çözülen alt sekmeleriyle) |
+     * Ödevlerim | Sınıfım. Sınıfı olmayan öğrencide yalnızca sorular (ekran eskisi gibi).
+     */
+    private enum class StudentMainTab { QUESTIONS, HOMEWORK, CLASS }
 
     private var _binding: FragmentNotificationBinding? = null
     private val binding get() = _binding!!
@@ -57,6 +62,28 @@ class NotificationFragment : Fragment() {
      * reddediyor ve liste hiçbir hata göstermeden boş kalıyor.
      */
     private var poolVisibility: CourseClasses.PoolVisibility? = null
+
+    // Öğrencinin sınıfı ve Ödevlerim / Sınıfım sekmeleri.
+    private var studentMainTab = StudentMainTab.QUESTIONS
+    private var myClass: CourseClasses.MyClass? = null
+    private var homeworkWatcher: com.example.app.homework.HomeworkCard.Watcher? = null
+    private var classmatesListener: ListenerRegistration? = null
+    private val classmateAvatars = HashMap<String, String?>()
+    private val homeworkAdapter = com.example.app.homework.HomeworkCard.Adapter { item ->
+        // Tam ekran katmanda: çocuk sorunun ortasında alt bardan başka sekmeye geçmesin.
+        (activity as? MainActivity)?.showAbacusOverlayFragment(
+            com.example.app.homework.HomeworkPlayerFragment.newInstance(item.homework.id)
+        )
+    }
+    private val classmateAdapter by lazy {
+        ClassmateAdapter(auth.currentUser?.uid) { member ->
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                .replace(R.id.fragmentContainerID, ProfileFragment.newInstance(member.uid))
+                .addToBackStack(null)
+                .commit()
+        }
+    }
 
     private val adapter = QuestionListAdapter(
         onItemClick = { question -> onQuestionClick(question) },
@@ -87,6 +114,13 @@ class NotificationFragment : Fragment() {
         private const val KEY_STUDENT_TAB = "student_tab"
         private const val KEY_REPORTS_SUB_TAB = "reports_sub_tab"
         private const val KEY_POOL_SUB_TAB = "pool_sub_tab"
+        private const val KEY_STUDENT_MAIN_TAB = "student_main_tab"
+        private const val ARG_FORCE_STUDENT_HOMEWORK = "force_student_homework"
+
+        /** Yeni ödev bildirimine dokunan öğrenci için: Ödevlerim sekmesi açık gelsin. */
+        fun newForStudentHomework(): NotificationFragment = NotificationFragment().apply {
+            arguments = Bundle().apply { putBoolean(ARG_FORCE_STUDENT_HOMEWORK, true) }
+        }
         private const val ARG_FORCE_TEACHER_CHATS = "force_teacher_chats"
         private const val ARG_FORCE_TEACHER_POOL = "force_teacher_pool"
         private const val ARG_FORCE_STUDENT_BEKLEYEN = "force_student_bekleyen"
@@ -156,6 +190,7 @@ class NotificationFragment : Fragment() {
         outState.putString(KEY_STUDENT_TAB, studentTab.name)
         outState.putString(KEY_REPORTS_SUB_TAB, reportsSubTab.name)
         poolSubTab?.let { outState.putString(KEY_POOL_SUB_TAB, it.name) }
+        outState.putString(KEY_STUDENT_MAIN_TAB, studentMainTab.name)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -189,9 +224,19 @@ class NotificationFragment : Fragment() {
             savedInstanceState.getString(KEY_POOL_SUB_TAB)?.let { name ->
                 kotlin.runCatching { poolSubTab = PoolSubTab.valueOf(name) }
             }
+            savedInstanceState.getString(KEY_STUDENT_MAIN_TAB)?.let { name ->
+                kotlin.runCatching { studentMainTab = StudentMainTab.valueOf(name) }
+            }
         } else {
             if (forceTeacherChats) teacherTab = TeacherTab.CHATS
             if (forceStudentBekleyen) studentTab = StudentTab.BEKLEYEN
+        }
+
+        // Ödev bildiriminden gelindi. Argüman tüketiliyor: profilden geri dönüşte görünüm yeniden
+        // kurulduğunda öğrencinin seçtiği sekme ezilmesin.
+        if (arguments?.getBoolean(ARG_FORCE_STUDENT_HOMEWORK) == true) {
+            studentMainTab = StudentMainTab.HOMEWORK
+            arguments?.putBoolean(ARG_FORCE_STUDENT_HOMEWORK, false)
         }
 
         isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
@@ -258,7 +303,112 @@ class NotificationFragment : Fragment() {
             updateStudentTabUi()
             binding.tabBekleyen.setOnClickListener { switchToStudentTab(StudentTab.BEKLEYEN) }
             binding.tabCozulen.setOnClickListener { switchToStudentTab(StudentTab.COZULEN) }
-            if (studentTab == StudentTab.BEKLEYEN) subscribeToStudentPending() else subscribeToStudentResolved()
+            binding.tabStudentQuestions.setOnClickListener { showStudentMainTab(StudentMainTab.QUESTIONS) }
+            binding.tabStudentHomework.setOnClickListener { showStudentMainTab(StudentMainTab.HOMEWORK) }
+            binding.tabStudentClass.setOnClickListener { showStudentMainTab(StudentMainTab.CLASS) }
+            // Sorular sınıf beklenmeden açılıyor (sınıfı olmayan öğrencilerin çoğu için tek ekran);
+            // Ödevlerim/Sınıfım isteniyorsa sınıf okununca geçiliyor.
+            if (studentMainTab == StudentMainTab.QUESTIONS) {
+                if (studentTab == StudentTab.BEKLEYEN) subscribeToStudentPending() else subscribeToStudentResolved()
+            }
+            loadStudentClass()
+        }
+    }
+
+    // ── Öğrenci: Sorularım | Ödevlerim | Sınıfım ───────────────────────────
+
+    /**
+     * Öğrencinin sınıfını okur. Sınıfı varsa ana sekmeler açılıyor (başlık yerine, öğretmendeki
+     * gibi); yoksa ekran yalnızca sorular. Sınıfa katılma Ayarlar → Kurs'ta kalıyor.
+     */
+    private fun loadStudentClass() {
+        CourseClasses.loadMyClass { c, _ ->
+            val b = _binding ?: return@loadMyClass
+            myClass = c
+            if (c == null) {
+                b.studentMainTabContainer.visibility = View.GONE
+                b.studentClassInfo.visibility = View.GONE
+                b.notificationTitle.visibility = View.VISIBLE
+                if (studentMainTab != StudentMainTab.QUESTIONS) showStudentMainTab(StudentMainTab.QUESTIONS, force = true)
+                return@loadMyClass
+            }
+            b.notificationTitle.visibility = View.GONE
+            b.studentMainTabContainer.visibility = View.VISIBLE
+            if (studentMainTab == StudentMainTab.QUESTIONS) updateStudentMainTabUi()
+            else showStudentMainTab(studentMainTab, force = true)
+        }
+    }
+
+    private fun updateStudentMainTabUi() {
+        val selectedColor = android.graphics.Color.WHITE
+        val unselectedColor = requireContext().getColor(R.color.dark_text_secondary)
+        listOf(
+            StudentMainTab.QUESTIONS to binding.tabStudentQuestions,
+            StudentMainTab.HOMEWORK to binding.tabStudentHomework,
+            StudentMainTab.CLASS to binding.tabStudentClass,
+        ).forEach { (tab, view) ->
+            view.setBackgroundResource(if (tab == studentMainTab) R.drawable.bg_segment_selected else 0)
+            view.setTextColor(if (tab == studentMainTab) selectedColor else unselectedColor)
+        }
+    }
+
+    private fun stopStudentClassListeners() {
+        homeworkWatcher?.stop()
+        homeworkWatcher = null
+        classmatesListener?.remove()
+        classmatesListener = null
+    }
+
+    private fun showStudentMainTab(tab: StudentMainTab, force: Boolean = false) {
+        val b = _binding ?: return
+        if (studentMainTab == tab && !force) return
+        studentMainTab = tab
+        updateStudentMainTabUi()
+        listener?.remove()
+        listener = null
+        removeAllMessageListeners()
+        stopStudentClassListeners()
+        b.studentTabContainer.visibility = if (tab == StudentMainTab.QUESTIONS) View.VISIBLE else View.GONE
+        b.studentClassInfo.visibility = if (tab == StudentMainTab.CLASS) View.VISIBLE else View.GONE
+        b.emptyText.visibility = View.GONE
+        val c = myClass
+        when {
+            tab == StudentMainTab.QUESTIONS || c == null -> {
+                b.questionsRecyclerView.adapter = adapter
+                if (studentTab == StudentTab.BEKLEYEN) subscribeToStudentPending() else subscribeToStudentResolved()
+            }
+            tab == StudentMainTab.HOMEWORK -> {
+                b.questionsRecyclerView.adapter = homeworkAdapter
+                b.emptyText.text = appString(R.string.hw_student_empty)
+                homeworkWatcher = com.example.app.homework.HomeworkCard.Watcher(c.id) onItems@{ items ->
+                    val bb = _binding ?: return@onItems
+                    homeworkAdapter.submitList(items)
+                    bb.emptyText.visibility = if (items.isEmpty()) View.VISIBLE else View.GONE
+                }
+            }
+            else -> {
+                b.questionsRecyclerView.adapter = classmateAdapter
+                val title = listOf(c.name, c.courseName).filter { it.isNotBlank() }.joinToString(" · ")
+                b.studentClassInfo.text = if (c.teacherName.isBlank()) title
+                else appString(R.string.hw_class_info, title, c.teacherName)
+                b.emptyText.text = appString(R.string.hw_classmates_empty)
+                classmatesListener = CourseClasses.listenMembers(c.id) { members -> showClassmates(members.orEmpty()) }
+            }
+        }
+    }
+
+    private fun showClassmates(members: List<CourseClasses.ClassMember>) {
+        val b = _binding ?: return
+        classmateAdapter.submitList(members.map { it to classmateAvatars[it.uid] })
+        // Yalnızca kendisi varsa "henüz başka öğrenci yok".
+        b.emptyText.visibility = if (members.none { it.uid != auth.currentUser?.uid }) View.VISIBLE else View.GONE
+        val missing = members.map { it.uid }.filterNot { classmateAvatars.containsKey(it) }
+        if (missing.isNotEmpty()) {
+            CourseClasses.loadAvatars(missing) { avatars ->
+                classmateAvatars.putAll(avatars)
+                if (_binding == null || studentMainTab != StudentMainTab.CLASS) return@loadAvatars
+                classmateAdapter.submitList(members.map { it to classmateAvatars[it.uid] })
+            }
         }
     }
 
@@ -1227,6 +1377,7 @@ class NotificationFragment : Fragment() {
     override fun onDestroyView() {
         listener?.remove()
         listener = null
+        stopStudentClassListeners()
         removeRestrictedUserListeners()
         removeAllMessageListeners()
         releaseReportAudioPlayer()

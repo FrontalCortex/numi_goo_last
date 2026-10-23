@@ -30,6 +30,9 @@ import kotlinx.coroutines.withContext
  * sayılar akarken boncukları oynatıyor ve sonunda Kontrol'e basıyor (cevap abaküsün değeri),
  * abaküssüzde sayılar bitince cevabı yazıyor. Çarpmada işlem tahtada sabit duruyor.
  *
+ * Sorularım → Ödevlerim'den tam ekran katmanda açılıyor ([MainActivity.showAbacusOverlayFragment]),
+ * kapanışı [MainActivity.finishHomeworkOverlay]: Görevler'in dönüş akışı (reklam, seri sorusu) yok.
+ *
  * Bu ekran BlindingLessonFragment'ı kullanmıyor (bilerek): o ekran harita dersi, kupa ve günlük
  * soru akışlarıyla iç içe; ödev için bir mod daha eklemek çalışan akışlara dokunmak demekti.
  * Abaküs, abaküs pratiği ekranındakiyle aynı ([AbacusBeadController]).
@@ -372,7 +375,7 @@ class HomeworkPlayerFragment : Fragment() {
         handler.removeCallbacksAndMessages(null)
         hideKeyboard()
         val main = activity as? MainActivity
-        if (main != null) main.finishTasksOverlayAnimated("HomeworkPlayer.close")
+        if (main != null) main.finishHomeworkOverlay("HomeworkPlayer.close")
         else parentFragmentManager.popBackStack()
     }
 

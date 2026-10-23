@@ -213,8 +213,18 @@ class MainActivity : AppCompatActivity() {
         /** Sınıf daveti bildiriminden gelindi: öğrenciye Kurs ekranı (StudentClassFragment) açılır. */
         const val EXTRA_OPEN_STUDENT_CLASS = "open_student_class"
 
-        /** Yeni ödev bildiriminden gelindi: Görevler sekmesi (Ödevlerim kartı en üstte) açılır. */
+        /** Yeni ödev bildiriminden gelindi: öğrenciye Sorularım → Ödevlerim açılır. */
         const val EXTRA_OPEN_HOMEWORKS = "open_homeworks"
+
+        /**
+         * Öğrenci ödevi bitirdi bildiriminden gelindi (öğretmen): o ödevin ayrıntısı açılır.
+         * Değer ödev kimliği; sınıf kimliği [EXTRA_OPEN_TEACHER_HOMEWORK_CLASS]'ta.
+         */
+        const val EXTRA_OPEN_TEACHER_HOMEWORK = "open_teacher_homework"
+        const val EXTRA_OPEN_TEACHER_HOMEWORK_CLASS = "open_teacher_homework_class"
+
+        /** [finishHomeworkOverlay]: slide_out_right süresinden biraz uzun. */
+        private const val HOMEWORK_OVERLAY_CLOSE_MS = 320L
 
         @Volatile
         var currentActivity: MainActivity? = null
@@ -2913,6 +2923,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Ödev oynatıcısının (Sorularım → Ödevlerim, [showAbacusOverlayFragment] ile açılıyor)
+     * kapanışı. [finishTasksOverlayAnimated]'ı KULLANMIYOR: o yol Görevler'e özgü (dönüşte
+     * reklam, seri sorusu, Görevler'i yeniden gösterme). Ödevden dönen çocuğa reklam çıkmıyor ve
+     * altta Sorularım duruyor; yalnızca katman kayarak kalkıyor.
+     */
+    fun finishHomeworkOverlay(caller: String) {
+        if (!::binding.isInitialized) return
+        val fm = supportFragmentManager
+        fm.executePendingTransactions()
+        val overlay = liveOverlayIn(R.id.abacusFragmentContainer)
+        if (overlay is com.example.app.homework.HomeworkPlayerFragment) {
+            fm.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
+                .remove(overlay)
+                .commitAllowingStateLoss()
+        }
+        // Host kayma bitince gizleniyor; hemen gizlenseydi kapanış animasyonu görünmezdi.
+        binding.root.postDelayed({
+            if (!::binding.isInitialized) return@postDelayed
+            if (liveOverlayIn(R.id.abacusFragmentContainer) == null) {
+                binding.abacusFragmentContainer.visibility = View.GONE
+            }
+            releasePracticeTouchBlocker()
+            ensureChromeUnlockedAfterOverlayDismiss("finishHomeworkOverlay:$caller")
+        }, HOMEWORK_OVERLAY_CLOSE_MS)
+    }
+
+    /**
      * Görevler overlay'i (abaküs pratik, günlük soru / BlindingLesson) sağa kayarak kapatır.
      *
      * @param fromDailyQuestion Kapanan ekran günlük soru. Görevler'e bu dönüşte de yeni seri
@@ -3886,11 +3924,32 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Yeni ödev: Görevler sekmesi. Sekme seçimi alt barın kendi yolundan geçiyor (oturum ve
-        // bağlantı denetimi orada).
+        // Yeni ödev: öğrenciye Sorularım → Ödevlerim (havuz bildirimindeki yolla aynı). Alt barda
+        // Sorularım işaretleniyor; işaretleme dinleyiciyi tetiklemiyor.
         if (intent?.extras?.getBoolean(EXTRA_OPEN_HOMEWORKS) == true) {
             intent?.removeExtra(EXTRA_OPEN_HOMEWORKS)
-            if (auth.currentUser != null) binding.bottomNavigationID.selectedItemId = R.id.tasks
+            if (auth.currentUser != null) {
+                changeFragment(NotificationFragment.newForStudentHomework())
+                binding.bottomNavigationID.menu.findItem(R.id.notification)?.isChecked = true
+            }
+            return
+        }
+
+        // Öğrenci ödevi bitirdi (öğretmen): ödevin ayrıntısı, geri tuşuyla kapanabilsin diye yığına.
+        val teacherHomeworkId = intent?.extras?.getString(EXTRA_OPEN_TEACHER_HOMEWORK)
+        if (!teacherHomeworkId.isNullOrEmpty()) {
+            val classId = intent?.extras?.getString(EXTRA_OPEN_TEACHER_HOMEWORK_CLASS).orEmpty()
+            intent?.removeExtra(EXTRA_OPEN_TEACHER_HOMEWORK)
+            intent?.removeExtra(EXTRA_OPEN_TEACHER_HOMEWORK_CLASS)
+            if (auth.currentUser != null && classId.isNotEmpty()) {
+                supportFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.fragmentContainerID,
+                        com.example.app.homework.TeacherHomeworkDetailFragment.newInstance(teacherHomeworkId, classId),
+                    )
+                    .addToBackStack(null)
+                    .commit()
+            }
             return
         }
 

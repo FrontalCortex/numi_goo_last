@@ -123,7 +123,27 @@ function homeworkSummary(config) {
   return `${labels} ${config.op === 'add' ? 'toplama' : 'çıkarma'}`;
 }
 
+/** Bitirenlerden hedefte olanların sayısı (sınıftan ayrılanlar sayılmaz). */
+function countDone(doneUids, targetUids) {
+  const target = new Set(targetUids);
+  return [...new Set(doneUids)].filter((u) => target.has(u)).length;
+}
+
+/**
+ * Öğretmene "öğrenci ödevi bitirdi" bildirimi. İstemci ödev başına tek bildirim tutuyor, yani
+ * gövde her bitirişte güncel toplamı söylüyor.
+ */
+function doneNoticeText({ studentName, summary, correct, answered, doneCount, targetCount }) {
+  const title = `Ödev tamamlandı: ${summary}`;
+  const parts = [`${studentName} bitirdi`];
+  if (answered > 0) parts.push(`${correct}/${answered} doğru`);
+  if (targetCount > 0) parts.push(`${doneCount}/${targetCount} öğrenci bitirdi`);
+  return { title, body: parts.join(' · ') };
+}
+
 module.exports = {
+  countDone,
+  doneNoticeText,
   BLOCK_SIZE,
   MAX_QUESTIONS,
   MAX_HOMEWORKS_PER_CLASS,

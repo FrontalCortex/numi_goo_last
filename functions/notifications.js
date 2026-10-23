@@ -109,6 +109,13 @@ const NOTIFICATION_TYPES = {
    * Kanal `account`: öğrencide zaten var, yeni bir Android kanalı açmaya değmez.
    */
   homework: { pref: null, capped: false, mutable: false, quiet: 'silence', channel: 'account' },
+
+  /**
+   * Öğretmene: bir öğrenci ödevi bitirdi (onHomeworkProgressWritten). Öğretmenin işi, havuz
+   * bildirimiyle aynı kanalda. İstemci ödev başına tek bildirim tutuyor: her bitirişte metin
+   * ("8/12 öğrenci bitirdi") güncelleniyor, bildirim yığılmıyor.
+   */
+  homework_done: { pref: null, capped: false, mutable: false, quiet: 'silence', channel: 'pool' },
 };
 
 /** Uygulama içinden kapatılabilen tercihler — istemcideki anahtarların kaynağı. */

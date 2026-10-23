@@ -180,6 +180,70 @@
                 android:textColor="@color/dark_text_secondary" />
         </LinearLayout>
 
+        <!--
+          Sınıftaki öğrenci: Sorularım | Ödevlerim | Sınıfım (bkz. NotificationFragment.StudentMainTab).
+          Sınıfı olmayan öğrencide gizli; ekran eskisi gibi yalnızca sorular.
+        -->
+        <LinearLayout
+            android:id="@+id/studentMainTabContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/notification_student_tabs_margin_top"
+            android:background="@drawable/bg_segment_control"
+            android:orientation="horizontal"
+            android:padding="3dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tabStudentQuestions"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/notification_tab_height"
+                android:background="@drawable/bg_segment_selected"
+                android:gravity="center"
+                android:paddingStart="@dimen/notification_tab_padding_h"
+                android:paddingEnd="@dimen/notification_tab_padding_h"
+                android:text="@string/ui_sorularim"
+                android:textColor="@android:color/white"
+                android:textSize="@dimen/notification_tab_text_size"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tabStudentHomework"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/notification_tab_height"
+                android:gravity="center"
+                android:paddingStart="@dimen/notification_tab_padding_h"
+                android:paddingEnd="@dimen/notification_tab_padding_h"
+                android:text="@string/hw_tab_homework"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="@dimen/notification_tab_text_size"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tabStudentClass"
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/notification_tab_height"
+                android:gravity="center"
+                android:paddingStart="@dimen/notification_tab_padding_h"
+                android:paddingEnd="@dimen/notification_tab_padding_h"
+                android:text="@string/class_settings_my_class"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="@dimen/notification_tab_text_size"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Sınıfım sekmesinde: sınıf, kurs ve öğretmen -->
+        <TextView
+            android:id="@+id/studentClassInfo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/hint_background"
+            android:padding="12dp"
+            android:textColor="@color/dark_text"
+            android:textSize="14sp"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/studentTabContainer"
             android:layout_width="wrap_content"

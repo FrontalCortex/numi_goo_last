@@ -93,7 +93,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             return
         }
 
-        showSimpleNotification(type, topic, channelId, title, body, data["questionId"], recipientUid)
+        showSimpleNotification(
+            type, topic, channelId, title, body, data["questionId"], recipientUid,
+            homeworkId = data["homeworkId"], classId = data["classId"],
+        )
     }
 
     override fun onNewToken(token: String) {
@@ -266,7 +269,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         title: String,
         body: String,
         questionId: String?,
-        recipientUid: String?
+        recipientUid: String?,
+        homeworkId: String? = null,
+        classId: String? = null,
     ) {
         createChannelIfNeeded(channelId)
 
@@ -282,6 +287,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             "account:$questionId".hashCode() and 0x7FFFFFFF
         } else if (topic == TOPIC_CLASS_INVITE) {
             CLASS_INVITE_NOTIFICATION_ID
+        } else if (type == TYPE_HOMEWORK_DONE && !homeworkId.isNullOrEmpty()) {
+            // Ödev başına tek bildirim: her bitirişte metin ("8/12 öğrenci bitirdi") güncelleniyor,
+            // sınıf bitirdikçe öğretmenin bildirim çekmecesi dolmuyor.
+            "homework_done:$homeworkId".hashCode() and 0x7FFFFFFF
         } else {
             notificationIdFor(type)
         }
@@ -294,8 +303,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             if (type == TYPE_POOL) putExtra(MainActivity.EXTRA_OPEN_TEACHER_POOL, true)
             // Sınıf daveti: öğrenci doğrudan Kurs ekranına, davet kartının olduğu yere.
             if (topic == TOPIC_CLASS_INVITE) putExtra(MainActivity.EXTRA_OPEN_STUDENT_CLASS, true)
-            // Yeni ödev: Görevler sekmesi, Ödevlerim kartı en üstte.
+            // Yeni ödev: öğrenciye Sorularım → Ödevlerim.
             if (type == TYPE_HOMEWORK) putExtra(MainActivity.EXTRA_OPEN_HOMEWORKS, true)
+            // Öğrenci ödevi bitirdi: öğretmene o ödevin ayrıntısı.
+            if (type == TYPE_HOMEWORK_DONE && !homeworkId.isNullOrEmpty() && !classId.isNullOrEmpty()) {
+                putExtra(MainActivity.EXTRA_OPEN_TEACHER_HOMEWORK, homeworkId)
+                putExtra(MainActivity.EXTRA_OPEN_TEACHER_HOMEWORK_CLASS, classId)
+            }
             // Soru durumu bildirimine dokunan öğrenci doğrudan sorusuna gitsin.
             // MainActivity ikisini birlikte bekliyor (bkz. handleOpenQuestionIdFromIntent).
             if (!questionId.isNullOrEmpty() && !recipientUid.isNullOrEmpty()) {
@@ -485,6 +499,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         private const val TYPE_POOL = "pool"
         /** Yeni ödev (createHomework); bkz. functions/notifications.js `homework`. */
         private const val TYPE_HOMEWORK = "homework"
+        /** Öğretmene: öğrenci ödevi bitirdi (onHomeworkProgressWritten); kanalı `pool`. */
+        private const val TYPE_HOMEWORK_DONE = "homework_done"
         /** Sınıf daveti (inviteStudentToClass). Türü `account`; ayrıldığı yer konu etiketi. */
         private const val TOPIC_CLASS_INVITE = "class_invite"
         /**

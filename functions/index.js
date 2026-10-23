@@ -4448,6 +4448,70 @@ exports.deleteHomework = functions.https.onCall(async (data, context) => {
 });
 
 /**
+ * Öğrenci ödevin son adımını bitirdi: ödevin `doneUids` listesine eklenir (öğretmenin listesindeki
+ * "12 öğrenciden 8'i bitirdi" özeti buradan) ve sınıfın öğretmenlerine bildirim gider.
+ *
+ * Tetikleyici, çünkü ilerlemeyi öğrenci kendisi yazıyor (kurallar bir adım ileriye izin
+ * veriyor); bitişi istemciye bırakmak, `doneUids`'i istemciye açmak demek olurdu. Bitiş YALNIZCA
+ * eşiğin geçildiği yazımda işleniyor: aynı doküman sonradan bir daha yazılmıyor (kurallar son
+ * adımdan ötesini reddediyor) ama tetikleyici iki kez çalışsa da arrayUnion aynı sonucu verir.
+ */
+exports.onHomeworkProgressWritten = functions.firestore
+  .document('homeworks/{homeworkId}/studentProgress/{studentUid}')
+  .onWrite(async (change, context) => {
+    if (!change.after.exists) return null;
+    const { homeworkId, studentUid } = context.params;
+    const after = change.after.data() || {};
+    const before = change.before.exists ? change.before.data() || {} : {};
+
+    const hwRef = db.collection('homeworks').doc(homeworkId);
+    const hwSnap = await hwRef.get();
+    if (!hwSnap.exists) return null;
+    const hw = hwSnap.data();
+    const total = Number(hw.blockCount) || 0;
+    const isDone = (Number(after.completedBlocks) || 0) >= total;
+    const wasDone = (Number(before.completedBlocks) || 0) >= total;
+    if (!total || !isDone || wasDone) return null;
+
+    await hwRef.update({ doneUids: admin.firestore.FieldValue.arrayUnion(studentUid) });
+
+    // "8/12": hedef, sınıfa verilen ödevde sınıfın ŞU ANKİ öğrencileri, seçilerek verilende
+    // seçilenler. Bitirenlerden yalnızca hâlâ hedefte olanlar sayılıyor; sınıftan ayrılan biri
+    // sayıyı şişirmesin (öğretmenin listesi de aynı hesabı yapıyor, TeacherHomeworkListFragment).
+    const doneUids = [...new Set([...(hw.doneUids || []), studentUid])];
+    const [classSnap, membersSnap] = await Promise.all([
+      classRefOf(hw.classId).get(),
+      classRefOf(hw.classId).collection('members').get(),
+    ]);
+    const classData = classSnap.exists ? classSnap.data() : {};
+    const memberNames = new Map(membersSnap.docs.map((d) => [d.id, d.get('name') || d.get('userId') || '']));
+    const targetUids = hw.wholeClass === true ? [...memberNames.keys()] : (hw.assignedUids || []);
+    const text = homework.doneNoticeText({
+      studentName: memberNames.get(studentUid) || 'Bir öğrenci',
+      summary: homework.homeworkSummary(hw.config),
+      correct: Number(after.correct) || 0,
+      answered: Number(after.answered) || 0,
+      doneCount: homework.countDone(doneUids, targetUids),
+      targetCount: targetUids.length,
+    });
+
+    const teacherUids = Array.isArray(classData.teacherUids) && classData.teacherUids.length
+      ? classData.teacherUids
+      : [hw.teacherUid].filter(Boolean);
+    await Promise.all(teacherUids.map((tid) =>
+      sendUserNotification(tid, {
+        type: 'homework_done',
+        topic: 'homework_done',
+        title: text.title,
+        body: text.body,
+        data: { homeworkId, classId: hw.classId },
+      }).catch((e) => console.error('onHomeworkProgressWritten: bildirim gönderilemedi', { tid, error: e.message }))
+    ));
+    console.log('Ödev bitti', { homeworkId, studentUid, body: text.body });
+    return null;
+  });
+
+/**
  * Silinen öğrencinin ödev ilerlemeleri (cleanupUserOnDelete). Ödev dokümanları öğretmenin;
  * yalnızca öğrencinin `studentProgress` kayıtları siliniyor (collection group, bkz.
  * firestore.indexes.json).
@@ -5549,8 +5613,8 @@ function isDeadTokenError(error) {
  * @param userData Çağıran taraf kullanıcı dokümanını zaten okuduysa — fazladan okuma olmasın.
  * @returns `{ sent: boolean, reason?: string }`
  */
-/** Öğretmene gidebilen bildirim konuları: öğrenci mesajı ve havuza düşen soru. */
-const TEACHER_NOTIFICATION_TOPICS = new Set(['chat', 'teacher_pool']);
+/** Öğretmene gidebilen bildirim konuları: öğrenci mesajı, havuza düşen soru, ödevi bitiren öğrenci. */
+const TEACHER_NOTIFICATION_TOPICS = new Set(['chat', 'teacher_pool', 'homework_done']);
 
 async function sendUserNotification(uid, { type, topic, title, body, data = {}, userData = null }) {
   if (!uid) return { sent: false, reason: 'no_uid' };

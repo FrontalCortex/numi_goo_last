@@ -245,6 +245,17 @@ class HomeworkEngineTest {
     }
 
     @Test
+    fun turkishAccusativeSuffix() {
+        // "12 öğrenciden 8'i bitirdi": ek, sayının okunuşunun son kelimesine göre.
+        val expected = mapOf(
+            1 to "1'i", 2 to "2'si", 3 to "3'ü", 4 to "4'ü", 5 to "5'i", 6 to "6'sı", 7 to "7'si",
+            8 to "8'i", 9 to "9'u", 10 to "10'u", 12 to "12'si", 20 to "20'si", 30 to "30'u",
+            40 to "40'ı", 50 to "50'si", 60 to "60'ı", 0 to "0'ı",
+        )
+        expected.forEach { (n, s) -> assertEquals(s, HomeworkText.withAccusative(n)) }
+    }
+
+    @Test
     fun blocksOfTen() {
         assertEquals(10, HomeworkEngine.blockCount(100))
         assertEquals(3, HomeworkEngine.blockCount(25))

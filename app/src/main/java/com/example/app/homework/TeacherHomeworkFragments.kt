@@ -54,12 +54,38 @@ class TeacherHomeworkListFragment : Fragment() {
     private var _binding: FragmentTeacherHomeworkListBinding? = null
     private val binding get() = _binding!!
     private var listener: ListenerRegistration? = null
+    private var membersListener: ListenerRegistration? = null
     private lateinit var classId: String
+    /** Bitiş özeti için sınıfın şu anki öğrencileri (sınıfa verilen ödevin hedefi). */
+    private var memberUids: List<String>? = null
+    private var homeworks: List<Homeworks.Homework>? = null
 
-    private val adapter = object : ListAdapter<Homeworks.Homework, RecyclerView.ViewHolder>(
-        object : DiffUtil.ItemCallback<Homeworks.Homework>() {
-            override fun areItemsTheSame(a: Homeworks.Homework, b: Homeworks.Homework) = a.id == b.id
-            override fun areContentsTheSame(a: Homeworks.Homework, b: Homeworks.Homework) = a == b
+    /**
+     * "12 öğrenciden 8'i bitirdi". Hedef ve bitirenler [Homeworks.Homework.targetUids] ve
+     * [Homeworks.Homework.doneCount]: sınıftan ayrılan öğrenci sayıya girmiyor.
+     */
+    private fun doneSummary(hw: Homeworks.Homework): String? {
+        val members = memberUids ?: return null
+        val total = hw.targetUids(members).size
+        if (total == 0) return null
+        val done = hw.doneCount(members)
+        return when (done) {
+            0 -> appString(R.string.hw_list_done_none, total)
+            total -> appString(R.string.hw_list_done_all, total)
+            else -> appString(R.string.hw_list_done_summary, total, HomeworkText.withAccusative(done))
+        }
+    }
+
+    private fun submit() {
+        // Üye listesi gelmeden de çiziliyor; özet satırı üyeler gelince ekleniyor.
+        adapter.submitList(homeworks.orEmpty().map { it to doneSummary(it) })
+    }
+
+    private val adapter = object : ListAdapter<Pair<Homeworks.Homework, String?>, RecyclerView.ViewHolder>(
+        object : DiffUtil.ItemCallback<Pair<Homeworks.Homework, String?>>() {
+            override fun areItemsTheSame(a: Pair<Homeworks.Homework, String?>, b: Pair<Homeworks.Homework, String?>) =
+                a.first.id == b.first.id
+            override fun areContentsTheSame(a: Pair<Homeworks.Homework, String?>, b: Pair<Homeworks.Homework, String?>) = a == b
         },
     ) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -69,11 +95,11 @@ class TeacherHomeworkListFragment : Fragment() {
         }
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-            val hw = getItem(position)
+            val (hw, summary) = getItem(position)
             val b = holder.itemView.tag as ItemTeacherClassBinding
             b.className.text = HomeworkText.title(hw.config)
             b.className.maxLines = 2
-            b.classMeta.text = HomeworkText.details(hw.config) + "\n" + targetLine(hw)
+            b.classMeta.text = listOfNotNull(HomeworkText.details(hw.config), targetLine(hw), summary).joinToString("\n")
             b.root.setOnClickListener { openScreen(TeacherHomeworkDetailFragment.newInstance(hw.id, classId)) }
         }
     }
@@ -98,15 +124,22 @@ class TeacherHomeworkListFragment : Fragment() {
         listener = Homeworks.listenClassHomeworks(classId) { list ->
             val b = _binding ?: return@listenClassHomeworks
             b.loading.visibility = View.GONE
-            adapter.submitList(list.orEmpty())
+            homeworks = list.orEmpty()
+            submit()
             b.empty.text = appString(if (list == null) R.string.class_generic_error else R.string.hw_list_empty)
             b.empty.visibility = if (list.isNullOrEmpty()) View.VISIBLE else View.GONE
+        }
+        membersListener = CourseClasses.listenMembers(classId) { list ->
+            memberUids = list.orEmpty().map { it.uid }
+            if (_binding != null) submit()
         }
     }
 
     override fun onDestroyView() {
         listener?.remove()
         listener = null
+        membersListener?.remove()
+        membersListener = null
         binding.list.adapter = null
         _binding = null
         super.onDestroyView()

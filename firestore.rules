@@ -592,10 +592,15 @@ service cloud.firestore {
       );
       allow write: if false;
 
-      // Öğretmen panelindeki öğrenci listesi: yalnızca sınıfın öğretmenleri.
+      // Öğrenci listesi: sınıfın öğretmenleri ve sınıftaki öğrenciler (Sorularım → Sınıfım,
+      // kullanıcı kararı 23.10.2026). Dokümanda ad, kullanıcı adı ve katılma zamanı var; ad ve
+      // kullanıcı adı zaten herkese açık (publicProfiles). Yeni olan, kimin hangi sınıfta
+      // olduğunun sınıf arkadaşlarına görünmesi — gizlilik politikası taslağında yazılı olmalı.
       match /members/{memberUid} {
-        allow read: if isSignedIn()
-          && request.auth.uid in get(/databases/$(database)/documents/classes/$(classId)).data.teacherUids;
+        allow read: if isSignedIn() && (
+          request.auth.uid in get(/databases/$(database)/documents/classes/$(classId)).data.teacherUids
+          || myUser().get('classId', null) == classId
+        );
         allow write: if false;
       }
     }
