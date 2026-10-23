@@ -100,6 +100,12 @@ class HomeworkCreateFragment : Fragment() {
         binding.targetSelect.setOnClickListener { wholeClass = false; refresh() }
         binding.btnPreviewRefresh.setOnClickListener { refreshPreview() }
         binding.btnSend.setOnClickListener { send() }
+        DepthPress.attach(
+            binding.opAdd, binding.opSub, binding.opMul,
+            binding.ruleDirect, binding.ruleFive, binding.ruleTen, binding.ruleBead,
+            binding.typeAbacus, binding.typeMental, binding.targetAll, binding.targetSelect,
+            binding.btnSend,
+        )
 
         digitsStepper = Stepper(binding.digitsStepper, decimal = false) { v -> digits = v.toInt(); refresh() }
         digits2Stepper = Stepper(binding.digits2Stepper, decimal = false) { v -> digits2 = v.toInt(); refresh() }
@@ -365,6 +371,7 @@ class HomeworkCreateFragment : Fragment() {
             }
             v.stepperMinus.setOnClickListener { onChange(value - step(value, down = true)) }
             v.stepperPlus.setOnClickListener { onChange(value + step(value, down = false)) }
+            DepthPress.attach(v.stepperMinus, v.stepperPlus)
             v.stepperValue.addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
                 override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit

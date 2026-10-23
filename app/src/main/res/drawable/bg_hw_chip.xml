@@ -1,6 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Ödev formunda seçilmemiş seçenek: kartın içinde, sayfa zemini renginde hap. -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="@color/background_color" />
-    <corners android:radius="22dp" />
-</shape>
+<!--
+  Ödev formunda seçilmemiş seçenek.
+  Duolingo tarzı göçen düğme: altta 4 dp koyu "dudak". Basılıyken dudak gizlenir; yüzün aşağı
+  inmesini DepthPress yapar (görünümü 4 dp aşağı kaydırır).
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <layer-list>
+            <item android:bottom="4dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/background_color" />
+                    <stroke android:width="2dp" android:color="#37464F" />
+                    <corners android:radius="16dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <layer-list>
+            <item android:top="4dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="#37464F" />
+                    <corners android:radius="16dp" />
+                </shape>
+            </item>
+            <item android:bottom="4dp">
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/background_color" />
+                    <stroke android:width="2dp" android:color="#37464F" />
+                    <corners android:radius="16dp" />
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

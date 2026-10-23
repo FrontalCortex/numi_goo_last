@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Öğretmenin yeni ödev formu (bkz. HomeworkCreateFragment). Üstte canlı özet (başlık + örnek soru),
-  altında bölüm kartları: İşlem, Konu, Ayarlar, Kime. Gönder düğmesi altta sabit.
+  Öğretmenin yeni ödev formu (bkz. HomeworkCreateFragment). Bölüm kartları: İşlem, Konu, Ayarlar,
+  Kime; sonunda canlı özet (başlık + örnek soru) ve Gönder. Hepsi birlikte kayıyor (kullanıcı kararı).
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -61,77 +61,6 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp">
 
-            <!-- Canlı özet: ödevin başlığı ve örnek soru -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/previewCard"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                app:cardBackgroundColor="@color/dark_secondary"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="0dp"
-                app:strokeWidth="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/previewTitle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@android:color/white"
-                        android:textSize="18sp"
-                        android:textStyle="bold"
-                        tools:text="5'lik ve 10'luk toplama" />
-
-                    <TextView
-                        android:id="@+id/previewMeta"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:alpha="0.85"
-                        android:textColor="@android:color/white"
-                        android:textSize="13sp"
-                        tools:text="Abaküslü · 2 basamak · 5 sayı · 1,5 sn · 20 soru" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:background="@drawable/bg_icon_circle_rect"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingStart="12dp"
-                        android:paddingTop="8dp"
-                        android:paddingEnd="4dp"
-                        android:paddingBottom="8dp">
-
-                        <TextView
-                            android:id="@+id/previewText"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:fontFamily="monospace"
-                            android:textColor="@android:color/white"
-                            android:textIsSelectable="true"
-                            android:textSize="15sp"
-                            tools:text="12 + 34 + 21 + 10 + 22 = 99" />
-
-                        <ImageButton
-                            android:id="@+id/btnPreviewRefresh"
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:contentDescription="@string/hw_preview_refresh"
-                            android:padding="9dp"
-                            android:src="@drawable/ic_hw_refresh"
-                            app:tint="@android:color/white" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <!-- İşlem -->
             <com.google.android.material.card.MaterialCardView style="@style/HomeworkSectionCard">
@@ -292,36 +221,106 @@
                 android:textColor="@color/dark_error"
                 android:textSize="13sp"
                 android:visibility="gone" />
+
+            <!-- Canlı özet: ödevin başlığı ve örnek soru -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/previewCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="@color/dark_secondary"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/previewTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@android:color/white"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        tools:text="5'lik ve 10'luk toplama" />
+
+                    <TextView
+                        android:id="@+id/previewMeta"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:alpha="0.85"
+                        android:textColor="@android:color/white"
+                        android:textSize="13sp"
+                        tools:text="Abaküslü · 2 basamak · 5 sayı · 1,5 sn · 20 soru" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_icon_circle_rect"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="12dp"
+                        android:paddingTop="8dp"
+                        android:paddingEnd="4dp"
+                        android:paddingBottom="8dp">
+
+                        <TextView
+                            android:id="@+id/previewText"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="monospace"
+                            android:textColor="@android:color/white"
+                            android:textIsSelectable="true"
+                            android:textSize="15sp"
+                            tools:text="12 + 34 + 21 + 10 + 22 = 99" />
+
+                        <ImageButton
+                            android:id="@+id/btnPreviewRefresh"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
+                            android:background="@android:color/transparent"
+                            android:contentDescription="@string/hw_preview_refresh"
+                            android:padding="9dp"
+                            android:src="@drawable/ic_hw_refresh"
+                            app:tint="@android:color/white" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Gönder: kaydırılan içeriğin sonunda, özet kartının hemen altında. -->
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="20dp">
+
+                <TextView
+                    android:id="@+id/btnSend"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_hw_send"
+                    android:gravity="center"
+                    android:paddingBottom="4dp"
+                    android:text="@string/hw_send"
+                    android:textColor="@android:color/white"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <ProgressBar
+                    android:id="@+id/sendProgress"
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="4dp"
+                    android:visibility="gone" />
+            </FrameLayout>
         </LinearLayout>
     </ScrollView>
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp">
-
-        <TextView
-            android:id="@+id/btnSend"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@drawable/bg_hw_send"
-            android:elevation="2dp"
-            android:foreground="?attr/selectableItemBackground"
-            android:gravity="center"
-            android:text="@string/hw_send"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <ProgressBar
-            android:id="@+id/sendProgress"
-            android:layout_width="28dp"
-            android:layout_height="28dp"
-            android:layout_gravity="center"
-            android:elevation="3dp"
-            android:visibility="gone" />
-    </FrameLayout>
 </LinearLayout>

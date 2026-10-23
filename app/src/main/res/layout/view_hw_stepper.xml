@@ -27,12 +27,12 @@
 
         <TextView
             android:id="@+id/stepperMinus"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="42dp"
+            android:layout_height="44dp"
             android:background="@drawable/bg_hw_round_button"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:includeFontPadding="false"
+            android:paddingBottom="4dp"
             android:text="−"
             android:textColor="@color/dark_primary"
             android:textSize="20sp"
@@ -57,12 +57,12 @@
 
         <TextView
             android:id="@+id/stepperPlus"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="42dp"
+            android:layout_height="44dp"
             android:background="@drawable/bg_hw_round_button"
-            android:foreground="?attr/selectableItemBackgroundBorderless"
             android:gravity="center"
             android:includeFontPadding="false"
+            android:paddingBottom="4dp"
             android:text="+"
             android:textColor="@color/dark_primary"
             android:textSize="20sp"

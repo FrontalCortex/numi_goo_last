@@ -83,8 +83,8 @@
                 android:layout_height="48dp"
                 android:background="@drawable/bg_icon_circle"
                 android:importantForAccessibility="no"
-                android:padding="11dp"
-                android:src="@drawable/book_icon" />
+                android:padding="9dp"
+                android:src="@drawable/profile_book_ic3" />
 
             <LinearLayout
                 android:layout_width="0dp"
