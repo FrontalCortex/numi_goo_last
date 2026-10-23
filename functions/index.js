@@ -30,6 +30,9 @@ const {
   currentSeason,
   millisUntilCurrentSeasonEnds,
 } = require('./seasonCalendar');
+// Kurs sınıfları ve soru havuzu ayrımı; karar mantığı orada, Firestore işi "Kurs sınıfları"
+// bölümünde.
+const classes = require('./classes');
 // `sendUserNotification` bir fonksiyon bildirimi (hoisted), yani burada tanımından önce
 // geçirilebiliyor; çağrı zaten çalışma anında, sezon bitince oluyor.
 exports.finalizeSeasonLeaderboardMedals = seasonLeaderboardFinalize.scheduleFinalize(
@@ -1893,6 +1896,14 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   } catch (error) {
     console.error(`Error removing bug reports for ${uid}:`, error);
   }
+
+  // Kurs sınıfı üyeliği, davetler ve (öğretmense) sınıflardaki yeri — hepsi üst seviyede.
+  try {
+    const counts = await removeDeletedUserFromClasses(uid);
+    console.log('Silinen kullanıcının sınıf kayıtları temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing class records for ${uid}:`, error);
+  }
 });
 
 // Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.
@@ -2849,6 +2860,10 @@ exports.resendTeacherQuestion = functions.https.onCall(async (data, context) => 
       throw new functions.https.HttpsError('failed-precondition', 'Yeterli danışma krediniz yok.');
     }
 
+    // Havuz İLK sorulduğu andan değil, şimdiki üyelikten: öğrenci o arada bir sınıfa
+    // katıldıysa (ya da çıktıysa) tekrar sorduğu soru yeni yerine gitmeli.
+    const poolFields = await questionPoolFieldsInTransaction(transaction, userData);
+
     transaction.update(userRef, { questionCredits: credits - 1 });
     transaction.update(questionRef, {
       status: 'pending',
@@ -2858,6 +2873,7 @@ exports.resendTeacherQuestion = functions.https.onCall(async (data, context) => 
       createdAtMs: Date.now(),
       lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
       resentAt: admin.firestore.FieldValue.serverTimestamp(),
+      ...poolFields,
     });
 
     return credits - 1;
@@ -3579,26 +3595,59 @@ async function runTeacherPoolNotify(nowMs) {
     return { sent: 0, newCount: 0, reason: 'no_new' };
   }
 
-  // Havuzda bekleyen toplam: öğretmen için en faydalı sayı "şu an kaç soru var".
-  let totalPending = newCount;
-  try {
-    const agg = await db.collection('questions').where('status', '==', 'pending').count().get();
-    totalPending = agg.data().count;
-  } catch (e) {
-    // Sayım başarısız olursa bildirim yine gidiyor, yalnızca metin "yeni" sayısına düşüyor.
-    console.warn('runTeacherPoolNotify: toplam sayım başarısız', e.message);
-  }
+  // Sayılar ÖĞRETMEN BAŞINA: kurs öğretmeni yalnızca kendi sınıflarının sorularını, genel
+  // öğretmen yalnızca genel havuzu görüyor (classes.poolVisibility). Herkese aynı "havuzda N
+  // soru" demek, göremeyeceği soru için öğretmeni uygulamaya çağırmak olurdu.
+  const newQuestions = newSnap.docs.map((d) => d.data());
+
+  // Sayım başarısız olursa bildirim yine gidiyor, yalnızca metin "yeni" sayısına düşüyor.
+  const countOrNull = async (query) => {
+    try {
+      return (await query.count().get()).data().count;
+    } catch (e) {
+      console.warn('runTeacherPoolNotify: sayım başarısız', e.message);
+      return null;
+    }
+  };
+  const pendingQuery = db.collection('questions').where('status', '==', 'pending');
+  // Genel havuz = bütün bekleyenler − sınıf soruları. `pool == general` sayılmıyor, çünkü
+  // bu özellikten önceki sorularda `pool` alanı yok (kurallarda da genel sayılıyorlar).
+  let generalTotal;
+  const generalPendingTotal = async () => {
+    if (generalTotal !== undefined) return generalTotal;
+    const [all, inClasses] = await Promise.all([
+      countOrNull(pendingQuery),
+      countOrNull(pendingQuery.where('pool', '==', classes.POOL_CLASS)),
+    ]);
+    generalTotal = all === null || inClasses === null ? null : Math.max(0, all - inClasses);
+    return generalTotal;
+  };
 
   // İki eşitlik filtresi yerine tek sorgu + kod filtresi: öğretmen sayısı küçük ve bu yol
   // yeni bir bileşik indeks gerektirmiyor.
   const teachersSnap = await db.collection('users').where('role', '==', 'TEACHER').get();
   const teachers = teachersSnap.docs.filter((d) => d.get('teacherApproved') === true);
 
-  const text = teacherPoolText(newCount, totalPending);
-  const counts = { sent: 0, skipped: 0, newCount, totalPending, teachers: teachers.length };
+  const counts = { sent: 0, skipped: 0, notMine: 0, newCount, teachers: teachers.length };
 
   for (const doc of teachers) {
     try {
+      const visibility = classes.poolVisibility(doc.data());
+      const mineNew = newQuestions.filter((q) => classes.questionVisibleTo(q, doc.id, visibility)).length;
+      if (!mineNew) {
+        counts.notMine++;
+        continue;
+      }
+      let total = 0;
+      if (visibility.generalPool) {
+        const general = await generalPendingTotal();
+        total = general === null ? null : total + general;
+      }
+      if (visibility.classPool && total !== null) {
+        const mine = await countOrNull(pendingQuery.where('classTeacherUids', 'array-contains', doc.id));
+        total = mine === null ? null : total + mine;
+      }
+      const text = teacherPoolText(mineNew, total === null ? mineNew : total);
       const result = await sendUserNotification(doc.id, {
         type: 'pool',
         topic: 'teacher_pool',
@@ -3763,6 +3812,20 @@ function readText(value, maxLength) {
 }
 
 /**
+ * Sorunun havuz alanlarını transaction içinde belirler: öğrenci bir sınıftaysa sınıf
+ * dokümanını da okur. Sınıfın öğretmen listesi öğrencinin dokümanındaki kopyadan değil
+ * sınıftan alınıyor — sınıf kapandıysa soru genel havuza düşsün diye.
+ *
+ * Okuma yaptığı için transaction'daki bütün yazımlardan ÖNCE çağrılmalı.
+ */
+async function questionPoolFieldsInTransaction(transaction, userData) {
+  const classId = typeof userData.classId === 'string' && userData.classId ? userData.classId : null;
+  if (!classId) return classes.questionPoolFields(userData, null);
+  const classSnap = await transaction.get(db.collection('classes').doc(classId));
+  return classes.questionPoolFields(userData, classSnap.exists ? classSnap.data() : null);
+}
+
+/**
  * Öğretmene soru gönderir: 1 danışma kredisi düşer ve soruyu oluşturur.
  *
  * Medya (görsel/video) istemci tarafından Storage'a yüklenir; buraya yalnızca yolu
@@ -3811,6 +3874,9 @@ exports.askTeacherQuestion = functions.https.onCall(async (data, context) => {
       );
     }
 
+    // Kredi kontrolünden sonra: krediyi olmayan öğrenci için boşuna bir okuma yapılmasın.
+    const poolFields = await questionPoolFieldsInTransaction(transaction, userData);
+
     const questionData = {
       studentUid: uid,
       studentEmail: context.auth.token.email || null,
@@ -3823,6 +3889,8 @@ exports.askTeacherQuestion = functions.https.onCall(async (data, context) => {
       // İade takibi: cevapsız kalırsa reconcileUnansweredQuestions krediyi geri verir.
       creditSpent: true,
       creditRefunded: false,
+      // Hangi öğretmenlerin göreceği: kurs sınıfı ya da genel havuz (bkz. classes.js).
+      ...poolFields,
     };
     if (isVideo) {
       questionData.mediaType = 'video';
@@ -3852,6 +3920,427 @@ exports.askTeacherQuestion = functions.https.onCall(async (data, context) => {
   console.log('Soru oluşturuldu', { uid, questionId: questionRef.id, remaining });
   return { success: true, questionId: questionRef.id, credits: remaining };
 });
+
+// ─── Kurs sınıfları ─────────────────────────────────────────────────────────
+//
+// Kurs öğretmeni uygulamadan sınıf açar; öğrenci sınıf koduyla ya da öğretmenin kullanıcı
+// adıyla gönderdiği daveti kabul ederek katılır. Bundan sonra öğrencinin soruları yalnızca
+// sınıfının öğretmenlerine düşer (askTeacherQuestion → questionPoolFieldsInTransaction).
+// Model ve kararlar için classes.js'in başlık yorumuna bakın; burada yalnızca Firestore işi.
+//
+// Bütün yazımlar burada, istemci sınıf/üyelik dokümanlarına hiç yazamıyor (firestore.rules).
+// Üyelik iki yerde birden tutuluyor — öğrencinin kullanıcı dokümanında (havuz kararı ve
+// kurallar için) ve sınıfın `members` alt koleksiyonunda (öğretmen paneli için) — ve ikisi
+// her zaman aynı transaction'da değişiyor.
+
+/** Kod çakışmasında kaç kez yeni kod denenir. 1 milyar olasılıkta pratikte hiç çakışmaz. */
+const JOIN_CODE_ATTEMPTS = 5;
+
+/** Aynı öğrenciye aynı sınıftan bu süre içinde ikinci davet bildirimi gitmez. */
+const CLASS_INVITE_RENOTIFY_MS = 24 * 60 * 60 * 1000;
+
+function classRefOf(classId) {
+  return db.collection('classes').doc(classId);
+}
+
+function classMemberRef(classId, uid) {
+  return classRefOf(classId).collection('members').doc(uid);
+}
+
+/** İstemciden gelen doküman kimliği; yol kaçışını (`/`) ve boşu reddeder. */
+function readDocId(value, label) {
+  const id = readText(value, 128);
+  if (!id || id.includes('/')) {
+    throw new functions.https.HttpsError('invalid-argument', `Geçersiz ${label}.`);
+  }
+  return id;
+}
+
+/** Firestore'un "zaten var" hatası (create çakışması). Admin SDK sayısal gRPC kodu veriyor. */
+function isAlreadyExistsError(e) {
+  return !!e && (e.code === 6 || e.code === 'already-exists');
+}
+
+/**
+ * Yeni bir katılma kodu ayırıp `writeExtra(batch, code)` ile aynı batch'te yazar.
+ * `create` kullanıldığı için başka bir sınıfın kodunun üstüne yazılamaz; çakışırsa yeni kod.
+ */
+async function commitWithNewJoinCode(classId, writeExtra) {
+  for (let attempt = 0; attempt < JOIN_CODE_ATTEMPTS; attempt++) {
+    const code = classes.generateJoinCode();
+    const batch = db.batch();
+    batch.create(db.collection('classJoinCodes').doc(code), { classId, createdAtMs: Date.now() });
+    writeExtra(batch, code);
+    try {
+      await batch.commit();
+      return code;
+    } catch (e) {
+      if (!isAlreadyExistsError(e)) throw e;
+    }
+  }
+  throw new functions.https.HttpsError('unavailable', 'Kod oluşturulamadı, tekrar dene.');
+}
+
+/** Öğrenciyi sınıftan çıkaran yazımlar. Okuma yapmaz; çağıran okumaları önce yapmış olmalı. */
+function writeClassLeave(transaction, uid, classId, { clearUser }) {
+  transaction.delete(classMemberRef(classId, uid));
+  transaction.update(classRefOf(classId), {
+    studentCount: admin.firestore.FieldValue.increment(-1),
+  });
+  if (clearUser) {
+    const cleared = {};
+    classes.MEMBERSHIP_FIELDS.forEach((f) => { cleared[f] = admin.firestore.FieldValue.delete(); });
+    transaction.update(db.collection('users').doc(uid), cleared);
+  }
+}
+
+/**
+ * Öğrencinin bekleyen (kimsenin almadığı) sorularını yeni havuzuna taşır. Sahiplenilmiş
+ * sorulara dokunmuyor: o sohbet zaten bir öğretmende ve onda kalmalı.
+ *
+ * Transaction dışında, en iyi çabayla: yarıda kalırsa soru eski havuzunda bekler, 48 saatte
+ * iade edilir. Üyeliği bunun için geri almak daha kötü olurdu.
+ */
+async function retagPendingQuestions(studentUid, poolFields) {
+  try {
+    const snap = await db
+      .collection('questions')
+      .where('studentUid', '==', studentUid)
+      .where('status', '==', 'pending')
+      .get();
+    if (snap.empty) return 0;
+    const batch = db.batch();
+    snap.docs.forEach((d) => batch.update(d.ref, poolFields));
+    await batch.commit();
+    return snap.size;
+  } catch (e) {
+    console.error('retagPendingQuestions: taşınamadı', { studentUid, error: e.message });
+    return 0;
+  }
+}
+
+/**
+ * Öğrenciyi sınıfa yazar (kodla ya da davetle). Başka bir sınıftaysa önce oradan çıkar.
+ *
+ * @param inviteRef Davetle katılımda davet dokümanı: aynı transaction'da yeniden okunup
+ *   "accepted" yapılıyor, böylece süresi dolmuş ya da reddedilmiş bir davetle girilemiyor.
+ */
+async function joinClass(uid, classId, via, inviteRef = null) {
+  const userRef = db.collection('users').doc(uid);
+  const classRef = classRefOf(classId);
+
+  const outcome = await db.runTransaction(async (transaction) => {
+    const [userSnap, classSnap, inviteSnap] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(classRef),
+      inviteRef ? transaction.get(inviteRef) : Promise.resolve(null),
+    ]);
+    if (!userSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const nowMs = Date.now();
+    if (inviteRef) {
+      throwIfFailed(classes.respondDecision(inviteSnap.exists ? inviteSnap.data() : null, uid, nowMs));
+    }
+    const userData = userSnap.data();
+    const classData = classSnap.exists ? classSnap.data() : null;
+    const decision = throwIfFailed(classes.joinDecision(userData, classId, classData));
+
+    if (!decision.alreadyMember) {
+      if (decision.previousClassId) {
+        writeClassLeave(transaction, uid, decision.previousClassId, { clearUser: false });
+      }
+      transaction.update(userRef, classes.membershipFields(classId, classData, nowMs));
+      transaction.set(classMemberRef(classId, uid), {
+        uid,
+        userId: userData.userId || null,
+        name: userData.name || null,
+        joinedAtMs: nowMs,
+        via,
+      });
+      transaction.update(classRef, { studentCount: admin.firestore.FieldValue.increment(1) });
+    }
+    if (inviteRef) {
+      transaction.update(inviteRef, { status: 'accepted', respondedAtMs: nowMs });
+    }
+    return { alreadyMember: decision.alreadyMember, classData };
+  });
+
+  if (!outcome.alreadyMember) {
+    await retagPendingQuestions(uid, classes.questionPoolFields({ classId }, outcome.classData));
+  }
+  console.log('Sınıfa katıldı', { uid, classId, via, alreadyMember: outcome.alreadyMember });
+  return {
+    success: true,
+    classId,
+    className: outcome.classData.name || '',
+    courseName: outcome.classData.courseName || '',
+    alreadyMember: outcome.alreadyMember,
+  };
+}
+
+/** Öğrenciyi sınıfından çıkarır; `actorUid` öğretmense sınıfın öğretmeni olmalı. */
+async function leaveClass(studentUid, { classId = null, actorUid = null } = {}) {
+  const userRef = db.collection('users').doc(studentUid);
+  const left = await db.runTransaction(async (transaction) => {
+    const [userSnap, classSnap] = await Promise.all([
+      transaction.get(userRef),
+      classId ? transaction.get(classRefOf(classId)) : Promise.resolve(null),
+    ]);
+    if (actorUid && !classes.isTeacherOfClass(classSnap && classSnap.exists ? classSnap.data() : null, actorUid)) {
+      throw new functions.https.HttpsError('permission-denied', 'Bu sınıf senin değil.');
+    }
+    const current = userSnap.exists ? userSnap.get('classId') || null : null;
+    if (!current || (classId && current !== classId)) return null;
+    writeClassLeave(transaction, studentUid, current, { clearUser: true });
+    return current;
+  });
+
+  if (left) {
+    await retagPendingQuestions(studentUid, classes.questionPoolFields({}, null));
+    console.log('Sınıftan çıktı', { studentUid, classId: left, byTeacher: actorUid || null });
+  }
+  return { success: true, left: !!left };
+}
+
+/**
+ * Kurs öğretmeni yeni bir sınıf açar. Yanıtta katılma kodu var; öğretmen bunu öğrencilerine
+ * verir (tahta, WhatsApp grubu).
+ */
+exports.createClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const { name } = throwIfFailed(classes.normalizeClassName(data && data.name));
+
+  const [teacherSnap, ownedSnap] = await Promise.all([
+    db.collection('users').doc(uid).get(),
+    db.collection('classes').where('ownerUid', '==', uid).where('archived', '==', false).count().get(),
+  ]);
+  const teacher = teacherSnap.exists ? teacherSnap.data() : null;
+  const { courseId } = throwIfFailed(classes.createClassDecision(teacher, ownedSnap.data().count));
+
+  const courseSnap = await db.collection('courses').doc(courseId).get();
+  if (!courseSnap.exists) {
+    throw new functions.https.HttpsError('failed-precondition', 'Kursun kaydı bulunamadı. Bize haber ver.');
+  }
+
+  const classRef = db.collection('classes').doc();
+  const nowMs = Date.now();
+  const joinCode = await commitWithNewJoinCode(classRef.id, (batch, code) => {
+    batch.create(classRef, {
+      courseId,
+      courseName: courseSnap.get('name') || '',
+      name,
+      ownerUid: uid,
+      ownerName: teacher.name || '',
+      // Dizi: sınıfa ileride ikinci bir öğretmen (yardımcı) eklenebilsin diye. Şimdilik
+      // yalnızca açan öğretmen.
+      teacherUids: [uid],
+      joinCode: code,
+      studentCount: 0,
+      archived: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAtMs: nowMs,
+    });
+  });
+
+  console.log('Sınıf açıldı', { uid, classId: classRef.id, courseId });
+  return { success: true, classId: classRef.id, name, joinCode };
+});
+
+/**
+ * Sınıfın katılma kodunu değiştirir; eski kod hemen geçersiz olur. Kod yanlış bir gruba
+ * sızdığında öğretmenin elindeki tek araç bu. İçerideki öğrencilere dokunulmuyor.
+ */
+exports.regenerateClassCode = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const classRef = classRefOf(classId);
+  const classSnap = await classRef.get();
+  const classData = classSnap.exists ? classSnap.data() : null;
+  if (!classes.isTeacherOfClass(classData, uid) || !classes.classIsActive(classData)) {
+    throw new functions.https.HttpsError('permission-denied', 'Bu sınıf senin değil.');
+  }
+
+  const joinCode = await commitWithNewJoinCode(classId, (batch, code) => {
+    if (classData.joinCode) batch.delete(db.collection('classJoinCodes').doc(classData.joinCode));
+    batch.update(classRef, { joinCode: code });
+  });
+  return { success: true, joinCode };
+});
+
+/** Öğrenci sınıf koduyla katılır. */
+exports.joinClassByCode = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const { code } = throwIfFailed(classes.normalizeJoinCode(data && data.code));
+
+  // Yanlış kod sınırı: kodlar tahmin edilerek başkasının sınıfına girilmesin. Sayaç
+  // transaction'da değil — iki eşzamanlı yanlış denemenin biri sayılmasa zarar yok.
+  const guardRef = db.collection('classJoinGuards').doc(uid);
+  const nowMs = Date.now();
+  const guardSnap = await guardRef.get();
+  const guard = guardSnap.exists ? guardSnap.data() : null;
+  throwIfFailed(classes.joinGuardCheck(guard, nowMs));
+
+  const codeSnap = await db.collection('classJoinCodes').doc(code).get();
+  if (!codeSnap.exists) {
+    await guardRef.set(classes.joinGuardAfterWrong(guard, nowMs));
+    throw new functions.https.HttpsError('not-found', 'Bu kodla bir sınıf bulunamadı.');
+  }
+  return joinClass(uid, codeSnap.get('classId'), 'code');
+});
+
+/**
+ * Öğretmen, öğrencinin kullanıcı adıyla davet gönderir. Öğrenci kabul edene kadar hiçbir
+ * şey değişmez: davetsiz eklemek, adını bilen her kurs öğretmeninin bir çocuğun ilerlemesini
+ * görebilmesi demek olurdu.
+ */
+exports.inviteStudentToClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const candidates = classes.userIdCandidates(data && data.userId);
+  if (!candidates.length) {
+    throw new functions.https.HttpsError('invalid-argument', 'Kullanıcı adı boş.');
+  }
+
+  const [classSnap, teacherSnap, usersSnap] = await Promise.all([
+    classRefOf(classId).get(),
+    db.collection('users').doc(uid).get(),
+    db.collection('users').where('userId', 'in', candidates).limit(5).get(),
+  ]);
+  // Önce yazıldığı gibi eşleşen; yoksa harf farkıyla eşleşen TEK hesap. Birden fazla hesap
+  // yalnızca harf farkıyla eşleşiyorsa hangisi olduğunu tahmin etmiyoruz.
+  const exact = usersSnap.docs.filter((d) => d.get('userId') === candidates[0]);
+  const matches = exact.length ? exact : usersSnap.docs;
+  if (!matches.length) {
+    throw new functions.https.HttpsError('not-found', 'Bu kullanıcı adıyla bir hesap bulunamadı.');
+  }
+  if (matches.length > 1) {
+    throw new functions.https.HttpsError('failed-precondition', 'Bu ad birden fazla hesapta var; büyük/küçük harfiyle tam yaz.');
+  }
+  const studentSnap = matches[0];
+  const student = studentSnap.data();
+  const classData = classSnap.exists ? classSnap.data() : null;
+  throwIfFailed(classes.inviteDecision(uid, classData, student));
+
+  const studentName = student.name || student.userId || '';
+  if (student.classId === classId) {
+    return { success: true, alreadyMember: true, studentUid: studentSnap.id, studentName };
+  }
+
+  const inviteId = classes.inviteIdOf(classId, studentSnap.id);
+  const inviteRef = db.collection('classInvites').doc(inviteId);
+  const nowMs = Date.now();
+  const previous = await inviteRef.get();
+  const recentlyNotified = previous.exists
+    && previous.get('status') === 'pending'
+    && nowMs - (Number(previous.get('createdAtMs')) || 0) < CLASS_INVITE_RENOTIFY_MS;
+
+  if (!recentlyNotified) {
+    const teacherName = (teacherSnap.exists && teacherSnap.get('name')) || 'Öğretmenin';
+    await inviteRef.set({
+      classId,
+      className: classData.name || '',
+      courseName: classData.courseName || '',
+      teacherUid: uid,
+      teacherName,
+      studentUid: studentSnap.id,
+      studentUserId: student.userId || null,
+      studentName,
+      status: 'pending',
+      createdAtMs: nowMs,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    try {
+      await sendUserNotification(studentSnap.id, {
+        // `account`: uygulamadan kapatılamayan tür. Davet çocuğun kendi öğretmeninden geliyor
+        // ve kaçırılırsa öğretmen öğrencisini göremiyor; ödül bildirimi gibi tavana girmemeli.
+        type: 'account',
+        topic: 'class_invite',
+        title: 'Sınıf daveti',
+        body: `${teacherName} seni "${classData.name || ''}" sınıfına davet etti.`,
+        data: { inviteId },
+        userData: student,
+      });
+    } catch (e) {
+      // Davet yazıldı; öğrenci uygulamayı açınca görür. Bildirim hatası daveti düşürmemeli.
+      console.error('inviteStudentToClass: bildirim gönderilemedi', { inviteId, error: e.message });
+    }
+  }
+
+  return { success: true, alreadyMember: false, inviteId, studentUid: studentSnap.id, studentName };
+});
+
+/** Öğrenci daveti kabul eder ya da reddeder. */
+exports.respondClassInvite = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const inviteId = readDocId(data && data.inviteId, 'davet');
+  const inviteRef = db.collection('classInvites').doc(inviteId);
+  const snap = await inviteRef.get();
+  throwIfFailed(classes.respondDecision(snap.exists ? snap.data() : null, uid, Date.now()));
+
+  if (!(data && data.accept === true)) {
+    await inviteRef.update({ status: 'declined', respondedAtMs: Date.now() });
+    return { success: true, accepted: false };
+  }
+  const result = await joinClass(uid, snap.get('classId'), 'invite', inviteRef);
+  return Object.assign({ accepted: true }, result);
+});
+
+/** Öğretmen bir öğrenciyi sınıfından çıkarır. */
+exports.removeStudentFromClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const studentUid = readDocId(data && data.studentUid, 'öğrenci');
+  return leaveClass(studentUid, { classId, actorUid: uid });
+});
+
+/** Öğrenci kendi isteğiyle sınıfından ayrılır. Çocuğun verisi; çıkış yolu ondan da olmalı. */
+exports.leaveMyClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  return leaveClass(uid);
+});
+
+/**
+ * Silinen hesabın sınıf izlerini temizler (cleanupUserOnDelete). Kullanıcı dokümanına
+ * bakmıyor, çünkü istemci (AccountDeletionHelper) onu Auth kaydından ÖNCE siliyor; üyelik
+ * `members` alt koleksiyonundan bulunuyor (collection group, bkz. firestore.indexes.json).
+ *
+ * Öğretmen silindiyse sınıflarından çıkarılıyor; öğretmensiz kalan sınıf kapanıyor ve
+ * öğrencilerin yeni soruları genel havuza düşüyor (classIsActive).
+ */
+async function removeDeletedUserFromClasses(uid) {
+  const counts = { memberships: 0, invites: 0, teacherClasses: 0 };
+
+  const memberSnap = await db.collectionGroup('members').where('uid', '==', uid).get();
+  for (const doc of memberSnap.docs) {
+    const classRef = doc.ref.parent.parent;
+    const batch = db.batch();
+    batch.delete(doc.ref);
+    batch.update(classRef, { studentCount: admin.firestore.FieldValue.increment(-1) });
+    await batch.commit().catch((e) => console.error('üyelik silinemedi', { uid, error: e.message }));
+    counts.memberships++;
+  }
+
+  const inviteSnap = await db.collection('classInvites').where('studentUid', '==', uid).get();
+  for (const doc of inviteSnap.docs) {
+    await doc.ref.delete();
+    counts.invites++;
+  }
+
+  const teacherSnap = await db.collection('classes').where('teacherUids', 'array-contains', uid).get();
+  for (const doc of teacherSnap.docs) {
+    const remaining = (doc.get('teacherUids') || []).filter((t) => t !== uid);
+    await doc.ref.update({
+      teacherUids: remaining,
+      ...(remaining.length ? {} : { archived: true }),
+    });
+    counts.teacherClasses++;
+  }
+  return counts;
+}
+
+// Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.
+exports._removeDeletedUserFromClasses = removeDeletedUserFromClasses;
 
 /**
  * Abonelik (Pro / Lite) doğrulama ve yenileme.

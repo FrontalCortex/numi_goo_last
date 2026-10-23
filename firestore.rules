@@ -25,6 +25,74 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    // İstek atanın kullanıcı dokümanı. isTeacher() ile aynı yol: kurallar aynı get()'i bir
+    // istekte bir kez okur, ikinci çağrı ek okuma maliyeti çıkarmaz.
+    function myUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // ── Soru havuzları (kurs sınıfları, bkz. functions/classes.js) ──────────
+    //
+    // Kurs öğretmeni (`courseId` dolu) yalnızca kendi sınıflarının sorularını görür; genel
+    // havuzu ancak `helpsGeneralPool` açıksa. Kursu olmayan öğretmen yalnızca genel havuzu.
+    // Sorunun havuzunu askTeacherQuestion yazar, kimse sonradan değiştiremez.
+    function seesGeneralPool() {
+      return myUser().get('courseId', null) == null
+        || myUser().get('helpsGeneralPool', false) == true;
+    }
+
+    // Öğretmen bu soruya erişebilir mi: sahiplendiği, sınıfının, ya da görebildiği genel
+    // havuzdaki soru.
+    //
+    // DİKKAT — `q.pool == 'general'` KATI yazılmalı, `q.get('pool', 'general')` DEĞİL.
+    // Kurallar bir liste sorgusunu dokümanlara bakmadan, sorgunun filtrelerinden kanıtlıyor;
+    // `pool`'u filtrelemeyen bir sorguda motor alanı "yok" varsayıp varsayılanı kullanıyor ve
+    // sorguyu KABUL ediyor. Yani varsayılanlı yazımda genel öğretmen `status == pending`
+    // (ya da başkasının uid'siyle `classTeacherUids`) sorgusuyla bütün sınıf sorularını
+    // listeleyebiliyordu (emülatörde görüldü, bkz. firestore-rules-tests/class-pools.test.mjs).
+    // Bedeli: `pool` alanı olmayan eski sorular okuma ayrımı açılınca yalnızca sahiplenen
+    // öğretmene açık; bekleyenler bu yüzden önce işaretleniyor (tools/kurs/eski_sorulari_isaretle.js).
+    function teacherReaches(q) {
+      return isTeacher() && (
+        q.get('claimedByTeacherUid', null) == request.auth.uid
+        || request.auth.uid in q.get('classTeacherUids', [])
+        || (q.pool == 'general' && seesGeneralPool())
+      );
+    }
+
+    // Yazma (sahiplenme, çözme) için: yukarıdakine ek olarak `pool` alanı olmayan eski soru
+    // genel sayılır. Burada güvenli, çünkü yazım TEK dokümanda değerlendiriliyor; sorgu
+    // kanıtındaki gevşeklik yok. Bu dal olmasaydı deploy ile eski soruların işaretlenmesi
+    // arasındaki dakikalarda bekleyen eski sorular sahiplenilemezdi.
+    function teacherMayWrite(q) {
+      return teacherReaches(q)
+        || (isTeacher() && !('pool' in q) && seesGeneralPool());
+    }
+
+    // OKUMA AYRIMININ AÇMA ANAHTARI: `system/questionPools.enforced`.
+    //
+    // Kurallar sorguyu süzmez; bir sorgu izinsiz tek bir dokümana bile çarpabiliyorsa
+    // TAMAMEN reddedilir. Eski öğretmen sürümü (≤15) havuzu `status == pending` ile, havuz
+    // filtresi olmadan dinliyor — ayrım hemen açılsaydı o öğretmenlerin havuzu boş kalırdı.
+    // Bu yüzden okuma ayrımı, öğretmenler yeni sürüme geçince Console'dan (ya da
+    // tools/kurs/havuz_ayrimi.js ile) açılıyor. Kapalıyken onaylı her öğretmen eskisi gibi
+    // her soruyu okuyabilir; YAZMA (sahiplenme, mesaj) her durumda ayrıma tabi.
+    function questionPoolsEnforced() {
+      return exists(/databases/$(database)/documents/system/questionPools)
+        && get(/databases/$(database)/documents/system/questionPools).data.get('enforced', false) == true;
+    }
+
+    function teacherCanRead(q) {
+      return isTeacher() && (!questionPoolsEnforced() || teacherReaches(q));
+    }
+
+    // Öğretmen bu öğrencinin sınıfında mı (ilerleme raporu için). Liste öğrencinin
+    // dokümanında, yalnızca sunucu yazar (classes.membershipFields).
+    function isTeacherOfStudent(userId) {
+      return isTeacher()
+        && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.get('classTeacherUids', []);
+    }
+
     // Bir sorunun dokümanı — mesaj alt koleksiyonu kurallarında tekrar tekrar get()
     // yazmamak için.
     function questionOf(questionId) {
@@ -65,7 +133,11 @@ service cloud.firestore {
           'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
           'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
           'restrictedAt', 'restrictedByUid',
-          'parentalConsentAt', 'parentalConsentVersion'  // veli onayı → yalnız onay CF'leri
+          'parentalConsentAt', 'parentalConsentVersion', // veli onayı → yalnız onay CF'leri
+          // Kurs: öğrencinin sınıf üyeliği (sınıf CF'leri) ve öğretmenin kursu (yönetici).
+          // Öğrenci yazabilseydi sorusunu istediği öğretmene düşürür, öğretmen yazabilseydi
+          // kendini bir kursa bağlayıp sınıf açabilirdi.
+          'classId', 'courseId', 'classTeacherUids', 'classJoinedAt'
         ];
       }
 
@@ -94,7 +166,8 @@ service cloud.firestore {
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
              'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
              'restrictedAt', 'restrictedByUid',
-             'parentalConsentAt', 'parentalConsentVersion'
+             'parentalConsentAt', 'parentalConsentVersion',
+             'classId', 'courseId', 'classTeacherUids', 'classJoinedAt'
            ])
         // birthYear yalnızca KAYIT ANINDA yazılabilir (reklam yaş koruması bu alana bakıyor);
         // sonradan değiştirilemez, bkz. aşağıdaki update kuralı.
@@ -371,6 +444,13 @@ service cloud.firestore {
     match /users/{userId}/abacusCustomization/{doc} {
       allow read: if isSignedIn();
     }
+    // Deneme sayıları (veli paneli / öğrenci ilerlemesi raporu, ParentReportRepository).
+    // Sahibinin okuması yukarıdaki genel alt koleksiyon kuralından geliyor; burası yalnızca
+    // öğrencinin kendi sınıfındaki öğretmeni ekliyor. Raporun öteki kaynakları
+    // (kullanıcı dokümanı, badgeProgress, lessonProgress) öğretmene zaten açık.
+    match /users/{userId}/lessonSuccessRateState/{doc} {
+      allow read: if isTeacherOfStudent(userId);
+    }
 
     // ── Takip sistemi ──────────────────────────────────────────────────────
     // Sayaçlar (followersCount / followingCount) artık İSTEMCİ TARAFINDAN YAZILMIYOR.
@@ -439,19 +519,33 @@ service cloud.firestore {
 
       // Kredi muhasebesi alanlarına ne öğrenci ne öğretmen dokunabilir; aksi halde iade
       // mekanizması (reconcileUnansweredQuestions) manipüle edilebilirdi.
-      allow read: if isSignedIn() && (resource.data.studentUid == request.auth.uid || isTeacher());
+      //
+      // Havuz alanları (`pool`, `classId`, `courseId`, `classTeacherUids`) da aynı şekilde
+      // kapalı: öğrenci sorusunu başka bir öğretmene, öğretmen başka bir havuza taşıyamaz.
+      //
+      // SAHİPLENME YARIŞI: `claimedByTeacherUid` yalnızca boşken ve yalnızca kendi uid'siyle
+      // yazılabilir. Eskiden kontrol yoktu; iki öğretmen aynı soruyu birkaç saniye arayla
+      // sahiplenince ikincisi birincinin üstüne yazıyor, öğrenci iki öğretmenle konuşuyordu.
+      allow read: if isSignedIn()
+        && (resource.data.studentUid == request.auth.uid || teacherCanRead(resource.data));
       allow update: if isSignedIn()
-        && (resource.data.studentUid == request.auth.uid || isTeacher())
+        && (resource.data.studentUid == request.auth.uid || teacherMayWrite(resource.data))
         && !changed().hasAny(['creditSpent', 'creditRefunded', 'creditRefundedAt',
-                              'createdAtMs', 'studentUid']);
+                              'createdAtMs', 'studentUid',
+                              'pool', 'classId', 'courseId', 'classTeacherUids'])
+        && (!changed().hasAny(['claimedByTeacherUid'])
+            || (resource.data.get('claimedByTeacherUid', null) == null
+                && request.resource.data.claimedByTeacherUid == request.auth.uid));
       allow delete: if isSignedIn() && resource.data.studentUid == request.auth.uid;
 
       match /messages/{messageId} {
         // Okuma: soru sahibi öğrenci veya onaylı bir öğretmen (öğretmenler henüz
         // sahiplenmedikleri soruları kuyrukta önizleyebilir/okunmamış sayısını görebilir —
         // bkz. NotificationFragment.refreshUnreadCounts/attachMessageListeners).
+        // Havuz ayrımı açıkken yalnızca soruya erişebilen öğretmen (teacherCanRead).
         allow read: if isSignedIn() && (
-          questionOf(questionId).studentUid == request.auth.uid || isTeacher()
+          questionOf(questionId).studentUid == request.auth.uid
+          || teacherCanRead(questionOf(questionId))
         );
 
         // Yazma (create/update): SADECE sorunun öğrencisi veya soruyu SAHİPLENEN öğretmen.
@@ -478,6 +572,49 @@ service cloud.firestore {
 
         allow delete: if isSignedIn() && resource.data.senderUid == request.auth.uid;
       }
+    }
+
+    // ── Kurs sınıfları (bkz. functions/classes.js) ──────────────────────────
+    // Hepsini yalnızca sınıf Cloud Function'ları yazar; istemci yalnızca okur.
+
+    // Kurs adı gizli değil (sınıf ekranında görünüyor).
+    match /courses/{courseId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Sınıf: öğretmenleri ve içindeki öğrenci okur. Katılma kodu dokümanda; öğrencinin
+    // görmesi zararsız, kodu zaten öğretmeninden aldı.
+    match /classes/{classId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid in resource.data.teacherUids
+        || myUser().get('classId', null) == classId
+      );
+      allow write: if false;
+
+      // Öğretmen panelindeki öğrenci listesi: yalnızca sınıfın öğretmenleri.
+      match /members/{memberUid} {
+        allow read: if isSignedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/classes/$(classId)).data.teacherUids;
+        allow write: if false;
+      }
+    }
+
+    // Kod → sınıf eşlemesi ve yanlış kod sayacı: istemci okuyabilseydi kodlar listelenirdi.
+    match /classJoinCodes/{code} {
+      allow read, write: if false;
+    }
+    match /classJoinGuards/{uid} {
+      allow read, write: if false;
+    }
+
+    // Davet: davet edilen öğrenci ve gönderen öğretmen okur.
+    match /classInvites/{inviteId} {
+      allow read: if isSignedIn() && (
+        resource.data.studentUid == request.auth.uid
+        || resource.data.teacherUid == request.auth.uid
+      );
+      allow write: if false;
     }
 
     // ── Bildirilen mesajlar ────────────────────────────────────────────────

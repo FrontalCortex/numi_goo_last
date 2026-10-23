@@ -20,7 +20,11 @@ uretimde bir kullanicinin ekraninda gorunur. Bu testler iki yonu birden tutar:
 cd firestore-rules-tests
 npm install      # yalnizca ilk kez
 npm test
+npm run test:pools   # soru havuzu ayrimi ve kurs siniflari (class-pools.test.mjs)
 ```
+
+Windows'ta `emulators:exec` bittikten sonra emulatorun Java sureci bazen acik kaliyor ve
+sonraki calistirma "port taken" ile duser. 8087'yi tutan `java.exe`'yi kapatmak yeter.
 
 Emulator jar'i ilk calistirmada indirilir, internet gerekir. Java 11+ kurulu olmalidir.
 
