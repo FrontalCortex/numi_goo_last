@@ -163,6 +163,107 @@ object CourseClasses {
         createdAtMs = d.getLong("createdAtMs") ?: 0L,
     )
 
+    // ── Öğrenci tarafı ───────────────────────────────────────────────────────
+
+    /** Öğrencinin şu anki sınıfı; öğretmen adı sınıfı açandan (`ownerName`). */
+    data class MyClass(
+        val id: String,
+        val name: String,
+        val courseName: String,
+        val teacherName: String,
+    )
+
+    data class ClassInvite(
+        val id: String,
+        val className: String,
+        val courseName: String,
+        val teacherName: String,
+    )
+
+    /** Sunucudaki davet süresi (functions/classes.js INVITE_TTL_MS); eskiler listede gösterilmiyor. */
+    private const val INVITE_TTL_MS = 14L * 24 * 60 * 60 * 1000
+
+    /**
+     * Öğrencinin sınıfı (yoksa null). İki okuma: üyelik kullanıcı dokümanında, ad ve öğretmen
+     * sınıf dokümanında. Sınıf kapandıysa (archived) öğrenci sınıfsız sayılıyor — soruları da
+     * zaten genel havuza düşüyor (classes.js questionPoolFields).
+     */
+    fun loadMyClass(onResult: (MyClass?, error: Boolean) -> Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return onResult(null, true)
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { user ->
+                val classId = user.getString("classId")?.takeIf { it.isNotBlank() }
+                    ?: return@addOnSuccessListener onResult(null, false)
+                db.collection("classes").document(classId).get()
+                    .addOnSuccessListener { c ->
+                        if (!c.exists() || c.getBoolean("archived") == true) return@addOnSuccessListener onResult(null, false)
+                        onResult(
+                            MyClass(
+                                id = c.id,
+                                name = c.getString("name").orEmpty(),
+                                courseName = c.getString("courseName").orEmpty(),
+                                teacherName = c.getString("ownerName").orEmpty(),
+                            ),
+                            false,
+                        )
+                    }
+                    .addOnFailureListener { e -> Log.w(TAG, "sınıf okunamadı", e); onResult(null, true) }
+            }
+            .addOnFailureListener { e -> Log.w(TAG, "kullanıcı okunamadı", e); onResult(null, true) }
+    }
+
+    /** Öğrenciye gelmiş, yanıtlanmamış ve süresi dolmamış davetler. */
+    fun listenMyInvites(onChange: (List<ClassInvite>) -> Unit): ListenerRegistration? =
+        myInvitesQuery()?.addSnapshotListener { snap, e ->
+            if (e != null) Log.w(TAG, "davetler okunamadı", e)
+            onChange(invitesOf(snap?.documents.orEmpty()))
+        }
+
+    /** [listenMyInvites]'in tek seferlik okuması (Ayarlar satırı). Hata olursa boş liste. */
+    fun loadMyInvites(onResult: (List<ClassInvite>) -> Unit) {
+        val q = myInvitesQuery() ?: return onResult(emptyList())
+        q.get()
+            .addOnSuccessListener { snap -> onResult(invitesOf(snap.documents)) }
+            .addOnFailureListener { e -> Log.w(TAG, "davetler okunamadı", e); onResult(emptyList()) }
+    }
+
+    // `studentUid` filtresi şart: kural daveti yalnızca davet edilen öğrenciye ve gönderen
+    // öğretmene açıyor, filtresiz sorgu tamamen reddedilirdi.
+    private fun myInvitesQuery() = FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+        db.collection("classInvites")
+            .whereEqualTo("studentUid", uid)
+            .whereEqualTo("status", "pending")
+    }
+
+    private fun invitesOf(docs: List<DocumentSnapshot>): List<ClassInvite> {
+        val now = System.currentTimeMillis()
+        return docs
+            .filter { now - (it.getLong("createdAtMs") ?: 0L) <= INVITE_TTL_MS }
+            .sortedByDescending { it.getLong("createdAtMs") ?: 0L }
+            .map { d ->
+                ClassInvite(
+                    id = d.id,
+                    className = d.getString("className").orEmpty(),
+                    courseName = d.getString("courseName").orEmpty(),
+                    teacherName = d.getString("teacherName").orEmpty(),
+                )
+            }
+    }
+
+    fun joinByCode(code: String, onResult: (className: String?, error: String?) -> Unit) {
+        call("joinClassByCode", mapOf("code" to code)) { data, error ->
+            onResult(data?.get("className") as? String, error)
+        }
+    }
+
+    fun respondInvite(inviteId: String, accept: Boolean, onResult: (error: String?) -> Unit) {
+        call("respondClassInvite", mapOf("inviteId" to inviteId, "accept" to accept)) { _, error -> onResult(error) }
+    }
+
+    fun leaveMyClass(onResult: (error: String?) -> Unit) {
+        call("leaveMyClass", emptyMap()) { _, error -> onResult(error) }
+    }
+
     // ── Yazma (Cloud Functions) ──────────────────────────────────────────────
 
     fun createClass(name: String, onResult: (joinCode: String?, error: String?) -> Unit) {
@@ -211,7 +312,12 @@ object CourseClasses {
             FirebaseFunctionsException.Code.FAILED_PRECONDITION,
             FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED,
             FirebaseFunctionsException.Code.PERMISSION_DENIED,
-            FirebaseFunctionsException.Code.NOT_FOUND -> fe.message ?: appString(R.string.class_generic_error)
+            FirebaseFunctionsException.Code.NOT_FOUND,
+            // Süresi dolan davet (respondClassInvite). İstemci zaman aşımı da bu kodla gelebilir;
+            // o zaman SDK'nın mesajı "DEADLINE_EXCEEDED" oluyor, kullanıcıya genel metin gidiyor.
+            FirebaseFunctionsException.Code.DEADLINE_EXCEEDED ->
+                fe.message?.takeUnless { it.equals("DEADLINE_EXCEEDED", ignoreCase = true) }
+                    ?: appString(R.string.class_generic_error)
             else -> appString(R.string.class_generic_error)
         }
     }

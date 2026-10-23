@@ -210,6 +210,9 @@ class MainActivity : AppCompatActivity() {
         /** Havuz bildiriminden gelindi: öğretmene doğrudan Havuz sekmesi açılır. */
         const val EXTRA_OPEN_TEACHER_POOL = "open_teacher_pool"
 
+        /** Sınıf daveti bildiriminden gelindi: öğrenciye Kurs ekranı (StudentClassFragment) açılır. */
+        const val EXTRA_OPEN_STUDENT_CLASS = "open_student_class"
+
         @Volatile
         var currentActivity: MainActivity? = null
         private const val PREFS_APP = "AppPrefs"
@@ -3875,6 +3878,19 @@ class MainActivity : AppCompatActivity() {
             intent?.removeExtra(EXTRA_OPEN_TEACHER_POOL)
             if (auth.currentUser != null) {
                 changeFragment(NotificationFragment.newForTeacherPool())
+            }
+            return
+        }
+
+        // Sınıf daveti: Kurs ekranı geri tuşuyla kapanabilsin diye haritanın ÜSTÜNE ekleniyor
+        // (sohbet bildirimiyle aynı), alt menü sekmesi değiştirilmiyor.
+        if (intent?.extras?.getBoolean(EXTRA_OPEN_STUDENT_CLASS) == true) {
+            intent?.removeExtra(EXTRA_OPEN_STUDENT_CLASS)
+            if (auth.currentUser != null) {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainerID, StudentClassFragment())
+                    .addToBackStack(null)
+                    .commit()
             }
             return
         }

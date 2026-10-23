@@ -36,6 +36,38 @@ class AccountSettingsFragment : Fragment() {
         loadUserPlan()
     }
 
+    override fun onResume() {
+        super.onResume()
+        // onResume'da: Kurs ekranından (katıldı / ayrıldı) dönünce satır güncel olsun.
+        loadCourseRow()
+    }
+
+    /**
+     * "Kurs" satırı: yalnızca öğrencide. Sınıftaysa "Sınıfım" ve sınıfın adı, değilse "Kursa
+     * katıl"; bekleyen bir davet varsa alt satırda söyleniyor (bildirimini kaçıran çocuk
+     * daveti burada görsün).
+     */
+    private fun loadCourseRow() {
+        if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) return
+        if (FirebaseAuth.getInstance().currentUser == null) return
+        binding.tvCourseHeader.visibility = View.VISIBLE
+        binding.courseCard.visibility = View.VISIBLE
+        CourseClasses.loadMyClass { c, _ ->
+            val b = _binding ?: return@loadMyClass
+            b.tvCourseRowTitle.text = appString(if (c != null) R.string.class_settings_my_class else R.string.class_settings_join)
+            val classLine = c?.let { listOf(it.name, it.courseName).filter { s -> s.isNotBlank() }.joinToString(" · ") }
+            b.tvCourseRowSubtitle.text = classLine
+            b.tvCourseRowSubtitle.visibility = if (classLine.isNullOrBlank()) View.GONE else View.VISIBLE
+            CourseClasses.loadMyInvites { invites ->
+                val bb = _binding ?: return@loadMyInvites
+                if (invites.isNotEmpty()) {
+                    bb.tvCourseRowSubtitle.text = appString(R.string.class_settings_invites)
+                    bb.tvCourseRowSubtitle.visibility = View.VISIBLE
+                }
+            }
+        }
+    }
+
     private fun loadUserPlan() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         
@@ -73,6 +105,18 @@ class AccountSettingsFragment : Fragment() {
                     R.anim.slide_out_right
                 )
                 .replace(R.id.fragmentContainerID, EditProfileFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+        binding.btnCourseClass.setOnClickListener {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.fragmentContainerID, StudentClassFragment())
                 .addToBackStack(null)
                 .commit()
         }

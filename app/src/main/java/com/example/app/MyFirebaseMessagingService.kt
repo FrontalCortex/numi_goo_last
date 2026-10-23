@@ -280,6 +280,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         // mesajın bildirimi, peşinden gelen durum bildirimiyle silinirdi.
         val notificationId = if (!questionId.isNullOrEmpty()) {
             "account:$questionId".hashCode() and 0x7FFFFFFF
+        } else if (topic == TOPIC_CLASS_INVITE) {
+            CLASS_INVITE_NOTIFICATION_ID
         } else {
             notificationIdFor(type)
         }
@@ -290,6 +292,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             // Havuz bildirimi doğrudan Havuz sekmesini açıyor; öteki türlerde uygulamanın
             // normal açılışı doğru yer.
             if (type == TYPE_POOL) putExtra(MainActivity.EXTRA_OPEN_TEACHER_POOL, true)
+            // Sınıf daveti: öğrenci doğrudan Kurs ekranına, davet kartının olduğu yere.
+            if (topic == TOPIC_CLASS_INVITE) putExtra(MainActivity.EXTRA_OPEN_STUDENT_CLASS, true)
             // Soru durumu bildirimine dokunan öğrenci doğrudan sorusuna gitsin.
             // MainActivity ikisini birlikte bekliyor (bkz. handleOpenQuestionIdFromIntent).
             if (!questionId.isNullOrEmpty() && !recipientUid.isNullOrEmpty()) {
@@ -469,6 +473,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         /** Öğretmen havuzu bildirimi (functions/index.js: notifyTeacherPool). */
         private const val TYPE_POOL = "pool"
+        /** Sınıf daveti (inviteStudentToClass). Türü `account`; ayrıldığı yer konu etiketi. */
+        private const val TOPIC_CLASS_INVITE = "class_invite"
+        /**
+         * Davetin kendi kimliği: `account` türünün ortak kimliğini (90_003) kullansaydı deneme
+         * süresi uyarısı gibi bir hesap bildiriminin yerine geçip onu silerdi.
+         */
+        private const val CLASS_INVITE_NOTIFICATION_ID = 90_005
 
         /**
          * Tür başına sabit bildirim kimliği: aynı türden ikinci bildirim birikmek yerine

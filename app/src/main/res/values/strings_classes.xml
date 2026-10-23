@@ -54,6 +54,33 @@
     <string name="class_removed">%1$s sınıftan çıkarıldı.</string>
     <string name="class_generic_error">Bir sorun oldu. İnternet bağlantını kontrol edip tekrar dene.</string>
 
+    <!-- Öğrenci: Ayarlar satırı ve Kurs ve sınıf ekranı (StudentClassFragment) -->
+    <string name="class_settings_header">Kurs</string>
+    <string name="class_settings_join">Kursa katıl</string>
+    <string name="class_settings_my_class">Sınıfım</string>
+    <string name="class_settings_invites">Seni bekleyen bir sınıf daveti var</string>
+    <string name="class_student_title">Kurs ve sınıf</string>
+    <string name="class_student_current">Sınıfın</string>
+    <string name="class_student_teacher">Öğretmenin: %1$s</string>
+    <string name="class_student_info">Soruların doğrudan öğretmenine gider. Öğretmenin derslerdeki ilerlemeni görebilir.</string>
+    <string name="class_student_leave">Sınıftan ayrıl</string>
+    <string name="class_student_leave_title">Sınıftan ayrılmak istiyor musun?</string>
+    <string name="class_student_leave_message">Bundan sonra soruların genel havuzdaki öğretmenlere gider ve öğretmenin ilerlemeni göremez. Tekrar katılmak için kodu yeniden girmen gerekir.</string>
+    <string name="class_student_left">Sınıftan ayrıldın.</string>
+    <string name="class_student_join_title">Sınıf kodunu gir</string>
+    <string name="class_student_join_desc">Öğretmeninden aldığın 6 karakterli kodu yaz. Katılınca soruların öğretmenine gider ve öğretmenin derslerdeki ilerlemeni görebilir.</string>
+    <string name="class_student_join_hint">ABC 234</string>
+    <string name="class_student_join_button">Katıl</string>
+    <string name="class_student_code_length">Kod 6 karakter olmalı.</string>
+    <string name="class_student_joined">\"%1$s\" sınıfına katıldın!</string>
+    <string name="class_student_invites_title">Davetler</string>
+    <string name="class_student_invite_text">%1$s seni \"%2$s\" sınıfına davet etti.</string>
+    <string name="class_student_invite_accept">Katıl</string>
+    <string name="class_student_invite_decline">Reddet</string>
+    <string name="class_student_switch_title">Sınıf değiştirilsin mi?</string>
+    <string name="class_student_switch_message">Şu anki sınıfından (%1$s) çıkıp \"%2$s\" sınıfına geçeceksin.</string>
+    <string name="class_student_switch_confirm">Geç</string>
+
     <!-- Profil ve ilerleme raporu -->
     <string name="class_student_progress_desc">Öğrencinin ilerlemesi</string>
     <string name="class_student_progress_title">%1$s — İlerleme</string>
