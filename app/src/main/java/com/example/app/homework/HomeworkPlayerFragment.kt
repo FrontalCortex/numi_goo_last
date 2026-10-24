@@ -250,6 +250,8 @@ class HomeworkPlayerFragment : Fragment() {
         if (given == null) return
         answered = true
         hideKeyboard()
+        // Klavye kapanınca kutu Kontrol'ün üstüne iniyor; sonuç paneliyle üst üste görünmesin.
+        b.answerInput.visibility = View.GONE
         val correct = given == q.answer
         if (correct) blockCorrect++
         setFlash(HomeworkText.questionLine(q).let { if (q.op == HomeworkOp.MUL) "$it = ${q.answer}" else q.answer.toString() })
