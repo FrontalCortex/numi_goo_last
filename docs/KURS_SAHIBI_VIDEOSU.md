@@ -13,6 +13,48 @@ geçiyor. Ağırlık ödev oluşturmada: kurs sahibinin ilk sorusu "ödevler ben
 - Videoda fiyat, iletişim bilgisi ve henüz olmayan özellik yok.
 - Ekranda gerçek çocuk verisi yok: yalnızca botlar ve test hesapları (Esma, Ted).
 
+## Seslendirme dosyaları (montajın son hâli, 24.10.2026)
+
+Kurgu `VideosSorobit_tanitimmontajetiklersahip_metin.js` içinde; taslak `VideosSorobit_tanitimsahipSorobit_neden_taslak.mp4`.
+Ses dosyaları: `VideosSorobit_tanitimsahipsessahip_soundN.mp3`. Dosyalar konunca
+`VIDEO=sahip node ogrenci_montaj.js` yazı sürelerini sese göre ayarlıyor. Senaryodaki 1. bölümün iki satırı
+açılışta tek ses (0) oldu; numaralar senaryodaki tablolardan bu yüzden farklı.
+
+| N | Sahne | Metin |
+|---|---|---|
+| 0 | açılış | Öğrenciniz haftada bir saat derste. Peki geri kalan altı gün? Ödev kâğıtta kalıyor: kim çalıştı, kaç doğru yaptı, ancak derste öğreniyorsunuz. |
+| 1 | sorobit | Sorobit, çocukların evde abaküs çalıştığı bir uygulama. |
+| 2 | sorobit | Kursunuz için de bir dijital sınıf: öğretmeniniz öğrencilerini görür, ödev verir, takip eder. |
+| 3 | sınıf yapısı | Kursunuz, öğretmenleriniz ve her öğretmenin sınıfları uygulamada birbirine bağlı. |
+| 4 | sınıf yapısı | Öğretmen her grubu için bir sınıf açar. Sınıfın bir katılma kodu olur. |
+| 5 | sınıf yapısı | Öğrenci kodu girer ve sınıfa katılır. |
+| 6 | sınıf yapısı | Öğretmen sınıfındaki bütün öğrencileri tek ekranda görür. |
+| 7 | ödev oluşturma | Ödevi öğretmen hazırlamaz, sadece tarif eder. Soruları uygulama üretir. |
+| 8 | ödev oluşturma | Önce işlem: toplama, çıkarma ya da çarpma. |
+| 9 | ödev oluşturma | Sonra konu: kuralsız, beşlik, onluk, boncuk. |
+| 10 | ödev oluşturma | Birden fazla kural seçebilirsiniz. Sorularda yalnızca seçtiğiniz kurallar çıkar. |
+| 11 | ödev oluşturma | Her soru, seçtiğiniz kurallarla çözülecek şekilde hesaplanır. Çocuk henüz görmediği bir kurala denk gelmez. |
+| 12 | ödev oluşturma | Abaküslü ödevde çocuk ekrandaki abaküsle çözer. Abaküssüz ödevde zihinden hesaplar ve cevabı yazar. |
+| 13 | ödev oluşturma | Basamak sayısını siz seçersiniz: abaküslüde beş, abaküssüzde sekiz basamağa kadar. |
+| 14 | ödev oluşturma | Çarpmada iki sayının basamağını ayrı ayrı belirlersiniz. |
+| 15 | ödev oluşturma | Kaç sayı toplanacağını siz belirlersiniz. |
+| 16 | ödev oluşturma | Çıkarmada sonuç hiçbir zaman eksiye düşmez. |
+| 17 | ödev oluşturma | Seçim kurala uymuyorsa uygulama sizi uyarır ve uygun değeri önerir. |
+| 18 | ödev oluşturma | Sayıların ekranda kalma süresini saniyenin onda biri ile otuz saniye arasında ayarlarsınız. |
+| 19 | ödev oluşturma | Soru sayısını siz seçersiniz; ödev onar soruluk adımlara bölünür, çocuk sıkılmadan bitirir. |
+| 20 | ödev oluşturma | Ödevi bütün sınıfa ya da yalnızca seçtiğiniz öğrencilere verirsiniz. Her çocuğa kendi seviyesine göre. |
+| 21 | ödev oluşturma | Göndermeden önce öğrencinin göreceği soruları görürsünüz. |
+| 22 | ödev oluşturma | Tek dokunuşla gönderin. |
+| 23 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
+| 24 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
+| 25 | öğrenci çözer | Abaküssüz ödevde çocuk cevabı kendisi yazar. |
+| 26 | öğrenci çözer | Uygulama her cevabı anında kontrol eder. Öğretmeniniz kâğıt okumaz. |
+| 27 | takip | Öğrenci ödevi bitirince öğretmene bildirim gelir. |
+| 28 | takip | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilirsiniz. |
+| 29 | takip | Her öğrencinin uygulamadaki ders ilerlemesi de öğretmeninizin elinde. |
+| 30 | sorular | Öğrencinizin sorduğu sorular başka öğretmene değil, yalnızca sizin öğretmeninize gider. |
+| 31 | kapanış | Ödevi uygulama hazırlar. Uygulama kontrol eder. Siz kimin çalıştığını bilirsiniz. Sorobit. |
+
 ## Akış (özet)
 
 | # | Bölüm | Ne anlatıyor | Süre |
