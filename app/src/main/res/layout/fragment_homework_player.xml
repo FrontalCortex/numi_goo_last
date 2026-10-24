@@ -66,12 +66,16 @@
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         tools:text="123" />
 
-    <!-- Abaküssüzde cevap alanı -->
+    <!--
+      Abaküssüzde cevap alanı: Kontrol düğmesinin hemen üstünde. Klavye açılınca ekran küçülüyor
+      (adjustResize) ve düğmeyle birlikte klavyenin üstüne çıkıyor; tahtanın altına bağlıyken klavyenin
+      arkasında kalıyordu. Abaküssüzde abaküs gizli olduğu için burası boş.
+    -->
     <EditText
         android:id="@+id/answerInput"
         android:layout_width="220dp"
         android:layout_height="64dp"
-        android:layout_marginTop="28dp"
+        android:layout_marginBottom="20dp"
         android:background="@drawable/bg_edit_profile_input"
         android:gravity="center"
         android:hint="@string/hw_player_answer_hint"
@@ -85,9 +89,9 @@
         android:textSize="26sp"
         android:textStyle="bold"
         android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/kontrolButton"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/blackboardImage" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <FrameLayout
         android:id="@+id/abacusContainer"
