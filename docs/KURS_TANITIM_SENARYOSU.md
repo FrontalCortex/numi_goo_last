@@ -26,25 +26,27 @@ Ekran yazısı aynı cümle (vurgular hariç).
 | 0 | açılış | Ödevi kim yaptı, kim yapmadı? Derse girmeden bilin. |
 | 1 | sınıf aç | Her grubunuz için uygulamada bir sınıf açın. |
 | 2 | sınıf aç | Her sınıfın bir katılma kodu olur. |
-| 3 | öğrenciler | Kodu velilere gönderin, öğrenci kodu girip sınıfa katılsın. |
-| 4 | öğrenciler | Ya da öğrenciyi kullanıcı adıyla davet edin. |
-| 5 | ödev ver | Sınıfın Ödevler ekranından yeni ödev verin. |
-| 6 | ödev ver | İşlemi ve kuralı seçin: kuralsız, beşlik, onluk, boncuk. |
-| 7 | ödev ver | Basamak sayısını, sayı adedini ve hızı siz belirleyin. |
-| 8 | ödev ver | Göndermeden önce öğrencinin göreceği örnek soruyu görün. |
-| 9 | ödev ver | Kurala uymayan bir seçimde uygulama sizi uyarır. |
-| 10 | ödev ver | Tek dokunuşla bütün sınıfa gönderin. |
-| 11 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
-| 12 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
-| 13 | öğrenci çözer | Ödev onar soruluk adımlarla çözülür. |
-| 14 | öğrenci çözer | Son adım bitince ödev tamamlanır. |
-| 15 | kim bitirdi? | Öğrenci ödevi bitirince size bildirim gelir. |
-| 16 | kim bitirdi? | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilin. |
-| 17 | ilerleme | Öğrencinin profilinden ders ilerlemesini açın. |
-| 18 | ilerleme | Kaç ders bitirdi, ne kadar çalıştı: hepsini görün. |
-| 19 | sorular | Öğrencilerinizin soruları yalnızca size gelir. |
-| 20 | sorular | Soruyu sahiplenin, öğrencinize kendiniz cevap verin. |
-| 21 | kapanış | Sorobit. Kursunuz için sınıf ve ödev takibi, tek uygulamada. |
+| 3 | öğrenciler | Katılma kodu, sınıf ekranında sağ üstteki ayarlar düğmesinde. |
+| 4 | öğrenciler | Kodu velilere gönderin, öğrenci kodu girip sınıfa katılsın. |
+| 5 | öğrenciler | Ya da Ekle düğmesiyle öğrenciyi kullanıcı adıyla davet edin. |
+| 6 | ödev ver | Sınıfa Ödevler ekranından yeni ödev verin. |
+| 7 | ödev ver | İşlemi ve kuralı seçin: kuralsız, beşlik, onluk, boncuk. |
+| 8 | ödev ver | Basamak sayısını, sayı adedini ve hızı siz belirleyin. |
+| 9 | ödev ver | Göndermeden önce öğrencinin göreceği örnek soruyu görün. |
+| 10 | ödev ver | Kurala uymayan bir seçimde uygulama sizi uyarır. |
+| 11 | ödev ver | Ödevi bütün sınıfa ya da yalnızca seçtiğiniz öğrencilere verebilirsiniz. |
+| 12 | ödev ver | Tek dokunuşla bütün sınıfa gönderin. |
+| 13 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
+| 14 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
+| 15 | öğrenci çözer | Ödev onar soruluk adımlarla çözülür. |
+| 16 | öğrenci çözer | Son adım bitince ödev tamamlanır. |
+| 17 | kim bitirdi? | Öğrenci ödevi bitirince size bildirim gelir. |
+| 18 | kim bitirdi? | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilin. |
+| 19 | ilerleme | Öğrencinin profilinden ders ilerlemesini açın. |
+| 20 | ilerleme | Kaç ders bitirdi, ne kadar çalıştı: hepsini görün. |
+| 21 | sorular | Öğrencilerinizin soruları yalnızca size gelir. |
+| 22 | sorular | Soruyu sahiplenin, öğrencinize kendiniz cevap verin. |
+| 23 | kapanış | Sorobit. Kursunuz için sınıf ve ödev takibi, tek uygulamada. |
 
 Çekimde senaryodan sapmalar: 4. sahnede konu kuralsız + 5'lik (uyarı 5'lik + 10'lukta çıkmıyor),
 sayı adedi 3; 5. sahnede yanlış cevap yok (20/20); 6. sahnede bildirimler botlardan.
