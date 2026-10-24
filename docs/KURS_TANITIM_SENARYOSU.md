@@ -35,7 +35,7 @@ Ekran yazısı aynı cümle (vurgular hariç).
 | 9 | ödev ver | Göndermeden önce öğrencinin göreceği örnek soruyu görün. |
 | 10 | ödev ver | Kurala uymayan bir seçimde uygulama sizi uyarır. |
 | 11 | ödev ver | Ödevi bütün sınıfa ya da yalnızca seçtiğiniz öğrencilere verebilirsiniz. |
-| 12 | ödev ver | Tek dokunuşla bütün sınıfa gönderin. |
+| 12 | ödev ver | Tek dokunuşla gönderin. |
 | 13 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
 | 14 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
 | 15 | öğrenci çözer | Ödev onar soruluk adımlarla çözülür. |
