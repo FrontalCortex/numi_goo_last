@@ -152,6 +152,7 @@ class HomeworkCreateFragment : Fragment() {
         b.digitsStepper.stepperLabel.text = appString(if (isMul) R.string.hw_field_digits1 else R.string.hw_field_digits)
         digitsStepper.set(digits.toDouble())
         b.digits2Stepper.root.visibility = if (isMul) View.VISIBLE else View.GONE
+        b.digits2Stepper.stepperLabel.text = appString(R.string.hw_field_digits2)
         digits2Stepper.set(digits2.toDouble())
         if (isMul) {
             digits2Stepper.hint(appString(R.string.hw_mul_capacity, cap))
