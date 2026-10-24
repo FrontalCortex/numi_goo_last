@@ -150,6 +150,8 @@ object Homeworks {
         previous: Progress,
         blockAnswered: Int,
         blockCorrect: Int,
+        /** Bu adımın kural sayımı: anahtar → [doğru, yanlış] (RuleAnalysis). Sunucu öğrencinin toplamına ekliyor. */
+        ruleTally: Map<String, IntArray>,
         onResult: (Boolean) -> Unit,
     ) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return onResult(false)
@@ -160,6 +162,7 @@ object Homeworks {
             "correct" to previous.correct + blockCorrect,
             "lastBlockCorrect" to blockCorrect,
             "updatedAtMs" to System.currentTimeMillis(),
+            "ruleTally" to ruleTally.mapValues { (_, cw) -> mapOf("c" to cw[0], "w" to cw[1]) },
         )
         progressRef(homeworkId, uid).set(data)
             .addOnSuccessListener { onResult(true) }

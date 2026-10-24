@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Öğrencinin ilerleme sayfasının girişi (bkz. ProgressHubFragment): Dersler kartı (veli paneli,
+  ParentPanelFragment) ve Ödev başarısı kartı (kural kural doğru oranı, HomeworkRuleStatsFragment).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:clickable="true"
+    android:focusable="true"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="4dp"
+        android:paddingEnd="16dp">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/fragment_parent_panel_btn_back_desc"
+            android:padding="12dp"
+            android:src="@drawable/ic_back_arrow"
+            app:tint="@android:color/white" />
+
+        <TextView
+            android:id="@+id/hubTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:gravity="center"
+            android:maxLines="1"
+            android:text="@string/fragment_parent_panel_parent_panel_header_title"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="48dp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:id="@+id/cardLessons"
+            style="@style/ProgressHubCard">
+
+            <ImageView
+                style="@style/ProgressHubIcon"
+                android:src="@drawable/profile_book_ic3" />
+
+            <LinearLayout style="@style/ProgressHubTexts">
+
+                <TextView
+                    style="@style/ProgressHubTitle"
+                    android:text="@string/progress_hub_lessons" />
+
+                <TextView
+                    style="@style/ProgressHubSubtitle"
+                    android:text="@string/progress_hub_lessons_desc" />
+            </LinearLayout>
+
+            <ImageView style="@style/ProgressHubArrow" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/cardRules"
+            style="@style/ProgressHubCard"
+            android:layout_marginTop="12dp">
+
+            <ImageView
+                style="@style/ProgressHubIcon"
+                android:src="@drawable/target_ic" />
+
+            <LinearLayout style="@style/ProgressHubTexts">
+
+                <TextView
+                    style="@style/ProgressHubTitle"
+                    android:text="@string/progress_hub_rules" />
+
+                <TextView
+                    style="@style/ProgressHubSubtitle"
+                    android:text="@string/progress_hub_rules_desc" />
+            </LinearLayout>
+
+            <ImageView style="@style/ProgressHubArrow" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

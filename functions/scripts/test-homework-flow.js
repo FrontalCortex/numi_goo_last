@@ -127,26 +127,41 @@ async function main() {
         { params: { homeworkId: done.homeworkId, studentUid: uid } },
       );
     }
-    await writeProgress(S1, { uid: S1, completedBlocks: 1, answered: 10, correct: 8, lastBlockCorrect: 8, updatedAtMs: 1 });
+    await writeProgress(S1, { uid: S1, completedBlocks: 1, answered: 10, correct: 8, lastBlockCorrect: 8, updatedAtMs: 1,
+      ruleTally: { add_five: { c: 7, w: 2 }, add_ten: { c: 3, w: 0 }, hile: { c: 99, w: 0 } } });
     check('ilk adım: henüz bitmedi', (await db.doc(hwPath).get()).get('doneUids'), undefined);
-    await writeProgress(S1, { uid: S1, completedBlocks: 2, answered: 20, correct: 17, lastBlockCorrect: 9, updatedAtMs: 2 });
+    const stats = () => db.doc(`homeworkRuleStats/${S1}`).get()
+      .then((d) => Object.fromEntries(Object.entries(d.get('tally') || {}).sort(([a], [b]) => a.localeCompare(b)))); // alan sırası belirsiz
+    check('kural sayımı: ilk adım (bilinmeyen anahtar atıldı)', await stats(), { add_five: { c: 7, w: 2 }, add_ten: { c: 3, w: 0 } });
+    await writeProgress(S1, { uid: S1, completedBlocks: 2, answered: 20, correct: 17, lastBlockCorrect: 9, updatedAtMs: 2,
+      ruleTally: { add_five: { c: 5, w: 1 }, add_bead: { c: 1, w: 1 } } });
+    check('kural sayımı: ikinci adım üstüne eklendi', await stats(),
+      { add_bead: { c: 1, w: 1 }, add_five: { c: 12, w: 3 }, add_ten: { c: 3, w: 0 } });
     check('son adım: bitirenlere eklendi', (await db.doc(hwPath).get()).get('doneUids'), [S1]);
     await writeProgress(S2, { uid: S2, completedBlocks: 2, answered: 20, correct: 20, lastBlockCorrect: 10, updatedAtMs: 3 });
     check('ikinci öğrenci', ((await db.doc(hwPath).get()).get('doneUids') || []).sort(), [S1, S2].sort());
     // Tetikleyici iki kez çalışsa da (aynı yazım) tekrar eklemez.
-    await writeProgress(S2, { uid: S2, completedBlocks: 2, answered: 20, correct: 20, lastBlockCorrect: 10, updatedAtMs: 4 });
+    await writeProgress(S2, { uid: S2, completedBlocks: 2, answered: 20, correct: 20, lastBlockCorrect: 10, updatedAtMs: 4,
+      ruleTally: { add_five: { c: 50, w: 0 } } });
     check('tekrar: değişmedi', ((await db.doc(hwPath).get()).get('doneUids') || []).length, 2);
+    check('tekrar: adım ilerlemeden sayım eklenmez', (await db.doc(`homeworkRuleStats/${S2}`).get()).exists, false);
 
     const h = require('../homework');
     check('bildirim metni', h.doneNoticeText({ studentName: 'Ali', summary: "5'lik toplama", correct: 17, answered: 20, doneCount: 8, targetCount: 12 }),
       { title: "Ödev tamamlandı: 5'lik toplama", body: 'Ali bitirdi · 17/20 doğru · 8/12 öğrenci bitirdi' });
     check('ayrılan öğrenci sayılmaz', h.countDone(['a', 'b', 'x', 'a'], ['a', 'b', 'c']), 2);
+    check('sayım süzgeci', h.sanitizeRuleTally({
+      sub_direct: { c: 2, w: 1 }, mulA_2x1: { c: 4, w: 0 }, mulM_9x1: { c: 1, w: 0 }, add_five: { c: -3, w: 1.5 },
+      add_ten: { c: 1e9, w: 0 }, 'add_five.c': { c: 1, w: 0 }, add_bead: { c: 0, w: 0 },
+    }), [{ key: 'sub_direct', c: 2, w: 1 }, { key: 'mulA_2x1', c: 4, w: 0 }, { key: 'add_ten', c: 8000, w: 0 }]);
+    check('sayım süzgeci: dizi/boş', [h.sanitizeRuleTally([1]), h.sanitizeRuleTally(null)], [[], []]);
   }
 
   console.log('\n=== HESAP SİLME ===');
   await db.doc(`homeworks/${mul.homeworkId}/studentProgress/${S1}`).set({ uid: S1, completedBlocks: 1, answered: 7, correct: 7, lastBlockCorrect: 7, updatedAtMs: 1 });
   // İki ödevde ilerlemesi var: biri burada, biri bitiş testindeki ödevde.
   check('silinen öğrencinin bütün ilerlemeleri', await fns._removeDeletedUserHomeworkProgress(S1), 2);
+  check('kural istatistiği de silindi', (await db.doc(`homeworkRuleStats/${S1}`).get()).exists, false);
   check('ödevin kendisi duruyor', (await db.doc(`homeworks/${mul.homeworkId}`).get()).exists, true);
 
   console.log(`\n${pass} geçti, ${fail} hata`);

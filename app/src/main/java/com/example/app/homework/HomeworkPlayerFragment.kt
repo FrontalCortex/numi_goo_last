@@ -51,6 +51,8 @@ class HomeworkPlayerFragment : Fragment() {
         private const val MIN_GAP_MS = 40L
         private const val MAX_GAP_MS = 250L
         private const val RESULT_PANEL_ANIM_MS = 200L
+        /** Abaküs değeri bu aralıkla okunuyor (kural çözümlemesi için, bkz. [RuleAnalysis]). */
+        private const val ABACUS_SAMPLE_MS = 30L
 
         fun newInstance(homeworkId: String) = HomeworkPlayerFragment().apply {
             arguments = Bundle().apply { putString(ARG_HOMEWORK_ID, homeworkId) }
@@ -77,6 +79,18 @@ class HomeworkPlayerFragment : Fragment() {
     private var mediaPlayer: android.media.MediaPlayer? = null
     /** Panel kayarken Devam'a basılıp soru atlanmasın. */
     private var resultPanelAnimating = false
+
+    // Kural kural başarı (RuleAnalysis): sorudaki abaküs değerleri, sayıların göründüğü anlar, adımın sayımı
+    private val abacusLog = ArrayList<RuleAnalysis.Sample>()
+    private val shownAtMs = ArrayList<Long>()
+    private val blockTally = LinkedHashMap<String, IntArray>()
+    private val abacusSampler = object : Runnable {
+        override fun run() {
+            val value = abacusController?.getCurrentValue()?.toLong() ?: return
+            if (abacusLog.lastOrNull()?.value != value) abacusLog += RuleAnalysis.Sample(android.os.SystemClock.uptimeMillis(), value)
+            handler.postDelayed(this, ABACUS_SAMPLE_MS)
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeworkPlayerBinding.inflate(inflater, container, false)
@@ -155,6 +169,7 @@ class HomeworkPlayerFragment : Fragment() {
             questions = generated
             questionIndex = 0
             blockCorrect = 0
+            blockTally.clear()
             setPlayVisible(true)
             showQuestion()
         }
@@ -194,11 +209,16 @@ class HomeworkPlayerFragment : Fragment() {
         b.kontrolButton.setOnClickListener { onKontrol() }
         val gap = (cfg.intervalMs * GAP_FRACTION).toLong().coerceIn(MIN_GAP_MS, MAX_GAP_MS)
         val show = (cfg.intervalMs - gap).coerceAtLeast(MIN_GAP_MS)
+        // Abaküslüde değerler kaydediliyor: hangi kuralda hata yapıldığı buradan çıkıyor
+        abacusLog.clear()
+        shownAtMs.clear()
+        handler.removeCallbacks(abacusSampler)
+        if (cfg.withAbacus) handler.post(abacusSampler)
         var t = 0L
         q.numbers.forEachIndexed { i, n ->
             // Çıkarmada başlangıçtan sonraki sayılar eksiyle gösteriliyor.
             val label = if (q.op == HomeworkOp.SUB && i > 0) "−$n" else n.toString()
-            handler.postDelayed({ setFlash(label) }, t)
+            handler.postDelayed({ shownAtMs += android.os.SystemClock.uptimeMillis(); setFlash(label) }, t)
             t += show
             handler.postDelayed({ setFlash("") }, t)
             t += gap
@@ -249,11 +269,13 @@ class HomeworkPlayerFragment : Fragment() {
         }
         if (given == null) return
         answered = true
+        handler.removeCallbacks(abacusSampler)
         hideKeyboard()
         // Klavye kapanınca kutu Kontrol'ün üstüne iniyor; sonuç paneliyle üst üste görünmesin.
         b.answerInput.visibility = View.GONE
         val correct = given == q.answer
         if (correct) blockCorrect++
+        countRules(q, given, correct)
         setFlash(HomeworkText.questionLine(q).let { if (q.op == HomeworkOp.MUL) "$it = ${q.answer}" else q.answer.toString() })
         b.resultTitle.text = if (correct) appString(R.string.hw_player_correct)
         else appString(R.string.hw_player_wrong, q.answer.toString())
@@ -267,6 +289,23 @@ class HomeworkPlayerFragment : Fragment() {
         // Ses ve ses düzeyi AbacusFragment.showResultPanel ile aynı.
         if (correct) playSound(R.raw.correct_answer_sound, 0.3f) else playSound(R.raw.incorrect_answer_sound, 1f)
         showResultPanel()
+    }
+
+    /** Sorunun kural sayımını adımın sayımına ekler (bkz. [RuleAnalysis]). Hata olursa soru sayılmaz. */
+    private fun countRules(q: HomeworkQuestion, given: Long, correct: Boolean) {
+        val cfg = homework?.config ?: return
+        val attempts = runCatching {
+            when {
+                q.op == HomeworkOp.MUL -> RuleAnalysis.multiplication(cfg, correct)
+                cfg.withAbacus -> RuleAnalysis.abacus(q, abacusLog.toList(), shownAtMs.toList(), given)
+                else -> emptyList() // abaküssüz toplama/çıkarma sayılmıyor
+            }
+        }.getOrDefault(emptyList())
+        for ((key, cw) in RuleAnalysis.tally(attempts)) {
+            val sum = blockTally.getOrPut(key) { IntArray(2) }
+            sum[0] += cw[0]
+            sum[1] += cw[1]
+        }
     }
 
     /** Panel alttan kayarak geliyor: AbacusFragment / BlindingLessonFragment ile aynı süre ve eğri. */
@@ -355,7 +394,7 @@ class HomeworkPlayerFragment : Fragment() {
         b.summarySecondary.visibility = View.INVISIBLE
         val answeredInBlock = questions.size
         val correctInBlock = blockCorrect
-        Homeworks.submitBlock(homeworkId, progress, answeredInBlock, correctInBlock) { ok ->
+        Homeworks.submitBlock(homeworkId, progress, answeredInBlock, correctInBlock, blockTally.toMap()) { ok ->
             val bb = _binding ?: return@submitBlock
             bb.summaryProgress.visibility = View.GONE
             bb.summaryPrimary.visibility = View.VISIBLE

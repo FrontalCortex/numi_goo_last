@@ -595,7 +595,7 @@ class ProfileFragment : Fragment() {
                         .ifBlank { doc.getString("name").orEmpty() }
                     requireActivity().supportFragmentManager.beginTransaction()
                         .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                        .replace(R.id.fragmentContainerID, ParentPanelFragment.newForStudent(studentUid, name))
+                        .replace(R.id.fragmentContainerID, ProgressHubFragment.newForStudent(studentUid, name))
                         .addToBackStack(null)
                         .commit()
                 }

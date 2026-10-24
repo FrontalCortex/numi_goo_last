@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ödev başarısında tek satır: kural, yüzde, oran çubuğu ve "18/20 doğru". -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="10dp"
+    android:paddingBottom="10dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/ruleName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/dark_text"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            tools:text="Boncuk" />
+
+        <TextView
+            android:id="@+id/rulePercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="17sp"
+            android:textStyle="bold"
+            tools:text="%90"
+            tools:textColor="#8CC63F" />
+    </LinearLayout>
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/ruleBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:max="100"
+        app:trackColor="#1AFFFFFF"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="8dp" />
+
+    <TextView
+        android:id="@+id/ruleCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/dark_text_secondary"
+        android:textSize="12sp"
+        tools:text="18/20 doğru" />
+</LinearLayout>

@@ -141,7 +141,29 @@ function doneNoticeText({ studentName, summary, correct, answered, doneCount, ta
   return { title, body: parts.join(' · ') };
 }
 
+/**
+ * Adımın kural sayımı (istemci RuleAnalysis.kt): { "add_five": { c, w }, "mulA_2x1": { c, w } … }.
+ * Öğrencinin istatistiğine eklenecek değerler; bilinmeyen anahtar ve saçma sayı atılıyor. Bir adım
+ * en çok 10 soru; toplama/çıkarmada her soru en çok 100 sayı × 8 basamak işlem, yani anahtar başına
+ * 10 × 100 × 8 üst sınır.
+ * @returns {{ key: string, c: number, w: number }[]}
+ */
+const RULE_TALLY_KEY = /^(?:(?:add|sub)_(?:direct|five|ten|bead)|mul[AM]_[1-8]x[1-8])$/;
+const RULE_TALLY_MAX = 10 * 100 * 8;
+function sanitizeRuleTally(tally) {
+  if (!tally || typeof tally !== 'object' || Array.isArray(tally)) return [];
+  const out = [];
+  for (const [key, v] of Object.entries(tally).slice(0, 60)) {
+    if (!RULE_TALLY_KEY.test(key) || !v || typeof v !== 'object') continue;
+    const c = Number.isInteger(v.c) ? Math.min(Math.max(v.c, 0), RULE_TALLY_MAX) : 0;
+    const w = Number.isInteger(v.w) ? Math.min(Math.max(v.w, 0), RULE_TALLY_MAX) : 0;
+    if (c + w > 0) out.push({ key, c, w });
+  }
+  return out;
+}
+
 module.exports = {
+  sanitizeRuleTally,
   countDone,
   doneNoticeText,
   BLOCK_SIZE,

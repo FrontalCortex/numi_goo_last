@@ -128,7 +128,7 @@ class AccountSettingsFragment : Fragment() {
                     R.anim.slide_in_left,
                     R.anim.slide_out_right
                 )
-                .replace(R.id.fragmentContainerID, ParentPanelFragment())
+                .replace(R.id.fragmentContainerID, ProgressHubFragment())
                 .addToBackStack(null)
                 .commit()
         }

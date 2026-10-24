@@ -100,6 +100,19 @@ await check('baska ogretmen okuyamaz', assertFails(getDocs(collection(t2, 'homew
 await check('ogrenci kendi ilerlemesini okur', assertSucceeds(getDoc(prog(s1, 'hw-all', 's1'))));
 await check('ogrenci baskasinin ilerlemesini okuyamaz', assertFails(getDoc(prog(s2, 'hw-all', 's1'))));
 await check('ogretmen ilerleme yazamaz', assertFails(updateDoc(prog(t1, 'hw-all', 's1'), { correct: 25 })));
+await check('kural sayimi ile adim yazilir', assertSucceeds(setDoc(prog(s1, 'hw-sel', 's1'),
+  { ...step(1, 10, 6, 6), ruleTally: { add_five: { c: 6, w: 4 } } })));
+await check('kural sayimi map degilse RED', assertFails(updateDoc(prog(s1, 'hw-sel', 's1'), { ...step(2, 20, 12, 6), ruleTally: 'x' })));
+
+console.log('\n-- KURAL ISTATISTIGI --');
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await setDoc(doc(ctx.firestore(), 'homeworkRuleStats/s1'), { tally: { add_five: { c: 6, w: 4 } }, updatedAtMs: 1 });
+});
+await check('ogrenci kendi istatistigini okur', assertSucceeds(getDoc(doc(s1, 'homeworkRuleStats/s1'))));
+await check('sinif ogretmeni okur', assertSucceeds(getDoc(doc(t1, 'homeworkRuleStats/s1'))));
+await check('baska ogretmen okuyamaz', assertFails(getDoc(doc(t2, 'homeworkRuleStats/s1'))));
+await check('baska ogrenci okuyamaz', assertFails(getDoc(doc(s2, 'homeworkRuleStats/s1'))));
+await check('ogrenci istatistik yazamaz', assertFails(setDoc(doc(s1, 'homeworkRuleStats/s1'), { tally: {} })));
 
 console.log('\n-- SINIFTAN AYRILAN --');
 await testEnv.withSecurityRulesDisabled(async (ctx) => {

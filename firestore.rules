@@ -648,7 +648,8 @@ service cloud.firestore {
     // yok, kurallar yalnızca saçma değerleri (ör. 10 soruda 50 doğru) engelliyor.
     function homeworkProgressOk(hw, prevBlocks, prevAnswered, prevCorrect) {
       let p = request.resource.data;
-      return p.keys().hasOnly(['uid', 'completedBlocks', 'answered', 'correct', 'lastBlockCorrect', 'updatedAtMs'])
+      return p.keys().hasOnly(['uid', 'completedBlocks', 'answered', 'correct', 'lastBlockCorrect', 'updatedAtMs', 'ruleTally'])
+        && (!('ruleTally' in p) || (p.ruleTally is map && p.ruleTally.size() <= 40))
         && p.uid == request.auth.uid
         && p.completedBlocks is int && p.completedBlocks == prevBlocks + 1
         && p.completedBlocks <= hw.blockCount
@@ -657,6 +658,13 @@ service cloud.firestore {
         && p.correct is int && p.correct >= prevCorrect && p.correct <= p.answered
         && p.correct - prevCorrect <= p.answered - prevAnswered
         && p.lastBlockCorrect is int && p.lastBlockCorrect == p.correct - prevCorrect;
+    }
+
+    // Ödevde kural kural başarı (onHomeworkProgressWritten topluyor; içerik functions/homework.js
+    // sanitizeRuleTally). Öğrencinin kendisi (veli paneli) ve sınıf öğretmeni okur; yazım sunucuda.
+    match /homeworkRuleStats/{uid} {
+      allow read: if isSelf(uid) || (isSignedIn() && isTeacherOfStudent(uid));
+      allow write: if false;
     }
 
     match /homeworks/{hwId} {

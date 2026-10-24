@@ -136,4 +136,20 @@
     <string name="hw_player_quit_title">Ödevden çıkılsın mı?</string>
     <string name="hw_player_quit_message">Bu adımdaki cevapların kaydedilmez; adıma baştan başlarsın.</string>
     <string name="hw_player_quit_confirm">Çık</string>
+
+    <!-- İlerleme sayfası girişi (ProgressHubFragment) ve ödev başarısı (HomeworkRuleStatsFragment) -->
+    <string name="progress_hub_lessons">Dersler</string>
+    <string name="progress_hub_lessons_desc">Ders ilerlemesi ve çalışma süresi</string>
+    <string name="progress_hub_rules">Ödev başarısı</string>
+    <string name="progress_hub_rules_desc">Ödevlerde kural kural doğru oranı</string>
+    <string name="rule_stats_title">%1$s — Ödev başarısı</string>
+    <string name="rule_stats_add">Toplama</string>
+    <string name="rule_stats_sub">Çıkarma</string>
+    <string name="rule_stats_mul_abacus">Abaküslü çarpma</string>
+    <string name="rule_stats_mul_mental">Abaküssüz çarpma</string>
+    <string name="rule_stats_mul_digits">%1$d × %2$d basamak</string>
+    <string name="rule_stats_percent">%%%1$d</string>
+    <string name="rule_stats_count">%1$d/%2$d doğru</string>
+    <string name="rule_stats_empty">Henüz ödevlerden gelen veri yok. Abaküslü ödevler ve çarpma ödevleri çözüldükçe burada her kuralın doğru oranı görünecek.</string>
+    <string name="rule_stats_note">Abaküslü toplama ve çıkarmada her basamak işlemi, gerektirdiği kurala sayılır. Çarpmada her soru bir deneme.</string>
 </resources>
