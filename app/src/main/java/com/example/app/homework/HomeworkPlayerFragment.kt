@@ -96,6 +96,7 @@ class HomeworkPlayerFragment : Fragment() {
         }
         binding.resultButton.setOnClickListener { if (!resultPanelAnimating) hideResultPanel { nextQuestion() } }
         navBarPanelExtension = com.example.app.NavBarPanelExtension(binding.root, binding.resultPanel).also { it.attach() }
+        liftAnswerAboveKeyboard()
         setPlayVisible(false)
 
         Homeworks.loadHomework(homeworkId) { hw ->
@@ -221,6 +222,30 @@ class HomeworkPlayerFragment : Fragment() {
             b.answerInput.requestFocus()
             requireContext().getSystemService(InputMethodManager::class.java)
                 ?.showSoftInput(b.answerInput, InputMethodManager.SHOW_IMPLICIT)
+        }
+    }
+
+    /**
+     * Abaküssüz cevap kutusu klavyenin altında kalmasın. Uygulama kenardan kenara çizildiği için
+     * (MainActivity.enableEdgeToEdge) adjustResize ekranı küçültmüyor; klavye açılınca soru alanı,
+     * cevap kutusu klavyenin üstünde kalacak kadar yukarı kayıyor, kapanınca yerine dönüyor.
+     */
+    private fun liftAnswerAboveKeyboard() {
+        val root = binding.root
+        val gap = (16 * resources.displayMetrics.density).toInt()
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val b = _binding
+            if (b != null) {
+                val ime = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime()).bottom
+                val lift = if (ime > 0 && b.answerInput.visibility == View.VISIBLE) {
+                    // Kaydırma öncesi konum: translationY'den bağımsız (bottom yerleşimden gelir)
+                    (b.answerInput.bottom + gap - (root.height - ime)).coerceAtLeast(0)
+                } else 0
+                listOf(b.quitButton, b.stepText, b.blackboardImage, b.flashText, b.answerInput).forEach {
+                    it.animate().translationY(-lift.toFloat()).setDuration(150).start()
+                }
+            }
+            insets
         }
     }
 
