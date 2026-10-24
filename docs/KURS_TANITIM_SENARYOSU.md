@@ -14,6 +14,41 @@ burada beklenmiyor, çünkü izleyen kişi zaten ürünü görmek için izliyor.
 - Videoda iletişim bilgisi yok: video zaten WhatsApp sohbetinde gidiyor, cevap oradan geliyor.
 - Videoda fiyat, şube sayısı ya da henüz olmayan bir özellik söylenmiyor.
 
+## Seslendirme dosyaları (montajın son hâli, 24.10.2026)
+
+Kurgu `C:UsersASUSVideosSorobit_tanitimmontajetiklerkurs_metin.js` içinde (kesimler, hızlar,
+odaklar, ekran yazıları). Her satır ayrı bir ses dosyası: `VideosSorobit_tanitimkursseskurs_soundN.mp3`.
+Dosyalar konunca `VIDEO=kurs node ogrenci_montaj.js` yazıların süresini sese göre kendisi ayarlıyor.
+Ekran yazısı aynı cümle (vurgular hariç).
+
+| N | Sahne | Metin |
+|---|---|---|
+| 0 | açılış | Ödevi kim yaptı, kim yapmadı? Derse girmeden bilin. |
+| 1 | sınıf aç | Her grubunuz için uygulamada bir sınıf açın. |
+| 2 | sınıf aç | Her sınıfın bir katılma kodu olur. |
+| 3 | öğrenciler | Kodu velilere gönderin, öğrenci kodu girip sınıfa katılsın. |
+| 4 | öğrenciler | Ya da öğrenciyi kullanıcı adıyla davet edin. |
+| 5 | ödev ver | Sınıfın Ödevler ekranından yeni ödev verin. |
+| 6 | ödev ver | İşlemi ve kuralı seçin: kuralsız, beşlik, onluk, boncuk. |
+| 7 | ödev ver | Basamak sayısını, sayı adedini ve hızı siz belirleyin. |
+| 8 | ödev ver | Göndermeden önce öğrencinin göreceği örnek soruyu görün. |
+| 9 | ödev ver | Kurala uymayan bir seçimde uygulama sizi uyarır. |
+| 10 | ödev ver | Tek dokunuşla bütün sınıfa gönderin. |
+| 11 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
+| 12 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
+| 13 | öğrenci çözer | Ödev onar soruluk adımlarla çözülür. |
+| 14 | öğrenci çözer | Son adım bitince ödev tamamlanır. |
+| 15 | kim bitirdi? | Öğrenci ödevi bitirince size bildirim gelir. |
+| 16 | kim bitirdi? | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilin. |
+| 17 | ilerleme | Öğrencinin profilinden ders ilerlemesini açın. |
+| 18 | ilerleme | Kaç ders bitirdi, ne kadar çalıştı: hepsini görün. |
+| 19 | sorular | Öğrencilerinizin soruları yalnızca size gelir. |
+| 20 | sorular | Soruyu sahiplenin, öğrencinize kendiniz cevap verin. |
+| 21 | kapanış | Sorobit. Kursunuz için sınıf ve ödev takibi, tek uygulamada. |
+
+Çekimde senaryodan sapmalar: 4. sahnede konu kuralsız + 5'lik (uyarı 5'lik + 10'lukta çıkmıyor),
+sayı adedi 3; 5. sahnede yanlış cevap yok (20/20); 6. sahnede bildirimler botlardan.
+
 ## Çekimden önce hazırlık
 
 | | Ne | Neden |
