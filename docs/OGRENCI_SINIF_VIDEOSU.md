@@ -11,6 +11,44 @@ Sınıfım'ı bulmak, ödevi açıp adım adım çözmek, sorusunu öğretmenine
 - Ekranda gerçek çocuk verisi yok: öğrenci olarak Ted ve Esma (test hesapları), sınıfta botlar.
 - Öğretmenin adı ekranda "Mehmet Öğretmen" görünüyor (test öğretmen hesabı); sorun değil.
 
+## Seslendirme dosyaları (montajın son hâli, 25.10.2026)
+
+Kurgu `VideosSorobit_tanitimmontajetiklerogrsinif_metin.js`; taslak `VideosSorobit_tanitimogrsinifSorobit_ogrenci_sinif_taslak.mp4`
+(1 dk 36 sn). Sesler `VideosSorobit_tanitimogrsinifsesogrsinif_soundN.mp3` (Sarah, ses_uret.js ogrsinif).
+
+| N | Sahne | Metin |
+|---|---|---|
+| 0 | açılış | Sınıfınla Sorobit'te buluş! Öğretmeninden ödev al, sorularını ona sor. |
+| 1 | sınıfa katıl | Sınıfına katılmak için profilindeki ayarlardan Sınıfa katıl'a dokun. |
+| 2 | sınıfa katıl | Öğretmeninin verdiği 6 karakterli kodu yaz. |
+| 3 | sınıfa katıl | Katıl'a dokun. Artık sınıftasın! |
+| 4 | davet | Öğretmenin seni kullanıcı adınla da davet edebilir. Davetin Sınıfa katıl ekranında görünür. |
+| 5 | davet | Davette Katıl'a dokunman yeter. |
+| 6 | sınıfım | Sınıfına katılınca Sorularım'da Sınıfım sekmesi açılır. |
+| 7 | sınıfım | Burada sınıfının kartı ve ödevlerin var. |
+| 8 | sınıfım | Sınıf kartına dokununca sınıf arkadaşlarını görürsün. |
+| 9 | sınıfım | Arkadaşlarının profillerine bakabilirsin. |
+| 10 | sınıfım | Sınıftan ayrılmak istersen sağ üstteki düğmeye dokun. |
+| 11 | ödev | Öğretmenin ödev verince sana bildirim gelir. |
+| 12 | ödev | Ödevlerin burada. Her kartta kaç adım bitirdiğin yazar. |
+| 13 | ödev | Ödeve dokun, hazır olunca Başla'ya bas. |
+| 14 | ödev | Sayılar tahtada tek tek gelir. Her sayıyı geldiği anda abaküsünde topla. |
+| 15 | ödev | Sayılar bitince Kontrol'e bas. Sonra Devam. |
+| 16 | ödev | Abaküssüz ödevde cevabı aklından bul ve yaz. |
+| 17 | ödev | Yanlış yaparsan doğru cevabı görürsün. Üzülme, sonrakine geç! |
+| 18 | adımlar | Ödev onar soruluk adımlara bölünür. |
+| 19 | adımlar | İstersen hemen sonraki adıma geç, istersen sonra devam et. |
+| 20 | adımlar | Adımın ortasında çıkarsan o adıma baştan başlarsın. |
+| 21 | adımlar | Son adımı bitirince ödevin tamamlanır. Öğretmenin de görür! |
+| 22 | sorular | Takıldığın soruyu sorduğunda soru doğrudan kendi öğretmenine gider. |
+| 23 | sorular | Öğretmeninin cevabını Sorularım'da görürsün. |
+| 24 | kapanış | Ödevlerini zamanında bitir, her gün biraz çalış! Sorobit. |
+
+Çekimde senaryodan sapmalar: yeni çekimler Ted ile (Esma çekim sırasında sınıftan çıkmıştı); davet
+bildirimi gelmediği için davet Sınıfa katıl ekranından gösterildi; Ö5 çekilmedi, sorular öğrenci rehberinin
+ham kayıtlarından (ogr8, ogr9; sınıf yapısından önce çekildi). Sınıf ekranında öğretmen listede görünmüyordu
+(uygulama hatası, 37311c7 ile düzeltildi; kayıt düzeltmeden önce), cümle "sınıf arkadaşlarını görürsün" oldu.
+
 ## Akış (özet)
 
 | # | Bölüm | Çip | Süre |
