@@ -42,11 +42,13 @@ Ekran yazısı aynı cümle (vurgular hariç).
 | 16 | öğrenci çözer | Son adım bitince ödev tamamlanır. |
 | 17 | kim bitirdi? | Öğrenci ödevi bitirince size bildirim gelir. |
 | 18 | kim bitirdi? | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilin. |
-| 19 | ilerleme | Öğrencinin profilinden ders ilerlemesini açın. |
-| 20 | ilerleme | Kaç ders bitirdi, ne kadar çalıştı: hepsini görün. |
-| 21 | sorular | Öğrencilerinizin soruları yalnızca size gelir. |
-| 22 | sorular | Soruyu sahiplenin, öğrencinize kendiniz cevap verin. |
-| 23 | kapanış | Sorobit. Kursunuz için sınıf ve ödev takibi, tek uygulamada. |
+| 19 | ilerleme | Öğrencinin profilinde sağ üstteki istatistik düğmesine dokunun. |
+| 20 | ilerleme | İlerleme sayfasında iki kart var: dersler ve ödev başarısı. |
+| 21 | ilerleme | Kaç ders bitirdi, ne kadar çalıştı: hepsini görün. |
+| 22 | ilerleme | Ödev başarısında öğrencinin hangi kuralda ne kadar hata yaptığını görürsünüz. |
+| 23 | sorular | Öğrencilerinizin soruları yalnızca size gelir. |
+| 24 | sorular | Soruyu sahiplenin, öğrencinize kendiniz cevap verin. |
+| 25 | kapanış | Sorobit. Kursunuz için sınıf ve ödev takibi, tek uygulamada. |
 
 Çekimde senaryodan sapmalar: 4. sahnede konu kuralsız + 5'lik (uyarı 5'lik + 10'lukta çıkmıyor),
 sayı adedi 3; 5. sahnede yanlış cevap yok (20/20); 6. sahnede bildirimler botlardan.
