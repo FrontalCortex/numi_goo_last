@@ -25,7 +25,16 @@ package com.example.app.homework
  *   Kural, ÖĞRENCİNİN o anki değeri üzerinden hesaplanıyor (75 + 12'nin kuralı 75'e göre). Elde
  *   zinciri başka bir kural gerektiriyorsa (49 + 1: birlerde 10'luk, onlarda 4 + 1 = 5'lik) işlem
  *   ikisine de sayılıyor; elde için doğrudan ±1 kuralın parçası (HomeworkEngine.addAt ile aynı).
- *   Cevap doğruysa bütün işlemler doğru (öğrenci başka sırayla çözmüş olabilir).
+ *   Cevap doğruysa bütün işlemler doğru.
+ *
+ * SAYILMAYAN SORULAR (istatistiği yanıltmasın; kullanıcıyla 25.10.2026'da konuşuldu)
+ *   - Adım adım çözülmemiş: her sayıdan sonraki ara toplamların (44 + 21 + 12'de 44, 65) yarısından
+ *     azı kayıtta. Abaküslü ödevde sonucu akıldan bulup doğrudan girmek böyle görünür; doğru
+ *     cevap bütün kurallara doğru, yanlış cevap bütün kurallara yanlış yazılırdı.
+ *   - Cevap yanlış ve ilk sayı abaküse hiç girilmemiş, ya da yanlış işlem gerçekçi bir dikkat
+ *     hatasından fazla (2'den ve işlemlerin üçte birinden çok): öğrenci adım adım gitmemiş (ör.
+ *     iki sayıyı aklında birleştirip tek seferde eklemiş), hata yanlış kurallara yazılırdı.
+ *   Herkes soldan sağa çözüyor varsayılıyor (kullanıcı kararı); sağdan sola çözüm denenmiyor.
  *
  * Çarpmada basamak kuralı yok: soru, basamak çiftine ("2x1") tek deneme olarak sayılıyor.
  * Abaküssüz toplama/çıkarmada kayıt yok, sayılmıyor (kullanıcı kararı, 25.10.2026).
@@ -48,6 +57,26 @@ object RuleAnalysis {
 
     private data class Op(val number: Int, val col: Int, val x: Int, val delta: Long)
 
+    /** Yanlış cevaplı soruda kabul edilen en çok yanlış işlem (işlemlerin üçte biri daha çoksa o). */
+    private const val MAX_SLIPS = 2
+
+    /**
+     * Öğrenci adım adım mı gitmiş: her sayıdan sonraki ara toplamların (sonuncusu, yani cevap hariç)
+     * en az yarısı kayıtta. Cevap yanlışsa ara toplamlar ilk hatadan sonra kayar; o yüzden yanlış
+     * cevapta yalnızca hataya kadarki ara toplamlar beklenebilir: en az biri (ilk sayı) yeter, gerisini
+     * yanlış işlem sınırı eliyor.
+     */
+    private fun steppedThrough(q: HomeworkQuestion, log: List<Sample>): Boolean {
+        val seen = log.mapTo(HashSet()) { it.value }
+        val sign = if (q.op == HomeworkOp.ADD) 1 else -1
+        var sum = q.numbers[0]
+        val partials = ArrayList<Long>()
+        for (k in 1 until q.numbers.size) { partials += sum; sum += sign * q.numbers[k] }
+        val hit = partials.count { it in seen }
+        val correct = log.lastOrNull()?.value == q.answer
+        return if (correct) hit * 2 >= partials.size else hit >= 1
+    }
+
     /**
      * Abaküslü toplama/çıkarma sorusu.
      * @param log abaküs değerleri, zamana göre; ilk kayıt sorunun başındaki değer
@@ -65,6 +94,7 @@ object RuleAnalysis {
             }
         }
         if (ops.isEmpty()) return emptyList()
+        if (!steppedThrough(q, log)) return emptyList()
 
         val bases: List<Long>
         val ok: BooleanArray
@@ -79,6 +109,8 @@ object RuleAnalysis {
             val (b, c) = align(ops, samples, shownAtMs, q.numbers[0])
             bases = b
             ok = c
+            val wrong = ok.count { !it }
+            if (log.none { it.value == q.numbers[0] } || wrong > maxOf(MAX_SLIPS, (ops.size + 2) / 3)) return emptyList()
         }
         val out = ArrayList<Attempt>()
         ops.forEachIndexed { i, op ->

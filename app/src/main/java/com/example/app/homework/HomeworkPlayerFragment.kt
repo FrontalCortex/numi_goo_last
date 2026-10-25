@@ -51,8 +51,6 @@ class HomeworkPlayerFragment : Fragment() {
         private const val MIN_GAP_MS = 40L
         private const val MAX_GAP_MS = 250L
         private const val RESULT_PANEL_ANIM_MS = 200L
-        /** Abaküs değeri bu aralıkla okunuyor (kural çözümlemesi için, bkz. [RuleAnalysis]). */
-        private const val ABACUS_SAMPLE_MS = 30L
 
         fun newInstance(homeworkId: String) = HomeworkPlayerFragment().apply {
             arguments = Bundle().apply { putString(ARG_HOMEWORK_ID, homeworkId) }
@@ -84,12 +82,13 @@ class HomeworkPlayerFragment : Fragment() {
     private val abacusLog = ArrayList<RuleAnalysis.Sample>()
     private val shownAtMs = ArrayList<Long>()
     private val blockTally = LinkedHashMap<String, IntArray>()
-    private val abacusSampler = object : Runnable {
-        override fun run() {
-            val value = abacusController?.getCurrentValue()?.toLong() ?: return
-            if (abacusLog.lastOrNull()?.value != value) abacusLog += RuleAnalysis.Sample(android.os.SystemClock.uptimeMillis(), value)
-            handler.postDelayed(this, ABACUS_SAMPLE_MS)
-        }
+    /** Soru akarken ve cevaplanana kadar true: abaküsün her değişimi kaydediliyor. */
+    private var recordingAbacus = false
+
+    private fun recordAbacus() {
+        if (!recordingAbacus) return
+        val value = abacusController?.getCurrentValue()?.toLong() ?: return
+        if (abacusLog.lastOrNull()?.value != value) abacusLog += RuleAnalysis.Sample(android.os.SystemClock.uptimeMillis(), value)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -133,6 +132,7 @@ class HomeworkPlayerFragment : Fragment() {
         if (!withAbacus) return
         val controller = AbacusBeadController(context = requireContext(), root = b.root, animationDurationMs = 300L)
         controller.setup()
+        controller.onValueChanged = { recordAbacus() }
         abacusController = controller
         b.abacusLinear.post {
             if (_binding == null || abacusMetricsReady) return@post
@@ -212,8 +212,8 @@ class HomeworkPlayerFragment : Fragment() {
         // Abaküslüde değerler kaydediliyor: hangi kuralda hata yapıldığı buradan çıkıyor
         abacusLog.clear()
         shownAtMs.clear()
-        handler.removeCallbacks(abacusSampler)
-        if (cfg.withAbacus) handler.post(abacusSampler)
+        recordingAbacus = cfg.withAbacus
+        recordAbacus() // sorunun başındaki değer
         var t = 0L
         q.numbers.forEachIndexed { i, n ->
             // Çıkarmada başlangıçtan sonraki sayılar eksiyle gösteriliyor.
@@ -269,7 +269,7 @@ class HomeworkPlayerFragment : Fragment() {
         }
         if (given == null) return
         answered = true
-        handler.removeCallbacks(abacusSampler)
+        recordingAbacus = false
         hideKeyboard()
         // Klavye kapanınca kutu Kontrol'ün üstüne iniyor; sonuç paneliyle üst üste görünmesin.
         b.answerInput.visibility = View.GONE

@@ -38,6 +38,9 @@ class AbacusBeadController(
     private var touchEnabled: Boolean = true
     private var resetInProgress: Boolean = false
 
+    /** Boncuk durumu her değiştiğinde (dokunma, sürükleme, sıfırlama). Ödev kural çözümlemesi dinliyor (RuleAnalysis). */
+    var onValueChanged: (() -> Unit)? = null
+
     private val DEBUG_TOUCH = true
     private val TAG = "AbacusBeadController"
 
@@ -195,8 +198,8 @@ class AbacusBeadController(
         val padded = value.coerceIn(0, 99999).toString().padStart(5, '0')
         for (rod in 0..4) {
             val digit = padded[rod].digitToInt()
-            bottomCount[rod] = digit % 5
-            topDown[rod] = digit >= 5
+            bottomCount[rod] = digit % 5; onValueChanged?.invoke()
+            topDown[rod] = digit >= 5; onValueChanged?.invoke()
         }
         logInternalState("applyInternalStateFromValue($value) applyAppearance=$applyAppearance")
         // Koşullarda teşhis bayrağı ARANMAZ. Daha önce ilk iki dal `&& ENABLED` taşıyordu;
@@ -274,14 +277,14 @@ class AbacusBeadController(
 
         for (rod in 0..4) {
             val count = countConsecutiveRaisedBottomBeads(rod)
-            bottomCount[rod] = count
+            bottomCount[rod] = count; onValueChanged?.invoke()
 
             // Top bead state.
             val top = topBeads[rod]
             val topByTranslation = top.translationY >= (topMoveDistancePx / 2f)
             // Key fix: infer top state from visual position, not drawable.
             // Otherwise "selected" tint can stay while the bead is reset/moving.
-            topDown[rod] = topByTranslation
+            topDown[rod] = topByTranslation; onValueChanged?.invoke()
 
             if (TutorialBeadDiagnostics.ENABLED && rod == 3) {
                 val b4 = bottomBeads[rod][3]
@@ -441,7 +444,7 @@ class AbacusBeadController(
                     if (!session.isDragging && abs(dy) > touchSlopPx && progress > 0f) {
                         session.isDragging = true
                         // Provisional state: mimic click behavior where appearance updates immediately.
-                        bottomCount[session.rod] = session.targetCount
+                        bottomCount[session.rod] = session.targetCount; onValueChanged?.invoke()
                         updateRodAppearance(session.rod)
 
                         // Cancel current animations and take control of translation.
@@ -492,7 +495,7 @@ class AbacusBeadController(
                             AbacusSoundPlayer.playBeadClick(context, activating = session.directionUp)
                             // Final state: ensure logical count is targetCount, then animate physical movement.
                             if (!session.provisionalApplied) {
-                                bottomCount[session.rod] = session.targetCount
+                                bottomCount[session.rod] = session.targetCount; onValueChanged?.invoke()
                                 updateRodAppearance(session.rod)
                             }
                             if (session.directionUp) {
@@ -503,7 +506,7 @@ class AbacusBeadController(
                         } else {
                             // Snap back to start (no margin changes; only translation back to 0).
                             if (session.provisionalApplied) {
-                                bottomCount[session.rod] = session.startCount
+                                bottomCount[session.rod] = session.startCount; onValueChanged?.invoke()
                                 updateRodAppearance(session.rod)
                             }
 
@@ -591,7 +594,7 @@ class AbacusBeadController(
 
                     if (!session.isDragging && abs(dy) > touchSlopPx && progress > 0f) {
                         session.isDragging = true
-                        topDown[session.rod] = session.targetDown
+                        topDown[session.rod] = session.targetDown; onValueChanged?.invoke()
                         updateTopAppearance(session.rod)
                         session.bead.animate().cancel()
                         animatingBeads.add(session.bead)
@@ -629,7 +632,7 @@ class AbacusBeadController(
                             AbacusSoundPlayer.playBeadClick(context, activating = session.targetDown)
                             // State already updated when drag started; still ensure if provisional was not applied.
                             if (!session.provisionalApplied) {
-                                topDown[session.rod] = session.targetDown
+                                topDown[session.rod] = session.targetDown; onValueChanged?.invoke()
                                 updateTopAppearance(session.rod)
                             }
                             if (session.targetDown) {
@@ -640,7 +643,7 @@ class AbacusBeadController(
                         } else {
                             // Snap back to start state.
                             if (session.provisionalApplied) {
-                                topDown[session.rod] = session.startDown
+                                topDown[session.rod] = session.startDown; onValueChanged?.invoke()
                                 updateTopAppearance(session.rod)
                             }
 
@@ -739,8 +742,8 @@ class AbacusBeadController(
         }
 
         for (i in 0..4) {
-            bottomCount[i] = 0
-            topDown[i] = false
+            bottomCount[i] = 0; onValueChanged?.invoke()
+            topDown[i] = false; onValueChanged?.invoke()
         }
         updateAllAppearance()
 
@@ -809,7 +812,7 @@ class AbacusBeadController(
         } else {
             animateBeadsDown(*affected)
         }
-        bottomCount[rod] = clampedTarget
+        bottomCount[rod] = clampedTarget; onValueChanged?.invoke()
         updateRodAppearance(rod)
     }
 
@@ -821,10 +824,10 @@ class AbacusBeadController(
         AbacusSoundPlayer.playBeadClick(context, activating = !topDown[rod])
         if (!topDown[rod]) {
             animateTopBeadDown(bead)
-            topDown[rod] = true
+            topDown[rod] = true; onValueChanged?.invoke()
         } else {
             animateTopBeadUp(bead)
-            topDown[rod] = false
+            topDown[rod] = false; onValueChanged?.invoke()
         }
         updateTopAppearance(rod)
     }
@@ -1039,7 +1042,7 @@ class AbacusBeadController(
             bead.translationY = 0f
         }
 
-        bottomCount[rod] = newCount
+        bottomCount[rod] = newCount; onValueChanged?.invoke()
         updateRodAppearance(rod)
     }
 
@@ -1055,10 +1058,10 @@ class AbacusBeadController(
         val halfStep = topMoveDistancePx / 2f
         if (bead.translationY >= halfStep) {
             bead.translationY = topMoveDistancePx
-            topDown[rod] = true
+            topDown[rod] = true; onValueChanged?.invoke()
         } else {
             bead.translationY = 0f
-            topDown[rod] = false
+            topDown[rod] = false; onValueChanged?.invoke()
         }
         updateTopAppearance(rod)
     }

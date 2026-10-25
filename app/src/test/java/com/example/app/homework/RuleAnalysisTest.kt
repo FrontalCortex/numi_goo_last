@@ -18,7 +18,8 @@ class RuleAnalysisTest {
     @Test
     fun dogruCevaptaButunIslemlerDogru() {
         // 44 + 49: onlarda 4+4 (5'lik), birlerde 4+9 (10'luk)
-        val a = RuleAnalysis.abacus(add(44, 49), log(0L to 0L), listOf(0, 1000), answer = 93)
+        val l = log(0L to 0L, 300L to 44L, 1200L to 94L, 1300L to 84L, 1500L to 94L, 1600L to 93L)
+        val a = RuleAnalysis.abacus(add(44, 49), l, listOf(0, 1000), answer = 93)
         assertEquals("add_five:1/0 add_ten:1/0", summary(a))
     }
 
@@ -65,9 +66,37 @@ class RuleAnalysisTest {
     }
 
     @Test
+    fun dogrudanSonucGirilirseSayilmaz() {
+        // 4 sayı, ara işlem yok: sonuç 300 doğrudan (önce yüzler, sonra birler oynatılmış gibi)
+        val q = add(120, 80, 60, 40)
+        val dogru = RuleAnalysis.abacus(q, log(0L to 0L, 4500L to 100L, 4600L to 300L), listOf(0, 1000, 2000, 3000), answer = 300)
+        assertEquals(0, dogru.size)
+        val yanlis = RuleAnalysis.abacus(q, log(0L to 0L, 4500L to 300L, 4600L to 310L), listOf(0, 1000, 2000, 3000), answer = 310)
+        assertEquals(0, yanlis.size)
+    }
+
+    @Test
+    fun geridenGelmekSorunDegil() {
+        // 44 + 21 + 12 + 98: öğrenci 2. sayıyı ancak 4. sayı görünürken topluyor; hepsi doğru
+        val l = log(0L to 0L, 300L to 44L, 3200L to 64L, 3300L to 65L, 3600L to 75L, 3700L to 77L, 3900L to 167L, 4100L to 175L)
+        val a = RuleAnalysis.abacus(add(44, 21, 12, 98), l, listOf(0, 1000, 2000, 3000), answer = 175)
+        assertEquals(0, a.count { !it.correct })
+        assertEquals(true, a.isNotEmpty())
+    }
+
+    @Test
+    fun cokYanlisIslemliSoruSayilmaz() {
+        // 44 + 23 + 45 + 11 = 123: 23 ile 45'i aklında birleştirip 68 eklemiş, sonra 11 yerine 21 eklemiş
+        // (cevap 133). Ara toplamlar 67 ve 112 yok: 23 ve 45'in işlemleri haksız yere yanlış çıkardı.
+        val l = log(0L to 0L, 300L to 44L, 2300L to 104L, 2400L to 112L, 3200L to 132L, 3300L to 133L)
+        val a = RuleAnalysis.abacus(add(44, 23, 45, 11), l, listOf(0, 1000, 2000, 3000), answer = 133)
+        assertEquals(0, a.size)
+    }
+
+    @Test
     fun cikarma() {
         // 57 − 25: onlarda 5−2 (5'lik), birlerde 7−5 (doğrudan)
-        val a = RuleAnalysis.abacus(sub(57, 25), log(0L to 0L), listOf(0, 1000), answer = 32)
+        val a = RuleAnalysis.abacus(sub(57, 25), log(0L to 0L, 300L to 57L, 1200L to 37L, 1400L to 32L), listOf(0, 1000), answer = 32)
         assertEquals("sub_direct:1/0 sub_five:1/0", summary(a))
     }
 
