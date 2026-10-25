@@ -15,6 +15,8 @@ Sınıfım'ı bulmak, ödevi açıp adım adım çözmek, sorusunu öğretmenine
 
 Kurgu `VideosSorobit_tanitimmontajetiklerogrsinif_metin.js`; taslak `VideosSorobit_tanitimogrsinifSorobit_ogrenci_sinif_taslak.mp4`
 (1 dk 40 sn). Sesler `VideosSorobit_tanitimogrsinifsesogrsinif_soundN.mp3` (Sarah, ses_uret.js ogrsinif).
+1, 5, 13 ve 18 kullanıcının dosyaları (sinifa_katil, davet_katila, odeve_dokun, odev_onar; Sarah'nınkiler sesapi_ilk).
+14 ve 15'te ses uzun: donuk kare yerine kayıt yavaşlatıldı (`yavas: true`).
 
 | N | Sahne | Metin |
 |---|---|---|
