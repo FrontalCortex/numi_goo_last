@@ -14,7 +14,7 @@ Sınıfım'ı bulmak, ödevi açıp adım adım çözmek, sorusunu öğretmenine
 ## Seslendirme dosyaları (montajın son hâli, 25.10.2026)
 
 Kurgu `VideosSorobit_tanitimmontajetiklerogrsinif_metin.js`; taslak `VideosSorobit_tanitimogrsinifSorobit_ogrenci_sinif_taslak.mp4`
-(1 dk 36 sn). Sesler `VideosSorobit_tanitimogrsinifsesogrsinif_soundN.mp3` (Sarah, ses_uret.js ogrsinif).
+(1 dk 40 sn). Sesler `VideosSorobit_tanitimogrsinifsesogrsinif_soundN.mp3` (Sarah, ses_uret.js ogrsinif).
 
 | N | Sahne | Metin |
 |---|---|---|
@@ -26,7 +26,7 @@ Kurgu `VideosSorobit_tanitimmontajetiklerogrsinif_metin.js`; taslak `VideosSoro
 | 5 | davet | Davette Katıl'a dokunman yeter. |
 | 6 | sınıfım | Sınıfına katılınca Sorularım'da Sınıfım sekmesi açılır. |
 | 7 | sınıfım | Burada sınıfının kartı ve ödevlerin var. |
-| 8 | sınıfım | Sınıf kartına dokununca sınıf arkadaşlarını görürsün. |
+| 8 | sınıfım | Sınıf kartında öğretmenini ve sınıf arkadaşlarını görürsün. |
 | 9 | sınıfım | Arkadaşlarının profillerine bakabilirsin. |
 | 10 | sınıfım | Sınıftan ayrılmak istersen sağ üstteki düğmeye dokun. |
 | 11 | ödev | Öğretmenin ödev verince sana bildirim gelir. |
@@ -46,8 +46,8 @@ Kurgu `VideosSorobit_tanitimmontajetiklerogrsinif_metin.js`; taslak `VideosSoro
 
 Çekimde senaryodan sapmalar: yeni çekimler Ted ile (Esma çekim sırasında sınıftan çıkmıştı); davet
 bildirimi gelmediği için davet Sınıfa katıl ekranından gösterildi; Ö5 çekilmedi, sorular öğrenci rehberinin
-ham kayıtlarından (ogr8, ogr9; sınıf yapısından önce çekildi). Sınıf ekranında öğretmen listede görünmüyordu
-(uygulama hatası, 37311c7 ile düzeltildi; kayıt düzeltmeden önce), cümle "sınıf arkadaşlarını görürsün" oldu.
+ham kayıtlarından (ogr8, ogr9; sınıf yapısından önce çekildi). Sınıf ekranı yeniden çekildi (ogrsinif5, Ted):
+37311c7'den sonra öğretmen ilk açılışta listenin başında; kurguda o açılış kullanıldı.
 
 ## Akış (özet)
 
