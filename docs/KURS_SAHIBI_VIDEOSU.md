@@ -19,7 +19,8 @@ Kurgu `VideosSorobit_tanitimmontajetiklersahip_metin.js` içinde; taslak `Video
 Ses dosyaları: `VideosSorobit_tanitimsahipsessahip_soundN.mp3`. Dosyalar konunca
 `VIDEO=sahip node ogrenci_montaj.js` yazı sürelerini sese göre ayarlıyor. Senaryodaki 1. bölümün iki satırı
 açılışta tek ses (0) oldu; "Sorobit, çocukların evde…" satırı kullanıcı kararıyla çıktı (24.10.2026).
-Numaralar senaryodaki tablolardan bu yüzden farklı.
+Numaralar senaryodaki tablolardan bu yüzden farklı. 25.10.2026: "ders ilerlemesi" satırı yerine ödev başarısı
+(kural kural doğru oranı) üç satırı geldi; kayıt sahip3_basari_1.mp4, Esma hesabında gösterim verisiyle.
 
 | N | Sahne | Metin |
 |---|---|---|
@@ -51,9 +52,11 @@ Numaralar senaryodaki tablolardan bu yüzden farklı.
 | 25 | öğrenci çözer | Uygulama her cevabı anında kontrol eder. Öğretmeniniz kâğıt okumaz. |
 | 26 | takip | Öğrenci ödevi bitirince öğretmene bildirim gelir. |
 | 27 | takip | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilirsiniz. |
-| 28 | takip | Her öğrencinin uygulamadaki ders ilerlemesi de öğretmeninizin elinde. |
-| 29 | sorular | Öğrencinizin sorduğu sorular başka öğretmene değil, yalnızca sizin öğretmeninize gider. |
-| 30 | kapanış | Ödevi uygulama hazırlar. Uygulama kontrol eder. Siz kimin çalıştığını bilirsiniz. Sorobit. |
+| 28 | takip | Uygulama yalnızca doğruyu yanlışı saymaz, hatanın hangi kuralda yapıldığını da bulur. |
+| 29 | takip | Öğrencinin beşlikte mi, onlukta mı zorlandığını kural kural görürsünüz. |
+| 30 | takip | Sıradaki ödevi bu eksiğe göre verin. |
+| 31 | sorular | Öğrencinizin sorduğu sorular başka öğretmene değil, yalnızca sizin öğretmeninize gider. |
+| 32 | kapanış | Ödevi uygulama hazırlar. Uygulama kontrol eder. Siz kimin çalıştığını bilirsiniz. Sorobit. |
 
 ## Akış (özet)
 
