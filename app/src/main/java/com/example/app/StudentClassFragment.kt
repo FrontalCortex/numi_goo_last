@@ -39,6 +39,10 @@ class StudentClassFragment : Fragment() {
     private var membersListener: ListenerRegistration? = null
     private var membersClassId: String? = null
     private var classTeachers: List<CourseClasses.ClassMember> = emptyList()
+    // Öğretmenler okunmadan liste çizilmiyor: öğrenciler önbellekten önce gelince öğretmen sonradan en üste
+    // ekleniyordu, RecyclerView ilk görünen satırı yerinde tuttuğu için öğretmen ekranın üstünde kalıyordu
+    // (ikinci açılışta öğretmen yok gibi görünüyordu, 25.10.2026).
+    private var teachersLoaded = false
     private var lastMembers: List<CourseClasses.ClassMember> = emptyList()
     private val avatars = HashMap<String, String?>()
     private val classmateAdapter by lazy {
@@ -110,7 +114,9 @@ class StudentClassFragment : Fragment() {
         stopMembers()
         membersClassId = c.id
         CourseClasses.loadTeachers(c.teacherUids) { teachers ->
+            if (membersClassId != c.id) return@loadTeachers // ekran kapandı ya da sınıf değişti
             classTeachers = teachers
+            teachersLoaded = true
             showMembers(lastMembers)
         }
         membersListener = CourseClasses.listenMembers(c.id) { list -> showMembers(list.orEmpty()) }
@@ -121,6 +127,7 @@ class StudentClassFragment : Fragment() {
         membersListener = null
         membersClassId = null
         classTeachers = emptyList()
+        teachersLoaded = false
         lastMembers = emptyList()
         classmateAdapter.submitList(emptyList())
     }
@@ -128,6 +135,7 @@ class StudentClassFragment : Fragment() {
     private fun showMembers(members: List<CourseClasses.ClassMember>) {
         val b = _binding ?: return
         lastMembers = members
+        if (!teachersLoaded) return
         val rows = classTeachers + members.filter { m -> classTeachers.none { it.uid == m.uid } }
         classmateAdapter.teacherUids = classTeachers.map { it.uid }.toSet()
         classmateAdapter.submitList(rows.map { it to avatars[it.uid] })

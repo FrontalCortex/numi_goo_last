@@ -157,7 +157,8 @@ object CourseClasses {
         uids.forEachIndexed { i, uid ->
             db.collection("publicProfiles").document(uid).get()
                 .addOnCompleteListener { task ->
-                    task.result?.takeIf { it.exists() }?.let { d ->
+                    // Başarısız okumada task.result istisna atar; sayaç düşmezse liste hiç çizilmezdi
+                    task.takeIf { it.isSuccessful }?.result?.takeIf { it.exists() }?.let { d ->
                         out[i] = ClassMember(uid, d.getString("name").orEmpty(), d.getString("userId").orEmpty(), 0L)
                     }
                     pending--
@@ -174,7 +175,7 @@ object CourseClasses {
         uids.forEach { uid ->
             db.collection("publicProfiles").document(uid).get()
                 .addOnCompleteListener { task ->
-                    out[uid] = task.result?.getString(AvatarStore.FIRESTORE_FIELD)
+                    out[uid] = task.takeIf { it.isSuccessful }?.result?.getString(AvatarStore.FIRESTORE_FIELD)
                     pending--
                     if (pending == 0) onResult(out)
                 }
