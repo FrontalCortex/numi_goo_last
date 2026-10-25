@@ -139,7 +139,9 @@ class StudentClassFragment : Fragment() {
             missing.forEach { avatars[it] = null } // okunurken yeniden istenmesin
             CourseClasses.loadAvatars(missing) { loaded ->
                 avatars.putAll(loaded)
-                if (_binding != null) classmateAdapter.submitList(rows.map { it to avatars[it.uid] })
+                // Bu çağrıdaki `rows` eskimiş olabilir: öğretmen ya da üyeler bu arada gelmiş olabilir. Eski liste
+                // gönderilirse sonradan gelen öğretmen listeden düşüyordu (25.10.2026). Güncel hâlden yeniden çiz.
+                if (_binding != null) showMembers(lastMembers)
             }
         }
     }
