@@ -1,7 +1,8 @@
 name: Seed Homework Progress Sample
 
 # Ted hesabına ödev başarısı ekranı için örnek geçmiş (.github/scripts/seed-homework-progress-sample.js).
-# Bu dosya push edilince çalışır. Geri almak için REMOVE'u '1' yapıp push et.
+# Bu dosya push edilince çalışır. REPLACE '1': eski örnek geri alınıp yenisi yazılır (tekrar
+# çalışması zararsız). Tamamen geri almak için REMOVE'u '1' yapıp push et.
 on:
   workflow_dispatch: {}
   push:
@@ -36,4 +37,5 @@ jobs:
           NODE_PATH: ${{ github.workspace }}/functions/node_modules
           SEED_USER_ID: '835398VV'
           REMOVE: '0'
+          REPLACE: '1'
         run: node .github/scripts/seed-homework-progress-sample.js
