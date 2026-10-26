@@ -83,7 +83,7 @@
 
             <ImageView
                 style="@style/ProgressHubIcon"
-                android:src="@drawable/target_ic" />
+                android:src="@drawable/analytics_ic" />
 
             <LinearLayout style="@style/ProgressHubTexts">
 
