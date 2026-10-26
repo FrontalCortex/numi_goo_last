@@ -218,9 +218,12 @@
     <string name="rule_stats_stage_started">Başladı</string>
     <string name="rule_stats_stage_improving">Gelişiyor</string>
     <string name="rule_stats_stage_master">Usta ⭐</string>
-    <!-- "Son 52 işlem · %92 doğru" -->
+    <!-- "Son 52 işlem · %92 doğru"; pencere yoksa (eski veri) toplam: "680 işlem · %67 doğru" -->
     <string name="rule_stats_recent">Son %1$d %2$s · %%%3$d doğru</string>
-    <string name="rule_stats_recent_few">%1$d %2$s · usta olmak için en az 50 gerekiyor</string>
+    <string name="rule_stats_ops">%1$d %2$s · %%%3$d doğru</string>
+    <!-- Satırın sonuna eklenir: "… · Usta olmaya %4 kaldı" ya da "… · Usta olmaya 12 işlem kaldı" -->
+    <string name="rule_stats_to_master_pct">Usta olmaya %%%1$d kaldı</string>
+    <string name="rule_stats_to_master_ops">Usta olmaya %1$d %2$s kaldı</string>
     <string-array name="rule_progress_months">
         <item>Oca</item>
         <item>Şub</item>

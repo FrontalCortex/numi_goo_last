@@ -22,7 +22,7 @@ object RuleProgress {
     /** Ustalık: son ~50 işlem; aynı eşikler sunucuda (functions/homework.js masteryStage). */
     const val MASTERY_WINDOW = 50
     private const val IMPROVING_PCT = 70
-    private const val MASTER_PCT = 90
+    const val MASTER_PCT = 90
 
     /** Bundan az soruyla dönemin oranı güvenilmez; grafikte soluk çiziliyor. */
     const val LOW_SAMPLE = 5
@@ -47,7 +47,7 @@ object RuleProgress {
 
     enum class Range { WEEK, MONTH, QUARTER, ALL }
 
-    enum class BucketKind { DAY, WEEK, MONTH }
+    enum class BucketKind { DAY, THREE_DAYS, WEEK, MONTH }
 
     /** Grafikte bir dönem: [from]..[to] epoch günleri; [cumulative] o dönemin sonuna kadarki toplam. */
     data class Bucket(val from: Int, val to: Int, val kind: BucketKind, val cw: Cw, val cumulative: Int)
@@ -82,15 +82,18 @@ object RuleProgress {
     }
 
     /**
-     * Grafiğin dönemleri. 1 hafta ve 1 ay günlük, 3 ay haftalık (bugünle biten 13 hafta), Tümü
-     * aylık (ilk kayıttan bu aya). Boş dönem atlanıyor (çizgi bir sonraki dolu döneme gidiyor).
+     * Grafiğin dönemleri, hepsi bugünle bitiyor: 1 hafta günlük (7 nokta), 1 ay 3 günlük (10 nokta),
+     * 3 ay haftalık (13 nokta), Tümü aylık (ilk kayıttan bu aya). 1 ay önce günlüktü; 30 nokta
+     * kalabalıktı (kullanıcı kararı 26.10.2026). Dönemin oranı ortalamaların ortalaması değil,
+     * dönemdeki bütün soruların doğru oranı: 2 soruluk bir gün 40 soruluk günle eş ağırlık almasın.
+     * Boş dönem atlanıyor (çizgi bir sonraki dolu döneme gidiyor).
      *
      * @param startTotal Başlangıç noktasının toplamı; [Bucket.cumulative] bunun üstüne birikiyor.
      */
     fun buckets(days: Map<Int, Day>, key: String?, range: Range, today: Int, startTotal: Int): List<Bucket> {
         val (kind, spans) = when (range) {
             Range.WEEK -> BucketKind.DAY to (today - 6..today).map { it to it }
-            Range.MONTH -> BucketKind.DAY to (today - 29..today).map { it to it }
+            Range.MONTH -> BucketKind.THREE_DAYS to (0 until 10).map { i -> (today - 29 + 3 * i).let { it to it + 2 } }
             Range.QUARTER -> BucketKind.WEEK to (0 until 13).map { i -> (today - 90 + 7 * i).let { it to it + 6 } }
             Range.ALL -> BucketKind.MONTH to monthSpans(days.keys.minOrNull()?.coerceAtMost(today) ?: today, today)
         }

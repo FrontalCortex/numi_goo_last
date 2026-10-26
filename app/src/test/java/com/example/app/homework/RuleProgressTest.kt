@@ -52,6 +52,14 @@ class RuleProgressTest {
 
         val rule = RuleProgress.buckets(days, "add_five", Range.MONTH, today, 0)
         assertEquals(listOf(Cw(20, 4)), rule.map { it.cw })
+
+        // 1 ay: bugünle biten 3 günlük 10 dönem; oran dönemdeki bütün soruların oranı.
+        val month = RuleProgress.buckets(days + mapOf(today - 1 to day(1, 9)), null, Range.MONTH, today, 0)
+        assertEquals(RuleProgress.BucketKind.THREE_DAYS, month.first().kind)
+        assertEquals(listOf(today - 5 to today - 3, today - 2 to today), month.map { it.from to it.to })
+        assertEquals(Cw(10, 10), month.last().cw)
+        val full = RuleProgress.buckets((today - 29..today).associateWith { day(1, 0) }, null, Range.MONTH, today, 0)
+        assertEquals(10, full.size)
     }
 
     @Test

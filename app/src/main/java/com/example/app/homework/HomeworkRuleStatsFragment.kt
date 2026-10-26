@@ -408,13 +408,13 @@ class HomeworkRuleStatsFragment : Fragment() {
         return if (bucket.kind == RuleProgress.BucketKind.MONTH) monthNames[m - 1] else "$d ${monthNames[m - 1]}"
     }
 
-    /** Ayrıntıda: "26 Eki", "12–18 Eki", "28 Eki–3 Kas", "Eki 2026". */
+    /** Ayrıntıda: "26 Eki", "12–14 Eki", "12–18 Eki", "28 Eki–3 Kas", "Eki 2026". */
     private fun periodLabel(bucket: RuleProgress.Bucket): String {
         val (y, m, d) = RuleProgress.civil(bucket.from)
         return when (bucket.kind) {
             RuleProgress.BucketKind.DAY -> "$d ${monthNames[m - 1]}"
             RuleProgress.BucketKind.MONTH -> "${monthNames[m - 1]} $y"
-            RuleProgress.BucketKind.WEEK -> {
+            RuleProgress.BucketKind.THREE_DAYS, RuleProgress.BucketKind.WEEK -> {
                 val (_, m2, d2) = RuleProgress.civil(bucket.to)
                 if (m == m2) "$d–$d2 ${monthNames[m - 1]}" else "$d ${monthNames[m - 1]}–$d2 ${monthNames[m2 - 1]}"
             }
@@ -480,7 +480,8 @@ class HomeworkRuleStatsFragment : Fragment() {
         rows.forEach { row ->
             val item = ItemRuleStatBinding.inflate(layoutInflater, body, false)
             // Son ~50 işlem (sunucunun penceresi); penceresi olmayan eski veride toplam.
-            val window = recent[row.key]?.takeIf { it.isNotEmpty() }?.fold(Cw.ZERO) { acc, x -> acc + x } ?: row.cw
+            val recentWindow = recent[row.key]?.takeIf { it.isNotEmpty() }?.fold(Cw.ZERO) { acc, x -> acc + x }
+            val window = recentWindow ?: row.cw
             val stage = maxOf(level[row.key] ?: 0, RuleProgress.stage(window))
             val pct = window.pct
             val color = percentColor(pct)
@@ -504,8 +505,15 @@ class HomeworkRuleStatsFragment : Fragment() {
             item.rulePercent.setTextColor(color)
             item.ruleBar.setIndicatorColor(color)
             item.ruleBar.progress = pct
-            item.ruleCount.text = if (window.total >= RuleProgress.MASTERY_WINDOW) appString(R.string.rule_stats_recent, window.total, u, pct)
-            else appString(R.string.rule_stats_recent_few, window.total, u)
+            // Aşamanın ne demek olduğu ve "az kaldı" hissi: usta değilse hedefe kalan (kullanıcı isteği 26.10.2026).
+            val counts = appString(if (recentWindow != null) R.string.rule_stats_recent else R.string.rule_stats_ops, window.total, u, pct)
+            val toMaster = when {
+                stage == 2 -> null
+                window.total < RuleProgress.MASTERY_WINDOW ->
+                    appString(R.string.rule_stats_to_master_ops, RuleProgress.MASTERY_WINDOW - window.total, u)
+                else -> appString(R.string.rule_stats_to_master_pct, (RuleProgress.MASTER_PCT - pct).coerceAtLeast(1))
+            }
+            item.ruleCount.text = listOfNotNull(counts, toMaster).joinToString(" · ")
             // Satıra dokununca grafik bu kurala geçiyor.
             item.root.setOnClickListener {
                 filter = row.key
