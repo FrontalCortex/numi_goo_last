@@ -23,6 +23,28 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Ödev başarısı: Bu hafta kartı, başarı grafiği, kural ustalığı (26.10.2026 — CANLIDA: 21c26d3 push edildi; fonksiyon, kural deploy'u ve Başlangıç aktarımı başarılı; telefona kuruldu, kullanıcı bakmadı)
+
+- **Neden:** eski ekran yalnızca toplam oranı gösteriyordu; yüzlerce sorudan sonra kımıldamıyor, "ilerlemişim"
+  dedirtmiyordu. Kullanıcı kararları: veli ve öğretmen aynı ekran; tarihsiz eski veri "Başlangıç" noktası;
+  1 hafta / 1 ay / 3 ay / Tümü; usta = son 50 işlemde %90 (gelişiyor %70), aşama geri düşmez.
+- **Ekran** (`HomeworkRuleStatsFragment`, hesap `RuleProgress.kt` + `RuleProgressTest`): Bu hafta kartı (son 7 gün
+  vs önceki 7 gün, fark puanı, şimdiye kadarki toplam); grafik: konu seçenekleri (Hepsi = sorular, kurallar =
+  işlemler), her nokta o dönemin oranı, üstünde o ana kadarki TOPLAM (en çok 7 etiket), dokununca ayrıntı; 1 hafta
+  ve 1 ay günlük, 3 ay haftalık, Tümü aylık; 5 sorudan az dönem soluk. Ustalık satırına dokununca grafik o kurala geçer.
+- **Sunucu** (`onHomeworkProgressWritten`, işlem içinde): `homeworkRuleStats/{uid}` → `tally` (artık mutlak değer),
+  `recent` (son ~50 işlem, adım sınırında), `level` (0/1/2, yalnızca yükselir); günlük kayıt
+  `homeworkRuleStats/{uid}/months/{yyyy-mm}.days.{gg}` → `q` (soru) ve `t` (kural), Türkiye saatiyle. Hesap
+  silinince alt koleksiyon da siliniyor (`recursiveDelete`). Saf mantık `functions/homework.js`; emülatör testi 49/49.
+- **Başlangıç:** `base.q` = ilerlemelerin toplamı − günlük kayıttaki sorular
+  (`functions/scripts/backfill-homework-stats-base.js`, iş akışı `backfill-homework-stats-base.yml` push'ta bir kez
+  çalışır; deploy'dan önce ya da sonra çalışması fark etmez, çift sayım yok). Kurallarda başlangıcı istemci buluyor
+  (toplam − günlük kayıtlar).
+- **Kurallar:** `homeworkRuleStats/{uid}/months/{m}` okuma (öğrenci + sınıf öğretmeni). Günlük kayıt
+  okunamazsa ekran toplamlarla açılıyor (çökmüyor).
+- `functions/index.js`'ten yalnızca bu işin parçası commit'lendi (kısmi sahneleme); yerel veli onayı taslağı
+  hâlâ yerelde, canlıdaki veli onayı metni değişmedi.
+
 ## Ödev formunda "Gelişmiş": hangi rakamlar gelsin (26.10.2026 — CANLIDA: fa8197b push edildi, fonksiyon deploy'u başarılı; telefona kuruldu, kullanıcı bakmadı)
 
 - **Ne:** Konu kartının altında "Gelişmiş" satırı → alt panel; seçili her kural için o kuralla eklenebilecek
