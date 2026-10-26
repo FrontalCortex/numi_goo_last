@@ -23,6 +23,27 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Ödev formunda "Gelişmiş": hangi rakamlar gelsin (26.10.2026 — CANLIDA: fa8197b push edildi, fonksiyon deploy'u başarılı; telefona kuruldu, kullanıcı bakmadı)
+
+- **Ne:** Konu kartının altında "Gelişmiş" satırı → alt panel; seçili her kural için o kuralla eklenebilecek
+  (çıkarmada çıkarılabilecek) rakamlar açılıp kapanıyor (5'lik 1–4, boncuk 6–9, kuralsız/10'luk 1–9;
+  `HomeworkEngine.ruleDigitOptions` sınıflandırmadan hesaplıyor). Çarpmada Ayarlar kartının altında; her
+  sayının her basamağı ayrı kart (en büyük basamakta 0 yok, tek basamaklı çarpanda 1 yok). Son açık rakam
+  kapatılamıyor; "Tümü" hepsini açıyor. Panel formun kart/düğme görünümünde (`sheet_hw_advanced.xml`).
+- **Motor:** hareket ancak kuralı seçili VE rakamı açıksa yapılıyor (`MoveRules`); eldenin kuralsız +1'i
+  serbest, 5'lik/10'luk +1'i de denetimden geçiyor. Elde yokken sınır kesin (ColumnPlan süzgeçle kuruluyor).
+  Elde/ödünçte tablo artık üst sınır; gerçek sınır formda arka planda ölçülüyor (`measureCarryMax`, tablo
+  üreticisiyle aynı yöntem, 300 soru güvenlik denemesi; PC'de ~0,1–0,5 sn). Ölçüm bitene kadar "En fazla
+  değer hesaplanıyor…" ve gönderilemiyor.
+- **Veri:** `config.ruleDigits` = `{ five: [3, 4] }`, çarpmada `mulDigits1/2` = `{ "0": [2, 5] }` (Firestore iç
+  içe dizi tutmuyor). Yalnızca kısıtlı girişler yazılıyor; eski ödevler değişmedi. İstemci okurken
+  `HomeworkEngine.normalized` ile temizliyor.
+- **Sunucu:** `functions/homework.js normalizeConfig` yeni alanları süzüp saklıyor (deploy edildi).
+  Emülatör testi geçti (`test-homework-flow.js`). Commit'e yalnızca bu işin dosyaları girdi; yerel veli
+  onayı taslağı (`index.js` vb.) girmedi, canlıdaki veli onayı metni değişmedi.
+- **Eski uygulama sürümü:** süzgeci bilmeyen öğrenci telefonu ödevi süzgeçsiz üretir (çökmez).
+- Ödev ayrıntı satırına (`HomeworkText.details`) seçim ekleniyor: "5'lik: 3, 4", "2. sayı birler: 2, 3".
+
 ## Mental aritmetik kursuyla kapalı test görüşmesi (22.10.2026 — konuşuluyor, anlaşma yok)
 
 Bir kurs (soğuk mesajla ulaşıldı) "ekiple paylaşıp beraber çalışabiliriz" dedi; kullanıcı öğretmen ve
