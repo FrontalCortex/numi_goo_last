@@ -158,7 +158,9 @@ class HomeworkRuleStatsFragment : Fragment() {
 
     /** Konu sırası: toplama ve çıkarma kuralları, sonra abaküslü ve abaküssüz çarpma çiftleri. */
     private fun orderedKeys(): List<String> {
-        val keys = tally.keys + days.values.flatMap { it.t.keys }
+        // Sayımı sıfır olan anahtar (ör. geri alınmış örnek veri) seçeneklerde boş durmasın.
+        val keys = tally.filterValues { it.total > 0 }.keys +
+            days.values.flatMap { day -> day.t.filterValues { it.total > 0 }.keys }
         fun mulKeys(prefix: String, order: List<String>) = keys.filter { it.startsWith(prefix + "_") }.distinct()
             .sortedWith(compareBy({ order.indexOf(it.removePrefix(prefix + "_")).let { i -> if (i < 0) Int.MAX_VALUE else i } }, { it }))
         return listOf(HomeworkOp.ADD, HomeworkOp.SUB).flatMap { op ->

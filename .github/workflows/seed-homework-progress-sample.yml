@@ -1,0 +1,39 @@
+name: Seed Homework Progress Sample
+
+# Ted hesabına ödev başarısı ekranı için örnek geçmiş (.github/scripts/seed-homework-progress-sample.js).
+# Bu dosya push edilince çalışır. Geri almak için REMOVE'u '1' yapıp push et.
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - '.github/workflows/seed-homework-progress-sample.yml'
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install function dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Run seed
+        env:
+          NODE_PATH: ${{ github.workspace }}/functions/node_modules
+          SEED_USER_ID: '835398VV'
+          REMOVE: '0'
+        run: node .github/scripts/seed-homework-progress-sample.js
