@@ -44,6 +44,11 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   okunamazsa ekran toplamlarla açılıyor (çökmüyor).
 - `functions/index.js`'ten yalnızca bu işin parçası commit'lendi (kısmi sahneleme); yerel veli onayı taslağı
   hâlâ yerelde, canlıdaki veli onayı metni değişmedi.
+- **ÖRNEK VERİ (canlıda, Ted `835398VV`):** ekranı dolu görmek için son 90 günün sahte kaydı yazıldı (b32d2c6,
+  `.github/scripts/seed-homework-progress-sample.js` + `seed-homework-progress-sample.yml`): 51 gün, 1020 soru,
+  aynı miktarlar `tally`'ye de eklendi; bugün yazılmadı. Eklenenler `homeworkRuleStats/{uid}/seed/sample`'da.
+  **Geri almak için:** yml'de `REMOVE: '1'` yapıp push et. Ted'in ustalık aşamaları bu yüzden şişkin görünür.
+
 
 ## Ödev formunda "Gelişmiş": hangi rakamlar gelsin (26.10.2026 — CANLIDA: fa8197b push edildi, fonksiyon deploy'u başarılı; telefona kuruldu, kullanıcı bakmadı)
 
