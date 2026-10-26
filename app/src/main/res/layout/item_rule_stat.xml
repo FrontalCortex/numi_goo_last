@@ -25,6 +25,21 @@
             android:textStyle="bold"
             tools:text="Boncuk" />
 
+        <!-- Ustalık aşaması: Başladı / Gelişiyor / Usta (renk kodda) -->
+        <TextView
+            android:id="@+id/ruleStage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:paddingStart="8dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="2dp"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            tools:text="Usta ⭐" />
+
         <TextView
             android:id="@+id/rulePercent"
             android:layout_width="wrap_content"

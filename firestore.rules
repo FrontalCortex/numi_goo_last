@@ -665,6 +665,12 @@ service cloud.firestore {
     match /homeworkRuleStats/{uid} {
       allow read: if isSelf(uid) || (isSignedIn() && isTeacherOfStudent(uid));
       allow write: if false;
+
+      // Günlük kayıtlar (ödev başarısı grafiği); okuma izni üst dokümanla aynı.
+      match /months/{month} {
+        allow read: if isSelf(uid) || (isSignedIn() && isTeacherOfStudent(uid));
+        allow write: if false;
+      }
     }
 
     match /homeworks/{hwId} {

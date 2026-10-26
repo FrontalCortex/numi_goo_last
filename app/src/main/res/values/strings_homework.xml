@@ -183,4 +183,54 @@
     <string name="rule_stats_count">%1$d/%2$d doğru</string>
     <string name="rule_stats_empty">Henüz ödevlerden gelen veri yok. Abaküslü ödevler ve çarpma ödevleri çözüldükçe burada her kuralın doğru oranı görünecek.</string>
     <string name="rule_stats_note">Abaküslü toplama ve çıkarmada her basamak işlemi, gerektirdiği kurala sayılır. Çarpmada her soru bir deneme.</string>
+
+    <!-- Ödev başarısı: bu hafta kartı ve başarı grafiği (HomeworkRuleStatsFragment) -->
+    <string name="rule_progress_unit_question">soru</string>
+    <string name="rule_progress_unit_op">işlem</string>
+    <string name="rule_progress_week_title">Bu hafta</string>
+    <!-- "42 soru · geçen hafta %74" -->
+    <string name="rule_progress_week_sub">%1$d %2$s · geçen hafta %%%3$d</string>
+    <string name="rule_progress_week_sub_no_last">%1$d %2$s · geçen hafta ödev yoktu</string>
+    <string name="rule_progress_week_none">Bu hafta henüz ödev çözülmedi</string>
+    <string name="rule_progress_week_none_sub">Geçen hafta %%%1$d · %2$d %3$s</string>
+    <string name="rule_progress_delta_up">+%1$d puan</string>
+    <string name="rule_progress_delta_down">−%1$d puan</string>
+    <string name="rule_progress_delta_same">Geçen haftayla aynı</string>
+    <string name="rule_progress_total">Şimdiye kadar %1$d %2$s</string>
+    <string name="rule_progress_chart_title">Başarı grafiği</string>
+    <string name="rule_progress_all_rules">Hepsi</string>
+    <string name="rule_progress_chip_mul_abacus">%1$d×%2$d abaküslü çarpma</string>
+    <string name="rule_progress_chip_mul_mental">%1$d×%2$d abaküssüz çarpma</string>
+    <string name="rule_progress_range_week">1 hafta</string>
+    <string name="rule_progress_range_month">1 ay</string>
+    <string name="rule_progress_range_quarter">3 ay</string>
+    <string name="rule_progress_range_all">Tümü</string>
+    <string name="rule_progress_chart_hint">Her nokta o dönemin doğru oranı; üstündeki sayı o ana kadar çözülen toplam %1$s. Ayrıntı için noktaya dokun.</string>
+    <string name="rule_progress_chart_empty">Bu dönemde ödev çözülmedi</string>
+    <string name="rule_progress_base">Başlangıç</string>
+    <!-- "12–18 Eki · 42 soru · %86 doğru · toplam 380" -->
+    <string name="rule_progress_point_detail">%1$s · %2$d %3$s · %%%4$d doğru · toplam %5$d</string>
+    <string name="rule_progress_base_detail">Başlangıç: grafikten önceki %1$d %2$s · %%%3$d doğru</string>
+    <string name="rule_stats_mastery_title">Kural ustalığı</string>
+    <string name="rule_stats_mastery_desc">Bir kuralda son 50 işlemin %90\'ını doğru yapınca usta olur. Kazanılan aşama geri düşmez.</string>
+    <string name="rule_stats_stage_started">Başladı</string>
+    <string name="rule_stats_stage_improving">Gelişiyor</string>
+    <string name="rule_stats_stage_master">Usta ⭐</string>
+    <!-- "Son 52 işlem · %92 doğru" -->
+    <string name="rule_stats_recent">Son %1$d %2$s · %%%3$d doğru</string>
+    <string name="rule_stats_recent_few">%1$d %2$s · usta olmak için en az 50 gerekiyor</string>
+    <string-array name="rule_progress_months">
+        <item>Oca</item>
+        <item>Şub</item>
+        <item>Mar</item>
+        <item>Nis</item>
+        <item>May</item>
+        <item>Haz</item>
+        <item>Tem</item>
+        <item>Ağu</item>
+        <item>Eyl</item>
+        <item>Eki</item>
+        <item>Kas</item>
+        <item>Ara</item>
+    </string-array>
 </resources>

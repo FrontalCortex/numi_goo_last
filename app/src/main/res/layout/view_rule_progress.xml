@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ödev başarısının üst bölümü (bkz. HomeworkRuleStatsFragment.renderProgress): "Bu hafta" kartı
+  (geçen haftayla karşılaştırma) ve başarı grafiği (konu seçenekleri, grafik, zaman seçenekleri).
+  Kural ustalığı kartları bunun altına koddan ekleniyor.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Bu hafta -->
+    <com.google.android.material.card.MaterialCardView style="@style/HomeworkSectionCard">
+
+        <LinearLayout style="@style/HomeworkSectionBody">
+
+            <TextView style="@style/HomeworkSectionTitle" android:text="@string/rule_progress_week_title" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/weekPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/dark_text"
+                    android:textSize="34sp"
+                    android:textStyle="bold"
+                    tools:text="%86" />
+
+                <TextView
+                    android:id="@+id/weekDelta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:paddingStart="10dp"
+                    android:paddingTop="4dp"
+                    android:paddingEnd="10dp"
+                    android:paddingBottom="4dp"
+                    android:textColor="@android:color/white"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    tools:text="+12 puan" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/weekSub"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="14sp"
+                tools:text="42 soru · geçen hafta %74" />
+
+            <TextView
+                android:id="@+id/weekTotal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:textColor="@color/dark_text"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                tools:text="Şimdiye kadar 380 soru" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Başarı grafiği -->
+    <com.google.android.material.card.MaterialCardView style="@style/HomeworkSectionCard">
+
+        <LinearLayout style="@style/HomeworkSectionBody">
+
+            <TextView style="@style/HomeworkSectionTitle" android:text="@string/rule_progress_chart_title" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:clipToPadding="false"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:id="@+id/filterChips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+            </HorizontalScrollView>
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/progressChart"
+                android:layout_width="match_parent"
+                android:layout_height="230dp"
+                android:layout_marginTop="12dp" />
+
+            <TextView
+                android:id="@+id/chartSelection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:minHeight="36dp"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="12sp"
+                tools:text="Her nokta o dönemin doğru oranı; üstündeki sayı o ana kadar çözülen toplam soru." />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView android:id="@+id/rangeWeek" style="@style/HomeworkOption" android:text="@string/rule_progress_range_week" />
+
+                <TextView android:id="@+id/rangeMonth" style="@style/HomeworkOption" android:text="@string/rule_progress_range_month" />
+
+                <TextView android:id="@+id/rangeQuarter" style="@style/HomeworkOption" android:text="@string/rule_progress_range_quarter" />
+
+                <TextView
+                    android:id="@+id/rangeAll"
+                    style="@style/HomeworkOption"
+                    android:layout_marginEnd="0dp"
+                    android:text="@string/rule_progress_range_all" />
+            </LinearLayout>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>

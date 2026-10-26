@@ -160,7 +160,25 @@ async function main() {
     await writeProgress(S2, { uid: S2, completedBlocks: 2, answered: 20, correct: 20, lastBlockCorrect: 10, updatedAtMs: 4,
       ruleTally: { add_five: { c: 50, w: 0 } } });
     check('tekrar: değişmedi', ((await db.doc(hwPath).get()).get('doneUids') || []).length, 2);
-    check('tekrar: adım ilerlemeden sayım eklenmez', (await db.doc(`homeworkRuleStats/${S2}`).get()).exists, false);
+    check('tekrar: adım ilerlemeden sayım eklenmez', (await db.doc(`homeworkRuleStats/${S2}`).get()).get('tally'), {});
+
+    // Günlük kayıt ve ustalık (grafik ve aşamalar).
+    const { month, day } = require('../homework').trDayKey(Date.now());
+    const monthDoc = (await db.doc(`homeworkRuleStats/${S1}/months/${month}`).get()).data() || {};
+    const today = (monthDoc.days || {})[day] || {};
+    check('günlük kayıt: soru (8+9 doğru / 20)', today.q, { c: 17, w: 3 });
+    check('günlük kayıt: kural', (today.t || {}).add_five, { c: 12, w: 3 });
+    check('günlük kayıt: kuralsız öğrencide de soru', (((await db.doc(`homeworkRuleStats/${S2}/months/${month}`).get()).data() || {}).days || {})[day].q, { c: 10, w: 0 });
+    const s1 = (await db.doc(`homeworkRuleStats/${S1}`).get()).data();
+    check('pencere: iki adım', s1.recent.add_five, [{ c: 7, w: 2 }, { c: 5, w: 1 }]);
+    check('aşama: 50 işlemden az → başladı', s1.level.add_five, 0);
+    const hm = require('../homework');
+    check('pencere 50\'yi karşılayınca eski adım düşer', hm.pushRecent([{ c: 30, w: 0 }, { c: 40, w: 10 }], 5, 0), [{ c: 40, w: 10 }, { c: 5, w: 0 }]);
+    check('aşamalar', [hm.masteryStage(45, 5), hm.masteryStage(40, 10), hm.masteryStage(30, 20), hm.masteryStage(20, 0)], [2, 1, 0, 0]);
+    const old = hm.applyBlockToStats({ tally: { add_ten: { c: 60, w: 2 } }, level: { add_ten: 1 } }, [{ key: 'add_ten', c: 1, w: 4 }]);
+    check('eski veri penceresi toplamla başlar, aşama geri düşmez', [old.recent.add_ten, old.level.add_ten, old.tally.add_ten],
+      [[{ c: 60, w: 2 }, { c: 1, w: 4 }], 2, { c: 61, w: 6 }]);
+    check('Türkiye günü (UTC 22:30 → ertesi gün)', hm.trDayKey(Date.UTC(2026, 9, 31, 22, 30)), { month: '2026-11', day: '01' });
 
     const h = require('../homework');
     check('bildirim metni', h.doneNoticeText({ studentName: 'Ali', summary: "5'lik toplama", correct: 17, answered: 20, doneCount: 8, targetCount: 12 }),

@@ -4469,17 +4469,30 @@ exports.onHomeworkProgressWritten = functions.firestore
     if (!hwSnap.exists) return null;
     const hw = hwSnap.data();
 
-    // Kural kural başarı: adımın sayımı öğrencinin toplamına (homeworkRuleStats/{uid}). Yalnızca
-    // yeni adım yazıldığında; istatistiği yalnızca sunucu yazıyor (kurallarda yazım kapalı).
+    // Kural kural başarı: adımın sayımı öğrencinin toplamına (homeworkRuleStats/{uid}), son ~50
+    // işlem penceresine ve ustalık aşamasına (homework.applyBlockToStats; pencere okuyup yazdığı
+    // için işlem içinde). Ayrıca günlük kayıt (months/{yyyy-mm}.days.{gg}): soru ve kural sayımı,
+    // ödev başarısı grafiği buradan. Yalnızca yeni adım yazıldığında; istatistiği yalnızca sunucu
+    // yazıyor (kurallarda yazım kapalı).
     const newBlock = (Number(after.completedBlocks) || 0) > (Number(before.completedBlocks) || 0);
     const tally = newBlock ? homework.sanitizeRuleTally(after.ruleTally) : [];
-    if (tally.length) {
+    const questions = newBlock ? homework.blockQuestionCounts(before, after) : { c: 0, w: 0 };
+    if (tally.length || questions.c + questions.w > 0) {
+      const now = Date.now();
+      const statsRef = db.collection('homeworkRuleStats').doc(studentUid);
+      const { month, day } = homework.trDayKey(now);
       const inc = admin.firestore.FieldValue.increment;
       const t = {};
       for (const { key, c, w } of tally) t[key] = { c: inc(c), w: inc(w) };
-      await db.collection('homeworkRuleStats').doc(studentUid)
-        .set({ tally: t, updatedAtMs: Date.now() }, { merge: true })
-        .catch((e) => console.error('onHomeworkProgressWritten: kural sayımı yazılamadı', { studentUid, error: e.message }));
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(statsRef);
+        const next = homework.applyBlockToStats(snap.exists ? snap.data() : {}, tally);
+        tx.set(statsRef, { ...next, updatedAtMs: now }, { merge: true });
+        tx.set(statsRef.collection('months').doc(month), {
+          days: { [day]: { q: { c: inc(questions.c), w: inc(questions.w) }, t } },
+          updatedAtMs: now,
+        }, { merge: true });
+      }).catch((e) => console.error('onHomeworkProgressWritten: kural sayımı yazılamadı', { studentUid, error: e.message }));
     }
 
     const total = Number(hw.blockCount) || 0;
@@ -4531,7 +4544,8 @@ exports.onHomeworkProgressWritten = functions.firestore
  * firestore.indexes.json).
  */
 async function removeDeletedUserHomeworkProgress(uid) {
-  await db.collection('homeworkRuleStats').doc(uid).delete();
+  // Günlük kayıtlar (months alt koleksiyonu) da gitsin.
+  await db.recursiveDelete(db.collection('homeworkRuleStats').doc(uid));
   const snap = await db.collectionGroup('studentProgress').where('uid', '==', uid).get();
   for (let i = 0; i < snap.docs.length; i += 400) {
     const batch = db.batch();

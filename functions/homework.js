@@ -202,7 +202,92 @@ function sanitizeRuleTally(tally) {
   return out;
 }
 
+/**
+ * KURAL USTALIĞI — ödev başarısı ekranındaki aşama: 0 başladı, 1 gelişiyor, 2 usta. Son ~50
+ * işleme bakılıyor (toplam oran zamanla düzleşip ilerlemeyi göstermiyordu); aşama hiç geri
+ * düşmüyor (kullanıcı kararı 26.10.2026). İstemci aynı eşikleri kullanıyor (HomeworkRuleStatsFragment).
+ */
+const MASTERY_WINDOW = 50;
+const MASTERY_IMPROVING_PCT = 70;
+const MASTERY_MASTER_PCT = 90;
+
+function masteryStage(c, w) {
+  const total = c + w;
+  if (total < MASTERY_WINDOW) return 0;
+  const pct = (c * 100) / total;
+  if (pct >= MASTERY_MASTER_PCT) return 2;
+  if (pct >= MASTERY_IMPROVING_PCT) return 1;
+  return 0;
+}
+
+function sumCw(list) {
+  return list.reduce((acc, x) => ({ c: acc.c + x.c, w: acc.w + x.w }), { c: 0, w: 0 });
+}
+
+/**
+ * Son işlemler penceresi: adım adım sayımlar, en yenisi sonda. Adımın içindeki sıra bilinmediği
+ * için pencere adım sınırında kesiliyor: en eski adım, kalanlar hâlâ 50 işlemi karşılıyorsa düşüyor.
+ */
+function pushRecent(recent, c, w) {
+  const out = (Array.isArray(recent) ? recent : [])
+    .filter((x) => x && isInt(x.c) && isInt(x.w))
+    .map((x) => ({ c: x.c, w: x.w }));
+  out.push({ c, w });
+  while (out.length > 1) {
+    const rest = sumCw(out.slice(1));
+    if (rest.c + rest.w < MASTERY_WINDOW) break;
+    out.shift();
+  }
+  return out;
+}
+
+/**
+ * Bir adımın kural sayımını öğrencinin istatistiğine uygular; yalnızca değişen anahtarlar döner
+ * (merge ile yazılıyor). Penceresi olmayan eski anahtar (pencereden önceki veriler) toplamıyla
+ * başlıyor: eski çalışma ustalıkta kaybolmasın.
+ * @param prev homeworkRuleStats/{uid} dokümanı ({ tally, recent, level })
+ * @param tally sanitizeRuleTally çıktısı
+ */
+function applyBlockToStats(prev, tally) {
+  const p = prev && typeof prev === 'object' ? prev : {};
+  const out = { tally: {}, recent: {}, level: {} };
+  for (const { key, c, w } of tally) {
+    const old = (p.tally && p.tally[key]) || {};
+    const oc = isInt(old.c) ? old.c : 0;
+    const ow = isInt(old.w) ? old.w : 0;
+    out.tally[key] = { c: oc + c, w: ow + w };
+    const prevRecent = p.recent && Array.isArray(p.recent[key]) ? p.recent[key]
+      : (oc + ow > 0 ? [{ c: oc, w: ow }] : []);
+    const recent = pushRecent(prevRecent, c, w);
+    out.recent[key] = recent;
+    const s = sumCw(recent);
+    const oldLevel = p.level && isInt(p.level[key]) ? p.level[key] : 0;
+    out.level[key] = Math.max(oldLevel, masteryStage(s.c, s.w));
+  }
+  return out;
+}
+
+/** Günlük kayıt anahtarı Türkiye saatiyle (UTC+3; 2016'dan beri yaz saati yok): { month: '2026-10', day: '26' }. */
+function trDayKey(ms) {
+  const iso = new Date(ms + 3 * 3600 * 1000).toISOString();
+  return { month: iso.slice(0, 7), day: iso.slice(8, 10) };
+}
+
+/** Adımda çözülen soru: ilerlemenin önceki hâlinden farkı; bir adım en çok BLOCK_SIZE soru. */
+function blockQuestionCounts(before, after) {
+  const clamp = (v) => (Number.isInteger(v) ? Math.min(Math.max(v, 0), BLOCK_SIZE) : 0);
+  const answered = clamp((Number(after.answered) || 0) - (Number(before.answered) || 0));
+  const correct = Math.min(clamp((Number(after.correct) || 0) - (Number(before.correct) || 0)), answered);
+  return { c: correct, w: answered - correct };
+}
+
 module.exports = {
+  MASTERY_WINDOW,
+  masteryStage,
+  pushRecent,
+  applyBlockToStats,
+  trDayKey,
+  blockQuestionCounts,
   sanitizeRuleTally,
   countDone,
   doneNoticeText,

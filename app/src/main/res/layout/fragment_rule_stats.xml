@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Ödevde kural kural başarı (bkz. homework/HomeworkRuleStatsFragment). Bölüm kartları koddan:
-  Toplama, Çıkarma, Abaküslü çarpma, Abaküssüz çarpma; verisi olmayan satır ve bölüm gösterilmiyor.
+  Ödev başarısı (bkz. homework/HomeworkRuleStatsFragment). İçerik koddan: Bu hafta kartı ve başarı
+  grafiği (view_rule_progress), altında kural ustalığı kartları (Toplama, Çıkarma, Abaküslü çarpma,
+  Abaküssüz çarpma); verisi olmayan satır ve bölüm gösterilmiyor.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -53,6 +54,7 @@
         android:layout_height="match_parent">
 
         <ScrollView
+            android:id="@+id/statsScroll"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
