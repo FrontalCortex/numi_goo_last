@@ -21,6 +21,10 @@ odaklar, ekran yazıları). Her satır ayrı bir ses dosyası: `VideosSorobit_ta
 Dosyalar konunca `VIDEO=kurs node ogrenci_montaj.js` yazıların süresini sese göre kendisi ayarlıyor.
 Ekran yazısı aynı cümle (vurgular hariç).
 
+26.10.2026: video `kurs/Sorobit_ogretmen_sinif.mp4` (2 dk 38 sn). Ödev ver'e Gelişmiş paneli iki satır (guncel3_gelismis),
+İlerleme'de Ödev başarısı yeni ekranla (guncel1_ogt_basari, öğretmenden Ted) ve üç yeni satır. Gelişmiş bölümü ayrıca tek başına:
+`kurs/Sorobit_gelismis_panel.mp4` (12 sn, bu videonun 18–34,5. saniyeleri, 1,4 kat).
+
 | N | Sahne | Metin |
 |---|---|---|
 | 0 | açılış | Ödevi kim yaptı, kim yapmadı? Derse girmeden bilin. |
@@ -32,26 +36,28 @@ Ekran yazısı aynı cümle (vurgular hariç).
 | 6 | ödev ver | Sınıfa Ödevler ekranından yeni ödev verin. |
 | 7 | ödev ver | İşlemi ve kuralı seçin: kuralsız, beşlik, onluk, boncuk. |
 | 8 | ödev ver | Basamak sayısını, sayı adedini ve hızı siz belirleyin. |
-| 9 | ödev ver | Göndermeden önce öğrencinin göreceği örnek soruyu görün. |
-| 10 | ödev ver | Kurala uymayan bir seçimde uygulama sizi uyarır. |
-| 11 | ödev ver | Ödevi bütün sınıfa ya da yalnızca seçtiğiniz öğrencilere verebilirsiniz. |
-| 12 | ödev ver | Tek dokunuşla gönderin. |
-| 13 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
-| 14 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
-| 15 | öğrenci çözer | Ödev onar soruluk adımlarla çözülür. |
-| 16 | öğrenci çözer | Son adım bitince ödev tamamlanır. |
-| 17 | kim bitirdi? | Öğrenci ödevi bitirince size bildirim gelir. |
-| 18 | kim bitirdi? | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilin. |
-| 19 | ilerleme | Öğrencinin profilinde sağ üstteki istatistik düğmesine dokunun. |
-| 20 | ilerleme | İlerleme sayfasında iki kart var: dersler ve ödev başarısı. |
-| 21 | ilerleme | Kaç ders bitirdi, ne kadar çalıştı: hepsini görün. |
-| 22 | ilerleme | Ödev başarısında öğrencinin hangi kuralda ne kadar hata yaptığını görürsünüz. |
-| 23 | sorular | Öğrencilerinizin soruları yalnızca size gelir. |
-| 24 | sorular | Soruyu sahiplenin, öğrencinize kendiniz cevap verin. |
-| 25 | kapanış | Sorobit. Kursunuz için sınıf ve ödev takibi, tek uygulamada. |
-
-Çekimde senaryodan sapmalar: 4. sahnede konu kuralsız + 5'lik (uyarı 5'lik + 10'lukta çıkmıyor),
-sayı adedi 3; 5. sahnede yanlış cevap yok (20/20); 6. sahnede bildirimler botlardan.
+| 9 | ödev ver | Gelişmiş'te her kuralda hangi sayıların gelebileceğini seçin. |
+| 10 | ödev ver | Çarpmada her basamağa hangi rakamların geleceğini belirleyin. |
+| 11 | ödev ver | Göndermeden önce öğrencinin göreceği örnek soruyu görün. |
+| 12 | ödev ver | Kurala uymayan bir seçimde uygulama sizi uyarır. |
+| 13 | ödev ver | Ödevi bütün sınıfa ya da yalnızca seçtiğiniz öğrencilere verebilirsiniz. |
+| 14 | ödev ver | Tek dokunuşla gönderin. |
+| 15 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
+| 16 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
+| 17 | öğrenci çözer | Ödev onar soruluk adımlarla çözülür. |
+| 18 | öğrenci çözer | Son adım bitince ödev tamamlanır. |
+| 19 | kim bitirdi | Öğrenci ödevi bitirince size bildirim gelir. |
+| 20 | kim bitirdi | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilin. |
+| 21 | ilerleme | Öğrencinin profilinde sağ üstteki istatistik düğmesine dokunun. |
+| 22 | ilerleme | İlerleme sayfasında iki kart var: dersler ve ödev başarısı. |
+| 23 | ilerleme | Kaç ders bitirdi, ne kadar çalıştı: hepsini görün. |
+| 24 | ilerleme | Bu hafta kartında haftanın doğru oranını ve geçen haftadan farkını görün. |
+| 25 | ilerleme | Grafikte konu ve dönem seçerek öğrencinin gelişimini izleyin. |
+| 26 | ilerleme | Bir kuralda son 50 işlemin yüzde 90'ı doğruysa öğrenci o kuralda usta olur. |
+| 27 | ilerleme | Ödev başarısında öğrencinin hangi kuralda ne kadar hata yaptığını görürsünüz. |
+| 28 | sorular | Öğrencilerinizin soruları yalnızca size gelir. |
+| 29 | sorular | Soruyu sahiplenin, öğrencinize kendiniz cevap verin. |
+| 30 | kapanış | Sorobit. Kursunuz için sınıf ve ödev takibi, tek uygulamada. |
 
 ## Çekimden önce hazırlık
 

@@ -26,6 +26,10 @@ Aynı gün: Veli (sahip4_veli_1.mp4, Esma, gösterim verisi çekimden sonra sili
 oluşturmadaki altı ayrıntı satırı (basamak, çarpmada iki basamak, sayı adedi, eksi, uyarı, hız) tek satıra indi.
 Süre 3 dk 36 sn. Yeni satırlar Sarah (ses_uret.js); kullanılmayan eski sesler `ses/api_ilk/kullanilmayan_N.mp3`.
 
+26.10.2026: Gelişmiş paneli satırı (guncel3_gelismis) eklendi; Takip ve Veli bölümlerinde Ödev başarısı yeni ekranla
+(guncel1_ogt_basari: öğretmenden Ted; guncel2_veli: Ted'in kendi hesabı). İki yeni satır (Bu hafta, grafik). Süre 3 dk 51 sn.
+Takip'te profil hâlâ Esma'nınki (sahip3_basari), sonraki ekranlar Ted'in; kullanıcı bunu sorun saymadı.
+
 | N | Sahne | Metin |
 |---|---|---|
 | 0 | açılış | Öğrenciniz haftada bir saat derste. Peki geri kalan altı gün? Ödev kâğıtta kalıyor: kim çalıştı, kaç doğru yaptı, ancak derste öğreniyorsunuz. |
@@ -41,32 +45,35 @@ Süre 3 dk 36 sn. Yeni satırlar Sarah (ses_uret.js); kullanılmayan eski sesler
 | 10 | ödev oluşturma | Her soru, seçtiğiniz kurallarla çözülecek şekilde hesaplanır. Çocuk henüz görmediği bir kurala denk gelmez. |
 | 11 | ödev oluşturma | Abaküslü ödevde çocuk ekrandaki abaküsle çözer. Abaküssüz ödevde zihinden hesaplar ve cevabı yazar. |
 | 12 | ödev oluşturma | Basamak, sayı adedi, hız: her ayrıntıyı siz belirlersiniz. |
-| 13 | ödev oluşturma | Soru sayısını siz seçersiniz; ödev onar soruluk adımlara bölünür, çocuk sıkılmadan bitirir. |
-| 14 | ödev oluşturma | Ödevi bütün sınıfa ya da yalnızca seçtiğiniz öğrencilere verirsiniz. Her çocuğa kendi seviyesine göre. |
-| 15 | ödev oluşturma | Göndermeden önce öğrencinin görebileceği soruları görürsünüz. |
-| 16 | ödev oluşturma | Tek dokunuşla gönderin. |
-| 17 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
-| 18 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
-| 19 | öğrenci çözer | Abaküssüz ödevde çocuk cevabı kendisi yazar. |
-| 20 | öğrenci çözer | Uygulama her cevabı anında kontrol eder. Öğretmeniniz kâğıt okumaz. |
-| 21 | takip | Öğrenci ödevi bitirince öğretmene bildirim gelir. |
-| 22 | takip | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilirsiniz. |
-| 23 | takip | Uygulama yalnızca doğruyu yanlışı saymaz, hatanın hangi kuralda yapıldığını da bulur. |
-| 24 | takip | Öğrencinin beşlikte mi, onlukta mı zorlandığını kural kural görürsünüz. |
-| 25 | takip | Sıradaki ödevi bu eksiğe göre verin. |
-| 26 | veli | Veli de çocuğunun telefonunda Veli Paneli'nden ilerlemeyi kendisi görür. |
-| 27 | veli | Ne kadar çalıştı, hangi kuralda zorlanıyor: hepsi tek ekranda. |
-| 28 | veli | Veli görüşmesinde somut veriyle konuşursunuz. |
-| 29 | sorular | Öğrenci evde takılırsa soruyu fotoğraf ya da videoyla sorar. |
-| 30 | sorular | Ekranını kaydeder, takıldığı yeri çizerek sesli anlatır. |
-| 31 | sorular | Öğrencinizin sorduğu sorular başka öğretmene değil, yalnızca sizin öğretmeninize gider. |
-| 32 | sorular | Öğretmeniniz videoyu izler, çocuğun nerede takıldığını görür. |
-| 33 | sorular | Cevabı da aynı şekilde verir: abaküste çizerek sesli anlatır. |
-| 34 | sorular | Çocuk bir sonraki dersi beklemeden öğrenir. |
-| 35 | evde | Ödevin dışında öğrenciniz derste gördüğü konuyu evde tekrar eder. |
-| 36 | evde | Konu adım adım anlatılır, testle pekiştirilir. |
-| 37 | evde | Görevler ve kupalarla her gün kendi isteğiyle çalışır. |
-| 38 | kapanış | Ödevi uygulama hazırlar. Uygulama kontrol eder. Siz kimin çalıştığını bilirsiniz. Sorobit. |
+| 13 | ödev oluşturma | Gelişmiş panelde hangi sayıların geleceğini bile siz seçersiniz: örneğin beşlikte yalnızca 1, 2 ve 3. |
+| 14 | ödev oluşturma | Soru sayısını siz seçersiniz; ödev onar soruluk adımlara bölünür, çocuk sıkılmadan bitirir. |
+| 15 | ödev oluşturma | Ödevi bütün sınıfa ya da yalnızca seçtiğiniz öğrencilere verirsiniz. Her çocuğa kendi seviyesine göre. |
+| 16 | ödev oluşturma | Göndermeden önce öğrencinin görebileceği soruları görürsünüz. |
+| 17 | ödev oluşturma | Tek dokunuşla gönderin. |
+| 18 | öğrenci çözer | Öğrenciye hemen bildirim gider. |
+| 19 | öğrenci çözer | Sayılar sizin seçtiğiniz hızda, tek tek gelir. |
+| 20 | öğrenci çözer | Abaküssüz ödevde çocuk cevabı kendisi yazar. |
+| 21 | öğrenci çözer | Uygulama her cevabı anında kontrol eder. Öğretmeniniz kâğıt okumaz. |
+| 22 | takip | Öğrenci ödevi bitirince öğretmene bildirim gelir. |
+| 23 | takip | Kim bitirdi, kaç doğru yaptı, kim başlamadı: derse girmeden bilirsiniz. |
+| 24 | takip | Uygulama yalnızca doğruyu yanlışı saymaz, hatanın hangi kuralda yapıldığını da bulur. |
+| 25 | takip | Bu haftanın başarısını geçen haftayla karşılaştırırsınız. |
+| 26 | takip | Grafikte öğrencinin her konuda nasıl ilerlediğini görürsünüz. |
+| 27 | takip | Öğrencinin beşlikte mi, onlukta mı zorlandığını kural kural görürsünüz. |
+| 28 | takip | Sıradaki ödevi bu eksiğe göre verin. |
+| 29 | veli | Veli de çocuğunun telefonunda Veli Paneli'nden ilerlemeyi kendisi görür. |
+| 30 | veli | Ne kadar çalıştı, hangi kuralda zorlanıyor: hepsi tek ekranda. |
+| 31 | veli | Veli görüşmesinde somut veriyle konuşursunuz. |
+| 32 | sorular | Öğrenci evde takılırsa soruyu fotoğraf ya da videoyla sorar. |
+| 33 | sorular | Ekranını kaydeder, takıldığı yeri çizerek sesli anlatır. |
+| 34 | sorular | Öğrencinizin sorduğu sorular başka öğretmene değil, yalnızca sizin öğretmeninize gider. |
+| 35 | sorular | Öğretmeniniz videoyu izler, çocuğun nerede takıldığını görür. |
+| 36 | sorular | Cevabı da aynı şekilde verir: abaküste çizerek sesli anlatır. |
+| 37 | sorular | Çocuk bir sonraki dersi beklemeden öğrenir. |
+| 38 | evde | Ödevin dışında öğrenciniz derste gördüğü konuyu evde tekrar eder. |
+| 39 | evde | Konu adım adım anlatılır, testle pekiştirilir. |
+| 40 | evde | Görevler ve kupalarla her gün kendi isteğiyle çalışır. |
+| 41 | kapanış | Ödevi uygulama hazırlar. Uygulama kontrol eder. Siz kimin çalıştığını bilirsiniz. Sorobit. |
 
 ## Akış (özet)
 
