@@ -51,6 +51,38 @@ function isInt(v) {
 }
 
 /**
+ * Gelişmiş ayar: anahtar → rakam listesi ({ five: [3, 4] }, çarpmada { "0": [2, 5] }). Yalnızca
+ * izin verilen anahtarlar ve [min, max] aralığındaki tam sayılar kalıyor; boş liste atılıyor.
+ * Kuralın hangi rakamlara sahip olduğu (5'likte 1–4 gibi) motorda; istemci okurken ayrıca
+ * temizliyor (HomeworkEngine.normalized).
+ * @returns {object|null} temiz kopya ya da hiç giriş yoksa null
+ */
+function normalizeDigitMap(raw, allowedKeys, min, max) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const out = {};
+  for (const key of allowedKeys) {
+    const list = raw[key];
+    if (!Array.isArray(list)) continue;
+    const digits = [...new Set(list.filter((d) => isInt(d) && d >= min && d <= max))].sort((a, b) => a - b);
+    if (digits.length) out[key] = digits;
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/** Çarpmada basamak anahtarları: "0" birler … En büyük basamakta 0 olamaz. */
+function normalizeMulDigits(raw, digits) {
+  const keys = Array.from({ length: digits }, (_, i) => String(i));
+  const out = normalizeDigitMap(raw, keys, 0, 9);
+  if (!out) return null;
+  const lead = String(digits - 1);
+  if (out[lead]) {
+    out[lead] = out[lead].filter((d) => d !== 0);
+    if (!out[lead].length) delete out[lead];
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/**
  * İstemciden gelen ayarları doğrular ve yalnızca bilinen alanları içeren temiz bir kopya döndürür.
  */
 function normalizeConfig(raw) {
@@ -69,7 +101,12 @@ function normalizeConfig(raw) {
     if (!isInt(digits) || !isInt(digits2) || digits < 1 || digits2 < 1 || digits + digits2 > cap) {
       return fail('invalid-argument', `Çarpmada iki sayının basamakları toplamı en fazla ${cap} olabilir.`);
     }
-    return { ok: true, config: { op, withAbacus, digits, digits2, questionCount } };
+    const config = { op, withAbacus, digits, digits2, questionCount };
+    const mulDigits1 = normalizeMulDigits(c.mulDigits1, digits);
+    const mulDigits2 = normalizeMulDigits(c.mulDigits2, digits2);
+    if (mulDigits1) config.mulDigits1 = mulDigits1;
+    if (mulDigits2) config.mulDigits2 = mulDigits2;
+    return { ok: true, config };
   }
 
   const rules = Array.isArray(c.rules) ? [...new Set(c.rules)] : [];
@@ -89,7 +126,10 @@ function normalizeConfig(raw) {
   }
   // Kural sırası sabit: aynı ödev her yerde aynı başlıkla görünsün.
   const ordered = RULES.filter((r) => rules.includes(r));
-  return { ok: true, config: { op, rules: ordered, withAbacus, digits, numberCount, intervalMs, questionCount } };
+  const config = { op, rules: ordered, withAbacus, digits, numberCount, intervalMs, questionCount };
+  const ruleDigits = normalizeDigitMap(c.ruleDigits, ordered, 1, 9);
+  if (ruleDigits) config.ruleDigits = ruleDigits;
+  return { ok: true, config };
 }
 
 function blockCount(questionCount) {

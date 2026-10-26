@@ -91,6 +91,22 @@ async function main() {
   check('bilinmeyen alan saklanmadı', Object.keys(hw.config).sort(), ['digits', 'intervalMs', 'numberCount', 'op', 'questionCount', 'rules', 'withAbacus']);
   check('öğretmen adı', [hw.teacherName, hw.className, hw.teacherUid], ['Ayşe Hoca', 'Cmt', T1]);
 
+  console.log('\n=== GELİŞMİŞ: RAKAM SEÇİMİ ===');
+  const adv = await call('createHomework', T1, {
+    classId: C1,
+    config: { ...ADD, ruleDigits: { five: [4, 3, 3, 12, 'x'], bead: [6], ten: [] } },
+    target: { wholeClass: true },
+  });
+  const hwAdv = (await db.doc(`homeworks/${adv.homeworkId}`).get()).data();
+  check('seçili olmayan kural ve geçersiz rakam atıldı', hwAdv.config.ruleDigits, { five: [3, 4] });
+  const advMul = await call('createHomework', T1, {
+    classId: C1,
+    config: { op: 'mul', withAbacus: true, digits: 2, digits2: 1, questionCount: 5, mulDigits1: { 1: [0, 3], 0: [5], 4: [1] }, mulDigits2: { 0: [0] } },
+    target: { wholeClass: true },
+  });
+  const hwAdvMul = (await db.doc(`homeworks/${advMul.homeworkId}`).get()).data();
+  check('çarpmada basamak dışı ve baştaki 0 atıldı', [hwAdvMul.config.mulDigits1, hwAdvMul.config.mulDigits2], [{ 0: [5], 1: [3] }, undefined]);
+
   console.log('\n=== SEÇİLİ ÖĞRENCİLERE ===');
   const mul = await call('createHomework', T1, {
     classId: C1,

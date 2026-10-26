@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -18,6 +19,8 @@ import com.example.app.R
 import com.example.app.appString
 import com.example.app.databinding.FragmentHomeworkCreateBinding
 import com.example.app.databinding.ViewHwStepperBinding
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,11 +35,17 @@ import kotlin.random.Random
  * [HomeworkEngine.forcedPattern]): her değişiklikte yeniden hesaplanıyor ve sayı adedi en fazla
  * değere kırpılıyor. Formun altındaki örnek soru aynı motordan; öğretmen göndermeden ne
  * çıkacağını görüyor. Sunucu ayrıca aralıkları doğruluyor (functions/homework.js).
+ *
+ * Gelişmiş paneli (Konu kartının, çarpmada Ayarlar kartının altında): her kuralda hangi rakamların
+ * eklenip çıkarılabileceği, çarpmada her basamağın hangi rakamları alabileceği. Elde/ödünçlü
+ * kurallarda rakam seçimi en fazla sayı adedini değiştiriyor ve hesapla bulunamıyor; motor onu
+ * arka planda ölçüyor ([HomeworkEngine.measureCarryMax]), ölçüm bitene kadar gönderilemiyor.
  */
 class HomeworkCreateFragment : Fragment() {
 
     companion object {
         private const val ARG_CLASS_ID = "class_id"
+        private const val DIGITS_PER_ROW = 5
 
         fun newInstance(classId: String) = HomeworkCreateFragment().apply {
             arguments = Bundle().apply { putString(ARG_CLASS_ID, classId) }
@@ -60,6 +69,18 @@ class HomeworkCreateFragment : Fragment() {
     private var wholeClass = true
     private val selectedUids = linkedSetOf<String>()
     private var members: List<CourseClasses.ClassMember> = emptyList()
+    /**
+     * Gelişmiş: kural → açık rakamlar. Ham seçim (konu değişince de korunuyor); ödev kurulurken
+     * temizleniyor ([HomeworkEngine.normalized]). Girişi olmayan kuralda bütün rakamlar açık.
+     */
+    private val ruleDigits = mutableMapOf<AbacusRule, Set<Int>>()
+    /** Gelişmiş, çarpma: 1. ve 2. sayının basamağı (0 = birler) → açık rakamlar. */
+    private val mulDigits = listOf(mutableMapOf<Int, Set<Int>>(), mutableMapOf<Int, Set<Int>>())
+
+    private var advancedSheet: BottomSheetDialog? = null
+    private var advancedGroups: LinearLayout? = null
+    private var measureJob: Job? = null
+    private var measureKey: List<Any>? = null
 
     private var membersListener: ListenerRegistration? = null
     private var previewJob: Job? = null
@@ -100,11 +121,13 @@ class HomeworkCreateFragment : Fragment() {
         binding.targetSelect.setOnClickListener { wholeClass = false; refresh() }
         binding.btnPreviewRefresh.setOnClickListener { refreshPreview() }
         binding.btnSend.setOnClickListener { send() }
+        binding.rulesAdvanced.root.setOnClickListener { showAdvancedSheet() }
+        binding.mulAdvanced.root.setOnClickListener { showAdvancedSheet() }
         DepthPress.attach(
             binding.opAdd, binding.opSub, binding.opMul,
             binding.ruleDirect, binding.ruleFive, binding.ruleTen, binding.ruleBead,
             binding.typeAbacus, binding.typeMental, binding.targetAll, binding.targetSelect,
-            binding.btnSend,
+            binding.rulesAdvanced.root, binding.mulAdvanced.root, binding.btnSend,
         )
 
         digitsStepper = Stepper(binding.digitsStepper, decimal = false) { v -> digits = v.toInt(); refresh() }
@@ -172,6 +195,14 @@ class HomeworkCreateFragment : Fragment() {
         selectOption(b.targetAll, wholeClass)
         selectOption(b.targetSelect, !wholeClass)
         updatingFields = false
+
+        b.mulAdvanced.root.visibility = if (isMul) View.VISIBLE else View.GONE
+        val filters = HomeworkText.digitFilters(currentConfig()).joinToString(" · ")
+            .ifEmpty { appString(R.string.hw_advanced_all_digits) }
+        b.rulesAdvanced.advancedSummary.text = filters
+        b.mulAdvanced.advancedSummary.text = filters
+        renderAdvancedSheet()
+
         renderStudents()
         refreshPreview()
     }
@@ -183,21 +214,23 @@ class HomeworkCreateFragment : Fragment() {
         )
         countStepper.set(numberCount.toDouble())
         val max = currentMax()
+        val filter = activeRuleDigits()
         countStepper.warning(null)
         when {
             rules.isEmpty() -> countStepper.hint(appString(R.string.hw_field_rules_hint))
+            max == null -> countStepper.hint(appString(R.string.hw_count_measuring))
             max == 0 -> {
                 countStepper.hint(null)
                 countStepper.warning(appString(R.string.hw_count_impossible, digits))
             }
             else -> {
-                val rec = HomeworkEngine.recommendedNumberCount(op, rules)
+                val rec = HomeworkEngine.recommendedNumberCount(op, rules, filter)
                 val base = if (rec != null) appString(R.string.hw_count_max_recommended, max, rec)
                 else appString(R.string.hw_count_max, max)
                 countStepper.hint(
                     if (op == HomeworkOp.SUB) base + "\n" + appString(R.string.hw_field_count_sub_hint) else base
                 )
-                HomeworkEngine.forcedPattern(op, rules, numberCount)?.let { pattern ->
+                HomeworkEngine.forcedPattern(op, rules, numberCount, filter)?.let { pattern ->
                     // Basamak sayısı kadar tekrar: 1 → "111".
                     val example = pattern.take(3).joinToString(if (op == HomeworkOp.ADD) " + " else " − ") { d ->
                         d.toString().repeat(digits)
@@ -211,7 +244,37 @@ class HomeworkCreateFragment : Fragment() {
         }
     }
 
-    private fun currentMax(): Int = HomeworkEngine.maxNumberCount(op, rules, digits, withAbacus)
+    /** Gelişmiş rakam seçiminin seçili konulara ve işleme göre temizlenmiş hâli. */
+    private fun activeRuleDigits(): Map<AbacusRule, Set<Int>> = HomeworkEngine.normalizeRuleDigits(op, rules, ruleDigits)
+
+    /**
+     * En fazla sayı adedi. Elde/ödünçlü kurallarda rakam seçimi varsa ölçülmesi gerekiyor: ölçüm
+     * bitene kadar null (ölçüm arka planda başlatılıyor, bitince form yenileniyor).
+     */
+    private fun currentMax(): Int? {
+        val filter = activeRuleDigits()
+        val chosen = rules.toSet()
+        if (!HomeworkEngine.needsMeasuredMax(op, chosen, filter)) {
+            return HomeworkEngine.maxNumberCount(op, chosen, digits, withAbacus, filter)
+        }
+        HomeworkEngine.cachedCarryMax(op, chosen, filter, digits, withAbacus)?.let { return it }
+        startMeasure(chosen, filter)
+        return null
+    }
+
+    private fun startMeasure(chosen: Set<AbacusRule>, filter: Map<AbacusRule, Set<Int>>) {
+        val o = op
+        val d = digits
+        val abacus = withAbacus
+        val key = listOf(o, chosen, filter, d, abacus)
+        if (key == measureKey && measureJob?.isActive == true) return
+        measureJob?.cancel()
+        measureKey = key
+        measureJob = viewLifecycleOwner.lifecycleScope.launch {
+            withContext(Dispatchers.Default) { HomeworkEngine.measureCarryMax(o, chosen, filter, d, abacus) }
+            if (_binding != null) refresh()
+        }
+    }
 
     /** Değerleri sınırlara çeker. Sayı adedi en fazla değerin üstündeyse ona iner. */
     private fun clampState() {
@@ -222,7 +285,8 @@ class HomeworkCreateFragment : Fragment() {
         } else {
             digits = digits.coerceIn(1, HomeworkEngine.maxDigits(withAbacus))
             val min = HomeworkEngine.minNumberCount(op)
-            val max = currentMax()
+            // Ölçüm sürerken rakam seçimsiz sınır (üst sınır); ölçüm bitince yeniden kırpılıyor.
+            val max = currentMax() ?: HomeworkEngine.maxNumberCount(op, rules.toSet(), digits, withAbacus)
             numberCount = if (max > 0) numberCount.coerceIn(min, max) else numberCount.coerceAtLeast(min)
         }
         intervalMs = intervalMs.coerceIn(HomeworkEngine.MIN_INTERVAL_MS, HomeworkEngine.MAX_INTERVAL_MS)
@@ -272,16 +336,145 @@ class HomeworkCreateFragment : Fragment() {
         }
     }
 
-    private fun currentConfig(): HomeworkConfig = HomeworkConfig(
-        op = op,
-        rules = if (op == HomeworkOp.MUL) emptySet() else rules.toSet(),
-        withAbacus = withAbacus,
-        digits = digits,
-        digits2 = if (op == HomeworkOp.MUL) digits2 else 0,
-        numberCount = if (op == HomeworkOp.MUL) 0 else numberCount,
-        intervalMs = if (op == HomeworkOp.MUL) 0L else intervalMs,
-        questionCount = questionCount,
+    private fun currentConfig(): HomeworkConfig = HomeworkEngine.normalized(
+        HomeworkConfig(
+            op = op,
+            rules = if (op == HomeworkOp.MUL) emptySet() else rules.toSet(),
+            withAbacus = withAbacus,
+            digits = digits,
+            digits2 = if (op == HomeworkOp.MUL) digits2 else 0,
+            numberCount = if (op == HomeworkOp.MUL) 0 else numberCount,
+            intervalMs = if (op == HomeworkOp.MUL) 0L else intervalMs,
+            questionCount = questionCount,
+            ruleDigits = ruleDigits.toMap(),
+            mulDigits1 = mulDigits[0].toMap(),
+            mulDigits2 = mulDigits[1].toMap(),
+        )
     )
+
+    // ── Gelişmiş paneli ─────────────────────────────────────────────────────
+
+    /**
+     * Toplama/çıkarmada seçili her kural, çarpmada her sayının her basamağı için bir kart; kartta
+     * rakamlar açılıp kapatılıyor. Değişiklik hemen forma yansıyor (özet, sınır, örnek soru).
+     */
+    private fun showAdvancedSheet() {
+        if (op != HomeworkOp.MUL && rules.isEmpty()) {
+            Toast.makeText(requireContext(), appString(R.string.hw_advanced_pick_rule), Toast.LENGTH_SHORT).show()
+            return
+        }
+        val view = layoutInflater.inflate(R.layout.sheet_hw_advanced, null)
+        view.findViewById<TextView>(R.id.advancedTitle).text = appString(
+            when (op) {
+                HomeworkOp.ADD -> R.string.hw_advanced_title_add
+                HomeworkOp.SUB -> R.string.hw_advanced_title_sub
+                HomeworkOp.MUL -> R.string.hw_advanced_title_mul
+            }
+        )
+        view.findViewById<TextView>(R.id.advancedDesc).text = appString(
+            when (op) {
+                HomeworkOp.ADD -> R.string.hw_advanced_desc_add
+                HomeworkOp.SUB -> R.string.hw_advanced_desc_sub
+                HomeworkOp.MUL -> R.string.hw_advanced_desc_mul
+            }
+        )
+        advancedGroups = view.findViewById(R.id.advancedGroups)
+        val dialog = BottomSheetDialog(requireContext())
+        dialog.setContentView(view)
+        view.findViewById<View>(R.id.advancedDone).apply {
+            setOnClickListener { dialog.dismiss() }
+            DepthPress.attach(this)
+        }
+        dialog.setOnShowListener {
+            // Malzeme kütüphanesinin beyaz kabı görünmesin; köşeler panelin kendi arka planından.
+            dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+                ?.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+            dialog.behavior.skipCollapsed = true
+            dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        }
+        dialog.setOnDismissListener {
+            advancedSheet = null
+            advancedGroups = null
+        }
+        advancedSheet = dialog
+        renderAdvancedSheet()
+        dialog.show()
+    }
+
+    private fun renderAdvancedSheet() {
+        val container = advancedGroups ?: return
+        container.removeAllViews()
+        if (op == HomeworkOp.MUL) {
+            listOf(digits, digits2).forEachIndexed { i, count ->
+                for (position in count - 1 downTo 0) {
+                    val title = appString(R.string.hw_advanced_mul_group, i + 1, HomeworkText.placeName(position))
+                    addDigitGroup(container, title, HomeworkEngine.mulDigitOptions(count, position), mulDigits[i], position)
+                }
+            }
+        } else {
+            AbacusRule.values().filter { it in rules }.forEach { rule ->
+                addDigitGroup(container, HomeworkText.ruleLabel(rule), HomeworkEngine.ruleDigitOptions(op, rule), ruleDigits, rule)
+            }
+        }
+    }
+
+    /**
+     * Panelde bir kart: [options] rakamları beşerli satırlarda; açık olanlar [picked]'daki [key]
+     * girişi (giriş yoksa ya da seçeneklerle kesişmiyorsa hepsi). Son açık rakam kapatılamıyor.
+     */
+    private fun <K> addDigitGroup(
+        container: LinearLayout,
+        title: String,
+        options: List<Int>,
+        picked: MutableMap<K, Set<Int>>,
+        key: K,
+    ) {
+        val card = layoutInflater.inflate(R.layout.item_hw_advanced_group, container, false)
+        card.findViewById<TextView>(R.id.groupTitle).text = title
+        val shown = picked[key]?.filter { it in options }?.toSet()?.takeIf { it.isNotEmpty() } ?: options.toSet()
+        card.findViewById<View>(R.id.groupAll).apply {
+            visibility = if (shown.size < options.size) View.VISIBLE else View.INVISIBLE
+            setOnClickListener {
+                picked.remove(key)
+                refresh()
+            }
+        }
+        val rows = card.findViewById<LinearLayout>(R.id.groupChips)
+        val density = resources.displayMetrics.density
+        options.chunked(DIGITS_PER_ROW).forEachIndexed { rowIndex, rowDigits ->
+            val row = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = ((if (rowIndex == 0) 10 else 8) * density).toInt() }
+            }
+            // Satırlar hep beş yuva: düğmeler her kartta aynı genişlikte.
+            for (slot in 0 until DIGITS_PER_ROW) {
+                val chip = layoutInflater.inflate(R.layout.item_hw_digit_chip, row, false) as TextView
+                if (slot == DIGITS_PER_ROW - 1) (chip.layoutParams as LinearLayout.LayoutParams).marginEnd = 0
+                val digit = rowDigits.getOrNull(slot)
+                if (digit == null) {
+                    chip.visibility = View.INVISIBLE
+                } else {
+                    chip.text = digit.toString()
+                    selectOption(chip, digit in shown)
+                    chip.setOnClickListener {
+                        val next = if (digit in shown) shown - digit else shown + digit
+                        if (next.isEmpty()) {
+                            Toast.makeText(requireContext(), appString(R.string.hw_advanced_min_one), Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
+                        }
+                        picked[key] = next
+                        refresh()
+                    }
+                    DepthPress.attach(chip)
+                }
+                row.addView(chip)
+            }
+            rows.addView(row)
+        }
+        container.addView(card)
+    }
 
     /** Örnek soru arka planda: elde gerektiren ayarların sınırında üretim birkaç yüz ms sürebiliyor. */
     private fun refreshPreview() {
@@ -314,6 +507,7 @@ class HomeworkCreateFragment : Fragment() {
         val cfg = currentConfig()
         val error = when {
             op != HomeworkOp.MUL && rules.isEmpty() -> appString(R.string.hw_field_rules_hint)
+            op != HomeworkOp.MUL && currentMax() == null -> appString(R.string.hw_wait_measuring)
             HomeworkEngine.validate(cfg) != null -> appString(R.string.hw_invalid)
             !wholeClass && selectedUids.isEmpty() -> appString(R.string.hw_target_none_selected)
             else -> null
@@ -348,6 +542,10 @@ class HomeworkCreateFragment : Fragment() {
         membersListener?.remove()
         membersListener = null
         previewJob?.cancel()
+        measureJob?.cancel()
+        advancedSheet?.dismiss()
+        advancedSheet = null
+        advancedGroups = null
         _binding = null
         super.onDestroyView()
     }

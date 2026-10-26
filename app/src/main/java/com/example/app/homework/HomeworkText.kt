@@ -54,8 +54,33 @@ object HomeworkText {
             parts += appString(R.string.hw_seconds, formatSeconds(cfg.intervalMs))
         }
         parts += appPlural(R.plurals.hw_questions, cfg.questionCount, cfg.questionCount)
+        parts += digitFilters(cfg)
         return parts.joinToString(" · ")
     }
+
+    /**
+     * Gelişmiş rakam seçiminin okunan hâli: "5'lik: 3, 4", çarpmada "2. sayı birler: 2, 3".
+     * Seçim yoksa (bütün sayılar) boş liste.
+     */
+    fun digitFilters(cfg: HomeworkConfig): List<String> {
+        if (cfg.op != HomeworkOp.MUL) {
+            return AbacusRule.values().mapNotNull { rule ->
+                cfg.ruleDigits[rule]?.let { appString(R.string.hw_advanced_rule_digits, ruleLabel(rule), digitList(it)) }
+            }
+        }
+        return listOf(1 to cfg.mulDigits1, 2 to cfg.mulDigits2).flatMap { (factor, picked) ->
+            picked.keys.sortedDescending().map { position ->
+                appString(R.string.hw_advanced_mul_digits, factor, placeName(position), digitList(picked.getValue(position)))
+            }
+        }
+    }
+
+    /** Basamak adı, 0 = "birler". */
+    fun placeName(position: Int): String =
+        com.example.app.AppStrings.context().resources.getStringArray(R.array.hw_place_names)
+            .getOrElse(position) { (position + 1).toString() }
+
+    private fun digitList(digits: Set<Int>): String = digits.sorted().joinToString(", ")
 
     /**
      * Kartlar için kısa özet: tür, basamak, soru ("Abaküslü · 2 basamak · 20 soru"). Sayı adedi ve

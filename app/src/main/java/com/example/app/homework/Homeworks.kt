@@ -230,29 +230,51 @@ object Homeworks {
         val op = HomeworkOp.fromKey(c["op"] as? String) ?: return null
         fun int(key: String) = (c[key] as? Number)?.toInt() ?: 0
         val rules = (c["rules"] as? List<*>).orEmpty().mapNotNull { AbacusRule.fromKey(it as? String) }.toSet()
-        return HomeworkConfig(
-            op = op,
-            rules = rules,
-            withAbacus = c["withAbacus"] == true,
-            digits = int("digits"),
-            digits2 = int("digits2"),
-            numberCount = int("numberCount"),
-            intervalMs = (c["intervalMs"] as? Number)?.toLong() ?: 0L,
-            questionCount = int("questionCount"),
+        // Gelişmiş rakam seçimi: { "five": [3, 4] }, çarpmada { "0": [2, 5] }. Firestore iç içe
+        // dizi tutmadığı için harita; okurken motorun kurallarıyla temizleniyor.
+        fun digitMap(key: String): Map<String, Set<Int>> =
+            (c[key] as? Map<*, *>).orEmpty().entries.mapNotNull { (k, v) ->
+                val digits = (v as? List<*>).orEmpty().mapNotNull { (it as? Number)?.toInt() }.toSet()
+                (k as? String)?.let { it to digits }
+            }.toMap()
+        return HomeworkEngine.normalized(
+            HomeworkConfig(
+                op = op,
+                rules = rules,
+                withAbacus = c["withAbacus"] == true,
+                digits = int("digits"),
+                digits2 = int("digits2"),
+                numberCount = int("numberCount"),
+                intervalMs = (c["intervalMs"] as? Number)?.toLong() ?: 0L,
+                questionCount = int("questionCount"),
+                ruleDigits = digitMap("ruleDigits").mapNotNull { (k, v) -> AbacusRule.fromKey(k)?.let { it to v } }.toMap(),
+                mulDigits1 = digitMap("mulDigits1").mapNotNull { (k, v) -> k.toIntOrNull()?.let { it to v } }.toMap(),
+                mulDigits2 = digitMap("mulDigits2").mapNotNull { (k, v) -> k.toIntOrNull()?.let { it to v } }.toMap(),
+            )
         )
     }
 
     internal fun configToMap(cfg: HomeworkConfig): Map<String, Any> = if (cfg.op == HomeworkOp.MUL) {
-        mapOf(
-            "op" to cfg.op.key, "withAbacus" to cfg.withAbacus,
-            "digits" to cfg.digits, "digits2" to cfg.digits2, "questionCount" to cfg.questionCount,
-        )
+        buildMap {
+            put("op", cfg.op.key)
+            put("withAbacus", cfg.withAbacus)
+            put("digits", cfg.digits)
+            put("digits2", cfg.digits2)
+            put("questionCount", cfg.questionCount)
+            if (cfg.mulDigits1.isNotEmpty()) put("mulDigits1", cfg.mulDigits1.entries.associate { (k, v) -> k.toString() to v.sorted() })
+            if (cfg.mulDigits2.isNotEmpty()) put("mulDigits2", cfg.mulDigits2.entries.associate { (k, v) -> k.toString() to v.sorted() })
+        }
     } else {
-        mapOf(
-            "op" to cfg.op.key, "rules" to AbacusRule.values().filter { it in cfg.rules }.map { it.key },
-            "withAbacus" to cfg.withAbacus, "digits" to cfg.digits, "numberCount" to cfg.numberCount,
-            "intervalMs" to cfg.intervalMs.toInt(), "questionCount" to cfg.questionCount,
-        )
+        buildMap {
+            put("op", cfg.op.key)
+            put("rules", AbacusRule.values().filter { it in cfg.rules }.map { it.key })
+            put("withAbacus", cfg.withAbacus)
+            put("digits", cfg.digits)
+            put("numberCount", cfg.numberCount)
+            put("intervalMs", cfg.intervalMs.toInt())
+            put("questionCount", cfg.questionCount)
+            if (cfg.ruleDigits.isNotEmpty()) put("ruleDigits", cfg.ruleDigits.entries.associate { (k, v) -> k.key to v.sorted() })
+        }
     }
 
     private fun errorMessage(e: Exception): String {

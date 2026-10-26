@@ -102,7 +102,7 @@ class HomeworkEngineTest {
     fun userExamples() {
         // "Basamağı 3, yalnızca 5'lik: en fazla 2 sayı, örneğin 132 + 423."
         val state = HomeworkEngine.digitsOf(132, 5)
-        assertTrue(HomeworkEngine.applyAdd(state, HomeworkEngine.digitsOf(423, 3), setOf(F)))
+        assertTrue(HomeworkEngine.applyAdd(state, HomeworkEngine.digitsOf(423, 3), MoveRules(setOf(F))))
         assertEquals(555L, state.foldRight(0L) { d, acc -> acc * 10 + d })
         // Kuralsız + 5'likte 9 sayı → bütün basamaklar 1 (uyarı); önerilen 4.
         assertEquals(List(9) { 1 }, HomeworkEngine.forcedPattern(HomeworkOp.ADD, setOf(D, F), 9))
@@ -135,11 +135,12 @@ class HomeworkEngineTest {
             for (col in cfg.digits - 1 downTo 0) {
                 val x = digits[col]
                 if (x == 0) continue
-                used += if (cfg.op == HomeworkOp.ADD) AbacusMoves.classifyAdd(before[col], x)
-                else AbacusMoves.classifySub(before[col], x)
+                val move = AbacusMoves.classify(cfg.op, before[col], x)
+                assertTrue("gelişmiş ayarda kapalı rakam: $move $x, sayı $n, $cfg", cfg.ruleDigits[move]?.contains(x) != false)
+                used += move
             }
-            val ok = if (cfg.op == HomeworkOp.ADD) HomeworkEngine.applyAdd(state, digits, cfg.rules)
-            else HomeworkEngine.applySub(state, digits, cfg.rules)
+            val ok = if (cfg.op == HomeworkOp.ADD) HomeworkEngine.applyAdd(state, digits, cfg.moveRules)
+            else HomeworkEngine.applySub(state, digits, cfg.moveRules)
             assertTrue("kurala uymayan sayı $n, soru ${q.numbers}, $cfg", ok)
             value = if (cfg.op == HomeworkOp.ADD) value + n else value - n
             assertTrue("sınır dışı $value, $cfg", value in 0..capMax)
@@ -242,6 +243,84 @@ class HomeworkEngineTest {
         // Abaküs 5 sütun: çarpım 5 basamağı geçmesin.
         assertNotNull(HomeworkEngine.validate(cfg.copy(digits = 3, digits2 = 3)))
         assertNull(HomeworkEngine.validate(cfg.copy(digits = 3, digits2 = 3, withAbacus = false)))
+    }
+
+    // ── Gelişmiş ayar: rakam seçimi ─────────────────────────────────────────
+
+    @Test
+    fun ruleDigitOptions() {
+        for (op in listOf(HomeworkOp.ADD, HomeworkOp.SUB)) {
+            assertEquals((1..9).toList(), HomeworkEngine.ruleDigitOptions(op, D))
+            assertEquals(listOf(1, 2, 3, 4), HomeworkEngine.ruleDigitOptions(op, F))
+            assertEquals((1..9).toList(), HomeworkEngine.ruleDigitOptions(op, T))
+            assertEquals(listOf(6, 7, 8, 9), HomeworkEngine.ruleDigitOptions(op, B))
+        }
+        // Seçilmeyen kural, seçenek dışı rakam, bütün seçenekler (= hepsi) atılıyor.
+        val raw = mapOf(F to setOf(3, 4, 7), B to setOf(6), D to setOf(1, 2, 3, 4, 5, 6, 7, 8, 9))
+        assertEquals(mapOf(F to setOf(3, 4)), HomeworkEngine.normalizeRuleDigits(HomeworkOp.ADD, setOf(D, F), raw))
+        assertEquals(mapOf(0 to setOf(5)), HomeworkEngine.normalizeMulDigits(1, mapOf(0 to setOf(0, 1, 5), 3 to setOf(2))))
+    }
+
+    @Test
+    fun filteredQuestionsUseOnlyOpenDigits() {
+        val rng = Random(11)
+        val filters = listOf(
+            setOf(D, F) to mapOf(F to setOf(4)),
+            setOf(D, F) to mapOf(D to setOf(1, 2), F to setOf(3, 4)),
+            setOf(F) to mapOf(F to setOf(2, 3)),
+            setOf(D, T) to mapOf(T to setOf(8, 9)),
+            setOf(D, F, T, B) to mapOf(B to setOf(6), F to setOf(4)),
+            setOf(D, F, B) to mapOf(B to setOf(7, 8)),
+            setOf(T, B) to mapOf(T to setOf(5)),
+        )
+        for (op in listOf(HomeworkOp.ADD, HomeworkOp.SUB)) for ((rules, filter) in filters) for (digits in 1..3) {
+            val usesCarry = HomeworkEngine.usesCarry(rules)
+            val max = if (usesCarry) HomeworkEngine.measureCarryMax(op, rules, filter, digits, true)
+            else HomeworkEngine.maxNumberCount(op, rules, digits, true, filter)
+            if (max == 0) continue
+            for (n in setOf(HomeworkEngine.minNumberCount(op), max)) {
+                val cfg = HomeworkConfig(op, rules, true, digits, numberCount = n, intervalMs = 1000, questionCount = 10, ruleDigits = filter)
+                assertNull(HomeworkEngine.validate(cfg))
+                repeat(20) {
+                    val q = HomeworkEngine.generateQuestion(cfg, rng)
+                    assertShape(cfg, q)
+                    replay(cfg, q)
+                }
+            }
+        }
+        // Elde yokken sınır kesin: 5'likte yalnızca +4 → 1 + 4 = 5'ten sonra 5'lik +4 yok.
+        assertEquals(2, HomeworkEngine.maxNumberCount(HomeworkOp.ADD, setOf(F), 1, true, mapOf(F to setOf(4))))
+    }
+
+    @Test
+    fun measuredCarryMaxIsReliableAndStable() {
+        val rules = setOf(D, F, T, B)
+        val filter = mapOf(B to setOf(6), T to setOf(9))
+        val started = System.currentTimeMillis()
+        val max = HomeworkEngine.measureCarryMax(HomeworkOp.ADD, rules, filter, 2, true)
+        println("ölçüm: $max, ${System.currentTimeMillis() - started} ms")
+        assertTrue(max in 2..HomeworkEngine.maxNumberCount(HomeworkOp.ADD, rules, 2, true))
+        assertEquals(max, HomeworkEngine.cachedCarryMax(HomeworkOp.ADD, rules, filter, 2, true))
+        val cfg = HomeworkConfig(HomeworkOp.ADD, rules, true, 2, numberCount = max, intervalMs = 1000, questionCount = 10, ruleDigits = filter)
+        val rng = Random(5)
+        repeat(200) { replay(cfg, HomeworkEngine.generateQuestion(cfg, rng)) }
+    }
+
+    @Test
+    fun multiplicationDigitFilter() {
+        val cfg = HomeworkConfig(
+            HomeworkOp.MUL, withAbacus = true, digits = 2, digits2 = 1, questionCount = 5,
+            mulDigits1 = mapOf(1 to setOf(1, 3), 0 to setOf(0)), mulDigits2 = mapOf(0 to setOf(5)),
+        )
+        assertNull(HomeworkEngine.validate(cfg))
+        val rng = Random(8)
+        repeat(100) {
+            val q = HomeworkEngine.generateQuestion(cfg, rng)
+            assertTrue("${q.numbers}", q.numbers[0] in setOf(10L, 30L))
+            assertEquals(5L, q.numbers[1])
+        }
+        // Temizlenmemiş seçim (en büyük basamakta 0) geçersiz.
+        assertNotNull(HomeworkEngine.validate(cfg.copy(mulDigits1 = mapOf(1 to setOf(0)))))
     }
 
     @Test

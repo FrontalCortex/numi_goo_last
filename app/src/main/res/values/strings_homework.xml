@@ -85,7 +85,7 @@
     <string name="hw_target_no_students">Sınıfta henüz öğrenci yok; ödev sınıfa katılan herkese görünür.</string>
     <string name="hw_count_max">En fazla %1$d</string>
     <string name="hw_count_max_recommended">En fazla %1$d · önerilen %2$d</string>
-    <string name="hw_count_impossible">Bu kurallarla %1$d basamakta soru üretilemiyor. Basamağı ya da konuyu değiştir.</string>
+    <string name="hw_count_impossible">Bu kurallarla %1$d basamakta soru üretilemiyor. Basamağı, konuyu ya da gelişmiş ayarı değiştir.</string>
     <string name="hw_count_forced">Bu kurallarla %1$d sayı seçersen bütün sayıların bütün basamakları %2$s olur (ör. %3$s). Sağlıklı değer %4$d.</string>
     <string name="hw_mul_capacity">İki sayının basamakları toplamı en fazla %1$d olabilir.</string>
     <string name="hw_preview_title">Örnek soru</string>
@@ -94,6 +94,37 @@
     <string name="hw_send">Ödevi gönder</string>
     <string name="hw_sent">Ödev %1$d öğrenciye gönderildi.</string>
     <string name="hw_invalid">Ayarları kontrol et.</string>
+    <string name="hw_count_measuring">En fazla değer hesaplanıyor…</string>
+    <string name="hw_wait_measuring">Sayı sınırı hesaplanıyor; birkaç saniye bekle.</string>
+
+    <!-- Öğretmen: ödev oluşturma → Gelişmiş paneli (hangi rakamlar gelsin) -->
+    <string name="hw_advanced">Gelişmiş</string>
+    <string name="hw_advanced_all_digits">Bütün sayılar</string>
+    <string name="hw_advanced_title_add">Hangi sayılar eklensin?</string>
+    <string name="hw_advanced_title_sub">Hangi sayılar çıkarılsın?</string>
+    <string name="hw_advanced_title_mul">Basamaklara hangi rakamlar gelsin?</string>
+    <string name="hw_advanced_desc_add">Her konuda, o kuralla eklenebilecek sayılar. Kapattığın sayı o kuralla eklenmez; ör. 5\'likte yalnızca 4 açıksa 5\'lik kural hep +4 ile (+5 −1) çalışılır.</string>
+    <string name="hw_advanced_desc_sub">Her konuda, o kuralla çıkarılabilecek sayılar. Kapattığın sayı o kuralla çıkarılmaz; ör. 5\'likte yalnızca 4 açıksa 5\'lik kural hep −4 ile (−5 +1) çalışılır.</string>
+    <string name="hw_advanced_desc_mul">Her basamak yalnızca açık rakamlardan seçilir.</string>
+    <string name="hw_advanced_select_all">Tümü</string>
+    <string name="hw_advanced_done">Tamam</string>
+    <string name="hw_advanced_min_one">En az bir sayı açık kalmalı.</string>
+    <string name="hw_advanced_pick_rule">Önce bir konu seç.</string>
+    <!-- "5\'lik: 3, 4" -->
+    <string name="hw_advanced_rule_digits">%1$s: %2$s</string>
+    <!-- "1. sayı · onlar basamağı" (panel kartı) ve "1. sayı onlar: 2, 3" (özet) -->
+    <string name="hw_advanced_mul_group">%1$d. sayı · %2$s basamağı</string>
+    <string name="hw_advanced_mul_digits">%1$d. sayı %2$s: %3$s</string>
+    <!-- Basamak adları, birlerden başlayarak (çarpmada bir sayı en fazla 7 basamak). -->
+    <string-array name="hw_place_names">
+        <item>birler</item>
+        <item>onlar</item>
+        <item>yüzler</item>
+        <item>binler</item>
+        <item>on binler</item>
+        <item>yüz binler</item>
+        <item>milyonlar</item>
+    </string-array>
 
     <!-- Bildirim kanalı: gece gelen ödev (MyFirebaseMessagingService, account_quiet) -->
     <string name="notification_channel_account_quiet_name">Ödevler ve hesap (sessiz)</string>

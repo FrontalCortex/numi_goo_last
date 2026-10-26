@@ -134,6 +134,9 @@
                         android:text="@string/hw_field_rules_hint"
                         android:textColor="@color/dark_text_secondary"
                         android:textSize="12sp" />
+
+                    <!-- Gelişmiş: her kuralda hangi sayılar gelsin -->
+                    <include android:id="@+id/rulesAdvanced" layout="@layout/view_hw_advanced_row" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -168,6 +171,9 @@
                     <include android:id="@+id/intervalStepper" layout="@layout/view_hw_stepper" />
 
                     <include android:id="@+id/questionsStepper" layout="@layout/view_hw_stepper" />
+
+                    <!-- Gelişmiş (yalnızca çarpma): her basamakta hangi rakamlar gelsin -->
+                    <include android:id="@+id/mulAdvanced" layout="@layout/view_hw_advanced_row" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

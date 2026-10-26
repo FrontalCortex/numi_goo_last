@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ödev formunun Gelişmiş paneli: her kural (çarpmada her basamak) için bir kart ve içinde açılıp
+  kapatılan rakamlar. Kartlar formdaki bölüm kartlarıyla aynı görünümde; kodda dolduruluyor
+  (bkz. HomeworkCreateFragment.renderAdvancedSheet).
+-->
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_hw_sheet">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="20dp">
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:background="@drawable/bg_sheet_handle" />
+
+        <TextView
+            android:id="@+id/advancedTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:textColor="@color/dark_text"
+            android:textSize="19sp"
+            android:textStyle="bold"
+            tools:text="Hangi sayılar eklensin?" />
+
+        <TextView
+            android:id="@+id/advancedDesc"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="13sp"
+            tools:text="Her konuda, o kuralla eklenebilecek sayılar." />
+
+        <LinearLayout
+            android:id="@+id/advancedGroups"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:id="@+id/advancedDone"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_hw_send"
+            android:gravity="center"
+            android:paddingBottom="4dp"
+            android:text="@string/hw_advanced_done"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
