@@ -207,6 +207,8 @@
     <string name="rule_progress_range_all">Tümü</string>
     <string name="rule_progress_chart_hint">Her nokta o dönemin doğru oranı; üstündeki sayı o ana kadar çözülen toplam %1$s. Ayrıntı için noktaya dokun.</string>
     <string name="rule_progress_chart_empty">Bu dönemde ödev çözülmedi</string>
+    <!-- Seçili dönemde konu çalışılmadıysa: "En son çalışma: 12 Ağu · %78 doğru. Tümü'ne geçince görünür." -->
+    <string name="rule_progress_chart_empty_last">En son çalışma: %1$s · %%%2$d doğru. Tümü\'ne geçince görünür.</string>
     <string name="rule_progress_base">Başlangıç</string>
     <!-- "12–18 Eki · 42 soru · %86 doğru · toplam 380" -->
     <string name="rule_progress_point_detail">%1$s · %2$d %3$s · %%%4$d doğru · toplam %5$d</string>

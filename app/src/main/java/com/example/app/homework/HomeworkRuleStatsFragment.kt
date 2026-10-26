@@ -330,6 +330,13 @@ class HomeworkRuleStatsFragment : Fragment() {
         chart.highlightValues(null)
         if (points.isEmpty()) {
             chart.clear()
+            // Konu bu dönemde çalışılmadıysa (ör. çocuk kuralsızdan 10'luğa geçti) yalnızca "veri yok"
+            // demek, hiç çalışılmamış gibi görünüyordu: en son çalışma ve oranı.
+            days.entries.filter { RuleProgress.valueOf(it.value, filter).total > 0 }.maxByOrNull { it.key }?.let { (d, day) ->
+                val cw = RuleProgress.valueOf(day, filter)
+                val (_, m, dd) = RuleProgress.civil(d)
+                p.chartSelection.text = appString(R.string.rule_progress_chart_empty_last, "$dd ${monthNames[m - 1]}", cw.pct)
+            }
             return
         }
         val entries = points.mapIndexed { i, pt -> Entry(i.toFloat(), pt.cw.pct.toFloat(), pt) }

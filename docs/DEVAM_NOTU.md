@@ -48,7 +48,8 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `.github/scripts/seed-homework-progress-sample.js` + `seed-homework-progress-sample.yml`): 51 gün, 1020 soru,
   aynı miktarlar `tally`'ye de eklendi; bugün yazılmadı. Eklenenler `homeworkRuleStats/{uid}/seed/sample`'da.
   **Geri almak için:** yml'de `REMOVE: '1'` yapıp push et. Ted'in ustalık aşamaları bu yüzden şişkin görünür.
-
+  Örnekte kuralsız toplama yalnızca 59–90 gün önce var (çocuk sonra 10'luğa geçiyor); 1 hafta / 1 ayda boş
+  görünmesi doğru. Boş dönemde "En son çalışma: 12 Ağu · %78 doğru" yazıyor (telefona kuruldu).
 
 ## Ödev formunda "Gelişmiş": hangi rakamlar gelsin (26.10.2026 — CANLIDA: fa8197b push edildi, fonksiyon deploy'u başarılı; telefona kuruldu, kullanıcı bakmadı)
 
