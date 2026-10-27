@@ -11,19 +11,21 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # ubuntu-latest 19 Ekim 2026'dan itibaren Ubuntu 26'ya geçiyor; Android SDK'nın imajda
+    # hazır geldiği 24.04'e sabitliyoruz.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      # android-actions/setup-android@v3 14 Eylül 2026'dan beri birkaç saniyede çöküyordu.
+      # Runner imajında SDK zaten kurulu (ANDROID_HOME); eksik platformu Gradle kendisi indirir.
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
