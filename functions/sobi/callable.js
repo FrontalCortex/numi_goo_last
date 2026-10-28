@@ -4,13 +4,11 @@
  * sobiChat callable — "Sobi'ye sor" sohbetinin sunucu ucu. Firestore ve kimlik işi burada,
  * sohbet mantığı chat.js'te.
  *
- * NEDEN index.js'E HENÜZ BAĞLI DEĞİL
- *   Fonksiyon ANTHROPIC_API_KEY gizli değişkenini (Secret Manager) istiyor. Değişken tanımlanmadan
- *   bu fonksiyon deploy edilirse deploy başarısız olur; claude/** dalına her push BÜTÜN
- *   fonksiyonları deploy ettiği için bu, ilgisiz bir değişikliğin deploy'unu da bozardı. Anahtar
- *   tanımlandıktan sonra index.js'e şu eklenir (kurulum: docs/ANLAMADIM_YARDIM_PLANI.md):
- *
- *     exports.sobiChat = require('./sobi/callable')({ functions, admin, db, isAskQuestionRestricted, effectivePlan });
+ * GİZLİ DEĞİŞKEN
+ *   Fonksiyon ANTHROPIC_API_KEY gizli değişkenini (Secret Manager) istiyor; index.js'e ancak
+ *   değişken kurulduktan sonra bağlandı (28.10.2026). Değişken silinirse bu fonksiyonun deploy'u
+ *   başarısız olur; claude/** dalına her push BÜTÜN fonksiyonları deploy ettiği için bu, ilgisiz
+ *   bir değişikliğin deploy'unu da bozar. Kurulum: docs/ANLAMADIM_YARDIM_PLANI.md.
  *
  * MODEL
  *   sobiChats/{uid}                       { usageDay, usageCount } — günlük mesaj sayacı

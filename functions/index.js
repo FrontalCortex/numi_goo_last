@@ -1915,6 +1915,13 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   } catch (error) {
     console.error(`Error removing homework progress for ${uid}:`, error);
   }
+
+  // Sobi sohbetleri üst seviyede (`sobiChats/{uid}` + `sessions`); çocuğun yazdıkları kalmasın.
+  try {
+    await db.recursiveDelete(db.collection('sobiChats').doc(uid));
+  } catch (error) {
+    console.error(`Error removing Sobi chats for ${uid}:`, error);
+  }
 });
 
 // Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.
@@ -7857,3 +7864,8 @@ async function deleteUserBugReports(uid) {
   await db.collection('bugReportGuards').doc(uid).delete();
   return { reports: snap.size };
 }
+
+// ─── Sobi'ye sor (yapay zekâ yardımcısı) ────────────────────────────────────
+// Ayrıntı ve gerekçe: sobi/callable.js, docs/ANLAMADIM_YARDIM_PLANI.md. ANTHROPIC_API_KEY
+// Secret Manager'da (28.10.2026 kuruldu); secret silinirse bu fonksiyonun deploy'u başarısız olur.
+exports.sobiChat = require('./sobi/callable')({ functions, admin, db, isAskQuestionRestricted, effectivePlan });

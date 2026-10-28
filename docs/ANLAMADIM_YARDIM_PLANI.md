@@ -191,7 +191,7 @@ bildirim oranı.
 |---|---|---|---|
 | 0 | GA4'ten en zor 10 adım ve "Öğretmene sor" kullanım oranı | 1 gün | Kod yok |
 | 1 | Kural motoru: Kotlin `StepExplainer` + JS karşılığı + ortak test tablosu | **bitti (28.10.2026)** | Aşağıda "Faz 1 durumu" |
-| 2 | `sobiChat` fonksiyonu: talimat metni, araçlar, güvenlik katmanları, sınır | **kod bitti (28.10.2026)**, anahtar bekliyor | Aşağıda "Faz 2 durumu" |
+| 2 | `sobiChat` fonksiyonu: talimat metni, araçlar, güvenlik katmanları, sınır | **kod bitti, secret kuruldu, index.js'e bağlandı (28.10.2026)** | Aşağıda "Faz 2 durumu" |
 | 3 | Test seti ve talimat metninin olgunlaştırılması | 2–3 gün | Model seçimi burada |
 | 4 | `SobiChatPanel`: sohbet, öneri balonları, sesli soru, abaküste gösterim | 3–4 gün | `TutorialFragment`'a yalnızca bağlantı noktası |
 | 5 | Gizlilik politikası, ebeveyn onayı, Play beyanları | 1 gün | Yayından önce şart |
@@ -219,7 +219,7 @@ bildirim oranı.
 
 ### Faz 2 durumu (28.10.2026)
 
-Kod `functions/sobi/` altında; **henüz `index.js`'e bağlı değil, deploy edilmiyor.**
+Kod `functions/sobi/` altında. ANTHROPIC_API_KEY Secret Manager'a kaydedildi (28.10.2026, sürüm 1) ve `sobiChat` `index.js`'e bağlandı; hesap silinince `sobiChats/{uid}` de siliniyor (`cleanupUserOnDelete`).
 
 | Dosya | İş |
 |---|---|
