@@ -25,16 +25,21 @@ const tools = require('./tools');
 const guard = require('./guard');
 
 /**
- * Model: claude-opus-5-5. Maliyet kararı kullanıcıda (docs/ANLAMADIM_YARDIM_PLANI.md, Faz 3):
- * test setinde daha küçük bir modelle (ör. claude-haiku-5-5) karşılaştırılıp seçilecek.
+ * Model: claude-haiku-5-5 (kullanıcı kararı 28.10.2026). Hesabı kural motoru yaptığı için model
+ * yalnızca araç çağırıp anlatıyor; Opus 5.5'in yaklaşık kırkta biri maliyetle. Opus ile
+ * karşılaştırma: `npm run sobi:dene -- --model claude-opus-5-5`.
  */
-const DEFAULT_MODEL = 'claude-opus-5-5';
-/** Sohbet: kısa cevaplar, derin düşünme gerekmiyor. Opus 5.5'te varsayılan 'medium'. */
+const DEFAULT_MODEL = 'claude-haiku-5-5';
+/** Sohbet: kısa cevaplar, derin düşünme gerekmiyor. Haiku 5.5 ve Opus 5.5'te varsayılan 'medium'. */
 const DEFAULT_EFFORT = 'low';
 const MAX_TOKENS = 8000;
 const MAX_TOOL_ROUNDS = 4;
-/** Ret olursa sunucu isteği kategoriye göre önerilen modelle yeniden çalıştırır. */
+/**
+ * Ret olursa sunucu isteği kategoriye göre önerilen modelle yeniden çalıştırır. Haiku 5.5'te bu
+ * yok; orada ret, çocuğa yedek metin olarak döner (runTurn).
+ */
 const FALLBACK_BETA = 'server-side-fallback-2026-07-01';
+const FALLBACK_MODELS = new Set(['claude-opus-5-5', 'claude-opus-5', 'claude-fable-5-1']);
 
 const STEP_ID = /^[a-z0-9_]{1,60}$/;
 const MAX_VALUE = 99999;
@@ -92,7 +97,7 @@ function addUsage(total, u) {
 /**
  * Tek tur.
  * @param {object} p
- * @param {object} p.client     Anthropic istemcisi (client.beta.messages.create)
+ * @param {object} p.client     Anthropic istemcisi (messages.create; yedek modelli modellerde beta.messages.create)
  * @param {string} p.system     Talimat metni (prompt_tr.md)
  * @param {Array}  p.history    Önceki turların mesajları (düşünme blokları dahil, değiştirilmemiş)
  * @param {object} p.context    sanitizeContext çıktısı
@@ -115,18 +120,21 @@ async function runTurn({ client, system, history, context, childText, note, mode
   let stopReason = null;
   const reasons = [];
 
+  const params = {
+    model,
+    max_tokens: MAX_TOKENS,
+    system: [{ type: 'text', text: system }],
+    tools: tools.TOOL_DEFS,
+    messages,
+    output_config: { effort },
+    cache_control: { type: 'ephemeral' },
+  };
+  const send = FALLBACK_MODELS.has(model)
+    ? () => client.beta.messages.create({ ...params, betas: [FALLBACK_BETA], fallbacks: 'default' })
+    : () => client.messages.create(params);
+
   for (let round = 0; ; round++) {
-    const response = await client.beta.messages.create({
-      model,
-      max_tokens: MAX_TOKENS,
-      system: [{ type: 'text', text: system }],
-      tools: tools.TOOL_DEFS,
-      messages,
-      output_config: { effort },
-      cache_control: { type: 'ephemeral' },
-      betas: [FALLBACK_BETA],
-      fallbacks: 'default',
-    });
+    const response = await send();
     addUsage(usage, response.usage);
     stopReason = response.stop_reason;
 
@@ -189,6 +197,7 @@ module.exports = {
   DEFAULT_EFFORT,
   MAX_TOOL_ROUNDS,
   FALLBACK_BETA,
+  FALLBACK_MODELS,
   sanitizeContext,
   contextBlock,
   suggestionsFor,

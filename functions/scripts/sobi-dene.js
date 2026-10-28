@@ -9,7 +9,8 @@
  * Kullanım:
  *   node scripts/sobi-dene.js                          hazır senaryolar
  *   node scripts/sobi-dene.js --soru "neden 5 gidiyor" --baslangic 8 --hedef 14
- *   node scripts/sobi-dene.js --model claude-haiku-5-5  başka modelle karşılaştırma
+ *   node scripts/sobi-dene.js --model claude-opus-5-5   başka modelle karşılaştırma (varsayılan Haiku 5.5)
+ *   node scripts/sobi-dene.js --effort medium           düşünme düzeyi (varsayılan low)
  *
  * Her turda çocuğun mesajı, Sobi'nin cevabı, çağrılan araçlar, ekran işleri, denetim sonucu ve
  * jeton kullanımı yazılır. Cevaplar sınamanın asıl malzemesi: Faz 3'te test setine dönüşecek.
@@ -44,14 +45,14 @@ function arg(name) {
   return i === -1 ? null : process.argv[i + 1];
 }
 
-async function run(client, model, sc) {
+async function run(client, model, effort, sc) {
   console.log(`\n━━ ${sc.ad} ━━`);
   const context = chat.sanitizeContext(sc.context);
   let history = [];
   let note = null;
   const total = {};
   for (const m of sc.mesajlar) {
-    const r = await chat.runTurn({ client, model, system: SYSTEM, history, context, childText: m, note });
+    const r = await chat.runTurn({ client, model, effort, system: SYSTEM, history, context, childText: m, note });
     const used = r.history.slice(history.length)
       .filter((x) => x.role === 'assistant')
       .flatMap((x) => x.content.filter((b) => b.type === 'tool_use').map((b) => `${b.name}(${JSON.stringify(b.input)})`));
@@ -70,6 +71,7 @@ async function run(client, model, sc) {
 
 async function main() {
   const model = arg('model') || chat.DEFAULT_MODEL;
+  const effort = arg('effort') || chat.DEFAULT_EFFORT;
   const client = new Anthropic();
   const soru = arg('soru');
   const scenarios = soru
@@ -79,8 +81,8 @@ async function main() {
       mesajlar: [soru],
     }]
     : SCENARIOS;
-  console.log(`Model: ${model}`);
-  for (const sc of scenarios) await run(client, model, sc);
+  console.log(`Model: ${model}, effort: ${effort}`);
+  for (const sc of scenarios) await run(client, model, effort, sc);
 }
 
 main().catch((e) => {

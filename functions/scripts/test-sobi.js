@@ -32,19 +32,13 @@ async function test(name, fn) {
 function fakeClient(responses) {
   const calls = [];
   const queue = responses;
-  return {
-    calls,
-    beta: {
-      messages: {
-        create: async (params) => {
-          calls.push(JSON.parse(JSON.stringify(params)));
-          const next = queue.shift();
-          if (!next) throw new Error('sahte model: cevap kalmadı');
-          return typeof next === 'function' ? next(params) : next;
-        },
-      },
-    },
+  const create = (beta) => async (params) => {
+    calls.push({ ...JSON.parse(JSON.stringify(params)), _beta: beta });
+    const next = queue.shift();
+    if (!next) throw new Error('sahte model: cevap kalmadı');
+    return typeof next === 'function' ? next(params) : next;
   };
+  return { calls, messages: { create: create(false) }, beta: { messages: { create: create(true) } } };
 }
 const usage = { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
 const say = (text, extra = []) => ({ stop_reason: 'end_turn', content: [...extra, { type: 'text', text }], usage });
@@ -168,10 +162,12 @@ async function main() {
     assert.strictEqual(r.reply, 'Birler sütununda boş boncuk kalmadı. 1 boncuk gelir, 5 gider, 10 gelir. Cevap 14!');
     assert.strictEqual(client.calls.length, 2);
     const p = client.calls[0];
-    assert.strictEqual(p.model, 'claude-opus-5-5');
+    assert.strictEqual(p.model, 'claude-haiku-5-5');
     assert.deepStrictEqual(p.output_config, { effort: 'low' });
-    assert.strictEqual(p.fallbacks, 'default');
-    assert.deepStrictEqual(p.betas, ['server-side-fallback-2026-07-01']);
+    // Haiku 5.5'te sunucu tarafı yedek model yok: beta uç noktası ve fallbacks gönderilmiyor.
+    assert.strictEqual(p._beta, false);
+    assert.strictEqual(p.fallbacks, undefined);
+    assert.strictEqual(p.betas, undefined);
     assert.deepStrictEqual(p.cache_control, { type: 'ephemeral' });
     assert.strictEqual(p.thinking, undefined);
     assert.ok(p.messages[0].content.some((b) => b.text.includes('<cocuk>neden 5 gidiyor</cocuk>')));
@@ -181,6 +177,14 @@ async function main() {
     assert.strictEqual(JSON.parse(toolResult.content).sonuc, 14);
     assert.deepStrictEqual(r.history.map((m) => m.role), ['user', 'assistant', 'user', 'assistant']);
     assert.strictEqual(r.usage.input_tokens, 200);
+  });
+  await test('Opus 5.5 ile karşılaştırmada yedek model açık', async () => {
+    const client = fakeClient([say('Birler sütununa bak.')]);
+    await chat.runTurn({ client, model: 'claude-opus-5-5', system: 'S', history: [], context: CTX, childText: 'x' });
+    const p = client.calls[0];
+    assert.strictEqual(p._beta, true);
+    assert.strictEqual(p.fallbacks, 'default');
+    assert.deepStrictEqual(p.betas, ['server-side-fallback-2026-07-01']);
   });
   await test('uydurulan sayı: çocuk yedek metni görüyor, model cevabı geçmişte kalıyor', async () => {
     const client = fakeClient([say('Kardeşi 3 gider, sonra 20 olur.')]);
@@ -278,7 +282,7 @@ async function main() {
   await test('API hatası: yedek metin, hak düşmüyor', async () => {
     const env = fakeEnv();
     const Anthropic = require('@anthropic-ai/sdk').default;
-    const failing = () => ({ beta: { messages: { create: async () => { throw new Anthropic.APIConnectionError({ message: 'yok' }); } } } });
+    const failing = () => ({ messages: { create: async () => { throw new Anthropic.APIConnectionError({ message: 'yok' }); } } });
     const fn = createSobiChat({ ...env, createClient: failing });
     env.store.set('users/u1', {});
     const warn = console.warn; console.warn = () => {};

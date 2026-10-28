@@ -229,10 +229,14 @@ Kod `functions/sobi/` altında; **henüz `index.js`'e bağlı değil, deploy edi
 | `chat.js` | Bir sohbet turu: elle yazılmış araç döngüsü (en çok 4 tur), ret ve yarıda kesilen cevap geçmişe eklenmiyor, geçmiş yalnızca eklenerek büyüyor (düşünme blokları değişmeden geri gidiyor), öneri balonları |
 | `callable.js` | `sobiChat` callable fabrikası: oturum, günlük hak (Free 20 / Lite 50 / Pro 100 mesaj), sohbet başına 10 mesaj, `sobiChats/{uid}/sessions/{id}` kaydı (30 gün), API hatasında yedek metin ve hak düşmüyor |
 
-- Model `claude-opus-5-5`, effort `low`, istem önbelleği açık, ret olursa sunucu tarafı yedek model
-  (`fallbacks: "default"`). Model bir sabit (`chat.DEFAULT_MODEL`); maliyet kararı Faz 3'te test
-  setiyle (ör. `claude-haiku-5-5` ile karşılaştırma: `npm run sobi:dene -- --model claude-haiku-5-5`).
-- Testler: `npm run test:sobi` (31 test, sahte model ve sahte Firestore; para harcamıyor).
+- Model `claude-haiku-5-5` (kullanıcı kararı 28.10.2026: hesabı kural motoru yaptığı için küçük
+  model yeterli olmalı; Opus 5.5'in yaklaşık kırkta biri maliyet), effort `low`, istem önbelleği
+  açık. Haiku 5.5'te sunucu tarafı yedek model yok; ret çocuğa yedek metin olarak döner. Opus 5.5
+  ile karşılaştırma: `npm run sobi:dene -- --model claude-opus-5-5` (orada `fallbacks: "default"`
+  açık). Effort karşılaştırması: `-- --effort medium`. İlk gerçek denemede bakılacaklar: Türkçe ve
+  çocuk dili, cevabı hemen söyleyip söylemediği, hamleden önce aracı çağırıp çağırmadığı
+  (çağırmazsa denetim yakalar ama çocuk sohbet yerine yedek metin görür).
+- Testler: `npm run test:sobi` (32 test, sahte model ve sahte Firestore; para harcamıyor).
 - Gerçek modelle deneme: `npm run sobi:dene` (ücretli; Firestore'a dokunmuyor).
 - Henüz yok: ebeveyn onayı denetimi ve gizlilik metni (Faz 5), "bildir" düğmesinin sunucu ucu
   (Faz 4 ile), İngilizce/Endonezce talimat metni.
