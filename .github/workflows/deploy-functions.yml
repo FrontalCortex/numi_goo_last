@@ -1,5 +1,11 @@
 name: Deploy Cloud Functions
 
+# Yalnızca davranışı değişmiş olabilecek fonksiyonlar deploy ediliyor: son başarılı deploy'un
+# commit'i ile şimdiki kod .github/scripts/deploy-plan.js ile karşılaştırılıyor (her fonksiyonun
+# kendi kodu + kullandığı yardımcılar + yerel modüller). Emin olunamayan her durumda hepsi gidiyor.
+# Yerelden `firebase deploy` yapılırsa bu iş akışı bunu bilemez; ardından bir kez elle
+# "hepsi" seçili çalıştırın.
+
 on:
   push:
     branches:
@@ -7,7 +13,23 @@ on:
     paths:
       - 'functions/**'
       - '.github/workflows/deploy-functions.yml'
-  workflow_dispatch: {}
+      - '.github/scripts/deploy-plan.js'
+  workflow_dispatch:
+    inputs:
+      hepsi:
+        description: "Bütün fonksiyonları deploy et (kapalıysa yalnızca son başarılı deploy'dan beri değişenler)"
+        type: boolean
+        default: true
+
+# Aynı projeye iki deploy aynı anda gitmesin; plan "son başarılı deploy"a göre yapıldığı için
+# çalıştırmaların sırayla bitmesi de gerekiyor. Sırada bekleyen iptal edilmiyor.
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read # son başarılı çalıştırmanın commit'ini bulmak için
 
 jobs:
   deploy:
@@ -15,6 +37,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # son başarılı deploy'un commit'i başka bir dalda olabilir
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -25,10 +49,55 @@ jobs:
         working-directory: functions
         run: npm ci
 
+      - name: Deploy planı (değişen fonksiyonlar)
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEPSI: ${{ github.event_name == 'workflow_dispatch' && inputs.hepsi }}
+        run: |
+          set -euo pipefail
+          yaz() { echo "$1" >> "$GITHUB_STEP_SUMMARY"; }
+          if [ "$HEPSI" = "true" ]; then
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            yaz "Elle **hepsi** seçildi: bütün fonksiyonlar deploy ediliyor."
+            exit 0
+          fi
+          BASE=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy-functions.yml \
+            --status success --limit 1 --json headSha --jq '.[0].headSha // ""' || true)
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+            yaz "Son başarılı deploy'un commit'i bulunamadı (\`$BASE\`): bütün fonksiyonlar deploy ediliyor."
+            exit 0
+          fi
+          mkdir -p "$RUNNER_TEMP/base" "$RUNNER_TEMP/acorn"
+          git archive "$BASE" firebase.json functions | tar -x -C "$RUNNER_TEMP/base"
+          npm install --no-save --no-audit --no-fund --prefix "$RUNNER_TEMP/acorn" acorn@8.14.0 > /dev/null
+          PLAN=$(node .github/scripts/deploy-plan.js "$RUNNER_TEMP/acorn/node_modules/acorn" "$RUNNER_TEMP/base" .) \
+            || PLAN='{"mode":"full","functions":[],"reason":"plan betiği hata verdi"}'
+          echo "$PLAN"
+          MODE=$(node -e 'console.log(JSON.parse(process.argv[1]).mode)' "$PLAN")
+          ONLY=$(node -e 'console.log(JSON.parse(process.argv[1]).functions.map((f) => "functions:" + f).join(","))' "$PLAN")
+          REASON=$(node -e 'console.log(JSON.parse(process.argv[1]).reason)' "$PLAN")
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
+          echo "only=$ONLY" >> "$GITHUB_OUTPUT"
+          yaz "Karşılaştırılan son başarılı deploy: \`$BASE\`"
+          yaz "Plan: **$MODE** ($REASON)"
+          if [ -n "$ONLY" ]; then yaz "\`$ONLY\`"; fi
+
       - name: Authenticate to Google Cloud
+        if: steps.plan.outputs.mode != 'none'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
       - name: Deploy to Firebase
-        run: npx firebase-tools deploy --only functions --non-interactive
+        if: steps.plan.outputs.mode != 'none'
+        env:
+          MODE: ${{ steps.plan.outputs.mode }}
+          ONLY: ${{ steps.plan.outputs.only }}
+        run: |
+          if [ "$MODE" = "partial" ]; then
+            npx firebase-tools deploy --only "$ONLY" --non-interactive
+          else
+            npx firebase-tools deploy --only functions --non-interactive
+          fi

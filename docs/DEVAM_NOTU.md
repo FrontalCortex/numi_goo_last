@@ -3259,7 +3259,14 @@ denetimlerine karışır) — "sınırsız" kuralı kuruldu, kullanıcı bu öne
 **Push = deploy (03.10.2026'da fark edildi):** (05.10: firestore.rules/indexes/storage değişikliği de push ile `deploy-rules.yml` üzerinden gidiyor.) `.github/workflows/deploy-functions.yml`,
 `functions/**` değişikliği içeren her push'ta (`claude/**` dalları; çalışma dalı dahil)
 `firebase-tools deploy --only functions` çalıştırıyor — yani seçici değil, BÜTÜN
-fonksiyonlar gidiyor. Cloud Functions denetim kayıtlarında deploy'lar
+fonksiyonlar gidiyor. **28.10.2026'dan beri seçici:** `.github/scripts/deploy-plan.js` son başarılı
+deploy'un commit'iyle şimdiki kodu fonksiyon fonksiyon karşılaştırıyor (kendi kodu + kullandığı
+yardımcılar + yerel modüller) ve yalnızca değişenleri `--only functions:a,functions:b` ile gönderiyor;
+package.json/lock, silinen export, `db.settings(` gibi küresel satırlar ya da emin olunamayan her
+durumda yine hepsi gidiyor. Neden gerekti: firebase-tools'un "değişmeyeni atla" hash'i bütün
+functions/ klasöründen tek parça hesaplanıyor, tek satır değişince 64 fonksiyonun hepsi (~25 dk)
+gidiyordu. Elle çalıştırmada "hepsi" kutusu (varsayılan açık) eski davranış. Yerelden
+`firebase deploy` yapılırsa ardından bir kez "hepsi" ile çalıştırın. Cloud Functions denetim kayıtlarında deploy'lar
 `github-actions-deploy@numigo-new.iam.gserviceaccount.com` adına (ör. 2026-10-01T19:04Z).
 "Deploy etmeden önce sor" anlaşması bu yüzden functions/ dokunan commit'lerin PUSH'unu da
 kapsıyor. Aşağıdaki "yalnızca şu iki fonksiyon deploy edildi" ifadesi muhtemelen yanlıştı:
