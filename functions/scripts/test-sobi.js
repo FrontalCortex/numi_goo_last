@@ -144,7 +144,9 @@ async function main() {
       plan: 'c0+6=bead[beads@0l+1 five@0u-1 ten{c1+1=direct[direct@1l+1]>14}]>14',
     });
     assert.strictEqual(tools.runTool('abakuste_goster', { baslangic: 8, islem: 'add', sayi: 6 }, CTX, state).isError, true);
-    assert.strictEqual(tools.runTool('alistirma_ver', { baslangic: 3, islem: 'add', sayi: 4 }, CTX, state).action.sonuc, 7);
+    // Alıştırma yalnızca uygulama destekliyorsa (öğretici desteklemiyor)
+    assert.strictEqual(tools.runTool('alistirma_ver', { baslangic: 3, islem: 'add', sayi: 4 }, CTX, state).isError, true);
+    assert.strictEqual(tools.runTool('alistirma_ver', { baslangic: 3, islem: 'add', sayi: 4 }, { ...CTX, practice: true }, state).action.sonuc, 7);
   });
   await test('hatayi_bul: ilk adımı yapıp 9\'a gelen çocuk doğru yolda', () => {
     const o = JSON.parse(tools.runTool('hatayi_bul', {}, CTX, {}).content);
@@ -176,6 +178,10 @@ async function main() {
     assert.strictEqual(o.siradaki_adim, 'birler: 10 gider (onlar basamağına 1 çıkarılır: kuralsız)');
     assert.ok(tools.findMistake(chat.sanitizeContext({})).durum.includes('yok'));
   });
+  await test('öğreticide alıştırma aracı modele verilmiyor', () => {
+    assert.ok(!chat.toolsFor(CTX).some((t) => t.name === 'alistirma_ver'));
+    assert.ok(chat.toolsFor({ ...CTX, practice: true }).some((t) => t.name === 'alistirma_ver'));
+  });
   await test('araç tanımları strict ve şemaları kapalı', () => {
     for (const t of tools.TOOL_DEFS) {
       assert.strictEqual(t.strict, true, t.name);
@@ -206,7 +212,7 @@ async function main() {
   ));
   await test('bağlam temizleniyor', () => {
     const c = chat.sanitizeContext({ stepId: 'T8; drop', base: -1, target: 100000, current: 3.2, attempts: 5, valueLog: [1, -2, 'x', 3], extra: 'gizli' });
-    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3] });
+    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3], practice: false });
   });
 
   console.log('sohbet turu (sahte model)');

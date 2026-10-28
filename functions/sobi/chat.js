@@ -67,7 +67,15 @@ function sanitizeContext(raw) {
     current: intIn(r.current, 0, MAX_VALUE),
     attempts: intIn(r.attempts, 0, 99),
     valueLog: log,
+    // Uygulama alıştırma hazırlayabiliyor mu. Öğretici bunu yapamıyor: "Kontrol Et" yalnızca
+    // adımın kendi cevabını denetliyor, Sobi başka bir işlem hazırlarsa çocuk karışır.
+    practice: r.practice === true,
   };
+}
+
+/** Bu bağlamda modele verilecek araçlar. */
+function toolsFor(ctx) {
+  return ctx.practice ? tools.TOOL_DEFS : tools.TOOL_DEFS.filter((t) => t.name !== 'alistirma_ver');
 }
 
 function contextBlock(ctx) {
@@ -128,7 +136,7 @@ async function runTurn({ client, system, history, context, childText, note, mode
     model,
     max_tokens: MAX_TOKENS,
     system: [{ type: 'text', text: system }],
-    tools: tools.TOOL_DEFS,
+    tools: toolsFor(context),
     messages,
     output_config: { effort },
     cache_control: { type: 'ephemeral' },
@@ -203,6 +211,7 @@ module.exports = {
   FALLBACK_BETA,
   FALLBACK_MODELS,
   sanitizeContext,
+  toolsFor,
   contextBlock,
   suggestionsFor,
   runTurn,

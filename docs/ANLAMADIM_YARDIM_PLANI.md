@@ -193,7 +193,7 @@ bildirim oranı.
 | 1 | Kural motoru: Kotlin `StepExplainer` + JS karşılığı + ortak test tablosu | **bitti (28.10.2026)** | Aşağıda "Faz 1 durumu" |
 | 2 | `sobiChat` fonksiyonu: talimat metni, araçlar, güvenlik katmanları, sınır | **kod bitti, secret kuruldu, index.js'e bağlandı (28.10.2026)** | Aşağıda "Faz 2 durumu" |
 | 3 | Test seti ve talimat metninin olgunlaştırılması | 2–3 gün | Model seçimi burada |
-| 4 | `SobiChatPanel`: sohbet, öneri balonları, sesli soru, abaküste gösterim | 3–4 gün | `TutorialFragment`'a yalnızca bağlantı noktası |
+| 4 | Sohbet paneli: sohbet, öneri balonları, sesli soru, abaküste gösterim | **ilk sürüm yazıldı (28.10.2026)**, sesli soru/cevap ve bildir sonra | Aşağıda "Faz 4 durumu" |
 | 5 | Gizlilik politikası, ebeveyn onayı, Play beyanları | 1 gün | Yayından önce şart |
 | 6 | Kapalı testte pilot (sınırlı grup), ölçüm | — | |
 | 7 | Ders alıştırması (`AbacusFragment`) ve ödeve genişletme | 2–3 gün | Aynı araçlar |
@@ -279,6 +279,28 @@ değişecek).
    bütün fonksiyonları deploy ettiği için ilgisiz değişiklikler de takılır.
 5. Firestore konsolunda `sessions` koleksiyon grubu için `expiresAt` alanına TTL ilkesi aç
    (sohbetler 30 gün sonra kendiliğinden silinsin).
+
+### Faz 4 durumu (28.10.2026, ilk sürüm; derlendi, telefonda denenmedi)
+
+Giriş: yanlış cevaptan sonra yanlış cevap panelindeki "nefes alan" bilgi düğmesi → ipucu paneli →
+**"Anlamadım, Sobi'ye sor"** (ipucu yoksa doğrudan panel). Yalnızca abaküslü soru adımında
+(`abacusClickable`, `answerNumber` var, seçenek yok) ve oturum açıkken. Sohbet başlayınca ekranda
+öğretmene sor düğmesinin altında yeşil **"Sobi"** düğmesi kalıyor.
+
+| Dosya | İş |
+|---|---|
+| `ServerSobi.kt` | `sobiChat` çağrısı, cevap/ekran işi ayrıştırma, günlük hak ve kısıt hataları |
+| `SobiContext.kt` | Gönderilen bağlam (`practice: false`) ve adım başına durum (`SobiStepTracker`: başlangıç değeri, abaküs kaydı, deneme sayısı, oturum, mesajlar, son gösterim) |
+| `SobiChatSheet.kt` + `sheet_sobi_chat.xml` | Alt panel: mesaj balonları, öneri balonları, yazma kutusu, "Abaküste izle"; "Bir daha göster" sunucuya gitmeden son gösterimi oynatıyor. Başlıkta "Sobi bir yapay zekâ yardımcısı; bazen yanılabilir." |
+| `SobiAbacusPlayer.kt` | Gösterim: abaküsü işlemin başına getirir, `StepExplainer` hamlelerini `animateGuideBead` ile (çocuğun dokunuşuyla aynı yoldan) oynatır, sonra yine başa döndürür |
+| `TutorialFragment.kt` | Yalnızca bağlantı noktaları: adım gösterilince durum sıfırlama ve başlangıç değerini yakalama, abaküs değer kaydı, "Kontrol Et" sayacı, ipucu panelindeki düğme, "Sobi" düğmesi, kapanışta temizlik. Ders sonu zincirine dokunulmadı. |
+| `strings_sobi.xml` | Bütün metinler |
+
+Sunucu: öğreticide `alistirma_ver` aracı modele verilmiyor (`practice` bayrağı); öğretici yalnızca
+adımın kendi cevabını denetlediği için Sobi'nin hazırladığı başka bir işlem çocuğu karıştırırdı.
+
+Henüz yok: sesli soru ve sesli cevap, Sobi mesajlarında "bildir" düğmesi (Play'in üretken yapay
+zekâ kuralı için yayından önce şart), ders alıştırması ve ödevde Sobi, analitik olayları.
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

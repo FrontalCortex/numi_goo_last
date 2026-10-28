@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Sobi'ye sor" yapay zekâ yardımcısı: öğretici adımındaki sohbet paneli
+     (bkz. SobiChatSheet.kt, functions/sobi/, docs/ANLAMADIM_YARDIM_PLANI.md). -->
+<resources>
+    <string name="sobi_title">Sobi\'ye sor</string>
+    <string name="sobi_ai_note">Sobi bir yapay zekâ yardımcısı; bazen yanılabilir.</string>
+    <string name="sobi_ask_button">Anlamadım, Sobi\'ye sor</string>
+    <string name="sobi_floating_button">Sobi</string>
+    <string name="sobi_greeting">Merhaba, ben Sobi! Bu adımda neresi zor geldi? Aşağıdan seçebilir ya da yazabilirsin.</string>
+    <string name="sobi_input_hint">Sobi\'ye yaz…</string>
+    <string name="sobi_send_desc">Gönder</string>
+    <string name="sobi_close_desc">Kapat</string>
+    <string name="sobi_thinking">Sobi düşünüyor…</string>
+    <string name="sobi_watch_button">Abaküste izle</string>
+    <string name="sobi_after_show">Şimdi sıra sende! Takılırsan \"Sobi\" düğmesine dokun.</string>
+
+    <!-- Öneri balonları: etiket ve gönderilen metin aynı -->
+    <string name="sobi_suggest_dont_know">Ne yapacağımı bilmiyorum</string>
+    <string name="sobi_suggest_why">Neden böyle?</string>
+    <string name="sobi_suggest_show">Bana göster</string>
+    <string name="sobi_suggest_show_again">Bir daha göster</string>
+    <string name="sobi_suggest_got_it">Anladım!</string>
+
+    <!-- Sorunlar -->
+    <string name="sobi_error_network">Şu an Sobi\'ye ulaşamıyorum. İnternetini kontrol edip yeniden dener misin?</string>
+    <string name="sobi_error_daily_limit">Bugün Sobi ile çok konuştun! Yarın yine konuşuruz.</string>
+    <string name="sobi_error_restricted">Şu an Sobi ile konuşamıyorsun.</string>
+    <string name="sobi_turn_limit">Bu sohbet çok uzadı. İstersen öğretmenine sorabilirsin.</string>
+    <string name="sobi_show_failed">Bunu abaküste gösteremedim.</string>
+</resources>

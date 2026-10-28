@@ -332,6 +332,8 @@ function runTool(name, input, ctx, state) {
     case 'abakuste_goster':
     case 'alistirma_ver': {
       const kind = name === 'abakuste_goster' ? 'goster' : 'alistirma';
+      // Araç listede yokken çağrılırsa (ör. eski bir geçmişten) uygulama bunu yapamaz.
+      if (kind === 'alistirma' && !(ctx && ctx.practice)) return fail('Bu ekranda alıştırma hazırlanamıyor.');
       if (state[kind]) return fail('Bu mesajda bu araç zaten kullanıldı.');
       const { e, error } = explainInput(input);
       if (error) return fail(error);
