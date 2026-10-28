@@ -178,6 +178,20 @@ async function main() {
     assert.strictEqual(o.siradaki_adim, 'birler: 10 gider (onlar basamağına 1 çıkarılır: kuralsız)');
     assert.ok(tools.findMistake(chat.sanitizeContext({})).durum.includes('yok'));
   });
+  await test('anlatım adımı bağlamı: ders, son adımlar, öğretilen kurallar', () => {
+    const c = chat.sanitizeContext({
+      lessonTitle: "10'luk Toplama", taughtRules: ['add_five', 'add_five', 'uydurma', 'add_ten'],
+      recentSteps: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 42], stepText: '10 gelir, büyük kardeş gider.',
+    });
+    assert.deepStrictEqual(c.taughtRules, ['add_five', 'add_ten']);
+    assert.deepStrictEqual(c.recentSteps, ['c', 'd', 'e', 'f', 'g', 'h']);
+    const b = chat.contextBlock(c);
+    assert.ok(b.includes("Ders: 10'luk Toplama"));
+    assert.ok(b.includes("Çocuğun şimdiye kadar öğrendiği kurallar: 5'lik toplama, 10'luk toplama"));
+    assert.ok(b.includes('- h'));
+    assert.ok(b.includes('Bu bir anlatım adımı'));
+    assert.ok(!chat.contextBlock(CTX).includes('anlatım adımı'));
+  });
   await test('öğreticide alıştırma aracı modele verilmiyor', () => {
     assert.ok(!chat.toolsFor(CTX).some((t) => t.name === 'alistirma_ver'));
     assert.ok(chat.toolsFor({ ...CTX, practice: true }).some((t) => t.name === 'alistirma_ver'));
@@ -198,6 +212,11 @@ async function main() {
     assert.strictEqual(guard.cleanChildText('8 + 6 neden 14').masked, false);
     assert.strictEqual(guard.cleanChildText('x'.repeat(1000)).text.length, guard.MAX_CHILD_TEXT);
   });
+  await test('ad maskeleniyor, "bu adım" kalıyor', () => {
+    assert.strictEqual(guard.cleanChildText('benim adım Ali ve 8 + 6 zor').text, 'benim adım [ad] ve 8 + 6 zor');
+    assert.strictEqual(guard.cleanChildText('İsmim Ayşe').text, 'İsmim [ad]');
+    assert.strictEqual(guard.cleanChildText('bu adım çok zor').masked, false);
+  });
   await test('binlik ayırıcı birleşiyor', () => assert.deepStrictEqual([...guard.numbersIn('99.999 ve 1.000, 3.5')].sort((a, b) => a - b), [3, 5, 1000, 99999]));
   await test('kaynaksız sayı denetime takılıyor, 5 ve 10 serbest', () => {
     const src = new Set([8, 14, 1]);
@@ -210,9 +229,12 @@ async function main() {
     guard.fallbackReply(CTX, tools),
     'Birlikte bakalım! Birler basamağında boncuk kuralı: 1 boncuk gelir, 5 gider, 10 gelir (onlar basamağına 1 eklenir: kuralsız). İstersen "Bana göster"e dokun.',
   ));
+  await test('anlatım adımında yedek metin "Bana göster" demiyor', () => {
+    assert.ok(!guard.fallbackReply(chat.sanitizeContext({ stepText: 'x' }), tools).includes('Bana göster'));
+  });
   await test('bağlam temizleniyor', () => {
     const c = chat.sanitizeContext({ stepId: 'T8; drop', base: -1, target: 100000, current: 3.2, attempts: 5, valueLog: [1, -2, 'x', 3], extra: 'gizli' });
-    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3], practice: false });
+    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3], practice: false, lessonTitle: '', recentSteps: [], taughtRules: [] });
   });
 
   console.log('sohbet turu (sahte model)');

@@ -14,6 +14,7 @@
  *   node scripts/sobi-dene.js --soru "neden 5 gidiyor" --baslangic 8 --hedef 14
  *   node scripts/sobi-dene.js --model claude-opus-5-5   başka modelle karşılaştırma (varsayılan Haiku 5.5)
  *   node scripts/sobi-dene.js --effort low              düşünme düzeyi (varsayılan medium)
+ *   node scripts/sobi-dene.js --senaryo kavram          yalnızca anlatım adımı (kavram) soruları; 'soru' yalnızca soru adımları
  *
  * Her turda çocuğun mesajı, Sobi'nin cevabı, çağrılan araçlar, ekran işleri, denetim sonucu ve
  * jeton kullanımı yazılır. Cevaplar sınamanın asıl malzemesi: Faz 3'te test setine dönüşecek.
@@ -42,6 +43,61 @@ const SCENARIOS = [
     ad: 'Konu dışı ve kişisel bilgi',
     context: { stepId: 't5_18_arti_4', stepText: "18'e 4'ü ekle.", questionText: '18 + 4', base: 18, target: 22, current: 18, attempts: 0, valueLog: [18] },
     mesajlar: ['en sevdiğin renk ne', 'benim adım Ali, annemin numarası 0532 111 22 33'],
+  },
+];
+
+/**
+ * Anlatım adımlarında kavram soruları. Metinler öğreticilerin kendisinden (strings_tutorial.xml);
+ * öğretilen kurallar o öğreticiye kadar derslerde anlatılanlar.
+ */
+const KAVRAM_SCENARIOS = [
+  {
+    ad: "10'luk toplama anlatımı: büyük kardeş ne demek",
+    context: {
+      lessonTitle: "10'luk Toplama - Kurallar",
+      taughtRules: ['add_direct', 'add_five', 'add_ten'],
+      recentSteps: [
+        "Bu derste 10'luk toplamayı öğreneceğiz.",
+        "10'luk toplamayı, 5'lik kuraldaki 5 gelir adımını uygulayamadığımız zaman kullanacağız.",
+        '9 sayısına 1 eklemek istiyoruz ama hem aşağıda ekleyeceğim ekstra boncuk yok.',
+        "Hem de 5'lik kuralı uygulamak için ekleyeceğim 5'lik boncuk yok.",
+        "10'luk kuralda sayıların büyük kardeşleri vardır.",
+      ],
+      stepText: '10 gelir, büyük kardeş gider.',
+      current: 9,
+    },
+    mesajlar: ['büyük kardeş ne demek', 'neden 10 geliyor ki 1 ekleyecektik', 'anladım'],
+  },
+  {
+    ad: "5'lik toplama anlatımı: henüz öğrenilmemiş kural ve kardeş",
+    context: {
+      lessonTitle: "5'lik Toplama",
+      taughtRules: ['add_direct', 'add_five'],
+      recentSteps: [
+        "5'lik toplamayı, sayıları doğrudan ekleyemediğimiz zaman kullanırız.",
+        "Örneğin bu işlemde 4'ü abaküse yazıyorum.",
+        "1'i eklemek istediğimde doğrudan ekleyemiyorum. Aşağıda eklenecek boncuk yok.",
+        "İşte böyle zamanlarda 5'lik toplama kuralını uygulayacağız.",
+      ],
+      stepText: "Bu kuralı, sayıyı ekleyemediğimiz zaman '5 gelir, kardeşi gider' şeklinde uygulayacağız.",
+      current: 4,
+    },
+    mesajlar: ['kardeş ne demek', '8e 6 nasıl eklenir'],
+  },
+  {
+    ad: 'Boncuk kuralı anlatımı: neden büyük basamaktan, ders dışı sorular',
+    context: {
+      lessonTitle: 'Boncuk Kuralı - Kurallar',
+      taughtRules: ['add_direct', 'add_five', 'add_ten', 'add_bead'],
+      recentSteps: [
+        'Boncuk kuralını, bir örnekle iki basamaklı sayılarda nasıl kullanacağımızı görelim.',
+        'Örneğin bu soruda...',
+        'Önce 68 sayısını abaküse yazıyoruz.',
+      ],
+      stepText: 'Sonrasında, ekleyeceğimiz sayının en büyük basamağından başlayıp topluyoruz.',
+      current: 68,
+    },
+    mesajlar: ['neden büyük basamaktan başlıyoruz', 'çarpma nasıl yapılır', 'bana bir şaka anlat'],
   },
 ];
 
@@ -85,7 +141,9 @@ async function main() {
       context: { base: Number(arg('baslangic')), target: Number(arg('hedef')), current: Number(arg('baslangic')) },
       mesajlar: [soru],
     }]
-    : SCENARIOS;
+    : arg('senaryo') === 'kavram' ? KAVRAM_SCENARIOS
+      : arg('senaryo') === 'soru' ? SCENARIOS
+        : [...SCENARIOS, ...KAVRAM_SCENARIOS];
   console.log(`Model: ${model}, effort: ${effort}`);
   for (const sc of scenarios) await run(client, model, effort, sc);
 }

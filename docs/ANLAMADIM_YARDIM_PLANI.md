@@ -303,6 +303,28 @@ adımın kendi cevabını denetlediği için Sobi'nin hazırladığı başka bir
 Henüz yok: sesli soru ve sesli cevap, Sobi mesajlarında "bildir" düğmesi (Play'in üretken yapay
 zekâ kuralı için yayından önce şart), ders alıştırması ve ödevde Sobi, analitik olayları.
 
+### Anlatım adımlarında Sobi (28.10.2026, sunucu hazır, uygulama henüz göndermiyor)
+
+Kullanıcı kararı: Sobi'ye öğreticinin her adımında soru sorulabilsin, yalnızca abaküslü soru
+adımında değil. Bağlama üç alan eklendi (`chat.sanitizeContext`): `lessonTitle`, `recentSteps`
+(son 6 adımın metni) ve `taughtRules` (`add_five`, `sub_ten`… çocuğun o ana kadar öğrendiği
+kurallar). Talimat metninde "Anlatım adımlarında" bölümü: açıklamayı dersin kendi metnine dayandır,
+öğretilmemiş kuralı anlatma ("ileride öğreneceğiz"), metinde gerekçe yoksa uydurma, gösterim yok.
+
+Deneme (`node scripts/sobi-dene.js --senaryo kavram`, Haiku 5.5, 3 senaryo, gerçek öğretici metinleri):
+- Doğru: "büyük kardeş ne demek", "1 ekleyecektik neden 10 geliyor" (dersin mantığıyla), "kardeş ne
+  demek"; öğrenilmemiş kural ("8'e 6", 5'lik derste) ve çarpma "ileride" diye geri çevrildi.
+- Düzeltilenler: her mesajı aynı soruyla ("birler sütununda kaç boncuk boşta?") bitiriyordu →
+  talimattaki örnek soru kaldırıldı, "aynı soruyu tekrarlama"; kendi önerdiği alıştırmayı
+  hesaplamadan söyleyip denetime takıldı → önerilen işlem de araçla hesaplanmalı; "neden büyük
+  basamaktan başlıyoruz"a gerekçe uydurdu → "gerekçe yoksa uydurma"; anlatım adımında yedek metin
+  olmayan "Bana göster"i öneriyordu → ayrı yedek metin; çocuğun adını geri söyledi → "benim adım /
+  ismim …" kalıbındaki ad maskeleniyor.
+- Soru adımı senaryoları yeniden çalıştırıldı, bozulma yok.
+
+Uygulamada kalan iş: öğreticide hep görünen Sobi düğmesi; sohbet adım adım değil öğretici boyunca;
+her mesajda ders adı, son adımlar ve öğretilen kurallar (öğretici numarasından).
+
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 
 Sobi'nin tur sınırı dolduğunda ya da çocuk isterse "Öğretmenine soralım mı?":

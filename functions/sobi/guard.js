@@ -28,13 +28,17 @@ const URL = /\b(?:https?:\/\/|www\.)\S+/gi;
 // 9 ya da daha çok rakam (aralarında boşluk/tire/nokta olabilir): telefon, kimlik no. Abaküs
 // 5 basamaklı; ders sayıları buna hiç yaklaşmıyor.
 const LONG_DIGITS = /(?:\+?\d[\s.-]?){9,}/g;
+// "benim adım Ali", "ismim Ayşe": ad modele gitmesin (denemede Sobi adı geri söyledi). Tek başına
+// "adım" maskelenmiyor: derste "bu adım" (basamak) anlamında da geçiyor. Büyük harfler açıkça
+// yazılı: /i bayrağı Türkçe "İ"yi "i" ile eşleştirmiyor.
+const NAME = /([Bb]enim\s+[Aa]d[ıi]m|[Bb]enim\s+[İi]smim|[İi]smim)\s+\p{L}+/gu;
 
 /** Çocuğun metni: kırpılmış, kısaltılmış, kişisel kalıplar maskelenmiş. */
 function cleanChildText(text) {
   if (typeof text !== 'string') return { text: '', masked: false };
   let t = text.replace(/\s+/g, ' ').trim().slice(0, MAX_CHILD_TEXT);
   const before = t;
-  t = t.replace(EMAIL, '[e-posta]').replace(URL, '[bağlantı]').replace(LONG_DIGITS, '[numara] ');
+  t = t.replace(EMAIL, '[e-posta]').replace(URL, '[bağlantı]').replace(LONG_DIGITS, '[numara] ').replace(NAME, '$1 [ad]');
   return { text: t.trim(), masked: t !== before };
 }
 
@@ -89,6 +93,8 @@ function fallbackReply(ctx, tools) {
     const m = tools.describe({ ...e, moves: [e.moves[0]] }).hamleler[0];
     return `Birlikte bakalım! ${m.basamak[0].toUpperCase()}${m.basamak.slice(1)} basamağında ${m.kural}: ${m.adimlar.join(', ')}. İstersen "Bana göster"e dokun.`;
   }
+  // Anlatım adımında (beklenen cevap yok) "Bana göster" düğmesi ve gösterim yok.
+  if (!ctx || !Number.isInteger(ctx.target)) return 'Bunu birlikte düşünelim! Neresi zor geldi, biraz daha anlatır mısın?';
   return 'Bunu birlikte abaküste görelim mi? "Bana göster"e dokunabilirsin.';
 }
 

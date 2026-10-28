@@ -49,6 +49,20 @@ const STEP_ID = /^[a-z0-9_]{1,60}$/;
 const MAX_VALUE = 99999;
 const MAX_LOG = 200;
 
+const MAX_RECENT_STEPS = 6;
+
+/** Kural anahtarı → çocuğun bildiği ad (homework.js ve RuleAnalysis ile aynı anahtarlar). */
+const RULE_LABELS = {
+  add_direct: 'kuralsız toplama',
+  add_five: "5'lik toplama",
+  add_ten: "10'luk toplama",
+  add_bead: 'boncuk kuralıyla toplama',
+  sub_direct: 'kuralsız çıkarma',
+  sub_five: "5'lik çıkarma",
+  sub_ten: "10'luk çıkarma",
+  sub_bead: 'boncuk kuralıyla çıkarma',
+};
+
 const intIn = (v, lo, hi) => (Number.isInteger(v) && v >= lo && v <= hi ? v : null);
 const text = (v, max) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, max) : '');
 
@@ -70,6 +84,16 @@ function sanitizeContext(raw) {
     // Uygulama alıştırma hazırlayabiliyor mu. Öğretici bunu yapamıyor: "Kontrol Et" yalnızca
     // adımın kendi cevabını denetliyor, Sobi başka bir işlem hazırlarsa çocuk karışır.
     practice: r.practice === true,
+    // Anlatım adımlarında da soru sorulabilsin diye: dersin adı, son adımların metni (eskiden
+    // yeniye) ve çocuğun o ana kadar öğrendiği kurallar. Sobi açıklamayı dersin kendi sözlerine
+    // dayandırsın, henüz öğretilmemiş bir kuralı anlatıp kafa karıştırmasın.
+    lessonTitle: text(r.lessonTitle, 80),
+    recentSteps: Array.isArray(r.recentSteps)
+      ? r.recentSteps.map((s) => text(s, 300)).filter(Boolean).slice(-MAX_RECENT_STEPS)
+      : [],
+    taughtRules: Array.isArray(r.taughtRules)
+      ? [...new Set(r.taughtRules.filter((k) => typeof k === 'string' && RULE_LABELS[k]))]
+      : [],
   };
 }
 
@@ -80,6 +104,15 @@ function toolsFor(ctx) {
 
 function contextBlock(ctx) {
   const lines = [];
+  if (ctx.lessonTitle) lines.push(`Ders: ${ctx.lessonTitle}`);
+  if (ctx.taughtRules && ctx.taughtRules.length) {
+    lines.push(`Çocuğun şimdiye kadar öğrendiği kurallar: ${ctx.taughtRules.map((k) => RULE_LABELS[k]).join(', ')}`);
+  }
+  if (ctx.recentSteps && ctx.recentSteps.length) {
+    lines.push('Bu derste az önce anlatılanlar (eskiden yeniye):');
+    for (const s of ctx.recentSteps) lines.push(`- ${s}`);
+  }
+  if (ctx.target === null) lines.push('Bu bir anlatım adımı: çocuk şu an bir soru cevaplamıyor, dersi dinliyor.');
   if (ctx.stepText) lines.push(`Adımın metni: ${ctx.stepText}`);
   if (ctx.questionText) lines.push(`Soru: ${ctx.questionText}`);
   if (ctx.base !== null) lines.push(`Adımın başında abaküste yazan: ${ctx.base}`);
@@ -210,6 +243,7 @@ module.exports = {
   MAX_TOOL_ROUNDS,
   FALLBACK_BETA,
   FALLBACK_MODELS,
+  RULE_LABELS,
   sanitizeContext,
   toolsFor,
   contextBlock,
