@@ -22,6 +22,7 @@ const explainer = require('./stepExplainer');
 const MAX_CHILD_TEXT = 300;
 const MAX_REPLY = 500;
 const ALWAYS_ALLOWED = new Set([5, 10]);
+const SMALL_FREE = 10;
 
 const EMAIL = /[^\s@]+@[^\s@]+\.[^\s@]+/g;
 const URL = /\b(?:https?:\/\/|www\.)\S+/gi;
@@ -69,13 +70,19 @@ function sourceNumbers(messages) {
   return out;
 }
 
-/** Döner: { ok, reasons: [...] }. */
-function checkReply(reply, sources) {
+/**
+ * Döner: { ok, reasons: [...] }. [explanation]: anlatım adımı (beklenen cevap yok). Orada 10'a kadarki
+ * sayılar serbest: "sağdan 3. sütun", "1 boncuk" gibi doğal ifadeler; denetlenecek bir işlem yok.
+ * Kapatınca Sobi anlatım adımında neredeyse hiç konuşamıyordu (28.10.2026, "kaynaksiz_sayi:1").
+ * Soru adımında denetim sıkı kalıyor: orada yanlış boncuk sayısı çocuğu yanlış hamleye götürür.
+ */
+function checkReply(reply, sources, { explanation = false } = {}) {
   const reasons = [];
   if (typeof reply !== 'string' || reply.trim() === '') reasons.push('bos');
   else {
     if (reply.length > MAX_REPLY) reasons.push('uzun');
-    const unknown = [...numbersIn(reply)].filter((n) => !ALWAYS_ALLOWED.has(n) && !sources.has(n));
+    const free = (n) => ALWAYS_ALLOWED.has(n) || (explanation && n <= SMALL_FREE);
+    const unknown = [...numbersIn(reply)].filter((n) => !free(n) && !sources.has(n));
     if (unknown.length) reasons.push(`kaynaksiz_sayi:${unknown.join(',')}`);
   }
   return { ok: reasons.length === 0, reasons };
@@ -94,7 +101,12 @@ function fallbackReply(ctx, tools) {
     return `Birlikte bakalım! ${m.basamak[0].toUpperCase()}${m.basamak.slice(1)} basamağında ${m.kural}: ${m.adimlar.join(', ')}. İstersen "Bana göster"e dokun.`;
   }
   // Anlatım adımında (beklenen cevap yok) "Bana göster" düğmesi ve gösterim yok.
-  if (!ctx || !Number.isInteger(ctx.target)) return 'Bunu birlikte düşünelim! Neresi zor geldi, biraz daha anlatır mısın?';
+  // Anlatım adımı: gösterim yok; dersin o adımdaki kendi sözü en güvenli açıklama.
+  if (!ctx || !Number.isInteger(ctx.target)) {
+    return ctx && ctx.stepText
+      ? `Birlikte bakalım! Derste şöyle diyoruz: "${ctx.stepText}" Neresi zor geldi?`
+      : 'Bunu birlikte düşünelim! Neresi zor geldi, biraz daha anlatır mısın?';
+  }
   return 'Bunu birlikte abaküste görelim mi? "Bana göster"e dokunabilirsin.';
 }
 

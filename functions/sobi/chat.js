@@ -222,7 +222,7 @@ async function runTurn({ client, system, history, context, childText, note, mode
 
   let fellBack = reply === null;
   if (reply !== null) {
-    const check = guard.checkReply(reply, guard.sourceNumbers(messages));
+    const check = guard.checkReply(reply, guard.sourceNumbers(messages), { explanation: context.target === null });
     if (!check.ok) { reasons.push(...check.reasons); fellBack = true; }
   }
   const shown = fellBack ? guard.fallbackReply(context, tools) : reply;

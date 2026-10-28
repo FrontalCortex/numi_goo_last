@@ -147,7 +147,13 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
         };
       }
 
-      if (result.fellBack) console.warn('sobiChat: yedek metin', { uid, reasons: result.reasons, stopReason: result.stopReason });
+      // Modelin takılan cevabı da yazılıyor (çocuğun metni değil): sebebi tahmin etmek zorunda kalmayalım.
+      if (result.fellBack) {
+        console.warn('sobiChat: yedek metin', {
+          uid, reasons: result.reasons, stopReason: result.stopReason,
+          modelReply: typeof result.modelReply === 'string' ? result.modelReply.slice(0, 400) : null,
+        });
+      }
 
       const childLine = guard.cleanChildText(message).text;
       const transcript = (session && Array.isArray(session.transcript) ? session.transcript : []).concat([

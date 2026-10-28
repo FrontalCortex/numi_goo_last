@@ -242,6 +242,16 @@ async function main() {
     guard.fallbackReply(CTX, tools),
     'Birlikte bakalım! Birler basamağında boncuk kuralı: 1 boncuk gelir, 5 gider, 10 gelir (onlar basamağına 1 eklenir: kuralsız). İstersen "Bana göster"e dokun.',
   ));
+  await test('anlatım adımında küçük sayılar serbest, soru adımında değil', () => {
+    const src = new Set([600]);
+    assert.strictEqual(guard.checkReply('Yüzler basamağı sağdan 3. sütun, önce 1 boncuk.', src, { explanation: true }).ok, true);
+    assert.strictEqual(guard.checkReply('Yüzler basamağı sağdan 3. sütun.', src).ok, false);
+    assert.strictEqual(guard.checkReply('Sonuç 47 olur.', src, { explanation: true }).ok, false);
+  });
+  await test('anlatım adımında yedek metin dersin kendi sözü', () => {
+    const r = guard.fallbackReply(chat.sanitizeContext({ stepText: 'İlk olarak yüzler basamağını yazıyorum.' }), tools);
+    assert.ok(r.includes('"İlk olarak yüzler basamağını yazıyorum."'));
+  });
   await test('anlatım adımında yedek metin "Bana göster" demiyor', () => {
     assert.ok(!guard.fallbackReply(chat.sanitizeContext({ stepText: 'x' }), tools).includes('Bana göster'));
   });
