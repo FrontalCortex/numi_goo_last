@@ -191,7 +191,7 @@ bildirim oranı.
 |---|---|---|---|
 | 0 | GA4'ten en zor 10 adım ve "Öğretmene sor" kullanım oranı | 1 gün | Kod yok |
 | 1 | Kural motoru: Kotlin `StepExplainer` + JS karşılığı + ortak test tablosu | **bitti (28.10.2026)** | Aşağıda "Faz 1 durumu" |
-| 2 | `sobiChat` fonksiyonu: talimat metni, araçlar, güvenlik katmanları, sınır | 3–4 gün | Sunucu değişikliği, deploy'dan önce sorulur |
+| 2 | `sobiChat` fonksiyonu: talimat metni, araçlar, güvenlik katmanları, sınır | **kod bitti (28.10.2026)**, anahtar bekliyor | Aşağıda "Faz 2 durumu" |
 | 3 | Test seti ve talimat metninin olgunlaştırılması | 2–3 gün | Model seçimi burada |
 | 4 | `SobiChatPanel`: sohbet, öneri balonları, sesli soru, abaküste gösterim | 3–4 gün | `TutorialFragment`'a yalnızca bağlantı noktası |
 | 5 | Gizlilik politikası, ebeveyn onayı, Play beyanları | 1 gün | Yayından önce şart |
@@ -216,6 +216,40 @@ bildirim oranı.
   `npm run test:step-explainer` (tablonun tamamı + bağımsız simülasyon). İkisi de geçiyor.
 - Henüz yok: çocuğa gösterilecek metin (Faz 2'de talimat metni ve `kurali_acikla` ile gelecek),
   animasyon bağlantısı (Faz 4).
+
+### Faz 2 durumu (28.10.2026)
+
+Kod `functions/sobi/` altında; **henüz `index.js`'e bağlı değil, deploy edilmiyor.**
+
+| Dosya | İş |
+|---|---|
+| `prompt_tr.md` | Talimat metni: Sobi'nin karakteri, dersin dili, "hesap yapma, araç kullan", üslup, sınırlar, bağlam biçimi |
+| `tools.js` | Beş araç (`hamleleri_hesapla`, `hatayi_bul`, `kurali_acikla`, `abakuste_goster`, `alistirma_ver`), hepsi `strict`; anlatım dersteki sözlerle ("1 boncuk gelir, 5 gider, 10 gelir"); kuralların onaylı açıklamaları |
+| `guard.js` | Girişte e-posta/telefon/bağlantı maskeleme, 300 karakter sınırı; çıkışta "her sayı bir kaynakta geçmeli" denetimi, 500 karakter sınırı; denetime takılırsa kural motorundan yedek metin |
+| `chat.js` | Bir sohbet turu: elle yazılmış araç döngüsü (en çok 4 tur), ret ve yarıda kesilen cevap geçmişe eklenmiyor, geçmiş yalnızca eklenerek büyüyor (düşünme blokları değişmeden geri gidiyor), öneri balonları |
+| `callable.js` | `sobiChat` callable fabrikası: oturum, günlük hak (Free 20 / Lite 50 / Pro 100 mesaj), sohbet başına 10 mesaj, `sobiChats/{uid}/sessions/{id}` kaydı (30 gün), API hatasında yedek metin ve hak düşmüyor |
+
+- Model `claude-opus-5-5`, effort `low`, istem önbelleği açık, ret olursa sunucu tarafı yedek model
+  (`fallbacks: "default"`). Model bir sabit (`chat.DEFAULT_MODEL`); maliyet kararı Faz 3'te test
+  setiyle (ör. `claude-haiku-5-5` ile karşılaştırma: `npm run sobi:dene -- --model claude-haiku-5-5`).
+- Testler: `npm run test:sobi` (31 test, sahte model ve sahte Firestore; para harcamıyor).
+- Gerçek modelle deneme: `npm run sobi:dene` (ücretli; Firestore'a dokunmuyor).
+- Henüz yok: ebeveyn onayı denetimi ve gizlilik metni (Faz 5), "bildir" düğmesinin sunucu ucu
+  (Faz 4 ile), İngilizce/Endonezce talimat metni.
+
+#### Kurulum (kullanıcı yapar, bir kez)
+
+1. Claude Console'da (platform.claude.com) bir API anahtarı oluştur. Harcama sınırı koymak iyi olur.
+2. Bilgisayarda denemek için (deploy gerekmez):
+   `cd functions; $env:ANTHROPIC_API_KEY = "sk-ant-..."; npm run sobi:dene`
+3. Sunucuya gizli değişken olarak kaydet (proje klasöründe):
+   `firebase functions:secrets:set ANTHROPIC_API_KEY` → anahtarı yapıştır.
+4. Ancak bundan sonra `functions/index.js`'e şu satır eklenir ve push edilir (deploy tetiklenir):
+   `exports.sobiChat = require('./sobi/callable')({ functions, admin, db, isAskQuestionRestricted, effectivePlan });`
+   Sıra önemli: anahtar Secret Manager'da yokken bu satırla yapılan deploy başarısız olur, push
+   bütün fonksiyonları deploy ettiği için ilgisiz değişiklikler de takılır.
+5. Firestore konsolunda `sessions` koleksiyon grubu için `expiresAt` alanına TTL ilkesi aç
+   (sohbetler 30 gün sonra kendiliğinden silinsin).
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

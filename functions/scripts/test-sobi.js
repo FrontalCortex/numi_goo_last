@@ -1,0 +1,325 @@
+/**
+ * "Sobi'ye sor" sunucu tarafı testi (bkz. sobi/chat.js, tools.js, guard.js, callable.js).
+ *
+ * NEDEN SAHTE MODEL
+ *   Gerçek API her çağrıda para harcıyor ve aynı soruya her seferinde başka cevap veriyor.
+ *   Buradaki testler modelin ne söyleyeceğini değil, bizim kodun her durumda doğru davrandığını
+ *   sınıyor: araç döngüsü, ret, sınır, denetime takılan cevap, geçmişin değiştirilmeden büyümesi,
+ *   günlük hak ve oturum. Sahte istemci önceden yazılmış cevapları sırayla döndürüyor.
+ *   Modelin gerçek cevaplarının kalitesi Faz 3'teki test setiyle ölçülecek (scripts/sobi-dene.js).
+ *
+ * ÇALIŞTIRMA: cd functions && npm run test:sobi
+ */
+const assert = require('assert');
+const tools = require('../sobi/tools');
+const guard = require('../sobi/guard');
+const chat = require('../sobi/chat');
+const createSobiChat = require('../sobi/callable');
+
+let passed = 0;
+async function test(name, fn) {
+  await fn();
+  passed++;
+  console.log(`  ✓ ${name}`);
+}
+
+// ── Sahte model ─────────────────────────────────────────────────────────
+
+/**
+ * Cevap listesini sırayla döndüren istemci; gönderilen istekleri [calls]'a yazar. Liste
+ * kopyalanmıyor: callable testi istemciyi bir kez kurup cevapları sonradan ekliyor.
+ */
+function fakeClient(responses) {
+  const calls = [];
+  const queue = responses;
+  return {
+    calls,
+    beta: {
+      messages: {
+        create: async (params) => {
+          calls.push(JSON.parse(JSON.stringify(params)));
+          const next = queue.shift();
+          if (!next) throw new Error('sahte model: cevap kalmadı');
+          return typeof next === 'function' ? next(params) : next;
+        },
+      },
+    },
+  };
+}
+const usage = { input_tokens: 100, output_tokens: 20, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+const say = (text, extra = []) => ({ stop_reason: 'end_turn', content: [...extra, { type: 'text', text }], usage });
+const callTool = (name, input, id = `tu_${name}`) => ({
+  stop_reason: 'tool_use',
+  content: [{ type: 'tool_use', id, name, input }],
+  usage,
+});
+const CTX = chat.sanitizeContext({
+  stepId: 't8_8_arti_6', stepText: '8\'e 6\'yı boncuk kuralıyla ekle.', questionText: '8 + 6',
+  base: 8, target: 14, current: 9, attempts: 2, valueLog: [8, 9],
+});
+
+async function main() {
+  console.log('anlatım (derslerdeki sözlerle)');
+  const steps = (b, op, n) => tools.describe(require('../sobi/stepExplainer').explain(b, op, n)).hamleler.map((h) => h.adimlar);
+  await test('8 + 6: 1 boncuk gelir, 5 gider, 10 gelir', () => assert.deepStrictEqual(
+    steps(8, 'add', 6), [['1 boncuk gelir', '5 gider', '10 gelir (onlar basamağına 1 eklenir: kuralsız)']],
+  ));
+  await test('3 + 4: 5 gelir, kardeşi 1 gider', () => assert.deepStrictEqual(steps(3, 'add', 4), [['5 gelir', 'kardeşi 1 gider']]));
+  await test('18 + 4: 10 gelir, büyük kardeşi 6 gider', () => assert.deepStrictEqual(
+    steps(18, 'add', 4), [['10 gelir (onlar basamağına 1 eklenir: kuralsız)', 'büyük kardeşi 6 gider']],
+  ));
+  await test('49 + 1: elde 5\'lik kuralla anlatılıyor', () => assert.deepStrictEqual(
+    steps(49, 'add', 1), [["10 gelir (onlar basamağına 1 eklenir: 5'lik kural, 5 gelir, kardeşi 4 gider)", 'büyük kardeşi 9 gider']],
+  ));
+  await test('10 − 1: 10 gider, kardeşi 9 gelir', () => assert.deepStrictEqual(
+    steps(10, 'sub', 1), [['10 gider (onlar basamağına 1 çıkarılır: kuralsız)', 'kardeşi 9 gelir']],
+  ));
+  await test('23 − 6: 10 gider, 5 gelir, kardeşi 1 gider', () => assert.deepStrictEqual(
+    steps(23, 'sub', 6), [['10 gider (onlar basamağına 1 çıkarılır: kuralsız)', '5 gelir', 'kardeşi 1 gider']],
+  ));
+  await test('5 − 1: 5 gider, kardeşi 4 gelir', () => assert.deepStrictEqual(steps(5, 'sub', 1), [['5 gider', 'kardeşi 4 gelir']]));
+  await test('kuralsız: 0 + 68', () => assert.deepStrictEqual(steps(0, 'add', 68), [['6 gelir'], ['8 gelir']]));
+
+  console.log('araçlar');
+  await test('hamleleri_hesapla özet ve kural adı', () => {
+    const r = tools.runTool('hamleleri_hesapla', { baslangic: 68, islem: 'add', sayi: 76 }, CTX, {});
+    const o = JSON.parse(r.content);
+    assert.strictEqual(r.isError, false);
+    assert.strictEqual(o.sonuc, 144);
+    assert.deepStrictEqual(o.hamleler.map((h) => [h.basamak, h.kural, h.sonra]), [['onlar', 'boncuk kuralı', 138], ['birler', 'boncuk kuralı', 144]]);
+  });
+  await test('sığmayan ve aralık dışı işlem hata', () => {
+    assert.strictEqual(tools.runTool('hamleleri_hesapla', { baslangic: 5, islem: 'sub', sayi: 6 }, CTX, {}).isError, true);
+    assert.strictEqual(tools.runTool('hamleleri_hesapla', { baslangic: 100000, islem: 'add', sayi: 1 }, CTX, {}).isError, true);
+    assert.strictEqual(tools.runTool('hamleleri_hesapla', { baslangic: 1.5, islem: 'add', sayi: 1 }, CTX, {}).isError, true);
+  });
+  await test('kurali_acikla onaylı metin', () => {
+    const o = JSON.parse(tools.runTool('kurali_acikla', { kural: 'five', islem: 'add' }, CTX, {}).content);
+    assert.strictEqual(o.kural, "5'lik kural");
+    assert.ok(o.aciklama.includes('5 gelir'));
+  });
+  await test('abakuste_goster ekran işi döndürüyor, ikinci kez reddediliyor', () => {
+    const state = {};
+    const r = tools.runTool('abakuste_goster', { baslangic: 8, islem: 'add', sayi: 6 }, CTX, state);
+    assert.deepStrictEqual(r.action, {
+      tur: 'goster', baslangic: 8, islem: 'add', sayi: 6, sonuc: 14,
+      plan: 'c0+6=bead[beads@0l+1 five@0u-1 ten{c1+1=direct[direct@1l+1]>14}]>14',
+    });
+    assert.strictEqual(tools.runTool('abakuste_goster', { baslangic: 8, islem: 'add', sayi: 6 }, CTX, state).isError, true);
+    assert.strictEqual(tools.runTool('alistirma_ver', { baslangic: 3, islem: 'add', sayi: 4 }, CTX, state).action.sonuc, 7);
+  });
+  await test('hatayi_bul: ilk hamle yapılmamış', () => {
+    const o = JSON.parse(tools.runTool('hatayi_bul', {}, CTX, {}).content);
+    assert.strictEqual(o.dogru_yapilan_hamle_sayisi, 0);
+    assert.strictEqual(o.ilk_hata.kural, 'boncuk kuralı');
+  });
+  await test('hatayi_bul: onlar doğru, birlerde şaşmış', () => {
+    const ctx = chat.sanitizeContext({ base: 68, target: 144, current: 140, valueLog: [68, 88, 38, 138, 139, 140] });
+    const o = tools.findMistake(ctx);
+    assert.strictEqual(o.dogru_yapilan_hamle_sayisi, 1);
+    assert.strictEqual(o.ilk_hata.basamak, 'birler');
+  });
+  await test('hatayi_bul: doğru cevap ve boş kayıt', () => {
+    assert.ok(tools.findMistake(chat.sanitizeContext({ base: 8, target: 14, current: 14 })).durum.includes('doğru'));
+    assert.ok(tools.findMistake(chat.sanitizeContext({ base: 8, target: 14, current: 8 })).durum.includes('henüz'));
+    assert.ok(tools.findMistake(chat.sanitizeContext({})).durum.includes('yok'));
+  });
+  await test('araç tanımları strict ve şemaları kapalı', () => {
+    for (const t of tools.TOOL_DEFS) {
+      assert.strictEqual(t.strict, true, t.name);
+      assert.strictEqual(t.input_schema.additionalProperties, false, t.name);
+    }
+  });
+
+  console.log('güvenlik');
+  await test('e-posta, telefon, bağlantı maskeleniyor; işlem kalıyor', () => {
+    const r = guard.cleanChildText('annem ayse@ornek.com numarası 0532 123 45 67 www.site.com 68 + 76 nasıl');
+    assert.strictEqual(r.masked, true);
+    assert.ok(!r.text.includes('@') && !r.text.includes('532') && !r.text.includes('www'));
+    assert.ok(r.text.includes('68 + 76'));
+    assert.strictEqual(guard.cleanChildText('8 + 6 neden 14').masked, false);
+    assert.strictEqual(guard.cleanChildText('x'.repeat(1000)).text.length, guard.MAX_CHILD_TEXT);
+  });
+  await test('binlik ayırıcı birleşiyor', () => assert.deepStrictEqual([...guard.numbersIn('99.999 ve 1.000, 3.5')].sort((a, b) => a - b), [3, 5, 1000, 99999]));
+  await test('kaynaksız sayı denetime takılıyor, 5 ve 10 serbest', () => {
+    const src = new Set([8, 14, 1]);
+    assert.strictEqual(guard.checkReply("5'lik değil 10'luk kural: 1 boncuk gelir, cevap 14.", src).ok, true);
+    assert.deepStrictEqual(guard.checkReply('Kardeşi 3 gider.', src).reasons, ['kaynaksiz_sayi:3']);
+    assert.strictEqual(guard.checkReply('', src).ok, false);
+    assert.strictEqual(guard.checkReply('a'.repeat(guard.MAX_REPLY + 1), src).ok, false);
+  });
+  await test('yedek metin kural motorundan', () => assert.strictEqual(
+    guard.fallbackReply(CTX, tools),
+    'Birlikte bakalım! Birler basamağında boncuk kuralı: 1 boncuk gelir, 5 gider, 10 gelir (onlar basamağına 1 eklenir: kuralsız). İstersen "Bana göster"e dokun.',
+  ));
+  await test('bağlam temizleniyor', () => {
+    const c = chat.sanitizeContext({ stepId: 'T8; drop', base: -1, target: 100000, current: 3.2, attempts: 5, valueLog: [1, -2, 'x', 3], extra: 'gizli' });
+    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3] });
+  });
+
+  console.log('sohbet turu (sahte model)');
+  await test('araçla cevap: istek biçimi ve geçmiş', async () => {
+    const client = fakeClient([
+      callTool('hamleleri_hesapla', { baslangic: 8, islem: 'add', sayi: 6 }),
+      say('Birler sütununda boş boncuk kalmadı. 1 boncuk gelir, 5 gider, 10 gelir. Cevap 14!'),
+    ]);
+    const r = await chat.runTurn({ client, system: 'S', history: [], context: CTX, childText: 'neden 5 gidiyor' });
+    assert.strictEqual(r.fellBack, false, r.reasons.join());
+    assert.strictEqual(r.reply, 'Birler sütununda boş boncuk kalmadı. 1 boncuk gelir, 5 gider, 10 gelir. Cevap 14!');
+    assert.strictEqual(client.calls.length, 2);
+    const p = client.calls[0];
+    assert.strictEqual(p.model, 'claude-opus-5-5');
+    assert.deepStrictEqual(p.output_config, { effort: 'low' });
+    assert.strictEqual(p.fallbacks, 'default');
+    assert.deepStrictEqual(p.betas, ['server-side-fallback-2026-07-01']);
+    assert.deepStrictEqual(p.cache_control, { type: 'ephemeral' });
+    assert.strictEqual(p.thinking, undefined);
+    assert.ok(p.messages[0].content.some((b) => b.text.includes('<cocuk>neden 5 gidiyor</cocuk>')));
+    assert.ok(p.messages[0].content[0].text.includes('Beklenen cevap: 14'));
+    const toolResult = client.calls[1].messages[2].content[0];
+    assert.strictEqual(toolResult.type, 'tool_result');
+    assert.strictEqual(JSON.parse(toolResult.content).sonuc, 14);
+    assert.deepStrictEqual(r.history.map((m) => m.role), ['user', 'assistant', 'user', 'assistant']);
+    assert.strictEqual(r.usage.input_tokens, 200);
+  });
+  await test('uydurulan sayı: çocuk yedek metni görüyor, model cevabı geçmişte kalıyor', async () => {
+    const client = fakeClient([say('Kardeşi 3 gider, sonra 20 olur.')]);
+    const r = await chat.runTurn({ client, system: 'S', history: [], context: CTX, childText: 'anlamadım' });
+    assert.strictEqual(r.fellBack, true);
+    assert.deepStrictEqual(r.reasons, ['kaynaksiz_sayi:3,20']);
+    assert.ok(r.reply.startsWith('Birlikte bakalım!'));
+    assert.strictEqual(r.history[r.history.length - 1].content[0].text, 'Kardeşi 3 gider, sonra 20 olur.');
+  });
+  await test('ret: geçmişe eklenmiyor', async () => {
+    const client = fakeClient([{ stop_reason: 'refusal', content: [], usage }]);
+    const r = await chat.runTurn({ client, system: 'S', history: [], context: CTX, childText: 'x' });
+    assert.strictEqual(r.fellBack, true);
+    assert.deepStrictEqual(r.reasons, ['refusal']);
+    assert.deepStrictEqual(r.history.map((m) => m.role), ['user']);
+  });
+  await test('yarıda kesilen cevap: geçmişe eklenmiyor', async () => {
+    const client = fakeClient([{ stop_reason: 'max_tokens', content: [{ type: 'text', text: 'Yar' }], usage }]);
+    const r = await chat.runTurn({ client, system: 'S', history: [], context: CTX, childText: 'x' });
+    assert.deepStrictEqual(r.reasons, ['max_tokens']);
+    assert.strictEqual(r.history.length, 1);
+  });
+  await test('araç sınırı: döngü duruyor, araç isteği cevapsız kalmıyor', async () => {
+    const loop = Array.from({ length: 10 }, (_, i) => callTool('hamleleri_hesapla', { baslangic: 1, islem: 'add', sayi: 1 }, `tu_${i}`));
+    const client = fakeClient(loop);
+    const r = await chat.runTurn({ client, system: 'S', history: [], context: CTX, childText: 'x' });
+    assert.strictEqual(client.calls.length, chat.MAX_TOOL_ROUNDS + 1);
+    assert.deepStrictEqual(r.reasons, ['arac_siniri']);
+    const last = r.history[r.history.length - 1];
+    assert.strictEqual(last.role, 'user');
+    assert.strictEqual(last.content[0].is_error, true);
+    assert.strictEqual(last.content[0].tool_use_id, `tu_${chat.MAX_TOOL_ROUNDS}`);
+  });
+  await test('düşünme blokları olduğu gibi geri gidiyor', async () => {
+    const thinking = { type: 'thinking', thinking: '', signature: 'imza-123' };
+    const first = fakeClient([{ ...callTool('hatayi_bul', {}), content: [thinking, { type: 'tool_use', id: 't1', name: 'hatayi_bul', input: {} }] }, say('Birler sütununa bak.', [thinking])]);
+    const r1 = await chat.runTurn({ client: first, system: 'S', history: [], context: CTX, childText: 'x' });
+    assert.deepStrictEqual(first.calls[1].messages[1].content[0], thinking);
+    const second = fakeClient([say('Aferin!')]);
+    const before = JSON.stringify(r1.history);
+    const r2 = await chat.runTurn({ client: second, system: 'S', history: r1.history, context: CTX, childText: 'tamam' });
+    assert.strictEqual(JSON.stringify(second.calls[0].messages.slice(0, r1.history.length)), before, 'eski geçmiş değişmemeli');
+    assert.strictEqual(r2.history.length, r1.history.length + 2);
+  });
+  await test('gösterim ekran işi ve öneri balonları', async () => {
+    const client = fakeClient([callTool('abakuste_goster', { baslangic: 8, islem: 'add', sayi: 6 }), say('İzle! 1 boncuk gelir, 5 gider, 10 gelir.')]);
+    const r = await chat.runTurn({ client, system: 'S', history: [], context: CTX, childText: 'göster' });
+    assert.strictEqual(r.actions.length, 1);
+    assert.strictEqual(r.actions[0].tur, 'goster');
+    assert.deepStrictEqual(r.suggestions, ['neden_boyle', 'bir_daha_goster']);
+  });
+  await test('not ve maskeleme modele gidiyor', async () => {
+    const client = fakeClient([say('Tamam.')]);
+    const r = await chat.runTurn({ client, system: 'S', history: [], context: CTX, childText: 'benim mailim ali@x.com', note: 'Yedek metin' });
+    const blocks = client.calls[0].messages[0].content.map((b) => b.text);
+    assert.ok(blocks.some((t) => t.startsWith('<not>') && t.includes('Yedek metin')));
+    assert.ok(!blocks.join(' ').includes('ali@x.com'));
+    assert.strictEqual(r.masked, true);
+  });
+
+  console.log('callable (sahte Firestore)');
+  await test('oturum, günlük hak, tur sınırı ve hata', async () => {
+    const env = fakeEnv();
+    const responses = [];
+    const fn = createSobiChat({ ...env, createClient: () => fakeClient(responses) });
+    const ctx = { auth: { uid: 'u1' } };
+    env.store.set('users/u1', { plan: 'Free' });
+
+    responses.push(say('Birler sütununa bak.'));
+    const r1 = await fn({ message: 'anlamadım', context: { base: 8, target: 14 } }, ctx);
+    assert.strictEqual(r1.reply, 'Birler sütununa bak.');
+    assert.strictEqual(r1.turnsLeft, 9);
+    assert.strictEqual(r1.remainingToday, 19);
+    const session = env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`);
+    assert.strictEqual(JSON.parse(session.historyJson).length, 2);
+    assert.deepStrictEqual(session.transcript.map((t) => t.from), ['cocuk', 'sobi']);
+    assert.strictEqual(session.promptVersion, createSobiChat.PROMPT_VERSION);
+
+    responses.push(say('Aferin!'));
+    const r2 = await fn({ message: 'tamam', sessionId: r1.sessionId, context: { base: 8, target: 14 } }, ctx);
+    assert.strictEqual(r2.sessionId, r1.sessionId);
+    assert.strictEqual(JSON.parse(env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`).historyJson).length, 4);
+
+    env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`).turns = 10;
+    const r3 = await fn({ message: 'bir daha', sessionId: r1.sessionId }, ctx);
+    assert.strictEqual(r3.turnLimitReached, true);
+
+    env.store.get('sobiChats/u1').usageCount = 20;
+    await assert.rejects(fn({ message: 'x' }, ctx), (e) => e.code === 'resource-exhausted');
+    await assert.rejects(fn({ message: 'x' }, {}), (e) => e.code === 'unauthenticated');
+
+    env.store.set('users/u2', { banned: true });
+    await assert.rejects(fn({ message: 'x' }, { auth: { uid: 'u2' } }), (e) => e.code === 'permission-denied');
+  });
+  await test('API hatası: yedek metin, hak düşmüyor', async () => {
+    const env = fakeEnv();
+    const Anthropic = require('@anthropic-ai/sdk').default;
+    const failing = () => ({ beta: { messages: { create: async () => { throw new Anthropic.APIConnectionError({ message: 'yok' }); } } } });
+    const fn = createSobiChat({ ...env, createClient: failing });
+    env.store.set('users/u1', {});
+    const warn = console.warn; console.warn = () => {};
+    const r = await fn({ message: 'x', context: { base: 8, target: 14 } }, { auth: { uid: 'u1' } });
+    console.warn = warn;
+    assert.strictEqual(r.unavailable, true);
+    assert.ok(r.reply.startsWith('Birlikte bakalım!'));
+    assert.strictEqual(env.store.has('sobiChats/u1'), false);
+  });
+
+  console.log(`\n${passed} test geçti.`);
+}
+
+/** Bellekte çalışan en küçük Firestore + firebase-functions taklidi. */
+function fakeEnv() {
+  const store = new Map();
+  let seq = 0;
+  const snap = (p) => {
+    const d = store.get(p);
+    return { exists: d !== undefined, id: p.split('/').pop(), data: () => d, get: (f) => (d ? d[f] : undefined) };
+  };
+  const docRef = (p) => ({
+    id: p.split('/').pop(),
+    get: async () => snap(p),
+    set: async (data, opts) => { store.set(p, opts && opts.merge ? { ...(store.get(p) || {}), ...data } : { ...data }); },
+    collection: (name) => colRef(`${p}/${name}`),
+  });
+  const colRef = (p) => ({ doc: (id) => docRef(`${p}/${id || `oto${++seq}abcdefgh`}`) });
+  const db = {
+    collection: (name) => colRef(name),
+    batch: () => {
+      const ops = [];
+      return { set: (ref, data, opts) => ops.push(() => ref.set(data, opts)), commit: async () => { for (const op of ops) await op(); } };
+    },
+  };
+  class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
+  const functions = { runWith: () => ({ https: { onCall: (fn) => fn } }), https: { HttpsError } };
+  const admin = { firestore: { Timestamp: { fromMillis: (ms) => ({ ms }) } } };
+  const isAskQuestionRestricted = (u) => u.banned === true;
+  const effectivePlan = (u) => u.plan || 'Free';
+  return { store, db, functions, admin, isAskQuestionRestricted, effectivePlan };
+}
+
+main().catch((e) => { console.error(e); process.exit(1); });

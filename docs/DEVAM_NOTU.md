@@ -36,7 +36,7 @@ Ayrıca önerildi (sıra verilmedi): deploy iş akışında önce testler + kıs
 deneme, staging projesi, hep kırmızı "Build Debug APK" iş akışı, sunucu hata metinlerinin
 yerelleştirilmesi, ödev saklama süresi.
 
-## PLAN: "Sobi'ye sor" sohbet eden yardımcı (28.10.2026 — Faz 1 bitti: kural anlatıcısı Kotlin + JS + ortak tablo, testler geçiyor; commit yok)
+## PLAN: "Sobi'ye sor" sohbet eden yardımcı (28.10.2026 — Faz 1 canlıda (fcad0fb); Faz 2 kodu `functions/sobi/` altında, testler geçiyor, index.js'e BAĞLI DEĞİL: önce ANTHROPIC_API_KEY secret'ı kurulmalı, plan belgesinde "Kurulum")
 
 "Öğretmene sor"un video akışı çok zahmetli. Kullanıcı kararı: öğretici adımında "Anlamadım" diyen
 çocuk yapay zekâyla (Sobi) sohbet ederek anlasın. Temel kural: sohbeti dil modeli, hesabı kural
