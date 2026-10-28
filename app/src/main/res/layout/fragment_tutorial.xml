@@ -2184,11 +2184,14 @@
             android:layout_height="@dimen/tutorial_back_button_size"
             android:layout_gravity="center"
             android:layout_marginLeft="10dp"
-            android:background="@drawable/bg_hw_chip"
-            android:padding="@dimen/tutorial_back_button_icon_padding"
+            android:background="@drawable/bg_depth_tutorial_control"
+            android:paddingStart="14dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="18dp"
             android:scaleType="centerInside"
-            android:src="@drawable/back_button"
-            android:tint="@color/lesson_completed"
+            android:src="@drawable/ic_tutorial_back_arrow"
+            android:tint="#000000"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 

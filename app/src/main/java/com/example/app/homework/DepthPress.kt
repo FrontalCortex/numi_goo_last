@@ -29,11 +29,7 @@ object DepthPress {
                     // basılı durumu ondan sonra bırakıyoruz ki tıklama kaybolmasın.
                     MotionEvent.ACTION_UP -> v.post { press(v, false) }
                     MotionEvent.ACTION_CANCEL -> press(v, false)
-                    MotionEvent.ACTION_MOVE -> {
-                        // Parmak düğmenin dışına kayınca düğme de çıksın.
-                        val inside = event.x >= 0 && event.y >= 0 && event.x <= v.width && event.y <= v.height
-                        press(v, inside && v.isEnabled)
-                    }
+                    MotionEvent.ACTION_MOVE -> move(v, event)
                 }
                 false
             }
@@ -45,6 +41,16 @@ object DepthPress {
 
     /** Kendi dokunma dinleyicisi olan düğme için: ACTION_UP / ACTION_CANCEL'da. */
     fun up(v: View) = press(v, false)
+
+    /**
+     * ACTION_MOVE'da: parmak düğmenin dışına kayınca düğme çıksın, geri gelince yine insin. Basılı
+     * durum ile kayma birlikte değişmeli; yalnızca biri değişirse düğme aşağıda kalırken dudak
+     * yeniden çizilir (dudak yüzün altından taşar) ya da tersi.
+     */
+    fun move(v: View, event: MotionEvent) {
+        val inside = event.x >= 0 && event.y >= 0 && event.x <= v.width && event.y <= v.height
+        press(v, inside && v.isEnabled)
+    }
 
     private fun press(v: View, down: Boolean) {
         v.isPressed = down

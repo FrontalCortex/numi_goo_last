@@ -670,6 +670,13 @@ class TutorialFragment : Fragment() {
                         true
                     }
 
+                    // Kayınca basılı durum ve göçme birlikte değişsin; olay burada tüketilir ki görünümün kendi
+                    // onTouchEvent'i basılı durumu ayrıca bırakıp düğmeyi aşağıda unutmasın.
+                    MotionEvent.ACTION_MOVE -> {
+                        com.example.app.homework.DepthPress.move(v, event)
+                        true
+                    }
+
                     else -> false
                 }
             }
@@ -18142,6 +18149,13 @@ class TutorialFragment : Fragment() {
                             true
                         }
 
+                        // Kayınca basılı durum ve göçme birlikte değişsin; olay burada tüketilir ki görünümün kendi
+                        // onTouchEvent'i basılı durumu ayrıca bırakıp düğmeyi aşağıda unutmasın.
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
                         else -> false
                     }
                 }
@@ -18182,6 +18196,13 @@ class TutorialFragment : Fragment() {
                         if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
                         com.example.app.homework.DepthPress.up(v)
                         dismissIncorrectResultPanel()
+                        true
+                    }
+
+                    // Kayınca basılı durum ve göçme birlikte değişsin; olay burada tüketilir ki görünümün kendi
+                    // onTouchEvent'i basılı durumu ayrıca bırakıp düğmeyi aşağıda unutmasın.
+                    MotionEvent.ACTION_MOVE -> {
+                        com.example.app.homework.DepthPress.move(v, event)
                         true
                     }
 
