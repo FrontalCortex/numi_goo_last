@@ -39,6 +39,8 @@ class SobiChatSheet(
     private val onShow: (ServerSobi.Action) -> Unit,
     /** Panel kapandı (ekrandaki "Sobi" düğmesi görünsün). */
     private val onClosed: () -> Unit = {},
+    /** Soru adımı mı (abaküslü soru); değilse anlatım adımı: ilk öneri balonları buna göre. */
+    private val isQuestionStep: () -> Boolean = { true },
 ) {
 
     private var dialog: BottomSheetDialog? = null
@@ -82,7 +84,11 @@ class SobiChatSheet(
 
         if (tracker.messages.isEmpty()) {
             tracker.messages += SobiStepTracker.Message(fromChild = false, text = appString(R.string.sobi_greeting))
-            tracker.suggestions = INITIAL_SUGGESTIONS
+        }
+        // Sohbet öğretici boyunca sürüyor; balon yoksa (yeni sohbet ya da son cevap hata) bu
+        // adımın türüne göre başlangıç balonları.
+        if (tracker.suggestions.isEmpty()) {
+            tracker.suggestions = if (isQuestionStep()) INITIAL_QUESTION_SUGGESTIONS else INITIAL_EXPLANATION_SUGGESTIONS
         }
         renderMessages()
         renderSuggestions()
@@ -245,9 +251,13 @@ class SobiChatSheet(
         private const val KEY_SHOW = "bana_goster"
         private const val KEY_SHOW_AGAIN = "bir_daha_goster"
         private const val KEY_GOT_IT = "anladim"
+        private const val KEY_DIDNT_GET = "bunu_anlamadim"
+        private const val KEY_EXAMPLE = "ornek_ver"
 
-        /** Sohbet açılırken, çocuk henüz bir şey yazmadan. */
-        private val INITIAL_SUGGESTIONS = listOf(KEY_DONT_KNOW, KEY_WHY, KEY_SHOW)
+        /** Sohbet açılırken, çocuk henüz bir şey yazmadan: soru adımında. */
+        private val INITIAL_QUESTION_SUGGESTIONS = listOf(KEY_DONT_KNOW, KEY_WHY, KEY_SHOW)
+        /** Anlatım adımında: gösterim yok, örnek istemek anlamlı. */
+        private val INITIAL_EXPLANATION_SUGGESTIONS = listOf(KEY_DIDNT_GET, KEY_EXAMPLE, KEY_WHY)
 
         /** Sunucunun anahtarları (chat.suggestionsFor) ve yerel olanlar → çocuğun gördüğü ve gönderilen metin. */
         private fun labelOf(key: String): String? = when (key) {
@@ -256,6 +266,8 @@ class SobiChatSheet(
             KEY_SHOW -> appString(R.string.sobi_suggest_show)
             KEY_SHOW_AGAIN -> appString(R.string.sobi_suggest_show_again)
             KEY_GOT_IT -> appString(R.string.sobi_suggest_got_it)
+            KEY_DIDNT_GET -> appString(R.string.sobi_suggest_didnt_get)
+            KEY_EXAMPLE -> appString(R.string.sobi_suggest_example)
             else -> null
         }
     }

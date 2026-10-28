@@ -192,6 +192,12 @@ async function main() {
     assert.ok(b.includes('Bu bir anlatım adımı'));
     assert.ok(!chat.contextBlock(CTX).includes('anlatım adımı'));
   });
+  await test('anlatım adımında gösterim aracı yok, öneriler farklı', () => {
+    const exp = chat.sanitizeContext({ stepText: 'x', current: 9 });
+    assert.ok(!chat.toolsFor(exp).some((x) => x.name === 'abakuste_goster'));
+    assert.ok(chat.toolsFor(CTX).some((x) => x.name === 'abakuste_goster'));
+    assert.deepStrictEqual(chat.suggestionsFor(exp, []), ['neden_boyle', 'ornek_ver', 'anladim']);
+  });
   await test('öğreticide alıştırma aracı modele verilmiyor', () => {
     assert.ok(!chat.toolsFor(CTX).some((t) => t.name === 'alistirma_ver'));
     assert.ok(chat.toolsFor({ ...CTX, practice: true }).some((t) => t.name === 'alistirma_ver'));
@@ -342,7 +348,7 @@ async function main() {
     responses.push(say('Birler sütununa bak.'));
     const r1 = await fn({ message: 'anlamadım', context: { base: 8, target: 14 } }, ctx);
     assert.strictEqual(r1.reply, 'Birler sütununa bak.');
-    assert.strictEqual(r1.turnsLeft, 9);
+    assert.strictEqual(r1.turnsLeft, createSobiChat.MAX_TURNS - 1);
     assert.strictEqual(r1.remainingToday, 19);
     const session = env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`);
     assert.strictEqual(JSON.parse(session.historyJson).length, 2);
@@ -354,7 +360,7 @@ async function main() {
     assert.strictEqual(r2.sessionId, r1.sessionId);
     assert.strictEqual(JSON.parse(env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`).historyJson).length, 4);
 
-    env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`).turns = 10;
+    env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`).turns = createSobiChat.MAX_TURNS;
     const r3 = await fn({ message: 'bir daha', sessionId: r1.sessionId }, ctx);
     assert.strictEqual(r3.turnLimitReached, true);
 

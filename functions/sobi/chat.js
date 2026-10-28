@@ -99,7 +99,11 @@ function sanitizeContext(raw) {
 
 /** Bu bağlamda modele verilecek araçlar. */
 function toolsFor(ctx) {
-  return ctx.practice ? tools.TOOL_DEFS : tools.TOOL_DEFS.filter((t) => t.name !== 'alistirma_ver');
+  // Gösterim yalnızca soru adımında: anlatım adımında öğreticinin abaküsü dersin kendi
+  // animasyonlarında, Sobi'nin oynatması dersi bozar.
+  const canShow = ctx.base !== null && ctx.target !== null;
+  return tools.TOOL_DEFS.filter((t) =>
+    (t.name !== 'alistirma_ver' || ctx.practice) && (t.name !== 'abakuste_goster' || canShow));
 }
 
 function contextBlock(ctx) {
@@ -124,6 +128,8 @@ function contextBlock(ctx) {
 
 /** Cevabın altındaki öneri balonları. Sabit liste; uygulama metinleri kendi dilinde gösterir. */
 function suggestionsFor(ctx, actions) {
+  // Anlatım adımı: gösterim yok, örnek istemek anlamlı.
+  if (ctx.target === null) return ['neden_boyle', 'ornek_ver', 'anladim'];
   const out = [];
   if (ctx.base !== null && ctx.target !== null && !actions.some((a) => a.tur === 'goster')) out.push('bana_goster');
   out.push('neden_boyle');

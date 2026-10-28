@@ -6,7 +6,7 @@
     <string name="sobi_ai_note">Sobi bir yapay zekâ yardımcısı; bazen yanılabilir.</string>
     <string name="sobi_ask_button">Sobi\'ye sor</string>
     <string name="sobi_floating_button">Sobi</string>
-    <string name="sobi_greeting">Merhaba, ben Sobi! Bu adımda neresi zor geldi? Aşağıdan seçebilir ya da yazabilirsin.</string>
+    <string name="sobi_greeting">Merhaba, ben Sobi! Dersle ilgili merak ettiğin bir şey var mı? Aşağıdan seçebilir ya da yazabilirsin.</string>
     <string name="sobi_input_hint">Sobi\'ye yaz…</string>
     <string name="sobi_send_desc">Gönder</string>
     <string name="sobi_close_desc">Kapat</string>
@@ -20,6 +20,8 @@
     <string name="sobi_suggest_show">Bana göster</string>
     <string name="sobi_suggest_show_again">Bir daha göster</string>
     <string name="sobi_suggest_got_it">Anladım!</string>
+    <string name="sobi_suggest_didnt_get">Bunu anlamadım</string>
+    <string name="sobi_suggest_example">Bir örnek ver</string>
 
     <!-- Sorunlar -->
     <string name="sobi_error_network">Şu an Sobi\'ye ulaşamıyorum. İnternetini kontrol edip yeniden dener misin?</string>

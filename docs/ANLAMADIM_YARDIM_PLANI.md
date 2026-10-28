@@ -322,8 +322,13 @@ Deneme (`node scripts/sobi-dene.js --senaryo kavram`, Haiku 5.5, 3 senaryo, ger�
   ismim …" kalıbındaki ad maskeleniyor.
 - Soru adımı senaryoları yeniden çalıştırıldı, bozulma yok.
 
-Uygulamada kalan iş: öğreticide hep görünen Sobi düğmesi; sohbet adım adım değil öğretici boyunca;
-her mesajda ders adı, son adımlar ve öğretilen kurallar (öğretici numarasından).
+Uygulama (28.10.2026): öğreticinin sağ üstünde, öğretmene sor düğmesinin altında hep duran kafalı
+"Sobi'ye sor" düğmesi (view_sobi_chip.xml); sohbet öğretici boyunca sürüyor (SobiStepTracker.startStep
+adım durumunu sıfırlıyor, sohbeti değil); her mesajla ders adı, son 6 adımın metni ve öğretilen
+kurallar (SobiCurriculum, öğretici numarasından) gidiyor. Anlatım adımında abaküs değeri gönderilmiyor
+(dersin animasyonları sırasında denetleyicinin değeri geride kalabiliyor) ve sunucu gösterim aracını
+vermiyor. Sohbet sınırı 10 → 20 mesaj. Anlatım adımında ilk balonlar: Bunu anlamadım, Bir örnek ver,
+Neden böyle?
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

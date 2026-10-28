@@ -36,8 +36,11 @@ const PROMPT_VERSION = crypto.createHash('sha1').update(SYSTEM_PROMPT).digest('h
 
 /** Günlük mesaj sınırı, plana göre (kullanıcı kararı bekleniyor: plan belgesi, açık soru 1). */
 const DAILY_LIMIT = { Free: 20, Lite: 50, Pro: 100 };
-/** Bir sohbette en fazla çocuk mesajı; sonra öğretmene sor önerilir. */
-const MAX_TURNS = 10;
+/**
+ * Bir sohbette en fazla çocuk mesajı; sonra öğretmene sor önerilir. Sohbet bir öğreticinin
+ * tamamı boyunca sürdüğü için (yalnızca bir soru adımı değil) 20.
+ */
+const MAX_TURNS = 20;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const SESSION_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
