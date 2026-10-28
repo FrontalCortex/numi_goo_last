@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sobi'nin kendiliğinden açılan konuşma balonu (SobiNudge): düğmenin solunda, kuyruğu düğmeye
+     bakıyor. Desen hint_bubble_background ile aynı; renk Sobi düğmesinin mavisi (bg_hw_send).
+     Kuyruk sağdan 9dp yer kaplıyor; metnin sağ iç boşluğu bunu içeriyor (view_sobi_nudge). -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:right="9dp">
+        <shape android:shape="rectangle">
+            <solid android:color="#1CB0F6" />
+            <corners android:radius="16dp" />
+        </shape>
+    </item>
+
+    <!-- Kuyruk: 45° döndürülmüş kare, sivri ucu balonun sağ kenarında. -->
+    <item
+        android:width="12dp"
+        android:height="12dp"
+        android:gravity="end|center_vertical"
+        android:right="3dp">
+        <rotate
+            android:fromDegrees="45"
+            android:pivotX="50%"
+            android:pivotY="50%">
+            <shape android:shape="rectangle">
+                <solid android:color="#1CB0F6" />
+                <corners android:radius="2dp" />
+            </shape>
+        </rotate>
+    </item>
+</layer-list>

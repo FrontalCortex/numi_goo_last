@@ -12,6 +12,9 @@
     <string name="sobi_close_desc">Kapat</string>
     <string name="sobi_thinking">Sobi düşünüyor…</string>
     <string name="sobi_watch_button">Abaküste izle</string>
+    <!-- Kendiliğinden açılan balonlar (SobiNudge) -->
+    <string name="sobi_nudge_wrong">Birlikte bakalım mı?</string>
+    <string name="sobi_nudge_idle">Anlamadığın yeri bana sor!</string>
     <string name="sobi_after_show">Şimdi sıra sende! Takılırsan \"Sobi\" düğmesine dokun.</string>
 
     <!-- Öneri balonları: etiket ve gönderilen metin aynı -->

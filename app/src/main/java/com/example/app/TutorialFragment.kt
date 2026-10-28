@@ -212,6 +212,12 @@ class TutorialFragment : Fragment() {
     private var sobiSheet: SobiChatSheet? = null
     private var sobiPlayer: SobiAbacusPlayer? = null
     private var sobiFloatingButton: View? = null
+    private var sobiNudge: SobiNudge? = null
+    /** "Anlamadığın yeri bana sor" balonu öğreticide bir kez. */
+    private var sobiIdleNudgeShown = false
+    /** "Birlikte bakalım mı?" adım başına bir kez. */
+    private var sobiWrongNudgeStep = -1
+    private val sobiIdleNudgeRunnable = Runnable { maybeShowSobiIdleNudge() }
     /** [resetAndWaith] sonrası planlanan [showStep]; üst üste geri basışta iptal edilir. */
     private var pendingBackShowStepRunnable: Runnable? = null
     private var backStepTransitionPending = false
@@ -268,6 +274,8 @@ class TutorialFragment : Fragment() {
     companion object {
         /** Sobi'ye bağlam olarak giden önceki adım sayısı (sunucu da en çok 6 alıyor). */
         private const val SOBI_RECENT_STEPS = 6
+        /** Bir adımda bu kadar kalınınca "Anlamadığın yeri bana sor!" (öğreticide bir kez). */
+        private const val SOBI_IDLE_NUDGE_MS = 7000L
         /** Ekrandaki Sobi düğmesi (yalnızca kafa) kare, bu kadar dp. */
         private const val SOBI_BUTTON_SIZE_DP = 48
         /** Öğreticide öğretmene sor düğmesi; kapalı, yerini Sobi aldı. */
@@ -851,10 +859,20 @@ class TutorialFragment : Fragment() {
             this.text = text.orEmpty()
             visibility = if (text.isNullOrEmpty()) View.GONE else View.VISIBLE
         }
-        incorrectPanel.findViewById<View>(R.id.incorrectSobiButton).apply {
+        val sobiButton = incorrectPanel.findViewById<View>(R.id.incorrectSobiButton).apply {
             visibility = if (isSobiChatAvailable()) View.VISIBLE else View.GONE
             setOnClickListener { if (!isTutorialResultButtonsCooldownActive()) openSobi() }
             com.example.app.homework.DepthPress.attach(this)
+        }
+        // Aynı adımda ikinci yanlış: Sobi kendiliğinden "Birlikte bakalım mı?" der (adım başına bir
+        // kez). Panel 200 ms'de kayarak geliyor; balonun yeri panel yerine oturunca hesaplanmalı.
+        val step = sobiTracker.stepIndex
+        if (isSobiChatAvailable() && isSobiQuestionStep() && sobiTracker.attempts >= 2 && sobiWrongNudgeStep != step) {
+            sobiWrongNudgeStep = step
+            sobiButton.postDelayed({
+                if (_binding == null || incorrectPanel.visibility != View.VISIBLE || sobiTracker.stepIndex != step) return@postDelayed
+                sobiNudge()?.show(sobiButton, appString(R.string.sobi_nudge_wrong)) { openSobi() }
+            }, 450L)
         }
     }
 
@@ -876,6 +894,31 @@ class TutorialFragment : Fragment() {
         sobiTracker.startStep(position)
         updateSobiFloatingButton()
         scheduleSobiBaseCapture(position, attempt = 0)
+        sobiNudge?.hide()
+        _binding?.root?.let { root ->
+            root.removeCallbacks(sobiIdleNudgeRunnable)
+            if (!sobiIdleNudgeShown) root.postDelayed(sobiIdleNudgeRunnable, SOBI_IDLE_NUDGE_MS)
+        }
+    }
+
+    private fun sobiNudge(): SobiNudge? {
+        val root = _binding?.root as? ViewGroup ?: return null
+        return sobiNudge ?: SobiNudge(root).also { sobiNudge = it }
+    }
+
+    /**
+     * Çocuk bir adımda 7 sn'den fazla kaldıysa sağ üstteki Sobi kafasının yanında "Anlamadığın yeri
+     * bana sor!" (öğreticide bir kez; kullanıcı kararı 28.10.2026). Sonuç paneli, Sobi paneli ya da
+     * gösterim açıksa bu adımda açılmaz, sonraki adımda yine denenir.
+     */
+    private fun maybeShowSobiIdleNudge() {
+        if (sobiIdleNudgeShown || _binding == null) return
+        val button = sobiFloatingButton ?: return
+        val busy = sobiSheet?.isShowing == true || sobiPlayer?.isPlaying == true ||
+            incorrectPanel.visibility == View.VISIBLE || correctPanel.visibility == View.VISIBLE
+        if (busy || button.visibility != View.VISIBLE) return
+        sobiIdleNudgeShown = true
+        sobiNudge()?.show(button, appString(R.string.sobi_nudge_idle)) { openSobi() }
     }
 
     /**
@@ -923,6 +966,7 @@ class TutorialFragment : Fragment() {
 
     private fun openSobi() {
         if (!isSobiChatAvailable()) return
+        sobiNudge?.hide()
         // Yanlış cevap paneli açıksa kapat: adım yeniden deneme durumuna dönsün, abaküs görünsün.
         if (incorrectPanel.visibility == View.VISIBLE) dismissIncorrectResultPanel()
         dismissAllRequestPanels(animated = true)
@@ -18288,6 +18332,7 @@ class TutorialFragment : Fragment() {
     private fun dismissIncorrectResultPanel() {
         if (isTutorialResultButtonsCooldownActive()) return
         if (incorrectPanel.visibility != View.VISIBLE) return
+        sobiNudge?.hide() // "Birlikte bakalım mı?" panelin düğmesine bağlı
 
         stopInfoRequestBreathAnimation()
 
@@ -19647,6 +19692,9 @@ class TutorialFragment : Fragment() {
         sobiSheet?.dismiss()
         sobiSheet = null
         sobiFloatingButton = null
+        _binding?.root?.removeCallbacks(sobiIdleNudgeRunnable)
+        sobiNudge?.hide()
+        sobiNudge = null
         if (_binding != null) {
             dismissRequestPanelsImmediate()
         }
