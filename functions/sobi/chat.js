@@ -98,12 +98,12 @@ function sanitizeContext(raw) {
 }
 
 /** Bu bağlamda modele verilecek araçlar. */
-function toolsFor(ctx) {
-  // Gösterim yalnızca soru adımında: anlatım adımında öğreticinin abaküsü dersin kendi
-  // animasyonlarında, Sobi'nin oynatması dersi bozar.
-  const canShow = ctx.base !== null && ctx.target !== null;
-  return tools.TOOL_DEFS.filter((t) =>
-    (t.name !== 'alistirma_ver' || ctx.practice) && (t.name !== 'abakuste_goster' || canShow));
+function toolsFor() {
+  // Liste sohbet boyunca HİÇ değişmemeli: model önceki turlardaki düşünme bloklarının aynı araç
+  // listesiyle yazıldığını doğruluyor, liste değişince isteği reddediyor ("The `tools` list
+  // differs from the one this block was created with"; 28.10.2026'da anlatım adımında
+  // abakuste_goster'i çıkarınca oldu). Bu adımda yapılamayan araçları runTool reddediyor.
+  return tools.TOOL_DEFS;
 }
 
 function contextBlock(ctx) {
@@ -120,7 +120,8 @@ function contextBlock(ctx) {
   if (ctx.stepText) lines.push(`Adımın metni: ${ctx.stepText}`);
   if (ctx.questionText) lines.push(`Soru: ${ctx.questionText}`);
   if (ctx.base !== null) lines.push(`Adımın başında abaküste yazan: ${ctx.base}`);
-  if (ctx.target !== null) lines.push(`Beklenen cevap: ${ctx.target}`);
+  // Sütunlarıyla: "yüzler sütununa 6 yaz" gibi doğru bir cümle de guard'dan geçsin (600'ün 6'sı).
+  if (ctx.target !== null) lines.push(`Beklenen cevap: ${ctx.target}; sütunlar: ${tools.columnsText(ctx.target)}`);
   if (ctx.current !== null) lines.push(`Şu an abaküste yazan: ${ctx.current}; sütunlar: ${tools.columnsText(ctx.current)}`);
   if (ctx.attempts !== null) lines.push(`Bu adımdaki deneme sayısı: ${ctx.attempts}`);
   return `<baglam>\n${lines.join('\n')}\n</baglam>`;

@@ -268,6 +268,10 @@ class TutorialFragment : Fragment() {
     companion object {
         /** Sobi'ye bağlam olarak giden önceki adım sayısı (sunucu da en çok 6 alıyor). */
         private const val SOBI_RECENT_STEPS = 6
+        /** Ekrandaki Sobi düğmesi (yalnızca kafa) kare, bu kadar dp. */
+        private const val SOBI_BUTTON_SIZE_DP = 48
+        /** Öğreticide öğretmene sor düğmesi; kapalı, yerini Sobi aldı. */
+        private const val ASK_TEACHER_IN_TUTORIAL = false
         private val INFO_REQUEST_TINT = Color.parseColor("#8BC34A")
         private val INFO_REQUEST_TINT_LIGHT = Color.parseColor("#DFF0D4")
         private const val INFO_REQUEST_BREATH_SCALE_DELTA = 0.14f
@@ -798,6 +802,12 @@ class TutorialFragment : Fragment() {
     }
 
     private fun setupAskQuestionButton() {
+        // Öğreticide öğretmene danışma yerine Sobi'ye sor kullanılıyor (kullanıcı kararı 28.10.2026);
+        // düğme gizli, kod ileride yeniden açılabilsin diye duruyor.
+        if (!ASK_TEACHER_IN_TUTORIAL) {
+            binding.askQuestionButton.visibility = View.GONE
+            return
+        }
         val authManager = AuthManager().also { it.initialize(requireContext()) }
         AskQuestionButtonBinder.bind(
             fragment = this,
@@ -966,8 +976,9 @@ class TutorialFragment : Fragment() {
                 com.example.app.homework.DepthPress.attach(this)
                 val d = resources.displayMetrics.density
                 root.addView(this, ConstraintLayout.LayoutParams(
-                    ConstraintLayout.LayoutParams.WRAP_CONTENT, (40 * d).toInt(),
+                    (SOBI_BUTTON_SIZE_DP * d).toInt(), (SOBI_BUTTON_SIZE_DP * d).toInt(),
                 ).apply {
+                    // Öğretmene sor düğmesi gizliyken (GONE) onun yerine oturur.
                     topToBottom = R.id.askQuestionButton
                     endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
                     topMargin = (8 * d).toInt()

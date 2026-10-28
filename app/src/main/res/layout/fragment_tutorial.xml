@@ -2576,6 +2576,7 @@
 
     <ImageView
         android:id="@+id/askQuestionButton"
+        android:visibility="gone"
         android:layout_width="@dimen/tutorial_ask_button_size"
         android:layout_height="@dimen/tutorial_ask_button_size"
         android:textAllCaps="false"

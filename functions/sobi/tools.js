@@ -334,6 +334,10 @@ function runTool(name, input, ctx, state) {
       const kind = name === 'abakuste_goster' ? 'goster' : 'alistirma';
       // Araç listede yokken çağrılırsa (ör. eski bir geçmişten) uygulama bunu yapamaz.
       if (kind === 'alistirma' && !(ctx && ctx.practice)) return fail('Bu ekranda alıştırma hazırlanamıyor.');
+      // Anlatım adımında öğreticinin abaküsü dersin kendi animasyonlarında; gösterim dersi bozar.
+      if (kind === 'goster' && !(ctx && Number.isInteger(ctx.base) && Number.isInteger(ctx.target))) {
+        return fail('Bu anlatım adımında abaküste gösterim yapılamıyor; anlatarak açıkla.');
+      }
       if (state[kind]) return fail('Bu mesajda bu araç zaten kullanıldı.');
       const { e, error } = explainInput(input);
       if (error) return fail(error);

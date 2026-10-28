@@ -178,6 +178,11 @@ async function main() {
     assert.strictEqual(o.siradaki_adim, 'birler: 10 gider (onlar basamağına 1 çıkarılır: kuralsız)');
     assert.ok(tools.findMistake(chat.sanitizeContext({})).durum.includes('yok'));
   });
+  await test('beklenen cevabın sütunları bağlamda: "yüzler sütununa 6" geçiyor', () => {
+    const ctx = chat.sanitizeContext({ base: 0, target: 600, current: 0 });
+    const src = guard.sourceNumbers([{ role: 'user', content: [{ type: 'text', text: chat.contextBlock(ctx) }] }]);
+    assert.strictEqual(guard.checkReply('Yüzler sütununa 6 yazmalısın.', src).ok, true);
+  });
   await test('anlatım adımı bağlamı: ders, son adımlar, öğretilen kurallar', () => {
     const c = chat.sanitizeContext({
       lessonTitle: "10'luk Toplama", taughtRules: ['add_five', 'add_five', 'uydurma', 'add_ten'],
@@ -192,15 +197,17 @@ async function main() {
     assert.ok(b.includes('Bu bir anlatım adımı'));
     assert.ok(!chat.contextBlock(CTX).includes('anlatım adımı'));
   });
-  await test('anlatım adımında gösterim aracı yok, öneriler farklı', () => {
+  await test('araç listesi bağlamdan bağımsız (düşünme blokları değişmeyen liste ister)', () => {
     const exp = chat.sanitizeContext({ stepText: 'x', current: 9 });
-    assert.ok(!chat.toolsFor(exp).some((x) => x.name === 'abakuste_goster'));
-    assert.ok(chat.toolsFor(CTX).some((x) => x.name === 'abakuste_goster'));
+    assert.deepStrictEqual(chat.toolsFor(exp), chat.toolsFor(CTX));
+    assert.deepStrictEqual(chat.toolsFor({ ...CTX, practice: true }), chat.toolsFor(CTX));
     assert.deepStrictEqual(chat.suggestionsFor(exp, []), ['neden_boyle', 'ornek_ver', 'anladim']);
   });
-  await test('öğreticide alıştırma aracı modele verilmiyor', () => {
-    assert.ok(!chat.toolsFor(CTX).some((t) => t.name === 'alistirma_ver'));
-    assert.ok(chat.toolsFor({ ...CTX, practice: true }).some((t) => t.name === 'alistirma_ver'));
+  await test('anlatım adımında gösterim araç düzeyinde reddediliyor', () => {
+    const exp = chat.sanitizeContext({ stepText: 'x' });
+    const r = tools.runTool('abakuste_goster', { baslangic: 8, islem: 'add', sayi: 6 }, exp, {});
+    assert.strictEqual(r.isError, true);
+    assert.strictEqual(r.action, undefined);
   });
   await test('araç tanımları strict ve şemaları kapalı', () => {
     for (const t of tools.TOOL_DEFS) {
@@ -279,12 +286,12 @@ async function main() {
     assert.deepStrictEqual(p.betas, ['server-side-fallback-2026-07-01']);
   });
   await test('uydurulan sayı: çocuk yedek metni görüyor, model cevabı geçmişte kalıyor', async () => {
-    const client = fakeClient([say('Kardeşi 3 gider, sonra 20 olur.')]);
+    const client = fakeClient([say('Kardeşi 7 gider, sonra 20 olur.')]);
     const r = await chat.runTurn({ client, system: 'S', history: [], context: CTX, childText: 'anlamadım' });
     assert.strictEqual(r.fellBack, true);
-    assert.deepStrictEqual(r.reasons, ['kaynaksiz_sayi:3,20']);
+    assert.deepStrictEqual(r.reasons, ['kaynaksiz_sayi:7,20']);
     assert.ok(r.reply.startsWith('Birlikte bakalım!'));
-    assert.strictEqual(r.history[r.history.length - 1].content[0].text, 'Kardeşi 3 gider, sonra 20 olur.');
+    assert.strictEqual(r.history[r.history.length - 1].content[0].text, 'Kardeşi 7 gider, sonra 20 olur.');
   });
   await test('ret: geçmişe eklenmiyor', async () => {
     const client = fakeClient([{ stop_reason: 'refusal', content: [], usage }]);
@@ -370,6 +377,31 @@ async function main() {
 
     env.store.set('users/u2', { banned: true });
     await assert.rejects(fn({ message: 'x' }, { auth: { uid: 'u2' } }), (e) => e.code === 'permission-denied');
+  });
+  await test('geçersiz düşünme bloğu: geçmiş sıfırlanıp bir kez yeniden deneniyor', async () => {
+    const env = fakeEnv();
+    const Anthropic = require('@anthropic-ai/sdk').default;
+    let calls = 0;
+    const client = { messages: { create: async (params) => {
+      calls++;
+      if (params.messages.length > 1) {
+        throw new Anthropic.BadRequestError(400, { type: 'error', error: { type: 'invalid_request_error',
+          message: 'messages.1.content.0: Invalid `signature` in `thinking` block. The block is bound to a different conversation.' } }, undefined, new Headers());
+      }
+      return say('Birlikte bakalım.');
+    } } };
+    const fn = createSobiChat({ ...env, createClient: () => client });
+    env.store.set('users/u1', {});
+    env.store.set('sobiChats/u1/sessions/oturum12345', {
+      historyJson: JSON.stringify([{ role: 'user', content: 'eski' }, { role: 'assistant', content: [{ type: 'text', text: 'eski cevap' }] }]),
+      turns: 2,
+    });
+    const warn = console.warn; console.warn = () => {};
+    const r = await fn({ message: 'neden', sessionId: 'oturum12345', context: { stepText: 'x' } }, { auth: { uid: 'u1' } });
+    console.warn = warn;
+    assert.strictEqual(calls, 2);
+    assert.strictEqual(r.reply, 'Birlikte bakalım.');
+    assert.strictEqual(JSON.parse(env.store.get('sobiChats/u1/sessions/oturum12345').historyJson).length, 2);
   });
   await test('API hatası: yedek metin, hak düşmüyor', async () => {
     const env = fakeEnv();

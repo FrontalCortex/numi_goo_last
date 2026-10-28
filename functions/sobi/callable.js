@@ -48,6 +48,11 @@ function trDay(ms) {
   return new Date(ms + 3 * 3600 * 1000).toISOString().slice(0, 10);
 }
 
+/** Geçmişteki düşünme bloğu reddedildi mi (geçmişi sıfırlayınca düzelen tek hata). */
+function isStaleHistoryError(err) {
+  return err instanceof Anthropic.BadRequestError && /thinking/i.test(String(err.message)) && /signature|bound/i.test(String(err.message));
+}
+
 /** [createClient] yalnızca testte verilir (scripts/test-sobi.js sahte model kullanıyor). */
 module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRestricted, effectivePlan, createClient }) {
   let client = null;
@@ -98,16 +103,30 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
         try { history = JSON.parse(session.historyJson); } catch (_) { history = []; }
       }
 
+      const runWith = (h) => chat.runTurn({
+        client: getClient(),
+        system: SYSTEM_PROMPT,
+        history: h,
+        context: stepContext,
+        childText: message,
+        note: session ? session.pendingNote || null : null,
+      });
       let result;
       try {
-        result = await chat.runTurn({
-          client: getClient(),
-          system: SYSTEM_PROMPT,
-          history,
-          context: stepContext,
-          childText: message,
-          note: session ? session.pendingNote || null : null,
-        });
+        try {
+          result = await runWith(history);
+        } catch (err) {
+          // Geçmişteki düşünme blokları artık geçerli değilse (araç listesi ya da talimat metni
+          // değişti) o sohbet hiç ilerleyemez: geçmişi bırakıp bu mesajla yeni başla. Çocuk yalnızca
+          // Sobi'nin önceki konuşmayı "unuttuğunu" görür; ekrandaki mesajlar uygulamada kalır.
+          if (history.length && isStaleHistoryError(err)) {
+            console.warn('sobiChat: geçmiş geçersiz, sıfırlanıyor', { uid, message: err.message });
+            history = [];
+            result = await runWith(history);
+          } else {
+            throw err;
+          }
+        }
       } catch (err) {
         // Sıra en özelden en genele: SDK'da hepsi (bağlantı hatası dahil) APIError'dan türüyor.
         // Hiçbiri çocuğa hata göstermiyor: yedek metin dönüyor, hak düşmüyor, geçmiş değişmiyor.
