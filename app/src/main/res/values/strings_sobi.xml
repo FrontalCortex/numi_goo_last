@@ -4,7 +4,7 @@
 <resources>
     <string name="sobi_title">Sobi\'ye sor</string>
     <string name="sobi_ai_note">Sobi bir yapay zekâ yardımcısı; bazen yanılabilir.</string>
-    <string name="sobi_ask_button">Anlamadım, Sobi\'ye sor</string>
+    <string name="sobi_ask_button">Sobi\'ye sor</string>
     <string name="sobi_floating_button">Sobi</string>
     <string name="sobi_greeting">Merhaba, ben Sobi! Bu adımda neresi zor geldi? Aşağıdan seçebilir ya da yazabilirsin.</string>
     <string name="sobi_input_hint">Sobi\'ye yaz…</string>
