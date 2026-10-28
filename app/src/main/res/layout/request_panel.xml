@@ -21,30 +21,10 @@
         android:textColor="@color/white"
         android:textSize="@dimen/tutorial_request_text_size"
         android:maxWidth="@dimen/tutorial_request_text_max_width"
-        app:layout_constraintBottom_toTopOf="@id/requestSobiButton"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- "Sobi'ye sor": yalnızca abaküslü soru adımında ve oturum açıkken (TutorialFragment.showRequestPanel). -->
-    <TextView
-        android:id="@+id/requestSobiButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:background="@drawable/bg_sobi_pill"
-        android:paddingStart="16dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="8dp"
-        android:text="@string/sobi_ask_button"
-        android:textColor="@color/white"
-        android:textSize="16sp"
-        android:textStyle="bold"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/requestText" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
+

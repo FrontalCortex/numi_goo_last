@@ -2184,7 +2184,7 @@
             android:layout_height="@dimen/tutorial_back_button_size"
             android:layout_gravity="center"
             android:layout_marginLeft="10dp"
-            android:background="@color/background_color"
+            android:background="@drawable/bg_hw_chip"
             android:padding="@dimen/tutorial_back_button_icon_padding"
             android:scaleType="centerInside"
             android:src="@drawable/back_button"
@@ -2194,6 +2194,11 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/kontrolButton"
+            android:background="@drawable/bg_depth_tutorial_control"
+            app:backgroundTint="@null"
+            android:stateListAnimator="@null"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
             android:layout_width="0dp"
             android:layout_height="@dimen/tutorial_back_button_size"
             android:minHeight="@dimen/tutorial_back_button_size"
@@ -2202,7 +2207,6 @@
             android:layout_marginStart="@dimen/tutorial_control_button_side_margin"
             android:layout_marginEnd="@dimen/tutorial_control_button_side_margin"
             android:layout_weight="1"
-            android:backgroundTint="@color/lesson_completed"
             android:elevation="0dp"
             android:fontFamily="@font/font_regular"
             android:text="@string/fragment_tutorial_kontrol_button"
@@ -2211,7 +2215,7 @@
             android:textSize="@dimen/tutorial_control_button_text_size"
             android:textStyle="bold"
             android:paddingTop="0dp"
-            android:paddingBottom="0dp"
+            android:paddingBottom="4dp"
             android:minWidth="0dp"
             android:visibility="visible"
             app:cornerRadius="@dimen/tutorial_control_button_corner_radius" />
@@ -2223,13 +2227,14 @@
             android:layout_height="@dimen/tutorial_skip_button_height"
             android:visibility="visible"
             android:layout_gravity="center"
-            android:background="@drawable/skip_tutorial">
+            android:background="@drawable/bg_depth_tutorial_skip">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:layout_marginHorizontal="@dimen/tutorial_skip_button_text_margin_h"
                 android:gravity="center"
+                android:paddingBottom="4dp"
                 android:text="@string/fragment_tutorial_text_35"
                 android:textAlignment="center"
                 android:textColor="@color/white"
@@ -2315,18 +2320,22 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/devamButton"
+        android:background="@drawable/bg_depth_tutorial_control"
+        app:backgroundTint="@null"
+        android:stateListAnimator="@null"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
         android:layout_width="0dp"
         android:layout_height="@dimen/tutorial_back_button_size"
         android:minHeight="@dimen/tutorial_back_button_size"
         android:maxHeight="@dimen/tutorial_back_button_size"
         android:layout_marginHorizontal="5dp"
         android:layout_marginBottom="@dimen/tutorial_bottom_panel_margin_bottom"
-        android:backgroundTint="@color/lesson_completed"
         android:elevation="0dp"
         android:fontFamily="@font/font_regular"
         android:minWidth="0dp"
         android:paddingTop="0dp"
-        android:paddingBottom="0dp"
+        android:paddingBottom="4dp"
         android:text="@string/fragment_tutorial_devam_button"
         android:textAllCaps="false"
         android:textColor="#000000"
@@ -2398,6 +2407,7 @@
 
         <ImageView
             android:id="@+id/infoRequest"
+            android:visibility="gone"
             android:layout_width="@dimen/tutorial_result_info_icon_size"
             android:layout_height="@dimen/tutorial_result_info_icon_size"
             android:layout_margin="@dimen/tutorial_result_item_margin"
@@ -2429,12 +2439,50 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/correctAnswerLabel" />
 
+        <!-- İpucu (adımın requestText'i) ve "Sobi'ye sor": yukarıdan panel inmesin, hepsi burada
+             (TutorialFragment.bindIncorrectPanelHelp). -->
+        <TextView
+            android:id="@+id/incorrectHintText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/tutorial_result_item_margin"
+            android:layout_marginTop="8dp"
+            android:textColor="#FFFFFF"
+            android:textSize="@dimen/tutorial_result_body_text_size"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/correctAnswerText" />
+
+        <TextView
+            android:id="@+id/incorrectSobiButton"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/tutorial_result_button_height"
+            android:layout_marginHorizontal="@dimen/tutorial_result_item_margin"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_hw_send"
+            android:gravity="center"
+            android:paddingBottom="4dp"
+            android:text="@string/sobi_ask_button"
+            android:textColor="#FFFFFF"
+            android:textSize="@dimen/tutorial_result_button_text_size"
+            android:textStyle="bold"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/incorrectHintText" />
+
         <Button
             android:id="@+id/okayButton"
+            android:background="@drawable/bg_depth_tutorial_okay"
+            app:backgroundTint="@null"
+            android:stateListAnimator="@null"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingBottom="4dp"
             android:layout_width="match_parent"
             android:layout_height="@dimen/tutorial_result_button_height"
             android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
-            android:backgroundTint="#FF4B4B"
             android:text="@string/fragment_tutorial_okay_button"
             android:layout_marginHorizontal="@dimen/tutorial_result_item_margin"
             android:textAllCaps="false"
@@ -2443,7 +2491,7 @@
             android:textStyle="bold"
             app:cornerRadius="@dimen/tutorial_result_button_corner_radius"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/correctAnswerText" />
+            app:layout_constraintTop_toBottomOf="@id/incorrectSobiButton" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -2487,10 +2535,15 @@
 
         <Button
             android:id="@+id/continueButton"
+            android:background="@drawable/bg_depth_tutorial_continue"
+            app:backgroundTint="@null"
+            android:stateListAnimator="@null"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingBottom="4dp"
             android:layout_width="0dp"
             android:layout_height="@dimen/tutorial_result_button_height"
             android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
-            android:backgroundTint="#8CC63F"
             android:text="@string/fragment_tutorial_continue_button"
             android:textAllCaps="false"
             android:textColor="#000000"

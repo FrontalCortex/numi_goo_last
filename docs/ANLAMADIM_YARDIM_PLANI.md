@@ -282,8 +282,9 @@ değişecek).
 
 ### Faz 4 durumu (28.10.2026, ilk sürüm; derlendi, telefonda denenmedi)
 
-Giriş: yanlış cevaptan sonra yanlış cevap panelindeki "nefes alan" bilgi düğmesi → ipucu paneli →
-**"Anlamadım, Sobi'ye sor"** (ipucu yoksa doğrudan panel). Yalnızca abaküslü soru adımında
+Giriş: yanlış cevap panelinin içinde, adımın ipucu metninin (`requestText`) altında ve "Tamam"ın
+üstünde **"Anlamadım, Sobi'ye sor"** (kullanıcı kararı 28.10.2026: yukarıdan ipucu paneli inmesin,
+her şey yanlış cevap panelinde; bilgi düğmesi gizli). Yalnızca abaküslü soru adımında
 (`abacusClickable`, `answerNumber` var, seçenek yok) ve oturum açıkken. Sohbet başlayınca ekranda
 öğretmene sor düğmesinin altında yeşil **"Sobi"** düğmesi kalıyor.
 
@@ -293,7 +294,7 @@ Giriş: yanlış cevaptan sonra yanlış cevap panelindeki "nefes alan" bilgi d�
 | `SobiContext.kt` | Gönderilen bağlam (`practice: false`) ve adım başına durum (`SobiStepTracker`: başlangıç değeri, abaküs kaydı, deneme sayısı, oturum, mesajlar, son gösterim) |
 | `SobiChatSheet.kt` + `sheet_sobi_chat.xml` | Alt panel: mesaj balonları, öneri balonları, yazma kutusu, "Abaküste izle"; "Bir daha göster" sunucuya gitmeden son gösterimi oynatıyor. Başlıkta "Sobi bir yapay zekâ yardımcısı; bazen yanılabilir." |
 | `SobiAbacusPlayer.kt` | Gösterim: abaküsü işlemin başına getirir, `StepExplainer` hamlelerini `animateGuideBead` ile (çocuğun dokunuşuyla aynı yoldan) oynatır, sonra yine başa döndürür |
-| `TutorialFragment.kt` | Yalnızca bağlantı noktaları: adım gösterilince durum sıfırlama ve başlangıç değerini yakalama, abaküs değer kaydı, "Kontrol Et" sayacı, ipucu panelindeki düğme, "Sobi" düğmesi, kapanışta temizlik. Ders sonu zincirine dokunulmadı. |
+| `TutorialFragment.kt` | Yalnızca bağlantı noktaları: adım gösterilince durum sıfırlama ve başlangıç değerini yakalama, abaküs değer kaydı, "Kontrol Et" sayacı, yanlış cevap panelindeki ipucu ve düğme, "Sobi" düğmesi, kapanışta temizlik. Ders sonu zincirine dokunulmadı. |
 | `strings_sobi.xml` | Bütün metinler |
 
 Sunucu: öğreticide `alistirma_ver` aracı modele verilmiyor (`practice` bayrağı); öğretici yalnızca

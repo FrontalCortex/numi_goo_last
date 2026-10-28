@@ -23,7 +23,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.AccelerateInterpolator
-import android.view.animation.BounceInterpolator
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
@@ -427,6 +426,9 @@ class TutorialFragment : Fragment() {
         findIDs()
         focusView = binding.focusView
         controlButton = binding.kontrolButton
+        // Ödev panelindeki gibi içe göçen düğmeler (dudak arka planda: bg_depth_tutorial_*, bg_hw_chip).
+        // Kontrol Et, Tamam ve Devam kendi dokunma dinleyicilerinde DepthPress.down/up çağırıyor.
+        com.example.app.homework.DepthPress.attach(binding.backButton, binding.skipTutorialButton, binding.devamButton)
         correctPanel = binding.correctPanel
         incorrectPanel = binding.incorrectPanel
         navBarPanelExtension = NavBarPanelExtension(binding.root, correctPanel, incorrectPanel).also { it.attach() }
@@ -654,23 +656,13 @@ class TutorialFragment : Fragment() {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         if (isTutorialResultButtonsCooldownActive()) return@OnTouchListener true
-                        v.animate()
-                            .scaleX(0.85f)
-                            .scaleY(0.85f)
-                            .setDuration(100)
-                            .setInterpolator(AccelerateDecelerateInterpolator())
-                            .start()
+                        com.example.app.homework.DepthPress.down(v)
                         true
                     }
 
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         if (isTutorialResultButtonsCooldownActive()) return@OnTouchListener true
-                        v.animate()
-                            .scaleX(1f)
-                            .scaleY(1f)
-                            .setDuration(400)
-                            .setInterpolator(BounceInterpolator())
-                            .start()
+                        com.example.app.homework.DepthPress.up(v)
 
                         // Tıklama işlemini gerçekleştir
                         showResultPanel()
@@ -816,9 +808,6 @@ class TutorialFragment : Fragment() {
                 val requestText = getCurrentStep().requestText
                 if (requestText != null && requestText.isNotEmpty()) {
                     showRequestPanel(requestText)
-                } else if (isSobiAvailable()) {
-                    // İpucu yoksa doğrudan Sobi.
-                    openSobi()
                 }
             }
         }
@@ -827,9 +816,27 @@ class TutorialFragment : Fragment() {
     // ── Sobi'ye sor ─────────────────────────────────────────────────────────
     //
     // Durum SobiStepTracker'da, panel SobiChatSheet'te, gösterim SobiAbacusPlayer'da; burada
-    // yalnızca öğretici adımına bağlanma var. Giriş: yanlış cevaptan sonra "nefes alan" bilgi
-    // düğmesi → ipucu panelindeki "Anlamadım, Sobi'ye sor" (ipucu yoksa doğrudan panel). Sohbet
-    // başlayınca ekranda "Sobi" düğmesi kalır; gösterimden sonra çocuk oradan devam eder.
+    // yalnızca öğretici adımına bağlanma var. Giriş: yanlış cevap panelindeki "Anlamadım, Sobi'ye
+    // sor" ([bindIncorrectPanelHelp]). Sohbet başlayınca ekranda "Sobi" düğmesi kalır; gösterimden
+    // sonra çocuk oradan devam eder.
+
+    /**
+     * Yanlış cevap panelinin içi: adımın ipucu (requestText) ve "Anlamadım, Sobi'ye sor". Eskiden
+     * ipucu bilgi düğmesiyle yukarıdan inen panelde açılıyordu; kullanıcı kararıyla (28.10.2026)
+     * hepsi yanlış cevap panelinde, bilgi düğmesi gizli.
+     */
+    private fun bindIncorrectPanelHelp() {
+        val text = getCurrentStep().requestText
+        incorrectPanel.findViewById<TextView>(R.id.incorrectHintText).apply {
+            this.text = text.orEmpty()
+            visibility = if (text.isNullOrEmpty()) View.GONE else View.VISIBLE
+        }
+        incorrectPanel.findViewById<View>(R.id.incorrectSobiButton).apply {
+            visibility = if (isSobiAvailable()) View.VISIBLE else View.GONE
+            setOnClickListener { if (!isTutorialResultButtonsCooldownActive()) openSobi() }
+            com.example.app.homework.DepthPress.attach(this)
+        }
+    }
 
     /** Yalnızca abaküslü soru adımında ve oturum açıkken (sunucu oturumsuz çağrıyı reddeder). */
     private fun isSobiAvailable(): Boolean {
@@ -1011,11 +1018,6 @@ class TutorialFragment : Fragment() {
 
         val requestTextView = panelView.findViewById<TextView>(R.id.requestText)
         requestTextView.text = text
-
-        panelView.findViewById<View>(R.id.requestSobiButton)?.apply {
-            visibility = if (isSobiAvailable()) View.VISIBLE else View.GONE
-            setOnClickListener { openSobi() }
-        }
 
         panelView.setOnClickListener { }
 
@@ -18068,12 +18070,7 @@ class TutorialFragment : Fragment() {
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
                             if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
                             val departedIndex = currentStep
                             currentStep++
                             logTutorialAbacusResetForwardContinue(departedIndex)
@@ -18124,12 +18121,7 @@ class TutorialFragment : Fragment() {
                         }
 
                         MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             disableTutorialResultTouchBlock()
                             
                             // Control button'u tekrar aktif hale getir
@@ -18161,6 +18153,7 @@ class TutorialFragment : Fragment() {
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
             incorrectPanel.findViewById<TextView>(R.id.correctAnswerText).visibility = View.GONE
+            bindIncorrectPanelHelp()
 
             enableTutorialResultTouchBlock(incorrectPanel)
             
@@ -18174,7 +18167,6 @@ class TutorialFragment : Fragment() {
                 .translationY(0f)
                 .setDuration(200)
                 .setInterpolator(AccelerateDecelerateInterpolator())
-                .withEndAction { startInfoRequestBreathAnimation() }
                 .start()
 
             val okayButton = incorrectPanel.findViewById<Button>(R.id.okayButton)
@@ -18182,23 +18174,13 @@ class TutorialFragment : Fragment() {
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
-                        v.animate()
-                            .scaleX(0.85f)
-                            .scaleY(0.85f)
-                            .setDuration(100)
-                            .setInterpolator(AccelerateDecelerateInterpolator())
-                            .start()
+                        com.example.app.homework.DepthPress.down(v)
                         true
                     }
 
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         if (isTutorialResultButtonsCooldownActive()) return@setOnTouchListener true
-                        v.animate()
-                            .scaleX(1f)
-                            .scaleY(1f)
-                            .setDuration(400)
-                            .setInterpolator(BounceInterpolator())
-                            .start()
+                        com.example.app.homework.DepthPress.up(v)
                         dismissIncorrectResultPanel()
                         true
                     }
