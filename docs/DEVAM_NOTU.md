@@ -23,6 +23,28 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## SONRA YAPILACAK: kurs testinden önce güvenlik (kullanıcı kararı 23.10.2026, "sonra yapacağız")
+
+1. **Öğretmenin `users` okuması:** kurallar onaylı HER öğretmene her kullanıcı dokümanını (e-posta,
+   doğum yılı, FCM token) açıyor (`firestore.rules` users read). Öğretmene yalnızca kendi sınıfındaki ve
+   kendisine soru sormuş öğrenciyi açmak; önce öğretmenin users okuduğu yerleri çıkar (kısıtlama/yasak
+   ekranı `whereEqualTo("banned", true)`, soru sohbeti, profil ilerleme düğmesi).
+2. **Storage soru medyası:** onaylı her öğretmen her sorunun medyasını indirebiliyor; havuz ayrımı
+   medyaya da uygulanmalı.
+3. **`teacherInvites`:** giriş yapan herkes okuyup "kullanıldı" yapabiliyor; kod kontrolü callable'a.
+Ayrıca önerildi (sıra verilmedi): deploy iş akışında önce testler + kısmi başarısızlıkta yeniden
+deneme, staging projesi, hep kırmızı "Build Debug APK" iş akışı, sunucu hata metinlerinin
+yerelleştirilmesi, ödev saklama süresi.
+
+## PLAN: "Sobi'ye sor" sohbet eden yardımcı (28.10.2026 — Faz 1 bitti: kural anlatıcısı Kotlin + JS + ortak tablo, testler geçiyor; commit yok)
+
+"Öğretmene sor"un video akışı çok zahmetli. Kullanıcı kararı: öğretici adımında "Anlamadım" diyen
+çocuk yapay zekâyla (Sobi) sohbet ederek anlasın. Temel kural: sohbeti dil modeli, hesabı kural
+motoru yapar — model hamleleri araç olarak (`AbacusMoves`/`RuleAnalysis` mantığının JS karşılığı)
+çağırır, cevabındaki sayılar araç sonuçlarıyla denetlenir. Sesli soru + öneri balonları, güvenlik
+katmanları, Play/KVKK beyanları, yayından önce test seti. Öğretmene sor son basamak, video yerine
+bağlam paketiyle. Ayrıntı ve fazlar: `docs/ANLAMADIM_YARDIM_PLANI.md`.
+
 ## Ödev başarısı: Bu hafta kartı, başarı grafiği, kural ustalığı (26.10.2026 — CANLIDA: 21c26d3 push edildi; fonksiyon, kural deploy'u ve Başlangıç aktarımı başarılı; telefona kuruldu, kullanıcı bakmadı)
 
 - **Neden:** eski ekran yalnızca toplam oranı gösteriyordu; yüzlerce sorudan sonra kımıldamıyor, "ilerlemişim"
@@ -31,7 +53,9 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
 - **Ekran** (`HomeworkRuleStatsFragment`, hesap `RuleProgress.kt` + `RuleProgressTest`): Bu hafta kartı (son 7 gün
   vs önceki 7 gün, fark puanı, şimdiye kadarki toplam); grafik: konu seçenekleri (Hepsi = sorular, kurallar =
   işlemler), her nokta o dönemin oranı, üstünde o ana kadarki TOPLAM (en çok 7 etiket), dokununca ayrıntı; 1 hafta
-  ve 1 ay günlük, 3 ay haftalık, Tümü aylık; 5 sorudan az dönem soluk. Ustalık satırına dokununca grafik o kurala geçer.
+  günlük (7 nokta), 1 ay 3 günlük (10 nokta; önce günlüktü, kullanıcı kararı 26.10.2026 — commit edilmedi, telefona
+  kuruldu 15:18), 3 ay haftalık (13), Tümü aylık; hepsine ek olarak en solda Başlangıç; dönemin oranı dönemdeki
+  bütün soruların oranı (günlük oranların ortalaması değil); 5 sorudan az dönem soluk. Ustalık satırına dokununca grafik o kurala geçer.
 - **Sunucu** (`onHomeworkProgressWritten`, işlem içinde): `homeworkRuleStats/{uid}` → `tally` (artık mutlak değer),
   `recent` (son ~50 işlem, adım sınırında), `level` (0/1/2, yalnızca yükselir); günlük kayıt
   `homeworkRuleStats/{uid}/months/{yyyy-mm}.days.{gg}` → `q` (soru) ve `t` (kural), Türkiye saatiyle. Hesap
@@ -44,12 +68,17 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   okunamazsa ekran toplamlarla açılıyor (çökmüyor).
 - `functions/index.js`'ten yalnızca bu işin parçası commit'lendi (kısmi sahneleme); yerel veli onayı taslağı
   hâlâ yerelde, canlıdaki veli onayı metni değişmedi.
-- **ÖRNEK VERİ (canlıda, Ted `835398VV`):** ekranı dolu görmek için son 90 günün sahte kaydı yazıldı (b32d2c6,
-  `.github/scripts/seed-homework-progress-sample.js` + `seed-homework-progress-sample.yml`): 51 gün, 1020 soru,
-  aynı miktarlar `tally`'ye de eklendi; bugün yazılmadı. Eklenenler `homeworkRuleStats/{uid}/seed/sample`'da.
+- **ÖRNEK VERİ (canlıda, Ted `835398VV`):** ekranı dolu görmek için son 90 günün sahte kaydı yazıldı
+  (`.github/scripts/seed-homework-progress-sample.js` + `seed-homework-progress-sample.yml`). 4728997 ile
+  `REPLACE` yapıldı: her gün 30–40 soru (90 gün, 3130 soru), %52 → %90 düz yükseliş + günlük ±2 ve 3 günlük ±3
+  zikzak ("şimşek gibi", kullanıcı isteği); her konu kendi başlangıcından yükseliyor, eski konular arada sürüyor.
+  Aynı miktarlar `tally`'ye de eklendi; bugün yazılmadı. Eklenenler `homeworkRuleStats/{uid}/seed/sample`'da.
   **Geri almak için:** yml'de `REMOVE: '1'` yapıp push et. Ted'in ustalık aşamaları bu yüzden şişkin görünür.
   Örnekte kuralsız toplama yalnızca 59–90 gün önce var (çocuk sonra 10'luğa geçiyor); 1 hafta / 1 ayda boş
-  görünmesi doğru. Boş dönemde "En son çalışma: 12 Ağu · %78 doğru" yazıyor (telefona kuruldu).
+  görünmesi doğru. Boş dönemde artık "En son çalışma: 12 Ağu · %78 doğru" yazıyor (5dfc882).
+- Ustalık satırında usta değilse hedefe kalan: "Son 52 işlem · %86 doğru · Usta olmaya %4 kaldı"; 50 işlemden
+  azsa "Usta olmaya 12 işlem kaldı". Pencere yoksa (eski/örnek veri) "Son" yazmıyor, toplam gösteriliyor
+  (kullanıcı isteği; commit edilmedi, telefona kuruldu 15:11).
 
 ## Ödev formunda "Gelişmiş": hangi rakamlar gelsin (26.10.2026 — CANLIDA: fa8197b push edildi, fonksiyon deploy'u başarılı; telefona kuruldu, kullanıcı bakmadı)
 
@@ -71,6 +100,229 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   onayı taslağı (`index.js` vb.) girmedi, canlıdaki veli onayı metni değişmedi.
 - **Eski uygulama sürümü:** süzgeci bilmeyen öğrenci telefonu ödevi süzgeçsiz üretir (çökmez).
 - Ödev ayrıntı satırına (`HomeworkText.details`) seçim ekleniyor: "5'lik: 3, 4", "2. sayı birler: 2, 3".
+
+## Ödevler (23.10.2026 — CANLIDA: 668ff08 push edildi, kurallar deploy başarılı; fonksiyon deploy'unda spendEnergy ve onFollowerCreated güncellenemedi, temiz worktree'den elle deploy edildi; telefona 21:58 kuruldu; CİHAZDA HENÜZ DENENMEDİ)
+
+**1785e41 (23.10.2026 22:48 telefona kuruldu; push edildi, 22:54 fonksiyon + kural deploy'u başarılı, 63 fonksiyonun hepsi aynı kodda):** öğretmen ödev listesinde "12 öğrenciden
+8'i bitirdi" (`HomeworkText.withAccusative`), öğretmene bitiş bildirimi (`onHomeworkProgressWritten`
+tetikleyicisi → `doneUids` + `homework_done`, istemcide ödev başına tek bildirim), öğrencinin ödevleri ve
+sınıf arkadaşları Sorularım'a taşındı (Sorularım | Ödevlerim | Sınıfım; Görevler kartı kaldırıldı,
+TasksFragment ödevden önceki hâlinde; oynatıcı `MainActivity.finishHomeworkOverlay` ile kapanıyor).
+Kurallar: sınıftaki öğrenci `members` okuyabiliyor (politika taslağına cümle eklendi). Kullanıcı
+soruları: son tarih ve arşiv anlatıldı, henüz istenmedi; birden fazla sınıf YOK (tek sınıf önerildi).
+
+Not: veli onayı e-postası taslağı (kurs maddesi, sürüm 2026-10-23.1) yanlışlıkla 69312cd'ye girmişti, 668ff08
+ile geri alındı; taslak `functions/index.js`, `public/privacy-policy.html`, `strings_ui.xml` içinde YEREL
+ve commit edilmemiş, kullanıcı onayını bekliyor. Bu dosyalar commit edilirken dikkat. Yerelden fonksiyon
+deploy'u `functions/.env`'i (depoda yok) yüklerdi: gerekirse temiz worktree + npm ci ile.
+
+Kurs öğretmeni sınıfına ya da seçtiği öğrencilere ödev verir: işlem (toplama/çıkarma/çarpma), konu
+(kuralsız/5'lik/10'luk/boncuk, çoklu), tür (abaküslü/abaküssüz), basamak, sayı adedi, hız, soru adedi.
+Kullanıcı kararları: çıkarmada sayı adedi başlangıç HARİÇ; abaküslü 5 basamak/sonuç 99.999, abaküssüz
+sayılar ve sonuç 8 basamak; adım (10 soru) doğru sayısından bağımsız tamamlanır, doğrular kaydedilir;
+en düşük hız 0,1 sn. Sınıfa verilen ödevi sonradan katılan da görür, ayrılanın listesinden düşer.
+
+- **Motor:** `app/.../homework/HomeworkEngine.kt` (saf Kotlin). Sütun hareketleri soldan sağa
+  sınıflanıyor; elde/ödünç +1'i doğrudansa kuralın parçası, sol sütun 4/9 (çıkarmada 5/0) ise 5'lik/10'luk
+  gerekir. Elde yoksa sütun planıyla kesin üretim (kuralsız+5'lik max 9, 9'da hepsi 1; kuralsız 5;
+  5'lik 2). Elde varsa plan yönlendirmeli rastgele üretim; en fazla adet ölçülmüş tabloda
+  (`HomeworkLimitTable.kt`, yeniden üretmek için başlık yorumu). Dikkat: 5'lik+10'luk TEK BAŞINA sınırlı
+  (1 basamakta 10 sayı); kuralsız ya da boncuk eklenince 100. Testler `HomeworkEngineTest` (10).
+- **Sunucu:** `functions/homework.js`, `createHomework`/`deleteHomework` (index.js "Ödevler"), bildirim
+  türü `homework` (notifications.js), kurallar "Ödevler" bölümü (ilerleme yalnızca bir adım ileri),
+  indeksler. Testler: `firestore-rules-tests` `npm run test:homework` (31), `functions/scripts/test-homework-flow.js` (26).
+- **Uygulama:** öğretmen sınıf ekranında "Ödevler" → `TeacherHomeworkFragments.kt`, `HomeworkCreateFragment`;
+  öğrenci Görevler en üstte "Ödevlerim" (`HomeworkCard.kt`) → `HomeworkPlayerFragment` (BlindingLesson
+  kullanılmadı, abaküs bloğu fragment_abacus_practice'ten). MainActivity'de overlay izin listelerine ve
+  bildirim açılışına ekleme; `account_quiet` bildirim kanalı eklendi.
+- **Sıradaki:** push (fonksiyonlar + kurallar + indeksler deploy) → telefona kur → öğretmenle ödev ver,
+  öğrenciyle çöz. Push edilmeden ödev ekranları çalışmaz (createHomework ve kurallar canlıda yok).
+
+## Kurs sınıfları ve soru havuzu ayrımı (23.10.2026 — 1. aşama (sunucu) CANLIDA: c9dc213 push edildi, fonksiyon + kural deploy'u başarılı, eski soru işaretleme çalıştı (0 bekleyen soru vardı); okuma ayrımı KAPALI; sıradaki 2. aşama)
+
+İstek: kurs öğretmeni yalnızca kendi öğrencilerinin sorularını görsün, kursu olmayan öğretmen
+sınıfı olmayan öğrencilerin sorularını görsün; öğretmen panelinde öğrenci listesi → profil →
+ilerleme (veli paneli). Kullanıcı kararları: kurs öğretmeni genel havuzu "isterse" açar
+(`helpsGeneralPool`); cevaplanmayan sınıf sorusu sınıfta kalır (48 sa iade aynen); katılma sınıf
+kodu + kullanıcı adıyla davet (öğrenci kabul eder); sınıfı öğretmen uygulamadan açar, öğretmeni
+kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığında.
+
+- **Sunucu:** `askTeacherQuestion` ve `resendTeacherQuestion` soruya `pool`/`classId`/`courseId`/
+  `classTeacherUids` yazıyor. Yeni callable'lar: `createClass`, `regenerateClassCode`,
+  `joinClassByCode`, `inviteStudentToClass`, `respondClassInvite`, `removeStudentFromClass`,
+  `leaveMyClass`. `notifyTeacherPool` artık öğretmen başına kendi havuzunu sayıyor.
+  `cleanupUserOnDelete` sınıf izlerini siliyor.
+- **Kurallar:** soru okuma/yazma havuza göre; `claimedByTeacherUid` yalnızca boşken yazılabilir
+  (iki öğretmenin aynı soruyu sahiplenme yarışı kapandı); öğretmen sınıfındaki öğrencinin
+  `lessonSuccessRateState`'ini okuyabilir. **Okuma ayrımı bir anahtarla açılıyor**
+  (`system/questionPools.enforced`, `tools/kurs/havuz_ayrimi.js`): eski öğretmen sürümü havuzu
+  filtresiz dinlediği için hemen açılsa havuzu boş kalırdı. Yazma ayrımı her durumda geçerli.
+- **Tuzak (emülatörde yakalandı):** kuralda `q.get('pool', 'general') == 'general'` sorgu
+  kanıtında gevşek; genel öğretmen filtresiz sorguyla sınıf sorularını listeleyebiliyordu.
+  Okuma tarafı katı `q.pool == 'general'`; bu yüzden `pool` alanı olmayan eski bekleyen sorular
+  `tools/kurs/eski_sorulari_isaretle.js` ile işaretlenmeli.
+- **Testler:** `npm run test:classes` (60, saf), `functions/scripts/test-class-flow.js` (55,
+  emülatör; komut dosyanın başında), `firestore-rules-tests` → `npm run test:pools` (63) +
+  `npm test` (41, regresyon). `tools/rules-test` (rozet kuralları) çalıştırılmadı, node_modules yok.
+- **Yayın sırası (önemli):** (1) push → fonksiyonlar + kurallar + indeksler deploy (ayrım kapalı,
+  eski sürümler aynen çalışır); (2) hemen `eski_sorulari_isaretle.js --yaz`; (3) versionCode 16
+  (2. ve 3. aşama: öğretmen havuz sekmeleri `pool == general` / `classTeacherUids array-contains`,
+  sınıf ve öğrenci paneli, profil ilerleme düğmesi, öğrencide kod/davet/ayrılma); (4) öğretmenler
+  16'ya geçince `havuz_ayrimi.js --ac`. Kursu öğretmene bağlamak: `tools/kurs/kurs_ogretmeni_ata.js`.
+- **2. aşama (öğretmen uygulaması) — 0aaf55e, derlendi, push edilmedi, CİHAZDA DENENMEDİ:**
+  telefonda Play'den gelen sürüm var, debug imzası uyuşmuyor (INSTALL_FAILED_UPDATE_INCOMPATIBLE);
+  kurmak için uygulamayı kaldırmak gerekiyor (kullanıcıya soruldu). Havuz alt sekmeleri
+  (`NotificationFragment.setupPoolVisibility`), `TeacherClassesFragment`, `TeacherClassDetailFragment`,
+  `CourseClasses.kt`, profilde `btnStudentProgress` → `ParentPanelFragment.newForStudent`.
+  Metinler `strings_classes.xml` (ceviri.js listesinde değil, bug report gibi). versionCode değişmedi.
+  Denemek için bir öğretmen hesabı `kurs_ogretmeni_ata.js` ile bir kursa bağlanmalı.
+  23.10.2026 17:45 debug telefona kuruldu (kullanıcı Play sürümünü kaldırdı). Canlıda `sennin-school`
+  ("Sennin School") kursu açıldı, TEK öğretmen hesabı "Mehmet Öğretmen" (746609WU) bağlandı ve
+  genel havuz kimsesiz kalmasın diye `helpsGeneralPool: true` yazıldı (kapatılırsa genel havuzu
+  hiçbir öğretmen görmez). Bağımsız öğretmen = tek kişilik kurs (aynı betikle, ad öğretmenin adı).
+- 2. aşama kullanıcı tarafından telefonda denendi: "her şey sorunsuz çalıştı" (23.10.2026).
+  Betiğe `--bagimsiz` (bağımsız öğretmen = tek kişilik kurs, ad öğretmenin adı) eklendi, 2e5fe93.
+- **3. aşama (öğrenci) — fb15b4f, versionCode 16, telefona kuruldu 18:12, push edilmedi:**
+  Ayarlar'da "Kurs" satırı (yalnızca öğrenci) → `StudentClassFragment` (kodla katılma, davetler,
+  sınıftan ayrılma). Davet bildirimi (`topic = class_invite`) → `EXTRA_OPEN_STUDENT_CLASS`.
+  Kalanlar: gizlilik politikası (kurs öğretmeni ilerlemeyi görüyor), cihazda öğrenci akışı denemesi,
+  AAB + kapalı test, öğretmenler 16'ya geçince `havuz_ayrimi.js --ac`.
+- **versionCode 17 AAB (25.10.2026 14:34):** 16 hiç AAB olmadı, 17 sınıflar + ödevler + kural kural ödev
+  başarısı + sınıf ekranı düzeltmesiyle kapalı teste gidiyor. Veli onayı taslağı (`strings_ui.xml`) derleme
+  sırasında geri alındı, AAB'de YOK; sonra yerel taslak geri kondu. Öğretmenler 17'ye geçince `havuz_ayrimi.js --ac`.
+- **versionCode 18 AAB (26.10.2026 22:41, ed3cb6e push edildi):** 17 + ödev başarısında 1 ay 3 günlük grafik ve
+  ustalık satırında "Usta olmaya … kaldı". Veli onayı taslağı yine derleme sırasında geri alındı, AAB'de YOK;
+  yerel taslak geri kondu. `app/build/outputs/bundle/release/app-release.aab` (69 MB), kapalı teste kullanıcı yükleyecek.
+- Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
+  okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
+
+## Reels sonuçları ve yeni reklam planı (23.10.2026 — plan önerildi, kullanıcı onaylamadı)
+
+Kullanıcının verdiği ekranda kalma oranları: Reklam 6 15. sn'de %36, uygulama ekranının girdiği
+~25. sn'den sonra sert düşüş; Reklam 5 yeni tahta bitene kadar (9. sn) %40, uygulamaya geçince 15. sn'de
+%19; Reklam 3 eski hikâye bitince (6. sn) %31, 15. sn'de %10. Reklam 6 en çok izlenen ve beğenilen oldu.
+Sonuç: izleyici içerik sürdükçe kalıyor, uygulama tanıtımına geçilen anda gidiyor (üçünde de aynı).
+Önerilen plan:
+- Format "kısa ders": 0–2 sn ilk karede sonuç ya da soru; 2–22 sn ders, her 4–5 sn'de yeni bir açılış;
+  uygulama dersin içinde, aynı görsel stilde (3D abaküs telefondaki abaküse dönüşür), en çok 3–4 sn;
+  toplam ~25 sn; ayrı mor kapanış ekranı yok ya da çok kısa.
+- Seri: 1 kuralsız toplama/çıkarma (Reklam 6 var), 2 küçük arkadaş (5'lik), 3 büyük arkadaş (10'luk),
+  4 abaküsü zihne taşıma, 5 hız gösterisi. Haftada 2–3 bölüm.
+- Hikâyeli reklamlar (3, 4, 5) beklemeye; hikâye ders öncesi 3–4 sn'lik kanca olarak kullanılabilir.
+- Ücretli öne çıkarma Reklam 4 yerine Reklam 6 anneler'e (kanca + ders); ondan önce sonu kısaltılmalı.
+- Ölçüm: 3. sn'de kalma, uygulamanın girdiği saniyede kalma, sonda kalma, kaydetme/paylaşma, "bilgi"
+  yorumu sayısı.
+- Reklam 5 Facebook öne çıkarması (22.10, amaç "Video Görüntülemeleri", günlük ₺50): ₺41,72'ye 2.014
+  görüntülenme, 297 ThruPlay (~₺0,14), ama hiç beğeni/kaydetme/paylaşma yok → kullanıcı durduruyor.
+  FB'deki 1,3 B görüntülenmenin çoğu bu öne çıkarmadan geldi; Reklam 6'nın FB'deki 2'siyle kıyaslanamaz.
+  Ders: "Video Görüntülemeleri" ucuz ama ilgisiz izleyici getiriyor. Sıradaki: Instagram'daki Reklam 6
+  gönderisi Business Suite'ten (Instagram sekmesi) amaç Etkileşim, kadın 28–45, günlük ₺50, 3 gün.
+- lemo-opuscar (github.com/lemomo-ai/lemo-opuscar, MIT; kodla film stil kütüphanesi) incelendi, eklenti
+  KURULMADI. Alınacaklar (2. bölüm "küçük arkadaş" için önerildi, onay yok): telestrator'dan "önce hızlı
+  izlet, sonra geri sar + dondur + çiz" (her donmada tek bulgu, müzik de donar); whiteboard'dan terim
+  söylendiği anda belirir, en fazla 3 anlamlı renk, önceki dersin silik izi; living-screencast'ten
+  uygulamaya eşleşen geçiş (3D abaküs telefondaki aynı alıştırmaya dönüşür), J-cut (uygulama sesi
+  görüntüden önce), slogan ayrı kart değil uygulamanın içinde, tek vaade spot ışığı; DIRECTOR.md'den
+  ilk 3 sn kanca, sonun açılışı yankılaması (Reels döngüsü için son kare = ilk kare), dönemeçten önce sessizlik.
+- 23.10.2026: kullanıcı 5'lik kuralı öğretmenin işe yaramayacağını düşünüyor; yeni yön "beklenmedik
+  günlük hayat hikâyesi + kısa öğretici an" (örnek: kilosu 160 TL çerezden 650 g = 104 TL, kasada 140).
+  Senaryolar önerildi (kasiyer hatası, hesap makinesi yarışı, para üstü, taksit, 3 al 2 öde); seçim yok.
+  Uygulama dersleri: toplama/çıkarma (kuralsız, 5'lik, 10'luk), 2'ye 1 … 3'e 2 çarpma, süreli zihinden
+  toplama/çıkarma; ondalık, yüzde, bölme yok → videoda uygulamaya bunları öğretiyor dedirtme.
+- 24.10.2026: kullanıcı 1. senaryoyu (kasadaki 140 lira) seçti. Seslendirme (9 kayıt, `kasa_1-9`; ad7_*
+  Reklam 6 anneler'e ait olduğu için bu ad seçildi) ve saniye saniye sahne akışı
+  `docs/REKLAM7_KASA_SENARYO.md`'de; kullanıcı onaylamadı. Açık konular: karakter İlgisu mu,
+  çocuk sesi nereden, uygulama ekranı kodla mı çizilecek (önerilen) yoksa kayıt mı.
+  **26.10.2026: kullanıcı bu senaryoyu iptal etti** (dosya kaldı, kullanılmıyor).
+
+## Reklam 7 rekor: kanca + kuralsız toplama + 10 basamak + hayal (26.10.2026 — geçici sesle ilk çıktı, kullanıcı bakmadı)
+
+Kullanıcı isteği: Reklam 6 taslağına benzer, tasarımı biraz iyileştirilmiş; 3 basamaklı toplamadan sonra
+"aynı yöntemle 10 basamaklı sayılar, küçük boncuk hareketleri, ustalaşınca boncukları hayal et". Kanca:
+`Downloads\soroban_world_record.mp4` (kopyası `reklam7\`) 32,0–35,2 sn (son el hareketleri, cevap, ✓) +
+36,0–37,0 (sevinç) → `public/rekor_kanca.mp4` (1080×1920, 30 fps, sesi 0,6). **Uyarı kullanıcıya iletildi:**
+klip Guinness World Records çekimi ("Officially Amazing" duvarı, hakem) ve tanınabilir bir çocuk; reklamda,
+özellikle ücretli öne çıkarmada telif ve görüntü hakkı riski, Meta telif eşleşmesiyle kısıtlanabilir.
+Kullanıcı riski bilerek klibin kalmasına karar verdi (26.10.2026); kayıtları (`rekor_0-5`) gönderecek.
+**Kanca değişti (26.10.2026, kullanıcı isteği: toplama görünsün, sonda doğru cevap, en fazla 5 sn):**
+`rekor_kanca.mp4` artık 150 kare, 4 parça: 18,5–20,9 bölünmüş ekran (sayılar + havada abaküs), 32,8–33,4
+cevabı yazıyor, 34,2–35,4 cevap kutusu "556251" + ✓ (crop 360×640 @ 295,175, ~3 kat), 36,0–36,8 sevinç.
+Soru yazısı koyu kutuda y 400 (monitörün boş alt yarısı), cevap ekranından önce söner (`CEVAP` 90, ✓
+sesi `TIK` 111). ffmpeg'de her parça `fps=30` sonrası kare numarasıyla kesildi ve `setsar=1` verildi
+(ilk denemede zaman damgaları bozuktu, Remotion 21. karede "No frame found" verdi). Toplam ~43,7 sn.
+**Sesler geldi (26.10.2026 20:45):** ElevenLabs "Bunty - Funny Best Friend", indirme sırasıyla rekor_0–4
+(asılları `reklam7\rekor_0-4.mp3`) → `public/rekor_0-4.wav`, Reklam 6 işlemiyle (duraklama 0,14 sn, 1,2 kat,
+-14 LUFS; 0'a +2,9 dB, 4'e +1 dB, `alimiter level=disabled` — açıkken hedefi 1,5 dB aşıyordu). Süreler
+74/95/102/124/83 kare. **rekor_5 (çağrı) 20:56'da geldi** (+2,9 dB, 78 kare). `Son` artık `cagriSure`
+alıyor: kısa modda kart en az çağrı sesi + 12 kare sürer (önceki 73 karelik yer sesi kesiyordu).
+Kod `src/modern/Reklam7Rekor.jsx`, kompozisyon `Reklam7Rekor`, `npm run render:r7r` →
+`out/Sorobit_reklam7_rekor.mp4` (kopya `reklam7\`). Akış: kanca 126 kare → Reklam 6 dersi (r6_1–5, çıkarma
+yok; kamera 31→28,5, zemin biraz aydınlık) → abaküs 10 çubuğa uzar (B=541), 1.234.056.213 + 3.510.623.276 =
+4.744.679.489 (her çubuk kuralsız) → hayal: saydam abaküste 3.141.205.312 + 5.802.793.672 = 8.943.998.984
+→ `Son` kısa mod (yeni `kisa`/`cagriSes`: konusma5 yok, kart ~2,5 sn). Toplam 1285 kare (~42,8 sn).
+`Abakus3D.Soroban` artık `xler`/`gorunur`/`cerceve` alıyor ve geçişi çubuk başına sayıyor (Reklam 6/5
+modern yeniden render edilirse 6 kare arayla gelen olaylarda boncuklar sıçramaz, başka fark yok).
+Seslendirme: `rekor_0-5.wav` yoksa `gecici_rekor_0-5.wav` (Windows OneCore "Tolga", scratchpad'deki
+tts.ps1 ile; trim + loudnorm). Kullanıcı kaydı gelince `SURE` (kare) yeniden ölçülmeli. Cümleler:
+0 "Bu çocuk bu sayıları nasıl bu kadar hızlı topluyor?", 1 "Aynı yöntemle çok büyük sayıları bile kolayca
+toplayabilirsin.", 2 "On basamaklı bir sayıyı bile, sadece küçük boncuk hareketleriyle.", 3 "Yeterince
+ustalaştığında, boncukları hayal ederek bu işlemleri zihninde yaparsın.", 4 "İşte bu şekilde on basamaklı
+sayıları toplayabilirsin.", 5 "Ücretsiz denemek için yorumlara bilgi yazın."
+**Sonuç (27.10.2026):** Reels'te patladı, tek videoda ~150 takipçi.
+
+## Reklam 8: Reklam 7 rekorun 2D'si (28.10.2026 — kullanıcı kayıtlarıyla ikinci çıktı, petrol zemin)
+
+Kullanıcı kararı: kanca aynı mantıkta ama başka çocuk, ders 3D değil 2D (r5y_boncuk.png), sonda "Sorobit bunu oyun
+oynar gibi öğretir, şu an kapalı testte" + ilk 100 test kullanıcısına 1 ay Pro. Çağrıyı "profildeki linkten mesaj"
+yerine (önerim) yorumlara **"test"** yaptım; kullanıcı onayladı (28.10.2026). Değişecekse `Reklam8.jsx`'te `YORUM`
+ve `cagriUst`.
+- **Kanca:** `Downloads\How Mental Math Geniuses in China Calculate.mp4` (kopyası `reklam8\`), 720×1280, iç kare
+  yatay (720×400 @ y 440). `r8_islem.mp4` = 11,0–14,9 sn (330–446. kare) iç kare 1,5 kat, altta sayılar akarken
+  çocuk havada işlem yapıyor (sayı değişimi klipte 2/31/47/64/84/106. kare → tık sesi); `r8_cevap.mp4` = 25,6–26,7
+  sn (768–800) 7283 kâğıdı, 720×848 @ 0,0 (altındaki İngilizce altyazı dışarıda) + yeşil ✓ ve "Cevap: 7.283".
+  **Yakın çekim (kullanıcı isteği, 28.10.2026: "geniş ekranda gözüküyor", soldaki çocuk da görünsün):** artık
+  `r8_islem_ham.mp4` (iç kare 3 kat, 2160×1200) ekranda 1080×960 penceresinde: 0–80 sağdaki çocuk (iç karede x 350,
+  y 10, genişlik 360), 80–86 bulanık kaydırma, sonra ~1 sn soldaki çocuk (20, 70, 270). Klibin sayıları kadraj
+  dışında; aynı karelerde bizim sarı sayılarımız (`SAYILAR`) pencerenin altında. `r8_islem.mp4` artık kullanılmıyor.
+  Klipler sessiz (aslında İngilizce anlatım var). "©老白干" filigranı bilerek kaldı. Klipteki sayılar cevabın
+  yalnızca bir kısmı (aslında daha uzun dizi), dikkatli izleyici toplamın tutmadığını görebilir.
+- **Ders:** Reklam 7 rekorla aynı kareler ve sesler (r6_1–5, rekor_0–4), `src/modern/Abakus2D.jsx`: CSS çerçeve +
+  çubuklar + kiriş (birim noktaları), boncuk görseli, "kamera" = merkez + ölçek (derste sağdaki 3 çubuk, büyük
+  sayılarda 10 çubuk 1020 px), hayalde çerçeve söner, boncuklar saydam/sarı parlar. Geçiş çubuk başına.
+- **Son:** `Son.jsx`'e `yorum`, `cagriUst`, `hediye`, `hediyeSes`/`hediyeSure`, `sis` eklendi (varsayılanlar eski
+  kart: Reklam 6/7 süreleri değişmedi, 1059/1339 kare). Telefon altyazısı "Sorobit uygulaması bunu oyun oynar gibi
+  öğretir." (kullanıcı "çocuğunuza"yı çıkardı).
+- **Sesler (28.10.2026, ElevenLabs Bunty, asılları `reklam8\r8_*.mp3`):** 3 kayıt sürelerden/hece sayısından
+  eşleştirildi (yazıya dökme aracı yok): `r8_cagri` (113 kare) "Şu anda kapalı testte. Test kullanıcısı olmak için
+  yorumlara test yazın." (cümle arası 0,3 sn bırakıldı), `r8_hediye` (72) "İlk 100 test kullanıcısına bir ay Pro
+  hediye!" (rozet bu sesle gelir), `r8_sorobit` (80) telefon cümlesi (r6_8'in yerine). Eşleşme yanlışsa dosya
+  adlarını değiştirmek yeter. Toplam 1456 kare (48,5 sn).
+- **Zemin petrol** (kullanıcı "abaküsle uyumlu olmadı" dedi): `#22535F → #133540 → #06161B`, ışık petrol, kanca
+  zemini de petrol, kapanıştaki 3D boncukların sisi `#0B2229`. Mor kalanlar: yazı rengi `R.soluk`, gönder düğmesi.
+- Kısa kayıtlarda loudnorm hedefin altında kalıyor: `r8_sorobit` -18,2, `r8_hediye` -17,3 LUFS çıktı (kullanıcı
+  "kısık" dedi) → +4 / +3 dB ve `alimiter limit=0.84 level=disabled` ile -14,3 LUFS. Yeni kayıtta ölçerek kontrol et.
+- Müzik 36 sn, reklam 48 sn → `loop`. Kapanıştaki uçan boncuklar hâlâ 3D (Son'un ortak parçası).
+- **Müziksiz sürüm:** `npm run render:r8m` (`--props=muziksiz.json`, `muzik: false`) → `Sorobit_reklam8_muziksiz.mp4`.
+  Kullanıcı Instagram'da trend şarkı kullanmak istedi; telifli şarkı videoya gömülmez, Instagram editöründen
+  düşük seviyede eklenir (işletme hesabında yalnızca lisanslı kütüphane çıkar).
+- `npm run render:r8` → `out/Sorobit_reklam8.mp4` (kopya `reklam8\`). Proje git'te değil; Son.jsx yedeği yok.
+- **Pro hediyesi:** uygulama `plan` + `planExpiresAt` okuyor (`PlanStatus.kt`), iade akışı yalnızca kendi
+  token'ına dokunuyor → 30 günlük Pro elle/betikle yazılabilir. Önerim: "14 günlük testi tamamlayan ilk 100",
+  süre yayın günü başlasın (test sırasında Pro, enerji/reklam deneyimini ölçmeyi bozar). Karar kullanıcıda.
+
+## Türkiye'deki soroban kursu sayısı taraması (23.10.2026 — bitti, commit edilmedi)
+
+Resmî sayı yok; MEB'de soroban programı ya da adında "soroban" geçen kurs hiç yok (kurslar
+"kişisel gelişim" diye kayıtlı). Google Haritalar'da 81 il + büyük şehir ilçeleri tarandı: 144 kesin
+nokta (+25 olası), 24 ilde hiç yok; Menar 45 ilde 65 nokta, Mega Hafıza 13 ilde 24. Tahmin ~200–350
+fiziksel nokta. Ayrıntı ve il tablosu `docs/SOROBAN_KURS_PAZARI.md`, liste
+`docs/pazar/soroban_merkezleri_2026-10.csv`. Adana, Antalya, Mersin ilçe bazında taranmadı.
+İletişim listesi `docs/pazar/soroban_kurs_iletisim_2026-10.csv` (Excel için `;` + BOM): 172 satır,
+161 açık, 137'sinde telefon; 0533 603 81 18 sekiz Menar şubesinde ortak (merkez hattı olabilir).
+WhatsApp tanıtımı (26.10.2026): kullanıcı otomatik gönderim yerine tıkla-gönder seçti;
+`docs/pazar/kurs_whatsapp_gonderim.html` 41 cep numarası, günde 12, mesaj kurs adıyla kişisel,
+sonda "ilgilenmezseniz bir daha yazmam". Gönderilenler sayfada işaretleniyor (yalnızca o tarayıcıda
+saklanıyor). 69 sabit hat telefonla aranacak, henüz bir şey gönderilmedi.
 
 ## Mental aritmetik kursuyla kapalı test görüşmesi (22.10.2026 — konuşuluyor, anlaşma yok)
 
@@ -108,6 +360,16 @@ plan `plan`/`planExpiresAt`'e bakıyor; sunucuda kredi üst sınırı yok. Play 
 (`planProductId`/`planPurchaseTokenHash` dolu) ve öğretmen atlanır. Kullanıcının kendi hesabı
 `835398VV` ("Ted") Pro yapıldı (önce Free, kredi 5); uygulamada
 görünüp görünmediği kullanıcıda. Kullanım: `docs/KAPALI_TEST_FORMLARI.md` son bölüm.
+
+## Öğretmenin uygulama içi kaydını öğrenci indiremiyordu (22.10.2026 — düzeltildi, cihazda denenmedi; versionCode 15 AAB derlendi, kapalı teste yüklenecek)
+
+Öğretmen kaydı CreateQuestion → soru seçimi → `MainActivity.handleTeacherSendToSelectedQuestion`
+yolundan gidiyor; bu yol servise `KEY_STUDENT_UID` vermiyordu, servis de `?: senderUid` ile öğretmenin
+uid'sini `studentUid` metadata'sına yazıyordu → `storage.rules` `ownsExistingFile()` öğrenciyi reddetti.
+Galeri/sohbet içi gönderim `QuestionChatFragment.startUploadService` üzerinden doğru uid'yi veriyordu.
+Artık `NotificationFragment` seçimde `question.studentUid`'yi geçiriyor, MainActivity saklayıp servise
+iletiyor (boşsa göndermiyor). **Daha önce gönderilmiş kayıtlar hâlâ indirilemez** (metadata yükleme
+anında yazıldı); kullanıcı bunlar için metadata düzeltme script'i istemedi.
 
 ## Liderlik tablosuna gerçekçi sahte oyuncular (22.10.2026 — canlı Firestore'a yazıldı)
 
@@ -182,6 +444,231 @@ düşüyor (13'le ilgisi yok, uygulama yerelde derleniyor); ayrıca bakılmalı.
 - Telefonda bakılacak: öğrenci kaydında abaküs sorusu (geçiş animasyonu, geri tuşu), kayıttan sonra
   Firestore'da `sorobanLevel`, DebugView'da `age_group`/`soroban_level`.
 
+## Reels güvenli alanı (21.10.2026 — iki reklam düzeltildi)
+
+Reels arayüzü üstte ~200 px, altta ~400 px (1520'den aşağısı), sağda x 940+ / y 980–1700 kaplıyor;
+kontrol için kareler bu kutular kırmızı çizilerek incelendi. Değişenler: `Baslik` y 150→270, `Marka`
+48→196; Mehmetcan sahnesi kâğıt+el 0,88–0,92 ölçekte, saydam abaküs (0,6) ve fiske eli kâğıdın altına
+(1205/1210) — önceden tamamen alt alandaydı; sır sahneleri telefon `EKRAN_W` 500→420, üst 420→520, iki
+çip aynı yerde sırayla (1430, `Cip`'e `bit`); kapanış çağrısı 1140→1100, yazı 76→66 (sağ düğmeler).
+Paylaşım önerisi verildi: Salı–Perşembe 20:30–22:00, iki reklam 3–4 gün arayla; her gün aynı reklam değil.
+
+## Reklam 5 yeni: ChatGPT çizimi öğretmen ve çocuk elleri (21.10.2026 — çıktı alındı, kullanıcı bakmadı)
+
+Kullanıcı `Downloads\tebeşir_öğretmen.png` (1199×1312 saydam, tebeşir ucu 240,98) ve
+`üç_çocuk_el_hareketi.png` (1536×1024, 3 panel: hazır / işaret parmağı yukarı / parmaklar aşağı;
+pembe kazak) verdi; kopyalar `reklam5\el\`. Paneller ayrı ayrı kesilip kol merkezine (y 700'deki kol
+genişliğinin ortası) hizalandı → `public/r5y_el1-3.png` (620×890), `public/r5y_ogretmen.png`.
+`Tahta.jsx`: `Reklam5` artık `yeni` alıyor, `Reklam5Yeni = <Reklam5 yeni />` (eski görünüm değişmedi).
+Çocuk eli: her boncuk olayında sayı artarsa poz 2, azalırsa poz 3, 6 kare sonra poz 1; itişte ±14 px.
+Sıralama: abaküs → el → masa (kolun düz kesiği masanın altında, el abaküsün önünde). Kompozisyon
+`Reklam5Yeni`, `npm run render:r5y` → `reklam5\Sorobit_reklam5_yeni.mp4`. ChatGPT'ye verilen el
+istemi: tek görselde 3 panel, kol/kazak birebir aynı, yalnızca parmaklar değişsin, saydam arka plan.
+**Abaküs de çizim oldu (22.10.2026):** `Downloads\Ahşap Çerçeveli Metal Çubuklu Panel.png` (boncuksuz
+çerçeve, saydam, 1024×1536) ve `Minimalist Ahşap Abaküs Boncuğu.png` (beyaz zemin, colorkey ile
+ayıklandı); kopyalar `reklam5\abakus\`. Çerçeve çok uzundu: alt bölümün ortasından 438 px (y 760–1198)
+kesilip birleştirildi, dış sınıra kırpıldı → `public/r5y_abakus.png` (675×941); boncuk →
+`public/r5y_boncuk.png`. `Tahta.jsx` `ResimAbakus`: boncuklar kodla dizilip kayar (4 kare), sayılan
+boncuk hafif sarı parlar; sahnede left 335 / top 975, scale .45, -6°. Yeni sürümde "245!" balonu
+x 640 / y 880 (sağ çubuğu kapatmasın). **Kapanış (22.10.2026):** yalnız Reklam 5 yeni'de slogan
+"İşlemleri zihinden yapmayı öğreten uygulama", ses `Downloads\ad5_6.mp3` (00:15 kaydı: "Sorobit.
+İşlemleri zihinden yapmayı öğreten uygulama.") → `public/r5_konusma5.wav` (99 kare, slogan 23. karede;
+"Sorobit"ten sonraki boşluk kısaltıldı, 1,1 kat, −14 LUFS). İlk denemede eski "…öğretir" kaydı
+kullanılmıştı; kullanıcı aynı adla yenisini koymuş. `Devam.jsx` `Kapanis` artık `k5` / `ses` / `slogan` alıyor; varsayılanı
+eski (Reklam 3/4/5 değişmedi). Abaküs ve boncuk için öneri: boncuksuz çerçeve + tek boncuk
+ayrı istenmeli, tam önden düz çizim.
+
+## Reklam 4 yeni: ChatGPT çizimi ellerle (21.10.2026 — çıktı alındı, kullanıcı bakmadı)
+
+Karar: yarınki 200 TL öne çıkarma Reklam 4 ile (annenin derdi, 15,8 sn); Reklam 6 anneler sonra
+karşılaştırma için. Eski Reklam 4'te eller (daire + çubuk parmak) kötüydü; kod çizimi denemesi
+(`src/deneme/ElDeneme.jsx`, `reklam4\el_denemesi.png`) yerine kullanıcı ChatGPT'ye çizdirdi:
+`Downloads\yeşil_ekranlı_telefon_çocuk.png` (940×1672, ekran #00FF00) ve `anne_eli.png` (saydam).
+Kopyalar `reklam4\yeni\`. Yeşil ffmpeg colorkey + despill ile ayıklandı → `public/r4y_sahne.png`
+(1080×1921); `public/r4y_anne_eli.png`. Ekran köşeleri kenar doğrularının kesişiminden ölçüldü
+(çizim pikseli: 206,230 / 647,189 / 286,1145 / 734,1102; ~5° eğik), içerik `matrix3d` ile oturuyor
+(%1,5 taşma). Kod `Telefon.jsx` sonunda `CizimSahnesi` + `Reklam4Yeni` (eski `Reklam4`'e dokunulmadı),
+`npm run render:r4y` → `reklam4\Sorobit_reklam4_yeni.mp4`. Telefon çevrilmiyor: kamera yavaş yaklaşır,
+"matematik!"te (T.ekran) ekran oyuna geçip telefona itilir; anne eli 40–68 uzanır, 80'de çekilir.
+Yazılar altta (y 1250). Anne elinin kolu da kırmızı (çocuğunkiyle aynı renk).
+
+## Reklam 6 anneler: ücretli öne çıkarma sürümü (21.10.2026 — kanca sessiz, 2 kayıt bekleniyor)
+
+Reklam 3 eski Facebook'ta 386 görüntülenme; izleyenlerin çoğu 35–64 yaş ERKEK (hedef: 28–45 anneler),
+1. sn %46, 2. sn %19, 10. sn %4 kaldı. Teşhis: önce kitle uyumsuzluğu, sonra çocuğun ağzından açılan
+kanca. Plan (kullanıcı onayladı): "Çocuğunuz hâlâ parmakla mı sayıyor?" kancalı sürüm, 200 TL öne
+çıkarma; öneri: kadın 28–45 Türkiye, ilgi ebeveynlik/ilkokul, amaç Etkileşim ("bilgi" yorumu),
+3–4 güne yay, FB + IG Reels; bakılacaklar 3 sn izlenme, ThruPlay maliyeti, "bilgi" yorumu sayısı.
+Kod `src/modern/Reklam6Anneler.jsx` (Reklam6.jsx'e dokunulmadı; onu Sequence içinde aynen kullanır),
+kompozisyon `Reklam6Anneler`, `npm run render:r6a` → `reklam6\Sorobit_reklam6_anneler.mp4`.
+Kanca 110 kare: 0–54 soru (ilk karede tam görünür) + "123 + 351 = ?" altında 10 parmak tek tek sayılır,
+54–110 "Japon abaküsüyle 30 saniyede göstereyim." + altyazı "Parmakla saymak doğal bir aşama; sonraki
+adım abaküs." (yumuşatma). Bekleyen kayıtlar: `ad7_0` "Çocuğunuz hâlâ parmakla mı sayıyor?" →
+`r7_0.wav`, `ad7_1` "Japon abaküsüyle otuz saniyede göstereyim." → `r7_1.wav`.
+
+## Reklam 6: abaküste kuralsız toplama/çıkarma (21.10.2026 — seslendirmeli sürüm, kullanıcı bakmadı)
+
+**Sesler geldi (22:00):** `Downloads\ad6_0-7.mp3` (kopyaları `reklam6\`) → `public/r6_1-8.wav`. Kullanıcı
+metni değiştirdi: 1 "Japon abaküsünde en sağdaki çubuk…", 3 "Boncuk kirişe itilince sayılır…",
+8 "Sorobit uygulaması çocuğunuza bunu oyun oynar gibi öğretir." "Tempoyu hızlandır" isteği:
+cümle içi duraklamalar 0,14 sn'ye indirildi (`silenceremove stop_periods=-1`), 1,2 kat hız, satır arası
+4 kare. Boncuk olayları kayıtlardaki "üç/beş/bir" ve "bir/beş/iki" kelimelerine oturtuldu (duraklama
+ölçümüyle). Toplam 1059 kare (~35,3 sn). Çıktı `reklam6\Sorobit_reklam6.mp4`; `_taslak` eski sessiz sürüm.
+Tek geçişli loudnorm kısa dosyada tutmadı (r6_2 −20 LUFS): r6_2/4/5/6/7'ye kazanç + alimiter verildi,
+hepsi −13,8…−14,8 LUFS. Sonraki kayıtlarda ebur128 ile ölçmek gerek.
+Aşağıdaki cümle listesi ilk taslağınki (1, 3 ve 8 değişti).
+
+Kullanıcı isteği: Reklam 5 modern'in 3D tasarımıyla, sıfırdan 3 basamaklı kuralsız toplama ve çıkarma
+öğreten, kısa, doğrudan konuya giren bir video; sonunda uygulamaya yönlendirme. Kararlar: kullanıcının
+kendi seslendirmesi, ~35 sn, çağrı "yorumlara bilgi yazın", ilk cümle doğrudan "Abaküste en sağdaki
+çubuk birler basamağıdır…". Örnekler: 123 + 351 = 474 ve 474 − 152 = 322 (her basamakta 5'lik/10'luk
+kural gerektirmez). Kod `src/modern/Reklam6.jsx` (kompozisyon `Reklam6`, `npm run render:r6`, tek sekme),
+taslak `Videos\Sorobit_tanitim\reklam6\Sorobit_reklam6_taslak.mp4`. `Abakus3D.jsx`'teki `Soroban` artık
+`olaylar` alıyor; `Son.jsx` `telefonSure` / `metin` / `ses` alıyor (Reklam 5 modern varsayılanlarla aynı).
+Zamanlar `SATIR` (satır başları), `OLAY` (boncuk değerleri), `ADIM` (+3/−1 etiketleri), `DENKLEM`.
+Beklenen kayıtlar `Downloads\ad6_sound1-8` → `public/r6_1-8.wav` (yoksa sessiz):
+1 "Abaküste en sağdaki çubuk birler basamağıdır; yanında onlar, solda yüzler."
+2 "Alttaki her boncuk bir, üstteki boncuk beş eder."
+3 "Boncuğu kirişe itince sayılır. İşte yüz yirmi üç."
+4 "Yüz yirmi üçe üç yüz elli bir ekleyelim. Soldan başla: üç, beş, bir."
+5 "Sonuç: dört yüz yetmiş dört."
+6 "Çıkarma da aynı: yüz elli iki çıkaralım. Bir, beş, iki boncuk indir."
+7 "Sonuç: üç yüz yirmi iki. Kural yok, sadece boncukları it."
+8 "Sorobit'te çocuğunuz bunu oyun oynar gibi öğrenir."
+Kapanış sesi konusma5 (mevcut). Kayıtlar gelince `SATIR` ve olay kareleri gerçek sürelere göre kayacak.
+
+## Reklam 5 modern: kufze akışında 3D sürüm (21.10.2026 — ilk tam çıktı, kullanıcı bakmadı)
+
+Kullanıcı Instagram'daki kufze anlatım videosunu (`Desktop\instagram1.mp4`, fermuar nasıl çalışır,
+89 sn) çok profesyonel buldu; "videolarımız bu akışta olsun" dedi. Kararlar: 3D, hiç insan yok, ~30 sn
+ve yazılı açıklama bölümü, alt satır "Sorobit · Matematiği bir üst seviyeye çıkaran uygulama"
+(Instagram kullanıcı adı yok). Kufze'nin logosu/sloganı/rengi kopyalanmadı: koyu mor zemin, sarı vurgu.
+Kod: `reklam3\proje\src\modern\` — `Sablon.jsx` (Inter yazı tipi `public/inter.ttf` [OFL], zemin, sol
+üst logo + değişen küçük not, alt yazı y 1262, imza y 1440, `Etiket` hapları, `yuvarlakKutu`,
+`Kamera` + `projeksiyon`: 3D noktanın ekran konumu, etiketler bununla 3D'ye oturur), `Tahta3D.jsx`
+(açılı 3D tahta, duvarda gölge, tebeşir yazısı katman, parlayan tebeşir ucu, "İlgisu · 85" hapları),
+`Abakus3D.jsx` (LatheGeometry boncuklu 3 çubuklu soroban; "Cevabı basit…" r5_konusma4; yüzler/onlar/
+birler, üst boncuk 5 / alt 1, 523 kur, −200/−70/−8 → 245, saydamlaşıp "zihne taşınır"), `Son.jsx`
+(CSS 3D telefonda oyun.mp4, süzülen 3D boncuklu kapanış kartı, konusma5, "bilgi" yorum çağrısı),
+`Reklam5Modern.jsx` (birleştirme + müzik). Kompozisyon `Reklam5Modern` (1015 kare, 33,9 sn),
+`npm run render:r5m` (`--gl=angle`, `--concurrency=1`; 2–4 sekmede Chrome belleği yetmiyor, ~5 dk)
+→ `out/Sorobit_reklam5_modern.mp4`, kopya
+`Videos\Sorobit_tanitim\reklam5\Sorobit_reklam5_modern.mp4`. Paketler: `@remotion/three@4.0.300`,
+`three@0.169.0`, `@react-three/fiber@8.17.10`. Müzik `public/muzik_uzun.m4a` (Way To Go 7.–43. sn;
+eski 20 sn'lik `muzik.m4a` yetmiyordu), baştan sona, tahtada kısık. "Daha eşittiri…" kaydı yine yok
+(altyazı anlatıcı diliyle yazıldı, ses gerekmiyor).
+**Yazı tipi hatası düzeltildi:** Kanca.jsx'teki modül düzeyi `delayRender('Baloo 2 yükleniyor')` yazı tipi
+yüklense de hiç temizlenmiyordu; render 118 sn'yi geçince zaman aşımıyla düşüyordu (eski reklamlar
+daha kısa sürdüğü için görülmemişti). Artık `balooHazir` / `interHazir` söz verileri dışa açılıyor,
+index.jsx'teki `yaziBekle` her kompozisyonu bileşen içi delayRender ile bekletiyor.
+
+## Reklam 5 animasyonu: "İlgisu, öğretmen yazarken cevaplıyor" (21.10.2026 — sessiz taslak hazır, seslendirme bekleniyor)
+
+Aynı Remotion projesi (`reklam3\proje`), `src/Tahta.jsx`, kompozisyon `Reklam5`, `npm run render:r5` →
+`out/Sorobit_reklam5.mp4`; kopyası `Videos\Sorobit_tanitim\reklam5\Sorobit_reklam5_taslak.mp4` (20,1 sn).
+0–3,3 sn tahta (38+47, 126+259; balon "85!"/"385!" "=" konmadan, öğretmen sonra sarı tebeşirle yazar),
+3,3–8 sn kamera iner, önde İlgisu'nun pembe kolu + saydam abaküs 523→323→253→245 rakam rakam, "245!",
+öğretmen eli donar; sonra Devam.jsx'in `Sir` sahnesi (artık `ad`/`ses`/`gecis` alıyor, Reklam 3 aynı) ve
+`Kapanis`. `Ses` yardımcısı Devam.jsx'e taşındı (Telefon.jsx oradan alıyor). Zamanlar `T` nesnesinde.
+Beklenen kayıtlar (`public/`, yoksa sessiz): `r5_ilgisu1-3.wav` ("85!", "385!", "245!"),
+`r5_konusma1.wav` ("Daha eşittiri koymadı bile…"), `r5_konusma2.wav` ("İlgisu bu işlemleri nasıl bu
+kadar hızlı yapıyor?!"), `r5_konusma4.wav` ("Cevabı basit: İlgisu her gün 10 dakika Sorobit'le Japon
+abaküs tekniğini öğrendi."). Kayıtlar gelince süreleri `T`'ye göre ayarlanacak.
+
+**Sesler geldi (21.10.2026, 19:00):** `Downloads\ad5_sound1-4.mp3` (kopyaları `reklam5\`) → `r5_ilgisu1`
+"85" (1,2 kat), `r5_ilgisu2` "385" (1,25), `r5_konusma2` soru (1,2; altyazı "?!" → "?"), `r5_konusma4`
+anlatıcı (1,15; "basit"ten sonraki 0,44 sn boşluk ~0,2'ye). Kullanıcı metni değiştirdi: "Cevabı basit.
+İlgisu, Sorobit uygulaması ile Japon abaküs tekniğini öğrendi." ("10 dakika" yok). `Sir` artık
+`k` (zamanlar) ve `yazilar` (üç altyazı) alıyor; Reklam 3'ün değerleri Devam.jsx'te varsayılan
+(`K4` anahtarları `ikinci`/`ucuncu`/`sure` oldu). Modül düzeyinde JSX "React is not defined" veriyor:
+altyazılar fonksiyonla çizimde kuruluyor. "Daha eşittiri koymadı bile…" KAYDEDİLMEDİ (altyazı sessiz).
+"245" sonradan geldi: `ad5_sound5.mp3` → `r5_ilgisu3.wav` (1,25 kat, 34 kare); soru 170 → 198. kareye
+kaydı, tahta sahnesi 274 kare. Çıktı `reklam5\Sorobit_reklam5.mp4` (21,2 sn); `Sorobit_reklam5_taslak.mp4`
+eski sessiz taslak.
+
+Senaryo notları:
+
+Kullanıcının fikri: öğretmen tahtaya işlem yazar, İlgisu cevaplar, bizim karakter "nasıl bu kadar hızlı?"
+diye sorar, sonra Reklam 3'teki "Cevabı basit…" sır sahnesi + kapanış. Öneriler: cevap son rakam
+yazılınca, "=" konmadan gelsin (soru yazılmadan cevap mantıksız, veli "sahte" der); üç işlemle
+tırmanma (38+47=85, 126+259=385, 523−278=245); öğretmen sırtı dönük/yalnızca eli (yüz yok); İlgisu'nun
+parmaklarında Reklam 3'teki saydam abaküs; kimse küçük düşürülmez. Gerekli kayıtlar: İlgisu'nun üç
+cevabı (kız çocuk sesi), bizim karakterin sorusu, konusma4'ün İlgisu'lu hâli; konusma5 ve müzik aynen.
+Sıklık önerisi: günde 2 değil, haftada 3–4 farklı reels; elde hazır Reklam 4 var.
+
+## Reklam 4 animasyonu: "Yine mi telefon?" (21.10.2026 — görüntü taslağı hazır, seslendirme bekleniyor)
+
+Kullanıcıya 4 senaryo önerildi (telefon / ödev 10 dakikada / market kasası / tahtada parmak), 1.
+seçildi. Aynı Remotion projesinde (`reklam3\proje`), `src/Telefon.jsx`, kompozisyon `Reklam4`,
+`npm run render:r4` → `out/Sorobit_reklam4.mp4`; taslak kopyası `reklam4\Sorobit_reklam4_taslak.mp4`
+(15,4 sn). Velinin gözünden koltuk: çocuğun elinde telefon (Kupa Yolu ekranı `public/tel_kupa.png`,
+kupa_toplama_1 0,3 sn), kenarda kapalı "Matematik ödev defteri", veli eli uzanır → çocuk telefonu
+çevirir, ekranda abaküs (oyun.mp4) → mor sır sahnesi (klip kaldığı yerden, "Aferin") → Reklam 3'ün
+kapanış kartı ve konusma5 aynen. Müzik "…matematik!"le girer. Bekleyen kayıtlar (dosya gelince
+`public/r4_konusma1-3.wav` olarak işlenecek; `Ses` bileşeni dosya yoksa sessiz geçer, zamanlar `V`):
+1 veli "Yine mi telefon? Hani ders çalışacaktın?!", 2 çocuk "Çalışıyorum ki anne… bak, matematik!",
+3 anlatıcı "Sorobit'le çocuğunuz oynarken Japon abaküs tekniğini öğrenir." Kupa Yolu ekranındaki
+dinozor/kartal Lottie'lerinin ticari lisansı hâlâ kontrol edilmedi.
+
+**Sesler geldi (21.10.2026, 09:30):** `Downloads\ad4_sound1.mp3` (veli) → `r4_konusma1.wav`,
+`ad4_sound2.mp3` (anlatıcı, "Sorobit ile…") → `r4_konusma3.wav`, ikisi 1,15 kat. Çocuğun repliği
+KAYDEDİLMEDİ (yalnızca altyazı). İlk ekran kullanıcının ekran görüntüsü oldu (eğitim: "İlk önce 241
+yazıyoruz", 241+153) → `public/tel_ders.png`, asıl `reklam4\ilk_ekran.jpg`; Kupa Yolu görüntüsü artık
+kullanılmıyor. Çıktı `reklam4\Sorobit_reklam4.mp4` (15,4 sn). `oyun.mp4` sık anahtar kareyle
+(`-g 10 -bf 0`) yeniden kodlandı: Remotion "No frame found at position" hatası veriyordu.
+
+**Son hâl (21.10.2026, 09:40):** veli sesi `ad4_sound3.mp3` ile değişti (`ad4_sound1` silindi: Downloads
+ve reklam4 kopyası), çocuk repliği `ad4_sound4.mp3` → `r4_konusma2.wav` ("anne" ile "bak" arası 0,46
+→ ~0,2 sn kısaltıldı). Müzik "matematik" kelimesiyle (132. kare) girer, sır sahnesi 150'de; toplam
+15,8 sn. Kullanılmayan `public/sayfa.wav` silindi; `public/tel_kupa.png` (resim) kullanılmıyor ama duruyor.
+
+## Reklam 3 animasyonu: "Mehmetcan arka sayfaya mı geçti?" (21.10.2026 — 20 sn taslak hazır, kullanıcı ilk 6 sn'yi beğendi, tamamına bakmadı)
+
+**Tam taslak:** `reklam3\Sorobit_reklam3.mp4` (20 sn; `npm run render:tam`, kompozisyon `Reklam` →
+`src/Devam.jsx`). 6–13 sn sır: mor zemin, telefonda gerçek oyun (`public/oyun.mp4` =
+`kupa_toplama_1.mp4` 22–33,6 sn, durum çubuğu kırpılmış, 1,8 kat hızlı; 5,8 sn'de "Aferin" karesinde
+donar çünkü sonrası ana ekran), "Mehmetcan'ın sırrı" → "Her gün 10 dakika Sorobit" + iki çip.
+13–17 sn dönüş: kendi kâğıdımız, biz de boncuk itip hızla yazıyoruz, HIŞIRT ile arka sayfaya
+geçiyoruz ("Arka sayfaya ben de geçtim!"). 17–20 sn kapanış: "Çocuğunuz da matematiği oyunla
+sevsin.", Sorobit, 7–14 yaş, "Ücretsiz kapalı teste katılın / Bağlantı açıklamada". Müzik yok.
+Eski ham kayıtların çoğu (ders_sesli, egitim_kesit…) silinmiş; elde yalnızca kupa_toplama_1 ve
+sobi_acilis tam ekran var.
+
+**Seslendirme (21.10.2026):** kullanıcının kayıtları `Downloads\ad3_sound1-3.mp3` + `page_flip.mp3`
+(kopyaları `reklam3\`). İşlenmiş hâlleri `public/konusma1-3.wav` (boşluk kırpıldı, 1,25/1,25/1,2 kat
+hız, loudnorm -14 LUFS) ve `public/page_flip.wav` (sentetik `sayfa.wav` artık kullanılmıyor).
+Kanca 200 kareye (6,7 sn) uzadı, tüm reklam 20,7 sn; zamanlar `Kanca.jsx` içindeki `T` nesnesinde,
+3. altyazı konuşmayla aynı: "Nasıl bu kadar hızlı olabilir?!". Sarsıntı hatası düzeltildi (hışırtıdan
+önce de sağda siyah şerit açıyordu).
+
+**Kurgu değişti (kullanıcı kararı, 21.10.2026):** "Şimdi sıra bende / Arka sayfaya ben de geçtim"
+dönüş sahnesi KALDIRILDI. Sır sahnesinde `Downloads\ad3_soun4.mp3` (adı böyle, "sound" değil) →
+`public/konusma4.wav` (1,15 kat): "Cevabı basit: Mehmetcan her gün 10 dakika Sorobit'le Japon abaküs
+tekniğini öğrendi." Altyazılar cümle parçalarına bağlı (`K4` nesnesi). Kapanış: Sorobit, "Matematiği
+bir üst seviyeye çıkaran uygulama", "7–14 yaş · Abaküsle zihinden hesap", "Ücretsiz kapalı teste
+katılmak için yorumlara “bilgi” yazın" + "bilgi" yazılan yorum kutusu animasyonu. Toplam 16,4 sn.
+Yorum çağrısı grup paylaşımı (organik) için; ücretli reklamda Meta düğmesi önerildi.
+
+**Müzik ve kapanış sesi (21.10.2026):** `Downloads\ad3_soun5.mp3` → `public/konusma5.wav` (1,1 kat):
+"Sorobit. Matematiği bir üst seviyeye çıkaran uygulama." Logo, slogan ve etiket sesle sırayla gelir,
+yorum çağrısı ses bitince (`K5` nesnesi). Müzik: `Downloads\Way To Go.mp4` 7. saniyeden itibaren
+→ `public/muzik.m4a` (kullanıcı önce 6 dedi, sonra 7'ye aldı). "Cevabı basit"le girer, konuşmalarda
+0,28'e (0,16 fazla kısık bulundu), diğer
+yerlerde 0,42'ye ayarlı (`muzikSesi`), son 1 sn'de söner. Kaynak dosyaların kopyaları `reklam3\`.
+Toplam 18,8 sn. Şarkının reklamda kullanım lisansı kontrol edilmedi.
+
+İlk 6 sn notları:
+
+Kullanıcının senaryosu gözden geçirildi; öneriler: "10 kat" iddiası çıkacak (kanıt yok), çocuğu
+yarıştıran ton yumuşayacak, kapanış veliye seslenecek, "yoruma bilgi yaz" yerine katılım linki.
+Oyuncu/ekipman yok, yapay zekâ videosu beğenilmedi → yüzsüz POV 2D animasyon, Remotion (kodla video).
+Proje: `C:\Users\ASUS\Videos\Sorobit_tanitim\reklam3\proje` (`npm run render`, `npm run studio`);
+sahne `src/Kanca.jsx`, sesler `public/*.wav` (ffmpeg ile sentezlendi, geçici). Çıktı:
+`reklam3\Sorobit_reklam3_kanca.mp4` (6 sn, 1080×1920). Akış: kendi kâğıdımız + "Daha ilk soruyu
+çözemedim…" → HIŞIRT → arkaya dönüş → Mehmetcan'ın kâğıdı çevriliyor → cevaplar yazılırken sol elin
+parmakları havada saydam abaküs boncuklarını itiyor, "Bu kadar hızlı nasıl?!". Sobi reklamda YOK
+(Freepik lisansı). Sıradaki: 6–20 sn (uygulama ekran kaydı, veliye kapanış, link).
+
 ## Kapalı test yol haritası (19.10.2026 — taslak, kullanıcı onaylamadı; Faz 0 kodu 13'te yazıldı)
 
 **13 (1.0) Alpha'da YAYINDA (19.10.2026 20:55, gönderim 2; veri güvenliği anketi de güncellendi).**
@@ -193,6 +680,17 @@ her şehirden, Facebook "N. sınıf anneleri" grupları (kullanıcı Bursa'da); 
 yalnızca katılım az olursa. Öneri: sayacı hemen başlatmak için önce 5-8 kişilik güvenilir çekirdek
 grup, yabancı testçiler paralelde; 100 kişide 1. gün formu herkese, telefon görüşmesi seçilmiş
 10-15 kişiye (A ve B'den).
+**Çevreye mesaj (21.10.2026):** kullanıcı önce tanıdıklarla 12 × 14 gün sayacını başlatacak (şu an
+çevresi dışında deneyen yok). Metin + 7. gün hatırlatması `docs/KAPALI_TEST_MESAJLARI.md` 10. bölüm;
+e-posta toplanmıyor, Google Group bağlantısıyla katılım. Bilgisayar mühendisliği grubu için toplu
+paylaşım metni de aynı bölümde (bağlantılar doğrudan gönderide, karşılıklı test teklifiyle). Kullanıcı Firestore'daki kayıtlı herkesi
+"testçi" işaretlemek istedi: UYARILDI, `isTester` Play'le ilgisiz ve yalnızca geliştiricinin kendi
+hesaplarını analizden ayırmak için (`--testci-haric`, GA4 `tester`); tanıdıklar gerçek testçi sayılıyor,
+ayrımları takip tablosundaki "Tanıdık mı" sütununda.
+**12 testçi tamam (27.10.2026'da görüldü):** Play Console Kontrol paneli → "Üretime erişim için başvuruda
+bulunma" listesinde "En az 12 test kullanıcısının kaydolması" işaretli; "12 kullanıcıyla 14 gün" adımı açık.
+Konsol gün sayısı göstermiyor; 14 gün dolunca adım kendiliğinden işaretlenir ve "Üretime başvur" açılır.
+12'nin altına düşülürse 2. adımın işareti kalkar, sayaç baştan başlar. En geç ~10.11.2026'da kontrol et.
 **Facebook sınıf grubu metinleri (19.10.2026, kullanıcı onayladı):** `docs/KAPALI_TEST_MESAJLARI.md`
 9. bölüm — 2–8. sınıf için kanca tablosu, ortak gövde, ilk yorum, yönetici izin mesajı. Vaat "10 kısa
 derste abaküste 5 basamaklı toplama" (`p1_i09`; "ilk haftasında" test verisiyle doğrulanacak). Genel

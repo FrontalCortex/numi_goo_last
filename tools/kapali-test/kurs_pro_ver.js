@@ -14,6 +14,7 @@
 //       → gerçekten yazar: plan=Pro, planExpiresAt=bitiş, questionCredits=en az --kredi.
 //   ... --bitis 2026-12-15   (varsayılan 2026-11-30; Türkiye saatiyle o günün 23:59:59'u)
 //   ... --kredi 999          (varsayılan 999; daha yüksek bakiyesi olanın kredisi düşürülmez)
+//   ... --kredi-ekle 10      (--kredi yerine: mevcut bakiyenin ÜSTÜNE 10 ekler; tek kişiye hediye için)
 //   ... --geri-al --yaz
 //       → elle verilen Pro'yu kapatır (plan=Free, planExpiresAt=null) ve krediyi 0'a çeker.
 //
@@ -46,7 +47,7 @@ function fail(msg) {
 }
 
 function parseArgs(argv) {
-  const out = { adlar: [], yaz: false, geriAl: false, bitis: VARSAYILAN_BITIS, kredi: VARSAYILAN_KREDI };
+  const out = { adlar: [], yaz: false, geriAl: false, bitis: VARSAYILAN_BITIS, kredi: VARSAYILAN_KREDI, krediEkle: 0 };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--yaz') out.yaz = true;
@@ -57,6 +58,9 @@ function parseArgs(argv) {
     } else if (a === '--kredi') {
       out.kredi = Number.parseInt(argv[++i], 10);
       if (!(out.kredi >= 1)) fail('--kredi 1 ya da daha büyük bir sayı bekliyor');
+    } else if (a === '--kredi-ekle') {
+      out.krediEkle = Number.parseInt(argv[++i], 10);
+      if (!(out.krediEkle >= 1)) fail('--kredi-ekle 1 ya da daha büyük bir sayı bekliyor');
     } else if (a === '--dosya') {
       const dosya = argv[++i];
       if (!dosya || !fs.existsSync(dosya)) fail(`--dosya bulunamadı: "${dosya}"`);
@@ -136,7 +140,8 @@ async function main() {
 
   console.log(opts.geriAl
     ? 'İşlem: GERİ AL (plan=Free, planExpiresAt=null, questionCredits=0)'
-    : `İşlem: PRO VER (plan=Pro, bitiş ${tarihYaz(bitis)}, kredi en az ${opts.kredi})`);
+    : `İşlem: PRO VER (plan=Pro, bitiş ${tarihYaz(bitis)}, ${opts.krediEkle
+      ? `kredi +${opts.krediEkle}` : `kredi en az ${opts.kredi}`})`);
   console.log(opts.yaz ? 'Kip: YAZ\n' : 'Kip: KURU ÇALIŞMA (hiçbir şey yazılmayacak; yazmak için --yaz)\n');
 
   const yazilacak = [];
@@ -160,7 +165,8 @@ async function main() {
       if (u.plan !== 'Pro' && krediSimdi === 0) { atlanan.push([ham, 'zaten Pro değil, kredi 0']); continue; }
       guncelleme = { plan: 'Free', planExpiresAt: null, questionCredits: 0 };
     } else {
-      guncelleme = { plan: 'Pro', planExpiresAt: bitis, questionCredits: Math.max(krediSimdi, opts.kredi) };
+      const kredi = opts.krediEkle ? krediSimdi + opts.krediEkle : Math.max(krediSimdi, opts.kredi);
+      guncelleme = { plan: 'Pro', planExpiresAt: bitis, questionCredits: kredi };
     }
     const once = `plan=${u.plan || 'Free'}, bitiş=${tarihYaz(u.planExpiresAt)}, kredi=${krediSimdi}`;
     const sonra = `plan=${guncelleme.plan}, bitiş=${tarihYaz(guncelleme.planExpiresAt)}, kredi=${guncelleme.questionCredits}`;

@@ -222,6 +222,69 @@ Gönderiye "ben de" diye yorum yazana: *"Teşekkürler 🙏 WhatsApp'tan yazarsa
 - Takip tablosunda "Kanal" = Facebook, "Notlar" = grup adı; sınıf, WhatsApp'a gelen hazır mesajdan
   okunur.
 
+## 10. Çevreye (aile, arkadaş) gönderilecek mesaj (21.10.2026)
+
+Tanıdıklara birebir WhatsApp'tan. Karşılama/`/katilim` akışı yerine tek mesaj; e-posta toplamaya
+gerek yok, kişi Google Group'a kendisi katılıyor. Çocuğu olmayan tanıdık da katılabilir (Play şartı
+için sayılır), ama geri bildirimi asıl çocuklu olanlardan iste.
+
+```
+Selam! 🙂 Çocuklara abaküsle zihinden hesap öğreten Sorobit adlı bir uygulama yaptım, şu an kapalı testte. Google Play'de yayına çıkabilmem için en az 12 kişinin 14 gün boyunca testte kalması gerekiyor. Bana bu konuda yardım eder misin? 🙏
+
+Kurulumu 1 dakika sürüyor (yalnızca Android):
+1️⃣ Gruba katıl: https://groups.google.com/g/sorobit-test → "Gruba katıl"
+2️⃣ Bu bağlantıyı aç: https://play.google.com/apps/testing/com.numigo.app → "Test kullanıcısı ol", sonra "Google Play'den indir"
+3️⃣ Uygulamayı Google Play'den yükle, aç ve bir hesap oluştur (çocuğun varsa onun adına)
+
+⚠️ Gruba, telefonundaki Play Store'da açık olan Gmail hesabıyla katıl, yoksa uygulama görünmez.
+
+Senden üç ricam var:
+• *14 gün boyunca testten ayrılma* ("Programdan ayrıl" düğmesine basma) ve uygulamayı silme
+• 2-3 günde bir 5 dakika aç, bir ders yap
+• Takıldığın, beğenmediğin ya da garip gelen bir şey olursa bana yaz, olumsuz yorumlar en değerlisi
+
+Kurunca "tamam" yazarsan 14 günü saymaya başlarım. Çok teşekkürler! 🙌
+```
+
+### Bilgisayar mühendisliği grubu (toplu paylaşım)
+
+Bağlantılar doğrudan gönderide: bu kitle kapalı testi biliyor, "bana yazın" adımı yalnızca kayıp
+yaratır. Kimin katıldığı Google Group üye listesinden görülür. Karşılıklı test teklifi en güçlü teşvik:
+bölümdekilerin çoğu kendi uygulaması için aynı 12 testçi şartıyla uğraşıyor.
+
+```
+Selam arkadaşlar 👋 Çocuklara abaküsle zihinden hesap öğreten Sorobit adlı bir Android uygulaması geliştirdim (Kotlin + Firebase), şu an Google Play kapalı testinde. Üretime çıkmak için 12 testçi × 14 gün şartını doldurmam gerekiyor, destek olursanız çok sevinirim 🙏
+
+Katılım (1 dk, yalnızca Android):
+1️⃣ https://groups.google.com/g/sorobit-test → "Gruba katıl"
+2️⃣ https://play.google.com/apps/testing/com.numigo.app → "Test kullanıcısı ol"
+3️⃣ Play'den yükle, aç, hesap oluştur
+(Gruba Play Store'daki Gmail hesabınla katıl, yoksa uygulama görünmez.)
+
+Ricam: 14 gün testten ayrılmayın, uygulamayı silmeyin, ara ara açıp bir ders yapın. Hata, tasarım, akış, ne görürseniz bana yazın; acımasız eleştiri en değerlisi 😄
+
+🔁 Kendi uygulaman için testçi arıyorsan yaz, ben de seninkine katılayım.
+Katılınca bu mesaja 👍 bırakırsanız kimlerin katıldığını görebilirim. Teşekkürler!
+```
+
+### 7. gün hatırlatması
+
+```
+Selam! Sorobit testinin yarısı geçti, çok teşekkürler 🙏 Bu hafta bir iki kez açıp bir ders yapabilir misin? Şimdiye kadar aklına takılan bir şey olduysa yazarsan çok sevinirim.
+```
+
+### 14. gün sonrası
+
+8. bölümdeki `/tesekkur` metni (testten ayrılmasınlar: üretim erişimi onaylanana kadar sayı 12'nin
+altına düşmemeli).
+
+Notlar:
+- "tamam" gelince takip tablosuna satır aç ("Tanıdık mı" = evet). 12. kişinin katıldığı gün 14 günlük
+  sayacın başladığı gündür; 7. gün hatırlatmasını herkese o günden saymak en kolayı.
+- Google Group ayarı: "Kimler gruba katılabilir" = **Herkes katılabilir** olmalı. "Katılma isteği"
+  seçiliyse her kişiyi elle onaylaman gerekir, onaylamadan Play testçi saymaz.
+- WhatsApp'ta `*...*` kalın gösterilir (Facebook'ta gösterilmez).
+
 ---
 
 ## 11. Mental aritmetik kursu (22.10.2026)
@@ -254,6 +317,7 @@ Harika, çok teşekkürler! 🙏 Bu sayıyla başlamak çok iyi. Kurulum mesajla
 Birkaç küçük not:
 • Öğretmen hesaplarını ben elle onaylıyorum. Öğretmenler kaydolunca bana kullanıcı adlarını yazsınlar, aynı gün açarım.
 • 13 yaş ve altındaki çocuklarda kayıt sırasında velinin e-postasına bir onay kodu gidiyor, bu yüzden kaydı veliyle birlikte yapmaları gerekiyor.
+• Öğrencilerin hesaplarını test süresince (30 Kasım'a kadar) ücretsiz olarak Pro üyeliğe yükseltiyorum: reklam yok, enerji sınırı yok, Pro'ya özel bölümler açık ve öğretmenlerine sınırsız soru sorabilecekler. Bunun için velilerin, mesajdaki 2 dakikalık formda çocuğun kullanıcı adını yazması yeterli.
 • Hata, öneri ya da istek olursa öğretmenler ve veliler bu formu doğrudan doldurabilir, hepsi bana geliyor: https://forms.gle/FgjRYeBeuWqBW1A88
   Size ulaşan bir şey olursa siz de bu formdan iletebilir ya da bana doğrudan yazabilirsiniz.
 • Test süresince hataları hemen düzelteceğim; öneri ve istekleri not alıp testten sonra sizin önceliklerinize göre sıralayacağım.
@@ -275,6 +339,7 @@ Sorobit kurulumu (yalnızca Android, ~2 dakika) 👩‍🏫
 
 ⚠️ Gruba, telefondaki Play Store'da açık olan Gmail hesabıyla katılın; yoksa uygulama görünmez.
 
+⭐ Test süresince öğrencilerin hesapları ücretsiz Pro'ya yükseltilecek; size sınırsız soru gönderebilecekler.
 ℹ️ Öğrencilerin uygulamadan gönderdiği sorular şimdilik bütün öğretmenlerin gördüğü ortak bir listeye düşüyor.
 🛠️ Hata, öneri ya da istekleriniz için: https://forms.gle/FgjRYeBeuWqBW1A88
 🙏 14 gün boyunca uygulamayı silmeyin ve testten ayrılmayın (Google Play'in yayın şartı).
@@ -292,9 +357,9 @@ Sorobit kurulumu (yalnızca Android, ~2 dakika) 🧮
 ⚠️ Gruba, telefondaki Play Store'da açık olan Gmail hesabıyla katılın; yoksa uygulama görünmez.
 📧 13 yaş ve altındaki çocuklarda kayıt sırasında velinin e-postasına bir onay kodu gelir; kod girilmeden hesap açılmaz. Kaydı çocuğunuzla birlikte yapın, kod 30 dakika geçerli. Gelmezse spam klasörüne bakın.
 
-Hesap açıldıktan sonra 2 dakikalık şu formu doldurabilir misiniz?
+⭐ Hesap açıldıktan sonra 2 dakikalık şu formu doldurun; çocuğunuzun hesabı test süresince (30 Kasım'a kadar) ücretsiz olarak Pro üyeliğe yükseltilecek: reklam yok, enerji sınırı yok, Pro'ya özel bölümler açık ve öğretmenine sınırsız soru sorabilecek. Herhangi bir ödeme bilgisi istenmez.
 👉 https://forms.gle/b6AaAaUwgc3T1sMX9
-(Kullanıcı adı, uygulamada profil ekranında adın altında @ ile başlayan addır.)
+(Kullanıcı adı, uygulamada profil ekranında adın altında @ ile başlayan addır. Pro, form geldikten sonra en geç 1 gün içinde açılır; uygulamayı kapatıp yeniden açmanız yeterli.)
 
 🙏 Lütfen 14 gün boyunca uygulamayı silmeyin ve testten ayrılmayın.
 🛠️ Bir hata, öneriniz ya da isteğiniz olursa: https://forms.gle/FgjRYeBeuWqBW1A88
@@ -319,6 +384,65 @@ Eleştirileriniz en değerlisi, içinizden geldiği gibi yazın.
 
 ```
 Form için çok teşekkürler! Cevaplarınızı okudum, birkaç konuyu biraz daha konuşmak isterim. Bu hafta sizin ve 1-2 öğretmenin uygun olduğu 20-30 dakikalık bir zaman var mı? Yüz yüze ya da görüntülü, size hangisi kolaysa.
+```
+
+### 11.7 Velilere: öğretmenin sınıfı (23.10.2026)
+
+**Ancak versionCode 16 kapalı testte yayındayken gönder** (Ayarlar'daki "Sınıf" bölümü 16'da geldi).
+Gönderince 11.2'deki "ortak liste" satırı ve yukarıdaki "Göndermeden önce" maddesi artık doğru
+değil; öğretmenlere giden metin de güncellenmeli.
+
+```
+Sorobit'te yeni: çocuğunuz artık kendi öğretmeninin sınıfında 🧮👩‍🏫
+
+Bugüne kadar çocukların uygulamadan sorduğu sorular bütün öğretmenlerin gördüğü ortak bir listeye düşüyordu. Artık her öğretmenin kendi sınıfı var:
+
+✅ Çocuğunuzun soruları yalnızca kendi öğretmenine gider; soruyu onu tanıyan öğretmeni cevaplar.
+✅ Öğretmeni hangi derslerde ilerlediğini, hangi adımda zorlandığını ve uygulamada ne kadar çalıştığını görebilir; derste neye ağırlık vereceğini buna göre seçebilir.
+
+Nasıl katılır? (1 dakika)
+1️⃣ Uygulamayı güncelleyin (Google Play → Sorobit → Güncelle)
+2️⃣ Profil → sağ üstteki ayarlar → "Sınıf" bölümünde "Sınıfa katıl"
+3️⃣ Öğretmenin verdiği 6 karakterli kodu yazın ve "Katıl"a dokunun
+Öğretmen çocuğunuzu kullanıcı adıyla davet ettiyse aynı yerde bir davet görünür, "Katıl" demeniz yeterli.
+
+🔒 Öğretmen yalnızca çocuğunuzun adını, kullanıcı adını, ders ilerlemesini ve kendisine sorduğu soruları görür. E-posta adresini, doğum yılını ve sizin e-posta adresinizi görmez.
+🔒 Çocuğunuz öğretmenin sınıfına yalnızca kodu girerek ya da daveti kabul ederek katılır; kimse onu kendiliğinden bir sınıfa ekleyemez.
+🚪 İstediğiniz an aynı ekrandaki "Sınıftan ayrıl" ile çıkabilirsiniz; öğretmen o andan sonra ilerlemeyi göremez.
+
+Sorunuz olursa bana yazabilirsiniz 🙏
+```
+
+### 11.8 Öğretmenlere: kendi sınıfınız (23.10.2026)
+
+**11.7 ile aynı şart: versionCode 16 kapalı testte yayındayken.** Göndermeden önce öğretmenlerin
+hesapları kursa bağlanmış olmalı (`tools/kurs/kurs_ogretmeni_ata.js`); bağlı olmayan öğretmende
+"Sınıflarım" düğmesi görünmez. 11.7'den (veliler) bir gün önce gönder ki öğretmen kodu hazır olsun.
+
+```
+Sorobit'te yeni: artık kendi sınıfınız var 👩‍🏫📋
+
+Öğrencilerinizin soruları artık ortak listeye değil, doğrudan size düşüyor. Sınıfınızdaki her öğrencinin ilerlemesini de görebiliyorsunuz.
+
+1️⃣ Sınıfınızı açın
+Uygulamayı güncelleyin → Sorular → "Sınıflarım" → "+ Yeni sınıf". Sınıfa bir ad verin (ör. "Cumartesi 10:00"). Her grup için ayrı sınıf açabilirsiniz.
+
+2️⃣ Öğrencileri ekleyin (iki yol)
+🔑 Kodla: sınıfa dokunun, 6 karakterli kodu "Paylaş" ile veli grubuna gönderin ya da tahtaya yazın. Öğrenci Ayarlar → "Sınıfa katıl" bölümüne kodu yazar.
+✉️ Davetle: "Öğrenci ekle"ye öğrencinin kullanıcı adını yazın (profilinde @ ile başlayan ad). Öğrenciye davet gider, kabul edince listenize düşer.
+Kod yanlış bir gruba giderse "Kodu yenile"ye basın; eski kod hemen geçersiz olur, sınıftaki öğrenciler yerinde kalır.
+
+3️⃣ Öğrencilerinizi takip edin
+Sınıfa dokununca öğrencileriniz listelenir. Bir öğrenciye dokunun, profili açılır; adının sağındaki 📊 simgesi ilerleme raporunu açar: hangi dersleri bitirdiği, her adımı kaçıncı denemede geçtiği, uygulamada ne kadar çalıştığı ve serisi. Derste neye ağırlık vereceğinizi seçerken işinize yarar.
+
+4️⃣ Sorular
+Havuz'da yalnızca kendi öğrencilerinizin soruları görünür. Bir öğrencinin sorusunu sizden başka öğretmen göremez ve cevaplayamaz.
+⏰ Cevaplanmayan soru 48 saat sonra öğrenciye iade edilir; bildirimleri açık tutun.
+🤝 İsterseniz "Sınıflarım" ekranındaki "Genel havuza da yardım et"i açarak kursa bağlı olmayan öğrencilerin sorularına da bakabilirsiniz. Havuz'da "Sınıfım" ve "Genel havuz" diye iki sekme çıkar.
+
+ℹ️ Öğrenci istediği an sınıftan ayrılabilir; siz de bir öğrenciyi listedeki ✕ ile çıkarabilirsiniz. Ayrılan öğrencinin ilerlemesini artık göremezsiniz.
+ℹ️ "Sınıflarım" düğmesini göremiyorsanız bana kullanıcı adınızı yazın; hesabınızı kursa bağlayayım.
+🛠️ Hata, öneri ya da istekleriniz için: https://forms.gle/FgjRYeBeuWqBW1A88
 ```
 
 Notlar:

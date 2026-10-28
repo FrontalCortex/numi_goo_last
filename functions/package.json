@@ -19,7 +19,8 @@
     "test:streak-freeze-flow": "node scripts/test-streak-freeze-flow.js",
     "test:notifications": "node scripts/test-notifications.js",
     "test:bug-reports": "node scripts/test-bug-reports.js",
-    "test:classes": "node scripts/test-classes.js"
+    "test:classes": "node scripts/test-classes.js",
+    "test:step-explainer": "node scripts/test-step-explainer.js"
   },
   "dependencies": {
     "dotenv": "^16.6.1",

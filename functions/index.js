@@ -870,7 +870,7 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
 // E-postadaki onay metni değişince bu sürüm de değişmeli; her onay kaydı hangi metni
 // onayladığını bu alanla taşıyor.
-const PARENTAL_CONSENT_VERSION = '2026-10-19.1';
+const PARENTAL_CONSENT_VERSION = '2026-10-23.1';
 // Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 10 dakikası
 // burada yetmiyor.
 const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;
@@ -923,6 +923,7 @@ function parentalConsentEmail(code, childEmail, parentEmail) {
     'Ders ilerlemesi, puanlar, seri ve kupa bilgileri',
     'Adı ve avatarı diğer kullanıcılara görünür (profil, sıralama tabloları, takip listeleri)',
     'Öğretmene soru sohbetinde gönderdiği mesajlar, fotoğraflar, videolar ve mikrofon sesi içeren ekran kayıtları (öğretmen bunları görür)',
+    'Öğretmeninin verdiği kodu girerek ya da davetini kabul ederek bir kurs sınıfına katılırsa, o sınıfın öğretmeni adını, kullanıcı adını ve ders ilerlemesini görür, sorularını da o öğretmen cevaplar. Çocuğunuz sınıftan dilediği an ayrılabilir',
     'Bildirim göndermek için cihaz bildirim kimliği',
     'Uygulama kullanım istatistikleri (yaş grubu ve abaküs bilgisiyle birlikte, adı ve e-postası olmadan); reklamlar çocuk ayarıyla, kişiselleştirilmeden gösterilir',
   ];
