@@ -230,14 +230,39 @@ Kod `functions/sobi/` altında; **henüz `index.js`'e bağlı değil, deploy edi
 | `callable.js` | `sobiChat` callable fabrikası: oturum, günlük hak (Free 20 / Lite 50 / Pro 100 mesaj), sohbet başına 10 mesaj, `sobiChats/{uid}/sessions/{id}` kaydı (30 gün), API hatasında yedek metin ve hak düşmüyor |
 
 - Model `claude-haiku-5-5` (kullanıcı kararı 28.10.2026: hesabı kural motoru yaptığı için küçük
-  model yeterli olmalı; Opus 5.5'in yaklaşık kırkta biri maliyet), effort `low`, istem önbelleği
-  açık. Haiku 5.5'te sunucu tarafı yedek model yok; ret çocuğa yedek metin olarak döner. Opus 5.5
-  ile karşılaştırma: `npm run sobi:dene -- --model claude-opus-5-5` (orada `fallbacks: "default"`
-  açık). Effort karşılaştırması: `-- --effort medium`. İlk gerçek denemede bakılacaklar: Türkçe ve
-  çocuk dili, cevabı hemen söyleyip söylemediği, hamleden önce aracı çağırıp çağırmadığı
-  (çağırmazsa denetim yakalar ama çocuk sohbet yerine yedek metin görür).
-- Testler: `npm run test:sobi` (32 test, sahte model ve sahte Firestore; para harcamıyor).
-- Gerçek modelle deneme: `npm run sobi:dene` (ücretli; Firestore'a dokunmuyor).
+  model yeterli olmalı), effort `medium`, istem önbelleği açık. Haiku 5.5'te sunucu tarafı yedek
+  model yok; ret çocuğa yedek metin olarak döner. Opus 5.5 ile karşılaştırma:
+  `node scripts/sobi-dene.js --model claude-opus-5-5` (orada `fallbacks: "default"` açık).
+  Effort karşılaştırması: `--effort low`.
+
+#### Gerçek model denemeleri (28.10.2026, `scripts/sobi-dene.js`, 3 senaryo × 7 mesaj)
+
+Ölçülen maliyet (önbellek dahil, yaklaşık): Haiku 5.5 **mesaj başına ~0,05 sent**, Opus 5.5
+**~2 sent**. Günün bütün denemeleri toplam 20 sentin altında.
+
+İlk denemede bulunanlar ve yapılan düzeltmeler:
+
+| Bulgu | Model | Düzeltme |
+|---|---|---|
+| "Birler sütununda 3 boncuk var" doğru ama 3 kaynakta yalnızca 23'ün rakamı olarak geçiyor → yanlış alarm | ikisi de | Bağlamda ve araç sonuçlarında sütun dökümü (`columnsOf`) |
+| 8 için "alt boncuklardan 2'si boş" (1'i boş); beşliğe "5 boncuk" | Haiku | Dökümde `birlik_bosta`; talimatta "beşlik boncuk" dili zorunlu |
+| "Neden 5 gidiyor?" gerekçesini uyduruyor ("6 = 1 + 5") | ikisi de | Her hamleye hesabı tutan onaylı gerekçe (`reasonOf`: `neden_dogrudan_olmuyor`, `neden`); talimatta doğru mantık açıkça |
+| İlk adımı doğru yapıp 9'a gelen çocuğa "8'e geri dön" | Haiku | `hatayi_bul` adım düzeyinde ilerleme buluyor (`stepTrail`): "doğru yolda, sıradaki adım: 5 gider" |
+| Hiç dokunmamış çocuğa "bu hamlede şaşmış olabilir" | araç | Kayıtta yalnızca başlangıç değeri varsa "henüz bir şey yapmamış" |
+| "Beşliği aşağı indir", "çek" gibi yanlış yön tarifleri | Haiku | Talimatta yön tarifi yasak, yalnızca "gelir / gider" |
+| "23, 13 olur" doğru ara değer → yanlış alarm | Haiku | Araç sonucunda adım sonrası değerler (`adim_sonrasi_degerler`) |
+| `low` uzun ve dağınık, çocuğun adını geri söyledi, toplamı kendisi hesaplayıp denetime takıldı | Haiku | effort `medium` |
+
+Son deneme (Haiku, `medium`): yedek metne düşen cevap yok; gerekçe doğru, çocuğun ilerlemesini
+biliyor, kişisel bilgiyi geri söylemiyor, konu dışını derse bağlıyor. Kalanlar (Faz 3 test setinde
+ölçülecek): bazen cevabı hemen söylüyor ve gösteriyor (soru sorarak yönlendirmek yerine), bazen 4
+cümleye çıkıyor, "beşlik boncuğu gider yapmak" gibi kırık Türkçe. Opus 5.5 aynı senaryolarda daha
+kısa ve daha Sokratik.
+
+Deneme betiğinin sınırı: bağlam sohbet boyunca sabit (gerçek uygulamada çocuk boncuk oynattıkça
+değişecek).
+- Testler: `npm run test:sobi` (40 test, sahte model ve sahte Firestore; para harcamıyor).
+- Gerçek modelle deneme: `node scripts/sobi-dene.js` (ücretli; Firestore'a dokunmuyor). Anahtar `functions/.env.local` dosyasından okunur (Git'e girmez); PowerShell `npm.ps1`'i engellediği için `npm run` yerine `node`.
 - Henüz yok: ebeveyn onayı denetimi ve gizlilik metni (Faz 5), "bildir" düğmesinin sunucu ucu
   (Faz 4 ile), İngilizce/Endonezce talimat metni.
 

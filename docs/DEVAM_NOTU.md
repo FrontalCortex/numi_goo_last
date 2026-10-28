@@ -286,7 +286,16 @@ ve `cagriUst`.
   dışında; aynı karelerde bizim sarı sayılarımız (`SAYILAR`) pencerenin altında. `r8_islem.mp4` artık kullanılmıyor.
   Klipler sessiz (aslında İngilizce anlatım var). "©老白干" filigranı bilerek kaldı. Klipteki sayılar cevabın
   yalnızca bir kısmı (aslında daha uzun dizi), dikkatli izleyici toplamın tutmadığını görebilir.
-- **Ders:** Reklam 7 rekorla aynı kareler ve sesler (r6_1–5, rekor_0–4), `src/modern/Abakus2D.jsx`: CSS çerçeve +
+- **Yeni cümleler ve sayılar (28.10.2026, kullanıcı: "Reklam 7 ile aynı gönderi sayılıp daha az gösterilmesin,
+  aynı hiçbir cümle olmasın"):** kanca h0 + ders d1–d5 + büyük sayılar b1–b4 Reklam 8'e özel (metinler
+  `araclar/r8_sesler.mjs` SATIRLAR'da). Sayılar: ders 241 + 153 = 394 (uygulama öğreticisindeki örnek), 10 basamak
+  2.103.415.032 + 6.251.032.411, hayal 1.320.512.603 + 7.155.371.291 (hepsi kuralsız). Zamanlar sabit değil:
+  `src/modern/r8_zaman.json` (satır süresi + kelime kareleri) → SATIR, OLAY, etiketler oradan. ElevenLabs API'si
+  Bunty'yi ücretsiz planda vermiyor (kütüphane sesi, 402), anahtarda forced_alignment/history izni yok → kullanıcı
+  10 cümleyi web'den sırayla indiriyor; `node araclar/r8_sesler.mjs --indir` İndirilenler'deki en yeni 10
+  ElevenLabs mp3'ünü sıraya göre `reklam8\ses\` içine alır, Reklam 7 işlemini uygular (`public/r8d_*.wav`) ve kelime
+  zamanını sessizlik parçası + hece oranından tahmin eder. Kullanıcı kayıtları 28.10.2026 15:34–15:36 (UTC) alındı.
+- **Ders görünümü:** `src/modern/Abakus2D.jsx`: CSS çerçeve +
   çubuklar + kiriş (birim noktaları), boncuk görseli, "kamera" = merkez + ölçek (derste sağdaki 3 çubuk, büyük
   sayılarda 10 çubuk 1020 px), hayalde çerçeve söner, boncuklar saydam/sarı parlar. Geçiş çubuk başına.
 - **Son:** `Son.jsx`'e `yorum`, `cagriUst`, `hediye`, `hediyeSes`/`hediyeSure`, `sis` eklendi (varsayılanlar eski

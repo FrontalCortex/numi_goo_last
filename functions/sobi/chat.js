@@ -30,8 +30,12 @@ const guard = require('./guard');
  * karşılaştırma: `npm run sobi:dene -- --model claude-opus-5-5`.
  */
 const DEFAULT_MODEL = 'claude-haiku-5-5';
-/** Sohbet: kısa cevaplar, derin düşünme gerekmiyor. Haiku 5.5 ve Opus 5.5'te varsayılan 'medium'. */
-const DEFAULT_EFFORT = 'low';
+/**
+ * 'medium' (Haiku 5.5'in kendi varsayılanı). 28.10.2026 denemesinde 'low' uzun ve dağınık yazdı,
+ * çocuğun adını geri söyledi, işlemin sonucunu kendisi hesaplayıp denetime takıldı; 'medium' kısa,
+ * doğru ve kurallara uygun kaldı. Maliyet farkı mesaj başına bir sentin onda birinden az.
+ */
+const DEFAULT_EFFORT = 'medium';
 const MAX_TOKENS = 8000;
 const MAX_TOOL_ROUNDS = 4;
 /**
@@ -72,7 +76,7 @@ function contextBlock(ctx) {
   if (ctx.questionText) lines.push(`Soru: ${ctx.questionText}`);
   if (ctx.base !== null) lines.push(`Adımın başında abaküste yazan: ${ctx.base}`);
   if (ctx.target !== null) lines.push(`Beklenen cevap: ${ctx.target}`);
-  if (ctx.current !== null) lines.push(`Şu an abaküste yazan: ${ctx.current}`);
+  if (ctx.current !== null) lines.push(`Şu an abaküste yazan: ${ctx.current}; sütunlar: ${tools.columnsText(ctx.current)}`);
   if (ctx.attempts !== null) lines.push(`Bu adımdaki deneme sayısı: ${ctx.attempts}`);
   return `<baglam>\n${lines.join('\n')}\n</baglam>`;
 }

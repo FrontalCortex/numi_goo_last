@@ -74,6 +74,50 @@ async function main() {
   await test('5 − 1: 5 gider, kardeşi 4 gelir', () => assert.deepStrictEqual(steps(5, 'sub', 1), [['5 gider', 'kardeşi 4 gelir']]));
   await test('kuralsız: 0 + 68', () => assert.deepStrictEqual(steps(0, 'add', 68), [['6 gelir'], ['8 gelir']]));
 
+  console.log('sütun dökümü');
+  await test('8: beşlik gelmiş, 3 birlik gelmiş, 1 birlik boşta', () => {
+    assert.strictEqual(tools.columnsText(8), 'birler 8: beşlik gelmiş, 3 birlik gelmiş, 1 birlik boşta');
+    assert.strictEqual(tools.columnsText(23), 'onlar 2: beşlik boşta, 2 birlik gelmiş, 2 birlik boşta; birler 3: beşlik boşta, 3 birlik gelmiş, 1 birlik boşta');
+    assert.strictEqual(tools.columnsText(0), 'birler 0: beşlik boşta, 0 birlik gelmiş, 4 birlik boşta');
+    assert.deepStrictEqual(tools.columnsOf(105).map((c) => c.deger), [1, 0, 5]);
+  });
+  await test('bağlamda sütunlar var, "birler sütununda 3" denetimden geçiyor', async () => {
+    const ctx = chat.sanitizeContext({ questionText: '23 - 6', base: 23, target: 17, current: 23 });
+    assert.ok(chat.contextBlock(ctx).includes('birler 3: beşlik boşta, 3 birlik gelmiş'));
+    const client = fakeClient([say('Birler sütununda 3 birlik boncuk var, onlarda 2. Sence 6 çıkar mı?')]);
+    const r = await chat.runTurn({ client, system: 'S', history: [], context: ctx, childText: 'anlamadım' });
+    assert.strictEqual(r.fellBack, false, r.reasons.join());
+  });
+
+  console.log('gerekçe');
+  const reason = (b, op, n) => tools.reasonOf(require('../sobi/stepExplainer').explain(b, op, n).moves[0]);
+  await test('8 + 6 boncuk kuralı: neden doğrudan ve 10\'luk olmuyor, neden doğru', () => assert.deepStrictEqual(reason(8, 'add', 6), {
+    neden_dogrudan_olmuyor: "8 ile 6 toplanınca 14 oluyor; bir sütun en fazla 9 tutar. 10'luk kural da olmuyor: büyük kardeş 4 gitmeli ama sütunda yalnızca 3 birlik boncuk gelmiş.",
+    neden: '6 eklemek, 10 ekleyip 4 çıkarmakla aynı. 4 çıkarmak da 5 çıkarıp 1 eklemekle aynı. Bu yüzden 1 boncuk gelir, 5 gider, 10 gelir.',
+  }));
+  await test('23 − 6 boncuk çıkarma gerekçesi', () => assert.deepStrictEqual(reason(23, 'sub', 6), {
+    neden_dogrudan_olmuyor: "Sütunda 3 var; 6 çıkarmaya yetmiyor. 10'luk kural da olmuyor: kardeş 4 gelmeli ama yalnızca 1 birlik boncuk boşta.",
+    neden: '6 çıkarmak, 10 çıkarıp 4 eklemekle aynı. 4 eklemek de 5 ekleyip 1 çıkarmakla aynı. Bu yüzden 10 gider, 5 gelir, 1 boncuk gider.',
+  }));
+  await test('5\'lik ve 10\'luk gerekçeler', () => {
+    assert.strictEqual(reason(3, 'add', 4).neden, '4 eklemek, 5 ekleyip 1 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 1 gider.');
+    assert.strictEqual(reason(3, 'add', 4).neden_dogrudan_olmuyor, 'Birlik boncuklardan 1 tanesi boşta ama 4 tane gerekiyor.');
+    assert.strictEqual(reason(18, 'add', 4).neden, '4 eklemek, 10 ekleyip 6 çıkarmakla aynı. Bu yüzden 10 gelir, büyük kardeşi 6 gider.');
+    assert.strictEqual(reason(5, 'sub', 1).neden, '1 çıkarmak, 5 çıkarıp 4 eklemekle aynı. Bu yüzden 5 gider, kardeşi 4 gelir.');
+    assert.strictEqual(reason(10, 'sub', 1).neden, '1 çıkarmak, 10 çıkarıp 9 eklemekle aynı. Bu yüzden 10 gider, kardeşi 9 gelir.');
+  });
+  await test('gerekçeler kendi içinde tutarlı: her (rakam, kural) için hesap doğru', () => {
+    const ex = require('../sobi/stepExplainer');
+    for (const op of ['add', 'sub']) for (let d = 0; d <= 9; d++) for (let x = 1; x <= 9; x++) {
+      const e = ex.explain(10 + d, op, x);
+      const r = tools.reasonOf(e.moves[0]);
+      assert.ok(typeof r.neden === 'string' && r.neden.length > 10, `${d} ${op} ${x}`);
+      // Gerekçedeki "a eklemek/çıkarmak, 5|10 ekleyip/çıkarıp b ..." hesabı tutmalı
+      const m = r.neden.match(/^(\d+) (?:eklemek|çıkarmak), (5|10) (?:ekleyip|çıkarıp) (\d+) /);
+      if (m) assert.strictEqual(Number(m[2]) - Number(m[3]), Number(m[1]), `${d} ${op} ${x}: ${r.neden}`);
+    }
+  });
+
   console.log('araçlar');
   await test('hamleleri_hesapla özet ve kural adı', () => {
     const r = tools.runTool('hamleleri_hesapla', { baslangic: 68, islem: 'add', sayi: 76 }, CTX, {});
@@ -102,11 +146,21 @@ async function main() {
     assert.strictEqual(tools.runTool('abakuste_goster', { baslangic: 8, islem: 'add', sayi: 6 }, CTX, state).isError, true);
     assert.strictEqual(tools.runTool('alistirma_ver', { baslangic: 3, islem: 'add', sayi: 4 }, CTX, state).action.sonuc, 7);
   });
-  await test('hatayi_bul: ilk hamle yapılmamış', () => {
+  await test('hatayi_bul: ilk adımı yapıp 9\'a gelen çocuk doğru yolda', () => {
     const o = JSON.parse(tools.runTool('hatayi_bul', {}, CTX, {}).content);
+    assert.ok(o.durum.includes('doğru yolda'));
+    assert.deepStrictEqual(o.yapilan_adimlar, ['birler: 1 boncuk gelir']);
+    assert.strictEqual(o.siradaki_adim, 'birler: 5 gider');
+  });
+  await test('hatayi_bul: doğru yoldan sapmış', () => {
+    const o = tools.findMistake(chat.sanitizeContext({ base: 8, target: 14, current: 11, valueLog: [8, 9, 10, 11] }));
     assert.strictEqual(o.dogru_yapilan_hamle_sayisi, 0);
     assert.strictEqual(o.ilk_hata.kural, 'boncuk kuralı');
   });
+  await test('adım izi: her adımdan sonraki değer', () => assert.deepStrictEqual(
+    tools.stepTrail(require('../sobi/stepExplainer').explain(68, 'add', 76)).map((t) => t.sonra),
+    [88, 38, 138, 139, 134, 144],
+  ));
   await test('hatayi_bul: onlar doğru, birlerde şaşmış', () => {
     const ctx = chat.sanitizeContext({ base: 68, target: 144, current: 140, valueLog: [68, 88, 38, 138, 139, 140] });
     const o = tools.findMistake(ctx);
@@ -116,6 +170,10 @@ async function main() {
   await test('hatayi_bul: doğru cevap ve boş kayıt', () => {
     assert.ok(tools.findMistake(chat.sanitizeContext({ base: 8, target: 14, current: 14 })).durum.includes('doğru'));
     assert.ok(tools.findMistake(chat.sanitizeContext({ base: 8, target: 14, current: 8 })).durum.includes('henüz'));
+    // Kayıtta yalnızca başlangıç değeri: dokunmamış, "şaştın" denmiyor
+    const o = tools.findMistake(chat.sanitizeContext({ base: 23, target: 17, current: 23, valueLog: [23] }));
+    assert.ok(o.durum.includes('henüz'));
+    assert.strictEqual(o.siradaki_adim, 'birler: 10 gider (onlar basamağına 1 çıkarılır: kuralsız)');
     assert.ok(tools.findMistake(chat.sanitizeContext({})).durum.includes('yok'));
   });
   await test('araç tanımları strict ve şemaları kapalı', () => {
@@ -163,7 +221,7 @@ async function main() {
     assert.strictEqual(client.calls.length, 2);
     const p = client.calls[0];
     assert.strictEqual(p.model, 'claude-haiku-5-5');
-    assert.deepStrictEqual(p.output_config, { effort: 'low' });
+    assert.deepStrictEqual(p.output_config, { effort: 'medium' });
     // Haiku 5.5'te sunucu tarafı yedek model yok: beta uç noktası ve fallbacks gönderilmiyor.
     assert.strictEqual(p._beta, false);
     assert.strictEqual(p.fallbacks, undefined);

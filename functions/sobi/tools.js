@@ -65,10 +65,92 @@ function stepPhrase(step, move) {
   }
 }
 
+/**
+ * Abaküsün sütun sütun dökümü: en büyük dolu sütundan birlere. Model "birler sütununda kaç boncuk
+ * var / kaçı boşta" derken rakamı kendisi ayırıp saymasın: ilk denemede Haiku 8'i "8 boncuk" sandı,
+ * ikincide "alt boncuklardan 2'si boş" dedi (1'i boş). Sayılar burada hazır, guard.checkReply
+ * için de kaynakta geçiyor.
+ */
+function columnsOf(value) {
+  const digits = String(value).split('').map(Number).reverse();
+  return digits.map((d, col) => ({
+    basamak: columnName(col),
+    deger: d,
+    beslik_gelmis: d >= 5,
+    birlik_gelmis: d % 5,
+    birlik_bosta: 4 - (d % 5),
+  })).reverse();
+}
+
+/** Bağlam satırı: "birler 8: beşlik gelmiş, 3 birlik gelmiş, 1 birlik boşta". */
+function columnsText(value) {
+  return columnsOf(value).map((c) =>
+    `${c.basamak} ${c.deger}: beşlik ${c.beslik_gelmis ? 'gelmiş' : 'boşta'}, ${c.birlik_gelmis} birlik gelmiş, ${c.birlik_bosta} birlik boşta`,
+  ).join('; ');
+}
+
+/**
+ * Hamlenin gerekçesi, o işlemin sayılarıyla: neden doğrudan olmuyor ve kural neden doğru sonucu
+ * veriyor. İki denemede de iki model "neden 5 gidiyor?" sorusuna gerekçeyi kendisi uydurdu
+ * (Haiku: "6'yı 1 ve 5'e ayırıyoruz"); burada derse uygun, hesabı tutan gerekçe hazır.
+ * Sayılara ek getirilmiyor (bkz. dosya başı).
+ */
+function reasonOf(m) {
+  const d = m.digitBefore;
+  const x = m.x;
+  const e = d % 5;
+  const b = 10 - x;
+  if (m.op === 'add') {
+    switch (m.rule) {
+      case 'direct':
+        return { neden: 'Gereken boncuklar boşta olduğu için doğrudan gelir.' };
+      case 'five':
+        return {
+          neden_dogrudan_olmuyor: `Birlik boncuklardan ${4 - e} tanesi boşta ama ${x} tane gerekiyor.`,
+          neden: `${x} eklemek, 5 ekleyip ${5 - x} çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi ${5 - x} gider.`,
+        };
+      case 'ten':
+        return {
+          neden_dogrudan_olmuyor: `${d} ile ${x} toplanınca ${d + x} oluyor; bir sütun en fazla 9 tutar.`,
+          neden: `${x} eklemek, 10 ekleyip ${b} çıkarmakla aynı. Bu yüzden 10 gelir, büyük kardeşi ${b} gider.`,
+        };
+      case 'bead':
+        return {
+          neden_dogrudan_olmuyor: `${d} ile ${x} toplanınca ${d + x} oluyor; bir sütun en fazla 9 tutar. 10'luk kural da olmuyor: büyük kardeş ${b} gitmeli ama sütunda yalnızca ${e} birlik boncuk gelmiş.`,
+          neden: `${x} eklemek, 10 ekleyip ${b} çıkarmakla aynı. ${b} çıkarmak da 5 çıkarıp ${x - 5} eklemekle aynı. Bu yüzden ${x - 5} boncuk gelir, 5 gider, 10 gelir.`,
+        };
+      default: break;
+    }
+  } else {
+    switch (m.rule) {
+      case 'direct':
+        return { neden: 'Gereken boncuklar sütunda olduğu için doğrudan gider.' };
+      case 'five':
+        return {
+          neden_dogrudan_olmuyor: `Sütunda ${e} birlik boncuk gelmiş ama ${x} tane gitmesi gerekiyor.`,
+          neden: `${x} çıkarmak, 5 çıkarıp ${5 - x} eklemekle aynı. Bu yüzden 5 gider, kardeşi ${5 - x} gelir.`,
+        };
+      case 'ten':
+        return {
+          neden_dogrudan_olmuyor: `Sütunda ${d} var; ${x} çıkarmaya yetmiyor.`,
+          neden: `${x} çıkarmak, 10 çıkarıp ${b} eklemekle aynı. Bu yüzden 10 gider, kardeşi ${b} gelir.`,
+        };
+      case 'bead':
+        return {
+          neden_dogrudan_olmuyor: `Sütunda ${d} var; ${x} çıkarmaya yetmiyor. 10'luk kural da olmuyor: kardeş ${b} gelmeli ama yalnızca ${4 - e} birlik boncuk boşta.`,
+          neden: `${x} çıkarmak, 10 çıkarıp ${b} eklemekle aynı. ${b} eklemek de 5 ekleyip ${x - 5} çıkarmakla aynı. Bu yüzden 10 gider, 5 gelir, ${x - 5} boncuk gider.`,
+        };
+      default: break;
+    }
+  }
+  throw new Error(`kural: ${m.rule}`);
+}
+
 /** Modelin okuyacağı hamle özeti. */
 function describe(e) {
   return {
     islem: `${e.base} ${e.op === 'add' ? '+' : '-'} ${e.number}`,
+    abakus_once: columnsOf(e.base),
     sonuc: e.result,
     hamleler: e.moves.map((m) => ({
       basamak: columnName(m.col),
@@ -77,6 +159,9 @@ function describe(e) {
       once: m.valueBefore,
       sonra: m.valueAfter,
       adimlar: m.steps.map((s) => stepPhrase(s, m)),
+      // Ara değerler: "23, 13 olur" gibi doğru bir cümle de guard'dan geçsin (denemede takılmıştı).
+      adim_sonrasi_degerler: moveTrail(m),
+      ...reasonOf(m),
     })),
   };
 }
@@ -151,9 +236,31 @@ function explainInput(input) {
 }
 
 /**
- * Çocuğun değer kaydında (abaküsün her değişimdeki değeri) doğru hamlelerin sonraki değerlerini
- * sırayla arar; bulunamayan ilk hamle büyük olasılıkla şaşılan yer. Ödevdeki RuleAnalysis.align
- * kadar ince değil (yalnızca ilk hatayı arıyor), sohbet için bu yeterli.
+ * Bütün adımlar sırayla, her adımdan sonra abaküste yazacak değerle. Elde adımının değeri sol
+ * sütundaki hareketin tamamı (zincir dahil).
+ */
+function stepTrail(e) {
+  return e.moves.flatMap((m) => moveTrail(m).map((v, i) => ({ basamak: columnName(m.col), adim: stepPhrase(m.steps[i], m), sonra: v })));
+}
+
+/** Hamlenin her adımından sonra abaküste yazan değer. */
+function moveTrail(m) {
+  let v = m.valueBefore;
+  return m.steps.map((s) => {
+    v += s.carry ? s.carry.valueAfter - s.carry.valueBefore : (s.upper * 5 + s.lower) * 10 ** s.col;
+    return v;
+  });
+}
+
+/**
+ * Çocuk nerede: önce şu anki değer doğru yoldaki bir adımın sonrasıyla eşleşiyor mu (o zaman hangi
+ * adımları yaptığı ve sıradaki adım kesin), değilse değer kaydında (abaküsün her değişimdeki
+ * değeri) doğru hamlelerin sonraki değerlerini sırayla arar; bulunamayan ilk hamle büyük olasılıkla
+ * şaşılan yer. Ödevdeki RuleAnalysis.align kadar ince değil (yalnızca ilk hatayı arıyor), sohbet
+ * için bu yeterli.
+ *
+ * Adım eşleşmesi neden var: denemede 8 + 6'da ilk adımı ("1 boncuk gelir") doğru yapıp 9'a gelen
+ * çocuğa Haiku "8'e geri dön" dedi; doğru yoldaki çocuk geri çevrilmemeli.
  */
 function findMistake(ctx) {
   if (!ctx || !inRange(ctx.base) || !inRange(ctx.target)) {
@@ -163,10 +270,29 @@ function findMistake(ctx) {
   if (!e) return { durum: 'Bu adımda denetlenecek bir abaküs işlemi yok.' };
   const log = Array.isArray(ctx.valueLog) ? ctx.valueLog : [];
   const current = inRange(ctx.current) ? ctx.current : null;
-  const base = { islem: describe(e).islem, beklenen: e.result, cocugun_su_anki_degeri: current };
+  const base = {
+    islem: describe(e).islem,
+    beklenen: e.result,
+    cocugun_su_anki_degeri: current,
+    ...(current !== null ? { cocugun_abakusu: columnsOf(current) } : {}),
+  };
   if (current === e.result) return { ...base, durum: 'Çocuğun abaküsünde doğru cevap yazıyor.' };
-  if (log.length === 0 && (current === null || current === ctx.base)) {
-    return { ...base, durum: 'Çocuk bu adımda abaküste henüz bir şey yapmamış.' };
+  // Kayıtta yalnızca başlangıç değeri varsa çocuk dokunmamış demektir; "şaştın" denmemeli.
+  const untouched = log.every((v) => v === ctx.base);
+  if ((current === null || current === ctx.base) && untouched) {
+    return { ...base, durum: 'Çocuk bu adımda abaküste henüz bir şey yapmamış.', siradaki_adim: `${stepTrail(e)[0].basamak}: ${stepTrail(e)[0].adim}` };
+  }
+  if (current !== null && current !== ctx.base) {
+    const trail = stepTrail(e);
+    const j = trail.findIndex((t) => t.sonra === current);
+    if (j !== -1 && j < trail.length - 1) {
+      return {
+        ...base,
+        durum: 'Çocuk doğru yolda; yaptığı adımlar doğru, geri dönmesine gerek yok.',
+        yapilan_adimlar: trail.slice(0, j + 1).map((t) => `${t.basamak}: ${t.adim}`),
+        siradaki_adim: `${trail[j + 1].basamak}: ${trail[j + 1].adim}`,
+      };
+    }
   }
   let from = 0;
   for (let i = 0; i < e.moves.length; i++) {
@@ -225,7 +351,11 @@ module.exports = {
   RULE_NAMES,
   RULE_TEXTS,
   columnName,
+  columnsOf,
+  columnsText,
+  reasonOf,
   stepPhrase,
+  stepTrail,
   describe,
   findMistake,
   runTool,

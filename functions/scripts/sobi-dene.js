@@ -3,20 +3,25 @@
  *
  * DİKKAT: her çalıştırma API'ye istek atar ve ücretlidir. Senaryo başına birkaç istek.
  *
- * Kimlik: ANTHROPIC_API_KEY ortam değişkeni (ya da `ant auth login` profili).
+ * Kimlik: ANTHROPIC_API_KEY ortam değişkeni; yoksa functions/.env.local dosyasındaki
+ * `ANTHROPIC_API_KEY=...` satırı (dosya .gitignore'da: `*.local`). Dosya yolu, anahtarın sohbete ya
+ * da terminal geçmişine düşmeden betiği başkasının (Claude) çalıştırabilmesi için.
  *   PowerShell:  $env:ANTHROPIC_API_KEY = "sk-ant-..."; node scripts/sobi-dene.js
+ * .env.local'ı Firebase deploy'u okumuyor (yalnızca emülatör); sunucunun anahtarı Secret Manager'da.
  *
  * Kullanım:
  *   node scripts/sobi-dene.js                          hazır senaryolar
  *   node scripts/sobi-dene.js --soru "neden 5 gidiyor" --baslangic 8 --hedef 14
  *   node scripts/sobi-dene.js --model claude-opus-5-5   başka modelle karşılaştırma (varsayılan Haiku 5.5)
- *   node scripts/sobi-dene.js --effort medium           düşünme düzeyi (varsayılan low)
+ *   node scripts/sobi-dene.js --effort low              düşünme düzeyi (varsayılan medium)
  *
  * Her turda çocuğun mesajı, Sobi'nin cevabı, çağrılan araçlar, ekran işleri, denetim sonucu ve
  * jeton kullanımı yazılır. Cevaplar sınamanın asıl malzemesi: Faz 3'te test setine dönüşecek.
  */
 const fs = require('fs');
 const path = require('path');
+// Var olan ortam değişkenini ezmez.
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.local'), quiet: true });
 const Anthropic = require('@anthropic-ai/sdk').default;
 const chat = require('../sobi/chat');
 
