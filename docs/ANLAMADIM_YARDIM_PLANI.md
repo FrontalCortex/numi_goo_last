@@ -448,6 +448,12 @@ A yapay zekâsız, kural motoruyla:
   ver" yerel: `abacus/ExamplePicker` dersin kuralını (SobiCurriculum.exampleRule) birler basamağında kullanan bir
   işlem seçer, sayfa sayfa çözdürülür ("Başka bir örnek"). "Derse dön" öğreticiye dokunmadan döner; çocuk
   soruyu derste kendisi bir daha yapar. Oturum şart değil (yalnızca yazmak ister).
+- Derste bir işlem anlatılıyorsa (adımın questionText'i "434 - 86") Sobi ekranı o işlemle açılır; abaküs
+  öğreticide hangi adımdaysa o sayfa. ‹ ile dersteki adıma dönülür, başka şey sorulabilir.
+- Sohbetten örnek ("zor bir örnek ver", "3 basamaklı örnek"): uygulama `practice: true` gönderiyor, Sobi
+  `alistirma_ver` ile işlemi açıyor, ekran sayfa sayfa çözdürüyor (ilk sayı abaküste hazır). Sunucu öğrenilmemiş
+  kural isteyen örneği reddediyor. Deneme: `node scripts/sobi-dene.js --senaryo ornek`. Bilinen: "3 basamaklı"
+  isteğinde Haiku bazen yalnızca ilk sayıyı 3 basamaklı seçiyor (253 + 8).
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

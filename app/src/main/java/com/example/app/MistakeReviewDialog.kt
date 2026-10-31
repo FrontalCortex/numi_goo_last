@@ -276,11 +276,25 @@ class MistakeReviewDialog : DialogFragment() {
         val target = a.getInt(ARG_TARGET, -1)
         val questionSteps = if (base >= 0 && target >= 0 && base != target) transitionSteps(base, target, tutorialQuestion) else null
         if (questionSteps.isNullOrEmpty()) {
-            val p = addInfoPage(
+            val lesson = addInfoPage(
                 appString(R.string.sobi_screen_lesson_step), tutorialValue,
                 appString(R.string.sobi_screen_lesson_intro, tutorialStepText),
             )
-            openPage(p)
+            // Derste bir işlem anlatılıyorsa (434 − 86) ekran o işlemle açılır; abaküs öğreticide hangi
+            // adımdaysa o sayfa (kullanıcı kararı 01.11.2026). Çocuk işlemde takılı kalmaz: ‹ ile dersteki
+            // adıma dönebilir, başka bir şey sorabilir, örnek isteyebilir.
+            val nums = parseOperation(tutorialQuestion)
+            val group = nums?.let { n -> buildSteps(n).map { it.copy(label = questionText(n), question = questionText(n)) } }.orEmpty()
+            if (nums == null || group.isEmpty()) {
+                openPage(lesson)
+                return
+            }
+            val first = addGroup(group, null, appString(R.string.review_step_result), nums.sum(), appString(R.string.sobi_screen_lesson_op_done))
+            val at = (first until first + group.size).firstOrNull { pageList[it].value == tutorialValue } ?: first
+            pages.getOrPut(at) { ArrayList() } += sobiMessage(
+                appString(R.string.sobi_screen_lesson_op_intro, questionText(nums), tutorialStepText) + "\n\n" + pageList[at].firstMessage,
+            )
+            openPage(at)
             return
         }
         val first = addGroup(
@@ -383,18 +397,18 @@ class MistakeReviewDialog : DialogFragment() {
         return pageList.lastIndex
     }
 
-    /** Sayfayı açar: ilk gelişte Sobi'nin ilk mesajı yazılır. */
+    /** Sayfayı açar: ileri ok artık buraya kadar gider. */
     private fun openPage(i: Int) {
-        if (pages[i].isNullOrEmpty()) addMessage(i, sobiMessage(pageList[i].firstMessage))
         maxPage = maxOf(maxPage, i)
         showPage(i)
     }
 
-    /** Sayfayı gösterir; abaküs o sayfanın başındaki değere gelir. */
+    /** Sayfayı gösterir (ilk gelişte Sobi'nin ilk mesajı yazılır); abaküs o sayfanın başındaki değere gelir. */
     private fun showPage(i: Int) {
         hideKeyboard()
         page = i
         val p = pageList[i]
+        if (pages[i].isNullOrEmpty()) pages.getOrPut(i) { ArrayList() } += sobiMessage(p.firstMessage)
         stepLabel.text = p.title
         showButton.visibility = if (p.step == null) View.GONE else View.VISIBLE
         checkButton.text = appString(if (p.step == null) R.string.review_back else R.string.review_check)
@@ -559,7 +573,7 @@ class MistakeReviewDialog : DialogFragment() {
         examples++
         val nums = listOf(a, b)
         val q = questionText(nums)
-        val group = buildSteps(nums).map { it.copy(label = q, question = q) }
+        val group = exampleSteps(nums, q)
         if (group.isEmpty()) return
         addMessage(page, SobiStepTracker.Message(fromChild = true, text = appString(R.string.sobi_suggest_example)))
         val rule = group.mapNotNull { it.move }.maxByOrNull { it.rule.ordinal }?.rule
@@ -572,6 +586,35 @@ class MistakeReviewDialog : DialogFragment() {
             nums.sum(),
             appString(R.string.sobi_screen_example_done, q, nums.sum()),
         )
+        openPage(first)
+    }
+
+    /**
+     * Örneğin adımları: abaküs ilk sayı yazılmış olarak gelir (çocuk doğrudan kuralı çalışır; Sobi de
+     * "abaküsünde 139 var" diyebilir). İlk sayı 0 ise tek adım: sayıyı yazmak.
+     */
+    private fun exampleSteps(nums: List<Int>, q: String): List<Step> =
+        transitionSteps(nums[0], nums[0] + nums[1], q).orEmpty().map { it.copy(label = q) }
+
+    /**
+     * Sobi'nin sohbetten açtığı örnek (alistirma_ver: "zor bir örnek ver", "3 basamaklı örnek"). Sunucu
+     * işlemi kural motoruyla doğruladı ve öğrenilmemiş kural isteyeni reddetti. Sobi'nin cevabı ve ilk
+     * adımın talimatı örneğin ilk sayfasına yazılır, ekran oraya geçer.
+     */
+    private fun openAiExample(a: ServerSobi.Action, reply: SobiStepTracker.Message?) {
+        val n = if (a.op == "sub") -a.number else a.number
+        val nums = listOf(a.base, n)
+        val q = if (a.base == 0) "${a.number}" else questionText(nums)
+        val group = exampleSteps(nums, q)
+        if (group.isEmpty()) {
+            reply?.let { addMessage(page, it) }
+            return
+        }
+        examples++
+        val first = addGroup(group, null, appString(R.string.sobi_screen_example_title), a.base + n, appString(R.string.sobi_screen_example_done, q, a.base + n))
+        val list = pages.getOrPut(first) { ArrayList() }
+        reply?.let { list += it }
+        list += sobiMessage(pageList[first].firstMessage)
         openPage(first)
     }
 
@@ -608,6 +651,13 @@ class MistakeReviewDialog : DialogFragment() {
                 reply.actions.lastOrNull { it.kind == ServerSobi.ACTION_SHOW }?.let { pageShow[forPage] = it }
                 pageSuggestions[forPage] = if (reply.turnLimitReached) emptyList() else reply.suggestions
                 val index = if (reply.turnLimitReached) null else reply.messageIndex
+                // Sobi bir örnek açtıysa ("zor bir örnek ver"): cevabı örneğin ilk sayfasına, ekran oraya.
+                val example = reply.actions.lastOrNull { it.kind == ServerSobi.ACTION_PRACTICE }
+                if (example != null && view != null && sendingPage == -1) {
+                    renderPage()
+                    openAiExample(example, shown?.let { SobiStepTracker.Message(fromChild = false, text = it, serverIndex = index) })
+                    return@send
+                }
                 if (view == null) {
                     shown?.let { pages.getOrPut(forPage) { ArrayList() } += SobiStepTracker.Message(fromChild = false, text = it, serverIndex = index) }
                     return@send
@@ -756,7 +806,8 @@ class MistakeReviewDialog : DialogFragment() {
                 )
             }
             // Sunucu bu adımın hazır açıklamasını bulsun (öğretici + adım sırası, metinle denetleniyor).
-            return ctx.copy(tutorialNumber = tutorialNumber, stepIndex = tutorialStepIndex)
+            // practice: Sobi bu ekranda örnek açabilir (alistirma_ver).
+            return ctx.copy(tutorialNumber = tutorialNumber, stepIndex = tutorialStepIndex, practice = true)
         }
         val notes = listOfNotNull(
             "Çocuk soruyu yanlış cevapladı: ${questionText(numbers)} = $answer (doğrusu ${numbers.sum()}).",
@@ -776,7 +827,7 @@ class MistakeReviewDialog : DialogFragment() {
             lessonTitle = lessonTitle,
             recentSteps = notes,
             taughtRules = rulesOf(steps),
-        )
+        ).copy(practice = true)
     }
 
     // ── Yardımcılar ─────────────────────────────────────────────────────────
@@ -828,6 +879,17 @@ class MistakeReviewDialog : DialogFragment() {
         private const val ARG_VALUE = "value"
         private const val ARG_BASE = "base"
         private const val ARG_TARGET = "target"
+
+        /** "434 - 86", "23 + 33 − 12" → [434, -86]; toplama/çıkarma değilse (çarpma, metin) ya da abaküse sığmıyorsa null. */
+        private fun parseOperation(text: String?): List<Int>? {
+            val t = text?.replace('−', '-')?.replace(Regex("""\s"""), "") ?: return null
+            if (!Regex("""\d+([+-]\d+)+""").matches(t)) return null
+            val out = Regex("""([+-]?)(\d+)""").findAll(t).toList().map { m ->
+                val n = m.groupValues[2].toIntOrNull() ?: return null
+                if (m.groupValues[1] == "-") -n else n
+            }
+            return out.takeIf { canReview(it) }
+        }
 
         /** "23 + 33 − 12": ilk sayı, sonra işaretleriyle. */
         fun questionText(numbers: List<Int>): String =

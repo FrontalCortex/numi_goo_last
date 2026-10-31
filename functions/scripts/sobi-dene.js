@@ -15,6 +15,7 @@
  *   node scripts/sobi-dene.js --model claude-opus-5-5   başka modelle karşılaştırma (varsayılan Haiku 5.5)
  *   node scripts/sobi-dene.js --effort low              düşünme düzeyi (varsayılan medium)
  *   node scripts/sobi-dene.js --senaryo kavram          yalnızca anlatım adımı (kavram) soruları; 'soru' yalnızca soru adımları
+ *   node scripts/sobi-dene.js --senaryo ornek           Sobi ekranında örnek isteyen çocuk (alistirma_ver)
  *   node scripts/sobi-dene.js --senaryo adim            analiz ekranında adımın bir parçasını soran çocuk (değerlendirme setinin adim_sorusu vakaları)
  *
  * Her turda çocuğun mesajı, Sobi'nin cevabı, çağrılan araçlar, ekran işleri, denetim sonucu ve
@@ -131,6 +132,20 @@ async function run(client, model, effort, sc) {
   console.log(`\n  jeton: ${JSON.stringify(total)}`);
 }
 
+/** Sobi ekranı (practice: true): çocuk sohbetten örnek istiyor; Sobi alistirma_ver ile açmalı. */
+const ORNEK_SCENARIOS = [
+  {
+    ad: "10'luk toplama dersi: zor ve 3 basamaklı örnek",
+    context: { lessonTitle: "10'luk Toplama", taughtRules: ['add_direct', 'add_five', 'add_ten'], stepText: '10 gelir, büyük kardeş gider.', questionText: '8 + 7', practice: true, attempts: 0, valueLog: [] },
+    mesajlar: ['zor bir örnek ver', '3 basamaklı bir örnek ver'],
+  },
+  {
+    ad: "5'lik toplama dersi: henüz öğrenilmemiş 10'luk örnek isteniyor",
+    context: { lessonTitle: "5'lik Toplama", taughtRules: ['add_direct', 'add_five'], stepText: '5 gelir, kardeşi gider.', questionText: '3 + 4', practice: true, attempts: 0, valueLog: [] },
+    mesajlar: ['bir örnek ver', '10luk kuralla örnek ver'],
+  },
+];
+
 /** Değerlendirme setinin adim_sorusu vakaları (tools/sobi-eval/build-cases.js). */
 function adimScenarios() {
   const cases = require('../../tools/sobi-eval/cases.json').filter((c) => c.tags[0] === 'adim_sorusu');
@@ -149,6 +164,7 @@ async function main() {
       mesajlar: [soru],
     }]
     : arg('senaryo') === 'adim' ? adimScenarios()
+      : arg('senaryo') === 'ornek' ? ORNEK_SCENARIOS
       : arg('senaryo') === 'kavram' ? KAVRAM_SCENARIOS
       : arg('senaryo') === 'soru' ? SCENARIOS
         : [...SCENARIOS, ...KAVRAM_SCENARIOS];

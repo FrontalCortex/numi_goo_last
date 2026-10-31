@@ -72,16 +72,13 @@
     <string name="review_mistake_write">%1$d. hata: İlk sayı %2$d idi, sen abaküse %3$d yazdın.</string>
     <!-- Sobi ekranı öğreticiden açılınca (MistakeReviewDialog.forTutorial) -->
     <string name="sobi_screen_lesson_step">Dersteki adım</string>
-    <string name="sobi_screen_lesson_intro">Şu an dersin bu kısmındayız:
-«%1$s»
-
-Neresi kafana takıldı? Aşağıdan seç ya da bana yaz.</string>
-    <string name="sobi_screen_question_intro">Şu an bu sorudayız: «%1$s»
-
-Birlikte adım adım çözelim. Takıldığın yerde aşağıdaki balonlara dokun.</string>
+    <string name="sobi_screen_lesson_intro">Şu an dersin bu kısmındayız:\n«%1$s»\n\nNeresi kafana takıldı? Aşağıdan seç ya da bana yaz.</string>
+    <string name="sobi_screen_lesson_op_intro">Derste şu işlem anlatılıyor: %1$s\n«%2$s»\n\nBirlikte abaküste adım adım yapalım. Başka bir şey sormak istersen aşağıya yaz ya da ‹ ile dersteki adıma dön.</string>
+    <string name="sobi_screen_lesson_op_done">Harika, işlemi birlikte yaptık! İstersen bir örnek daha çöz ya da \"Derse dön\"e dokun.</string>
+    <string name="sobi_screen_question_intro">Şu an bu sorudayız: «%1$s»\n\nBirlikte adım adım çözelim. Takıldığın yerde aşağıdaki balonlara dokun.</string>
     <string name="sobi_screen_question_done">Harika, birlikte çözdük! Şimdi \"Derse dön\"e dokun ve aynısını derste kendin yap.</string>
-    <string name="sobi_screen_example_intro">Örnek: %1$s. Bu işlemde %2$s kullanılıyor; adım adım birlikte yapalım.</string>
-    <string name="sobi_screen_example_intro_direct">Örnek: %1$s. Bu işlemde kural gerekmiyor; adım adım birlikte yapalım.</string>
+    <string name="sobi_screen_example_intro">Örnek: %1$s. İlk sayı abaküste hazır; bu işlemde %2$s kullanılıyor. Adım adım birlikte yapalım.</string>
+    <string name="sobi_screen_example_intro_direct">Örnek: %1$s. İlk sayı abaküste hazır; bu işlemde kural gerekmiyor. Adım adım birlikte yapalım.</string>
     <string name="sobi_screen_example_title">Örnek bitti</string>
     <string name="sobi_screen_example_done">Harika, örneği çözdük: %1$s = %2$d. İstersen \"Başka bir örnek\"e dokun ya da derse dön.</string>
     <string name="sobi_screen_another_example">Başka bir örnek</string>

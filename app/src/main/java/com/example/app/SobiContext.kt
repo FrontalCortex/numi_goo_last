@@ -34,6 +34,11 @@ data class SobiContext(
      */
     val tutorialNumber: Int? = null,
     val stepIndex: Int? = null,
+    /**
+     * Sobi ekranı örnek açabiliyor: sunucunun alistirma_ver aracının işlemini ekran sayfa sayfa
+     * çözdürüyor ("zor bir örnek ver", "3 basamaklı örnek"; kullanıcı kararı 01.11.2026).
+     */
+    val practice: Boolean = false,
 ) {
     fun toPayload(): Map<String, Any> = buildMap {
         stepId?.let { put("stepId", it) }
@@ -44,8 +49,7 @@ data class SobiContext(
         current?.let { put("current", it) }
         put("attempts", attempts)
         put("valueLog", valueLog)
-        // Öğretici alıştırma hazırlayamıyor: "Kontrol Et" yalnızca adımın kendi cevabını denetliyor.
-        put("practice", false)
+        put("practice", practice)
         lessonTitle?.takeIf { it.isNotBlank() }?.let { put("lessonTitle", it) }
         if (recentSteps.isNotEmpty()) put("recentSteps", recentSteps)
         if (taughtRules.isNotEmpty()) put("taughtRules", taughtRules)

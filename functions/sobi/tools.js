@@ -422,6 +422,16 @@ function runTool(name, input, ctx, state) {
       const kind = name === 'abakuste_goster' ? 'goster' : 'alistirma';
       // Araç listede yokken çağrılırsa (ör. eski bir geçmişten) uygulama bunu yapamaz.
       if (kind === 'alistirma' && !(ctx && ctx.practice)) return fail('Bu ekranda alıştırma hazırlanamıyor.');
+      // Örnek, çocuğun henüz öğrenmediği bir kural istemesin (ör. 5'lik toplama dersinde 10'luk).
+      if (kind === 'alistirma' && ctx && Array.isArray(ctx.taughtRules) && ctx.taughtRules.length) {
+        const pre = explainInput(input);
+        if (pre.e) {
+          const prefix = pre.e.op === 'add' ? 'add_' : 'sub_';
+          const missing = [...new Set(pre.e.moves.flatMap((m) => explainer.rulesUsed(m)))]
+            .map((r) => prefix + r).filter((k) => !ctx.taughtRules.includes(k));
+          if (missing.length) return fail(`Bu işlem çocuğun henüz öğrenmediği bir kural istiyor (${missing.join(', ')}). Öğrendiği kurallarla yapılabilen bir işlem seç.`);
+        }
+      }
       // Anlatım adımında öğreticinin abaküsü dersin kendi animasyonlarında; gösterim dersi bozar.
       if (kind === 'goster' && !(ctx && Number.isInteger(ctx.base) && Number.isInteger(ctx.target))) {
         return fail('Bu anlatım adımında abaküste gösterim yapılamıyor; anlatarak açıkla.');

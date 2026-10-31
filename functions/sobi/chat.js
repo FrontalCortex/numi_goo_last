@@ -195,6 +195,8 @@ function contextBlock(ctx, extra = {}) {
     for (const s of near) lines.push(`- ${s}`);
   }
   if (ctx.target === null) lines.push('Bu bir anlatım adımı: çocuk şu an bir soru cevaplamıyor, dersi dinliyor.');
+  // Sobi ekranı (uygulama 01.11.2026): alistirma_ver'in işlemini sayfa sayfa, abaküste çözdürüyor.
+  if (ctx.practice) lines.push('Bu ekranda örnek işlem açılabilir: alistirma_ver ile açtığın işlemi ekran çocuğa abaküste adım adım çözdürür.');
   const ex = explanations.find(ctx);
   if (ex) {
     lines.push(`Onaylı açıklama (bu kısmın konusu: ${ex.konu}):`);

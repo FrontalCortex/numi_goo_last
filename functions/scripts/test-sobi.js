@@ -461,6 +461,22 @@ async function main() {
     assert.strictEqual(env.store.has('sobiChats/u1'), false);
   });
 
+  await test('örnek açma (alistirma_ver): yalnızca Sobi ekranında, öğrenilmiş kurallarla', async () => {
+    const input = { baslangic: 3, islem: 'add', sayi: 4 }; // 5'lik kural
+    assert.strictEqual(tools.runTool('alistirma_ver', input, { practice: false }, {}).isError, true);
+    const early = tools.runTool('alistirma_ver', input, { practice: true, taughtRules: ['add_direct'] }, {});
+    assert.strictEqual(early.isError, true);
+    assert.ok(early.content.includes('add_five'));
+    const ok = tools.runTool('alistirma_ver', input, { practice: true, taughtRules: ['add_direct', 'add_five'] }, {});
+    assert.strictEqual(ok.isError, false);
+    assert.strictEqual(ok.action.tur, 'alistirma');
+    assert.strictEqual(ok.action.sonuc, 7);
+    // Elde zinciri de sayılır: 95 + 8 boncuk kuralı ve onlarda 10'luk.
+    const chain = tools.runTool('alistirma_ver', { baslangic: 95, islem: 'add', sayi: 8 }, { practice: true, taughtRules: ['add_direct', 'add_five', 'add_bead'] }, {});
+    assert.ok(chain.isError && chain.content.includes('add_ten'));
+    assert.ok(chat.contextBlock(chat.sanitizeContext({ practice: true })).includes('örnek işlem açılabilir'));
+  });
+
   await test('hazır açıklama: balon modelsiz, hak düşmüyor; beğeni kaydı ve geri alma', async () => {
     const env = fakeEnv();
     const fn = createSobiChat({ ...env, createClient: () => ({ messages: { create: async () => { throw new Error('model çağrılmamalı'); } } }) });

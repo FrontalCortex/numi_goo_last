@@ -41,6 +41,8 @@ object ServerSobi {
     )
 
     const val ACTION_SHOW = "goster"
+    /** Sobi ekranında açılacak örnek işlem (alistirma_ver). */
+    const val ACTION_PRACTICE = "alistirma"
 
     /**
      * [suggestion]: çocuk bir öneri balonuna dokunduysa balonun anahtarı. Anlatım adımında hazır
