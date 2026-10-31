@@ -207,10 +207,8 @@ class TutorialFragment : Fragment() {
     private var currentAnimations: MutableList<BeadAnimation> = mutableListOf()
     private val widgetAnimators = mutableListOf<ValueAnimator>()
     private var infoRequestBreathAnimator: ValueAnimator? = null
-    /** "Sobi'ye sor": adımın sohbet durumu, panel, abaküste gösterim ve ekrandaki düğme. */
+    /** "Sobi'ye sor": adımın durumu (deneme sayısı, başlangıç değeri) ve ekrandaki düğme. */
     private val sobiTracker = SobiStepTracker()
-    private var sobiSheet: SobiChatSheet? = null
-    private var sobiPlayer: SobiAbacusPlayer? = null
     private var sobiFloatingButton: View? = null
     private var sobiNudge: SobiNudge? = null
     /** "Anlamadığın yeri bana sor" balonu öğreticide bir kez. */
@@ -846,11 +844,12 @@ class TutorialFragment : Fragment() {
 
     // ── Sobi'ye sor ─────────────────────────────────────────────────────────
     //
-    // Durum SobiStepTracker'da, panel SobiChatSheet'te, gösterim SobiAbacusPlayer'da; burada
-    // yalnızca öğretici adımına bağlanma var. İki giriş: ekranın sağ üstünde hep duran "Sobi'ye sor"
-    // düğmesi (anlatımın her yerinde soru sorulabilsin; kullanıcı kararı 28.10.2026) ve yanlış cevap
-    // panelindeki düğme ([bindIncorrectPanelHelp]). Sohbet öğretici boyunca sürer; abaküste gösterim
-    // yalnızca soru adımında.
+    // "Sobi'ye sor" tam ekran Sobi ekranını açar (MistakeReviewDialog.forTutorial; kullanıcı kararı
+    // 01.11.2026): alttan açılan sohbet paneli abaküsü ve adımı örtüyordu. Ekran öğreticinin o anki
+    // abaküsü ve adımıyla açılır; soru adımında soruyu adım adım çözdürür, "Bir örnek ver" dersin
+    // kuralıyla bir işlem çözdürür, "Derse dön" tam bırakılan yere döner (öğreticinin abaküsüne ve
+    // adımına dokunulmaz). İki giriş: ekranın sağ üstünde hep duran Sobi düğmesi (anlatımın her yerinde;
+    // kullanıcı kararı 28.10.2026) ve yanlış cevap panelindeki düğme ([bindIncorrectPanelHelp]).
 
     /**
      * Yanlış cevap panelinin içi: adımın ipucu (requestText) ve "Sobi'ye sor". Eskiden ipucu bilgi
@@ -880,9 +879,11 @@ class TutorialFragment : Fragment() {
         }
     }
 
-    /** Sohbet açılabilir mi: oturum açık olmalı (sunucu oturumsuz çağrıyı reddeder). */
-    private fun isSobiChatAvailable(): Boolean =
-        _binding != null && FirebaseAuth.getInstance().currentUser != null
+    /**
+     * Sobi ekranı açılabilir mi. Oturum şart değil: adım adım çözüm, parça balonları ve örnekler kural
+     * motoruyla; yalnızca Sobi'ye yazmak oturum ister (ekran yazma kutusunu kendisi gizler).
+     */
+    private fun isSobiChatAvailable(): Boolean = _binding != null
 
     /** Abaküslü soru adımı mı: abaküs bağlamı, hata bulma ve gösterim yalnızca burada. */
     private fun isSobiQuestionStep(): Boolean {
@@ -893,8 +894,6 @@ class TutorialFragment : Fragment() {
 
     private fun onSobiStepShown(position: Int) {
         if (position == sobiTracker.stepIndex) return // aynı adım yeniden kuruldu (ör. yanlış sonrası)
-        // Sohbet sürer (panel açık kalabilir); adım durumu ve bir önceki adımın gösterimi biter.
-        sobiPlayer?.cancel()
         sobiTracker.startStep(position)
         updateSobiFloatingButton()
         scheduleSobiBaseCapture(position, attempt = 0)
@@ -912,14 +911,13 @@ class TutorialFragment : Fragment() {
 
     /**
      * Çocuk bir adımda 7 sn'den fazla kaldıysa sağ üstteki Sobi kafasının yanında "Anlamadığın yeri
-     * bana sor!" (öğreticide bir kez; kullanıcı kararı 28.10.2026). Sonuç paneli, Sobi paneli ya da
-     * gösterim açıksa bu adımda açılmaz, sonraki adımda yine denenir.
+     * bana sor!" (öğreticide bir kez; kullanıcı kararı 28.10.2026). Sonuç paneli ya da Sobi ekranı
+     * açıksa bu adımda açılmaz, sonraki adımda yine denenir.
      */
     private fun maybeShowSobiIdleNudge() {
         if (sobiIdleNudgeShown || _binding == null) return
         val button = sobiFloatingButton ?: return
-        val busy = sobiSheet?.isShowing == true || sobiPlayer?.isPlaying == true ||
-            incorrectPanel.visibility == View.VISIBLE || correctPanel.visibility == View.VISIBLE
+        val busy = isSobiScreenOpen() || incorrectPanel.visibility == View.VISIBLE || correctPanel.visibility == View.VISIBLE
         if (busy || button.visibility != View.VISIBLE) return
         sobiIdleNudgeShown = true
         sobiNudge()?.show(button, appString(R.string.sobi_nudge_idle)) { openSobi() }
@@ -944,82 +942,60 @@ class TutorialFragment : Fragment() {
         }, 400L)
     }
 
-    /** Gönderim anındaki bağlam: soru adımında abaküs alanları, her adımda ders ve son adımlar. */
-    private fun sobiContext(): SobiContext? {
-        if (!isSobiChatAvailable()) return null
+    private fun openSobi() {
+        if (!isSobiChatAvailable() || isSobiScreenOpen()) return
+        sobiNudge?.hide()
+        // Yanlış cevap paneli açıksa kapat: çocuk derse dönünce adımı yeniden denesin.
+        if (incorrectPanel.visibility == View.VISIBLE) dismissIncorrectResultPanel()
+        dismissAllRequestPanels(animated = true)
         val step = getCurrentStep()
         val recent = currentTutorialSteps
             .subList(maxOf(0, currentStep - SOBI_RECENT_STEPS), currentStep)
             .map { it.text }
             .filter { it.isNotBlank() }
-        val lessonTitle = lessonItem?.title
-        val rules = SobiCurriculum.taughtRules(tutorialNumber)
-        val ctx = if (isSobiQuestionStep()) {
-            sobiTracker.questionContext(
-                stepId = step.id, stepText = step.text, questionText = step.questionText,
-                target = step.answerNumber, current = abacusController?.getCurrentValue(),
-                lessonTitle = lessonTitle, recentSteps = recent, taughtRules = rules,
-            )
-        } else {
-            sobiTracker.explanationContext(
-                stepId = step.id, stepText = step.text, questionText = step.questionText,
-                lessonTitle = lessonTitle, recentSteps = recent, taughtRules = rules,
-            )
+        val value = visibleAbacusValue()
+        val question = isSobiQuestionStep()
+        childFragmentManager.setFragmentResultListener(MistakeReviewDialog.RESULT_CLOSED, viewLifecycleOwner) { _, _ ->
+            _binding?.root?.post { updateSobiFloatingButton() }
         }
-        // Sunucu bu adımın hazır açıklamasını bulsun (öğretici + adım sırası, metinle denetleniyor).
-        return ctx.copy(tutorialNumber = tutorialNumber, stepIndex = currentStep)
+        MistakeReviewDialog.forTutorial(
+            stepText = step.text.toString(),
+            stepId = step.id,
+            question = step.questionText,
+            lessonTitle = lessonItem?.title,
+            recentSteps = recent,
+            taughtRules = SobiCurriculum.taughtRules(tutorialNumber),
+            tutorialNumber = tutorialNumber,
+            stepIndex = currentStep,
+            value = value,
+            base = if (question) sobiTracker.base ?: value else null,
+            target = if (question) step.answerNumber else null,
+        ).show(childFragmentManager, MistakeReviewDialog.TAG)
+        _binding?.root?.post { updateSobiFloatingButton() }
     }
 
-    private fun openSobi() {
-        if (!isSobiChatAvailable()) return
-        sobiNudge?.hide()
-        // Yanlış cevap paneli açıksa kapat: adım yeniden deneme durumuna dönsün, abaküs görünsün.
-        if (incorrectPanel.visibility == View.VISIBLE) dismissIncorrectResultPanel()
-        dismissAllRequestPanels(animated = true)
-        val sheet = sobiSheet ?: SobiChatSheet(
-            fragment = this,
-            tracker = sobiTracker,
-            contextProvider = { sobiContext() },
-            onShow = { playSobiAction(it) },
-            onClosed = { updateSobiFloatingButton() },
-            isQuestionStep = { isSobiQuestionStep() },
-        ).also { sobiSheet = it }
-        sheet.show()
-        updateSobiFloatingButton()
-    }
+    private fun isSobiScreenOpen(): Boolean =
+        _binding != null && childFragmentManager.findFragmentByTag(MistakeReviewDialog.TAG) != null
 
-    private fun playSobiAction(action: ServerSobi.Action) {
-        // Sunucu anlatım adımında gösterim aracını vermiyor; yine de gelirse dersin abaküsüne dokunma.
-        if (!isSobiQuestionStep()) return
-        val controller = abacusController ?: return
-        if (incorrectPanel.visibility == View.VISIBLE) dismissIncorrectResultPanel()
-        val player = sobiPlayer ?: SobiAbacusPlayer(controller).also { sobiPlayer = it }
-        sobiTracker.paused = true
-        controller.setEnabled(false)
-        val restore = {
-            sobiTracker.paused = false
-            if (_binding != null) controller.setEnabled(getCurrentStep().abacusClickable && !isWritingAnswerNumber)
-        }
-        val started = player.play(action) {
-            if (_binding == null) return@play
-            restore()
-            Toast.makeText(requireContext(), appString(R.string.sobi_after_show), Toast.LENGTH_SHORT).show()
-            updateSobiFloatingButton()
-        }
-        if (!started) {
-            restore()
-            Toast.makeText(requireContext(), appString(R.string.sobi_show_failed), Toast.LENGTH_SHORT).show()
-        }
-        updateSobiFloatingButton()
+    /**
+     * Öğreticinin abaküsünde GÖRÜNEN değer (boncukların yerinden okunur, denetleyiciye dokunulmaz):
+     * anlatım adımlarında boncukları dersin kendi animasyonları oynatıyor ve denetleyicinin değeri
+     * geride kalabiliyor. Sobi ekranı abaküsü bu değerle açar ki çocuk aynı abaküsü görsün.
+     */
+    private fun visibleAbacusValue(): Int {
+        val c = abacusController ?: return 0
+        var v = 0
+        for (rod in 0..4) v = v * 10 + c.countConsecutiveRaisedBottomBeads(rod) + if (c.isTopBeadDown(rod)) 5 else 0
+        return v
     }
 
     /**
-     * Ekranın sağ üstünde, öğretmene sor düğmesinin altında hep duran "Sobi'ye sor". Panel açıkken
-     * ve gösterim sürerken gizli. Sonuç panelleri açıkken önlerine konan katman onu zaten örtüyor.
+     * Ekranın sağ üstünde, öğretmene sor düğmesinin altında hep duran "Sobi'ye sor". Sobi ekranı
+     * açıkken gizli. Sonuç panelleri açıkken önlerine konan katman onu zaten örtüyor.
      */
     private fun updateSobiFloatingButton() {
         val root = _binding?.root as? ConstraintLayout ?: return
-        val visible = isSobiChatAvailable() && sobiSheet?.isShowing != true && sobiPlayer?.isPlaying != true
+        val visible = isSobiChatAvailable() && !isSobiScreenOpen()
         val button = sobiFloatingButton ?: if (!visible) return else LayoutInflater.from(requireContext())
             .inflate(R.layout.view_sobi_chip, root, false).apply {
                 setOnClickListener { openSobi() }
@@ -19693,10 +19669,6 @@ class TutorialFragment : Fragment() {
     override fun onDestroyView() {
         cancelPendingBackShowStep()
         stopInfoRequestBreathAnimation()
-        sobiPlayer?.cancel()
-        sobiPlayer = null
-        sobiSheet?.dismiss()
-        sobiSheet = null
         sobiFloatingButton = null
         _binding?.root?.removeCallbacks(sobiIdleNudgeRunnable)
         sobiNudge?.hide()

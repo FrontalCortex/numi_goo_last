@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Sobi'nin sohbet balonu (SobiChatSheet); çocuğunki chat_bubble_me. -->
+<!-- Sobi'nin sohbet balonu (Sobi ekranı, MistakeReviewDialog); çocuğunki chat_bubble_me. -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
     <solid android:color="#2C4A52" />
     <corners android:radius="12dp" />

@@ -442,7 +442,12 @@ A yapay zekâsız, kural motoruyla:
   anlamadım" diyen çocuğa Sobi geri soru sordu. Talimata da iki kural eklendi (adımın parçası adıyla sorulunca
   geri soru yok; 10 gelir/gider zinciri); kullanıcı kararıyla kör karşılaştırmasız yayına alındı. Değerlendirme
   setinde yeni kategori `adim_sorusu` (5 vaka; `node scripts/sobi-dene.js --senaryo adim`).
-- Sırada: öğreticide "Bir örnek ver" → bu ekranla örnek işlem.
+- Öğreticide "Sobi'ye sor" artık bu ekranı açıyor (01.11.2026; `MistakeReviewDialog.forTutorial`). Alttan açılan
+  sohbet paneli (SobiChatSheet) abaküsü ve adımı örttüğü için kaldırıldı. Ekran öğreticinin abaküsünde GÖRÜNEN
+  değerle (boncukların yerinden) ve adımın metniyle açılır; soru adımında soru adım adım çözdürülür. "Bir örnek
+  ver" yerel: `abacus/ExamplePicker` dersin kuralını (SobiCurriculum.exampleRule) birler basamağında kullanan bir
+  işlem seçer, sayfa sayfa çözdürülür ("Başka bir örnek"). "Derse dön" öğreticiye dokunmadan döner; çocuk
+  soruyu derste kendisi bir daha yapar. Oturum şart değil (yalnızca yazmak ister).
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

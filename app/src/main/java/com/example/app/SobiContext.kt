@@ -86,6 +86,13 @@ object SobiCurriculum {
         in 18..26 -> SUB_BEAD                 // çarpma dersleri: toplama ve çıkarma kuralları biliniyor
         else -> emptyList()
     }
+
+    /**
+     * "Bir örnek ver"in kuralı: öğreticinin kendi kuralı (listenin sonuncusu). Sayı yazma ve çarpma
+     * derslerinde yok: orada toplama/çıkarma örneği dersle ilgisiz olurdu.
+     */
+    fun exampleRule(tutorialNumber: Int): String? =
+        if (tutorialNumber in 18..26) null else taughtRules(tutorialNumber).lastOrNull()
 }
 
 /**

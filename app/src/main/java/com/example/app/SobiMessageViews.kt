@@ -11,8 +11,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 
 /**
- * Sobi sohbet balonları ve altlarındaki beğen / beğenme / bildir: sohbet paneli ([SobiChatSheet])
- * ve "Sobi ile analiz et" ekranı ([MistakeReviewDialog]) aynı görünsün diye tek yerde.
+ * Sobi sohbet balonları ve altlarındaki beğen / beğenme / bildir (Sobi ekranı, [MistakeReviewDialog]):
+ * analizde ve öğreticide aynı görünsün diye tek yerde.
  *
  * Oy iki türlü mesaja verilebiliyor:
  *  - Sunucudan gelen cevap ([SobiStepTracker.Message.serverIndex]): sohbet kaydındaki satıra bağlı.

@@ -22,50 +22,49 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.DialogFragment
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.ExamplePicker
 import com.example.app.abacus.MistakeAnalyzer
 import com.example.app.abacus.StepExplainer
+import com.example.app.abacus.SubStepExplainer
 import com.example.app.homework.DepthPress
 import com.example.app.homework.HomeworkOp
 import com.google.firebase.auth.FirebaseAuth
 
 /**
- * "Sobi ile analiz et" ekranı: yanlış cevaplanan soruyu Sobi anlatarak, adım adım yeniden çözdürür
- * (kullanıcı kararı 31.10.2026; docs/ANLAMADIM_YARDIM_PLANI.md "B aşaması").
+ * SOBİ EKRANI — abaküs, adım adım çözüm ve Sobi sohbeti bir arada. İki yerden açılır:
  *
- * Soru bir sayı dizisi: ilk sayı, sonra her biri eklenen (+) ya da çıkarılan (−) sayılar. Ders
- * ekranında `[ilk, ±ikinci]`, abaküssüz derste flaş dizisi (23 + 33 + 12 + 22).
+ * 1. "Sobi ile analiz et" (ders ekranında yanlış cevap; [newInstance]): yanlış cevaplanan soruyu
+ *    Sobi anlatarak adım adım yeniden çözdürür (kullanıcı kararı 31.10.2026; docs/ANLAMADIM_YARDIM_PLANI.md
+ *    "B aşaması"). Soru bir sayı dizisi: ilk sayı, sonra eklenen (+) ya da çıkarılan (−) sayılar.
+ *    Sobi önce hatayı söyler ([MistakeAnalyzer] teşhis ettiyse), sonra soru adımlara bölünür: ilk sayıyı
+ *    yazmak, ardından her sayının her basamağı ([StepExplainer] hamleleri). Flaş dizisinde (değer kaydı ve
+ *    sayıların göründüğü anlar varken) yalnızca yanlış yapılan işlemler çözdürülür; açılışta kural başına
+ *    hata sayısı.
+ * 2. Öğreticide "Sobi'ye sor" ([forTutorial]; kullanıcı kararı 01.11.2026): alttan açılan sohbet paneli
+ *    abaküsü ve adımı örtüyordu. Ekran öğreticinin o anki abaküsüyle ve adımın metniyle açılır; soru
+ *    adımındaysa soru adım adım çözdürülür. "Bir örnek ver" dersin kuralıyla bir işlem seçer
+ *    ([ExamplePicker]) ve onu da adım adım çözdürür. "Derse dön" öğreticiye tam bıraktığı yere döner
+ *    (öğreticinin abaküsü ve adımı değişmez; çocuk soruyu orada kendisi bir daha yapar).
  *
- * FLAŞ DİZİSİ (abaküslü, değer kaydı ve sayıların göründüğü anlar varken): bütün dizi değil, yalnızca
- * yanlış yapılan işlemler çözdürülür (78'e 9 eklemek); Sobi açılışta kural başına hata sayısını söyler
- * ("10'luk kuralda 2 hata ve boncuk kuralında 1 hata"). Bulunamazsa bütün dizi.
+ * SAYFALAR: her adım kendi sohbet sayfası; adımın talimatı, Kontrol Et sonuçları ve o adımda sorulanlar
+ * orada kalır. Bilgi sayfaları (dersteki adım, sonuç, örneğin sonu) Kontrol Et yerine "Derse dön" gösterir.
+ * ‹ › ile açılmış sayfalar arasında gezilir; bir adıma dönünce abaküs o adımın başındaki değere gelir.
+ * Yanlışta Sobi o adımda ne yapıldığını söyler, abaküs adımın başına döner; "Bana göster" hamleyi
+ * oynatır ([SobiAbacusPlayer]).
  *
- * Akış: Sobi önce hatayı söyler ([MistakeAnalyzer] teşhis ettiyse: yalnızca abaküslü iki sayılı
- * soruda, değer kaydı varken), sonra soru adımlara bölünür: ilk sayıyı yazmak, ardından her sayının
- * her basamağı ([StepExplainer] hamleleri). Çocuk her adımı abaküste yapıp "Kontrol Et"e basar;
- * yanlışsa Sobi o adımda ne yaptığını söyler ve abaküs adımın başına döner, "Bana göster" hamleyi
- * oynatır ([SobiAbacusPlayer]). Asıl soruda yanıldığı adıma gelince uyarılır. Teşhis yoksa (abaküssüz
- * ders) çocuğun burada ilk yanıldığı adım hatanın yeri sayılır.
+ * Anlatım yapay zekâsız (kural motoru): kesin ve ücretsiz. Adımın parça balonları ("10 gelir" ne demek?)
+ * da kural motoru ([SubStepExplainer]). Yapay zekâ yalnızca çocuk yazınca ya da yeşil balona dokununca
+ * (ileride kredi ile). Sobi'nin bütün mesajlarında beğen / beğenme / bildir ([SobiMessageViews]).
  *
- * SAYFALAR (kullanıcı kararı 31.10.2026): her adım kendi sohbet sayfası; adımın talimatı, Kontrol Et
- * sonuçları ve o adımda Sobi'ye sorulanlar orada kalır. ‹ › ile açılmış adımlar arasında gezilir;
- * bir adıma dönünce abaküs o adımın başındaki değere gelir (12 + 22'nin 2. adımında 12). Son sayfa
- * sonuç. Sayfanın altında Sobi'ye yazma kutusu: soru o adımın bağlamıyla gider. Sağ üstte ayrı bir
- * sohbet düğmesi yok; ileride soru kredi ile olacağı için soru yeri adımın içinde, görünür.
- *
- * Anlatım yapay zekâsız (kural motoru): kesin ve ücretsiz. Sobi'nin bütün mesajlarında beğen /
- * beğenme / bildir var ([SobiMessageViews]); kural motorunun mesajı metniyle birlikte oylanır.
- *
- * Ekran sade (kullanıcı kararı 01.11.2026): üstte yalnızca kapat ve adım gezinmesi; soru ve çocuğun
- * cevabı Sobi'nin ilk mesajında (flaş dizisi üst satıra sığmıyordu). Maskot yok, sohbet tam genişlik.
- *
- * Tam ekran DialogFragment: ders ekranı altta olduğu gibi kalır, kapanınca çocuk yanlış cevap
- * panelindeki "Tamam" ile devam eder. Kapanınca [RESULT_CLOSED] gider (sandık dersinin süresi sürer).
+ * Ekran sade (kullanıcı kararı 01.11.2026): üstte yalnızca kapat ve adım gezinmesi; maskot yok, sohbet
+ * tam genişlik. Kapanınca [RESULT_CLOSED] gider (sandık dersinin süresi sürer, öğreticinin Sobi düğmesi
+ * yeniden görünür).
  */
 class MistakeReviewDialog : DialogFragment() {
 
     /**
-     * [label]: adım çubuğunda ne işlendiği ("+22", "78 + 9"); iki sayılı soruda yok. [intro]: adım ilk
-     * açıldığında talimattan önce (flaş dizisinde hatalı işlemin başlığı ve teşhisi).
+     * Kontrol Et ile çözülen adım. [label]: adım çubuğunda ne işlendiği ("+22", "78 + 9"); [intro]: adım
+     * ilk açıldığında talimattan önce; [question]: Sobi'ye giden soru metni; [num]/[of]: grubundaki sırası.
      */
     private data class Step(
         val base: Int,
@@ -74,17 +73,41 @@ class MistakeReviewDialog : DialogFragment() {
         val text: String,
         val label: String? = null,
         val intro: String? = null,
+        val question: String? = null,
+        val num: Int = 0,
+        val of: Int = 0,
     )
 
+    /** Sayfa: adım ya da bilgi sayfası ([step] null). [value]: abaküsün bu sayfadaki başlangıç değeri. */
+    private class Page(val step: Step?, val title: String, val value: Int, val firstMessage: String)
+
+    private var tutorialMode = false
+
+    // Analiz
     private var numbers: List<Int> = emptyList()
     private var answer = 0
     private var lessonTitle: String? = null
-
     private var steps: List<Step> = emptyList()
     private var diagnosis: MistakeAnalyzer.Diagnosis? = null
     /** Flaş dizisinde yanlış yapılan işlemler; doluysa yalnızca bunlar çözdürülür. */
     private var sequenceMistakes: List<MistakeAnalyzer.SequenceMistake> = emptyList()
-    /** Görüntülenen sayfa: 0..steps.size-1 adımlar, steps.size sonuç sayfası. */
+    /** Analiz ekranında çocuğun ilk yanıldığı adım (teşhis yoksa hatanın yeri sayılır). */
+    private var firstReviewMistake = -1
+
+    // Öğretici
+    private var tutorialStepText = ""
+    private var tutorialStepId: String? = null
+    private var tutorialQuestion: String? = null
+    private var tutorialRecent: List<String> = emptyList()
+    private var tutorialRules: List<String> = emptyList()
+    private var tutorialNumber = 0
+    private var tutorialStepIndex = 0
+    private var tutorialValue = 0
+    private var exampleRule: String? = null
+    private var examples = 0
+
+    private val pageList = ArrayList<Page>()
+    /** Görüntülenen sayfa. */
     private var page = 0
     /** Açılmış en ileri sayfa; ileri ok buna kadar gider. */
     private var maxPage = 0
@@ -92,8 +115,6 @@ class MistakeReviewDialog : DialogFragment() {
     /** Sayfanın son Sobi cevabındaki "abaküste göster" işi ve öneri balonları. */
     private val pageShow = HashMap<Int, ServerSobi.Action>()
     private val pageSuggestions = HashMap<Int, List<String>>()
-    /** Analiz ekranında çocuğun ilk yanıldığı adım (teşhis yoksa hatanın yeri sayılır). */
-    private var firstReviewMistake = -1
 
     private var controller: AbacusBeadController? = null
     private var player: SobiAbacusPlayer? = null
@@ -123,9 +144,22 @@ class MistakeReviewDialog : DialogFragment() {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
         val a = requireArguments()
+        lessonTitle = a.getString(ARG_LESSON)
+        tutorialMode = a.getBoolean(ARG_TUTORIAL_MODE)
+        if (tutorialMode) {
+            tutorialStepText = a.getString(ARG_STEP_TEXT).orEmpty()
+            tutorialStepId = a.getString(ARG_STEP_ID)
+            tutorialQuestion = a.getString(ARG_QUESTION)
+            tutorialRecent = a.getStringArrayList(ARG_RECENT).orEmpty()
+            tutorialRules = a.getStringArrayList(ARG_RULES).orEmpty()
+            tutorialNumber = a.getInt(ARG_TUTORIAL)
+            tutorialStepIndex = a.getInt(ARG_TUTORIAL_STEP)
+            tutorialValue = a.getInt(ARG_VALUE)
+            exampleRule = SobiCurriculum.exampleRule(tutorialNumber)
+            return
+        }
         numbers = a.getIntArray(ARG_NUMBERS)?.toList().orEmpty()
         answer = a.getInt(ARG_ANSWER)
-        lessonTitle = a.getString(ARG_LESSON)
         val log = a.getIntArray(ARG_LOG)?.toList().orEmpty()
         val marks = a.getIntArray(ARG_MARKS)?.toList().orEmpty()
         if (marks.isNotEmpty()) {
@@ -157,8 +191,8 @@ class MistakeReviewDialog : DialogFragment() {
         messageViews = SobiMessageViews(
             fragment = this,
             sessionId = { tracker.sessionId },
-            localScreen = "analiz",
-            localQuestion = { questionText(numbers) },
+            localScreen = if (tutorialMode) "ogretici" else "analiz",
+            localQuestion = { if (tutorialMode) tutorialQuestion ?: tutorialStepText.take(100) else questionText(numbers) },
             onChanged = { renderPage() },
             onReported = { addMessage(page, SobiStepTracker.Message(fromChild = false, text = appString(R.string.sobi_report_done))) },
         )
@@ -198,14 +232,14 @@ class MistakeReviewDialog : DialogFragment() {
         view.findViewById<View>(R.id.abacusLinear).post {
             if (!isAdded) return@post
             if (c.computeMovementDistancesFromLayout(ratio = 1.0f, force = true)) c.syncStateFromUi()
-            start()
+            if (tutorialMode) startTutorial() else startReview()
         }
     }
 
-    private fun start() {
+    private fun startReview() {
         if (steps.isEmpty()) {
-            addMessage(0, sobiMessage(appString(R.string.review_intro_unknown)))
-            openResult()
+            val p = addInfoPage(appString(R.string.review_step_result), controller?.getCurrentValue() ?: 0, appString(R.string.review_intro_unknown))
+            openPage(p)
             return
         }
         val intro = when {
@@ -219,7 +253,43 @@ class MistakeReviewDialog : DialogFragment() {
         val question = if (numbers.size == 2) {
             appString(R.string.review_intro_question, questionText(numbers), answer, numbers.sum())
         } else null
-        openStep(0, intro = listOfNotNull(question, intro).joinToString("\n\n"))
+        val tip = diagnosis?.move?.let { m ->
+            appString(
+                R.string.review_done_tip,
+                MistakeAnalyzer.columnName(m.col),
+                m.steps.joinToString(", ") { "\"${MistakeAnalyzer.stepPhrase(it, m)}\"" },
+            )
+        }.orEmpty()
+        val done = if (sequenceMistakes.isNotEmpty()) appString(R.string.review_done_sequence, numbers.sum())
+        else appString(R.string.review_done, questionText(numbers), numbers.sum()) + tip
+        val first = addGroup(steps, listOfNotNull(question, intro).joinToString("\n\n"), appString(R.string.review_step_result), numbers.sum(), done)
+        openPage(first)
+    }
+
+    /**
+     * Öğreticiden: soru adımındaysa soru adım adım (başlangıç öğreticinin abaküsü), değilse dersteki
+     * adımın sayfası (abaküs öğreticideki gibi, çocuk serbestçe oynatabilir).
+     */
+    private fun startTutorial() {
+        val a = requireArguments()
+        val base = a.getInt(ARG_BASE, -1)
+        val target = a.getInt(ARG_TARGET, -1)
+        val questionSteps = if (base >= 0 && target >= 0 && base != target) transitionSteps(base, target, tutorialQuestion) else null
+        if (questionSteps.isNullOrEmpty()) {
+            val p = addInfoPage(
+                appString(R.string.sobi_screen_lesson_step), tutorialValue,
+                appString(R.string.sobi_screen_lesson_intro, tutorialStepText),
+            )
+            openPage(p)
+            return
+        }
+        val first = addGroup(
+            questionSteps,
+            appString(R.string.sobi_screen_question_intro, tutorialStepText),
+            appString(R.string.review_step_result), target,
+            appString(R.string.sobi_screen_question_done),
+        )
+        openPage(first)
     }
 
     private var stopped = false
@@ -253,7 +323,7 @@ class MistakeReviewDialog : DialogFragment() {
         super.onDestroyView()
     }
 
-    /** Ders ekranı süreyi bu bildirimle sürdürür (sandık dersi süreli). */
+    /** Ders ekranı süreyi bu bildirimle sürdürür (sandık dersi süreli); öğretici Sobi düğmesini gösterir. */
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
         if (isAdded) parentFragmentManager.setFragmentResult(RESULT_CLOSED, Bundle())
@@ -285,55 +355,56 @@ class MistakeReviewDialog : DialogFragment() {
 
     // ── Sayfalar ────────────────────────────────────────────────────────────
 
-    /** Adımı açar: ilk gelişte talimatı sayfaya yazılır. */
-    private fun openStep(i: Int, intro: String? = null) {
-        if (pages[i].isNullOrEmpty()) {
-            val step = steps[i]
+    /**
+     * Adım grubunu sayfalara ekler: adımlar ve sonda bir bilgi sayfası ([endTitle], abaküs [endValue],
+     * Sobi [endText] der). [intro] ilk adımın ilk mesajının başına. İlk adımın sayfa sırası döner.
+     */
+    private fun addGroup(group: List<Step>, intro: String?, endTitle: String, endValue: Int, endText: String): Int {
+        val first = pageList.size
+        group.forEachIndexed { i, s ->
+            val step = s.copy(num = i + 1, of = group.size)
             val m = step.move
             val wasHere = m != null && diagnosis?.move?.let { it.col == m.col && it.valueAfter == m.valueAfter } == true
-            val text = listOfNotNull(intro, if (wasHere) appString(R.string.review_was_here) else null, step.intro, step.text)
-                .joinToString("\n\n")
-            addMessage(i, sobiMessage(text))
+            val text = listOfNotNull(
+                if (i == 0) intro else null,
+                if (wasHere) appString(R.string.review_was_here) else null,
+                step.intro, step.text,
+            ).joinToString("\n\n")
+            val title = if (step.label != null) appString(R.string.review_step_label_number, step.num, step.of, step.label)
+            else appString(R.string.review_step_label, step.num, step.of)
+            pageList += Page(step, title, step.base, text)
         }
+        pageList += Page(null, endTitle, endValue, endText)
+        return first
+    }
+
+    private fun addInfoPage(title: String, value: Int, text: String): Int {
+        pageList += Page(null, title, value, text)
+        return pageList.lastIndex
+    }
+
+    /** Sayfayı açar: ilk gelişte Sobi'nin ilk mesajı yazılır. */
+    private fun openPage(i: Int) {
+        if (pages[i].isNullOrEmpty()) addMessage(i, sobiMessage(pageList[i].firstMessage))
         maxPage = maxOf(maxPage, i)
         showPage(i)
     }
 
-    private fun openResult() {
-        val p = steps.size
-        if (pages[p].isNullOrEmpty()) {
-            val tip = diagnosis?.move?.let { m ->
-                appString(
-                    R.string.review_done_tip,
-                    MistakeAnalyzer.columnName(m.col),
-                    m.steps.joinToString(", ") { "\"${MistakeAnalyzer.stepPhrase(it, m)}\"" },
-                )
-            }.orEmpty()
-            val done = if (sequenceMistakes.isNotEmpty()) appString(R.string.review_done_sequence, numbers.sum())
-            else appString(R.string.review_done, questionText(numbers), numbers.sum()) + tip
-            if (steps.isNotEmpty()) addMessage(p, sobiMessage(done))
-        }
-        maxPage = p
-        showPage(p)
-    }
-
-    /** Sayfayı gösterir; abaküs o adımın başındaki değere (sonuç sayfasında cevaba) gelir. */
+    /** Sayfayı gösterir; abaküs o sayfanın başındaki değere gelir. */
     private fun showPage(i: Int) {
         hideKeyboard()
         page = i
-        val step = steps.getOrNull(i)
-        stepLabel.text = when {
-            step == null -> appString(R.string.review_step_result)
-            step.label != null -> appString(R.string.review_step_label_number, i + 1, steps.size, step.label)
-            else -> appString(R.string.review_step_label, i + 1, steps.size)
-        }
-        showButton.visibility = if (step == null) View.GONE else View.VISIBLE
-        checkButton.text = appString(if (step == null) R.string.review_back else R.string.review_check)
+        val p = pageList[i]
+        stepLabel.text = p.title
+        showButton.visibility = if (p.step == null) View.GONE else View.VISIBLE
+        checkButton.text = appString(if (p.step == null) R.string.review_back else R.string.review_check)
         tracker.startStep(i)
-        tracker.captureBase(step?.base ?: numbers.sum())
+        tracker.captureBase(p.value)
         renderPage()
-        moveAbacus(step?.base ?: (if (steps.isEmpty()) controller?.getCurrentValue() ?: 0 else numbers.sum()))
+        moveAbacus(p.value)
     }
+
+    private fun currentStep(): Step? = pageList.getOrNull(page)?.step
 
     private fun sobiMessage(text: String) = SobiStepTracker.Message(
         fromChild = false,
@@ -351,7 +422,7 @@ class MistakeReviewDialog : DialogFragment() {
         val ctx = context ?: return
         messagesView.removeAllViews()
         for (m in pages[page].orEmpty()) messagesView.addView(messageViews.bubble(ctx, m))
-        partChips(ctx)?.let { messagesView.addView(it) }
+        localChips(ctx)?.let { messagesView.addView(it) }
         if (sendingPage == page) messagesView.addView(thinkingBubble(ctx))
         else suggestionChips(ctx)?.let { messagesView.addView(it) }
         updateNav()
@@ -374,7 +445,7 @@ class MistakeReviewDialog : DialogFragment() {
     // ── Adım ────────────────────────────────────────────────────────────────
 
     private fun onCheck() {
-        val step = steps.getOrNull(page)
+        val step = currentStep()
         if (step == null) { dismissAllowingStateLoss(); return }
         if (abacusBusy) return
         val c = controller ?: return
@@ -388,13 +459,13 @@ class MistakeReviewDialog : DialogFragment() {
             checkButton.postDelayed({
                 if (!isAdded || page != from) return@postDelayed
                 holdAbacus(false)
-                if (from + 1 < steps.size) openStep(from + 1) else openResult()
+                if (from + 1 < pageList.size) openPage(from + 1)
             }, NEXT_STEP_DELAY_MS)
             return
         }
         val detail = step.move?.let { MistakeAnalyzer.diagnoseStep(it, stepLog, value).text }
             ?: MistakeAnalyzer.diagnoseWrite(step.target, value)
-        val found = if (diagnosis == null && sequenceMistakes.isEmpty() && firstReviewMistake == -1) {
+        val found = if (!tutorialMode && diagnosis == null && sequenceMistakes.isEmpty() && firstReviewMistake == -1) {
             firstReviewMistake = page
             appString(R.string.review_found_now) + " "
         } else ""
@@ -451,7 +522,7 @@ class MistakeReviewDialog : DialogFragment() {
 
     /** "Bana göster": bu adımın hamlesini adımın başından oynatır; sonunda abaküs yine başa döner. */
     private fun showCurrentStep() {
-        val step = steps.getOrNull(page) ?: return
+        val step = currentStep() ?: return
         val action = if (step.move == null) {
             ServerSobi.Action(ServerSobi.ACTION_SHOW, 0, "add", step.target, step.target)
         } else {
@@ -471,11 +542,37 @@ class MistakeReviewDialog : DialogFragment() {
         val started = p.play(action) {
             if (!isAdded) return@play
             holdAbacus(false)
-            val base = steps.getOrNull(from)?.base
+            val base = pageList.getOrNull(from)?.value
             if (page == from && base != null && c.getCurrentValue() != base) moveAbacus(base)
             else { stepLog.clear(); stepLog += c.getCurrentValue() }
         }
         if (!started) holdAbacus(false)
+    }
+
+    /**
+     * "Bir örnek ver" (öğretici): dersin kuralıyla bir işlem ([ExamplePicker]) sayfa sayfa çözdürülür;
+     * sonunda "Başka örnek" ya da "Derse dön".
+     */
+    private fun startExample() {
+        val ruleKey = exampleRule ?: return
+        val (a, b) = ExamplePicker.pick(ruleKey, examples * 7 + tutorialNumber * 3) ?: return
+        examples++
+        val nums = listOf(a, b)
+        val q = questionText(nums)
+        val group = buildSteps(nums).map { it.copy(label = q, question = q) }
+        if (group.isEmpty()) return
+        addMessage(page, SobiStepTracker.Message(fromChild = true, text = appString(R.string.sobi_suggest_example)))
+        val rule = group.mapNotNull { it.move }.maxByOrNull { it.rule.ordinal }?.rule
+        val intro = if (rule == null || rule == com.example.app.homework.AbacusRule.DIRECT) appString(R.string.sobi_screen_example_intro_direct, q)
+        else appString(R.string.sobi_screen_example_intro, q, MistakeAnalyzer.ruleName(rule))
+        val first = addGroup(
+            group,
+            intro,
+            appString(R.string.sobi_screen_example_title),
+            nums.sum(),
+            appString(R.string.sobi_screen_example_done, q, nums.sum()),
+        )
+        openPage(first)
     }
 
     // ── Sobi'ye sor ─────────────────────────────────────────────────────────
@@ -534,32 +631,40 @@ class MistakeReviewDialog : DialogFragment() {
     }
 
     /**
-     * Adımın parçaları: “10 gelir” ne demek?, “5 gider” ne demek?, Neden bu kural? Kural motoru
-     * cevaplar ([com.example.app.abacus.SubStepExplainer]): ücretsiz (ileride kredi harcamaz), kesin,
-     * oturum gerekmez. Yapay zekâ balonlarından ayrı görünür (açık renk) ki çocuk farkı görsün.
+     * Kural motorunun cevapladığı balonlar (açık renk; yapay zekâ balonlarından ayrı ki çocuk farkı
+     * görsün): adımın parçaları (“10 gelir” ne demek?, Neden bu kural? — [SubStepExplainer]) ve
+     * öğreticide "Bir örnek ver". Ücretsiz (ileride kredi harcamaz), kesin, oturum gerekmez.
      */
-    private fun partChips(ctx: Context): View? {
-        val m = steps.getOrNull(page)?.move ?: return null
-        if (!com.example.app.abacus.SubStepExplainer.hasParts(m)) return null
-        val items = m.steps.map { st ->
-            com.example.app.abacus.SubStepExplainer.question(st, m) to { com.example.app.abacus.SubStepExplainer.explain(st, m) }
-        }.distinctBy { it.first } + (appString(R.string.review_why_rule) to { com.example.app.abacus.SubStepExplainer.whyRule(m) })
+    private fun localChips(ctx: Context): View? {
+        val items = ArrayList<Pair<String, () -> Unit>>()
+        currentStep()?.move?.takeIf { SubStepExplainer.hasParts(it) }?.let { m ->
+            val parts = m.steps.map { st -> SubStepExplainer.question(st, m) to { SubStepExplainer.explain(st, m) } }
+                .distinctBy { it.first } + (appString(R.string.review_why_rule) to { SubStepExplainer.whyRule(m) })
+            for ((label, answer) in parts) {
+                items += label to {
+                    val p = page
+                    addMessage(p, SobiStepTracker.Message(fromChild = true, text = label))
+                    addMessage(p, sobiMessage(answer()))
+                }
+            }
+        }
+        if (tutorialMode && exampleRule != null) {
+            val label = appString(if (examples == 0) R.string.sobi_suggest_example else R.string.sobi_screen_another_example)
+            items += label to { startExample() }
+        }
+        if (items.isEmpty()) return null
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, dp(ctx, 6), 0, 0)
         }
-        for ((label, answer) in items) {
+        for ((label, action) in items) {
             val chip = TextView(ctx).apply {
                 text = label
                 setTextColor(ContextCompat.getColor(ctx, R.color.dark_text))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
                 background = ContextCompat.getDrawable(ctx, R.drawable.bg_hw_chip)
                 setPadding(dp(ctx, 12), dp(ctx, 7), dp(ctx, 12), dp(ctx, 10))
-                setOnClickListener {
-                    val p = page
-                    addMessage(p, SobiStepTracker.Message(fromChild = true, text = label))
-                    addMessage(p, sobiMessage(answer()))
-                }
+                setOnClickListener { if (!abacusBusy) action() }
             }
             DepthPress.attach(chip)
             row.addView(chip, LinearLayout.LayoutParams(
@@ -573,7 +678,7 @@ class MistakeReviewDialog : DialogFragment() {
     }
 
     /**
-     * Sayfanın altındaki balonlar: Sobi'nin son cevabının önerileri; henüz soru sorulmadıysa adımın
+     * Yapay zekâya giden balonlar (yeşil): Sobi'nin son cevabının önerileri; henüz soru sorulmadıysa
      * başlangıç balonları. "Bana göster" ve "Bir daha göster" sunucuya gitmez (yerelde oynar).
      */
     private fun suggestionChips(ctx: Context): View? {
@@ -581,11 +686,13 @@ class MistakeReviewDialog : DialogFragment() {
         val show = pageShow[page]
         val keys = ArrayList<String>()
         if (show != null) keys += KEY_WATCH
+        val step = currentStep()
         // "Neden böyle?" parça balonlarındaki "Neden bu kural?" ile aynı işi görürdü; onlar varken yalnızca "Bunu anlamadım".
-        val hasParts = steps.getOrNull(page)?.move?.let { com.example.app.abacus.SubStepExplainer.hasParts(it) } == true
+        val hasParts = step?.move?.let { SubStepExplainer.hasParts(it) } == true
         keys += pageSuggestions[page] ?: when {
-            page >= steps.size -> emptyList()
-            hasParts -> listOf(SobiChatSheet.KEY_DIDNT_GET)
+            step == null && tutorialMode && page == 0 -> listOf(SobiSuggestions.KEY_DIDNT_GET, SobiSuggestions.KEY_WHY)
+            step == null -> emptyList()
+            hasParts -> listOf(SobiSuggestions.KEY_DIDNT_GET)
             else -> INITIAL_SUGGESTIONS
         }
         val row = LinearLayout(ctx).apply {
@@ -593,7 +700,9 @@ class MistakeReviewDialog : DialogFragment() {
             setPadding(0, dp(ctx, 6), 0, dp(ctx, 4))
         }
         for (key in keys.distinct()) {
-            val label = if (key == KEY_WATCH) appString(R.string.sobi_watch_button) else SobiChatSheet.labelOf(key) ?: continue
+            // "Bir örnek ver" yapay zekâya gitmiyor: öğreticide yerel balon, analizde yok.
+            if (key == SobiSuggestions.KEY_EXAMPLE) continue
+            val label = if (key == KEY_WATCH) appString(R.string.sobi_watch_button) else SobiSuggestions.labelOf(key) ?: continue
             val chip = TextView(ctx).apply {
                 text = label
                 setTextColor(ContextCompat.getColor(ctx, R.color.white))
@@ -615,9 +724,9 @@ class MistakeReviewDialog : DialogFragment() {
 
     private fun onSuggestion(key: String) {
         when (key) {
-            KEY_WATCH, SobiChatSheet.KEY_SHOW_AGAIN -> pageShow[page]?.let { play(it) } ?: showCurrentStep()
-            SobiChatSheet.KEY_SHOW -> showCurrentStep()
-            else -> send(SobiChatSheet.labelOf(key) ?: return, suggestion = key)
+            KEY_WATCH, SobiSuggestions.KEY_SHOW_AGAIN -> pageShow[page]?.let { play(it) } ?: showCurrentStep()
+            SobiSuggestions.KEY_SHOW -> showCurrentStep()
+            else -> send(SobiSuggestions.labelOf(key) ?: return, suggestion = key)
         }
     }
 
@@ -628,9 +737,27 @@ class MistakeReviewDialog : DialogFragment() {
         setPadding(dp(ctx, 4), dp(ctx, 6), 0, dp(ctx, 6))
     }
 
-    /** O anki sayfanın adımı: soru adımı bağlamı; Sobi teşhisi ve sorunun kurallarını da bilsin. */
+    /** O anki sayfanın bağlamı: adım sayfasında soru adımı; öğreticinin bilgi sayfasında dersin anlatım adımı. */
     private fun sobiContext(): SobiContext {
-        val step = steps.getOrNull(page)
+        val step = currentStep()
+        if (tutorialMode) {
+            val ctx = if (step == null) {
+                tracker.explanationContext(
+                    stepId = tutorialStepId, stepText = tutorialStepText, questionText = tutorialQuestion,
+                    lessonTitle = lessonTitle, recentSteps = tutorialRecent, taughtRules = tutorialRules,
+                )
+            } else {
+                tracker.questionContext(
+                    stepId = null, stepText = step.text, questionText = step.question,
+                    target = step.target, current = controller?.getCurrentValue(), lessonTitle = lessonTitle,
+                    recentSteps = tutorialRecent + "Dersteki adım: $tutorialStepText" +
+                        "Şimdi Sobi ekranında bu işlemi abaküste adım adım birlikte çözüyorsunuz.",
+                    taughtRules = tutorialRules,
+                )
+            }
+            // Sunucu bu adımın hazır açıklamasını bulsun (öğretici + adım sırası, metinle denetleniyor).
+            return ctx.copy(tutorialNumber = tutorialNumber, stepIndex = tutorialStepIndex)
+        }
         val notes = listOfNotNull(
             "Çocuk soruyu yanlış cevapladı: ${questionText(numbers)} = $answer (doğrusu ${numbers.sum()}).",
             diagnosis?.text?.let { "Teşhis: $it" },
@@ -676,7 +803,7 @@ class MistakeReviewDialog : DialogFragment() {
 
     companion object {
         const val TAG = "MistakeReview"
-        /** Ekran kapanınca ders ekranına giden bildirim (setFragmentResult). */
+        /** Ekran kapanınca açan ekrana giden bildirim (setFragmentResult). */
         const val RESULT_CLOSED = "MistakeReview.closed"
         private const val REWIND_DELAY_MS = 700L
         private const val REWIND_SETTLE_MS = 500L
@@ -684,12 +811,23 @@ class MistakeReviewDialog : DialogFragment() {
         /** Yerel balon: Sobi'nin son cevabındaki gösterimi oynatır. */
         private const val KEY_WATCH = "abakuste_izle"
         /** Adımda henüz soru sorulmadıysa. "Bana göster" zaten alt düğme. */
-        private val INITIAL_SUGGESTIONS = listOf(SobiChatSheet.KEY_WHY, SobiChatSheet.KEY_DIDNT_GET)
+        private val INITIAL_SUGGESTIONS = listOf(SobiSuggestions.KEY_WHY, SobiSuggestions.KEY_DIDNT_GET)
         private const val ARG_NUMBERS = "numbers"
         private const val ARG_ANSWER = "answer"
         private const val ARG_LOG = "log"
         private const val ARG_MARKS = "marks"
         private const val ARG_LESSON = "lesson"
+        private const val ARG_TUTORIAL_MODE = "tutorialMode"
+        private const val ARG_STEP_TEXT = "stepText"
+        private const val ARG_STEP_ID = "stepId"
+        private const val ARG_QUESTION = "question"
+        private const val ARG_RECENT = "recent"
+        private const val ARG_RULES = "rules"
+        private const val ARG_TUTORIAL = "tutorial"
+        private const val ARG_TUTORIAL_STEP = "tutorialStep"
+        private const val ARG_VALUE = "value"
+        private const val ARG_BASE = "base"
+        private const val ARG_TARGET = "target"
 
         /** "23 + 33 − 12": ilk sayı, sonra işaretleriyle. */
         fun questionText(numbers: List<Int>): String =
@@ -713,6 +851,16 @@ class MistakeReviewDialog : DialogFragment() {
                 running = plan.result
             }
             return out
+        }
+
+        /**
+         * Öğreticideki soru: abaküs [base]'den [target]'a. Sıfırdan yazmaksa tek "yaz" adımı, değilse
+         * kural motorunun hamleleri. Abaküse sığmıyorsa null.
+         */
+        private fun transitionSteps(base: Int, target: Int, question: String?): List<Step>? {
+            if (base == 0) return listOf(Step(0, target, null, appString(R.string.review_step_write, target), question = question))
+            val e = StepExplainer.explainTransition(base.toLong(), target.toLong()) ?: return null
+            return e.moves.map { m -> Step(m.valueBefore.toInt(), m.valueAfter.toInt(), m, moveText(m), question = question) }
         }
 
         private fun moveText(m: StepExplainer.ColumnMove): String {
@@ -764,9 +912,9 @@ class MistakeReviewDialog : DialogFragment() {
         fun canReview(numbers: List<Int>?): Boolean = numbers != null && buildSteps(numbers).isNotEmpty()
 
         /**
-         * [log]: abaküslü derste bu sorudaki değer kaydı (teşhis için); klavyeyle cevaplanan derste boş.
-         * [marks]: flaş dizisinde her sayı göründüğünde kayda eklenen değerin sırası; verilirse yalnızca
-         * yanlış yapılan işlemler çözdürülür ([MistakeAnalyzer.findSequenceMistakes]).
+         * "Sobi ile analiz et". [log]: abaküslü derste bu sorudaki değer kaydı (teşhis için); klavyeyle
+         * cevaplanan derste boş. [marks]: flaş dizisinde her sayı göründüğünde kayda eklenen değerin
+         * sırası; verilirse yalnızca yanlış yapılan işlemler çözdürülür ([MistakeAnalyzer.findSequenceMistakes]).
          */
         fun newInstance(numbers: List<Int>, answer: Int, log: List<Int>, lessonTitle: String?, marks: List<Int> = emptyList()) =
             MistakeReviewDialog().apply {
@@ -778,5 +926,30 @@ class MistakeReviewDialog : DialogFragment() {
                     putString(ARG_LESSON, lessonTitle)
                 }
             }
+
+        /**
+         * Öğreticide "Sobi'ye sor". [value]: öğreticinin abaküsünde görünen değer. Soru adımındaysa
+         * [base] (adımın başı) ve [target] (beklenen cevap), değilse null.
+         */
+        fun forTutorial(
+            stepText: String, stepId: String?, question: String?, lessonTitle: String?,
+            recentSteps: List<String>, taughtRules: List<String>, tutorialNumber: Int, stepIndex: Int,
+            value: Int, base: Int?, target: Int?,
+        ) = MistakeReviewDialog().apply {
+            arguments = Bundle().apply {
+                putBoolean(ARG_TUTORIAL_MODE, true)
+                putString(ARG_STEP_TEXT, stepText)
+                putString(ARG_STEP_ID, stepId)
+                putString(ARG_QUESTION, question)
+                putString(ARG_LESSON, lessonTitle)
+                putStringArrayList(ARG_RECENT, ArrayList(recentSteps))
+                putStringArrayList(ARG_RULES, ArrayList(taughtRules))
+                putInt(ARG_TUTORIAL, tutorialNumber)
+                putInt(ARG_TUTORIAL_STEP, stepIndex)
+                putInt(ARG_VALUE, value)
+                putInt(ARG_BASE, base ?: -1)
+                putInt(ARG_TARGET, target ?: -1)
+            }
+        }
     }
 }
