@@ -512,6 +512,22 @@ async function main() {
     assert.ok(warns.some((w) => String(w[0]).startsWith('sobiReport')));
     await assert.rejects(feedback({ sessionId: r.sessionId, messageIndex: 1 }, ctx), (e) => e.code === 'invalid-argument');
 
+    // Yerel (kural motoru) mesajı: sohbet kaydı yok, metin istemciden; oy, geri alma, bildirim.
+    const local = { local: true, localId: 'abcd1234efgh', text: 'Birler basamağında 3 eklerken...', screen: 'analiz', question: '12 + 22' };
+    await feedback({ ...local, value: 1 }, ctx);
+    const lf = env.store.get('sobiChats/u1/sobiFeedback/local_abcd1234efgh');
+    assert.strictEqual(lf.value, 1);
+    assert.strictEqual(lf.source, 'kural');
+    assert.strictEqual(lf.question, '12 + 22');
+    await feedback({ ...local, value: 0 }, ctx);
+    assert.strictEqual(env.store.has('sobiChats/u1/sobiFeedback/local_abcd1234efgh'), false);
+    const w2 = console.warn; console.warn = () => {};
+    await feedback({ ...local, report: true, comment: 'anlamadım' }, ctx);
+    console.warn = w2;
+    assert.strictEqual(env.store.get('sobiChats/u1/sobiReports/local_abcd1234efgh').status, 'yeni');
+    await assert.rejects(feedback({ ...local, text: '', value: 1 }, ctx), (e) => e.code === 'invalid-argument');
+    await assert.rejects(feedback({ ...local, localId: 'x', value: 1 }, ctx), (e) => e.code === 'invalid-argument');
+
     // Onaylı açıklaması olmayan balon ("Bir örnek ver") ve soru adımı: model çalışır.
     assert.strictEqual(chat.directReplyFor(chat.sanitizeContext(stepContext), 'ornek_ver'), null);
     assert.strictEqual(chat.directReplyFor(chat.sanitizeContext({ ...stepContext, base: 4, target: 6 }), 'bunu_anlamadim'), null);

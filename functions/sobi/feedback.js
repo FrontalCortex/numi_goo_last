@@ -19,6 +19,13 @@
  *   sobiChats/{uid}/sobiReports/{sessionId}_{i}   status: 'yeni' (incelenince 'incelendi')
  * altına düşer; haftalık rapor bunları en başta listeler. Play'in üretken yapay zekâ kuralının
  * istediği uygulama içi bildirim yolu bu. Kayıt 90 gün tutulur (expiresAt).
+ *
+ * YEREL MESAJ (local: true) — kural motorunun yazdığı, sunucudan geçmeyen Sobi mesajları ("Sobi ile
+ * analiz et" ekranında adım talimatı, hata teşhisi; kullanıcı kararı 31.10.2026). Sohbet kaydı yok;
+ * mesajın metni istemciden gelir (en çok 1000 karakter), kimliği istemcinin ürettiği [localId].
+ *   sobiChats/{uid}/sobiFeedback/local_{localId}   source: "kural", screen, question
+ *   sobiChats/{uid}/sobiReports/local_{localId}
+ * Haftalık rapor bunları "Kural motoru mesajları" bölümünde listeler.
  */
 
 const guard = require('./guard');
@@ -27,6 +34,7 @@ const guard = require('./guard');
 const SESSION_ID = /^[A-Za-z0-9_-]{8,64}$/;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const REPORT_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
+const SCREEN = /^[a-z_]{1,32}$/;
 
 module.exports = function createSobiFeedback({ functions, admin, db, promptVersion }) {
   return functions.https.onCall(async (data, context) => {
@@ -38,6 +46,7 @@ module.exports = function createSobiFeedback({ functions, admin, db, promptVersi
     const value = p.value === 1 || p.value === -1 || p.value === 0 ? p.value : null;
     const report = p.report === true;
     const comment = typeof p.comment === 'string' ? guard.cleanChildText(p.comment).text : '';
+    if (p.local === true) return localFeedback({ functions, admin, db, uid, p, value, report, comment });
     if (!sessionId || index === null || (value === null && !report)) {
       throw new functions.https.HttpsError('invalid-argument', 'Geçersiz oy.');
     }
@@ -90,3 +99,37 @@ module.exports = function createSobiFeedback({ functions, admin, db, promptVersi
     return { ok: true };
   });
 };
+
+/** Kural motorunun mesajına oy / bildirim (bkz. dosya başı, YEREL MESAJ). */
+async function localFeedback({ functions, admin, db, uid, p, value, report, comment }) {
+  const localId = SESSION_ID.test(p.localId || '') ? p.localId : null;
+  const text = typeof p.text === 'string' ? p.text.trim().slice(0, 1000) : '';
+  if (!localId || !text || (value === null && !report)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz oy.');
+  }
+  const now = Date.now();
+  const ts = admin.firestore.Timestamp;
+  const record = {
+    local: true,
+    localId,
+    source: 'kural',
+    screen: SCREEN.test(p.screen || '') ? p.screen : 'bilinmiyor',
+    question: typeof p.question === 'string' ? p.question.slice(0, 100) : null,
+    reply: text,
+    tutorialNumber: null,
+    stepIndex: null,
+    at: ts.fromMillis(now),
+  };
+  const userRef = db.collection('sobiChats').doc(uid);
+  if (value !== null) {
+    const ref = userRef.collection('sobiFeedback').doc(`local_${localId}`);
+    if (value === 0) await ref.delete();
+    else await ref.set({ ...record, value, comment: comment || null, expiresAt: ts.fromMillis(now + RETENTION_MS) });
+  }
+  if (report) {
+    await userRef.collection('sobiReports').doc(`local_${localId}`)
+      .set({ ...record, comment: comment || null, status: 'yeni', expiresAt: ts.fromMillis(now + REPORT_RETENTION_MS) });
+    console.warn('sobiReport: kural motoru mesajı bildirildi', { uid, localId, reply: text.slice(0, 300), comment });
+  }
+  return { ok: true };
+}

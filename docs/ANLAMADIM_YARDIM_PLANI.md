@@ -409,6 +409,29 @@ A yapay zekâsız, kural motoruyla:
   alınmıyor), her yeni soruda sıfırlanıyor; yanlış cevap panelinde `incorrectDiagnosisText`.
 - Abaküssüz derslerde kayıt yok (çocuk boncuk oynatmıyor); orada hata B'deki yeniden çözme ekranında
   bulunacak.
+- Sonra (kullanıcı kararı): teşhis paneli kalabalık gösterdi; panelde yalnızca "Sobi ile analiz et"
+  düğmesi var, teşhis o ekranda.
+
+### "Sobi ile analiz et" ekranı (31.10.2026, B aşaması; telefona kuruldu)
+
+`MistakeReviewDialog` (tam ekran): soru adımlara bölünür (ilk sayıyı yazmak + her sayının her basamağı,
+`StepExplainer` hamleleri), çocuk her adımı abaküste yapıp "Kontrol Et"e basar. Yapay zekâsız:
+- Yanlışta Sobi o adımda ne yaptığını söyler (`MistakeAnalyzer.diagnoseStep/diagnoseWrite`), yanlış sesi
+  çalar ve abaküs 0,7 sn sonra adımın başına döner (çocuk geri almak zorunda kalmaz). Doğruda doğru sesi.
+- "Bana göster" adımın hamlesini oynatır (`SobiAbacusPlayer`), sonunda abaküs yine başa döner.
+- Her adım bir sohbet sayfası: talimat, Kontrol Et sonuçları ve o adımda sorulanlar orada kalır. ‹ › ile
+  açılmış adımlar arasında gezilir; geri dönünce abaküs o adımın başındaki değere gelir. Son sayfa sonuç.
+- Sobi'ye yazma kutusu sayfanın altında (ileride soru kredi ile olacak; soru yeri adımın içinde, görünür).
+  Klavye açılınca abaküs gizlenir. "Bana göster"/"Bir daha göster" balonları sunucuya gitmez.
+- Sobi'nin bütün mesajlarında 👍 👎 🚩 (`SobiMessageViews`, sohbet paneliyle ortak). Kural motorunun
+  mesajları metniyle oylanır: `sobiFeedback` `local: true` → `sobiFeedback/local_{id}` (source `kural`),
+  haftalık raporda "3c. Kural motoru mesajları".
+- Sobi tam gövde: doğruda CHEER, yanlışta DETERMINED (üzgün → kararlı; "üzgün" yerine, çocuk yanılmaktan
+  korkmasın), beklerken THINK, cevapta konuşma, sonuçta CLAP.
+- Sandık dersinde de var (önce `type == 2` "süreli" sanılıp gizlenmişti); ekran açıkken sandık süresi
+  durur (`RESULT_CLOSED` ile sürer). Kupa modunda yok.
+- Sırada: flaş dizisinde yalnızca yanlış yapılan işlemler + kural başına hata özeti; öğreticide
+  "Bir örnek ver" → bu ekranla örnek işlem.
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

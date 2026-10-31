@@ -78,7 +78,7 @@ async function main() {
     `${rows.length} oy: ${up} beğeni, ${down} beğenmeme (${pct(up, up + down)} beğeni). Hazır açıklama: ${bySource('hazir').length} oy, model: ${bySource('model').length} oy.`, '',
     `## 0. İncelenmemiş bildirimler (${reports.length})`, '',
     ...(reports.length ? reports.flatMap((r) => [
-      `- ${r.at && r.at.toDate ? r.at.toDate().toISOString().slice(0, 16) : ''} t${r.tutorialNumber} adım ${r.stepIndex} — ${r.path}`,
+      `- ${r.at && r.at.toDate ? r.at.toDate().toISOString().slice(0, 16) : ''} ${r.local ? `${r.screen} «${r.question || '?'}»` : `t${r.tutorialNumber} adım ${r.stepIndex}`} — ${r.path}`,
       `  - çocuk: «${r.childText || r.suggestion || '?'}»`,
       `  - Sobi: «${r.reply}»`,
       `  - not: «${r.comment || '—'}»`,
@@ -105,8 +105,14 @@ async function main() {
   const comments = rows.filter((r) => r.comment && r.value === 1);
   out.push('', `## 3b. Beğenilen cevaplara yorumlar (${comments.length})`, '');
   for (const r of comments.slice(0, 40)) out.push(`- t${r.tutorialNumber} adım ${r.stepIndex}: «${r.comment}» — Sobi: «${r.reply}»`);
+  // Kural motorunun mesajları ("Sobi ile analiz et" ekranı): model yok; beğenilmeyen metin kuralın anlatımını düzeltmek için.
+  const kural = bySource('kural');
+  out.push('', `## 3c. Kural motoru mesajları (${kural.length} oy, ${kural.filter((r) => r.value === 1).length} 👍)`, '');
+  const kuralDown = kural.filter((r) => r.value === -1);
+  if (!kuralDown.length) out.push('_Beğenilmeyen yok._');
+  for (const r of kuralDown.slice(0, 40)) out.push(`- ${r.screen} «${r.question || '?'}» — Sobi: «${r.reply}»${r.comment ? ` — yorum: «${r.comment}»` : ''}`);
   out.push('', '## 4. Öğretici başına', '', '| öğretici | 👍 | 👎 | beğeni |', '|---|---|---|---|');
-  const tuts = [...new Set(rows.map((r) => r.tutorialNumber))].sort((a, b) => a - b);
+  const tuts = [...new Set(rows.filter((r) => r.tutorialNumber != null).map((r) => r.tutorialNumber))].sort((a, b) => a - b);
   for (const t of tuts) {
     const l = rows.filter((r) => r.tutorialNumber === t);
     const u = l.filter((r) => r.value === 1).length;

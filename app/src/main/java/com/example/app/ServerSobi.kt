@@ -113,6 +113,22 @@ object ServerSobi {
             .addOnFailureListener { e -> Log.w(TAG, "sobiFeedback (bildir) başarısız", e) }
     }
 
+    /**
+     * Kural motorunun yazdığı mesaja oy ([value] 1, -1, 0) ya da bildirim: sohbet kaydı olmadığı için
+     * metin de gider (functions/sobi/feedback.js, "YEREL MESAJ"). [screen]: "analiz" gibi.
+     */
+    fun sendLocalFeedback(localId: String, text: String, value: Int?, report: Boolean, comment: String?, screen: String, question: String?) {
+        val payload = hashMapOf<String, Any>("local" to true, "localId" to localId, "text" to text.take(1000), "screen" to screen)
+        if (value != null && !report) payload["value"] = value
+        if (report) payload["report"] = true
+        if (!comment.isNullOrBlank()) payload["comment"] = comment
+        if (!question.isNullOrBlank()) payload["question"] = question
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("sobiFeedback")
+            .call(payload)
+            .addOnFailureListener { e -> Log.w(TAG, "sobiFeedback (yerel) başarısız", e) }
+    }
+
     private fun parseAction(raw: Any?): Action? {
         val m = raw as? Map<*, *> ?: return null
         val kind = m["tur"] as? String ?: return null

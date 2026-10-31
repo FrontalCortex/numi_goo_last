@@ -3,7 +3,6 @@ package com.example.app
 import android.content.Context
 import android.graphics.Color
 import android.util.TypedValue
-import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.WindowManager
@@ -29,7 +28,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
  * Abaküste gösterim panel KAPANARAK yapılıyor: panel ekranın alt yarısını kapatıyor, çocuk boncukları
  * görmeli. Oynatmayı [onShow] üzerinden barındıran fragment yapıyor.
  *
- * Henüz yok (sonraki sürüm): sesli soru ve sesli cevap, "bildir" düğmesi.
+ * Henüz yok (sonraki sürüm): sesli soru ve sesli cevap.
  */
 class SobiChatSheet(
     private val fragment: Fragment,
@@ -44,6 +43,13 @@ class SobiChatSheet(
 ) {
 
     private var dialog: BottomSheetDialog? = null
+    /** Balonlar ve beğen / beğenme / bildir (analiz ekranıyla ortak). */
+    private val views = SobiMessageViews(
+        fragment = fragment,
+        sessionId = { tracker.sessionId },
+        onChanged = { if (isShowing) renderMessages() },
+        onReported = { tracker.messages += SobiStepTracker.Message(fromChild = false, text = appString(R.string.sobi_report_done)) },
+    )
     private var busy = false
 
     private lateinit var scroll: ScrollView
@@ -195,134 +201,14 @@ class SobiChatSheet(
         send(labelOf(key) ?: return, suggestion = key)
     }
 
-    /** Aynı düğmeye yeniden dokunmak oyu geri alır. */
-    private fun rate(m: SobiStepTracker.Message, value: Int) {
-        val sessionId = tracker.sessionId ?: return
-        val index = m.serverIndex ?: return
-        m.rating = if (m.rating == value) 0 else value
-        ServerSobi.sendFeedback(sessionId, index, m.rating)
-        renderMessages()
-    }
-
     // ── Görünüm ─────────────────────────────────────────────────────────────
 
     private fun renderMessages() {
         val ctx = fragment.context ?: return
         messagesView.removeAllViews()
-        for (m in tracker.messages) messagesView.addView(bubble(ctx, m))
+        for (m in tracker.messages) messagesView.addView(views.bubble(ctx, m))
         scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
     }
-
-    private fun bubble(ctx: Context, m: SobiStepTracker.Message): View {
-        val tv = TextView(ctx).apply {
-            text = m.text
-            setTextColor(ContextCompat.getColor(ctx, R.color.dark_text))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-            setLineSpacing(0f, 1.15f)
-            background = ContextCompat.getDrawable(ctx, if (m.fromChild) R.drawable.chat_bubble_me else R.drawable.chat_bubble_sobi)
-            val p = dp(ctx, 12)
-            setPadding(p, dp(ctx, 9), p, dp(ctx, 9))
-            maxWidth = (ctx.resources.displayMetrics.widthPixels * 0.78f).toInt()
-        }
-        val row = LinearLayout(ctx).apply {
-            gravity = if (m.fromChild) Gravity.END else Gravity.START
-            setPadding(0, dp(ctx, 4), 0, dp(ctx, 4))
-            addView(tv, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
-        }
-        if (m.fromChild || m.serverIndex == null) return row
-        // Sobi'nin sunucudan gelen cevabının altında beğen / beğenme / bildir (haftalık iyileştirme
-        // verisi). Oy verilince yanında "Bize daha fazla bilgi ver": nedenini öğrenmek için.
-        val rating = LinearLayout(ctx).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(ctx, 6), 0, 0, 0)
-            addView(rateButton(ctx, m, 1, "👍", R.string.sobi_rate_up))
-            addView(rateButton(ctx, m, -1, "👎", R.string.sobi_rate_down))
-            addView(reportButton(ctx, m))
-            if (m.rating != 0) addView(moreInfoLink(ctx, m))
-        }
-        return LinearLayout(ctx).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(row)
-            addView(rating)
-        }
-    }
-
-    private fun reportButton(ctx: Context, m: SobiStepTracker.Message): View =
-        TextView(ctx).apply {
-            text = "🚩"
-            contentDescription = appString(R.string.sobi_report)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
-            alpha = if (m.reported) 1f else 0.45f
-            setPadding(dp(ctx, 8), dp(ctx, 2), dp(ctx, 8), dp(ctx, 2))
-            if (!m.reported) setOnClickListener { askReport(m) }
-        }
-
-    private fun moreInfoLink(ctx: Context, m: SobiStepTracker.Message): View =
-        TextView(ctx).apply {
-            text = appString(if (m.commented) R.string.sobi_feedback_thanks else R.string.sobi_feedback_more)
-            setTextColor(ContextCompat.getColor(ctx, R.color.dark_text))
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
-            if (!m.commented) paintFlags = paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
-            alpha = 0.8f
-            setPadding(dp(ctx, 6), dp(ctx, 2), dp(ctx, 4), dp(ctx, 2))
-            if (!m.commented) setOnClickListener { askComment(m) }
-        }
-
-    /** Kısa yorum kutusu; [onSend] boş olmayan metinle çağrılır. */
-    private fun textDialog(title: String, message: String?, positive: String, onSend: (String) -> Unit) {
-        val ctx = fragment.context ?: return
-        val box = EditText(ctx).apply {
-            hint = appString(R.string.sobi_feedback_hint)
-            maxLines = 4
-            filters = arrayOf(android.text.InputFilter.LengthFilter(300))
-        }
-        val wrap = LinearLayout(ctx).apply {
-            setPadding(dp(ctx, 20), dp(ctx, 8), dp(ctx, 20), 0)
-            addView(box, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
-        }
-        androidx.appcompat.app.AlertDialog.Builder(ctx)
-            .setTitle(title)
-            .apply { if (message != null) setMessage(message) }
-            .setView(wrap)
-            .setPositiveButton(positive) { _, _ -> onSend(box.text?.toString()?.trim().orEmpty()) }
-            .setNegativeButton(appString(R.string.sobi_feedback_cancel), null)
-            .show()
-    }
-
-    private fun askComment(m: SobiStepTracker.Message) {
-        textDialog(appString(R.string.sobi_feedback_title), null, appString(R.string.sobi_feedback_send)) { text ->
-            val sessionId = tracker.sessionId ?: return@textDialog
-            val index = m.serverIndex ?: return@textDialog
-            if (text.isEmpty() || m.rating == 0) return@textDialog
-            ServerSobi.sendFeedback(sessionId, index, m.rating, text)
-            m.commented = true
-            if (isShowing) renderMessages()
-        }
-    }
-
-    /** Bildirmek için yorum şart değil: boş da gönderilebilir. */
-    private fun askReport(m: SobiStepTracker.Message) {
-        textDialog(appString(R.string.sobi_report), appString(R.string.sobi_report_message), appString(R.string.sobi_report_send)) { text ->
-            val sessionId = tracker.sessionId ?: return@textDialog
-            val index = m.serverIndex ?: return@textDialog
-            ServerSobi.sendReport(sessionId, index, text)
-            m.reported = true
-            tracker.messages += SobiStepTracker.Message(fromChild = false, text = appString(R.string.sobi_report_done))
-            if (isShowing) renderMessages()
-        }
-    }
-
-    private fun rateButton(ctx: Context, m: SobiStepTracker.Message, value: Int, glyph: String, label: Int): View =
-        TextView(ctx).apply {
-            text = glyph
-            contentDescription = appString(label)
-            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
-            // Seçili oy tam görünür, diğeri soluk; hiç oy yoksa ikisi de yarı soluk.
-            alpha = when (m.rating) { value -> 1f; 0 -> 0.55f; else -> 0.25f }
-            setPadding(dp(ctx, 8), dp(ctx, 2), dp(ctx, 8), dp(ctx, 2))
-            setOnClickListener { rate(m, value) }
-        }
 
     private fun renderSuggestions() {
         val ctx = fragment.context ?: return
@@ -352,12 +238,12 @@ class SobiChatSheet(
     private fun dp(ctx: Context, v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
 
     companion object {
-        private const val KEY_DONT_KNOW = "ne_yapacagim"
-        private const val KEY_WHY = "neden_boyle"
-        private const val KEY_SHOW = "bana_goster"
-        private const val KEY_SHOW_AGAIN = "bir_daha_goster"
+        const val KEY_DONT_KNOW = "ne_yapacagim"
+        const val KEY_WHY = "neden_boyle"
+        const val KEY_SHOW = "bana_goster"
+        const val KEY_SHOW_AGAIN = "bir_daha_goster"
         private const val KEY_GOT_IT = "anladim"
-        private const val KEY_DIDNT_GET = "bunu_anlamadim"
+        const val KEY_DIDNT_GET = "bunu_anlamadim"
         private const val KEY_EXAMPLE = "ornek_ver"
 
         /** Sohbet açılırken, çocuk henüz bir şey yazmadan: soru adımında. */
@@ -366,7 +252,7 @@ class SobiChatSheet(
         private val INITIAL_EXPLANATION_SUGGESTIONS = listOf(KEY_DIDNT_GET, KEY_EXAMPLE, KEY_WHY)
 
         /** Sunucunun anahtarları (chat.suggestionsFor) ve yerel olanlar → çocuğun gördüğü ve gönderilen metin. */
-        private fun labelOf(key: String): String? = when (key) {
+        fun labelOf(key: String): String? = when (key) {
             KEY_DONT_KNOW -> appString(R.string.sobi_suggest_dont_know)
             KEY_WHY -> appString(R.string.sobi_suggest_why)
             KEY_SHOW -> appString(R.string.sobi_suggest_show)

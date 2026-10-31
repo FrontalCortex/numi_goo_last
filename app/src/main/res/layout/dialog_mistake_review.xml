@@ -1,12 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   "Sobi ile analiz et" ekranı (MistakeReviewDialog): yanlış cevaplanan ders sorusunu Sobi anlatarak
-  adım adım yeniden çözdürür. Abaküs bloğu fragment_homework_player.xml'deki bloğun kopyası
+  adım adım yeniden çözdürür. Her adım kendi sohbet sayfası (‹ › ile adımlar arasında geçiş); sayfanın
+  altında Sobi'ye yazma kutusu. Abaküs bloğu fragment_homework_player.xml'deki bloğun kopyası
   (AbacusBeadController boncukları kimlikleriyle buluyor; kimlikler aynı kalmalı).
 -->
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/reviewRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_color">
@@ -26,115 +28,157 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/reviewTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/review_title"
-        android:textColor="@color/dark_text"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
-        app:layout_constraintStart_toEndOf="@id/reviewClose"
-        app:layout_constraintTop_toTopOf="@id/reviewClose" />
-
-    <!-- Sobi'ye soru sor (yalnızca kafa, öğreticideki gibi). -->
-    <FrameLayout
-        android:id="@+id/reviewAskSobi"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginTop="6dp"
-        android:layout_marginEnd="10dp"
-        android:background="@drawable/bg_hw_send"
-        android:contentDescription="@string/sobi_ask_button"
-        android:paddingStart="7dp"
-        android:paddingTop="6dp"
-        android:paddingEnd="7dp"
-        android:paddingBottom="10dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <com.example.app.SobiHeadView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </FrameLayout>
-
+    <!-- Soru ve çocuğun cevabı tek satırda: sohbete yer kalsın. -->
     <TextView
         android:id="@+id/reviewQuestion"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
         android:textColor="@color/dark_text"
-        android:textSize="34sp"
+        android:textSize="28sp"
         android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/reviewClose"
-        tools:text="248 + 223" />
+        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
+        app:layout_constraintEnd_toStartOf="@id/reviewYourAnswer"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toEndOf="@id/reviewClose"
+        app:layout_constraintTop_toTopOf="@id/reviewClose"
+        tools:text="12 + 22" />
 
     <TextView
         android:id="@+id/reviewYourAnswer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="52dp"
         android:textColor="#FF4B4B"
         android:textSize="15sp"
+        app:layout_constraintBaseline_toBaselineOf="@id/reviewQuestion"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/reviewQuestion"
-        tools:text="Senin cevabın: 461" />
+        app:layout_constraintStart_toEndOf="@id/reviewQuestion"
+        tools:text="Senin cevabın: 44" />
 
-    <!-- Sobi konuşuyor: kafa + balon. Uzun anlatım kayar. -->
-    <com.example.app.SobiHeadView
-        android:id="@+id/reviewSobiHead"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
-        android:layout_marginStart="14dp"
-        android:layout_marginTop="14dp"
+    <!-- Adım gezinmesi: önceki / sonraki adım (yalnızca açılmış adımlar). -->
+    <ImageButton
+        android:id="@+id/reviewPrev"
+        android:layout_width="44dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="10dp"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_hw_chip"
+        android:contentDescription="@string/review_prev"
+        android:paddingBottom="4dp"
+        android:rotation="180"
+        android:scaleType="center"
+        android:src="@drawable/ic_lesson_card_chevron"
+        android:tint="@color/dark_text"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/reviewYourAnswer" />
+        app:layout_constraintTop_toBottomOf="@id/reviewClose" />
+
+    <TextView
+        android:id="@+id/reviewStepLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/dark_text"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/reviewPrev"
+        app:layout_constraintEnd_toStartOf="@id/reviewNext"
+        app:layout_constraintStart_toEndOf="@id/reviewPrev"
+        app:layout_constraintTop_toTopOf="@id/reviewPrev"
+        tools:text="Adım 2 / 3 · +22 işleniyor" />
+
+    <ImageButton
+        android:id="@+id/reviewNext"
+        android:layout_width="44dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/bg_hw_chip"
+        android:contentDescription="@string/review_next"
+        android:paddingBottom="4dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_lesson_card_chevron"
+        android:tint="@color/dark_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/reviewPrev" />
+
+    <!-- Sobi (tam gövde, canlanıyor: sevinç, kararlılık, düşünme) ve adımın sohbeti. -->
+    <com.example.app.BunnyMascotView
+        android:id="@+id/reviewMascot"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_marginStart="6dp"
+        android:layout_marginTop="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/reviewPrev" />
 
     <ScrollView
         android:id="@+id/reviewSobiScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="14dp"
-        android:layout_marginEnd="14dp"
-        android:layout_marginBottom="10dp"
-        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
+        android:layout_marginStart="4dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="6dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/reviewInputRow"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/reviewSobiHead"
-        app:layout_constraintTop_toBottomOf="@id/reviewYourAnswer">
+        app:layout_constraintStart_toEndOf="@id/reviewMascot"
+        app:layout_constraintTop_toBottomOf="@id/reviewPrev">
 
         <LinearLayout
+            android:id="@+id/reviewMessages"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/reviewStepLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="4dp"
-                android:textColor="@color/dark_text_secondary"
-                android:textSize="13sp"
-                tools:text="Adım 2 / 4" />
-
-            <TextView
-                android:id="@+id/reviewSobiText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/chat_bubble_sobi"
-                android:lineSpacingMultiplier="1.15"
-                android:paddingStart="14dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="10dp"
-                android:textColor="@color/dark_text"
-                android:textSize="17sp"
-                tools:text="Hatanı buldum!" />
-        </LinearLayout>
+            android:orientation="vertical" />
     </ScrollView>
+
+    <!-- Sobi'ye yaz: bu adım hakkında soru (yapay zekâ; ileride kredi ile). -->
+    <LinearLayout
+        android:id="@+id/reviewInputRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="6dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <EditText
+            android:id="@+id/reviewInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/chat_bubble_sobi"
+            android:hint="@string/review_input_hint"
+            android:imeOptions="actionSend"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:maxLength="300"
+            android:maxLines="2"
+            android:paddingStart="14dp"
+            android:paddingTop="9dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="9dp"
+            android:textColor="@color/dark_text"
+            android:textSize="15sp" />
+
+        <ImageButton
+            android:id="@+id/reviewSend"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_hw_send"
+            android:contentDescription="@string/sobi_send_desc"
+            android:paddingStart="11dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="11dp"
+            android:paddingBottom="14dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/send_ic" />
+    </LinearLayout>
 
     <FrameLayout
         android:id="@+id/abacusContainer"
@@ -459,7 +503,7 @@
         </LinearLayout>
     </FrameLayout>
 
-    <!-- Alt düğmeler: Bana göster / Kontrol Et (son adımdan sonra Derse dön). -->
+    <!-- Alt düğmeler: Bana göster / Kontrol Et (sonuç sayfasında Derse dön). -->
     <LinearLayout
         android:id="@+id/reviewButtons"
         android:layout_width="match_parent"

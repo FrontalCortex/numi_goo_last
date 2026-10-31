@@ -1,12 +1,25 @@
 package com.example.app
 
+import android.content.Context
 import android.content.DialogInterface
 import android.media.MediaPlayer
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
+import android.widget.HorizontalScrollView
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.DialogFragment
 import com.example.app.abacus.AbacusBeadController
 import com.example.app.abacus.MistakeAnalyzer
@@ -25,15 +38,24 @@ import com.google.firebase.auth.FirebaseAuth
  * Akış: Sobi önce hatayı söyler ([MistakeAnalyzer] teşhis ettiyse: yalnızca abaküslü iki sayılı
  * soruda, değer kaydı varken), sonra soru adımlara bölünür: ilk sayıyı yazmak, ardından her sayının
  * her basamağı ([StepExplainer] hamleleri). Çocuk her adımı abaküste yapıp "Kontrol Et"e basar;
- * yanlışsa Sobi o adımda ne yaptığını söyler, "Bana göster" hamleyi oynatır ([SobiAbacusPlayer]).
- * Asıl soruda yanıldığı adıma gelince uyarılır. Teşhis yoksa (abaküssüz ders) çocuğun burada ilk
- * yanıldığı adım hatanın yeri sayılır.
+ * yanlışsa Sobi o adımda ne yaptığını söyler ve abaküs adımın başına döner, "Bana göster" hamleyi
+ * oynatır ([SobiAbacusPlayer]). Asıl soruda yanıldığı adıma gelince uyarılır. Teşhis yoksa (abaküssüz
+ * ders) çocuğun burada ilk yanıldığı adım hatanın yeri sayılır.
  *
- * Anlatım yapay zekâsız (kural motoru): kesin ve ücretsiz. Sağ üstteki Sobi kafası yapay zekâ
- * sohbetini o anki adımın bağlamıyla açar (oturum açıksa).
+ * SAYFALAR (kullanıcı kararı 31.10.2026): her adım kendi sohbet sayfası; adımın talimatı, Kontrol Et
+ * sonuçları ve o adımda Sobi'ye sorulanlar orada kalır. ‹ › ile açılmış adımlar arasında gezilir;
+ * bir adıma dönünce abaküs o adımın başındaki değere gelir (12 + 22'nin 2. adımında 12). Son sayfa
+ * sonuç. Sayfanın altında Sobi'ye yazma kutusu: soru o adımın bağlamıyla gider. Sağ üstte ayrı bir
+ * sohbet düğmesi yok; ileride soru kredi ile olacağı için soru yeri adımın içinde, görünür.
+ *
+ * Anlatım yapay zekâsız (kural motoru): kesin ve ücretsiz. Sobi'nin bütün mesajlarında beğen /
+ * beğenme / bildir var ([SobiMessageViews]); kural motorunun mesajı metniyle birlikte oylanır.
+ *
+ * Sobi (tam gövde) tepki verir: doğruda sevinir, yanlışta üzgünden kararlıya geçer (çocuk yanılmaktan
+ * korkmasın: "hadi bir daha"), soruyu beklerken düşünür, cevapta konuşur.
  *
  * Tam ekran DialogFragment: ders ekranı altta olduğu gibi kalır, kapanınca çocuk yanlış cevap
- * panelindeki "Tamam" ile devam eder.
+ * panelindeki "Tamam" ile devam eder. Kapanınca [RESULT_CLOSED] gider (sandık dersinin süresi sürer).
  */
 class MistakeReviewDialog : DialogFragment() {
 
@@ -52,24 +74,41 @@ class MistakeReviewDialog : DialogFragment() {
 
     private var steps: List<Step> = emptyList()
     private var diagnosis: MistakeAnalyzer.Diagnosis? = null
-    private var stepIndex = 0
-    private var finished = false
+    /** Görüntülenen sayfa: 0..steps.size-1 adımlar, steps.size sonuç sayfası. */
+    private var page = 0
+    /** Açılmış en ileri sayfa; ileri ok buna kadar gider. */
+    private var maxPage = 0
+    private val pages = HashMap<Int, ArrayList<SobiStepTracker.Message>>()
+    /** Sayfanın son Sobi cevabındaki "abaküste göster" işi ve öneri balonları. */
+    private val pageShow = HashMap<Int, ServerSobi.Action>()
+    private val pageSuggestions = HashMap<Int, List<String>>()
     /** Analiz ekranında çocuğun ilk yanıldığı adım (teşhis yoksa hatanın yeri sayılır). */
     private var firstReviewMistake = -1
 
     private var controller: AbacusBeadController? = null
     private var player: SobiAbacusPlayer? = null
     private val stepLog = ArrayList<Int>()
-    private var recording = true
+    /** Abaküs Sobi'nin elinde (gösterim, geri alma, sayfa geçişi): dokunuş, düğmeler ve kayıt kapalı. */
+    private var abacusBusy = false
     private var mediaPlayer: MediaPlayer? = null
 
     private val tracker = SobiStepTracker()
-    private var sheet: SobiChatSheet? = null
+    /** Sobi'nin cevabı bekleniyor; cevap sorunun sorulduğu sayfaya düşer. */
+    private var sendingPage = -1
+    private val loggedIn: Boolean get() = FirebaseAuth.getInstance().currentUser != null
 
-    private lateinit var sobiText: TextView
+    private lateinit var messageViews: SobiMessageViews
+    private lateinit var scroll: ScrollView
+    private lateinit var messagesView: LinearLayout
     private lateinit var stepLabel: TextView
+    private lateinit var prevButton: View
+    private lateinit var nextButton: View
     private lateinit var showButton: TextView
     private lateinit var checkButton: TextView
+    private lateinit var input: EditText
+    private lateinit var mascot: BunnyMascotView
+    private lateinit var abacusContainer: View
+    private lateinit var buttonsRow: View
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,26 +129,50 @@ class MistakeReviewDialog : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        sobiText = view.findViewById(R.id.reviewSobiText)
+        scroll = view.findViewById(R.id.reviewSobiScroll)
+        messagesView = view.findViewById(R.id.reviewMessages)
         stepLabel = view.findViewById(R.id.reviewStepLabel)
+        prevButton = view.findViewById(R.id.reviewPrev)
+        nextButton = view.findViewById(R.id.reviewNext)
         showButton = view.findViewById(R.id.reviewShow)
         checkButton = view.findViewById(R.id.reviewCheck)
+        input = view.findViewById(R.id.reviewInput)
+        mascot = view.findViewById(R.id.reviewMascot)
+        abacusContainer = view.findViewById(R.id.abacusContainer)
+        buttonsRow = view.findViewById(R.id.reviewButtons)
+        messageViews = SobiMessageViews(
+            fragment = this,
+            sessionId = { tracker.sessionId },
+            localScreen = "analiz",
+            localQuestion = { questionText(numbers) },
+            onChanged = { renderPage() },
+            onReported = { addMessage(page, SobiStepTracker.Message(fromChild = false, text = appString(R.string.sobi_report_done))) },
+        )
+
         view.findViewById<TextView>(R.id.reviewQuestion).text = questionText(numbers)
         view.findViewById<TextView>(R.id.reviewYourAnswer).text = appString(R.string.review_your_answer, answer)
         view.findViewById<View>(R.id.reviewClose).setOnClickListener { dismissAllowingStateLoss() }
 
-        val ask = view.findViewById<View>(R.id.reviewAskSobi)
-        ask.visibility = if (FirebaseAuth.getInstance().currentUser != null) View.VISIBLE else View.GONE
-        ask.setOnClickListener { openSobi() }
+        // Sobi'ye yazmak oturum ister (sunucu çağrısı).
+        val inputRow = view.findViewById<View>(R.id.reviewInputRow)
+        inputRow.visibility = if (loggedIn) View.VISIBLE else View.GONE
+        val send = view.findViewById<View>(R.id.reviewSend)
+        send.setOnClickListener { sendFromInput() }
+        input.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_SEND) { sendFromInput(); true } else false
+        }
+        prevButton.setOnClickListener { if (page > 0) showPage(page - 1) }
+        nextButton.setOnClickListener { if (page < maxPage) showPage(page + 1) }
         showButton.setOnClickListener { showCurrentStep() }
         checkButton.setOnClickListener { onCheck() }
-        DepthPress.attach(ask, showButton, checkButton)
+        DepthPress.attach(prevButton, nextButton, send, showButton, checkButton)
+        setupKeyboard(view)
 
         // Abaküs: ödev oynatıcısıyla aynı kurulum (boncukları kimlikleriyle bulur).
         val c = AbacusBeadController(context = requireContext(), root = view, animationDurationMs = 300L)
         c.setup()
         c.onValueChanged = {
-            if (recording && !c.isResetInProgress()) {
+            if (!abacusBusy && !c.isResetInProgress()) {
                 val v = c.getCurrentValue()
                 if (stepLog.lastOrNull() != v && stepLog.size < 400) stepLog += v
                 tracker.record(v)
@@ -122,11 +185,11 @@ class MistakeReviewDialog : DialogFragment() {
         }
 
         if (steps.isEmpty()) {
-            sobiText.text = appString(R.string.review_intro_unknown)
-            finish()
+            addMessage(0, sobiMessage(appString(R.string.review_intro_unknown)))
+            openResult()
             return
         }
-        startStep(0, intro = diagnosis?.let { appString(R.string.review_intro_found, it.text) }
+        openStep(0, intro = diagnosis?.let { appString(R.string.review_intro_found, it.text) }
             ?: appString(R.string.review_intro_unknown))
     }
 
@@ -134,8 +197,6 @@ class MistakeReviewDialog : DialogFragment() {
         player?.cancel()
         mediaPlayer?.release()
         mediaPlayer = null
-        sheet?.dismiss()
-        sheet = null
         super.onDestroyView()
     }
 
@@ -145,52 +206,150 @@ class MistakeReviewDialog : DialogFragment() {
         if (isAdded) parentFragmentManager.setFragmentResult(RESULT_CLOSED, Bundle())
     }
 
-    // ── Adımlar ─────────────────────────────────────────────────────────────
-
-    private fun startStep(i: Int, intro: String? = null) {
-        stepIndex = i
-        val step = steps[i]
-        stepLabel.text = if (numbers.size > 2 && step.numberIndex > 0) {
-            appString(R.string.review_step_label_number, i + 1, steps.size, signed(numbers[step.numberIndex]))
-        } else {
-            appString(R.string.review_step_label, i + 1, steps.size)
+    /**
+     * Klavye açılınca abaküs ve alt düğmeler gizlenir: tam ekran pencerede yazma kutusu ile sohbete
+     * yer kalsın (abaküs yüksekliği sabit, yoksa sohbet sıfıra inerdi). Pencere klavyeyi kendisi
+     * yerleştirmiyor; klavyenin payı kök görünümün alt boşluğu olarak veriliyor.
+     */
+    private fun setupKeyboard(root: View) {
+        dialog?.window?.let { w ->
+            WindowCompat.setDecorFitsSystemWindows(w, false)
+            @Suppress("DEPRECATION")
+            w.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
         }
-        val m = step.move
-        val wasHere = m != null && diagnosis?.move?.let { it.col == m.col && it.valueAfter == m.valueAfter } == true
-        val parts = listOfNotNull(intro, if (wasHere) appString(R.string.review_was_here) else null, step.text)
-        sobiText.text = parts.joinToString("\n\n")
-        stepLog.clear()
-        stepLog += controller?.getCurrentValue() ?: step.base
-        tracker.startStep(i)
-        tracker.captureBase(step.base)
-        showButton.visibility = View.VISIBLE
-        setButtonsEnabled(true)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val typing = insets.isVisible(WindowInsetsCompat.Type.ime())
+            val bottom = if (typing) insets.getInsets(WindowInsetsCompat.Type.ime()).bottom else bars.bottom
+            v.setPadding(0, bars.top, 0, bottom)
+            val shown = if (typing) View.GONE else View.VISIBLE
+            abacusContainer.visibility = shown
+            buttonsRow.visibility = shown
+            if (typing) scrollToEnd()
+            WindowInsetsCompat.CONSUMED
+        }
     }
 
+    // ── Sayfalar ────────────────────────────────────────────────────────────
+
+    /** Adımı açar: ilk gelişte talimatı sayfaya yazılır. */
+    private fun openStep(i: Int, intro: String? = null) {
+        if (pages[i].isNullOrEmpty()) {
+            val step = steps[i]
+            val m = step.move
+            val wasHere = m != null && diagnosis?.move?.let { it.col == m.col && it.valueAfter == m.valueAfter } == true
+            val text = listOfNotNull(intro, if (wasHere) appString(R.string.review_was_here) else null, step.text)
+                .joinToString("\n\n")
+            addMessage(i, sobiMessage(text))
+        }
+        maxPage = maxOf(maxPage, i)
+        showPage(i)
+    }
+
+    private fun openResult() {
+        val p = steps.size
+        if (pages[p].isNullOrEmpty()) {
+            val tip = diagnosis?.move?.let { m ->
+                appString(
+                    R.string.review_done_tip,
+                    MistakeAnalyzer.columnName(m.col),
+                    m.steps.joinToString(", ") { "\"${MistakeAnalyzer.stepPhrase(it, m)}\"" },
+                )
+            }.orEmpty()
+            if (steps.isNotEmpty()) addMessage(p, sobiMessage(appString(R.string.review_done, questionText(numbers), numbers.sum()) + tip))
+        }
+        maxPage = p
+        showPage(p)
+        if (steps.isNotEmpty()) mascot.play(BunnyMascotView.Emote.CLAP)
+    }
+
+    /** Sayfayı gösterir; abaküs o adımın başındaki değere (sonuç sayfasında cevaba) gelir. */
+    private fun showPage(i: Int) {
+        hideKeyboard()
+        page = i
+        val step = steps.getOrNull(i)
+        stepLabel.text = when {
+            step == null -> appString(R.string.review_step_result)
+            numbers.size > 2 && step.numberIndex > 0 ->
+                appString(R.string.review_step_label_number, i + 1, steps.size, signed(numbers[step.numberIndex]))
+            else -> appString(R.string.review_step_label, i + 1, steps.size)
+        }
+        showButton.visibility = if (step == null) View.GONE else View.VISIBLE
+        checkButton.text = appString(if (step == null) R.string.review_back else R.string.review_check)
+        tracker.startStep(i)
+        tracker.captureBase(step?.base ?: numbers.sum())
+        renderPage()
+        moveAbacus(step?.base ?: (if (steps.isEmpty()) controller?.getCurrentValue() ?: 0 else numbers.sum()))
+    }
+
+    private fun sobiMessage(text: String) = SobiStepTracker.Message(
+        fromChild = false,
+        text = text,
+        // Kural motorunun mesajı: oy metniyle birlikte gider (oturum yoksa oy da yok).
+        localId = if (loggedIn) SobiMessageViews.newLocalId() else null,
+    )
+
+    private fun addMessage(p: Int, m: SobiStepTracker.Message) {
+        pages.getOrPut(p) { ArrayList() } += m
+        if (p == page && view != null) renderPage()
+    }
+
+    private fun renderPage() {
+        val ctx = context ?: return
+        messagesView.removeAllViews()
+        for (m in pages[page].orEmpty()) messagesView.addView(messageViews.bubble(ctx, m))
+        if (sendingPage == page) messagesView.addView(thinkingBubble(ctx))
+        else suggestionChips(ctx)?.let { messagesView.addView(it) }
+        updateNav()
+        scrollToEnd()
+    }
+
+    private fun scrollToEnd() {
+        scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    private fun updateNav() {
+        val canPrev = page > 0 && !abacusBusy
+        val canNext = page < maxPage && !abacusBusy
+        prevButton.isEnabled = canPrev
+        nextButton.isEnabled = canNext
+        prevButton.alpha = if (canPrev) 1f else 0.35f
+        nextButton.alpha = if (canNext) 1f else 0.35f
+    }
+
+    // ── Adım ────────────────────────────────────────────────────────────────
+
     private fun onCheck() {
-        if (finished) { dismissAllowingStateLoss(); return }
+        val step = steps.getOrNull(page)
+        if (step == null) { dismissAllowingStateLoss(); return }
+        if (abacusBusy) return
         val c = controller ?: return
-        val step = steps[stepIndex]
         val value = c.getCurrentValue()
         tracker.onAnswerChecked()
         if (value == step.target) {
             playSound(R.raw.correct_answer_sound, 0.3f)
-            sobiText.text = appString(R.string.review_correct)
-            setButtonsEnabled(false)
-            sobiText.postDelayed({
-                if (!isAdded) return@postDelayed
-                if (stepIndex + 1 < steps.size) startStep(stepIndex + 1) else finish()
-            }, 900L)
+            mascot.play(BunnyMascotView.Emote.CHEER)
+            addMessage(page, SobiStepTracker.Message(fromChild = false, text = appString(R.string.review_correct)))
+            val from = page
+            holdAbacus(true)
+            checkButton.postDelayed({
+                if (!isAdded || page != from) return@postDelayed
+                holdAbacus(false)
+                if (from + 1 < steps.size) openStep(from + 1) else openResult()
+            }, NEXT_STEP_DELAY_MS)
             return
         }
         val detail = step.move?.let { MistakeAnalyzer.diagnoseStep(it, stepLog, value).text }
             ?: MistakeAnalyzer.diagnoseWrite(step.target, value)
         val found = if (diagnosis == null && firstReviewMistake == -1) {
-            firstReviewMistake = stepIndex
+            firstReviewMistake = page
             appString(R.string.review_found_now) + " "
         } else ""
-        sobiText.text = found + appString(R.string.review_wrong, detail)
+        addMessage(page, sobiMessage(found + appString(R.string.review_wrong, detail)))
         playSound(R.raw.incorrect_answer_sound)
+        // Üzgün → kararlı: "hadi bir daha" (çocuk yanılmaktan korkmasın); son duruşta kalmasın.
+        mascot.play(BunnyMascotView.Emote.DETERMINED)
+        mascot.postDelayed({ if (isAdded) mascot.stop() }, BunnyMascotView.Emote.DETERMINED.durationMs)
         rewindToStepStart(step)
     }
 
@@ -200,42 +359,49 @@ class MistakeReviewDialog : DialogFragment() {
      * var ki çocuk önce kendi yaptığını görsün; geri alma hareketi değer kaydına girmez.
      */
     private fun rewindToStepStart(step: Step) {
-        val c = controller ?: return
-        val p = player ?: return
-        if (c.getCurrentValue() == step.base) return
-        recording = false
-        tracker.paused = true
-        c.setEnabled(false)
-        setButtonsEnabled(false)
-        sobiText.postDelayed({
+        val from = page
+        holdAbacus(true)
+        checkButton.postDelayed({
             if (!isAdded) return@postDelayed
-            p.moveTo(step.base)
-            sobiText.postDelayed({
-                if (!isAdded) return@postDelayed
-                recording = true
-                tracker.paused = false
-                c.setEnabled(true)
-                setButtonsEnabled(true)
-                stepLog.clear()
-                stepLog += c.getCurrentValue()
-            }, REWIND_SETTLE_MS)
+            holdAbacus(false)
+            if (page == from) moveAbacus(step.base)
         }, REWIND_DELAY_MS)
     }
 
-    /** Ders ekranındaki sesler; ayarlarda ses kapalıysa çalmaz. */
-    private fun playSound(resId: Int, volume: Float = 1f) {
-        val c = context ?: return
-        if (!c.getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE).getBoolean("sound_enabled", true)) return
-        mediaPlayer?.release()
-        mediaPlayer = MediaPlayer.create(c, resId)?.apply {
-            setVolume(volume, volume)
-            start()
+    /** Abaküsü [value]'ya getirir; hareket bitene dek dokunuş ve düğmeler kapalı, kayıt durur. */
+    private fun moveAbacus(value: Int) {
+        val c = controller ?: return
+        val p = player ?: return
+        if (c.getCurrentValue() == value) {
+            stepLog.clear()
+            stepLog += value
+            return
         }
+        if (p.isPlaying) p.cancel()
+        holdAbacus(true)
+        p.moveTo(value)
+        checkButton.postDelayed({
+            if (!isAdded) return@postDelayed
+            holdAbacus(false)
+            stepLog.clear()
+            stepLog += c.getCurrentValue()
+        }, REWIND_SETTLE_MS)
+    }
+
+    private fun holdAbacus(hold: Boolean) {
+        abacusBusy = hold
+        tracker.paused = hold
+        controller?.setEnabled(!hold)
+        showButton.isEnabled = !hold
+        checkButton.isEnabled = !hold
+        showButton.alpha = if (hold) 0.5f else 1f
+        checkButton.alpha = if (hold) 0.5f else 1f
+        updateNav()
     }
 
     /** "Bana göster": bu adımın hamlesini adımın başından oynatır; sonunda abaküs yine başa döner. */
     private fun showCurrentStep() {
-        val step = steps.getOrNull(stepIndex) ?: return
+        val step = steps.getOrNull(page) ?: return
         val action = if (step.move == null) {
             ServerSobi.Action(ServerSobi.ACTION_SHOW, 0, "add", step.target, step.target)
         } else {
@@ -245,68 +411,135 @@ class MistakeReviewDialog : DialogFragment() {
         play(action)
     }
 
+    /** Gösterim; Sobi başka bir örnek gösterdiyse sonunda abaküs bu sayfanın başına döner. */
     private fun play(action: ServerSobi.Action) {
+        if (abacusBusy) return
         val c = controller ?: return
         val p = player ?: return
-        recording = false
-        tracker.paused = true
-        c.setEnabled(false)
-        setButtonsEnabled(false)
-        val restore = {
-            recording = true
-            tracker.paused = false
-            c.setEnabled(true)
-            setButtonsEnabled(true)
-        }
+        val from = page
+        holdAbacus(true)
         val started = p.play(action) {
             if (!isAdded) return@play
-            restore()
-            stepLog.clear()
-            stepLog += c.getCurrentValue()
+            holdAbacus(false)
+            val base = steps.getOrNull(from)?.base
+            if (page == from && base != null && c.getCurrentValue() != base) moveAbacus(base)
+            else { stepLog.clear(); stepLog += c.getCurrentValue() }
         }
-        if (!started) restore()
+        if (!started) holdAbacus(false)
     }
 
-    private fun finish() {
-        finished = true
-        val tip = diagnosis?.move?.let { m ->
-            appString(
-                R.string.review_done_tip,
-                MistakeAnalyzer.columnName(m.col),
-                m.steps.joinToString(", ") { "\"${MistakeAnalyzer.stepPhrase(it, m)}\"" },
-            )
-        }.orEmpty()
-        stepLabel.text = ""
-        sobiText.text = appString(R.string.review_done, questionText(numbers), numbers.sum()) + tip
-        showButton.visibility = View.GONE
-        checkButton.text = appString(R.string.review_back)
-        setButtonsEnabled(true)
+    // ── Sobi'ye sor ─────────────────────────────────────────────────────────
+
+    private fun sendFromInput() {
+        val text = input.text?.toString()?.trim().orEmpty()
+        if (text.isEmpty() || sendingPage != -1) return
+        input.setText("")
+        hideKeyboard()
+        send(text)
     }
 
-    private fun setButtonsEnabled(enabled: Boolean) {
-        showButton.isEnabled = enabled
-        checkButton.isEnabled = enabled
-        showButton.alpha = if (enabled) 1f else 0.5f
-        checkButton.alpha = if (enabled) 1f else 0.5f
+    private fun send(text: String, suggestion: String? = null) {
+        if (sendingPage != -1 || !loggedIn) return
+        val context = sobiContext()
+        val forPage = page
+        sendingPage = forPage
+        pageSuggestions.remove(forPage)
+        pageShow.remove(forPage)
+        addMessage(forPage, SobiStepTracker.Message(fromChild = true, text = text))
+        mascot.repeatWithPause(BunnyMascotView.Emote.THINK, 0L)
+
+        ServerSobi.send(
+            sessionId = tracker.sessionId,
+            message = text,
+            context = context,
+            onResult = { reply ->
+                sendingPage = -1
+                tracker.sessionId = reply.sessionId
+                val shown = when {
+                    reply.turnLimitReached -> appString(R.string.sobi_turn_limit)
+                    else -> reply.text?.takeIf { it.isNotBlank() }
+                }
+                reply.actions.lastOrNull { it.kind == ServerSobi.ACTION_SHOW }?.let { pageShow[forPage] = it }
+                pageSuggestions[forPage] = if (reply.turnLimitReached) emptyList() else reply.suggestions
+                val index = if (reply.turnLimitReached) null else reply.messageIndex
+                if (view == null) {
+                    shown?.let { pages.getOrPut(forPage) { ArrayList() } += SobiStepTracker.Message(fromChild = false, text = it, serverIndex = index) }
+                    return@send
+                }
+                mascot.stop()
+                if (shown != null) {
+                    mascot.talk((shown.length * TALK_MS_PER_CHAR).coerceIn(800L, 4000L))
+                    addMessage(forPage, SobiStepTracker.Message(fromChild = false, text = shown, serverIndex = index))
+                } else renderPage()
+            },
+            onFailure = { e ->
+                sendingPage = -1
+                val msg = when {
+                    ServerSobi.isDailyLimit(e) -> appString(R.string.sobi_error_daily_limit)
+                    ServerSobi.isRestricted(e) -> appString(R.string.sobi_error_restricted)
+                    else -> appString(R.string.sobi_error_network)
+                }
+                if (view == null) return@send
+                mascot.stop()
+                addMessage(forPage, SobiStepTracker.Message(fromChild = false, text = msg))
+            },
+            suggestion = suggestion,
+        )
     }
 
-    // ── Sobi sohbeti ────────────────────────────────────────────────────────
-
-    private fun openSobi() {
-        if (FirebaseAuth.getInstance().currentUser == null) return
-        val s = sheet ?: SobiChatSheet(
-            fragment = this,
-            tracker = tracker,
-            contextProvider = { sobiContext() },
-            onShow = { if (!finished) play(it) },
-            isQuestionStep = { !finished },
-        ).also { sheet = it }
-        s.show()
+    /**
+     * Sayfanın altındaki balonlar: Sobi'nin son cevabının önerileri; henüz soru sorulmadıysa adımın
+     * başlangıç balonları. "Bana göster" ve "Bir daha göster" sunucuya gitmez (yerelde oynar).
+     */
+    private fun suggestionChips(ctx: Context): View? {
+        if (!loggedIn) return null
+        val show = pageShow[page]
+        val keys = ArrayList<String>()
+        if (show != null) keys += KEY_WATCH
+        keys += pageSuggestions[page] ?: if (page < steps.size) INITIAL_SUGGESTIONS else emptyList()
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(ctx, 6), 0, dp(ctx, 4))
+        }
+        for (key in keys.distinct()) {
+            val label = if (key == KEY_WATCH) appString(R.string.sobi_watch_button) else SobiChatSheet.labelOf(key) ?: continue
+            val chip = TextView(ctx).apply {
+                text = label
+                setTextColor(ContextCompat.getColor(ctx, R.color.white))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                background = ContextCompat.getDrawable(ctx, R.drawable.bg_sobi_pill)
+                setPadding(dp(ctx, 12), dp(ctx, 7), dp(ctx, 12), dp(ctx, 7))
+                setOnClickListener { onSuggestion(key) }
+            }
+            row.addView(chip, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { marginEnd = dp(ctx, 8) })
+        }
+        if (row.childCount == 0) return null
+        return HorizontalScrollView(ctx).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(row)
+        }
     }
 
-    /** O anki adım: soru adımı bağlamı; Sobi teşhisi ve sorunun kurallarını da bilsin. */
+    private fun onSuggestion(key: String) {
+        when (key) {
+            KEY_WATCH, SobiChatSheet.KEY_SHOW_AGAIN -> pageShow[page]?.let { play(it) } ?: showCurrentStep()
+            SobiChatSheet.KEY_SHOW -> showCurrentStep()
+            else -> send(SobiChatSheet.labelOf(key) ?: return, suggestion = key)
+        }
+    }
+
+    private fun thinkingBubble(ctx: Context): View = TextView(ctx).apply {
+        text = appString(R.string.sobi_thinking)
+        setTextColor(ContextCompat.getColor(ctx, R.color.dark_text_secondary))
+        setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+        setPadding(dp(ctx, 4), dp(ctx, 6), 0, dp(ctx, 6))
+    }
+
+    /** O anki sayfanın adımı: soru adımı bağlamı; Sobi teşhisi ve sorunun kurallarını da bilsin. */
     private fun sobiContext(): SobiContext {
-        val step = steps.getOrNull(stepIndex)
+        val step = steps.getOrNull(page)
         val notes = listOfNotNull(
             "Çocuk soruyu yanlış cevapladı: ${questionText(numbers)} = $answer (doğrusu ${numbers.sum()}).",
             diagnosis?.text?.let { "Teşhis: $it" },
@@ -314,9 +547,9 @@ class MistakeReviewDialog : DialogFragment() {
         )
         return tracker.questionContext(
             stepId = null,
-            stepText = if (finished) null else step?.text,
+            stepText = step?.text,
             questionText = questionText(numbers),
-            target = if (finished) null else step?.target,
+            target = step?.target,
             current = controller?.getCurrentValue(),
             lessonTitle = lessonTitle,
             recentSteps = notes,
@@ -324,12 +557,41 @@ class MistakeReviewDialog : DialogFragment() {
         )
     }
 
+    // ── Yardımcılar ─────────────────────────────────────────────────────────
+
+    /** Ders ekranındaki sesler; ayarlarda ses kapalıysa çalmaz. */
+    private fun playSound(resId: Int, volume: Float = 1f) {
+        val c = context ?: return
+        if (!c.getSharedPreferences("AppPrefs", Context.MODE_PRIVATE).getBoolean("sound_enabled", true)) return
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer.create(c, resId)?.apply {
+            setVolume(volume, volume)
+            start()
+        }
+    }
+
+    private fun hideKeyboard() {
+        if (!::input.isInitialized) return
+        val imm = input.context.getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(input.windowToken, 0)
+        input.clearFocus()
+    }
+
+    private fun dp(ctx: Context, v: Int): Int = (v * ctx.resources.displayMetrics.density).toInt()
+
     companion object {
         const val TAG = "MistakeReview"
         /** Ekran kapanınca ders ekranına giden bildirim (setFragmentResult). */
         const val RESULT_CLOSED = "MistakeReview.closed"
         private const val REWIND_DELAY_MS = 700L
         private const val REWIND_SETTLE_MS = 500L
+        private const val NEXT_STEP_DELAY_MS = 900L
+        /** Cevap okunurken Sobi'nin ağzı karakter başına bu kadar oynar (en az 0,8, en çok 4 sn). */
+        private const val TALK_MS_PER_CHAR = 45L
+        /** Yerel balon: Sobi'nin son cevabındaki gösterimi oynatır. */
+        private const val KEY_WATCH = "abakuste_izle"
+        /** Adımda henüz soru sorulmadıysa. "Bana göster" zaten alt düğme. */
+        private val INITIAL_SUGGESTIONS = listOf(SobiChatSheet.KEY_WHY, SobiChatSheet.KEY_DIDNT_GET)
         private const val ARG_NUMBERS = "numbers"
         private const val ARG_ANSWER = "answer"
         private const val ARG_LOG = "log"

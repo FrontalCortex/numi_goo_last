@@ -103,12 +103,14 @@ class SobiStepTracker {
     /**
      * [serverIndex]: Sobi'nin cevabının sunucudaki sohbet kaydındaki sırası; beğen / beğenme buna
      * bağlanır (yalnızca sunucudan gelen cevaplarda var). [rating]: 1 beğendi, -1 beğenmedi, 0 yok.
-     * [commented]: oyuna yorum yazdı; [reported]: cevabı bildirdi.
+     * [commented]: oyuna yorum yazdı; [reported]: cevabı bildirdi. [localId]: kural motorunun yazdığı
+     * mesaj (sunucudan geçmedi); oy metniyle birlikte bu kimlikle gider ([SobiMessageViews]).
      */
     data class Message(
         val fromChild: Boolean,
         val text: String,
         val serverIndex: Int? = null,
+        val localId: String? = null,
         var rating: Int = 0,
         var commented: Boolean = false,
         var reported: Boolean = false,
