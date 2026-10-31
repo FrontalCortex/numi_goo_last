@@ -267,6 +267,26 @@ function applyBlockToStats(prev, tally) {
   return out;
 }
 
+/**
+ * DERS VE SOBİ SAYIMI — kural başarısına derslerden ve Sobi ile çalışmadan gelen sayım (kullanıcı kararı
+ * 01.11.2026: "Ödev başarısı" kartı "Kural başarısı" oldu, hepsi tek toplamda). Uygulama biriktirip
+ * gönderiyor (recordRuleTally). Yalnızca abaküslü toplama ve çıkarma kuralları (çarpma ödevde kalıyor);
+ * tek çağrıda kural başına ve soru sayısında en çok EXTRA_TALLY_MAX: uygulama hatası ya da oynanmış bir
+ * istemci toplamı bir anda şişiremesin.
+ */
+const EXTRA_TALLY_MAX = 200;
+const EXTRA_TALLY_KEY = /^(?:add|sub)_(?:direct|five|ten|bead)$/;
+
+function sanitizeExtraTally(data) {
+  const d = data && typeof data === 'object' ? data : {};
+  const clamp = (v) => (Number.isInteger(v) ? Math.min(Math.max(v, 0), EXTRA_TALLY_MAX) : 0);
+  const tally = sanitizeRuleTally(d.tally)
+    .filter((t) => EXTRA_TALLY_KEY.test(t.key))
+    .map((t) => ({ key: t.key, c: Math.min(t.c, EXTRA_TALLY_MAX), w: Math.min(t.w, EXTRA_TALLY_MAX) }));
+  const q = d.q && typeof d.q === 'object' ? d.q : {};
+  return { tally, questions: { c: clamp(q.c), w: clamp(q.w) } };
+}
+
 /** Günlük kayıt anahtarı Türkiye saatiyle (UTC+3; 2016'dan beri yaz saati yok): { month: '2026-10', day: '26' }. */
 function trDayKey(ms) {
   const iso = new Date(ms + 3 * 3600 * 1000).toISOString();
@@ -289,6 +309,8 @@ module.exports = {
   trDayKey,
   blockQuestionCounts,
   sanitizeRuleTally,
+  sanitizeExtraTally,
+  EXTRA_TALLY_MAX,
   countDone,
   doneNoticeText,
   BLOCK_SIZE,

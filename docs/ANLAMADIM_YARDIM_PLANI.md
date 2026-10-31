@@ -460,6 +460,11 @@ A yapay zekâsız, kural motoruyla:
   sütunu sayfa açılınca kendiliğinden parlar, Sobi de `sutunu_goster` aracıyla parlatabilir; (4) kural hafızası
   `SobiRuleStats` (cihazda; ders soruları, flaş, Sobi ekranı; yanlışta yalnızca hatanın kuralı) bağlamda `ruleStats`.
   Sunucu ayrıca "örneği açtım" deyip açmayan cevabı yedek metne çeviriyor (`acilmayan_ornek`).
+- Örnek zorluğu (01.11.2026): "Daha zor bir örnek" balonu; `ExamplePicker` 4 düzey (tek basamak → üç basamak,
+  kural en az iki sütunda), örnek hep dersin kuralından, düzeyi yalnızca çocuk artırır (kural hafızasına bağlı değil).
+- Kural hafızası veli panelinde: "Ödev başarısı" kartı "Kural başarısı" oldu. `SobiRuleStats` işlem başına sayıyor
+  (ödevle aynı), biriktirip `recordRuleTally` ile homeworkRuleStats/{uid}'e ekliyor (ödev toplamı, son ~50 işlem,
+  ustalık, günlük kayıt; sınıf öğretmeni de görüyor). Ders soruları soru sayısına da giriyor; Sobi adımları yalnızca kurala.
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

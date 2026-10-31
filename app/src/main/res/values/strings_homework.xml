@@ -168,12 +168,13 @@
     <string name="hw_player_quit_message">Bu adımdaki cevapların kaydedilmez; adıma baştan başlarsın.</string>
     <string name="hw_player_quit_confirm">Çık</string>
 
-    <!-- İlerleme sayfası girişi (ProgressHubFragment) ve ödev başarısı (HomeworkRuleStatsFragment) -->
+    <!-- İlerleme sayfası girişi (ProgressHubFragment) ve kural başarısı (HomeworkRuleStatsFragment; eski adı ödev başarısı,
+         01.11.2026'dan beri dersler ve Sobi ile çalışma da sayılıyor) -->
     <string name="progress_hub_lessons">Dersler</string>
     <string name="progress_hub_lessons_desc">Ders ilerlemesi ve çalışma süresi</string>
-    <string name="progress_hub_rules">Ödev başarısı</string>
-    <string name="progress_hub_rules_desc">Ödevlerde kural kural doğru oranı</string>
-    <string name="rule_stats_title">%1$s — Ödev başarısı</string>
+    <string name="progress_hub_rules">Kural başarısı</string>
+    <string name="progress_hub_rules_desc">Derslerde, ödevlerde ve Sobi ile kural kural doğru oranı</string>
+    <string name="rule_stats_title">%1$s — Kural başarısı</string>
     <string name="rule_stats_add">Toplama</string>
     <string name="rule_stats_sub">Çıkarma</string>
     <string name="rule_stats_mul_abacus">Abaküslü çarpma</string>
@@ -181,17 +182,17 @@
     <string name="rule_stats_mul_digits">%1$d × %2$d basamak</string>
     <string name="rule_stats_percent">%%%1$d</string>
     <string name="rule_stats_count">%1$d/%2$d doğru</string>
-    <string name="rule_stats_empty">Henüz ödevlerden gelen veri yok. Abaküslü ödevler ve çarpma ödevleri çözüldükçe burada her kuralın doğru oranı görünecek.</string>
-    <string name="rule_stats_note">Abaküslü toplama ve çıkarmada her basamak işlemi, gerektirdiği kurala sayılır. Çarpmada her soru bir deneme.</string>
+    <string name="rule_stats_empty">Henüz veri yok. Dersler, ödevler ve Sobi ile çalışmalar çözüldükçe burada her kuralın doğru oranı görünecek.</string>
+    <string name="rule_stats_note">Toplama ve çıkarmada her basamak işlemi, gerektirdiği kurala sayılır: dersler, ödevler ve Sobi ile çalışma birlikte. Çarpmada her ödev sorusu bir deneme.</string>
 
-    <!-- Ödev başarısı: bu hafta kartı ve başarı grafiği (HomeworkRuleStatsFragment) -->
+    <!-- Kural başarısı: bu hafta kartı ve başarı grafiği (HomeworkRuleStatsFragment) -->
     <string name="rule_progress_unit_question">soru</string>
     <string name="rule_progress_unit_op">işlem</string>
     <string name="rule_progress_week_title">Bu hafta</string>
     <!-- "42 soru · geçen hafta %74" -->
     <string name="rule_progress_week_sub">%1$d %2$s · geçen hafta %%%3$d</string>
-    <string name="rule_progress_week_sub_no_last">%1$d %2$s · geçen hafta ödev yoktu</string>
-    <string name="rule_progress_week_none">Bu hafta henüz ödev çözülmedi</string>
+    <string name="rule_progress_week_sub_no_last">%1$d %2$s · geçen hafta çalışma yoktu</string>
+    <string name="rule_progress_week_none">Bu hafta henüz soru çözülmedi</string>
     <string name="rule_progress_week_none_sub">Geçen hafta %%%1$d · %2$d %3$s</string>
     <string name="rule_progress_delta_up">+%1$d puan</string>
     <string name="rule_progress_delta_down">−%1$d puan</string>
@@ -206,7 +207,7 @@
     <string name="rule_progress_range_quarter">3 ay</string>
     <string name="rule_progress_range_all">Tümü</string>
     <string name="rule_progress_chart_hint">Her nokta o dönemin doğru oranı; üstündeki sayı o ana kadar çözülen toplam %1$s. Ayrıntı için noktaya dokun.</string>
-    <string name="rule_progress_chart_empty">Bu dönemde ödev çözülmedi</string>
+    <string name="rule_progress_chart_empty">Bu dönemde soru çözülmedi</string>
     <!-- Seçili dönemde konu çalışılmadıysa: "En son çalışma: 12 Ağu · %78 doğru. Tümü'ne geçince görünür." -->
     <string name="rule_progress_chart_empty_last">En son çalışma: %1$s · %%%2$d doğru. Tümü\'ne geçince görünür.</string>
     <string name="rule_progress_base">Başlangıç</string>

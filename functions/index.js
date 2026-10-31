@@ -4439,6 +4439,51 @@ exports.createHomework = functions.https.onCall(async (data, context) => {
   return { success: true, homeworkId: ref.id, recipients: recipients.length };
 });
 
+/**
+ * Kural sayımını öğrencinin toplamına (homeworkRuleStats/{uid}), son ~50 işlem penceresine, ustalık
+ * aşamasına ve günlük kayda (months/{yyyy-mm}.days.{gg}) ekler. Ödevler ve dersler/Sobi aynı yoldan.
+ * [beforeWrite]: işlem içinde önceki belgeye bakıp yazımı reddedebilir (sıklık sınırı).
+ */
+async function writeRuleTally(studentUid, tally, questions, { extraFields = {}, beforeWrite = null } = {}) {
+  const now = Date.now();
+  const statsRef = db.collection('homeworkRuleStats').doc(studentUid);
+  const { month, day } = homework.trDayKey(now);
+  const inc = admin.firestore.FieldValue.increment;
+  const t = {};
+  for (const { key, c, w } of tally) t[key] = { c: inc(c), w: inc(w) };
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(statsRef);
+    const prev = snap.exists ? snap.data() : {};
+    if (beforeWrite) beforeWrite(prev, now);
+    const next = homework.applyBlockToStats(prev, tally);
+    tx.set(statsRef, { ...next, ...extraFields, updatedAtMs: now }, { merge: true });
+    tx.set(statsRef.collection('months').doc(month), {
+      days: { [day]: { q: { c: inc(questions.c), w: inc(questions.w) }, t } },
+      updatedAtMs: now,
+    }, { merge: true });
+  });
+}
+
+/**
+ * Derslerden ve Sobi ile çalışmadan gelen kural sayımı (uygulama biriktirip gönderiyor; SobiRuleStats).
+ * Ödevlerle aynı toplama eklenir: veli panelindeki "Kural başarısı" ve sınıf öğretmeni hepsini görür
+ * (kullanıcı kararı 01.11.2026). Sınırlar homework.sanitizeExtraTally'de; en sık 3 sn'de bir
+ * (uygulama ~4 sn biriktiriyor; reddedilen sayım uygulamada bekler, sonra yeniden gönderilir).
+ */
+exports.recordRuleTally = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const { tally, questions } = homework.sanitizeExtraTally(data);
+  if (!tally.length && questions.c + questions.w === 0) return { success: true, written: false };
+  await writeRuleTally(uid, tally, questions, {
+    extraFields: { extraTallyAtMs: Date.now() },
+    beforeWrite: (prev, now) => {
+      const last = Number(prev.extraTallyAtMs) || 0;
+      if (now - last < 3000) throw new functions.https.HttpsError('resource-exhausted', 'Çok sık gönderildi.');
+    },
+  });
+  return { success: true, written: true };
+});
+
 /** Öğretmen ödevi siler; öğrencilerin ilerlemesi de gider. */
 exports.deleteHomework = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);
@@ -4486,21 +4531,8 @@ exports.onHomeworkProgressWritten = functions.firestore
     const tally = newBlock ? homework.sanitizeRuleTally(after.ruleTally) : [];
     const questions = newBlock ? homework.blockQuestionCounts(before, after) : { c: 0, w: 0 };
     if (tally.length || questions.c + questions.w > 0) {
-      const now = Date.now();
-      const statsRef = db.collection('homeworkRuleStats').doc(studentUid);
-      const { month, day } = homework.trDayKey(now);
-      const inc = admin.firestore.FieldValue.increment;
-      const t = {};
-      for (const { key, c, w } of tally) t[key] = { c: inc(c), w: inc(w) };
-      await db.runTransaction(async (tx) => {
-        const snap = await tx.get(statsRef);
-        const next = homework.applyBlockToStats(snap.exists ? snap.data() : {}, tally);
-        tx.set(statsRef, { ...next, updatedAtMs: now }, { merge: true });
-        tx.set(statsRef.collection('months').doc(month), {
-          days: { [day]: { q: { c: inc(questions.c), w: inc(questions.w) }, t } },
-          updatedAtMs: now,
-        }, { merge: true });
-      }).catch((e) => console.error('onHomeworkProgressWritten: kural sayımı yazılamadı', { studentUid, error: e.message }));
+      await writeRuleTally(studentUid, tally, questions)
+        .catch((e) => console.error('onHomeworkProgressWritten: kural sayımı yazılamadı', { studentUid, error: e.message }));
     }
 
     const total = Number(hw.blockCount) || 0;

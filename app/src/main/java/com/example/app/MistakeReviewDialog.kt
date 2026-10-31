@@ -115,6 +115,8 @@ class MistakeReviewDialog : DialogFragment() {
     private var tutorialValue = 0
     private var exampleRule: String? = null
     private var examples = 0
+    /** Örneklerin zorluğu (1..[ExamplePicker.MAX_LEVEL]); çocuk "Daha zor bir örnek"e dokundukça artar. */
+    private var exampleLevel = 1
 
     private val pageList = ArrayList<Page>()
     private val groups = ArrayList<Group>()
@@ -542,7 +544,7 @@ class MistakeReviewDialog : DialogFragment() {
         val value = c.getCurrentValue()
         tracker.onAnswerChecked()
         val correct = value == step.target
-        step.move?.let { SobiRuleStats.record(requireContext(), SobiRuleStats.moveRules(it), correct) }
+        step.move?.let { SobiRuleStats.recordMove(requireContext(), it, correct) }
         if (!correct) groups.getOrNull(pageList[page].group)?.let { it.wrong++ }
         if (correct) {
             playSound(R.raw.correct_answer_sound, 0.3f)
@@ -648,7 +650,7 @@ class MistakeReviewDialog : DialogFragment() {
      */
     private fun startExample() {
         val ruleKey = exampleRule ?: return
-        val (a, b) = ExamplePicker.pick(ruleKey, examples * 7 + tutorialNumber * 3) ?: return
+        val (a, b) = ExamplePicker.pick(ruleKey, examples * 7 + tutorialNumber * 3, exampleLevel, tutorialRules) ?: return
         examples++
         val nums = listOf(a, b)
         val q = questionText(nums)
@@ -656,8 +658,9 @@ class MistakeReviewDialog : DialogFragment() {
         if (group.isEmpty()) return
         addMessage(page, SobiStepTracker.Message(fromChild = true, text = appString(R.string.sobi_suggest_example)))
         val rule = group.mapNotNull { it.move }.maxByOrNull { it.rule.ordinal }?.rule
-        val intro = if (rule == null || rule == com.example.app.homework.AbacusRule.DIRECT) appString(R.string.sobi_screen_example_intro_direct, q)
-        else appString(R.string.sobi_screen_example_intro, q, MistakeAnalyzer.ruleName(rule))
+        val intro = appString(R.string.sobi_screen_example_level, exampleLevel, ExamplePicker.MAX_LEVEL) + " " +
+            if (rule == null || rule == com.example.app.homework.AbacusRule.DIRECT) appString(R.string.sobi_screen_example_intro_direct, q)
+            else appString(R.string.sobi_screen_example_intro, q, MistakeAnalyzer.ruleName(rule))
         val first = addGroup(
             group,
             intro,
@@ -787,6 +790,13 @@ class MistakeReviewDialog : DialogFragment() {
         if (tutorialMode && exampleRule != null) {
             val label = appString(if (examples == 0) R.string.sobi_suggest_example else R.string.sobi_screen_another_example)
             items += label to { startExample() }
+            // Zorluğu çocuk seçer (kullanıcı kararı 01.11.2026): örnek yine dersin kuralından, yalnızca büyür.
+            if (examples > 0 && exampleLevel < ExamplePicker.MAX_LEVEL) {
+                items += appString(R.string.sobi_screen_harder_example) to {
+                    exampleLevel++
+                    startExample()
+                }
+            }
         }
         if (items.isEmpty()) return null
         val row = LinearLayout(ctx).apply {

@@ -189,6 +189,15 @@ async function main() {
       add_ten: { c: 1e9, w: 0 }, 'add_five.c': { c: 1, w: 0 }, add_bead: { c: 0, w: 0 },
     }), [{ key: 'sub_direct', c: 2, w: 1 }, { key: 'mulA_2x1', c: 4, w: 0 }, { key: 'add_ten', c: 8000, w: 0 }]);
     check('sayım süzgeci: dizi/boş', [h.sanitizeRuleTally([1]), h.sanitizeRuleTally(null)], [[], []]);
+    // Ders ve Sobi sayımı: yalnızca toplama/çıkarma kuralları, çağrı başına sınır.
+    check('ders sayımı süzgeci', h.sanitizeExtraTally({
+      tally: { add_ten: { c: 3, w: 1 }, mulA_2x1: { c: 5, w: 0 }, sub_bead: { c: 9999, w: 0 }, uydurma: { c: 1, w: 1 } },
+      q: { c: 2, w: -4 },
+    }), {
+      tally: [{ key: 'add_ten', c: 3, w: 1 }, { key: 'sub_bead', c: h.EXTRA_TALLY_MAX, w: 0 }],
+      questions: { c: 2, w: 0 },
+    });
+    check('ders sayımı süzgeci: boş', h.sanitizeExtraTally(null), { tally: [], questions: { c: 0, w: 0 } });
   }
 
   console.log('\n=== HESAP SİLME ===');

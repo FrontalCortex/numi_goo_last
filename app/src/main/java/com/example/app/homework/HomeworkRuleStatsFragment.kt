@@ -37,8 +37,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 /**
- * Ödev başarısı: homeworkRuleStats/{uid} ve günlük kayıtları (sunucu topluyor, bkz. [RuleAnalysis],
- * [RuleProgress] ve functions/index.js onHomeworkProgressWritten).
+ * Kural başarısı (eski adı ödev başarısı): homeworkRuleStats/{uid} ve günlük kayıtları (sunucu topluyor,
+ * bkz. [RuleAnalysis], [RuleProgress] ve functions/index.js onHomeworkProgressWritten). 01.11.2026'dan beri
+ * dersler ve Sobi ile çalışma da aynı toplama ekleniyor (SobiRuleStats → recordRuleTally; kullanıcı kararı).
  *
  * Amaç "ilerlemişim" dedirtmek (kullanıcı kararı 26.10.2026); toplam oran yüzlerce sorudan sonra
  * kımıldamıyordu. Üç parça:

@@ -86,6 +86,8 @@
     <string name="sobi_screen_example_title">Örnek bitti</string>
     <string name="sobi_screen_example_done">Harika, örneği çözdük: %1$s = %2$d. İstersen \"Başka bir örnek\"e dokun ya da derse dön.</string>
     <string name="sobi_screen_example_done_ai">Harika, %1$s = %2$d! İstersen \"Sıradaki soru\"ya dokun; sana göre bir soru seçeyim.</string>
+    <string name="sobi_screen_harder_example">Daha zor bir örnek</string>
+    <string name="sobi_screen_example_level">Zorluk %1$d/%2$d.</string>
     <string name="sobi_screen_another_example">Başka bir örnek</string>
     <!-- Analiz ekranında adımın parça balonları (kural motoru cevaplar) -->
     <string name="review_why_rule">Neden bu kural?</string>
