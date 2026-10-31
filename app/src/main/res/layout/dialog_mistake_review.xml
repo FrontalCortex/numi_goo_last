@@ -28,63 +28,39 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Soru ve çocuğun cevabı tek satırda: sohbete yer kalsın. -->
-    <TextView
-        android:id="@+id/reviewQuestion"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textColor="@color/dark_text"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
-        app:layout_constraintEnd_toStartOf="@id/reviewYourAnswer"
-        app:layout_constraintHorizontal_chainStyle="packed"
-        app:layout_constraintStart_toEndOf="@id/reviewClose"
-        app:layout_constraintTop_toTopOf="@id/reviewClose"
-        tools:text="12 + 22" />
-
-    <TextView
-        android:id="@+id/reviewYourAnswer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="52dp"
-        android:textColor="#FF4B4B"
-        android:textSize="15sp"
-        app:layout_constraintBaseline_toBaselineOf="@id/reviewQuestion"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/reviewQuestion"
-        tools:text="Senin cevabın: 44" />
-
-    <!-- Adım gezinmesi: önceki / sonraki adım (yalnızca açılmış adımlar). -->
+    <!-- Adım gezinmesi kapatmanın yanında: önceki / sonraki adım (yalnızca açılmış adımlar). Soru ve
+         çocuğun cevabı üstte yazmıyor (flaş dizisinde çok uzun, kalabalık); Sobi'nin ilk mesajında. -->
     <ImageButton
         android:id="@+id/reviewPrev"
         android:layout_width="44dp"
         android:layout_height="40dp"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="6dp"
+        android:layout_marginStart="4dp"
         android:background="@drawable/bg_hw_chip"
         android:contentDescription="@string/review_prev"
         android:paddingBottom="4dp"
-        android:rotation="180"
         android:scaleType="center"
-        android:src="@drawable/ic_lesson_card_chevron"
+        android:src="@drawable/ic_review_chevron_left"
         android:tint="@color/dark_text"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/reviewClose" />
+        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
+        app:layout_constraintStart_toEndOf="@id/reviewClose"
+        app:layout_constraintTop_toTopOf="@id/reviewClose" />
 
     <TextView
         android:id="@+id/reviewStepLabel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginEnd="6dp"
+        android:ellipsize="end"
         android:gravity="center"
+        android:maxLines="1"
         android:textColor="@color/dark_text"
         android:textSize="15sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toBottomOf="@id/reviewPrev"
+        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
         app:layout_constraintEnd_toStartOf="@id/reviewNext"
         app:layout_constraintStart_toEndOf="@id/reviewPrev"
-        app:layout_constraintTop_toTopOf="@id/reviewPrev"
+        app:layout_constraintTop_toTopOf="@id/reviewClose"
         tools:text="Adım 2 / 3 · +22 işleniyor" />
 
     <ImageButton
@@ -98,32 +74,24 @@
         android:scaleType="center"
         android:src="@drawable/ic_lesson_card_chevron"
         android:tint="@color/dark_text"
+        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@id/reviewPrev" />
+        app:layout_constraintTop_toTopOf="@id/reviewClose" />
 
-    <!-- Sobi (tam gövde, canlanıyor: sevinç, kararlılık, düşünme) ve adımın sohbeti. -->
-    <com.example.app.BunnyMascotView
-        android:id="@+id/reviewMascot"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:layout_marginStart="6dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/reviewPrev" />
-
+    <!-- Adımın sohbeti (tam genişlik). -->
     <ScrollView
         android:id="@+id/reviewSobiScroll"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="10dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="12dp"
         android:layout_marginBottom="6dp"
         android:fillViewport="true"
         app:layout_constraintBottom_toTopOf="@id/reviewInputRow"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/reviewMascot"
-        app:layout_constraintTop_toBottomOf="@id/reviewPrev">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/reviewClose">
 
         <LinearLayout
             android:id="@+id/reviewMessages"

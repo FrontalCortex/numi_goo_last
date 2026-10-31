@@ -54,7 +54,7 @@
     <string name="review_title">Sobi ile analiz</string>
     <string name="review_check">Kontrol Et</string>
     <string name="review_back">Derse dön</string>
-    <string name="review_your_answer">Senin cevabın: %1$d</string>
+    <string name="review_intro_question">%1$s sorusunda cevabın %2$d oldu, doğrusu %3$d.</string>
     <string name="review_prev">Önceki adım</string>
     <string name="review_next">Sonraki adım</string>
     <string name="review_step_result">Sonuç</string>

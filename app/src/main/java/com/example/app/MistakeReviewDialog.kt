@@ -55,8 +55,8 @@ import com.google.firebase.auth.FirebaseAuth
  * Anlatım yapay zekâsız (kural motoru): kesin ve ücretsiz. Sobi'nin bütün mesajlarında beğen /
  * beğenme / bildir var ([SobiMessageViews]); kural motorunun mesajı metniyle birlikte oylanır.
  *
- * Sobi (tam gövde) tepki verir: doğruda sevinir, yanlışta üzgünden kararlıya geçer (çocuk yanılmaktan
- * korkmasın: "hadi bir daha"), soruyu beklerken düşünür, cevapta konuşur.
+ * Ekran sade (kullanıcı kararı 01.11.2026): üstte yalnızca kapat ve adım gezinmesi; soru ve çocuğun
+ * cevabı Sobi'nin ilk mesajında (flaş dizisi üst satıra sığmıyordu). Maskot yok, sohbet tam genişlik.
  *
  * Tam ekran DialogFragment: ders ekranı altta olduğu gibi kalır, kapanınca çocuk yanlış cevap
  * panelindeki "Tamam" ile devam eder. Kapanınca [RESULT_CLOSED] gider (sandık dersinin süresi sürer).
@@ -116,7 +116,6 @@ class MistakeReviewDialog : DialogFragment() {
     private lateinit var showButton: TextView
     private lateinit var checkButton: TextView
     private lateinit var input: EditText
-    private lateinit var mascot: BunnyMascotView
     private lateinit var abacusContainer: View
     private lateinit var buttonsRow: View
 
@@ -153,7 +152,6 @@ class MistakeReviewDialog : DialogFragment() {
         showButton = view.findViewById(R.id.reviewShow)
         checkButton = view.findViewById(R.id.reviewCheck)
         input = view.findViewById(R.id.reviewInput)
-        mascot = view.findViewById(R.id.reviewMascot)
         abacusContainer = view.findViewById(R.id.abacusContainer)
         buttonsRow = view.findViewById(R.id.reviewButtons)
         messageViews = SobiMessageViews(
@@ -165,14 +163,6 @@ class MistakeReviewDialog : DialogFragment() {
             onReported = { addMessage(page, SobiStepTracker.Message(fromChild = false, text = appString(R.string.sobi_report_done))) },
         )
 
-        view.findViewById<TextView>(R.id.reviewQuestion).apply {
-            text = questionText(numbers)
-            // Uzun flaş dizisi de sığsın.
-            val len = text.length
-            if (len > 14) setTextSize(TypedValue.COMPLEX_UNIT_SP, if (len > 30) 15f else 19f)
-            maxLines = 2
-        }
-        view.findViewById<TextView>(R.id.reviewYourAnswer).text = appString(R.string.review_your_answer, answer)
         view.findViewById<View>(R.id.reviewClose).setOnClickListener { dismissAllowingStateLoss() }
 
         // Sobi'ye yazmak oturum ister (sunucu çağrısı).
@@ -202,10 +192,17 @@ class MistakeReviewDialog : DialogFragment() {
         }
         controller = c
         player = SobiAbacusPlayer(c)
+        // İlk sayfa abaküs ölçüldükten SONRA açılır: flaş analizinde ilk adım abaküsü hemen 32'ye
+        // taşıyor; ölçüden önce taşınan boncuklar sonradan "aşağıda" sayılıyor, gri kalıp dokununca
+        // çerçeveden taşıyordu (01.11.2026, ekran yeniden kurulunca görüldü).
         view.findViewById<View>(R.id.abacusLinear).post {
-            if (isAdded && c.computeMovementDistancesFromLayout(ratio = 1.0f, force = true)) c.syncStateFromUi()
+            if (!isAdded) return@post
+            if (c.computeMovementDistancesFromLayout(ratio = 1.0f, force = true)) c.syncStateFromUi()
+            start()
         }
+    }
 
+    private fun start() {
         if (steps.isEmpty()) {
             addMessage(0, sobiMessage(appString(R.string.review_intro_unknown)))
             openResult()
@@ -218,7 +215,35 @@ class MistakeReviewDialog : DialogFragment() {
             diagnosis != null -> appString(R.string.review_intro_found, diagnosis!!.text)
             else -> appString(R.string.review_intro_unknown)
         }
-        openStep(0, intro = intro)
+        // Soru üstte yazmıyor: iki sayılı soruda ilk mesajda (uzun flaş dizisinde hata başlıkları yeter).
+        val question = if (numbers.size == 2) {
+            appString(R.string.review_intro_question, questionText(numbers), answer, numbers.sum())
+        } else null
+        openStep(0, intro = listOfNotNull(question, intro).joinToString("\n\n"))
+    }
+
+    private var stopped = false
+
+    override fun onStop() {
+        super.onStop()
+        stopped = true
+    }
+
+    /**
+     * Arka plandan dönüşte abaküsün durumu görünen boncuklardan yeniden okunur: dönüşte boncuklar
+     * yerindeyken denetleyici onları "aşağıda" sayıp gri gösterebiliyordu (01.11.2026).
+     */
+    override fun onStart() {
+        super.onStart()
+        if (!stopped) return
+        stopped = false
+        val c = controller ?: return
+        view?.post {
+            if (!isAdded || abacusBusy || c.isBeadAnimationInProgress()) return@post
+            c.syncStateFromUi()
+            stepLog.clear()
+            stepLog += c.getCurrentValue()
+        }
     }
 
     override fun onDestroyView() {
@@ -290,7 +315,6 @@ class MistakeReviewDialog : DialogFragment() {
         }
         maxPage = p
         showPage(p)
-        if (steps.isNotEmpty()) mascot.play(BunnyMascotView.Emote.CLAP)
     }
 
     /** Sayfayı gösterir; abaküs o adımın başındaki değere (sonuç sayfasında cevaba) gelir. */
@@ -357,7 +381,6 @@ class MistakeReviewDialog : DialogFragment() {
         tracker.onAnswerChecked()
         if (value == step.target) {
             playSound(R.raw.correct_answer_sound, 0.3f)
-            mascot.play(BunnyMascotView.Emote.CHEER)
             addMessage(page, SobiStepTracker.Message(fromChild = false, text = appString(R.string.review_correct)))
             val from = page
             holdAbacus(true)
@@ -376,9 +399,6 @@ class MistakeReviewDialog : DialogFragment() {
         } else ""
         addMessage(page, sobiMessage(found + appString(R.string.review_wrong, detail)))
         playSound(R.raw.incorrect_answer_sound)
-        // Üzgün → kararlı: "hadi bir daha" (çocuk yanılmaktan korkmasın); son duruşta kalmasın.
-        mascot.play(BunnyMascotView.Emote.DETERMINED)
-        mascot.postDelayed({ if (isAdded) mascot.stop() }, BunnyMascotView.Emote.DETERMINED.durationMs)
         rewindToStepStart(step)
     }
 
@@ -475,7 +495,6 @@ class MistakeReviewDialog : DialogFragment() {
         pageSuggestions.remove(forPage)
         pageShow.remove(forPage)
         addMessage(forPage, SobiStepTracker.Message(fromChild = true, text = text))
-        mascot.repeatWithPause(BunnyMascotView.Emote.THINK, 0L)
 
         ServerSobi.send(
             sessionId = tracker.sessionId,
@@ -495,9 +514,7 @@ class MistakeReviewDialog : DialogFragment() {
                     shown?.let { pages.getOrPut(forPage) { ArrayList() } += SobiStepTracker.Message(fromChild = false, text = it, serverIndex = index) }
                     return@send
                 }
-                mascot.stop()
                 if (shown != null) {
-                    mascot.talk((shown.length * TALK_MS_PER_CHAR).coerceIn(800L, 4000L))
                     addMessage(forPage, SobiStepTracker.Message(fromChild = false, text = shown, serverIndex = index))
                 } else renderPage()
             },
@@ -509,7 +526,6 @@ class MistakeReviewDialog : DialogFragment() {
                     else -> appString(R.string.sobi_error_network)
                 }
                 if (view == null) return@send
-                mascot.stop()
                 addMessage(forPage, SobiStepTracker.Message(fromChild = false, text = msg))
             },
             suggestion = suggestion,
@@ -619,8 +635,6 @@ class MistakeReviewDialog : DialogFragment() {
         private const val REWIND_DELAY_MS = 700L
         private const val REWIND_SETTLE_MS = 500L
         private const val NEXT_STEP_DELAY_MS = 900L
-        /** Cevap okunurken Sobi'nin ağzı karakter başına bu kadar oynar (en az 0,8, en çok 4 sn). */
-        private const val TALK_MS_PER_CHAR = 45L
         /** Yerel balon: Sobi'nin son cevabındaki gösterimi oynatır. */
         private const val KEY_WATCH = "abakuste_izle"
         /** Adımda henüz soru sorulmadıysa. "Bana göster" zaten alt düğme. */

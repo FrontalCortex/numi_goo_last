@@ -1091,14 +1091,15 @@ class BlindingLessonFragment : Fragment() {
      * Yanlış cevap panelindeki "Sobi ile analiz et": soru abaküste adım adım yeniden çözülür, Sobi
      * hatanın yerini bulur ([MistakeReviewDialog]; kullanıcı kararı 31.10.2026). Abaküsle cevaplanan
      * flaş dizisinde değer kaydı gider: yalnızca yanlış yapılan işlemler çözdürülür. Klavyeyle
-     * cevaplananda kayıt yok; bütün dizi yeniden çözülür, hatayı o çözüş bulur. Kupa modunda yok (kupa yarışı;
-     * yanlışta ders zaten bitiyor). Sandık dersinde ekran açıkken süre durur.
+     * cevaplananda kayıt yok; bütün dizi yeniden çözülür, hatayı o çözüş bulur. Kupa modunda da var
+     * (kullanıcı kararı 01.11.2026; kupa sonucu Kontrol Et anında yazıldı, analiz onu değiştirmez).
+     * Sandık dersinde ekran açıkken süre durur.
      */
     private fun bindReviewButton() {
         val button = incorrectPanel.findViewById<View>(R.id.incorrectSobiAnalyze) ?: return
         @Suppress("UNCHECKED_CAST")
         val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>()
-        if (globalPartId == 9 || !MistakeReviewDialog.canReview(numbers)) {
+        if (!MistakeReviewDialog.canReview(numbers)) {
             button.visibility = View.GONE
             return
         }
