@@ -94,11 +94,23 @@ object ServerSobi {
      * Beğen / beğenme (`sobiFeedback`): [value] 1, -1 ya da 0 (geri al). Sonuç çocuğa gösterilmiyor;
      * başarısız olursa yalnızca günlüğe yazılır (oy kaybı çocuğun işini bozmaz).
      */
-    fun sendFeedback(sessionId: String, messageIndex: Int, value: Int) {
+    fun sendFeedback(sessionId: String, messageIndex: Int, value: Int, comment: String? = null) {
+        val payload = hashMapOf<String, Any>("sessionId" to sessionId, "messageIndex" to messageIndex, "value" to value)
+        if (!comment.isNullOrBlank()) payload["comment"] = comment
         FirebaseFunctions.getInstance()
             .getHttpsCallable("sobiFeedback")
-            .call(hashMapOf("sessionId" to sessionId, "messageIndex" to messageIndex, "value" to value))
+            .call(payload)
             .addOnFailureListener { e -> Log.w(TAG, "sobiFeedback başarısız", e) }
+    }
+
+    /** Bildir: uygunsuz ya da zararlı cevap (sunucu hemen günlüğe yazar, ayrı kayıt tutar). */
+    fun sendReport(sessionId: String, messageIndex: Int, comment: String?) {
+        val payload = hashMapOf<String, Any>("sessionId" to sessionId, "messageIndex" to messageIndex, "report" to true)
+        if (!comment.isNullOrBlank()) payload["comment"] = comment
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("sobiFeedback")
+            .call(payload)
+            .addOnFailureListener { e -> Log.w(TAG, "sobiFeedback (bildir) başarısız", e) }
     }
 
     private fun parseAction(raw: Any?): Action? {

@@ -490,6 +490,23 @@ async function main() {
     await assert.rejects(feedback({ sessionId: r.sessionId, messageIndex: 1, value: 5 }, ctx), (e) => e.code === 'invalid-argument');
     await assert.rejects(feedback({ sessionId: r.sessionId, messageIndex: 1, value: 1 }, {}), (e) => e.code === 'unauthenticated');
 
+    // "Bize daha fazla bilgi ver": oyla birlikte yorum, kişisel bilgi maskeli.
+    await feedback({ sessionId: r.sessionId, messageIndex: 1, value: -1, comment: 'çok uzun, annem 0532 111 22 33' }, ctx);
+    const withComment = env.store.get(`sobiChats/u1/sobiFeedback/${r.sessionId}_1`);
+    assert.ok(withComment.comment.startsWith('çok uzun') && !withComment.comment.includes('0532'));
+    // Bildir: oydan bağımsız, ayrı kayıt, sohbet satırı işaretli, günlüğe uyarı.
+    const warns = []; const warn = console.warn; console.warn = (...a) => warns.push(a);
+    await feedback({ sessionId: r.sessionId, messageIndex: 1, report: true, comment: 'kötü söz' }, ctx);
+    console.warn = warn;
+    const rep = env.store.get(`sobiChats/u1/sobiReports/${r.sessionId}_1`);
+    assert.strictEqual(rep.status, 'yeni');
+    assert.strictEqual(rep.comment, 'kötü söz');
+    assert.strictEqual(rep.reply, r.reply);
+    assert.strictEqual(env.store.get(path).transcript[1].reported, true);
+    assert.strictEqual(env.store.get(path).transcript[1].rating, -1, 'bildirim oyu silmemeli');
+    assert.ok(warns.some((w) => String(w[0]).startsWith('sobiReport')));
+    await assert.rejects(feedback({ sessionId: r.sessionId, messageIndex: 1 }, ctx), (e) => e.code === 'invalid-argument');
+
     // Onaylı açıklaması olmayan balon ("Bir örnek ver") ve soru adımı: model çalışır.
     assert.strictEqual(chat.directReplyFor(chat.sanitizeContext(stepContext), 'ornek_ver'), null);
     assert.strictEqual(chat.directReplyFor(chat.sanitizeContext({ ...stepContext, base: 4, target: 6 }), 'bunu_anlamadim'), null);

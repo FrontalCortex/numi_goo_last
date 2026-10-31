@@ -103,8 +103,16 @@ class SobiStepTracker {
     /**
      * [serverIndex]: Sobi'nin cevabının sunucudaki sohbet kaydındaki sırası; beğen / beğenme buna
      * bağlanır (yalnızca sunucudan gelen cevaplarda var). [rating]: 1 beğendi, -1 beğenmedi, 0 yok.
+     * [commented]: oyuna yorum yazdı; [reported]: cevabı bildirdi.
      */
-    data class Message(val fromChild: Boolean, val text: String, val serverIndex: Int? = null, var rating: Int = 0)
+    data class Message(
+        val fromChild: Boolean,
+        val text: String,
+        val serverIndex: Int? = null,
+        var rating: Int = 0,
+        var commented: Boolean = false,
+        var reported: Boolean = false,
+    )
 
     var stepIndex: Int = -1
         private set

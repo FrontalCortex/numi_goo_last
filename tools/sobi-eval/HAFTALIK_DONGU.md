@@ -8,6 +8,10 @@ kendiliğinden yayına çıkmaz. Kör karşılaştırmada hakem (yapay zekâ) ku
 
 - Uygulama: Sobi'nin sunucudan gelen her cevabının altında 👍 / 👎 (`SobiChatSheet`); aynı düğmeye
   yeniden dokunmak oyu geri alır.
+- Oy verilince yanında "Bize daha fazla bilgi ver" çıkar: kısa yorum kutusu (en çok 300 karakter,
+  kişisel bilgi maskelenir). 🚩 "Bu cevabı bildir": uygunsuz / zararlı cevap için; oydan bağımsız,
+  sunucu günlüğüne hemen `sobiReport` uyarısı yazılır ve `sobiChats/{uid}/sobiReports/` altına
+  `status: 'yeni'` kaydı düşer (90 gün); haftalık raporun en başında listelenir.
 - Sunucu: `sobiFeedback` callable (`functions/sobi/feedback.js`) → `sobiChats/{uid}/sobiFeedback/`:
   oy, cevap, çocuğun önceki mesajı (maskelenmiş), kaynak (`hazir` = onaylı açıklama, modelsiz /
   `model` = Haiku), açıklama anahtarı, öğretici ve adım, talimat sürümü. 30 gün sonra TTL ile silinir;
@@ -15,6 +19,18 @@ kendiliğinden yayına çıkmaz. Kör karşılaştırmada hakem (yapay zekâ) ku
 - Not: çocukların beğenisi doğruluğu ölçmez (cevabı direkt veren Sobi'yi beğenebilirler). Oylar
   "nereye bakalım" sinyalidir; karar test seti ve kör karşılaştırmayla verilir. Daha sağlam ölçüt,
   sohbetten sonra çocuğun adımı geçip geçmediği (plan belgesi, "Ölçüm").
+
+## Kararlar (31.10.2026)
+
+- Hazır açıklamalar şimdilik yalnızca t3'te; diğer öğreticilere Haiku cevapları hiç sevilmezse eklenir.
+- Beğenilen bir cevabın modelsiz gösterilmesi için eşik: **aynı yer + aynı soru, 50 farklı kullanıcı,
+  %80 beğeni.** Haiku her seferinde farklı metin yazdığı için oylar tek bir metinde toplanmaz; önce
+  iyi beğenilen bir cevap sabit "aday metin" yapılır, sonraki çocuklara bu metin gösterilip oylanır,
+  eşik bu metnin kendi oylarıyla aşılır (öneri, henüz yapılmadı).
+- "Aynı soru" kesin olarak yalnızca öneri balonlarında bilinir ("Bunu anlamadım", "Neden böyle?",
+  "Bir örnek ver"); yazılan mesajlar ancak niyetine göre gruplanabilir. "Aynı yer" anlatım adımında
+  kesin (öğretici + adım + adım metni); soru adımında her çocuğun abaküsü farklı olduğu için hazır
+  cevap kullanılmaz.
 
 ## Her hafta
 

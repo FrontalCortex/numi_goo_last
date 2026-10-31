@@ -29,6 +29,18 @@
     <!-- Beğen / beğenme (Sobi'nin her cevabının altında; haftalık iyileştirme döngüsünün verisi) -->
     <string name="sobi_rate_up">Bu cevabı beğendim</string>
     <string name="sobi_rate_down">Bu cevabı beğenmedim</string>
+    <!-- Oydan sonra beliren bağlantı; dokununca kısa bir yorum kutusu açılır -->
+    <string name="sobi_feedback_more">Bize daha fazla bilgi ver</string>
+    <string name="sobi_feedback_thanks">Teşekkürler!</string>
+    <string name="sobi_feedback_title">Ne oldu?</string>
+    <string name="sobi_feedback_hint">Kısaca yaz (ör. sayı yanlış, çok uzun, çok güzeldi)</string>
+    <string name="sobi_feedback_send">Gönder</string>
+    <string name="sobi_feedback_cancel">Vazgeç</string>
+    <!-- Bildir: uygunsuz ya da zararlı cevap için (beğenmemekten ayrı, hemen incelenir) -->
+    <string name="sobi_report">Bu cevabı bildir</string>
+    <string name="sobi_report_message">Bu cevapta uygunsuz, korkutucu ya da yanlış bir şey mi var? İstersen ne olduğunu yaz. Sobi\'nin ekibi inceleyecek.</string>
+    <string name="sobi_report_send">Bildir</string>
+    <string name="sobi_report_done">Bildirdin, teşekkürler!</string>
 
     <!-- Sorunlar -->
     <string name="sobi_error_network">Şu an Sobi\'ye ulaşamıyorum. İnternetini kontrol edip yeniden dener misin?</string>

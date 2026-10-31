@@ -46,6 +46,10 @@ async function main() {
   const snap = await db.collectionGroup('sobiFeedback').get();
   const rows = snap.docs.map((d) => d.data()).filter((r) => r.at && r.at.toMillis && r.at.toMillis() >= since);
 
+  // Bildirimler (uygunsuz / zararlı cevap): haftadan bağımsız, incelenmemiş olanların hepsi.
+  const reports = (await db.collectionGroup('sobiReports').get()).docs
+    .map((d) => ({ path: d.ref.path, ...d.data() }))
+    .filter((r) => r.status !== 'incelendi');
   const up = rows.filter((r) => r.value === 1).length;
   const down = rows.filter((r) => r.value === -1).length;
   const bySource = (s) => rows.filter((r) => r.source === s);
@@ -72,6 +76,14 @@ async function main() {
   const out = [
     `# Sobi haftalık rapor — son ${DAYS} gün (${new Date().toISOString().slice(0, 10)})`, '',
     `${rows.length} oy: ${up} beğeni, ${down} beğenmeme (${pct(up, up + down)} beğeni). Hazır açıklama: ${bySource('hazir').length} oy, model: ${bySource('model').length} oy.`, '',
+    `## 0. İncelenmemiş bildirimler (${reports.length})`, '',
+    ...(reports.length ? reports.flatMap((r) => [
+      `- ${r.at && r.at.toDate ? r.at.toDate().toISOString().slice(0, 16) : ''} t${r.tutorialNumber} adım ${r.stepIndex} — ${r.path}`,
+      `  - çocuk: «${r.childText || r.suggestion || '?'}»`,
+      `  - Sobi: «${r.reply}»`,
+      `  - not: «${r.comment || '—'}»`,
+    ]) : ['_Yok._']), '',
+    'İncelenen bildirimin status alanı "incelendi" yapılır (Firebase konsolu).', '',
     '## 1. Yeniden yazılacak hazır açıklamalar', '',
     `(En az ${REWRITE_MIN_VOTES} oy ve %${REWRITE_DISLIKE * 100}+ beğenmeme.)`, '',
   ];
@@ -88,7 +100,11 @@ async function main() {
     out.push(`- t${r.tutorialNumber} adım ${r.stepIndex} «${stepText(r.tutorialNumber, r.stepIndex)}»${r.fellBack ? ' [yedek metin]' : ''}`);
     out.push(`  - çocuk: «${r.childText || r.suggestion || '?'}»`);
     out.push(`  - Sobi: «${r.reply}»`);
+    if (r.comment) out.push(`  - yorum: «${r.comment}»`);
   }
+  const comments = rows.filter((r) => r.comment && r.value === 1);
+  out.push('', `## 3b. Beğenilen cevaplara yorumlar (${comments.length})`, '');
+  for (const r of comments.slice(0, 40)) out.push(`- t${r.tutorialNumber} adım ${r.stepIndex}: «${r.comment}» — Sobi: «${r.reply}»`);
   out.push('', '## 4. Öğretici başına', '', '| öğretici | 👍 | 👎 | beğeni |', '|---|---|---|---|');
   const tuts = [...new Set(rows.map((r) => r.tutorialNumber))].sort((a, b) => a - b);
   for (const t of tuts) {
