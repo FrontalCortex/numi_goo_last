@@ -40,6 +40,12 @@ import kotlinx.coroutines.withContext
  * Adım bitince ilerleme yazılıyor ([Homeworks.submitBlock]); yazılamazsa sonuç ekranı "Tekrar
  * kaydet" gösteriyor, çocuğun çözdüğü adım kaybolmuyor. Adımın ortasında çıkılırsa adım sayılmıyor.
  * Can (enerji) harcanmıyor, reklam yok: ödev öğretmenin verdiği iş.
+ *
+ * SOBİ TESTİ KİPİ ([newSobiTest]; kullanıcı kararı 01.11.2026): Sobi'nin günlük testi aynı ekranda.
+ * Ödev belgesi yok: sorular hazır gelir ([com.example.app.abacus.SobiTestPlanner]), sonuç kural
+ * başarısına yazılır ([com.example.app.SobiRuleStats]; soru başına, ödevle aynı işlem sayımı).
+ * Yanlışta "Sobi ile analiz et"; bitince Sobi kural kural özetler, sandık derslerdekiyle aynı sunucu
+ * sandığı ([com.example.app.NewChestFragment]). Ödev akışı değişmedi; kip yalnızca bu argümanla açılır.
  */
 class HomeworkPlayerFragment : Fragment() {
 
@@ -51,11 +57,33 @@ class HomeworkPlayerFragment : Fragment() {
         private const val MIN_GAP_MS = 40L
         private const val MAX_GAP_MS = 250L
         private const val RESULT_PANEL_ANIM_MS = 200L
+        /** Oynatıcı kayarak kapanırken sandık hemen ardından açılsın (kapsayıcı gizlenmeden). */
+        private const val SOBI_CHEST_DELAY_MS = 80L
 
         fun newInstance(homeworkId: String) = HomeworkPlayerFragment().apply {
             arguments = Bundle().apply { putString(ARG_HOMEWORK_ID, homeworkId) }
         }
+
+        private const val ARG_SOBI_FIRST = "sobi_first"
+        private const val ARG_SOBI_SECOND = "sobi_second"
+        private const val ARG_SOBI_WEAK = "sobi_weak"
+        /** Sobi testinde sayıların ekranda kalma süresi: çocuk boncukları rahat oynatsın. */
+        private const val SOBI_INTERVAL_MS = 2600L
+
+        /** Sobi'nin günlük testi: [questions] (ilk sayı, ±ikinci), [weakRules] testin çalıştırdığı kurallar. */
+        fun newSobiTest(questions: List<Pair<Int, Int>>, weakRules: List<String>) = HomeworkPlayerFragment().apply {
+            arguments = Bundle().apply {
+                putIntArray(ARG_SOBI_FIRST, questions.map { it.first }.toIntArray())
+                putIntArray(ARG_SOBI_SECOND, questions.map { it.second }.toIntArray())
+                putStringArrayList(ARG_SOBI_WEAK, ArrayList(weakRules))
+            }
+        }
     }
+
+    /** Sobi'nin günlük testi mi (ödev değil). */
+    private var sobiMode = false
+    private var sobiWeak: List<String> = emptyList()
+
 
     private var _binding: FragmentHomeworkPlayerBinding? = null
     private val binding get() = _binding!!
@@ -99,6 +127,7 @@ class HomeworkPlayerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         homeworkId = requireArguments().getString(ARG_HOMEWORK_ID).orEmpty()
+        sobiMode = requireArguments().containsKey(ARG_SOBI_FIRST)
         binding.quitButton.setOnClickListener { requestQuit() }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = requestQuit()
@@ -111,6 +140,10 @@ class HomeworkPlayerFragment : Fragment() {
         navBarPanelExtension = com.example.app.NavBarPanelExtension(binding.root, binding.resultPanel).also { it.attach() }
         setPlayVisible(false)
 
+        if (sobiMode) {
+            startSobiTest()
+            return
+        }
         Homeworks.loadHomework(homeworkId) { hw ->
             if (_binding == null) return@loadHomework
             if (hw == null) return@loadHomework showUnavailable()
@@ -122,6 +155,97 @@ class HomeworkPlayerFragment : Fragment() {
                 startBlock()
             }
         }
+    }
+
+    // ── Sobi testi ──────────────────────────────────────────────────────────
+
+    /** Ödev yerine Sobi'nin testi: tek adım, hazır sorular, abaküslü. */
+    private fun startSobiTest() {
+        val a = requireArguments()
+        val firsts = a.getIntArray(ARG_SOBI_FIRST) ?: intArrayOf()
+        val seconds = a.getIntArray(ARG_SOBI_SECOND) ?: intArrayOf()
+        sobiWeak = a.getStringArrayList(ARG_SOBI_WEAK).orEmpty()
+        val list = firsts.indices.mapNotNull { i ->
+            val second = seconds.getOrNull(i) ?: return@mapNotNull null
+            HomeworkQuestion(if (second < 0) HomeworkOp.SUB else HomeworkOp.ADD, listOf(firsts[i].toLong(), Math.abs(second).toLong()))
+        }
+        val config = HomeworkConfig(op = HomeworkOp.ADD, withAbacus = true, digits = 2, numberCount = 2, intervalMs = SOBI_INTERVAL_MS, questionCount = list.size)
+        homework = Homeworks.Homework(
+            id = "", classId = "", className = "", teacherName = "", config = config, blockCount = 1,
+            wholeClass = false, assignedUids = emptyList(), createdAtMs = 0L,
+        )
+        setupAbacus(true)
+        if (list.isEmpty()) return showUnavailable()
+        questions = list
+        questionIndex = 0
+        blockCorrect = 0
+        blockTally.clear()
+        setPlayVisible(true)
+        showQuestion()
+    }
+
+    /**
+     * Abaküsün değer kaydı ve her sayının göründüğü anki değer (Sobi ekranının flaş analizi:
+     * [com.example.app.abacus.MistakeAnalyzer.findSequenceMistakes]; `log[marks[k]]` k. sayı göründüğünde).
+     */
+    private fun reviewLog(): Pair<List<Int>, List<Int>> {
+        val values = ArrayList<Int>()
+        val marks = ArrayList<Int>()
+        var si = 0
+        for (t in shownAtMs) {
+            while (si < abacusLog.size && abacusLog[si].tMs <= t) values += abacusLog[si++].value.toInt()
+            values += values.lastOrNull() ?: 0
+            marks += values.lastIndex
+        }
+        while (si < abacusLog.size) values += abacusLog[si++].value.toInt()
+        return values to marks
+    }
+
+    /** Test bitti: Sobi kural kural özetler; sandık derslerdekiyle aynı. Test bugün yapılmış sayılır. */
+    private fun finishSobiTest() {
+        val b = _binding ?: return
+        val ctx = requireContext()
+        com.example.app.SobiDailyTest.markDone(ctx)
+        com.example.app.MissionsProgressStore.recordStepIncrementProgress(ctx)
+        if (blockCorrect == questions.size) com.example.app.MissionsProgressStore.recordPerfectStepIncrementProgress(ctx)
+        // Sandık isteği şimdiden: açılıştaki gecikme gizlensin (görev sandıklarıyla aynı).
+        com.example.app.ServerRewards.prefetchChest("COMMON")
+        setPlayVisible(false)
+        b.resultPanel.visibility = View.GONE
+        b.abacusContainer.visibility = View.GONE
+        b.summaryPanel.visibility = View.VISIBLE
+        b.summaryTitle.text = appString(R.string.sobi_test_done_title)
+        b.summaryScore.text = appString(R.string.hw_player_block_score, blockCorrect, questions.size)
+        b.summaryScore.visibility = View.VISIBLE
+        val lines = sobiWeak.mapNotNull { key ->
+            val cw = blockTally[key] ?: return@mapNotNull null
+            appString(R.string.sobi_test_rule_line, com.example.app.SobiDailyTest.ruleLabel(key), cw[0] + cw[1], cw[0])
+        }
+        val pct = if (questions.isEmpty()) 0 else blockCorrect * 100 / questions.size
+        val cheer = appString(if (pct >= 80) R.string.sobi_test_cheer_good else R.string.sobi_test_cheer_try)
+        b.summaryMessage.text = (lines + cheer).joinToString("\n")
+        b.summaryPrimary.text = appString(R.string.sobi_test_open_chest)
+        b.summaryPrimary.setOnClickListener {
+            b.summaryPrimary.isEnabled = false
+            openSobiChest()
+        }
+        b.summarySecondary.visibility = View.GONE
+    }
+
+    /** Ders sandığıyla aynı sunucu sandığı; ders sonu zincirine (harita ilerlemesi) dokunmadan. */
+    private fun openSobiChest() {
+        val main = activity as? MainActivity ?: return close()
+        close()
+        main.window.decorView.postDelayed({
+            if (main.isFinishing || main.isDestroyed) return@postDelayed
+            // Görev sandığıyla aynı açılış (MissionsSection): kapanışı NewChestFragment kendisi yapıyor
+            // (finishTasksOverlayAnimated), çalışan bir yol.
+            val container = main.findViewById<View>(R.id.abacusFragmentContainer) ?: return@postDelayed
+            container.visibility = View.VISIBLE
+            main.supportFragmentManager.beginTransaction()
+                .add(R.id.abacusFragmentContainer, com.example.app.NewChestFragment.newInstance(source = com.example.app.AnalyticsLogger.CHEST_SOURCE_SOBI_TEST))
+                .commit()
+        }, SOBI_CHEST_DELAY_MS)
     }
 
     // ── Kurulum ─────────────────────────────────────────────────────────────
@@ -183,7 +307,8 @@ class HomeworkPlayerFragment : Fragment() {
         val q = questions[questionIndex]
         answered = false
         b.resultPanel.visibility = View.GONE
-        b.stepText.text = appString(R.string.hw_player_step, blockIndex + 1, hw.blockCount, questionIndex + 1, questions.size)
+        b.stepText.text = if (sobiMode) appString(R.string.sobi_test_step, questionIndex + 1, questions.size)
+        else appString(R.string.hw_player_step, blockIndex + 1, hw.blockCount, questionIndex + 1, questions.size)
         abacusController?.reset(animate = true)
         b.answerInput.text = null
         b.answerInput.visibility = View.GONE
@@ -285,10 +410,31 @@ class HomeworkPlayerFragment : Fragment() {
         b.resultMessage.visibility = if (correct) View.GONE else View.VISIBLE
         b.resultMessage.text = HomeworkText.questionLine(q) + " = " + q.answer
         b.resultButton.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+        bindSobiReview(q, given, correct)
         b.kontrolButton.isEnabled = false
         // Ses ve ses düzeyi AbacusFragment.showResultPanel ile aynı.
         if (correct) playSound(R.raw.correct_answer_sound, 0.3f) else playSound(R.raw.incorrect_answer_sound, 1f)
         showResultPanel()
+    }
+
+    /** Sobi testinde yanlışta "Sobi ile analiz et": soru Sobi ekranında, hatalı işlemden adım adım. */
+    private fun bindSobiReview(q: HomeworkQuestion, given: Long, correct: Boolean) {
+        val button = _binding?.resultSobiAnalyze ?: return
+        if (!sobiMode || correct || q.op == HomeworkOp.MUL) {
+            button.visibility = View.GONE
+            return
+        }
+        val numbers = q.numbers.mapIndexed { i, n -> if (q.op == HomeworkOp.SUB && i > 0) -n.toInt() else n.toInt() }
+        val (log, marks) = reviewLog()
+        button.visibility = View.VISIBLE
+        DepthPress.attach(button)
+        button.setOnClickListener {
+            if (childFragmentManager.findFragmentByTag(com.example.app.MistakeReviewDialog.TAG) != null) return@setOnClickListener
+            com.example.app.MistakeReviewDialog.newInstance(
+                numbers, given.toInt(), log, appString(R.string.sobi_test_title),
+                marks = if (marks.size == numbers.size) marks else emptyList(),
+            ).show(childFragmentManager, com.example.app.MistakeReviewDialog.TAG)
+        }
     }
 
     /** Sorunun kural sayımını adımın sayımına ekler (bkz. [RuleAnalysis]). Hata olursa soru sayılmaz. */
@@ -301,11 +447,14 @@ class HomeworkPlayerFragment : Fragment() {
                 else -> emptyList() // abaküssüz toplama/çıkarma sayılmıyor
             }
         }.getOrDefault(emptyList())
-        for ((key, cw) in RuleAnalysis.tally(attempts)) {
+        val tally = RuleAnalysis.tally(attempts)
+        for ((key, cw) in tally) {
             val sum = blockTally.getOrPut(key) { IntArray(2) }
             sum[0] += cw[0]
             sum[1] += cw[1]
         }
+        // Sobi testi ödev belgesine değil kural başarısına yazılır (dersler ve Sobi ile aynı toplam).
+        if (sobiMode) context?.let { com.example.app.SobiRuleStats.add(it, tally, question = correct) }
     }
 
     /** Panel alttan kayarak geliyor: AbacusFragment / BlindingLessonFragment ile aynı süre ve eğri. */
@@ -373,6 +522,7 @@ class HomeworkPlayerFragment : Fragment() {
     // ── Adım sonu ───────────────────────────────────────────────────────────
 
     private fun finishBlock() {
+        if (sobiMode) return finishSobiTest()
         val b = _binding ?: return
         val hw = homework ?: return
         setPlayVisible(false)
@@ -465,8 +615,8 @@ class HomeworkPlayerFragment : Fragment() {
             (questionIndex > 0 || answered || flashing)
         if (!midBlock) return close()
         val dialog = AlertDialog.Builder(requireContext())
-            .setTitle(appString(R.string.hw_player_quit_title))
-            .setMessage(appString(R.string.hw_player_quit_message))
+            .setTitle(appString(if (sobiMode) R.string.sobi_test_quit_title else R.string.hw_player_quit_title))
+            .setMessage(appString(if (sobiMode) R.string.sobi_test_quit_message else R.string.hw_player_quit_message))
             .setPositiveButton(appString(R.string.hw_player_quit_confirm)) { _, _ -> close() }
             .setNegativeButton(appString(R.string.class_cancel), null)
             .show()

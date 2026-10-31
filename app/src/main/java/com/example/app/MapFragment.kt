@@ -30,6 +30,8 @@ class MapFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var lessonsAdapter: LessonAdapter // Adapter'ı tanımla
     private var askQuestionBounceAnimators: List<ObjectAnimator>? = null
+    /** Sobi'nin günlük testi düğmesi (bkz. [MapSobiTestButton]). */
+    private var sobiTestButton: MapSobiTestButton? = null
 
     private val guidePanelBackCallback = object : androidx.activity.OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
@@ -1162,6 +1164,8 @@ class MapFragment : Fragment() {
         }
         setupGuidePanel()
         setupAskQuestionButton()
+        // Sobi'nin günlük testi: "Öğretmene sor"un üstünde ayrı bir düğme (liste ve ders dönüşüne dokunmadan).
+        sobiTestButton = MapSobiTestButton(this, binding.root, binding.askQuestionButton)
         
         // View hazır olduğunda scroll listener'ı tetikle
         view.post {
@@ -1705,6 +1709,8 @@ class MapFragment : Fragment() {
         }
         askQuestionBounceAnimators?.forEach { it.cancel() }
         askQuestionBounceAnimators = null
+        sobiTestButton?.release()
+        sobiTestButton = null
         view?.removeCallbacks(lessonProgressConsumeRetry)
         super.onDestroyView()
         // Verileri kaydet
@@ -1995,6 +2001,7 @@ class MapFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        sobiTestButton?.refresh()
         // ensureUnlockedForMapReturn sayacı zorla 0'a çektiyse bizim acquire'ımız da gitti;
         // bayrak true kalırsa sonraki enableMainActivityViews başkasının kilidini bırakır.
         if (MainActivityChromeBlocker.currentLockDepth() == 0) {

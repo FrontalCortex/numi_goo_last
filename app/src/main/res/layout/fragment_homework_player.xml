@@ -470,6 +470,34 @@
             android:visibility="gone"
             tools:text="Doğru cevap: 123" />
 
+        <!-- Sobi testinde yanlışta: soru Sobi ekranında adım adım (yalnızca Sobi testi kipi). -->
+        <LinearLayout
+            android:id="@+id/resultSobiAnalyze"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_hw_send"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone">
+
+            <com.example.app.SobiHeadView
+                android:layout_width="30dp"
+                android:layout_height="30dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/review_open_button"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/resultButton"
             android:layout_width="match_parent"

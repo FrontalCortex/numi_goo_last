@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Haritadaki Sobi'nin günlük testi düğmesi (MapSobiTestButton): Sobi'nin kafası, bugünün testi
+  bekliyorsa sağ üstte kırmızı nokta. Düğme kendi dudaklı arka planıyla içe göçüyor (DepthPress).
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="56dp"
+    android:layout_height="56dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
+
+    <FrameLayout
+        android:id="@+id/mapSobiTestFace"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/bg_hw_send"
+        android:contentDescription="@string/sobi_test_button_desc"
+        android:paddingStart="8dp"
+        android:paddingTop="7dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="12dp">
+
+        <com.example.app.SobiHeadView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </FrameLayout>
+
+    <View
+        android:id="@+id/mapSobiTestDot"
+        android:layout_width="14dp"
+        android:layout_height="14dp"
+        android:layout_gravity="top|end"
+        android:background="@drawable/bg_map_sobi_dot" />
+</FrameLayout>

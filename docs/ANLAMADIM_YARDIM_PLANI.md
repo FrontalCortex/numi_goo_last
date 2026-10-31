@@ -466,6 +466,20 @@ A yapay zekâsız, kural motoruyla:
   (ödevle aynı), biriktirip `recordRuleTally` ile homeworkRuleStats/{uid}'e ekliyor (ödev toplamı, son ~50 işlem,
   ustalık, günlük kayıt; sınıf öğretmeni de görüyor). Ders soruları soru sayısına da giriyor; Sobi adımları yalnızca kurala.
 
+### Sobi'nin günlük testi (01.11.2026; telefona kuruldu, denenmedi)
+
+Ürün yönü: eğitmen/ödev kenarda, Sobi eksiğe göre test veriyor. Kararlar: haritada Sobi düğmesi, günde 1 test,
+10 soru, ödül derslerdeki sandık.
+- `abacus/SobiTestPlanner`: kural başarısının son ~50 işleminden oranı en düşük 1–2 kural (en az 10 işlem; %90 altı,
+  yoksa en düşüğü). 7 soru zayıf kuraldan (oran %60 altıysa daha kolay düzey), 3 pekiştirme (3., 6., 9. sıra). Yalnızca
+  verisi olan kurallar. Yapay zekâ yok. 4 birim testi.
+- `SobiDailyTest`: sunucu `homeworkRuleStats` (recent), yoksa cihazdaki `SobiRuleStats`; gün Türkiye saatiyle, aynı gün
+  aynı sorular; bitince o gün yapılmış.
+- Oynatıcı: `HomeworkPlayerFragment` Sobi testi kipi (`newSobiTest`): ödev belgesi yok, sonuç kural başarısına;
+  yanlışta "Sobi ile analiz et" (flaş analizi); sonda kural kural özet ve sandık (`NewChestFragment`, görev sandığıyla
+  aynı açılış; ders sonu zincirine dokunulmadı) + günlük görevlerde ders ilerlemesi.
+- Harita: `MapSobiTestButton` ("Öğretmene sor"un üstünde; bekleyen testte kırmızı nokta, günde bir balon).
+
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 
 Sobi'nin tur sınırı dolduğunda ya da çocuk isterse "Öğretmenine soralım mı?":

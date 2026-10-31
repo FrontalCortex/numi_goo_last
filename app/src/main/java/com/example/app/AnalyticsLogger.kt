@@ -449,6 +449,9 @@ object AnalyticsLogger {
     /** Kupa yolu kartındaki sandık (Trophy Road). */
     const val CHEST_SOURCE_CUP_PATH = "cup_path"
 
+    /** Sobi'nin günlük testi bitince (HomeworkPlayerFragment, Sobi testi kipi). */
+    const val CHEST_SOURCE_SOBI_TEST = "sobi_test"
+
     /**
      * Kullanıcı hayatında en az bir kez enerji duvarına çarptı. Bir kez "true" yazılır ve
      * bir daha değişmez; Elde Tutma raporunda kırılım boyutu olarak kullanılır.

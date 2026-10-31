@@ -94,4 +94,35 @@
     <string name="review_label_first">ilk sayı</string>
     <string name="review_done_sequence">Harika, yanıldığın işlemleri birlikte doğru çözdük! Dizinin doğru cevabı %1$d.</string>
     <string name="review_done_tip">\n\nBundan sonra %1$s basamağında %2$s adımlarına dikkat et!</string>
+
+    <!-- Sobi'nin günlük testi (SobiDailyTest, HomeworkPlayerFragment Sobi testi kipi, MapSobiTestButton) -->
+    <string name="sobi_test_title">Sobi\'nin testi</string>
+    <string name="sobi_test_step">Soru %1$d / %2$d</string>
+    <string name="sobi_test_done_title">Sobi\'nin testi bitti!</string>
+    <!-- "10'luk toplama: 14 işlemden 11'i doğru" -->
+    <string name="sobi_test_rule_line">%1$s: %2$d işlemden %3$d doğru</string>
+    <string name="sobi_test_cheer_good">Harika gidiyorsun! Yarın yeni bir test hazırlarım.</string>
+    <string name="sobi_test_cheer_try">Bu kurala yarın yine bakalım; her gün biraz daha iyi olacak.</string>
+    <string name="sobi_test_open_chest">Sandığını aç</string>
+    <string name="sobi_test_quit_title">Testten çıkılsın mı?</string>
+    <string name="sobi_test_quit_message">Test bitmeden çıkarsan bugünkü test sayılmaz; yeniden açınca aynı sorular gelir.</string>
+    <string name="sobi_test_button_desc">Sobi\'nin günlük testi</string>
+    <string name="sobi_test_nudge">Senin için bir test hazırladım!</string>
+    <string name="sobi_test_dialog_title">Sobi\'nin bugünkü testi</string>
+    <!-- %1$s: "10'luk toplama ve 5'lik çıkarma" -->
+    <string name="sobi_test_dialog_message">Bugün %1$s çalışalım. 10 soru; bitirince bir sandık kazanırsın.</string>
+    <string name="sobi_test_dialog_start">Başla</string>
+    <string name="sobi_test_dialog_later">Sonra</string>
+    <string name="sobi_test_done_today">Bugünkü testi bitirdin, aferin! Yarın sana yeni bir test hazırlayacağım.</string>
+    <string name="sobi_test_no_data">Biraz ders çöz, sana göre bir test hazırlayayım!</string>
+    <string name="sobi_test_loading">Sobi testini hazırlıyor…</string>
+    <string name="sobi_test_ok">Tamam</string>
+    <string name="sobi_test_rule_add_direct">kuralsız toplama</string>
+    <string name="sobi_test_rule_add_five">5\'lik toplama</string>
+    <string name="sobi_test_rule_add_ten">10\'luk toplama</string>
+    <string name="sobi_test_rule_add_bead">boncuk kuralıyla toplama</string>
+    <string name="sobi_test_rule_sub_direct">kuralsız çıkarma</string>
+    <string name="sobi_test_rule_sub_five">5\'lik çıkarma</string>
+    <string name="sobi_test_rule_sub_ten">10\'luk çıkarma</string>
+    <string name="sobi_test_rule_sub_bead">boncuk kuralıyla çıkarma</string>
 </resources>
