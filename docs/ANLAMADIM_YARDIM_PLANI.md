@@ -430,8 +430,13 @@ A yapay zekâsız, kural motoruyla:
   korkmasın), beklerken THINK, cevapta konuşma, sonuçta CLAP.
 - Sandık dersinde de var (önce `type == 2` "süreli" sanılıp gizlenmişti); ekran açıkken sandık süresi
   durur (`RESULT_CLOSED` ile sürer). Kupa modunda yok.
-- Sırada: flaş dizisinde yalnızca yanlış yapılan işlemler + kural başına hata özeti; öğreticide
-  "Bir örnek ver" → bu ekranla örnek işlem.
+- Flaş dizisi (abaküsle cevaplanan, `BlindingLessonFragment`): her sayı göründüğü anda abaküsün değeri
+  işaretlenir, aradaki hareketler kaydedilir. `MistakeAnalyzer.findSequenceMistakes` her işlemi çocuğun
+  KENDİ önceki değerine göre denetler (hatadan sonraki doğru işlemler hata sayılmaz); geç kalan çocuk için
+  işlemin sonucu sıradaki sayının süresinde de aranır. Analiz ekranı yalnızca hatalı işlemleri çözdürür
+  (78 + 9, abaküs 78'den başlar); açılışta "10'luk kuralda 2 hata ve boncuk kuralında 1 hata". Kayıt
+  uygun değilse (klavyeyle cevap, yeniden başlatma, bulunamayan hata) bütün dizi çözdürülür. 6 birim testi.
+- Sırada: öğreticide "Bir örnek ver" → bu ekranla örnek işlem.
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

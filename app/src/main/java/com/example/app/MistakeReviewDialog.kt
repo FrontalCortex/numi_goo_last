@@ -35,6 +35,10 @@ import com.google.firebase.auth.FirebaseAuth
  * Soru bir sayı dizisi: ilk sayı, sonra her biri eklenen (+) ya da çıkarılan (−) sayılar. Ders
  * ekranında `[ilk, ±ikinci]`, abaküssüz derste flaş dizisi (23 + 33 + 12 + 22).
  *
+ * FLAŞ DİZİSİ (abaküslü, değer kaydı ve sayıların göründüğü anlar varken): bütün dizi değil, yalnızca
+ * yanlış yapılan işlemler çözdürülür (78'e 9 eklemek); Sobi açılışta kural başına hata sayısını söyler
+ * ("10'luk kuralda 2 hata ve boncuk kuralında 1 hata"). Bulunamazsa bütün dizi.
+ *
  * Akış: Sobi önce hatayı söyler ([MistakeAnalyzer] teşhis ettiyse: yalnızca abaküslü iki sayılı
  * soruda, değer kaydı varken), sonra soru adımlara bölünür: ilk sayıyı yazmak, ardından her sayının
  * her basamağı ([StepExplainer] hamleleri). Çocuk her adımı abaküste yapıp "Kontrol Et"e basar;
@@ -59,13 +63,17 @@ import com.google.firebase.auth.FirebaseAuth
  */
 class MistakeReviewDialog : DialogFragment() {
 
-    /** [numberIndex]: işlenen sayının dizideki yeri (0 = ilk sayıyı yazmak). */
+    /**
+     * [label]: adım çubuğunda ne işlendiği ("+22", "78 + 9"); iki sayılı soruda yok. [intro]: adım ilk
+     * açıldığında talimattan önce (flaş dizisinde hatalı işlemin başlığı ve teşhisi).
+     */
     private data class Step(
         val base: Int,
         val target: Int,
         val move: StepExplainer.ColumnMove?,
         val text: String,
-        val numberIndex: Int,
+        val label: String? = null,
+        val intro: String? = null,
     )
 
     private var numbers: List<Int> = emptyList()
@@ -74,6 +82,8 @@ class MistakeReviewDialog : DialogFragment() {
 
     private var steps: List<Step> = emptyList()
     private var diagnosis: MistakeAnalyzer.Diagnosis? = null
+    /** Flaş dizisinde yanlış yapılan işlemler; doluysa yalnızca bunlar çözdürülür. */
+    private var sequenceMistakes: List<MistakeAnalyzer.SequenceMistake> = emptyList()
     /** Görüntülenen sayfa: 0..steps.size-1 adımlar, steps.size sonuç sayfası. */
     private var page = 0
     /** Açılmış en ileri sayfa; ileri ok buna kadar gider. */
@@ -118,10 +128,16 @@ class MistakeReviewDialog : DialogFragment() {
         answer = a.getInt(ARG_ANSWER)
         lessonTitle = a.getString(ARG_LESSON)
         val log = a.getIntArray(ARG_LOG)?.toList().orEmpty()
-        diagnosis = if (log.isNotEmpty() && numbers.size == 2) {
+        val marks = a.getIntArray(ARG_MARKS)?.toList().orEmpty()
+        if (marks.isNotEmpty()) {
+            sequenceMistakes = MistakeAnalyzer.findSequenceMistakes(numbers, log, marks, answer).orEmpty()
+            buildMistakeSteps(sequenceMistakes)?.let { steps = it }
+            if (steps.isEmpty()) sequenceMistakes = emptyList()
+        }
+        diagnosis = if (marks.isEmpty() && log.isNotEmpty() && numbers.size == 2) {
             MistakeAnalyzer.analyze(numbers[0], if (numbers[1] < 0) "-" else "+", Math.abs(numbers[1]), log, answer)
         } else null
-        steps = buildSteps(numbers)
+        if (steps.isEmpty()) steps = buildSteps(numbers)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
@@ -149,7 +165,13 @@ class MistakeReviewDialog : DialogFragment() {
             onReported = { addMessage(page, SobiStepTracker.Message(fromChild = false, text = appString(R.string.sobi_report_done))) },
         )
 
-        view.findViewById<TextView>(R.id.reviewQuestion).text = questionText(numbers)
+        view.findViewById<TextView>(R.id.reviewQuestion).apply {
+            text = questionText(numbers)
+            // Uzun flaş dizisi de sığsın.
+            val len = text.length
+            if (len > 14) setTextSize(TypedValue.COMPLEX_UNIT_SP, if (len > 30) 15f else 19f)
+            maxLines = 2
+        }
         view.findViewById<TextView>(R.id.reviewYourAnswer).text = appString(R.string.review_your_answer, answer)
         view.findViewById<View>(R.id.reviewClose).setOnClickListener { dismissAllowingStateLoss() }
 
@@ -189,8 +211,14 @@ class MistakeReviewDialog : DialogFragment() {
             openResult()
             return
         }
-        openStep(0, intro = diagnosis?.let { appString(R.string.review_intro_found, it.text) }
-            ?: appString(R.string.review_intro_unknown))
+        val intro = when {
+            sequenceMistakes.isNotEmpty() -> appString(
+                R.string.review_intro_sequence, sequenceMistakes.size, MistakeAnalyzer.ruleSummary(sequenceMistakes),
+            )
+            diagnosis != null -> appString(R.string.review_intro_found, diagnosis!!.text)
+            else -> appString(R.string.review_intro_unknown)
+        }
+        openStep(0, intro = intro)
     }
 
     override fun onDestroyView() {
@@ -238,7 +266,7 @@ class MistakeReviewDialog : DialogFragment() {
             val step = steps[i]
             val m = step.move
             val wasHere = m != null && diagnosis?.move?.let { it.col == m.col && it.valueAfter == m.valueAfter } == true
-            val text = listOfNotNull(intro, if (wasHere) appString(R.string.review_was_here) else null, step.text)
+            val text = listOfNotNull(intro, if (wasHere) appString(R.string.review_was_here) else null, step.intro, step.text)
                 .joinToString("\n\n")
             addMessage(i, sobiMessage(text))
         }
@@ -256,7 +284,9 @@ class MistakeReviewDialog : DialogFragment() {
                     m.steps.joinToString(", ") { "\"${MistakeAnalyzer.stepPhrase(it, m)}\"" },
                 )
             }.orEmpty()
-            if (steps.isNotEmpty()) addMessage(p, sobiMessage(appString(R.string.review_done, questionText(numbers), numbers.sum()) + tip))
+            val done = if (sequenceMistakes.isNotEmpty()) appString(R.string.review_done_sequence, numbers.sum())
+            else appString(R.string.review_done, questionText(numbers), numbers.sum()) + tip
+            if (steps.isNotEmpty()) addMessage(p, sobiMessage(done))
         }
         maxPage = p
         showPage(p)
@@ -270,8 +300,7 @@ class MistakeReviewDialog : DialogFragment() {
         val step = steps.getOrNull(i)
         stepLabel.text = when {
             step == null -> appString(R.string.review_step_result)
-            numbers.size > 2 && step.numberIndex > 0 ->
-                appString(R.string.review_step_label_number, i + 1, steps.size, signed(numbers[step.numberIndex]))
+            step.label != null -> appString(R.string.review_step_label_number, i + 1, steps.size, step.label)
             else -> appString(R.string.review_step_label, i + 1, steps.size)
         }
         showButton.visibility = if (step == null) View.GONE else View.VISIBLE
@@ -341,7 +370,7 @@ class MistakeReviewDialog : DialogFragment() {
         }
         val detail = step.move?.let { MistakeAnalyzer.diagnoseStep(it, stepLog, value).text }
             ?: MistakeAnalyzer.diagnoseWrite(step.target, value)
-        val found = if (diagnosis == null && firstReviewMistake == -1) {
+        val found = if (diagnosis == null && sequenceMistakes.isEmpty() && firstReviewMistake == -1) {
             firstReviewMistake = page
             appString(R.string.review_found_now) + " "
         } else ""
@@ -543,7 +572,11 @@ class MistakeReviewDialog : DialogFragment() {
         val notes = listOfNotNull(
             "Çocuk soruyu yanlış cevapladı: ${questionText(numbers)} = $answer (doğrusu ${numbers.sum()}).",
             diagnosis?.text?.let { "Teşhis: $it" },
-            "Şimdi soruyu abaküste adım adım birlikte yeniden çözüyorsunuz.",
+            sequenceMistakes.takeIf { it.isNotEmpty() }?.joinToString("; ", prefix = "Dizide yanıldığı işlemler: ") {
+                "${it.base} ${if (it.number < 0) "- ${-it.number}" else "+ ${it.number}"} (${it.value} yaptı, doğrusu ${it.base + it.number})"
+            },
+            if (sequenceMistakes.isNotEmpty()) "Şimdi yalnızca bu işlemleri abaküste adım adım birlikte çözüyorsunuz."
+            else "Şimdi soruyu abaküste adım adım birlikte yeniden çözüyorsunuz.",
         )
         return tracker.questionContext(
             stepId = null,
@@ -595,6 +628,7 @@ class MistakeReviewDialog : DialogFragment() {
         private const val ARG_NUMBERS = "numbers"
         private const val ARG_ANSWER = "answer"
         private const val ARG_LOG = "log"
+        private const val ARG_MARKS = "marks"
         private const val ARG_LESSON = "lesson"
 
         /** "23 + 33 − 12": ilk sayı, sonra işaretleriyle. */
@@ -607,22 +641,54 @@ class MistakeReviewDialog : DialogFragment() {
         private fun buildSteps(numbers: List<Int>): List<Step> {
             if (numbers.size < 2 || numbers[0] !in 0..99999) return emptyList()
             val out = ArrayList<Step>()
-            out += Step(0, numbers[0], null, appString(R.string.review_step_write, numbers[0]), 0)
+            out += Step(0, numbers[0], null, appString(R.string.review_step_write, numbers[0]))
             var running = numbers[0].toLong()
             for (k in 1 until numbers.size) {
                 val n = numbers[k]
                 if (n == 0) continue
                 val hop = if (n < 0) HomeworkOp.SUB else HomeworkOp.ADD
                 val plan = StepExplainer.explain(running, hop, Math.abs(n).toLong()) ?: return emptyList()
-                for (m in plan.moves) {
-                    val column = MistakeAnalyzer.columnName(m.col).replaceFirstChar { it.uppercase() }
-                    val rule = MistakeAnalyzer.ruleName(m.rule).replaceFirstChar { it.uppercase() }
-                    val moves = m.steps.joinToString(", ") { MistakeAnalyzer.stepPhrase(it, m) }
-                    val text = if (m.op == HomeworkOp.ADD) appString(R.string.review_step_add, column, m.x, rule, moves)
-                    else appString(R.string.review_step_sub, column, m.x, rule, moves)
-                    out += Step(m.valueBefore.toInt(), m.valueAfter.toInt(), m, text, k)
-                }
+                val label = if (numbers.size > 2) signed(n) else null
+                for (m in plan.moves) out += Step(m.valueBefore.toInt(), m.valueAfter.toInt(), m, moveText(m), label)
                 running = plan.result
+            }
+            return out
+        }
+
+        private fun moveText(m: StepExplainer.ColumnMove): String {
+            val column = MistakeAnalyzer.columnName(m.col).replaceFirstChar { it.uppercase() }
+            val rule = MistakeAnalyzer.ruleName(m.rule).replaceFirstChar { it.uppercase() }
+            val moves = m.steps.joinToString(", ") { MistakeAnalyzer.stepPhrase(it, m) }
+            return if (m.op == HomeworkOp.ADD) appString(R.string.review_step_add, column, m.x, rule, moves)
+            else appString(R.string.review_step_sub, column, m.x, rule, moves)
+        }
+
+        /**
+         * Flaş dizisinde yalnızca yanlış yapılan işlemler: her biri abaküste çocuğun o anki değerinden
+         * (78) başlar, basamak basamak çözülür. İşlemin ilk adımında hatanın başlığı ve teşhisi.
+         * Hata yoksa ya da işlem abaküse sığmıyorsa null (bütün dizi çözdürülür).
+         */
+        private fun buildMistakeSteps(mistakes: List<MistakeAnalyzer.SequenceMistake>): List<Step>? {
+            if (mistakes.isEmpty()) return null
+            val out = ArrayList<Step>()
+            mistakes.forEachIndexed { j, mk ->
+                val target = mk.base + mk.number
+                val head = when {
+                    mk.index == 0 -> appString(R.string.review_mistake_write, j + 1, target, mk.value)
+                    mk.number < 0 -> appString(R.string.review_mistake_sub, j + 1, mk.base, -mk.number, mk.value, target)
+                    else -> appString(R.string.review_mistake_add, j + 1, mk.base, mk.number, mk.value, target)
+                }
+                val intro = listOfNotNull(head, mk.diagnosis?.text?.takeIf { mk.index > 0 }).joinToString(" ")
+                if (mk.index == 0) {
+                    out += Step(0, target, null, appString(R.string.review_step_write, target), appString(R.string.review_label_first), intro)
+                    return@forEachIndexed
+                }
+                val hop = if (mk.number < 0) HomeworkOp.SUB else HomeworkOp.ADD
+                val plan = StepExplainer.explain(mk.base.toLong(), hop, Math.abs(mk.number).toLong()) ?: return null
+                val label = "${mk.base} ${if (mk.number < 0) "− ${-mk.number}" else "+ ${mk.number}"}"
+                plan.moves.forEachIndexed { i, m ->
+                    out += Step(m.valueBefore.toInt(), m.valueAfter.toInt(), m, moveText(m), label, if (i == 0) intro else null)
+                }
             }
             return out
         }
@@ -637,13 +703,18 @@ class MistakeReviewDialog : DialogFragment() {
         /** Yalnızca toplama/çıkarma ve abaküse sığan diziler. */
         fun canReview(numbers: List<Int>?): Boolean = numbers != null && buildSteps(numbers).isNotEmpty()
 
-        /** [log]: abaküslü derste bu sorudaki değer kaydı (teşhis için); abaküssüzde boş. */
-        fun newInstance(numbers: List<Int>, answer: Int, log: List<Int>, lessonTitle: String?) =
+        /**
+         * [log]: abaküslü derste bu sorudaki değer kaydı (teşhis için); klavyeyle cevaplanan derste boş.
+         * [marks]: flaş dizisinde her sayı göründüğünde kayda eklenen değerin sırası; verilirse yalnızca
+         * yanlış yapılan işlemler çözdürülür ([MistakeAnalyzer.findSequenceMistakes]).
+         */
+        fun newInstance(numbers: List<Int>, answer: Int, log: List<Int>, lessonTitle: String?, marks: List<Int> = emptyList()) =
             MistakeReviewDialog().apply {
                 arguments = Bundle().apply {
                     putIntArray(ARG_NUMBERS, numbers.toIntArray())
                     putInt(ARG_ANSWER, answer)
                     putIntArray(ARG_LOG, log.toIntArray())
+                    putIntArray(ARG_MARKS, marks.toIntArray())
                     putString(ARG_LESSON, lessonTitle)
                 }
             }

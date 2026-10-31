@@ -1,6 +1,7 @@
 package com.example.app.abacus
 
 import com.example.app.abacus.MistakeAnalyzer.Kind
+import com.example.app.homework.AbacusRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -82,5 +83,68 @@ class MistakeAnalyzerTest {
         // 21 + 13'te birlerde hiçbir şey yapılmadı (31'de kaldı): "adımı yapmamışsın" değil, sütun farkı.
         val d = MistakeAnalyzer.analyze(21, "+", 13, listOf(0, 10, 20, 21, 31), 31)!!
         assertEquals(Kind.WRONG_COLUMN, d.kind)
+    }
+
+    // ── Flaş dizisi ─────────────────────────────────────────────────────────
+    // Kayıtta her sayı göründüğü anda abaküsün değeri bir kez daha var (marks bunların sırası).
+
+    /** 50 + 28 + 9: 78'e 9 eklerken 10 geldi ama 1 yerine 2 gitti → 86. */
+    private val log50_28_9 = listOf(0, 50, 50, 60, 70, 75, 76, 77, 78, 78, 88, 86)
+    private val marks50_28_9 = listOf(0, 2, 9)
+
+    @Test
+    fun flas_yalnizca_hatali_islem_78_arti_9() {
+        val list = MistakeAnalyzer.findSequenceMistakes(listOf(50, 28, 9), log50_28_9, marks50_28_9, 86)!!
+        assertEquals(1, list.size)
+        val m = list[0]
+        assertEquals(2, m.index)
+        assertEquals(78, m.base)
+        assertEquals(86, m.value)
+        assertEquals(AbacusRule.TEN, m.rule)
+        // 1 yerine 2 götürmek "adımı yapmamışsın" değil, yanlış sütun değeri.
+        assertEquals(Kind.WRONG_COLUMN, m.diagnosis!!.kind)
+        assertTrue(m.diagnosis!!.text, m.diagnosis!!.text.contains("Birler sütununda 7 olmalıydı, sende 6 oldu"))
+    }
+
+    @Test
+    fun flas_hatadan_sonraki_dogru_islem_hata_sayilmaz() {
+        // ... sonra 86'ya 5 doğru eklendi (10 gelir 5 gider: 96, 91); cevap 91 (doğrusu 92).
+        val log = log50_28_9 + listOf(86, 96, 91)
+        val list = MistakeAnalyzer.findSequenceMistakes(listOf(50, 28, 9, 5), log, marks50_28_9 + 12, 91)!!
+        assertEquals(listOf(2), list.map { it.index })
+        assertEquals(86, list[0].value)
+    }
+
+    @Test
+    fun flas_gec_kalan_cocuk_ve_hata() {
+        // 50 + 9 + 5: çocuk 9'u 5 göründükten sonra işledi ve 58 yaptı; 5'i ondan doğru ekledi → 63.
+        val log = listOf(0, 50, 50, 50, 55, 56, 57, 58, 68, 63)
+        val list = MistakeAnalyzer.findSequenceMistakes(listOf(50, 9, 5), log, listOf(0, 2, 3), 63)!!
+        assertEquals(listOf(1), list.map { it.index })
+        assertEquals(50, list[0].base)
+        assertEquals(58, list[0].value)
+    }
+
+    @Test
+    fun flas_gec_kalan_ama_dogru_cocuk_hatasiz() {
+        // 9'u geç işledi ama doğru: 59, sonra 64.
+        val log = listOf(0, 50, 50, 50, 55, 59, 64)
+        assertEquals(emptyList<Any>(), MistakeAnalyzer.findSequenceMistakes(listOf(50, 9, 5), log, listOf(0, 2, 3), 64))
+    }
+
+    @Test
+    fun flas_kayit_uygun_degilse_susar() {
+        assertNull(MistakeAnalyzer.findSequenceMistakes(listOf(50, 9), listOf(0, 50), listOf(0), 58))
+        assertNull(MistakeAnalyzer.findSequenceMistakes(listOf(50, 9), emptyList(), emptyList(), 58))
+    }
+
+    @Test
+    fun kural_ozeti() {
+        fun m(rule: AbacusRule?) = MistakeAnalyzer.SequenceMistake(1, 0, 1, 2, rule, null)
+        assertEquals(
+            "10'luk kuralda 2 hata ve boncuk kuralında 1 hata",
+            MistakeAnalyzer.ruleSummary(listOf(m(AbacusRule.BEAD), m(AbacusRule.TEN), m(AbacusRule.TEN))),
+        )
+        assertEquals("5'lik kuralda 1 hata", MistakeAnalyzer.ruleSummary(listOf(m(AbacusRule.FIVE))))
     }
 }

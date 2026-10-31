@@ -112,6 +112,131 @@ object MistakeAnalyzer {
         return "${capital(columnName(col))} basamağına ${digit(target, col)} yazılmalı, sende ${digit(value, col)} var."
     }
 
+    // ── Flaş dizisi ─────────────────────────────────────────────────────────
+
+    /**
+     * Flaş dizisinde yanlış yapılan bir işlem: abaküste [base] varken dizinin [index]. sayısı
+     * ([number], eksi = çıkarma) işlenirken [value] olmuş. [rule]: işlemin hatanın düştüğü kuralı
+     * (ilk sayıyı yazmakta null). [diagnosis]: o işlemde nerede şaşıldığı (bulunamazsa null).
+     */
+    data class SequenceMistake(
+        val index: Int,
+        val base: Int,
+        val number: Int,
+        val value: Int,
+        val rule: AbacusRule?,
+        val diagnosis: Diagnosis?,
+    )
+
+    /**
+     * Sayılar ekrana tek tek gelirken çocuğun abaküste hangi işlemlerde yanıldığı (kullanıcı kararı
+     * 31.10.2026: analiz ekranında yalnızca bunlar çözdürülür, ör. "78'e 9 eklemek").
+     *
+     * [log]: dizinin başından abaküsün değerleri; [marks]: her sayı göründüğü anda kayda eklenen
+     * değerin sırası (`log[marks[k]]` = k. sayı göründüğünde abaküste yazan). [answer]: Kontrol Et
+     * anındaki değer.
+     *
+     * Her işlem çocuğun KENDİ önceki değerine göre denetlenir: 9. sayıda şaşan çocuğun ardından doğru
+     * yaptığı eklemeler hata sayılmaz. Geç kalan çocuk (sayıyı sıradaki sayı gelince işleyen) hata
+     * sayılmasın diye işlemin sonucu sıradaki sayının penceresinde de aranır.
+     *
+     * Hiç hata bulunamazsa boş liste (ör. cevaptan sonra bir boncuk oynadı); kayıt uygun değilse ya da
+     * dizi abaküse sığmıyorsa null: çağıran bütün diziyi çözdürür.
+     */
+    fun findSequenceMistakes(numbers: List<Int>, log: List<Int>, marks: List<Int>, answer: Int): List<SequenceMistake>? {
+        if (numbers.isEmpty() || marks.size != numbers.size) return null
+        if (marks.any { it !in log.indices } || marks.zipWithNext().any { (a, b) -> b < a }) return null
+        val full = log + answer
+        val out = ArrayList<SequenceMistake>()
+        var pos = marks[0]
+        var base = 0
+        for (k in numbers.indices) {
+            val n = numbers[k]
+            val target = base + n
+            if (target !in 0..MAX_VALUE) return null
+            val hop = if (n < 0) HomeworkOp.SUB else HomeworkOp.ADD
+            val plan = StepExplainer.explain(base.toLong(), hop, Math.abs(n).toLong()) ?: return null
+            val end = windowEnd(k, marks, full)
+            val found = indexIn(full, target, pos, end)
+            if (found != -1) { pos = found; base = target; continue }
+
+            val at = settledAfterMistake(k, numbers, full, marks, pos, end)
+            val value = full[at]
+            val segment = full.subList(pos, at + 1)
+            val diagnosis = if (k == 0) {
+                Diagnosis(Kind.WRONG_FIRST_NUMBER, diagnoseWrite(target, value), null)
+            } else diagnoseOperation(plan, base, segment, value)
+            val rule = if (k == 0) null else diagnosis?.move?.rule ?: mainRule(plan)
+            out += SequenceMistake(k, base, n, value, rule, diagnosis)
+            pos = at
+            base = value
+        }
+        return out
+    }
+
+    /** "10'luk kuralda 2 hata ve boncuk kuralında 1 hata": en çok hatalı kural önce. */
+    fun ruleSummary(mistakes: List<SequenceMistake>): String {
+        val parts = mistakes.groupBy { it.rule }.entries
+            .sortedWith(compareByDescending<Map.Entry<AbacusRule?, List<SequenceMistake>>> { it.value.size }.thenBy { it.key?.ordinal ?: -1 })
+            .map { (rule, list) -> "${ruleLocative(rule)} ${list.size} hata" }
+        return when (parts.size) {
+            0 -> ""
+            1 -> parts[0]
+            else -> parts.dropLast(1).joinToString(", ") + " ve " + parts.last()
+        }
+    }
+
+    private fun ruleLocative(rule: AbacusRule?): String = when (rule) {
+        null -> "ilk sayıyı yazarken"
+        AbacusRule.DIRECT -> "kuralsız işlemlerde"
+        AbacusRule.FIVE -> "5'lik kuralda"
+        AbacusRule.TEN -> "10'luk kuralda"
+        AbacusRule.BEAD -> "boncuk kuralında"
+    }
+
+    /** k. işlemin sonucu nereye kadar aranır: sıradaki sayının göründüğü süre de dahil (geç kalan çocuk). */
+    private fun windowEnd(k: Int, marks: List<Int>, full: List<Int>): Int =
+        if (k + 2 < marks.size) marks[k + 2] else full.lastIndex
+
+    /**
+     * Hatalı işlemden sonra çocuğun abaküsteki değeri (sıradaki işlemin başlangıcı): sıradaki işlem
+     * ondan doğru yapılmışsa o değer. Pencerenin SONUNDAN aranır: hatalı işlemin ara değerleri
+     * (50 + 9 yaparken 55) daha önce gelir; geç kalan çocukta asıl değer sıradaki sayı göründükten
+     * sonradır. Tutarlı değer yoksa sıradaki sayı göründüğündeki değer.
+     */
+    private fun settledAfterMistake(k: Int, numbers: List<Int>, full: List<Int>, marks: List<Int>, pos: Int, end: Int): Int {
+        if (k == numbers.lastIndex) return full.lastIndex
+        val next = numbers[k + 1]
+        val nextEnd = windowEnd(k + 1, marks, full)
+        for (i in end downTo pos) {
+            if (indexIn(full, full[i] + next, i + 1, nextEnd) != -1) return i
+        }
+        return marks[k + 1]
+    }
+
+    /** Tek işlemde ([plan], [base]'den) çocuğun ilk şaştığı hamle; kayıt [segment], sonuç [value]. */
+    private fun diagnoseOperation(plan: StepExplainer.Explanation, base: Int, segment: List<Int>, value: Int): Diagnosis? {
+        val values = dedupe(segment + value)
+        var from = values.indexOf(base).coerceAtLeast(0)
+        for (m in plan.moves) {
+            val at = indexFrom(values, m.valueAfter.toInt(), from)
+            if (at != -1) { from = at; continue }
+            return diagnoseMove(m, values, from)
+        }
+        return null
+    }
+
+    /** İşlemin en zor kuralı (hata yeri bulunamazsa özet için). */
+    private fun mainRule(plan: StepExplainer.Explanation): AbacusRule =
+        plan.moves.map { it.rule }.maxByOrNull { it.ordinal } ?: AbacusRule.DIRECT
+
+    private fun indexIn(values: List<Int>, v: Int, from: Int, to: Int): Int {
+        for (i in from..minOf(to, values.lastIndex)) if (values[i] == v) return i
+        return -1
+    }
+
+    private const val MAX_VALUE = 99999
+
     private fun diagnoseMove(m: StepExplainer.ColumnMove, values: List<Int>, from: Int): Diagnosis {
         val after = values.subList(from + 1, values.size)
         val target = m.valueAfter.toInt()
@@ -123,7 +248,11 @@ object MistakeAnalyzer {
             for (s in m.steps) {
                 val delta = stepDelta(s)
                 val missing = target - delta
-                if (missing != m.valueBefore.toInt() && missing in after) {
+                val missingAt = after.indexOf(missing)
+                // Çocuk sonra aynı sütunda başka bir değere geçtiyse (1 yerine 2 götürmek) adımı unutmamış,
+                // yanlış yapmış: aşağıdaki "yanlış sütun değeri" anlatır.
+                val movedOn = missingAt != -1 && after.drop(missingAt + 1).any { differsOnlyIn(it, target, m.col) }
+                if (missing != m.valueBefore.toInt() && missingAt != -1 && !movedOn) {
                     val tail = when {
                         s.carry != null && m.op == HomeworkOp.ADD ->
                             " ${capital(columnName(s.col))} sütununa 1 boncuk gelmeliydi."

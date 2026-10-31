@@ -71,5 +71,12 @@
     <string name="review_wrong">Bir daha bakalım. %1$s\n\nAbaküsü bu adımın başına geri aldım, yeniden dene. İstersen \"Bana göster\"e dokun.</string>
     <string name="review_found_now">İşte, hata büyük ihtimalle burada!</string>
     <string name="review_done">Harika, birlikte doğru çözdük: %1$s = %2$d.</string>
+    <!-- Flaş dizisi: yalnızca yanlış yapılan işlemler; %2$s kural özeti ("10'luk kuralda 2 hata ve boncuk kuralında 1 hata") -->
+    <string name="review_intro_sequence">Bu dizide %1$d yerde şaştın: %2$s. Doğru yaptıklarını tekrar etmene gerek yok; şimdi yalnızca bu işlemleri birlikte çözelim.</string>
+    <string name="review_mistake_add">%1$d. hata: Abaküste %2$d varken %3$d eklerken %4$d yaptın, %5$d olmalıydı.</string>
+    <string name="review_mistake_sub">%1$d. hata: Abaküste %2$d varken %3$d çıkarırken %4$d yaptın, %5$d olmalıydı.</string>
+    <string name="review_mistake_write">%1$d. hata: İlk sayı %2$d idi, sen abaküse %3$d yazdın.</string>
+    <string name="review_label_first">ilk sayı</string>
+    <string name="review_done_sequence">Harika, yanıldığın işlemleri birlikte doğru çözdük! Dizinin doğru cevabı %1$d.</string>
     <string name="review_done_tip">\n\nBundan sonra %1$s basamağında %2$s adımlarına dikkat et!</string>
 </resources>

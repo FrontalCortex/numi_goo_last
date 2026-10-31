@@ -46,6 +46,8 @@ import androidx.core.view.isInvisible
 
 class BlindingLessonFragment : Fragment() {
     companion object {
+        /** Flaş dizisi değer kaydının sınırı (uzun dizide bile yeter; sunucuya gitmiyor). */
+        private const val FLASH_LOG_MAX = 1500
         private const val ARG_DAILY_MODE = "daily_mode"
         private const val ARG_DAILY_PERIOD_KEY = "daily_period_key"
         private const val ARG_DAILY_SLOT_INDEX = "daily_slot_index"
@@ -218,6 +220,22 @@ class BlindingLessonFragment : Fragment() {
      */
     private var sequenceBlankPending = false
 
+    /**
+     * Flaş dizisinde abaküsün değer kaydı (abaküslü derste): "Sobi ile analiz et" yalnızca yanlış
+     * yapılan işlemleri çözdürsün diye (MistakeAnalyzer.findSequenceMistakes; kullanıcı kararı
+     * 31.10.2026). Her sayı göründüğü anda o anki değer de eklenir; [flashMarks] onların sırası.
+     * Dizi her başladığında (yeniden başlatma dahil) sıfırlanır.
+     */
+    private val flashLog = ArrayList<Int>()
+    private val flashMarks = ArrayList<Int>()
+
+    private fun markFlashNumber() {
+        if (lessonItem.isBlinding != null || !::abacusController.isInitialized) return
+        if (flashLog.size >= FLASH_LOG_MAX) return
+        flashLog += abacusController.getCurrentValue()
+        flashMarks += flashLog.lastIndex
+    }
+
     private fun onSequenceRevealStep() {
         sequenceBlankPending = false
         if (!isShowingSequence) return
@@ -226,6 +244,7 @@ class BlindingLessonFragment : Fragment() {
             return
         }
         numberText.text = currentSequence[currentSequenceIndex].toString()
+        markFlashNumber()
         currentSequenceIndex++
         if (currentSequenceIndex < currentSequence.size) {
             handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod?.toLong() ?: 1000L)
@@ -1057,15 +1076,22 @@ class BlindingLessonFragment : Fragment() {
         correctAnswerLabel.text = appString(R.string.ui_dogru_cevap_x, answerNumber)
         correctAnswerText.text = appString(R.string.ui_senin_cevabin_x, controlNumber)
         lastWrongAnswer = controlNumber
+        // Kontrol Et anındaki kayıt: panel açıkken oynanan boncuklar analize karışmasın.
+        lastFlashLog = flashLog.toList()
+        lastFlashMarks = flashMarks.toList()
     }
+
+    private var lastFlashLog: List<Int> = emptyList()
+    private var lastFlashMarks: List<Int> = emptyList()
 
     /** Son yanlış cevap: controlNumber denetimden sonra sıfırlanıyor, analiz ekranı bunu kullanıyor. */
     private var lastWrongAnswer = 0
 
     /**
      * Yanlış cevap panelindeki "Sobi ile analiz et": soru abaküste adım adım yeniden çözülür, Sobi
-     * hatanın yerini bulur ([MistakeReviewDialog]; kullanıcı kararı 31.10.2026). Abaküssüz derste değer
-     * kaydı yok, teşhisi o ekranda çocuğun yeniden çözüşü yapıyor. Kupa modunda yok (kupa yarışı;
+     * hatanın yerini bulur ([MistakeReviewDialog]; kullanıcı kararı 31.10.2026). Abaküsle cevaplanan
+     * flaş dizisinde değer kaydı gider: yalnızca yanlış yapılan işlemler çözdürülür. Klavyeyle
+     * cevaplananda kayıt yok; bütün dizi yeniden çözülür, hatayı o çözüş bulur. Kupa modunda yok (kupa yarışı;
      * yanlışta ders zaten bitiyor). Sandık dersinde ekran açıkken süre durur.
      */
     private fun bindReviewButton() {
@@ -1088,7 +1114,13 @@ class BlindingLessonFragment : Fragment() {
         button.setOnClickListener {
             if (childFragmentManager.findFragmentByTag(MistakeReviewDialog.TAG) != null) return@setOnClickListener
             if (isTimerStarted) handler.removeCallbacks(runnable)
-            MistakeReviewDialog.newInstance(numbers!!, answer, emptyList(), lessonItem.title)
+            // Kayıt yalnızca bu dizinin tamamı izlendiyse (her sayı bir kez işaretli).
+            val complete = lastFlashMarks.size == numbers!!.size
+            MistakeReviewDialog.newInstance(
+                numbers, answer,
+                log = if (complete) lastFlashLog else emptyList(), lessonItem.title,
+                marks = if (complete) lastFlashMarks else emptyList(),
+            )
                 .show(childFragmentManager, MistakeReviewDialog.TAG)
         }
     }
@@ -1971,6 +2003,13 @@ class BlindingLessonFragment : Fragment() {
             root = binding.root,
         )
         abacusController.setup()
+        abacusController.onValueChanged = {
+            // Sıfırlamanın ara değerleri ve dizi dışındaki oynamalar kayda girmez.
+            if (flashMarks.isNotEmpty() && !abacusController.isResetInProgress() && flashLog.size < FLASH_LOG_MAX) {
+                val v = abacusController.getCurrentValue()
+                if (flashLog.lastOrNull() != v) flashLog += v
+            }
+        }
         val density = resources.displayMetrics.density
         abacusController.setBeadMarginOffsets(
             savedBeadMarginBottomDp * density,
@@ -2448,7 +2487,10 @@ class BlindingLessonFragment : Fragment() {
         controlButton.setBackgroundColor(resources.getColor(R.color.button_disabled, null))
         controlButton.setTextColor(resources.getColor(R.color.button_text_disabled, null))
 
+        flashLog.clear()
+        flashMarks.clear()
         numberText.text = currentSequence[0].toString()
+        markFlashNumber()
         currentSequenceIndex = 1
         handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod ?: 1000L)
     }
