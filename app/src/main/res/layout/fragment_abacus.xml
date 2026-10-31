@@ -2148,6 +2148,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/correctAnswerLabel" />
 
+        <!-- Çocuğun nerede yanıldığı (AbacusFragment.bindMistakeDiagnosis, MistakeAnalyzer). -->
+        <TextView
+            android:id="@+id/incorrectDiagnosisText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/tutorial_result_item_margin"
+            android:layout_marginTop="6dp"
+            android:textColor="#FFFFFF"
+            android:textSize="@dimen/tutorial_result_body_text_size"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/correctAnswerText" />
+
         <Button
             android:id="@+id/okayButton"
             android:layout_width="match_parent"
@@ -2162,7 +2176,7 @@
             android:textStyle="bold"
             app:cornerRadius="@dimen/tutorial_result_button_corner_radius"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/correctAnswerText" />
+            app:layout_constraintTop_toBottomOf="@id/incorrectDiagnosisText" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
     <androidx.constraintlayout.widget.ConstraintLayout

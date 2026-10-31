@@ -393,6 +393,23 @@ yazdırılıp (Opus, ~$4) kullanıcının onayladığı "basit / neden" metinler
 seçer; öneri balonlarına model çağırmadan onaylı metin döner. Önce kör yan yana etiketleme
 (`tools/sobi-eval/etiket/YAN_YANA.md`) ve 2 öğreticilik pilot (~$0,25).
 
+### Ders ekranında hata teşhisi (31.10.2026, A aşaması; derlendi, telefonda denenmedi)
+
+Kullanıcı kararı: ders (`AbacusFragment`) ve abaküssüz ders (`BlindingLessonFragment`) için yanlış cevapta
+çocuğun nerede yanıldığı anlatılsın; sonra "Sobi ile adım adım çöz" ekranı (B) ve o ekranda Sobi (C).
+A yapay zekâsız, kural motoruyla:
+- `abacus/MistakeAnalyzer.kt`: soru `ilk ± ikinci`, abaküs sıfırdan. Doğru yol = ilk sayıyı yazmak +
+  ikinciyi basamak basamak işlemek (`StepExplainer`). Çocuğun değer kaydında hamle sonuçları sırayla
+  aranır; bulunamayan ilk hamle hatanın yeri. Türler: unutulan adım (çok adımlı hamlede "sonuç − o
+  adımın katkısı" kayıtta: 248+223=461 → "10 gelir" yapılmamış), yanlış sütun değeri, ilk sayıyı
+  yanlış yazmak (kayıtta `cevap ∓ ikinci`), yoksa yalnızca yer + doğru adımlar. Adım adım gidilmediyse
+  (ilk sayı kayıtta yok ve yanlış yazılmış ilk sayı da yok) SUSAR; çarpma/bölme ve yalnızca sayı yazma
+  sorularında da. 8 birim testi.
+- `AbacusFragment`: denetleyicinin `onValueChanged`'iyle kayıt (sıfırlama sırasındaki ara değerler
+  alınmıyor), her yeni soruda sıfırlanıyor; yanlış cevap panelinde `incorrectDiagnosisText`.
+- Abaküssüz derslerde kayıt yok (çocuk boncuk oynatmıyor); orada hata B'deki yeniden çözme ekranında
+  bulunacak.
+
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 
 Sobi'nin tur sınırı dolduğunda ya da çocuk isterse "Öğretmenine soralım mı?":

@@ -230,6 +230,13 @@ class AbacusFragment : Fragment() {
     private val binding get() = _binding!!
     private var resultDialog: Dialog? = null
     private lateinit var abacusController: AbacusBeadController
+    /**
+     * Bu sorudaki abaküs değerleri, sırayla (0'dan başlar). Yanlış cevapta MistakeAnalyzer çocuğun
+     * nerede yanıldığını bununla buluyor. Sıfırlama sırasındaki ara değerler alınmıyor. Üst sınır:
+     * dokunuş başına bir değer; fazlası teşhise gerekmez.
+     */
+    private val mistakeLog = ArrayList<Int>()
+    private val mistakeLogMax = 400
     private var abacusMetricsInitialized = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -301,6 +308,12 @@ class AbacusFragment : Fragment() {
             animationDurationMs = BEAD_ANIMATION_MS
         )
         abacusController.setup()
+        abacusController.onValueChanged = {
+            if (!abacusController.isResetInProgress()) {
+                val v = abacusController.getCurrentValue()
+                if (mistakeLog.lastOrNull() != v && mistakeLog.size < mistakeLogMax) mistakeLog += v
+            }
+        }
         ensureAbacusMetricsIfVisible()
         FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
             val ctx = requireContext().applicationContext
@@ -1780,6 +1793,9 @@ class AbacusFragment : Fragment() {
         }
 
         if (currentIndex < operations.size) {
+            // Yeni soru: abaküs sıfırdan başlıyor (resetAbacus), kayıt da.
+            mistakeLog.clear()
+            mistakeLog += 0
             val currentOperation = operations[currentIndex]
             currentOperation.firstNumber?.let { number ->
                 firstNumberText.text = number.toString()
@@ -1822,6 +1838,27 @@ class AbacusFragment : Fragment() {
             controlNumber = 0
             false
         }
+    }
+
+    /**
+     * Yanlış cevap panelinde çocuğun nerede yanıldığı ([MistakeAnalyzer], kural motoru). Teşhis
+     * yoksa (adım adım gidilmedi, çarpma, yalnızca sayı yazma sorusu) metin gizli kalır.
+     */
+    private fun bindMistakeDiagnosis() {
+        val view = incorrectPanel.findViewById<TextView>(R.id.incorrectDiagnosisText) ?: return
+        val op = operations.getOrNull(currentIndex)
+        val first = op?.firstNumber
+        val second = op?.secondNumber
+        val sign = op?.operator
+        val diagnosis = if (first != null && second != null && sign != null) {
+            runCatching {
+                com.example.app.abacus.MistakeAnalyzer.analyze(
+                    first, sign, second, mistakeLog, abacusController.getCurrentValue(),
+                )
+            }.getOrNull()
+        } else null
+        view.text = diagnosis?.text.orEmpty()
+        view.visibility = if (diagnosis != null) View.VISIBLE else View.GONE
     }
 
     private fun incorrectText() {
@@ -3056,6 +3093,7 @@ class AbacusFragment : Fragment() {
             incorrectPanel.translationY = resultPanelHiddenY(incorrectPanel)
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
+            bindMistakeDiagnosis()
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
             
             // Control button'u devre dışı bırak
