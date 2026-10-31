@@ -146,6 +146,17 @@ function reasonOf(m) {
   throw new Error(`kural: ${m.rule}`);
 }
 
+/**
+ * Kimin kardeşi: model kardeşi yanlış sayıya bağlıyordu (değerlendirme 29.10.2026: 17 + 3'te
+ * "7'nin büyük kardeşi gider", 743 + 2'de "5'in kardeşi"). Çıkarmada 10'luk kuralda ders yalnızca
+ * "kardeş" diyor.
+ */
+function kardesOf(m) {
+  if (m.rule === 'five') return { sayi: m.x, kardesi: 5 - m.x, ad: 'kardeş' };
+  if (m.rule === 'ten' || m.rule === 'bead') return { sayi: m.x, kardesi: 10 - m.x, ad: m.op === 'add' ? 'büyük kardeş' : 'kardeş' };
+  return undefined;
+}
+
 /** Modelin okuyacağı hamle özeti. */
 function describe(e) {
   return {
@@ -161,6 +172,7 @@ function describe(e) {
       adimlar: m.steps.map((s) => stepPhrase(s, m)),
       // Ara değerler: "23, 13 olur" gibi doğru bir cümle de guard'dan geçsin (denemede takılmıştı).
       adim_sonrasi_degerler: moveTrail(m),
+      ...(kardesOf(m) ? { kardes: kardesOf(m) } : {}),
       ...reasonOf(m),
     })),
   };
@@ -240,8 +252,21 @@ function explainInput(input) {
  * sütundaki hareketin tamamı (zincir dahil).
  */
 function stepTrail(e) {
-  return e.moves.flatMap((m) => moveTrail(m).map((v, i) => ({ basamak: columnName(m.col), adim: stepPhrase(m.steps[i], m), sonra: v })));
+  return e.moves.flatMap((m) => moveTrail(m).map((v, i) => ({ basamak: columnName(m.col), kural: RULE_NAMES[m.rule], adim: stepPhrase(m.steps[i], m), sonra: v })));
 }
+
+const cap = (s) => `${s[0].toUpperCase()}${s.slice(1)}`;
+
+/**
+ * Hamleyi söylemeden yön gösteren ipucu. Değerlendirmede (29.10.2026) `siradaki_adim` alanı
+ * cevabı modelin önüne koyuyordu: araç çağrıldığında Sobi hamleyi daha sık hemen söyledi.
+ * Kullanıcı kararı: takılan çocuğa ilk yardımda ipucu, yeniden isterse ya da cevabı açıkça
+ * isterse hamle.
+ */
+function hintFor(basamak, kural) {
+  return `${cap(basamak)} basamağına bak: bu adımda ${kural} kullanılıyor.`;
+}
+const WHEN_TO_TELL = 'Hamleyi çocuk cevabı açıkça isterse ya da bu adımda yeniden yardım isterse söyle; ilk yardımda ipucuyla yönlendir.';
 
 /** Hamlenin her adımından sonra abaküste yazan değer. */
 function moveTrail(m) {
@@ -280,7 +305,14 @@ function findMistake(ctx) {
   // Kayıtta yalnızca başlangıç değeri varsa çocuk dokunmamış demektir; "şaştın" denmemeli.
   const untouched = log.every((v) => v === ctx.base);
   if ((current === null || current === ctx.base) && untouched) {
-    return { ...base, durum: 'Çocuk bu adımda abaküste henüz bir şey yapmamış.', siradaki_adim: `${stepTrail(e)[0].basamak}: ${stepTrail(e)[0].adim}` };
+    const first = stepTrail(e)[0];
+    return {
+      ...base,
+      durum: 'Çocuk bu adımda abaküste henüz bir şey yapmamış.',
+      ipucu: hintFor(first.basamak, first.kural),
+      siradaki_adim: `${first.basamak}: ${first.adim}`,
+      siradaki_adim_ne_zaman: WHEN_TO_TELL,
+    };
   }
   if (current !== null && current !== ctx.base) {
     const trail = stepTrail(e);
@@ -290,7 +322,9 @@ function findMistake(ctx) {
         ...base,
         durum: 'Çocuk doğru yolda; yaptığı adımlar doğru, geri dönmesine gerek yok.',
         yapilan_adimlar: trail.slice(0, j + 1).map((t) => `${t.basamak}: ${t.adim}`),
+        ipucu: `Doğru yoldasın; ${hintFor(trail[j + 1].basamak, trail[j + 1].kural).toLocaleLowerCase('tr-TR')}`,
         siradaki_adim: `${trail[j + 1].basamak}: ${trail[j + 1].adim}`,
+        siradaki_adim_ne_zaman: WHEN_TO_TELL,
       };
     }
   }
@@ -303,7 +337,9 @@ function findMistake(ctx) {
         ...base,
         durum: 'Tahmin: bu hamlede şaşmış olabilir.',
         dogru_yapilan_hamle_sayisi: i,
+        ipucu: hintFor(columnName(m.col), RULE_NAMES[m.rule]),
         ilk_hata: describe({ ...e, moves: [m] }).hamleler[0],
+        siradaki_adim_ne_zaman: WHEN_TO_TELL,
       };
     }
     from = at + 1;

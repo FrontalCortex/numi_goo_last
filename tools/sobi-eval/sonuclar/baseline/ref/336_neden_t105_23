@@ -1,0 +1,1 @@
+Birler sütununda 9 var, üstüne 6 eklersek 15 olur ve bir sütun en fazla 9 tutar, o yüzden 6'yı doğrudan ekleyemiyoruz. 6 eklemek, 10 ekleyip 4 çıkarmakla aynı şey, bu yüzden önce 10 geliyor. Sonra 6'nın büyük kardeşi olan 4'ü gidiyor ve sonuç 55 oluyor.

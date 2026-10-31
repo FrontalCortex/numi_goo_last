@@ -1,0 +1,1 @@
+Yüzler sütununda şu an 2 birlik boncuk var ve 2 tanesi boşta. 300 eklemek için 3 boş birlik boncuk gerekir, ama sadece 2 tane boş olduğu için doğrudan ekleyemiyoruz. 3 eklemek, 5 ekleyip 2 çıkarmakla aynı olduğu için 5'lik kuralı kullanıyoruz: 5 gelir, kardeşi 2 gider.

@@ -70,6 +70,9 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       const payload = data || {};
       const message = typeof payload.message === 'string' ? payload.message : '';
       const stepContext = chat.sanitizeContext(payload.context);
+      // Çocuk bir öneri balonuna dokunduysa balonun anahtarı (uygulama metni de "message"da gönderiyor).
+      const suggestion = typeof payload.suggestion === 'string' && /^[a-z_]{1,30}$/.test(payload.suggestion) ? payload.suggestion : null;
+      const direct = chat.directReplyFor(stepContext, suggestion);
       const sessionId = SESSION_ID.test(payload.sessionId || '') ? payload.sessionId : null;
 
       const userSnap = await db.collection('users').doc(uid).get();
@@ -85,7 +88,8 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       const usageRef = db.collection('sobiChats').doc(uid);
       const usageSnap = await usageRef.get();
       const used = usageSnap.exists && usageSnap.get('usageDay') === today ? Number(usageSnap.get('usageCount')) || 0 : 0;
-      if (used >= limit) {
+      // Modelsiz cevap ücretsiz: günlük hakkı bitmiş çocuk da balondaki hazır açıklamayı görür.
+      if (used >= limit && !direct) {
         throw new functions.https.HttpsError('resource-exhausted', 'Bugünkü Sobi sohbet hakkın doldu.', { limit });
       }
 
@@ -113,7 +117,9 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       });
       let result;
       try {
-        try {
+        if (direct) {
+          result = chat.directTurn({ history, context: stepContext, childText: message, text: direct.text });
+        } else try {
           result = await runWith(history);
         } catch (err) {
           // Geçmişteki düşünme blokları artık geçerli değilse (araç listesi ya da talimat metni
@@ -158,7 +164,14 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       const childLine = guard.cleanChildText(message).text;
       const transcript = (session && Array.isArray(session.transcript) ? session.transcript : []).concat([
         { from: 'cocuk', text: childLine, at: now },
-        { from: 'sobi', text: result.reply, at: Date.now(), ...(result.fellBack ? { fellBack: true } : {}) },
+        {
+          from: 'sobi', text: result.reply, at: Date.now(), ...(result.fellBack ? { fellBack: true } : {}),
+          // Beğeni ve haftalık iyileştirme için: cevap hazır açıklamadan mı, modelden mi; hangi adımda.
+          source: direct ? 'hazir' : 'model',
+          ...(direct ? { aciklama: direct.key } : {}),
+          ...(suggestion ? { suggestion } : {}),
+          tutorialNumber: stepContext.tutorialNumber, stepIndex: stepContext.stepIndex, stepId: stepContext.stepId,
+        },
       ]);
       const totals = { ...(session && session.usage ? session.usage : {}) };
       for (const [k, v] of Object.entries(result.usage)) totals[k] = (totals[k] || 0) + v;
@@ -178,7 +191,8 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
         updatedAt: ts.fromMillis(now),
         expiresAt: ts.fromMillis(now + RETENTION_MS),
       }, { merge: true });
-      batch.set(usageRef, { usageDay: today, usageCount: used + 1 }, { merge: true });
+      // Modelsiz cevap günlük haktan düşmüyor.
+      if (!direct) batch.set(usageRef, { usageDay: today, usageCount: used + 1 }, { merge: true });
       await batch.commit();
 
       return {
@@ -188,7 +202,10 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
         suggestions: result.suggestions,
         fellBack: result.fellBack,
         turnsLeft: MAX_TURNS - (turns + 1),
-        remainingToday: limit - (used + 1),
+        remainingToday: limit - (direct ? used : used + 1),
+        // Beğen / beğenme bu sıraya bağlanıyor (sobiFeedback).
+        messageIndex: transcript.length - 1,
+        source: direct ? 'hazir' : 'model',
       };
     });
 };

@@ -1,0 +1,1 @@
+Boncuk kuralını, bir sayıyı çıkarırken kardeşi doğrudan gelemediği zaman kullanırız. Bu derste 6'yı çıkarırken önce 10 gider, sonra 6'nın kardeşi olan 4 gelmek zorunda kalır. Ama 4'ü doğrudan getiremediğimiz için 5 gelir, 4'ün kardeşi 1 gider diyerek onu yapıyoruz.

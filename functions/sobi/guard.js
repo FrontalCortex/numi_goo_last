@@ -93,6 +93,11 @@ function checkReply(reply, sources, { explanation = false } = {}) {
  * hamlesi kural motorundan; sayılar hesaplanmış olduğu için güvenli.
  */
 function fallbackReply(ctx, tools) {
+  // Çarpma adımında kural motoru yalnızca toplamayı görür ("10'luk kural: 10 gelir…"); çarpma
+  // dersinde çocuğa anlamsız geliyordu (değerlendirme 29.10.2026). Adımın kendi sözü daha güvenli.
+  if (ctx && Number.isInteger(ctx.target) && /^\s*\d+\s*[x×*]\s*\d+\s*$/.test(ctx.questionText || '') && ctx.stepText) {
+    return `Birlikte bakalım! Bu adımda: "${ctx.stepText}" İstersen "Bana göster"e dokun.`;
+  }
   const e = ctx && Number.isInteger(ctx.base) && Number.isInteger(ctx.target)
     ? explainer.explainTransition(ctx.base, ctx.target)
     : null;

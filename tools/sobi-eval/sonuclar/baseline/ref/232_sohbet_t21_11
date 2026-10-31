@@ -1,0 +1,5 @@
+Bu adımda bunun nedenini ayrıntılı anlatmadık. Şimdilik şunu bil: 284 x 4'te önce birler basamağındaki 4 ile çarpıyoruz, sonra onlar ve yüzler basamağına geçiyoruz. Sıra bu dersin yöntemi, bunu bir örnekte birlikte deneyelim.
+---
+Burada 284'ün birler basamağındaki 4'ü, çarpan 4 ile çarpıyoruz. 4 x 4, dört tane dörtlük demek ve sonucu 16. Bu 16'nın 6'sını birler basamağına, 1'ini de onlar basamağına yazıyoruz.
+---
+Harika, çok iyi gidiyorsun! Şimdi 284'ün bir sonraki basamağındaki 8'i 4 ile çarpmaya geçeceğiz.

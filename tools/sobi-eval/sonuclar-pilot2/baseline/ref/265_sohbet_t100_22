@@ -1,0 +1,5 @@
+Sorun değil, birlikte bakalım. Birler sütununda şu an 1 birlik boncuk gelmiş, boşta 3 tane var. 2 eklemek için bu sütuna kaç birlik boncuk daha gelmeli?
+---
+Şimdi abaküsünde birler sütununa bakalım. Oraya 2 eklemek için boşta olan birlik boncuklardan 2 tanesini gelir hâline getiriyoruz. Bu, kuralsız toplamadır: 30'un üstüne 2 gelir ve sonuç 32 olur. Sen şu an 31'de kaldın, bir birlik boncuk daha gelmesi gerekiyor.
+---
+Tamam, abaküsünde 30'dan 32'ye giden hareketi gösterdim. Birler sütununda boşta olan 2 birlik boncuğa dokunup gelir hâline getir. Sonra sayı 32 olacak, ardından 'Kontrol Et' butonuna bas.

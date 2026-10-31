@@ -1,0 +1,1 @@
+Bu adımda dersin verdiği ayrıntılı bir gerekçe yok, o yüzden tahmin yürütmek istemem. Genel olarak şöyle düşünebilirsin: her sütunun alt kısmında en fazla 4 birlik boncuk var, ve 40 eklemek için onlar sütununa boncuk eklemek gerekir; boşta yeterince yer kalmıyorsa doğrudan eklenemez. Bu durumda 5'lik kuralla 5 gelir, kardeşi gider, böylece yer açılmış olur.

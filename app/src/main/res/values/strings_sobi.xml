@@ -26,6 +26,10 @@
     <string name="sobi_suggest_didnt_get">Bunu anlamadım</string>
     <string name="sobi_suggest_example">Bir örnek ver</string>
 
+    <!-- Beğen / beğenme (Sobi'nin her cevabının altında; haftalık iyileştirme döngüsünün verisi) -->
+    <string name="sobi_rate_up">Bu cevabı beğendim</string>
+    <string name="sobi_rate_down">Bu cevabı beğenmedim</string>
+
     <!-- Sorunlar -->
     <string name="sobi_error_network">Şu an Sobi\'ye ulaşamıyorum. İnternetini kontrol edip yeniden dener misin?</string>
     <string name="sobi_error_daily_limit">Bugün Sobi ile çok konuştun! Yarın yine konuşuruz.</string>

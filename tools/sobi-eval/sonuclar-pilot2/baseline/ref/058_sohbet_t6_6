@@ -1,0 +1,5 @@
+Birler sütunundaki 9 ile 4'ü toplarsak 13 olur, ama bir sütun en fazla 9 tutabilir. Bunun yerine 4 eklemek, 10 ekleyip 6 çıkarmakla aynıdır. Bu yüzden 10 gelir, 4'ün büyük kardeşi olan 6 gider ve sonuç 53 olur.
+---
+Birler sütununda 10'a yer yok, bu yüzden 10'un yerine onlar sütununa 1 eklenir. Senin abaküsünde onlar sütununda 4 var; 1 eklemek için beşlik boncuk gelir ve 4 birlik boncuk gider. Böylece onlar 4'ten 5'e çıkar ve bu, 10 gelmiş olmak demektir.
+---
+Güzel, anladığını görmek sevindirici! Bu ekranda alıştırma hazırlayamıyorum, o yüzden kendi abaküsünde deneyebilirsin: 48 + 3 yap. Önce birler sütununa 3 nasıl eklenebileceğine bak; 10 gelir ve 7 gider. Sonucun 51 çıkıyor mu?

@@ -1,0 +1,1 @@
+Birler sütununda zaten 8 var, 4 daha eklersek 12 olur, ama bir sütunda en fazla 9 durabilir. Bu yüzden 4'ü doğrudan ekleyemiyoruz. 4 eklemek, 10 ekleyip 6 çıkarmakla aynı şey, o yüzden 10 gelir ve 4'ün büyük kardeşi olan 6 gider.

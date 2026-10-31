@@ -1,0 +1,1 @@
+13'ten 8'i doğrudan çıkaramayız, çünkü birler sütununda sadece 3 var. Bunun yerine 10 gider, 5 gelir, sonra kardeşi olan 3 gider yaparız. Böylece 13 - 10 + 5 - 3 = 5 olur ve cevap 5 çıkar.

@@ -1,0 +1,5 @@
+Bu adımda onlar basamağından 9 çıkarıyoruz, ama onlarda 6 var ve 9'u doğrudan çıkaramayız. Onun yerine 10 çıkarıp 1 geri eklemek aynı sonucu verir: yüzlerden 1 gider, sayı 65 olur, sonra kardeşi 1 gelir ve sayı 75 olur. Şimdi birler sütununda 5 olması gerekiyor, ama abaküsünde 74 görünüyor. Birler sütununa bir daha bakar mısın?
+---
+Ekranında 165'ten 90'ı çıkardım ve sonuç 75 oldu. Onlar basamağında 6 var, 9'u doğrudan çıkaramadığımız için önce 10 gider (yüzlerden 1 gider, sayı 65 olur), sonra kardeşi 1 gelir ve 75 olur. Şimdi bu 75'in üstüne bak; birler sütununda 5 olmalı.
+---
+Ekranda 165 - 96 işlemini gösterdim. Önce onlardan 9'u çıkarınca 75 olur, sonra birlerde 6'yı çıkarırız: 10 gider, kardeşi 4 gelir ve sonuç 69 olur. Senin abaküsünde şu an 74 var; birler sütununu 5'e getirip bu adımları kendin deneyebilir misin?

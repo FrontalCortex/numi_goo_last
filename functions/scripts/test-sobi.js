@@ -12,6 +12,7 @@
  */
 const assert = require('assert');
 const tools = require('../sobi/tools');
+const explainer = require('../sobi/stepExplainer');
 const guard = require('../sobi/guard');
 const chat = require('../sobi/chat');
 const createSobiChat = require('../sobi/callable');
@@ -189,13 +190,41 @@ async function main() {
       recentSteps: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 42], stepText: '10 gelir, büyük kardeş gider.',
     });
     assert.deepStrictEqual(c.taughtRules, ['add_five', 'add_ten']);
-    assert.deepStrictEqual(c.recentSteps, ['c', 'd', 'e', 'f', 'g', 'h']);
+    // Bütün önceki adımlar kalıyor (eskiden son 6); son 6'sı "az önce" diye ayrı.
+    assert.deepStrictEqual(c.recentSteps, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']);
     const b = chat.contextBlock(c);
     assert.ok(b.includes("Ders: 10'luk Toplama"));
     assert.ok(b.includes("Çocuğun şimdiye kadar öğrendiği kurallar: 5'lik toplama, 10'luk toplama"));
     assert.ok(b.includes('- h'));
+    assert.ok(b.indexOf('Dersin önceki kısmı') < b.indexOf('- a') && b.indexOf('- b') < b.indexOf('az önce anlatılanlar'));
+    assert.ok(b.indexOf('az önce anlatılanlar') < b.indexOf('- c'));
     assert.ok(b.includes('Bu bir anlatım adımı'));
     assert.ok(!chat.contextBlock(CTX).includes('anlatım adımı'));
+  });
+  await test('soru adımı bağlamı: adımın işi, abaküs durumu, ipucu ve çarpımlar', () => {
+    // 4 + 9'un "10 gelir" adımı: 4 → 14; ekrandaki işlem bütün işlem.
+    const c = chat.sanitizeContext({ questionText: '4 + 9', stepText: '10 gelir.', base: 4, target: 14, current: 4, valueLog: [4] });
+    const b = chat.contextBlock(c, { messageInStep: 2 });
+    assert.ok(b.includes('Bu adımın işi: 4 → 14'));
+    assert.ok(b.includes('Ekrandaki "4 + 9" bütün işlem'));
+    assert.ok(b.includes('İpucu (ilk yardımda bunu kullan): Onlar basamağına bak'));
+    assert.ok(b.includes('Sıradaki adım (çocuk cevabı isterse'));
+    assert.ok(b.includes("Sobi'nin bu adımdaki mesajı: 2."));
+    const m = chat.contextBlock(chat.sanitizeContext({ questionText: '46 x 3', stepText: 'Çarp.', base: 18, target: 138, current: 18 }));
+    assert.ok(m.includes('6 x 3 = 18') && m.includes('4 x 3 = 12') && m.includes('(120)'));
+    // Çarpım sayıları artık kaynakta: "4 ile 3'ün çarpımı 12" guard'dan geçiyor.
+    const src = guard.sourceNumbers([{ role: 'user', content: [{ type: 'text', text: m }] }]);
+    assert.strictEqual(guard.checkReply("4 ile 3'ün çarpımı 12, onlar basamağına 120 eklenir.", src).ok, true);
+    // Çarpmada yedek metin adımın kendi sözü, toplama kuralı değil.
+    const fb = guard.fallbackReply(chat.sanitizeContext({ questionText: '46 x 3', stepText: 'Çarp.', base: 18, target: 138 }), tools);
+    assert.ok(fb.includes('"Çarp."') && !fb.includes('kural'));
+  });
+  await test('kardeş alanı: kimin kardeşi, çıkarmada "kardeş"', () => {
+    const add = tools.describe(explainer.explain(17, 'add', 3)).hamleler[0].kardes;
+    assert.deepStrictEqual(add, { sayi: 3, kardesi: 7, ad: 'büyük kardeş' });
+    const sub = tools.describe(explainer.explain(23, 'sub', 6)).hamleler[0].kardes;
+    assert.deepStrictEqual(sub, { sayi: 6, kardesi: 4, ad: 'kardeş' });
+    assert.strictEqual(tools.describe(explainer.explain(1, 'add', 2)).hamleler[0].kardes, undefined);
   });
   await test('araç listesi bağlamdan bağımsız (düşünme blokları değişmeyen liste ister)', () => {
     const exp = chat.sanitizeContext({ stepText: 'x', current: 9 });
@@ -257,7 +286,7 @@ async function main() {
   });
   await test('bağlam temizleniyor', () => {
     const c = chat.sanitizeContext({ stepId: 'T8; drop', base: -1, target: 100000, current: 3.2, attempts: 5, valueLog: [1, -2, 'x', 3], extra: 'gizli' });
-    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3], practice: false, lessonTitle: '', recentSteps: [], taughtRules: [] });
+    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3], practice: false, lessonTitle: '', recentSteps: [], taughtRules: [], tutorialNumber: null, stepIndex: null });
   });
 
   console.log('sohbet turu (sahte model)');
@@ -427,6 +456,46 @@ async function main() {
     assert.strictEqual(env.store.has('sobiChats/u1'), false);
   });
 
+  await test('hazır açıklama: balon modelsiz, hak düşmüyor; beğeni kaydı ve geri alma', async () => {
+    const env = fakeEnv();
+    const fn = createSobiChat({ ...env, createClient: () => ({ messages: { create: async () => { throw new Error('model çağrılmamalı'); } } }) });
+    const feedback = require('../sobi/feedback')({ ...env, promptVersion: 'pv' });
+    env.store.set('users/u1', { plan: 'Free' });
+    const ctx = { auth: { uid: 'u1' } };
+    // t3'ün 25. adımı (4 + 2 anlatımı): onaylı açıklaması var (sobi/aciklamalar_tr.json).
+    const stepContext = { stepText: "Bu yüzden 5'lik kuralı uygulayacağız.", questionText: '4 + 2', tutorialNumber: 3, stepIndex: 25 };
+    const r = await fn({ message: 'Bunu anlamadım', suggestion: 'bunu_anlamadim', context: stepContext }, ctx);
+    assert.ok(r.reply.startsWith('Abaküste 4 var'));
+    assert.strictEqual(r.source, 'hazir');
+    assert.strictEqual(r.remainingToday, 20);
+    assert.strictEqual(r.messageIndex, 1);
+    const path = `sobiChats/u1/sessions/${r.sessionId}`;
+    const line = env.store.get(path).transcript[1];
+    assert.strictEqual(line.source, 'hazir');
+    assert.strictEqual(line.aciklama, 't3_p5');
+    assert.strictEqual(env.store.get('sobiChats/u1'), undefined, 'günlük sayaç yazılmamalı');
+    // Geçmişte çocuğun mesajı ve düz metin cevap: sonraki model turu görsün.
+    assert.deepStrictEqual(JSON.parse(env.store.get(path).historyJson).map((m) => m.role), ['user', 'assistant']);
+
+    await feedback({ sessionId: r.sessionId, messageIndex: 1, value: -1 }, ctx);
+    const fb = env.store.get(`sobiChats/u1/sobiFeedback/${r.sessionId}_1`);
+    assert.strictEqual(fb.value, -1);
+    assert.strictEqual(fb.childText, 'Bunu anlamadım');
+    assert.strictEqual(fb.aciklama, 't3_p5');
+    assert.strictEqual(fb.tutorialNumber, 3);
+    assert.strictEqual(env.store.get(path).transcript[1].rating, -1);
+    await feedback({ sessionId: r.sessionId, messageIndex: 1, value: 0 }, ctx);
+    assert.strictEqual(env.store.has(`sobiChats/u1/sobiFeedback/${r.sessionId}_1`), false);
+    await assert.rejects(feedback({ sessionId: r.sessionId, messageIndex: 0, value: 1 }, ctx), (e) => e.code === 'not-found');
+    await assert.rejects(feedback({ sessionId: r.sessionId, messageIndex: 1, value: 5 }, ctx), (e) => e.code === 'invalid-argument');
+    await assert.rejects(feedback({ sessionId: r.sessionId, messageIndex: 1, value: 1 }, {}), (e) => e.code === 'unauthenticated');
+
+    // Onaylı açıklaması olmayan balon ("Bir örnek ver") ve soru adımı: model çalışır.
+    assert.strictEqual(chat.directReplyFor(chat.sanitizeContext(stepContext), 'ornek_ver'), null);
+    assert.strictEqual(chat.directReplyFor(chat.sanitizeContext({ ...stepContext, base: 4, target: 6 }), 'bunu_anlamadim'), null);
+    assert.ok(chat.contextBlock(chat.sanitizeContext(stepContext)).includes('Onaylı açıklama'));
+  });
+
   console.log(`\n${passed} test geçti.`);
 }
 
@@ -442,6 +511,7 @@ function fakeEnv() {
     id: p.split('/').pop(),
     get: async () => snap(p),
     set: async (data, opts) => { store.set(p, opts && opts.merge ? { ...(store.get(p) || {}), ...data } : { ...data }); },
+    delete: async () => { store.delete(p); },
     collection: (name) => colRef(`${p}/${name}`),
   });
   const colRef = (p) => ({ doc: (id) => docRef(`${p}/${id || `oto${++seq}abcdefgh`}`) });
@@ -451,9 +521,21 @@ function fakeEnv() {
       const ops = [];
       return { set: (ref, data, opts) => ops.push(() => ref.set(data, opts)), commit: async () => { for (const op of ops) await op(); } };
     },
+    runTransaction: async (fn) => {
+      const ops = [];
+      const tx = {
+        get: (ref) => ref.get(),
+        set: (ref, data) => ops.push(() => ref.set(data)),
+        update: (ref, data) => ops.push(() => ref.set(data, { merge: true })),
+        delete: (ref) => ops.push(() => ref.delete()),
+      };
+      const out = await fn(tx);
+      for (const op of ops) await op();
+      return out;
+    },
   };
   class HttpsError extends Error { constructor(code, message) { super(message); this.code = code; } }
-  const functions = { runWith: () => ({ https: { onCall: (fn) => fn } }), https: { HttpsError } };
+  const functions = { runWith: () => ({ https: { onCall: (fn) => fn } }), https: { HttpsError, onCall: (fn) => fn } };
   const admin = { firestore: { Timestamp: { fromMillis: (ms) => ({ ms }) } } };
   const isAskQuestionRestricted = (u) => u.banned === true;
   const effectivePlan = (u) => u.plan || 'Free';

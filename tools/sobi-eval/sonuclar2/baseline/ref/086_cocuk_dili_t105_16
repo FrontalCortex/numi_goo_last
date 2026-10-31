@@ -1,0 +1,1 @@
+Sorun şu: birler sütununda 8 var ve 8 + 7 = 15 olur, ama bir sütun en fazla 9 tutar. Bu yüzden 7'yi 10 eksi 3 gibi düşünürüz: 10 gelir, 3 gider. Onlar basamağına 1 eklenir, 58 olur, sonra 3 gider ve 55 kalır.

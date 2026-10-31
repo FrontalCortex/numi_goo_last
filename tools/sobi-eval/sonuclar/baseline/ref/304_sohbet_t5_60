@@ -1,0 +1,7 @@
+Birler sütununda 8 var ve buna 4 eklersen 12 olur. Bir sütun 9'u geçemediği için 4'ü doğrudan ekleyemeyiz. Bunun yerine 10 gelir, yani onlar sütununa 1 eklenir, birler sütunundan da 6 gider.
+
+Senin abaküsünde onlar sütunu şu an 2. Bu adımda onlar sütununa 1 eklemek için hangi boncuğa dokunursun?
+---
+Abaküsünde gösterdim. Önce 10 gelir, yani onlar sütunu 1'den 2 olur ve sayı 28 olur. Sonra 4 yerine 10 eklediğimiz için fazla giden 6'yı çıkarırız, yani büyük kardeşi 6 gider. Böylece 28 eksi 6 eşittir 22.
+---
+Abaküsünde 18 + 4 hamleleri şöyle oynuyor. Önce onlar sütununa 10 gelir, yani sayı 28 olur. Sonra 6 gider, ve sonuç 22 olur. Şimdi bunu kendi abaküsünde 18'den başlayıp dener misin?

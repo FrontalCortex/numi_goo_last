@@ -272,8 +272,12 @@ class TutorialFragment : Fragment() {
     private var tutorialRod4FourIsUp: Boolean = false
 
     companion object {
-        /** Sobi'ye bağlam olarak giden önceki adım sayısı (sunucu da en çok 6 alıyor). */
-        private const val SOBI_RECENT_STEPS = 6
+        /**
+         * Sobi'ye bağlam olarak giden önceki adım sayısı: pratikte dersin başından bu adıma kadar
+         * hepsi (en uzun öğretici ~80 adım). Çocuk "baştaki kardeş olayı" gibi önceki bir konuyu da
+         * sorabiliyor; eskiden 6'ydı. Sunucu en çok 150 adım ve 8.000 karakter alıyor.
+         */
+        private const val SOBI_RECENT_STEPS = 150
         /** Bir adımda bu kadar kalınınca "Anlamadığın yeri bana sor!" (öğreticide bir kez). */
         private const val SOBI_IDLE_NUDGE_MS = 7000L
         /** Ekrandaki Sobi düğmesi (yalnızca kafa) kare, bu kadar dp. */
@@ -950,7 +954,7 @@ class TutorialFragment : Fragment() {
             .filter { it.isNotBlank() }
         val lessonTitle = lessonItem?.title
         val rules = SobiCurriculum.taughtRules(tutorialNumber)
-        return if (isSobiQuestionStep()) {
+        val ctx = if (isSobiQuestionStep()) {
             sobiTracker.questionContext(
                 stepId = step.id, stepText = step.text, questionText = step.questionText,
                 target = step.answerNumber, current = abacusController?.getCurrentValue(),
@@ -962,6 +966,8 @@ class TutorialFragment : Fragment() {
                 lessonTitle = lessonTitle, recentSteps = recent, taughtRules = rules,
             )
         }
+        // Sunucu bu adımın hazır açıklamasını bulsun (öğretici + adım sırası, metinle denetleniyor).
+        return ctx.copy(tutorialNumber = tutorialNumber, stepIndex = currentStep)
     }
 
     private fun openSobi() {

@@ -1,0 +1,1 @@
+Birler sütununda 8 var ve 8 + 7 = 15 olur, ama bir sütun en fazla 9 tutabilir. Bu yüzden 7 eklemek yerine 10 ekleyip fazladan 3'ü geri çıkarıyoruz. 7'nin büyük kardeşi 3 olduğu için 10 gelir, 3 gider ve sonuç 55 çıkar.

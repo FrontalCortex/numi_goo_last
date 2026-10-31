@@ -24,10 +24,16 @@ data class SobiContext(
     /** Abaküsün bu adımdaki değerleri, sırayla (ilk kayıt adımın başı). */
     val valueLog: List<Int>,
     val lessonTitle: String? = null,
-    /** Bu adımdan önceki birkaç adımın metni, eskiden yeniye. */
+    /** Bu adımdan önceki adımların metni (dersin başından), eskiden yeniye. */
     val recentSteps: List<String> = emptyList(),
     /** Çocuğun o ana kadar öğrendiği kurallar ([SobiCurriculum]). */
     val taughtRules: List<String> = emptyList(),
+    /**
+     * Öğretici numarası ve adımın sırası: sunucu bu adımın hazır açıklamasını bulsun diye
+     * (functions/sobi/explanations.js; adım metniyle de denetleniyor, sıra kayarsa zarar yok).
+     */
+    val tutorialNumber: Int? = null,
+    val stepIndex: Int? = null,
 ) {
     fun toPayload(): Map<String, Any> = buildMap {
         stepId?.let { put("stepId", it) }
@@ -43,6 +49,8 @@ data class SobiContext(
         lessonTitle?.takeIf { it.isNotBlank() }?.let { put("lessonTitle", it) }
         if (recentSteps.isNotEmpty()) put("recentSteps", recentSteps)
         if (taughtRules.isNotEmpty()) put("taughtRules", taughtRules)
+        tutorialNumber?.let { put("tutorialNumber", it) }
+        stepIndex?.let { put("stepIndex", it) }
     }
 }
 
@@ -92,7 +100,11 @@ object SobiCurriculum {
  */
 class SobiStepTracker {
 
-    data class Message(val fromChild: Boolean, val text: String)
+    /**
+     * [serverIndex]: Sobi'nin cevabının sunucudaki sohbet kaydındaki sırası; beğen / beğenme buna
+     * bağlanır (yalnızca sunucudan gelen cevaplarda var). [rating]: 1 beğendi, -1 beğenmedi, 0 yok.
+     */
+    data class Message(val fromChild: Boolean, val text: String, val serverIndex: Int? = null, var rating: Int = 0)
 
     var stepIndex: Int = -1
         private set

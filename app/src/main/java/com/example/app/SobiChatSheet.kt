@@ -130,7 +130,7 @@ class SobiChatSheet(
         send(text)
     }
 
-    private fun send(text: String) {
+    private fun send(text: String, suggestion: String? = null) {
         if (busy) return
         val context = contextProvider() ?: return
         busy = true
@@ -152,7 +152,10 @@ class SobiChatSheet(
                     reply.turnLimitReached -> appString(R.string.sobi_turn_limit)
                     else -> reply.text?.takeIf { it.isNotBlank() }
                 }
-                shown?.let { tracker.messages += SobiStepTracker.Message(fromChild = false, text = it) }
+                shown?.let {
+                    val index = if (reply.turnLimitReached) null else reply.messageIndex
+                    tracker.messages += SobiStepTracker.Message(fromChild = false, text = it, serverIndex = index)
+                }
                 val showAction = reply.actions.lastOrNull { it.kind == ServerSobi.ACTION_SHOW }
                 if (showAction != null) tracker.lastShowAction = showAction
                 tracker.suggestions = if (reply.turnLimitReached) emptyList() else reply.suggestions
@@ -175,6 +178,7 @@ class SobiChatSheet(
                 renderMessages()
                 renderSuggestions()
             },
+            suggestion = suggestion,
         )
     }
 
@@ -188,7 +192,16 @@ class SobiChatSheet(
                 return
             }
         }
-        send(labelOf(key) ?: return)
+        send(labelOf(key) ?: return, suggestion = key)
+    }
+
+    /** Aynı düğmeye yeniden dokunmak oyu geri alır. */
+    private fun rate(m: SobiStepTracker.Message, value: Int) {
+        val sessionId = tracker.sessionId ?: return
+        val index = m.serverIndex ?: return
+        m.rating = if (m.rating == value) 0 else value
+        ServerSobi.sendFeedback(sessionId, index, m.rating)
+        renderMessages()
     }
 
     // ── Görünüm ─────────────────────────────────────────────────────────────
@@ -211,12 +224,36 @@ class SobiChatSheet(
             setPadding(p, dp(ctx, 9), p, dp(ctx, 9))
             maxWidth = (ctx.resources.displayMetrics.widthPixels * 0.78f).toInt()
         }
-        return LinearLayout(ctx).apply {
+        val row = LinearLayout(ctx).apply {
             gravity = if (m.fromChild) Gravity.END else Gravity.START
             setPadding(0, dp(ctx, 4), 0, dp(ctx, 4))
             addView(tv, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         }
+        if (m.fromChild || m.serverIndex == null) return row
+        // Sobi'nin sunucudan gelen cevabının altında beğen / beğenme (haftalık iyileştirme verisi).
+        val rating = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(dp(ctx, 6), 0, 0, 0)
+            addView(rateButton(ctx, m, 1, "👍", R.string.sobi_rate_up))
+            addView(rateButton(ctx, m, -1, "👎", R.string.sobi_rate_down))
+        }
+        return LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(row)
+            addView(rating)
+        }
     }
+
+    private fun rateButton(ctx: Context, m: SobiStepTracker.Message, value: Int, glyph: String, label: Int): View =
+        TextView(ctx).apply {
+            text = glyph
+            contentDescription = appString(label)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            // Seçili oy tam görünür, diğeri soluk; hiç oy yoksa ikisi de yarı soluk.
+            alpha = when (m.rating) { value -> 1f; 0 -> 0.55f; else -> 0.25f }
+            setPadding(dp(ctx, 8), dp(ctx, 2), dp(ctx, 8), dp(ctx, 2))
+            setOnClickListener { rate(m, value) }
+        }
 
     private fun renderSuggestions() {
         val ctx = fragment.context ?: return

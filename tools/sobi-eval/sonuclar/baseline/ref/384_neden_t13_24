@@ -1,0 +1,1 @@
+Sütunda 5 var ama 6'yı doğrudan çıkaramayız, çünkü 5'ten fazla çıkaramayız. Bu yüzden 6 çıkarmanın yerine 10 çıkarıp 4 geri ekliyoruz: 10 gider, kardeşi 4 gelir. Böylece 75'ten 65'e inilir ve sonra 4 gelince 69 olur.

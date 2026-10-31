@@ -1,0 +1,7 @@
+# Değerlendirme çıktıları: ham kayıtlar ve türetilmiş sayfalar Git'e girmez (yeniden üretilebilir).
+**/traces/
+**/report.html
+**/trajectory/
+**/state.json
+**/progress.txt
+*.log

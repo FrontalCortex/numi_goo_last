@@ -1,0 +1,155 @@
+{
+ "_not": "Hazır açıklamalar (HAZIR_ACIKLAMALAR_PLANI.md). Anahtar: parcalar.json'daki parça; hash, parçanın adım metinleri değişince açıklamanın eskidiğini gösterir. onay: kullanıcı onayladı mı. neden: null ise ders bir gerekçe vermiyor (Sobi 'soroban'da böyle çalışıyoruz' der). Pilot: t3, t14 (31.10.2026, Claude yazdı).",
+ "t3_p1": {
+  "hash": "544a8fbec109",
+  "onay": true,
+  "konu": "5'lik toplama ne zaman kullanılır",
+  "basit": "Bazen eklemek istediğimiz sayı kadar birlik boncuk boşta olmaz. İşte o zaman 5'lik toplamayı kullanırız: sayıyı beşlik boncuğun yardımıyla ekleriz.",
+  "neden": "Her sütunda yalnızca 4 birlik boncuk var. Yer kalmayınca beşlik boncuk işe yarar.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p2": {
+  "hash": "f6cfedca0e95",
+  "onay": true,
+  "konu": "4'e 1 neden doğrudan eklenemiyor",
+  "basit": "Abaküste 4 yazınca 4 birlik boncuğun hepsi gelmiş olur. 1 eklemek için boşta birlik boncuk kalmaz, bu yüzden 1'i doğrudan ekleyemeyiz.",
+  "neden": "Birlik boncuklardan hiçbiri boşta değil ama 1 tane gerekiyor.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p3": {
+  "hash": "22fbcedae517",
+  "onay": true,
+  "konu": "Kardeş sayılar ve 5'lik toplama kuralı",
+  "basit": "5'lik toplamada her sayının bir kardeşi var: ikisi birlikte 5 eder. 1'in kardeşi 4, 2'nin kardeşi 3, 3'ün kardeşi 2, 4'ün kardeşi 1. Sayıyı doğrudan ekleyemezsek \"5 gelir, kardeşi gider\" deriz.",
+  "neden": "Bir sayıyı eklemek, 5 ekleyip kardeşini çıkarmakla aynıdır. Örneğin 1 eklemek, 5 ekleyip 4 çıkarmak demek.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p4": {
+  "hash": "e6bd0132e735",
+  "onay": true,
+  "konu": "4 + 1'i 5'lik kuralla yapmak",
+  "basit": "Abaküste 4 var ve boşta birlik boncuk yok, bu yüzden 1'i doğrudan ekleyemiyoruz. 5 gelir, 1'in kardeşi 4 gider. Sonuç 5 olur.",
+  "neden": "1 eklemek, 5 ekleyip 4 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 4 gider.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p5": {
+  "hash": "f96ded21f3df",
+  "onay": true,
+  "konu": "4 + 2'yi 5'lik kuralla yapmak",
+  "basit": "Abaküste 4 var; 2 eklemek için boşta birlik boncuk yok. Bu yüzden 5 gelir, 2'nin kardeşi 3 gider. Sonuç 6 olur.",
+  "neden": "2 eklemek, 5 ekleyip 3 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 3 gider.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p6": {
+  "hash": "9eedee583769",
+  "onay": true,
+  "konu": "3 + 3'ü 5'lik kuralla yapmak",
+  "basit": "Abaküste 3 var; boşta yalnızca 1 birlik boncuk kaldığı için 3'ü doğrudan ekleyemiyoruz. Bu yüzden 5 gelir, 3'ün kardeşi 2 gider. Sonuç 6 olur.",
+  "neden": "3 eklemek, 5 ekleyip 2 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 2 gider.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p7": {
+  "hash": "bf3503652255",
+  "onay": true,
+  "konu": "2 + 4'ü 5'lik kuralla yapmak",
+  "basit": "Abaküste 2 var; boşta 2 birlik boncuk kalıyor ama 4 tane gerekiyor. Bu yüzden 5 gelir, 4'ün kardeşi 1 gider. Sonuç 6 olur.",
+  "neden": "4 eklemek, 5 ekleyip 1 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 1 gider.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p8": {
+  "hash": "d731c91dc02e",
+  "onay": true,
+  "konu": "5'lik kural her basamakta aynı",
+  "basit": "5'lik kural yalnızca birler basamağında değil, onlarda ve yüzlerde de aynı çalışır. Onlar basamağında da \"5 gelir, kardeşi gider\" deriz; işi yalnızca onlar sütununda yaparız.",
+  "neden": null,
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p9": {
+  "hash": "1f667a9ca95c",
+  "onay": true,
+  "konu": "30 + 40'ı onlar basamağında 5'lik kuralla yapmak",
+  "basit": "Abaküste 30 var ve onlar sütununda yalnızca 1 birlik boncuk boşta. 40 eklemek, onlar sütununa 4 eklemek demek; bu yüzden onlarda 5 gelir, 4'ün kardeşi 1 gider. Sonuç 70 olur.",
+  "neden": "4 eklemek, 5 ekleyip 1 çıkarmakla aynı. Onlar basamağında da bu yüzden 5 gelir, kardeşi 1 gider.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p10": {
+  "hash": "d8ba912c4cea",
+  "onay": true,
+  "konu": "Birlikte örnek yapma",
+  "basit": "Şimdi 5'lik toplamayı birlikte birkaç işlemde deneyeceğiz. Sayıyı doğrudan ekleyemezsen \"5 gelir, kardeşi gider\" kuralını hatırla.",
+  "neden": null,
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p11": {
+  "hash": "cbea81a48b76",
+  "onay": true,
+  "konu": "4 + 4'ü 5'lik kuralla yapmak",
+  "basit": "Abaküste 4 var; boşta birlik boncuk kalmadığı için 4'ü doğrudan ekleyemiyoruz. Bu yüzden 5 gelir, 4'ün kardeşi 1 gider. Sonuç 8 olur.",
+  "neden": "4 eklemek, 5 ekleyip 1 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 1 gider.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p12": {
+  "hash": "b3d76fdf7567",
+  "onay": true,
+  "konu": "3 + 2'yi 5'lik kuralla yapmak",
+  "basit": "Abaküste 3 var; boşta 1 birlik boncuk var ama 2 tane gerekiyor. Bu yüzden 5 gelir, 2'nin kardeşi 3 gider. Sonuç 5 olur.",
+  "neden": "2 eklemek, 5 ekleyip 3 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 3 gider.",
+  "onay_tarihi": "2026-10-31"
+ },
+ "t3_p13": {
+  "hash": "b0360f13d9e8",
+  "onay": false,
+  "konu": "Uygulama zamanı",
+  "basit": "Ders bitti, şimdi 5'lik toplamayı kendi başına deneyeceksin. Sayıyı doğrudan ekleyemezsen \"5 gelir, kardeşi gider\" de.",
+  "neden": null
+ },
+ "t14_p1": {
+  "hash": "87fde288d1e0",
+  "onay": false,
+  "konu": "10'luk çıkarmada 5'lik çıkarmadan yardım almak",
+  "basit": "10'luk çıkarmada \"10 gider\" demek, sol sütundan 1 boncuk gitmesi demek. Bazen o sol sütundan 1'i doğrudan çıkaramayız; o zaman orada 5'lik çıkarmayı kullanırız.",
+  "neden": null
+ },
+ "t14_p2": {
+  "hash": "6970d3e97623",
+  "onay": false,
+  "konu": "50 − 5: onlarda 5'lik çıkarmayla 10 gider",
+  "basit": "Birler sütununda boncuk yok, bu yüzden 5'i 10'luk kuralla çıkarıyoruz: 10 gider, kardeşi 5 gelir. \"10 gider\" için onlardan 1 çıkmalı ama orada yalnızca beşlik boncuk var; bu yüzden onlarda 5 gider, 1'in kardeşi 4 gelir. Sonra birlere 5 gelir ve sonuç 45 olur.",
+  "neden": "5 çıkarmak, 10 çıkarıp 5 eklemekle aynı. Onlarda 1 çıkarmak da 5 çıkarıp 4 eklemekle aynı; çünkü orada gidecek birlik boncuk yok."
+ },
+ "t14_p3": {
+  "hash": "3028a9ed40de",
+  "onay": false,
+  "konu": "10 gider adımında 10'luk çıkarmadan yardım almak",
+  "basit": "\"10 gider\" derken sol sütundan 1 boncuk gitmeli. O sütunda hiç boncuk yoksa, orada da 10'luk çıkarmayı kullanırız.",
+  "neden": null
+ },
+ "t14_p4": {
+  "hash": "70b4ee709e10",
+  "onay": false,
+  "konu": "100 − 3: onlarda 10'luk çıkarmayla 10 gider",
+  "basit": "100'de birler ve onlar sütunu boş, bu yüzden 3'ü 10'luk kuralla çıkarıyoruz: 10 gider, kardeşi 7 gelir. \"10 gider\" için onlardan 1 çıkmalı ama onlarda boncuk yok; orada da 10'luk kural: yüzlerden 1 gider, onlara 1'in kardeşi 9 gelir. Sonra birlere 7 gelir ve sonuç 97 olur.",
+  "neden": "3 çıkarmak, 10 çıkarıp 7 eklemekle aynı. Onlarda 1 çıkarmak da 10 çıkarıp 9 eklemekle aynı; çünkü onlar sütunu boş."
+ },
+ "t14_p5": {
+  "hash": "1f97b1ea0d7e",
+  "onay": false,
+  "konu": "100 − 9'u birlikte yapmak",
+  "basit": "100'den 9 çıkarırken de aynı yolu izliyoruz: 10 gider, 9'un kardeşi 1 gelir. Onlar sütunu boş olduğu için \"10 gider\", yüzlerden 1 gitmesi ve onlara 9 gelmesiyle yapılır. Sonuç 91 olur.",
+  "neden": "9 çıkarmak, 10 çıkarıp 1 eklemekle aynı. Bu yüzden 10 gider, kardeşi 1 gelir."
+ },
+ "t14_p6": {
+  "hash": "75bee1cfb09b",
+  "onay": false,
+  "konu": "530 − 41: önce onlar, sonra birler",
+  "basit": "Önce onlar basamağı: onlarda 3 var, 4 çıkmıyor; 10 gider, 4'ün kardeşi 6 gelir. Sonra birler: birlerde boncuk yok; 10 gider, 1'in kardeşi 9 gelir. Sonuç 489 olur.",
+  "neden": "4 çıkarmak, 10 çıkarıp 6 eklemekle aynı; 1 çıkarmak da 10 çıkarıp 9 eklemekle aynı. Onlardaki \"10 gider\" için yüzlerden 1 çıkmalı; yüzlerde beşlik boncuk gelmiş olduğu için orada 5 gider, kardeşi 4 gelir."
+ },
+ "t14_p7": {
+  "hash": "691b0fc875ed",
+  "onay": false,
+  "konu": "Soru: 10 gider adımı doğrudan olmazsa",
+  "basit": "Bu soruda \"10 gider\" derken sol sütundan 1'i doğrudan çıkaramadığımız durumu düşünüyoruz. Derste iki örnek gördük, 50 − 5 ve 100 − 3; her birinde sol sütunda hangi kuralı kullandığımızı hatırla.",
+  "neden": null
+ }
+}

@@ -1,0 +1,172 @@
+{
+ "tarih": "2026-10-31",
+ "ham": {
+  "1": "B",
+  "2": "B",
+  "3": "=",
+  "4": "=",
+  "5": "A",
+  "6": "B",
+  "7": "B",
+  "8": "A",
+  "9": "A",
+  "10": "B",
+  "11": "=",
+  "12": "B",
+  "13": "B",
+  "14": "B",
+  "15": "A",
+  "16": "A",
+  "17": "A",
+  "18": "A",
+  "19": "B",
+  "20": "B"
+ },
+ "sonuc": {
+  "baseline": 5,
+  "v2": 12,
+  "ayni": 3
+ },
+ "satirlar": [
+  {
+   "no": 1,
+   "id": "050_neden_t5_61",
+   "secim": "v2",
+   "hakem": "ayni"
+  },
+  {
+   "no": 2,
+   "id": "162_neden_t14_30",
+   "secim": "baseline",
+   "hakem": "baseline"
+  },
+  {
+   "no": 3,
+   "id": "118_neden_t11_2",
+   "secim": "ayni",
+   "hakem": "ayni"
+  },
+  {
+   "no": 4,
+   "id": "234_neden_t22_9",
+   "secim": "ayni",
+   "hakem": "v2"
+  },
+  {
+   "no": 5,
+   "id": "038_kisisel_t4_4",
+   "secim": "v2",
+   "hakem": "ayni"
+  },
+  {
+   "no": 6,
+   "id": "466_kisa_adim_t104_12",
+   "secim": "v2",
+   "hakem": "baseline"
+  },
+  {
+   "no": 7,
+   "id": "058_sohbet_t6_6",
+   "secim": "baseline",
+   "hakem": "v2"
+  },
+  {
+   "no": 8,
+   "id": "186_yanlis_anlama_t17_3",
+   "secim": "v2",
+   "hakem": "baseline"
+  },
+  {
+   "no": 9,
+   "id": "006_anlamadim_t1_12",
+   "secim": "v2",
+   "hakem": "ayni"
+  },
+  {
+   "no": 10,
+   "id": "475_onceki_konu_t3_60",
+   "secim": "v2",
+   "hakem": "v2"
+  },
+  {
+   "no": 11,
+   "id": "254_yanlis_anlama_t26_2",
+   "secim": "ayni",
+   "hakem": "baseline"
+  },
+  {
+   "no": 12,
+   "id": "150_konu_disi_t13_6",
+   "secim": "v2",
+   "hakem": "baseline"
+  },
+  {
+   "no": 13,
+   "id": "467_kisa_adim_t9_8",
+   "secim": "v2",
+   "hakem": "ayni"
+  },
+  {
+   "no": 14,
+   "id": "477_onceki_konu_t8_59",
+   "secim": "v2",
+   "hakem": "v2"
+  },
+  {
+   "no": 15,
+   "id": "146_anlamadim_t13_6",
+   "secim": "v2",
+   "hakem": "ayni"
+  },
+  {
+   "no": 16,
+   "id": "182_ornek_t16_39",
+   "secim": "baseline",
+   "hakem": "v2"
+  },
+  {
+   "no": 17,
+   "id": "134_ornek_t1100_25",
+   "secim": "v2",
+   "hakem": "baseline"
+  },
+  {
+   "no": 18,
+   "id": "102_sohbet_t8_46",
+   "secim": "baseline",
+   "hakem": "ayni"
+  },
+  {
+   "no": 19,
+   "id": "190_anlamadim_t17_8",
+   "secim": "baseline",
+   "hakem": "ayni"
+  },
+  {
+   "no": 20,
+   "id": "074_anlamadim_t7_8",
+   "secim": "v2",
+   "hakem": "baseline"
+  }
+ ],
+ "ikinci": {
+  "tarih": "2026-10-31",
+  "ham": {
+   "1": "B",
+   "2": "=",
+   "3": "A",
+   "4": "A",
+   "5": "A",
+   "6": "A",
+   "7": "B",
+   "8": "A",
+   "9": "=",
+   "10": "="
+  },
+  "sonuc": {
+   "baseline": 2,
+   "v2": 5,
+   "ayni": 3
+  }
+ }
+}

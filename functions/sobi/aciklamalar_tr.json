@@ -1,0 +1,392 @@
+{
+ "3": [
+  {
+   "key": "t3_p1",
+   "steps": [
+    [
+     0,
+     "f03d38e3"
+    ],
+    [
+     1,
+     "89432c71"
+    ]
+   ],
+   "konu": "5'lik toplama ne zaman kullanılır",
+   "basit": "Bazen eklemek istediğimiz sayı kadar birlik boncuk boşta olmaz. İşte o zaman 5'lik toplamayı kullanırız: sayıyı beşlik boncuğun yardımıyla ekleriz.",
+   "neden": "Her sütunda yalnızca 4 birlik boncuk var. Yer kalmayınca beşlik boncuk işe yarar."
+  },
+  {
+   "key": "t3_p2",
+   "steps": [
+    [
+     2,
+     "f7ecbc7f"
+    ],
+    [
+     3,
+     "28f829ca"
+    ]
+   ],
+   "konu": "4'e 1 neden doğrudan eklenemiyor",
+   "basit": "Abaküste 4 yazınca 4 birlik boncuğun hepsi gelmiş olur. 1 eklemek için boşta birlik boncuk kalmaz, bu yüzden 1'i doğrudan ekleyemeyiz.",
+   "neden": "Birlik boncuklardan hiçbiri boşta değil ama 1 tane gerekiyor."
+  },
+  {
+   "key": "t3_p3",
+   "steps": [
+    [
+     4,
+     "71559cc3"
+    ],
+    [
+     5,
+     "8fb75b05"
+    ],
+    [
+     6,
+     "f4581d41"
+    ],
+    [
+     7,
+     "b444a497"
+    ],
+    [
+     8,
+     "3e576e36"
+    ],
+    [
+     9,
+     "e76454fe"
+    ],
+    [
+     10,
+     "48b1579d"
+    ]
+   ],
+   "konu": "Kardeş sayılar ve 5'lik toplama kuralı",
+   "basit": "5'lik toplamada her sayının bir kardeşi var: ikisi birlikte 5 eder. 1'in kardeşi 4, 2'nin kardeşi 3, 3'ün kardeşi 2, 4'ün kardeşi 1. Sayıyı doğrudan ekleyemezsek \"5 gelir, kardeşi gider\" deriz.",
+   "neden": "Bir sayıyı eklemek, 5 ekleyip kardeşini çıkarmakla aynıdır. Örneğin 1 eklemek, 5 ekleyip 4 çıkarmak demek."
+  },
+  {
+   "key": "t3_p4",
+   "steps": [
+    [
+     11,
+     "fd138cfd"
+    ],
+    [
+     12,
+     "8024e402"
+    ],
+    [
+     13,
+     "1b3a5095"
+    ],
+    [
+     14,
+     "c91cb511"
+    ],
+    [
+     15,
+     "1d395ade"
+    ],
+    [
+     16,
+     "f4581d41"
+    ],
+    [
+     17,
+     "4b7865ee"
+    ],
+    [
+     18,
+     "4b7865ee"
+    ],
+    [
+     19,
+     "7c0cd5d2"
+    ],
+    [
+     20,
+     "7c0cd5d2"
+    ],
+    [
+     21,
+     "af88706f"
+    ]
+   ],
+   "konu": "4 + 1'i 5'lik kuralla yapmak",
+   "basit": "Abaküste 4 var ve boşta birlik boncuk yok, bu yüzden 1'i doğrudan ekleyemiyoruz. 5 gelir, 1'in kardeşi 4 gider. Sonuç 5 olur.",
+   "neden": "1 eklemek, 5 ekleyip 4 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 4 gider."
+  },
+  {
+   "key": "t3_p5",
+   "steps": [
+    [
+     22,
+     "0aba1ede"
+    ],
+    [
+     23,
+     "d8518c4c"
+    ],
+    [
+     24,
+     "29c6dd18"
+    ],
+    [
+     25,
+     "173e53b0"
+    ],
+    [
+     26,
+     "7b78885d"
+    ],
+    [
+     27,
+     "4b7865ee"
+    ],
+    [
+     28,
+     "4b7865ee"
+    ],
+    [
+     29,
+     "89accb38"
+    ],
+    [
+     30,
+     "89accb38"
+    ],
+    [
+     31,
+     "6988d440"
+    ]
+   ],
+   "konu": "4 + 2'yi 5'lik kuralla yapmak",
+   "basit": "Abaküste 4 var; 2 eklemek için boşta birlik boncuk yok. Bu yüzden 5 gelir, 2'nin kardeşi 3 gider. Sonuç 6 olur.",
+   "neden": "2 eklemek, 5 ekleyip 3 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 3 gider."
+  },
+  {
+   "key": "t3_p6",
+   "steps": [
+    [
+     32,
+     "0aba1ede"
+    ],
+    [
+     33,
+     "e3a7a3a6"
+    ],
+    [
+     34,
+     "65d8f5e4"
+    ],
+    [
+     35,
+     "173e53b0"
+    ],
+    [
+     36,
+     "22a306ff"
+    ],
+    [
+     37,
+     "4b7865ee"
+    ],
+    [
+     38,
+     "4b7865ee"
+    ],
+    [
+     39,
+     "0f8d1b59"
+    ],
+    [
+     40,
+     "0f8d1b59"
+    ],
+    [
+     41,
+     "6988d440"
+    ]
+   ],
+   "konu": "3 + 3'ü 5'lik kuralla yapmak",
+   "basit": "Abaküste 3 var; boşta yalnızca 1 birlik boncuk kaldığı için 3'ü doğrudan ekleyemiyoruz. Bu yüzden 5 gelir, 3'ün kardeşi 2 gider. Sonuç 6 olur.",
+   "neden": "3 eklemek, 5 ekleyip 2 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 2 gider."
+  },
+  {
+   "key": "t3_p7",
+   "steps": [
+    [
+     43,
+     "aaa2c666"
+    ],
+    [
+     44,
+     "b6392a91"
+    ],
+    [
+     45,
+     "eb4d0ae1"
+    ],
+    [
+     46,
+     "173e53b0"
+    ],
+    [
+     47,
+     "e76454fe"
+    ],
+    [
+     48,
+     "4b7865ee"
+    ],
+    [
+     49,
+     "4b7865ee"
+    ],
+    [
+     50,
+     "8954a876"
+    ],
+    [
+     51,
+     "8954a876"
+    ],
+    [
+     52,
+     "6988d440"
+    ]
+   ],
+   "konu": "2 + 4'ü 5'lik kuralla yapmak",
+   "basit": "Abaküste 2 var; boşta 2 birlik boncuk kalıyor ama 4 tane gerekiyor. Bu yüzden 5 gelir, 4'ün kardeşi 1 gider. Sonuç 6 olur.",
+   "neden": "4 eklemek, 5 ekleyip 1 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 1 gider."
+  },
+  {
+   "key": "t3_p8",
+   "steps": [
+    [
+     54,
+     "66538358"
+    ]
+   ],
+   "konu": "5'lik kural her basamakta aynı",
+   "basit": "5'lik kural yalnızca birler basamağında değil, onlarda ve yüzlerde de aynı çalışır. Onlar basamağında da \"5 gelir, kardeşi gider\" deriz; işi yalnızca onlar sütununda yaparız.",
+   "neden": null
+  },
+  {
+   "key": "t3_p9",
+   "steps": [
+    [
+     55,
+     "95d6793b"
+    ],
+    [
+     56,
+     "dfb3e005"
+    ],
+    [
+     57,
+     "171c598e"
+    ],
+    [
+     58,
+     "173e53b0"
+    ],
+    [
+     59,
+     "e76454fe"
+    ],
+    [
+     60,
+     "4b7865ee"
+    ],
+    [
+     61,
+     "4b7865ee"
+    ],
+    [
+     62,
+     "8954a876"
+    ],
+    [
+     63,
+     "8954a876"
+    ],
+    [
+     64,
+     "d70ac9da"
+    ]
+   ],
+   "konu": "30 + 40'ı onlar basamağında 5'lik kuralla yapmak",
+   "basit": "Abaküste 30 var ve onlar sütununda yalnızca 1 birlik boncuk boşta. 40 eklemek, onlar sütununa 4 eklemek demek; bu yüzden onlarda 5 gelir, 4'ün kardeşi 1 gider. Sonuç 70 olur.",
+   "neden": "4 eklemek, 5 ekleyip 1 çıkarmakla aynı. Onlar basamağında da bu yüzden 5 gelir, kardeşi 1 gider."
+  },
+  {
+   "key": "t3_p10",
+   "steps": [
+    [
+     65,
+     "715ab48e"
+    ]
+   ],
+   "konu": "Birlikte örnek yapma",
+   "basit": "Şimdi 5'lik toplamayı birlikte birkaç işlemde deneyeceğiz. Sayıyı doğrudan ekleyemezsen \"5 gelir, kardeşi gider\" kuralını hatırla.",
+   "neden": null
+  },
+  {
+   "key": "t3_p11",
+   "steps": [
+    [
+     67,
+     "35d59b36"
+    ],
+    [
+     68,
+     "45d50740"
+    ],
+    [
+     69,
+     "e76454fe"
+    ],
+    [
+     72,
+     "32cf24e9"
+    ]
+   ],
+   "konu": "4 + 4'ü 5'lik kuralla yapmak",
+   "basit": "Abaküste 4 var; boşta birlik boncuk kalmadığı için 4'ü doğrudan ekleyemiyoruz. Bu yüzden 5 gelir, 4'ün kardeşi 1 gider. Sonuç 8 olur.",
+   "neden": "4 eklemek, 5 ekleyip 1 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 1 gider."
+  },
+  {
+   "key": "t3_p12",
+   "steps": [
+    [
+     73,
+     "0ae41da8"
+    ],
+    [
+     75,
+     "dfe2f74b"
+    ],
+    [
+     76,
+     "45d50740"
+    ],
+    [
+     77,
+     "7b78885d"
+    ],
+    [
+     80,
+     "af88706f"
+    ]
+   ],
+   "konu": "3 + 2'yi 5'lik kuralla yapmak",
+   "basit": "Abaküste 3 var; boşta 1 birlik boncuk var ama 2 tane gerekiyor. Bu yüzden 5 gelir, 2'nin kardeşi 3 gider. Sonuç 5 olur.",
+   "neden": "2 eklemek, 5 ekleyip 3 çıkarmakla aynı. Bu yüzden 5 gelir, kardeşi 3 gider."
+  }
+ ]
+}

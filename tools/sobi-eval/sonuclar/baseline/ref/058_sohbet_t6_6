@@ -1,0 +1,5 @@
+Birler sütununda zaten 9 var ve 9 + 4 = 13 olur, bu da bir sütuna sığmaz. Bu yüzden 4 eklemek yerine 10 ekleyip 6 çıkarıyoruz, çünkü 10 − 6 = 4. Yani 49'a 10 gelince 59 olur, sonra 6 gidince 53 olur.
+---
+Birler sütununa 10 sığmadığı için 10'u, bir sol sütun olan onlar basamağına 1 ekleyerek yapıyoruz. Senin abaküsünde onlarda 4 var; 1 eklemek için beşlik boncuğu geliyoruz, bunun karşılığında 4 birlik boncuğu gidiyor. Böylece onlar 5 olmuş oluyor, yani 49'a 10 eklenmiş gibi 59 oluyor.
+---
+Bu ekranda alıştırma hazırlayamıyorum, o yüzden kendin deneyebilirsin: 23 + 9 kaç eder? Önce 9'u doğrudan ekleyip ekleyemeyeceğine bak, olmazsa 10'luk kuralı kullan. Birler sütununda 10 gelip 1 gidince sonuç ne olur?

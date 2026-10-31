@@ -1,0 +1,5 @@
+Onlar sütununda şu an 4 birlik boncuk var ve boşta hiç boncuk kalmadı. Bu yüzden 40 eklemek için onlar sütununa 4 eklemek doğrudan olmaz. Bunun yerine 5 gelir, kardeşi olan 1 gider; 5 eksi 1 yine 4 eder.
+---
+Küçük bir örnekle deneyelim. Abaküsünde 4 var ve 4 daha eklemek istiyoruz. Boşta boncuk kalmadığı için 4'ü doğrudan ekleyemeyiz. Bunun yerine 5 gelir, kardeşi olan 1 gider; böylece 9 olur, 1 gidince 8 kalır.
+---
+Başka bir sayıyla deneyelim: 3 + 4. Abaküsünde 3 var ve 4 eklemek istiyoruz. Boşta sadece 1 birlik boncuk kaldığı için 4'ü doğrudan ekleyemeyiz. Bunun yerine 5 gelir, kardeşi olan 1 gider; 8 olur, 1 gidince 7 kalır.

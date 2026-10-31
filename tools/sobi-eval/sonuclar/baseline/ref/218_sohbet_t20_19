@@ -1,0 +1,5 @@
+Tamam, adım adım bakalım. 21'in birler basamağı 1, 43'ün birler basamağı 3. Önce 1 ile 3'ü çarpıyoruz; yani 3'ü bir kez alıyoruz ve sonuç 3 oluyor. Bu 3'ü sonucun birler basamağına yazıyoruz.
+---
+Çarpma, bir sayıyı kaç kez aldığımızı söyler. Burada 21'in birler basamağı 1, yani 3'ü yalnızca bir kez alıyoruz. Bir kez alınca 3 elde ederiz, o yüzden 3'ü birler sütununa yazıyoruz.
+---
+Diyelim ki 7 ile 1'i çarpıyoruz. 1 ile çarpmak, sayıyı bir kez almak demektir, yani sonuç yine 7 olur. Bu 7'yi birler sütununa yazarız, tıpkı 43 x 21'de 3'ü yazdığımız gibi.

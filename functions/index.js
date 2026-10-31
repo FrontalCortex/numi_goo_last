@@ -7869,3 +7869,5 @@ async function deleteUserBugReports(uid) {
 // Ayrıntı ve gerekçe: sobi/callable.js, docs/ANLAMADIM_YARDIM_PLANI.md. ANTHROPIC_API_KEY
 // Secret Manager'da (28.10.2026 kuruldu); secret silinirse bu fonksiyonun deploy'u başarısız olur.
 exports.sobiChat = require('./sobi/callable')({ functions, admin, db, isAskQuestionRestricted, effectivePlan });
+// Sobi cevabına beğen / beğenme; haftalık iyileştirme döngüsünün verisi (sobi/feedback.js).
+exports.sobiFeedback = require('./sobi/feedback')({ functions, admin, db, promptVersion: require('./sobi/callable').PROMPT_VERSION });

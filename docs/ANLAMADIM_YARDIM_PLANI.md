@@ -170,8 +170,8 @@ Uygulama (SobiChatPanel)                 Cloud Functions (sobiChat, onCall)     
   doğrudan cevap verme oranı, konu dışına çıkma.
 - Elle gözden geçirme: üslup, çocuğa uygunluk. Kullanıcı (geliştirici) her talimat değişikliğinde
   bir örneklem okur.
-- Test seti depoda (`functions/sobi/test_set.json`), Node betiğiyle çalışır
-  (`npm run test:sobi`, mevcut `test:*` betikleri gibi).
+- Test seti depoda: `tools/sobi-eval/` (`functions/` dışında, çünkü oraya her push bütün
+  fonksiyonları deploy ediyor). Durum ve sonuç: aşağıda "Faz 3 durumu".
 
 ## Ölçüm
 
@@ -192,7 +192,7 @@ bildirim oranı.
 | 0 | GA4'ten en zor 10 adım ve "Öğretmene sor" kullanım oranı | 1 gün | Kod yok |
 | 1 | Kural motoru: Kotlin `StepExplainer` + JS karşılığı + ortak test tablosu | **bitti (28.10.2026)** | Aşağıda "Faz 1 durumu" |
 | 2 | `sobiChat` fonksiyonu: talimat metni, araçlar, güvenlik katmanları, sınır | **kod bitti, secret kuruldu, index.js'e bağlandı (28.10.2026)** | Aşağıda "Faz 2 durumu" |
-| 3 | Test seti ve talimat metninin olgunlaştırılması | 2–3 gün | Model seçimi burada |
+| 3 | Test seti ve talimat metninin olgunlaştırılması | **test seti kuruldu, ilk ölçüm yapıldı (29.10.2026)**; düzeltmeler bekliyor | Aşağıda "Faz 3 durumu" |
 | 4 | Sohbet paneli: sohbet, öneri balonları, sesli soru, abaküste gösterim | **ilk sürüm yazıldı (28.10.2026)**, sesli soru/cevap ve bildir sonra | Aşağıda "Faz 4 durumu" |
 | 5 | Gizlilik politikası, ebeveyn onayı, Play beyanları | 1 gün | Yayından önce şart |
 | 6 | Kapalı testte pilot (sınırlı grup), ölçüm | — | |
@@ -329,6 +329,69 @@ kurallar (SobiCurriculum, öğretici numarasından) gidiyor. Anlatım adımında
 (dersin animasyonları sırasında denetleyicinin değeri geride kalabiliyor) ve sunucu gösterim aracını
 vermiyor. Sohbet sınırı 10 → 20 mesaj. Anlatım adımında ilk balonlar: Bunu anlamadım, Bir örnek ver,
 Neden böyle?
+
+### Faz 3 durumu (29.10.2026): değerlendirme seti ve ilk ölçüm
+
+`tools/sobi-eval/` (tasarım: `TASARIM.md`, sonuç: `SONUC.md`). Girdiler öğreticilerin gerçek
+metinlerinden (`extract-steps.js`: TutorialFragment.kt + strings_tutorial.xml, uygulamanın gönderdiği
+bağlamla); çocuk mesajları sentetik. 460 örnek, 32 öğretici, 10 kategori (anlamadım, neden, yanlış
+anlama, örnek, öğretilmemiş kural, cevabı isteme, konu dışı, kişisel bilgi, yazım hatalı dil, çok
+turlu sohbet). Sobi gerçek sunucu koduyla (`chat.runTurn`) çağrılıyor; puanlama programlı denetimler
++ hakem modeli (Sonnet 5.5, 8 ölçüt, `hakem_tr.md`).
+
+İlk ölçüm, kredi için setin yarısında (230 örnek, Haiku 5.5 / medium; ölçülen maliyet 2,12 $, pilot
+ve rubrik denemesiyle toplam 2,60 $):
+
+- Başarı %33 ± 6 (hakemin zayıf iki ölçütü dışarıda %43). Anlatım adımı %46, soru adımı %18.
+  Güvenlik %99, öğretilmemiş kural anlatmama %96, soruya cevap %88.
+- En sık 5 hata ve önerilen düzeltme (hiçbiri uygulanmadı):
+  1. Soru adımında cevabı/hamleyi hemen söylüyor (%49). `hatayi_bul`'un `siradaki_adim` alanı
+     cevabı sızdırıyor: araç ilk turda ipucu dönsün, hamleyi ikinci yardım isteğinde versin;
+     bağlamda "Sobi'nin bu adımdaki kaçıncı mesajı".
+  2. Abaküsün o anki durumunu ve adımın işini yanlış okuyor (~%19): sunucu ilk turda `hatayi_bul`'u
+     kendisi çalıştırsın (model %44 çağırıyor); bağlama "bu adımın işi" satırı.
+  3. Uzun cevap (%23 > 3 cümle): guard kırpsın (yedeğe düşürmeden).
+  4. Kardeş / büyük kardeş karışıklığı ve derste olmayan gerekçe: araçta kimin kardeşi olduğu açık
+     alan; talimatta "çıkarmada kardeş de".
+  5. Çarpma derslerinde guard cevapların %38'ini (t18 ve t23'te %71) geri çeviriyor (çarpım
+     sonuçları kaynaksız) ve yedek metin toplama kuralı anlatıyor: bağlama basamak çarpımları,
+     çarpmada yedek metin = adımın metni.
+- Hakem `low` effort boncuk aritmetiğinde güvenilmez (matematik başarısızlıklarının ~yarısı hakem
+  hatası); sonraki turda matematik programlı denetlenmeli.
+- Ücretsiz maliyet kazancı: sistem bloğuna `cache_control` (her sohbet ortak öneki yeniden yazıyor;
+  Sobi maliyetinin ~yarısı).
+
+İkinci tur (29.10.2026, kullanıcı etiketleriyle; ayrıntı `tools/sobi-eval/SONUC.md`): ölçüt
+kullanıcıya göre düzeltildi (uzunluk tek başına sorun değil; cevabı isteyene söylenir, takılana önce
+ipucu; anlatımda "bunu" = şu anki adım ve son konu). Düzeltmeler `functions/sobi/` ve
+`TutorialFragment.kt`'de **yalnızca yerelde** uygulandı (bütün önceki adımlar bağlamda, adımın işi,
+abaküs durumu, çarpımlar, kardeş alanı, ipucu, önbellek noktası, çarpmada yedek metin). Aynı 135
+örnekte: soru adımı %27 → %49, anlatım adımı %65 → %46, genel %51 → %47; Sobi örnek başına ~%35
+ucuzladı. Anlatımdaki gerileme talimattan (uzayan cevaplar, öğretilmemiş kuralı çözmesi, soru adımı
+kurallarının sızması); v2 talimatı önerildi. **v1 bu haliyle deploy edilmemeli.**
+
+v2 talimatı (yerelde uygulandı; kısa cevap, öğretilmemişte çözmeme, anlatımda abaküs yaptırmama)
+yalnız anlatım adımlarında ölçüldü: %46 → %50 (gürültü içinde), baseline %65. Kalan farkın bir
+kısmı hakem hatası (dersin kendi sözlerini cezalandırıyor), bir kısmı gerçek (cevaptan sonra dersin
+başka sorusuna kayma, anlatımda "gösterebilirim"). Karar için insan etiketli yan yana karşılaştırma
+önerildi. Toplam harcanan 5,87 $.
+
+Kullanıcının kör yan yana etiketi (31.10.2026, 20 anlatım örneği): **v2 12, baseline 5, aynı 3**;
+hakem ayrıştığı 12 örneğin yalnızca 3'ünde kullanıcıyla aynı yöndeydi. Anlatım "gerilemesi" hakem
+hatasıydı; sürüm kararları bundan sonra kör etiketle verilir.
+
+Hazır açıklamalar ve beğeni (31.10.2026, kullanıcı onayıyla; henüz deploy edilmedi): t3'ün 12
+parçası onaylandı (`functions/sobi/aciklamalar_tr.json`, `explanations.js`). Anlatım adımında onaylı
+açıklama bağlama giriyor; "Bunu anlamadım" / "Neden böyle?" balonlarına model çağrılmadan dönüyor
+(günlük haktan düşmüyor). Uygulama bağlama öğretici numarası ve adım sırasını ekledi. Sobi'nin her
+cevabının altında 👍 / 👎 (`sobiFeedback`, `feedback.js`); haftalık döngü:
+`tools/sobi-eval/HAFTALIK_DONGU.md`. Sunucu testleri 52/52; APK derlendi ve telefona kuruldu.
+
+Sonraki adım önerisi (31.10.2026): **hazır açıklamalar** (`tools/sobi-eval/HAZIR_ACIKLAMALAR_PLANI.md`).
+Anlatım adımlarında Haiku'nun serbest açıklaması yerine dersin 224 konu parçası için bir kez
+yazdırılıp (Opus, ~$4) kullanıcının onayladığı "basit / neden" metinleri, örnekleri kural motoru
+seçer; öneri balonlarına model çağırmadan onaylı metin döner. Önce kör yan yana etiketleme
+(`tools/sobi-eval/etiket/YAN_YANA.md`) ve 2 öğreticilik pilot (~$0,25).
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

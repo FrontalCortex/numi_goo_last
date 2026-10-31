@@ -1,0 +1,5 @@
+25'ten 7 çıkarmak için 5 birler sütununda yetmediği için 10'luk kuralı kullanırız. 7'nin büyük kardeşi 3'tür, yani 7 çıkarmak 10 çıkarıp 3 eklemekle aynıdır.
+
+Önce onlar basamağındaki 2'den 1 çıkar, yani 10 gider ve 25 yerine 15 kalır. Sonra birler sütununa 3 gelir: 15'ten 18 olur. Ama 25 - 7 = 18 olduğunu böylece görürsün.
+
+Şimdi sıra sende: 23 - 6 işleminde ilk adım olan "10 gider" hamlesini abaküsünde yapabilir misin?

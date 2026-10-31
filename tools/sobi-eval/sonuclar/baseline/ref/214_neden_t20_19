@@ -1,0 +1,1 @@
+Bu yöntemde çarpmaya her zaman 2. sayının birler basamağından başlıyoruz. 21'in birler basamağı 1 olduğu için önce onu, 43'ün birler basamağı olan 3 ile çarpıyoruz. Bu adım sonucu birler sütununa ekleyerek yazıyoruz.

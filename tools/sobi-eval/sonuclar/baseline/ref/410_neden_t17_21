@@ -1,0 +1,1 @@
+Birler sütununda 7'yi doğrudan çıkaramadığımız için 10 gidiyor. 10 çıkarıp 7'yi geri koymak yerine, 7'nin 10'a tamamlayanı olan 3'ü ekliyoruz. Yani 10 − 7 = 3 olduğu için 3 geliyor.

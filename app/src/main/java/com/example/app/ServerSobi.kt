@@ -36,22 +36,30 @@ object ServerSobi {
         /** Model şu an çağrılamadı; [text] kural motorunun yedek metni. */
         val unavailable: Boolean,
         val remainingToday: Int?,
+        /** Cevabın sunucudaki sohbet kaydında sırası; beğen / beğenme buna bağlanır. */
+        val messageIndex: Int?,
     )
 
     const val ACTION_SHOW = "goster"
 
+    /**
+     * [suggestion]: çocuk bir öneri balonuna dokunduysa balonun anahtarı. Anlatım adımında hazır
+     * açıklama varsa sunucu "Bunu anlamadım" ve "Neden böyle?"ye modeli çağırmadan onu döner.
+     */
     fun send(
         sessionId: String?,
         message: String,
         context: SobiContext,
         onResult: (Reply) -> Unit,
         onFailure: (Exception) -> Unit,
+        suggestion: String? = null,
     ) {
         val payload = hashMapOf<String, Any>(
             "message" to message,
             "context" to context.toPayload(),
         )
         if (!sessionId.isNullOrBlank()) payload["sessionId"] = sessionId
+        if (suggestion != null) payload["suggestion"] = suggestion
 
         FirebaseFunctions.getInstance()
             .getHttpsCallable("sobiChat")
@@ -72,6 +80,7 @@ object ServerSobi {
                         turnLimitReached = data["turnLimitReached"] == true,
                         unavailable = data["unavailable"] == true,
                         remainingToday = (data["remainingToday"] as? Number)?.toInt(),
+                        messageIndex = (data["messageIndex"] as? Number)?.toInt(),
                     )
                 )
             }
@@ -79,6 +88,17 @@ object ServerSobi {
                 Log.e(TAG, "sobiChat başarısız", e)
                 onFailure(e)
             }
+    }
+
+    /**
+     * Beğen / beğenme (`sobiFeedback`): [value] 1, -1 ya da 0 (geri al). Sonuç çocuğa gösterilmiyor;
+     * başarısız olursa yalnızca günlüğe yazılır (oy kaybı çocuğun işini bozmaz).
+     */
+    fun sendFeedback(sessionId: String, messageIndex: Int, value: Int) {
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("sobiFeedback")
+            .call(hashMapOf("sessionId" to sessionId, "messageIndex" to messageIndex, "value" to value))
+            .addOnFailureListener { e -> Log.w(TAG, "sobiFeedback başarısız", e) }
     }
 
     private fun parseAction(raw: Any?): Action? {

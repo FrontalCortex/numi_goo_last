@@ -1,0 +1,7 @@
+Burada birler sütununda hiç boncuk yok, o yüzden 5'i doğrudan çıkaramıyoruz. 5 çıkarmak, 10 çıkarıp 5 geri eklemekle aynı olduğu için önce onlar sütunundan 10 gider. Sonra birler sütununa 5 gelir ve sonuç 45 olur.
+---
+Diyelim ki abaküsünde 50 yazıyor: 5 onluk var, birler yok. Birlerden 5 çıkaramayız, çünkü hiç boncuk yok. Bu yüzden onlardan 1 onluk gider, birlere de 10 gelmiş gibi düşünürüz: 40 ve 10 var.
+
+Şimdi 10'un içinden 5 gider, geriye 5 kalır. Sonuç 45 olur.
+---
+Örnek olarak 23 - 5 alalım. Birler sütununda 3 var, 5'i çıkaramıyoruz. Bu yüzden onlardan 1 gider, geriye 13 kalır. Sonra birlere 5 gelir ve sonuç 18 olur.
