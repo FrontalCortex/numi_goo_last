@@ -39,7 +39,14 @@ data class SobiContext(
      * çözdürüyor ("zor bir örnek ver", "3 basamaklı örnek"; kullanıcı kararı 01.11.2026).
      */
     val practice: Boolean = false,
+    /** Bu ekranda açılan örnekler, eskiden yeniye: Sobi zorluğu buna göre ayarlasın (01.11.2026). */
+    val practiceResults: List<PracticeResult> = emptyList(),
+    /** Kural hafızası ([SobiRuleStats]): her kuralda kaç doğru, kaç yanlış (bu cihaz). */
+    val ruleStats: List<SobiRuleStats.Entry> = emptyList(),
 ) {
+    /** [question] "146 + 9"; [wrong] yanlış Kontrol Et sayısı; [done] sonuna kadar çözüldü mü. */
+    data class PracticeResult(val question: String, val wrong: Int, val done: Boolean)
+
     fun toPayload(): Map<String, Any> = buildMap {
         stepId?.let { put("stepId", it) }
         stepText?.takeIf { it.isNotBlank() }?.let { put("stepText", it) }
@@ -50,6 +57,12 @@ data class SobiContext(
         put("attempts", attempts)
         put("valueLog", valueLog)
         put("practice", practice)
+        if (practiceResults.isNotEmpty()) {
+            put("practiceResults", practiceResults.takeLast(5).map { mapOf("question" to it.question, "wrong" to it.wrong, "done" to it.done) })
+        }
+        if (ruleStats.isNotEmpty()) {
+            put("ruleStats", ruleStats.map { mapOf("key" to it.key, "correct" to it.correct, "wrong" to it.wrong) })
+        }
         lessonTitle?.takeIf { it.isNotBlank() }?.let { put("lessonTitle", it) }
         if (recentSteps.isNotEmpty()) put("recentSteps", recentSteps)
         if (taughtRules.isNotEmpty()) put("taughtRules", taughtRules)

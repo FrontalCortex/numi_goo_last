@@ -226,6 +226,19 @@ const TOOL_DEFS = [
     strict: true,
   },
   {
+    name: 'sutunu_goster',
+    description: 'Çocuğun ekranındaki abaküste bir sütunu kısa süre parlatır (boncuklara dokunmaz). Bir sütundan söz ederken çocuk hangisi olduğunu görsün diye kullan. Bir mesajda en fazla bir kez.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        sutun: { type: 'string', enum: ['birler', 'onlar', 'yuzler', 'binler', 'on_binler'] },
+      },
+      required: ['sutun'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
     name: 'alistirma_ver',
     description: 'Çocuğun denemesi için abaküste küçük bir işlem hazırlar; çocuğun cevabını uygulama denetler, sonucu sonraki mesajın bağlamında görürsün. Çocuk anladığını söylediğinde pekiştirmek için kullan. Bir mesajda en fazla bir kez.',
     input_schema: OP_SCHEMA,
@@ -416,6 +429,13 @@ function runTool(name, input, ctx, state) {
     case 'kurali_acikla': {
       const text = RULE_TEXTS[input && input.islem] && RULE_TEXTS[input.islem][input.kural];
       return text ? ok({ kural: RULE_NAMES[input.kural], aciklama: text }) : fail('Böyle bir kural yok.');
+    }
+    case 'sutunu_goster': {
+      const col = ['birler', 'onlar', 'yuzler', 'binler', 'on_binler'].indexOf(input && input.sutun);
+      if (col === -1) return fail('Böyle bir sütun yok.');
+      if (state.isaret) return fail('Bu mesajda bu araç zaten kullanıldı.');
+      state.isaret = true;
+      return ok({ durum: `${COLUMN_NAMES[col]} sütunu çocuğun abaküsünde parlıyor.` }, { tur: 'isaret', sutun: col });
     }
     case 'abakuste_goster':
     case 'alistirma_ver': {

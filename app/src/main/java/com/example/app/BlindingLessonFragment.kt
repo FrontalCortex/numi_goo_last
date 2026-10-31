@@ -1126,6 +1126,20 @@ class BlindingLessonFragment : Fragment() {
         }
     }
 
+    /**
+     * Sobi'nin kural hafızası ([SobiRuleStats]): flaş dizisinin kuralları. Yanlışta yalnızca abaküs
+     * kaydından bulunan hatalı işlemler (klavyeyle cevapta kayıt yok, yanlış sayılmaz).
+     */
+    private fun recordRuleStats(isCorrect: Boolean) {
+        @Suppress("UNCHECKED_CAST")
+        val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>() ?: return
+        val complete = lastFlashMarks.size == numbers.size
+        SobiRuleStats.recordSequence(
+            requireContext(), numbers, isCorrect,
+            if (complete) lastFlashLog else emptyList(), if (complete) lastFlashMarks else emptyList(), lastWrongAnswer,
+        )
+    }
+
     private fun cupWay(){
         if(globalPartId == 9){
             binding.progressBarContainer.visibility = View.GONE
@@ -1163,6 +1177,7 @@ class BlindingLessonFragment : Fragment() {
                         // Tıklama işlemini gerçekleştir (cevabı tek kez hesapla)
                         hasSubmittedAnyAnswer = true
                         val isCorrect = stepAnswerAlgorithm()
+                        recordRuleStats(isCorrect)
                         updateProgressBar(isCorrect)
                         
                         if (globalPartId == 9) {

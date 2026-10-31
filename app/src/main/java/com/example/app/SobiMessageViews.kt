@@ -33,6 +33,10 @@ class SobiMessageViews(
     private val onChanged: () -> Unit,
     /** Çocuk bir mesajı bildirdi: ekran "Bildirdin, teşekkürler!" balonunu kendi listesine ekler. */
     private val onReported: () -> Unit,
+    /** 🔊: Sobi'nin mesajını sesli okur ([SobiSpeaker]); null ya da ses yoksa düğme yok. */
+    private val onSpeak: ((String) -> Unit)? = null,
+    /** Ses motoru hazır mı (Türkçe ses yoksa 🔊 gösterilmez). */
+    private val canSpeak: () -> Boolean = { true },
 ) {
 
     fun bubble(ctx: Context, m: SobiStepTracker.Message): View {
@@ -51,16 +55,20 @@ class SobiMessageViews(
             setPadding(0, dp(ctx, 4), 0, dp(ctx, 4))
             addView(tv, LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         }
-        if (m.fromChild || !canRate(m)) return row
+        val speak = onSpeak?.takeIf { canSpeak() }
+        if (m.fromChild || (!canRate(m) && speak == null)) return row
         // Oy verilince yanında "Bize daha fazla bilgi ver": nedenini öğrenmek için.
         val rating = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(ctx, 6), 0, 0, 0)
-            addView(rateButton(ctx, m, 1, "👍", R.string.sobi_rate_up))
-            addView(rateButton(ctx, m, -1, "👎", R.string.sobi_rate_down))
-            addView(reportButton(ctx, m))
-            if (m.rating != 0) addView(moreInfoLink(ctx, m))
+            if (speak != null) addView(speakButton(ctx, m, speak))
+            if (canRate(m)) {
+                addView(rateButton(ctx, m, 1, "👍", R.string.sobi_rate_up))
+                addView(rateButton(ctx, m, -1, "👎", R.string.sobi_rate_down))
+                addView(reportButton(ctx, m))
+                if (m.rating != 0) addView(moreInfoLink(ctx, m))
+            }
         }
         return LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
@@ -68,6 +76,15 @@ class SobiMessageViews(
             addView(rating)
         }
     }
+
+    private fun speakButton(ctx: Context, m: SobiStepTracker.Message, speak: (String) -> Unit): View =
+        TextView(ctx).apply {
+            text = "🔊"
+            contentDescription = appString(R.string.sobi_speak)
+            setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+            setPadding(dp(ctx, 8), dp(ctx, 2), dp(ctx, 8), dp(ctx, 2))
+            setOnClickListener { speak(m.text) }
+        }
 
     private fun canRate(m: SobiStepTracker.Message): Boolean =
         m.localId != null || (m.serverIndex != null && sessionId() != null)

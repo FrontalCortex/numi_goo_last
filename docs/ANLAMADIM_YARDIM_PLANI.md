@@ -454,6 +454,12 @@ A yapay zekâsız, kural motoruyla:
   `alistirma_ver` ile işlemi açıyor, ekran sayfa sayfa çözdürüyor (ilk sayı abaküste hazır). Sunucu öğrenilmemiş
   kural isteyen örneği reddediyor. Deneme: `node scripts/sobi-dene.js --senaryo ornek`. Bilinen: "3 basamaklı"
   isteğinde Haiku bazen yalnızca ilk sayıyı 3 basamaklı seçiyor (253 + 8).
+- Yeni yetkiler (01.11.2026): (1) sesli okuma `SobiSpeaker` (telefonun Türkçe sesi; 🔊 her mesajda, üstte
+  otomatik okuma aç/kapat, varsayılan açık); (2) örnek sonuçları bağlamda (`practiceResults`: işlem, yanlış deneme,
+  bitti mi), Sobi'nin açtığı örneğin sonunda "Sıradaki soru": Sobi zorluğu ayarlar; (3) sütun işaretleme: adımın
+  sütunu sayfa açılınca kendiliğinden parlar, Sobi de `sutunu_goster` aracıyla parlatabilir; (4) kural hafızası
+  `SobiRuleStats` (cihazda; ders soruları, flaş, Sobi ekranı; yanlışta yalnızca hatanın kuralı) bağlamda `ruleStats`.
+  Sunucu ayrıca "örneği açtım" deyip açmayan cevabı yedek metne çeviriyor (`acilmayan_ornek`).
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

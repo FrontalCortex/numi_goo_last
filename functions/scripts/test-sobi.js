@@ -291,10 +291,42 @@ async function main() {
   });
   await test('bağlam temizleniyor', () => {
     const c = chat.sanitizeContext({ stepId: 'T8; drop', base: -1, target: 100000, current: 3.2, attempts: 5, valueLog: [1, -2, 'x', 3], extra: 'gizli' });
-    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3], practice: false, lessonTitle: '', recentSteps: [], taughtRules: [], tutorialNumber: null, stepIndex: null });
+    assert.deepStrictEqual(c, { stepId: null, stepText: '', questionText: '', base: null, target: null, current: null, attempts: 5, valueLog: [1, 3], practice: false, lessonTitle: '', recentSteps: [], taughtRules: [], tutorialNumber: null, stepIndex: null, practiceResults: [], ruleStats: [] });
+    // Örnek sonuçları ve kural geçmişi: biçimi bozuk olanlar atılır.
+    const p = chat.sanitizeContext({
+      practiceResults: [{ question: '146 + 9', wrong: 1, done: true }, { question: '<script>', wrong: 0, done: true }, { question: '12 + 3', wrong: -1 }],
+      ruleStats: [{ key: 'add_ten', correct: 12, wrong: 5 }, { key: 'uydurma', correct: 1, wrong: 1 }],
+    });
+    assert.deepStrictEqual(p.practiceResults, [{ question: '146 + 9', wrong: 1, done: true }]);
+    assert.deepStrictEqual(p.ruleStats, [{ key: 'add_ten', correct: 12, wrong: 5 }]);
+    const block = chat.contextBlock(p);
+    assert.ok(block.includes('146 + 9: çözdü, 1 yanlış deneme'));
+    assert.ok(block.includes("10'luk toplama: 12 doğru, 5 yanlış"));
+  });
+
+  await test('sütun işaretleme: tek sütun, mesaj başına bir kez', () => {
+    const state = {};
+    const r = tools.runTool('sutunu_goster', { sutun: 'yuzler' }, {}, state);
+    assert.strictEqual(r.isError, false);
+    assert.deepStrictEqual(r.action, { tur: 'isaret', sutun: 2 });
+    assert.strictEqual(tools.runTool('sutunu_goster', { sutun: 'onlar' }, {}, state).isError, true);
+    assert.strictEqual(tools.runTool('sutunu_goster', { sutun: 'milyonlar' }, {}, {}).isError, true);
   });
 
   console.log('sohbet turu (sahte model)');
+  await test('örnek: "açtım" deyip açmayan cevap çocuğa gitmez', async () => {
+    const ctx = { stepText: 'x', practice: true, taughtRules: ['add_direct', 'add_five'] };
+    const lie = await chat.runTurn({ client: fakeClient([say('Bir örnek açtım: 2 + 4.')]), system: 'S', history: [], context: ctx, childText: 'örnek ver' });
+    assert.strictEqual(lie.fellBack, true);
+    assert.ok(lie.reasons.includes('acilmayan_ornek'));
+    const real = await chat.runTurn({
+      client: fakeClient([callTool('alistirma_ver', { baslangic: 2, islem: 'add', sayi: 4 }), say('Bir örnek açtım: 2 + 4.')]),
+      system: 'S', history: [], context: ctx, childText: 'örnek ver',
+    });
+    assert.strictEqual(real.fellBack, false, real.reasons.join());
+    assert.strictEqual(real.actions[0].tur, 'alistirma');
+  });
+
   await test('araçla cevap: istek biçimi ve geçmiş', async () => {
     const client = fakeClient([
       callTool('hamleleri_hesapla', { baslangic: 8, islem: 'add', sayi: 6 }),

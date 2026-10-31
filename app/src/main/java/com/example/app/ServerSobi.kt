@@ -22,6 +22,8 @@ object ServerSobi {
         val op: String,
         val number: Int,
         val result: Int,
+        /** [ACTION_POINT]: parlatılacak sütun (0 = birler). */
+        val column: Int? = null,
     )
 
     data class Reply(
@@ -43,6 +45,8 @@ object ServerSobi {
     const val ACTION_SHOW = "goster"
     /** Sobi ekranında açılacak örnek işlem (alistirma_ver). */
     const val ACTION_PRACTICE = "alistirma"
+    /** Abaküste bir sütunu kısa süre parlat (sutunu_goster). */
+    const val ACTION_POINT = "isaret"
 
     /**
      * [suggestion]: çocuk bir öneri balonuna dokunduysa balonun anahtarı. Anlatım adımında hazır
@@ -134,6 +138,10 @@ object ServerSobi {
     private fun parseAction(raw: Any?): Action? {
         val m = raw as? Map<*, *> ?: return null
         val kind = m["tur"] as? String ?: return null
+        if (kind == ACTION_POINT) {
+            val col = (m["sutun"] as? Number)?.toInt()?.takeIf { it in 0..4 } ?: return null
+            return Action(kind, 0, "", 0, 0, col)
+        }
         val base = (m["baslangic"] as? Number)?.toInt() ?: return null
         val op = m["islem"] as? String ?: return null
         val number = (m["sayi"] as? Number)?.toInt() ?: return null

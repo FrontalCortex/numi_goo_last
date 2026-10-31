@@ -1724,6 +1724,7 @@ class AbacusFragment : Fragment() {
                             // Tıklama işlemini gerçekleştir
                             hasSubmittedAnyAnswer = true
                             val isCorrect = stepAnswerAlgorithm()
+                            recordRuleStats(isCorrect)
                             if (currentIndex == operations.size - 1 && isTimerStarted) {
                                 // Son soruda panel butonunu beklemeden süreyi anında durdur.
                                 stopTimer()
@@ -1873,6 +1874,19 @@ class AbacusFragment : Fragment() {
             MistakeReviewDialog.newInstance(numbers!!, answer, log, lessonItem.title)
                 .show(childFragmentManager, MistakeReviewDialog.TAG)
         }
+    }
+
+    /** Sobi'nin kural hafızası ([SobiRuleStats]): toplama/çıkarma sorusunun kuralları. */
+    private fun recordRuleStats(isCorrect: Boolean) {
+        val op = operations.getOrNull(currentIndex) ?: return
+        val first = op.firstNumber ?: return
+        val second = op.secondNumber ?: return
+        val sign = op.operator
+        if (sign != "+" && sign != "-") return
+        SobiRuleStats.recordAnswer(
+            requireContext(), listOf(first, if (sign == "-") -second else second), isCorrect,
+            mistakeLog.toList(), abacusController.getCurrentValue(),
+        )
     }
 
     private fun incorrectText() {

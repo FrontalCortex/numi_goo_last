@@ -78,8 +78,18 @@ class MistakeReviewDialog : DialogFragment() {
         val of: Int = 0,
     )
 
-    /** Sayfa: adım ya da bilgi sayfası ([step] null). [value]: abaküsün bu sayfadaki başlangıç değeri. */
-    private class Page(val step: Step?, val title: String, val value: Int, val firstMessage: String)
+    /**
+     * Sayfa: adım ya da bilgi sayfası ([step] null). [value]: abaküsün bu sayfadaki başlangıç değeri.
+     * [group]: ait olduğu adım grubu ([groups] sırası; tek bilgi sayfasında -1).
+     */
+    private class Page(val step: Step?, val title: String, val value: Int, val firstMessage: String, val group: Int = -1)
+
+    /**
+     * Bir adım grubu (soru ya da örnek). Örneklerin sonucu ([wrong] yanlış Kontrol Et, [done] sonuna
+     * kadar çözüldü) Sobi'ye gider: zorluğu buna göre ayarlasın. [ai]: örneği Sobi açtı (sonunda
+     * "Sıradaki soru").
+     */
+    private class Group(val question: String, val example: Boolean, val ai: Boolean, var wrong: Int = 0, var done: Boolean = false)
 
     private var tutorialMode = false
 
@@ -107,6 +117,7 @@ class MistakeReviewDialog : DialogFragment() {
     private var examples = 0
 
     private val pageList = ArrayList<Page>()
+    private val groups = ArrayList<Group>()
     /** Görüntülenen sayfa. */
     private var page = 0
     /** Açılmış en ileri sayfa; ileri ok buna kadar gider. */
@@ -122,6 +133,8 @@ class MistakeReviewDialog : DialogFragment() {
     /** Abaküs Sobi'nin elinde (gösterim, geri alma, sayfa geçişi): dokunuş, düğmeler ve kayıt kapalı. */
     private var abacusBusy = false
     private var mediaPlayer: MediaPlayer? = null
+    private var speaker: SobiSpeaker? = null
+    private lateinit var speakToggle: View
 
     private val tracker = SobiStepTracker()
     /** Sobi'nin cevabı bekleniyor; cevap sorunun sorulduğu sayfaya düşer. */
@@ -188,6 +201,24 @@ class MistakeReviewDialog : DialogFragment() {
         input = view.findViewById(R.id.reviewInput)
         abacusContainer = view.findViewById(R.id.abacusContainer)
         buttonsRow = view.findViewById(R.id.reviewButtons)
+        speakToggle = view.findViewById(R.id.reviewSpeak)
+        speaker = SobiSpeaker(requireContext()) {
+            // Ses motoru hazır: 🔊 düğmeleri ve aç/kapat görünsün; açılış mesajı okunsun.
+            view.post {
+                if (!isAdded) return@post
+                speakToggle.visibility = View.VISIBLE
+                updateSpeakToggle()
+                renderPage()
+                pages[page]?.lastOrNull { !it.fromChild }?.let { speaker?.speakIfAuto(it.text) }
+            }
+        }
+        speakToggle.setOnClickListener {
+            val s = speaker ?: return@setOnClickListener
+            s.autoRead = !s.autoRead
+            if (!s.autoRead) s.stop()
+            updateSpeakToggle()
+        }
+        DepthPress.attach(speakToggle)
         messageViews = SobiMessageViews(
             fragment = this,
             sessionId = { tracker.sessionId },
@@ -195,6 +226,8 @@ class MistakeReviewDialog : DialogFragment() {
             localQuestion = { if (tutorialMode) tutorialQuestion ?: tutorialStepText.take(100) else questionText(numbers) },
             onChanged = { renderPage() },
             onReported = { addMessage(page, SobiStepTracker.Message(fromChild = false, text = appString(R.string.sobi_report_done))) },
+            onSpeak = { speaker?.speak(it) },
+            canSpeak = { speaker?.available == true },
         )
 
         view.findViewById<View>(R.id.reviewClose).setOnClickListener { dismissAllowingStateLoss() }
@@ -330,7 +363,13 @@ class MistakeReviewDialog : DialogFragment() {
         }
     }
 
+    private fun updateSpeakToggle() {
+        speakToggle.alpha = if (speaker?.autoRead == true) 1f else 0.4f
+    }
+
     override fun onDestroyView() {
+        speaker?.shutdown()
+        speaker = null
         player?.cancel()
         mediaPlayer?.release()
         mediaPlayer = null
@@ -373,8 +412,13 @@ class MistakeReviewDialog : DialogFragment() {
      * Adım grubunu sayfalara ekler: adımlar ve sonda bir bilgi sayfası ([endTitle], abaküs [endValue],
      * Sobi [endText] der). [intro] ilk adımın ilk mesajının başına. İlk adımın sayfa sırası döner.
      */
-    private fun addGroup(group: List<Step>, intro: String?, endTitle: String, endValue: Int, endText: String): Int {
+    private fun addGroup(
+        group: List<Step>, intro: String?, endTitle: String, endValue: Int, endText: String,
+        example: Boolean = false, ai: Boolean = false,
+    ): Int {
         val first = pageList.size
+        val g = groups.size
+        groups += Group(group.firstOrNull()?.question ?: group.firstOrNull()?.label.orEmpty(), example, ai)
         group.forEachIndexed { i, s ->
             val step = s.copy(num = i + 1, of = group.size)
             val m = step.move
@@ -386,9 +430,9 @@ class MistakeReviewDialog : DialogFragment() {
             ).joinToString("\n\n")
             val title = if (step.label != null) appString(R.string.review_step_label_number, step.num, step.of, step.label)
             else appString(R.string.review_step_label, step.num, step.of)
-            pageList += Page(step, title, step.base, text)
+            pageList += Page(step, title, step.base, text, g)
         }
-        pageList += Page(null, endTitle, endValue, endText)
+        pageList += Page(null, endTitle, endValue, endText, g)
         return first
     }
 
@@ -406,16 +450,45 @@ class MistakeReviewDialog : DialogFragment() {
     /** Sayfayı gösterir (ilk gelişte Sobi'nin ilk mesajı yazılır); abaküs o sayfanın başındaki değere gelir. */
     private fun showPage(i: Int) {
         hideKeyboard()
+        speaker?.stop()
         page = i
         val p = pageList[i]
-        if (pages[i].isNullOrEmpty()) pages.getOrPut(i) { ArrayList() } += sobiMessage(p.firstMessage)
+        if (pages[i].isNullOrEmpty()) {
+            pages.getOrPut(i) { ArrayList() } += sobiMessage(p.firstMessage)
+            speaker?.speakIfAuto(p.firstMessage)
+        }
+        // Grubun sonuna gelindi: örnek çözüldü (Sobi'ye giden sonuç).
+        if (p.step == null) groups.getOrNull(p.group)?.done = true
         stepLabel.text = p.title
         showButton.visibility = if (p.step == null) View.GONE else View.VISIBLE
         checkButton.text = appString(if (p.step == null) R.string.review_back else R.string.review_check)
         tracker.startStep(i)
         tracker.captureBase(p.value)
         renderPage()
+        val moving = controller?.getCurrentValue() != p.value
         moveAbacus(p.value)
+        // Talimatın sözünü ettiği sütun kısa süre parlar (çocuklar sütunları en çok burada karıştırıyor).
+        p.step?.move?.let { m -> checkButton.postDelayed({ if (isAdded && page == i) highlightColumn(m.col) }, if (moving) HIGHLIGHT_AFTER_MOVE_MS else 0L) }
+    }
+
+    /** [col] sütununu (0 = birler) birkaç kez yanıp söndürür. */
+    private fun highlightColumn(col: Int) {
+        val root = view ?: return
+        val id = resources.getIdentifier("rod${4 - col}", "id", requireContext().packageName)
+        val rod = root.findViewById<android.widget.FrameLayout>(id) ?: return
+        val glow = ContextCompat.getDrawable(requireContext(), R.drawable.bg_rod_highlight)?.mutate() ?: return
+        glow.alpha = 0
+        rod.foreground = glow
+        android.animation.ValueAnimator.ofInt(0, 255, 60, 255, 0).apply {
+            duration = HIGHLIGHT_MS
+            addUpdateListener { glow.alpha = it.animatedValue as Int }
+            addListener(object : android.animation.AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: android.animation.Animator) {
+                    if (rod.foreground === glow) rod.foreground = null
+                }
+            })
+            start()
+        }
     }
 
     private fun currentStep(): Step? = pageList.getOrNull(page)?.step
@@ -429,7 +502,10 @@ class MistakeReviewDialog : DialogFragment() {
 
     private fun addMessage(p: Int, m: SobiStepTracker.Message) {
         pages.getOrPut(p) { ArrayList() } += m
-        if (p == page && view != null) renderPage()
+        if (p == page && view != null) {
+            renderPage()
+            if (!m.fromChild) speaker?.speakIfAuto(m.text)
+        }
     }
 
     private fun renderPage() {
@@ -465,7 +541,10 @@ class MistakeReviewDialog : DialogFragment() {
         val c = controller ?: return
         val value = c.getCurrentValue()
         tracker.onAnswerChecked()
-        if (value == step.target) {
+        val correct = value == step.target
+        step.move?.let { SobiRuleStats.record(requireContext(), SobiRuleStats.moveRules(it), correct) }
+        if (!correct) groups.getOrNull(pageList[page].group)?.let { it.wrong++ }
+        if (correct) {
             playSound(R.raw.correct_answer_sound, 0.3f)
             addMessage(page, SobiStepTracker.Message(fromChild = false, text = appString(R.string.review_correct)))
             val from = page
@@ -585,6 +664,7 @@ class MistakeReviewDialog : DialogFragment() {
             appString(R.string.sobi_screen_example_title),
             nums.sum(),
             appString(R.string.sobi_screen_example_done, q, nums.sum()),
+            example = true,
         )
         openPage(first)
     }
@@ -611,7 +691,10 @@ class MistakeReviewDialog : DialogFragment() {
             return
         }
         examples++
-        val first = addGroup(group, null, appString(R.string.sobi_screen_example_title), a.base + n, appString(R.string.sobi_screen_example_done, q, a.base + n))
+        val first = addGroup(
+            group, null, appString(R.string.sobi_screen_example_title), a.base + n,
+            appString(R.string.sobi_screen_example_done_ai, q, a.base + n), example = true, ai = true,
+        )
         val list = pages.getOrPut(first) { ArrayList() }
         reply?.let { list += it }
         list += sobiMessage(pageList[first].firstMessage)
@@ -665,6 +748,9 @@ class MistakeReviewDialog : DialogFragment() {
                 if (shown != null) {
                     addMessage(forPage, SobiStepTracker.Message(fromChild = false, text = shown, serverIndex = index))
                 } else renderPage()
+                reply.actions.lastOrNull { it.kind == ServerSobi.ACTION_POINT }?.column?.let { col ->
+                    if (page == forPage) highlightColumn(col)
+                }
             },
             onFailure = { e ->
                 sendingPage = -1
@@ -739,7 +825,9 @@ class MistakeReviewDialog : DialogFragment() {
         val step = currentStep()
         // "Neden böyle?" parça balonlarındaki "Neden bu kural?" ile aynı işi görürdü; onlar varken yalnızca "Bunu anlamadım".
         val hasParts = step?.move?.let { SubStepExplainer.hasParts(it) } == true
-        keys += pageSuggestions[page] ?: when {
+        val aiExampleEnd = step == null && groups.getOrNull(pageList.getOrNull(page)?.group ?: -1)?.ai == true
+        keys += pageSuggestions[page]?.let { if (aiExampleEnd) listOf(KEY_NEXT) + it else it } ?: when {
+            aiExampleEnd -> listOf(KEY_NEXT)
             step == null && tutorialMode && page == 0 -> listOf(SobiSuggestions.KEY_DIDNT_GET, SobiSuggestions.KEY_WHY)
             step == null -> emptyList()
             hasParts -> listOf(SobiSuggestions.KEY_DIDNT_GET)
@@ -752,7 +840,11 @@ class MistakeReviewDialog : DialogFragment() {
         for (key in keys.distinct()) {
             // "Bir örnek ver" yapay zekâya gitmiyor: öğreticide yerel balon, analizde yok.
             if (key == SobiSuggestions.KEY_EXAMPLE) continue
-            val label = if (key == KEY_WATCH) appString(R.string.sobi_watch_button) else SobiSuggestions.labelOf(key) ?: continue
+            val label = when (key) {
+                KEY_WATCH -> appString(R.string.sobi_watch_button)
+                KEY_NEXT -> appString(R.string.sobi_next_question)
+                else -> SobiSuggestions.labelOf(key) ?: continue
+            }
             val chip = TextView(ctx).apply {
                 text = label
                 setTextColor(ContextCompat.getColor(ctx, R.color.white))
@@ -776,6 +868,8 @@ class MistakeReviewDialog : DialogFragment() {
         when (key) {
             KEY_WATCH, SobiSuggestions.KEY_SHOW_AGAIN -> pageShow[page]?.let { play(it) } ?: showCurrentStep()
             SobiSuggestions.KEY_SHOW -> showCurrentStep()
+            // Sobi'nin açtığı örneğin sonunda: Sobi sonuca bakıp sıradakini seçer (zorlaştırır ya da kolaylaştırır).
+            KEY_NEXT -> send(appString(R.string.sobi_next_question_message))
             else -> send(SobiSuggestions.labelOf(key) ?: return, suggestion = key)
         }
     }
@@ -807,7 +901,10 @@ class MistakeReviewDialog : DialogFragment() {
             }
             // Sunucu bu adımın hazır açıklamasını bulsun (öğretici + adım sırası, metinle denetleniyor).
             // practice: Sobi bu ekranda örnek açabilir (alistirma_ver).
-            return ctx.copy(tutorialNumber = tutorialNumber, stepIndex = tutorialStepIndex, practice = true)
+            return ctx.copy(
+                tutorialNumber = tutorialNumber, stepIndex = tutorialStepIndex, practice = true,
+                practiceResults = practiceResults(), ruleStats = SobiRuleStats.snapshot(requireContext()),
+            )
         }
         val notes = listOfNotNull(
             "Çocuk soruyu yanlış cevapladı: ${questionText(numbers)} = $answer (doğrusu ${numbers.sum()}).",
@@ -827,8 +924,11 @@ class MistakeReviewDialog : DialogFragment() {
             lessonTitle = lessonTitle,
             recentSteps = notes,
             taughtRules = rulesOf(steps),
-        ).copy(practice = true)
+        ).copy(practice = true, practiceResults = practiceResults(), ruleStats = SobiRuleStats.snapshot(requireContext()))
     }
+
+    private fun practiceResults(): List<SobiContext.PracticeResult> =
+        groups.filter { it.example }.map { SobiContext.PracticeResult(it.question, it.wrong, it.done) }
 
     // ── Yardımcılar ─────────────────────────────────────────────────────────
 
@@ -861,6 +961,10 @@ class MistakeReviewDialog : DialogFragment() {
         private const val NEXT_STEP_DELAY_MS = 900L
         /** Yerel balon: Sobi'nin son cevabındaki gösterimi oynatır. */
         private const val KEY_WATCH = "abakuste_izle"
+        /** Yerel balon: Sobi'den sıradaki soruyu ister (Sobi'nin açtığı örneğin sonunda). */
+        private const val KEY_NEXT = "siradaki_soru"
+        private const val HIGHLIGHT_MS = 1600L
+        private const val HIGHLIGHT_AFTER_MOVE_MS = 650L
         /** Adımda henüz soru sorulmadıysa. "Bana göster" zaten alt düğme. */
         private val INITIAL_SUGGESTIONS = listOf(SobiSuggestions.KEY_WHY, SobiSuggestions.KEY_DIDNT_GET)
         private const val ARG_NUMBERS = "numbers"

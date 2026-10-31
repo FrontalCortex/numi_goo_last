@@ -144,6 +144,16 @@ const ORNEK_SCENARIOS = [
     context: { lessonTitle: "5'lik Toplama", taughtRules: ['add_direct', 'add_five'], stepText: '5 gelir, kardeşi gider.', questionText: '3 + 4', practice: true, attempts: 0, valueLog: [] },
     mesajlar: ['bir örnek ver', '10luk kuralla örnek ver'],
   },
+  {
+    ad: "Örnek sonucu ve kural geçmişi: sıradaki soru (zorlaşmalı), 10'lukta zorlanıyor",
+    context: { lessonTitle: "10'luk Toplama", taughtRules: ['add_direct', 'add_five', 'add_ten'], stepText: '10 gelir, büyük kardeş gider.', practice: true, attempts: 0, valueLog: [], practiceResults: [{ question: '8 + 7', wrong: 0, done: true }], ruleStats: [{ key: 'add_ten', correct: 4, wrong: 7 }, { key: 'add_five', correct: 10, wrong: 1 }] },
+    mesajlar: ['Bir soru daha ver'],
+  },
+  {
+    ad: "Soru adımı: sütun işaretleme",
+    context: { lessonTitle: 'Sobi ile analiz', taughtRules: ['add_direct', 'add_five', 'add_ten', 'add_bead'], stepText: "Onlar basamağına 7 ekle.\nBoncuk kuralı: 2 boncuk gelir, 5 gider, 10 gelir.", questionText: '1553 + 473', base: 1953, target: 2023, current: 1953, practice: true, attempts: 0, valueLog: [1953] },
+    mesajlar: ['2 boncuk hangi sütuna gelecek'],
+  },
 ];
 
 /** Değerlendirme setinin adim_sorusu vakaları (tools/sobi-eval/build-cases.js). */

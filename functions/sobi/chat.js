@@ -115,6 +115,22 @@ function sanitizeContext(raw) {
     // Hazır açıklamayı bulmak için: hangi öğretici, kaçıncı adım (explanations.find metni de denetler).
     tutorialNumber: intIn(r.tutorialNumber, 0, 99999),
     stepIndex: intIn(r.stepIndex, 0, 999),
+    // Sobi ekranında açılan örneklerin sonucu (eskiden yeniye, en çok 5): Sobi zorluğu ayarlasın.
+    practiceResults: Array.isArray(r.practiceResults)
+      ? r.practiceResults.slice(-5).map((p) => ({
+        question: p && typeof p.question === 'string' && /^[\d +\-−]{1,40}$/.test(p.question) ? p.question.trim() : null,
+        wrong: intIn(p && p.wrong, 0, 99),
+        done: !!(p && p.done === true),
+      })).filter((p) => p.question && p.wrong !== null)
+      : [],
+    // Kural hafızası (uygulama, bu cihaz): her kuralda kaç doğru, kaç yanlış. Kişisel bilgi yok.
+    ruleStats: Array.isArray(r.ruleStats)
+      ? r.ruleStats.map((x) => ({
+        key: x && RULE_LABELS[x.key] ? x.key : null,
+        correct: intIn(x && x.correct, 0, 1000000),
+        wrong: intIn(x && x.wrong, 0, 1000000),
+      })).filter((x) => x.key && x.correct !== null && x.wrong !== null)
+      : [],
   };
 }
 
@@ -197,6 +213,12 @@ function contextBlock(ctx, extra = {}) {
   if (ctx.target === null) lines.push('Bu bir anlatım adımı: çocuk şu an bir soru cevaplamıyor, dersi dinliyor.');
   // Sobi ekranı (uygulama 01.11.2026): alistirma_ver'in işlemini sayfa sayfa, abaküste çözdürüyor.
   if (ctx.practice) lines.push('Bu ekranda örnek işlem açılabilir: alistirma_ver ile açtığın işlemi ekran çocuğa abaküste adım adım çözdürür.');
+  if (ctx.practiceResults && ctx.practiceResults.length) {
+    lines.push(`Bu ekranda açılan örnekler (eskiden yeniye): ${ctx.practiceResults.map((p) => `${p.question}: ${p.done ? 'çözdü' : 'henüz bitmedi'}, ${p.wrong} yanlış deneme`).join('; ')}`);
+  }
+  if (ctx.ruleStats && ctx.ruleStats.length) {
+    lines.push(`Çocuğun kural geçmişi (dersler ve alıştırmalar): ${ctx.ruleStats.map((x) => `${RULE_LABELS[x.key]}: ${x.correct} doğru, ${x.wrong} yanlış`).join('; ')}`);
+  }
   const ex = explanations.find(ctx);
   if (ex) {
     lines.push(`Onaylı açıklama (bu kısmın konusu: ${ex.konu}):`);
@@ -369,6 +391,11 @@ async function runTurn({ client, system, history, context, childText, note, mode
   if (reply !== null) {
     const check = guard.checkReply(reply, guard.sourceNumbers(messages), { explanation: context.target === null });
     if (!check.ok) { reasons.push(...check.reasons); fellBack = true; }
+    // "Örneği açtım" deyip açmamış (araç çağrılmadı ya da reddedildi): çocuk boş ekrana bakardı.
+    if (context.practice && /(açtım|hazırladım)/i.test(reply) && !actions.some((a) => a.tur === 'alistirma')) {
+      reasons.push('acilmayan_ornek');
+      fellBack = true;
+    }
   }
   const shown = fellBack ? guard.fallbackReply(context, tools) : reply;
   return {

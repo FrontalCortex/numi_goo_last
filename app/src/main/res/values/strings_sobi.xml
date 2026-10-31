@@ -22,6 +22,10 @@
     <string name="sobi_suggest_example">Bir örnek ver</string>
 
     <!-- Beğen / beğenme (Sobi'nin her cevabının altında; haftalık iyileştirme döngüsünün verisi) -->
+    <string name="sobi_speak">Sesli oku</string>
+    <string name="sobi_auto_read">Sobi\'nin mesajlarını sesli oku</string>
+    <string name="sobi_next_question">Sıradaki soru</string>
+    <string name="sobi_next_question_message">Bir soru daha ver</string>
     <string name="sobi_rate_up">Bu cevabı beğendim</string>
     <string name="sobi_rate_down">Bu cevabı beğenmedim</string>
     <!-- Oydan sonra beliren bağlantı; dokununca kısa bir yorum kutusu açılır -->
@@ -81,6 +85,7 @@
     <string name="sobi_screen_example_intro_direct">Örnek: %1$s. İlk sayı abaküste hazır; bu işlemde kural gerekmiyor. Adım adım birlikte yapalım.</string>
     <string name="sobi_screen_example_title">Örnek bitti</string>
     <string name="sobi_screen_example_done">Harika, örneği çözdük: %1$s = %2$d. İstersen \"Başka bir örnek\"e dokun ya da derse dön.</string>
+    <string name="sobi_screen_example_done_ai">Harika, %1$s = %2$d! İstersen \"Sıradaki soru\"ya dokun; sana göre bir soru seçeyim.</string>
     <string name="sobi_screen_another_example">Başka bir örnek</string>
     <!-- Analiz ekranında adımın parça balonları (kural motoru cevaplar) -->
     <string name="review_why_rule">Neden bu kural?</string>
