@@ -378,6 +378,7 @@ class AbacusFragment : Fragment() {
         startButton?.visibility = android.view.View.VISIBLE
         binding.kontrolButton.visibility = android.view.View.INVISIBLE
         
+        startButton?.let { com.example.app.homework.DepthPress.attach(it) }
         startButton?.setOnClickListener {
             if (lessonStarted) return@setOnClickListener
             lessonStarted = true
@@ -1701,29 +1702,25 @@ class AbacusFragment : Fragment() {
         controlButtonListener = View.OnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    v.animate()
-                        .scaleX(0.85f)
-                        .scaleY(0.85f)
-                        .setDuration(100)
-                        .setInterpolator(AccelerateDecelerateInterpolator())
-                        .start()
+                    com.example.app.homework.DepthPress.down(v)
+                    true
+                }
+
+                // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                MotionEvent.ACTION_MOVE -> {
+                    com.example.app.homework.DepthPress.move(v, event)
                     true
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    // Önce çıksın: hızlı çift dokunuşta ve çevrimdışıyken de düğme aşağıda kalmasın.
+                    com.example.app.homework.DepthPress.up(v)
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastClickTime >= 100) {
                         lastClickTime = currentTime
 
                         val ctx = context
                         if (ctx != null && isDeviceOnline(ctx)) {
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
-
                             // Tıklama işlemini gerçekleştir
                             hasSubmittedAnyAnswer = true
                             val isCorrect = stepAnswerAlgorithm()
@@ -1854,8 +1851,7 @@ class AbacusFragment : Fragment() {
         val numbers = if (first != null && second != null && (sign == "+" || sign == "-")) {
             listOf(first, if (sign == "-") -second else second)
         } else null
-        // Süreli derste yok: ekran açıkken süre işlerdi.
-        if (lessonItem.type == 2 || !MistakeReviewDialog.canReview(numbers)) {
+        if (!MistakeReviewDialog.canReview(numbers)) {
             button.visibility = View.GONE
             return
         }
@@ -1863,8 +1859,17 @@ class AbacusFragment : Fragment() {
         val log = mistakeLog.toList()
         button.visibility = View.VISIBLE
         com.example.app.homework.DepthPress.attach(button)
+        // Sandık dersi süreli: analiz ekranı açıkken süre durur, kapanınca kaldığı yerden devam eder
+        // (süre sandık puanına giriyor; analize bakmak çocuğu cezalandırmasın).
+        childFragmentManager.setFragmentResultListener(MistakeReviewDialog.RESULT_CLOSED, viewLifecycleOwner) { _, _ ->
+            if (isTimerStarted && _binding != null) {
+                handler.removeCallbacks(runnable)
+                handler.postDelayed(runnable, 1000)
+            }
+        }
         button.setOnClickListener {
             if (childFragmentManager.findFragmentByTag(MistakeReviewDialog.TAG) != null) return@setOnClickListener
+            if (isTimerStarted) handler.removeCallbacks(runnable)
             MistakeReviewDialog.newInstance(numbers!!, answer, log, lessonItem.title)
                 .show(childFragmentManager, MistakeReviewDialog.TAG)
         }
@@ -3032,12 +3037,18 @@ class AbacusFragment : Fragment() {
                     if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
+                            true
+                        }
+
+                        // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            com.example.app.homework.DepthPress.up(v)
                             true
                         }
 
@@ -3045,12 +3056,7 @@ class AbacusFragment : Fragment() {
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
                             currentIndex++
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                             
@@ -3128,12 +3134,18 @@ class AbacusFragment : Fragment() {
                     if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
+                            true
+                        }
+
+                        // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            com.example.app.homework.DepthPress.up(v)
                             true
                         }
 
@@ -3141,12 +3153,7 @@ class AbacusFragment : Fragment() {
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
                             currentIndex++
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                             

@@ -56,6 +56,11 @@ class SobiAbacusPlayer(private val controller: AbacusBeadController) {
         return true
     }
 
+    /** Abaküsü hemen [value]'ya getirir (analiz ekranında yanlıştan sonra adımın başına dönmek için). */
+    fun moveTo(value: Int) {
+        if (!playing) setValue(value)
+    }
+
     fun cancel() {
         handler.removeCallbacksAndMessages(null)
         playing = false

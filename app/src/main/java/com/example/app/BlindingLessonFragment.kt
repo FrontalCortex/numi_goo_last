@@ -532,6 +532,7 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun setupStartButton() {
+        com.example.app.homework.DepthPress.attach(binding.startButton)
         binding.startButton.setOnClickListener {
             if (lessonStarted) return@setOnClickListener
             lessonStarted = true
@@ -1064,23 +1065,29 @@ class BlindingLessonFragment : Fragment() {
     /**
      * Yanlış cevap panelindeki "Sobi ile analiz et": soru abaküste adım adım yeniden çözülür, Sobi
      * hatanın yerini bulur ([MistakeReviewDialog]; kullanıcı kararı 31.10.2026). Abaküssüz derste değer
-     * kaydı yok, teşhisi o ekranda çocuğun yeniden çözüşü yapıyor. Kupa modunda ve süreli derste yok:
-     * ekran açıkken süre işlerdi.
+     * kaydı yok, teşhisi o ekranda çocuğun yeniden çözüşü yapıyor. Kupa modunda yok (kupa yarışı;
+     * yanlışta ders zaten bitiyor). Sandık dersinde ekran açıkken süre durur.
      */
     private fun bindReviewButton() {
         val button = incorrectPanel.findViewById<View>(R.id.incorrectSobiAnalyze) ?: return
         @Suppress("UNCHECKED_CAST")
         val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>()
-        val timed = globalPartId == 9 || lessonItem.type == 2
-        if (timed || !MistakeReviewDialog.canReview(numbers)) {
+        if (globalPartId == 9 || !MistakeReviewDialog.canReview(numbers)) {
             button.visibility = View.GONE
             return
         }
         val answer = lastWrongAnswer
         button.visibility = View.VISIBLE
         com.example.app.homework.DepthPress.attach(button)
+        childFragmentManager.setFragmentResultListener(MistakeReviewDialog.RESULT_CLOSED, viewLifecycleOwner) { _, _ ->
+            if (isTimerStarted && _binding != null) {
+                handler.removeCallbacks(runnable)
+                handler.postDelayed(runnable, 1000)
+            }
+        }
         button.setOnClickListener {
             if (childFragmentManager.findFragmentByTag(MistakeReviewDialog.TAG) != null) return@setOnClickListener
+            if (isTimerStarted) handler.removeCallbacks(runnable)
             MistakeReviewDialog.newInstance(numbers!!, answer, emptyList(), lessonItem.title)
                 .show(childFragmentManager, MistakeReviewDialog.TAG)
         }
@@ -1103,26 +1110,22 @@ class BlindingLessonFragment : Fragment() {
         controlButtonListener = View.OnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    v.animate()
-                        .scaleX(0.85f)
-                        .scaleY(0.85f)
-                        .setDuration(100)
-                        .setInterpolator(AccelerateDecelerateInterpolator())
-                        .start()
+                    com.example.app.homework.DepthPress.down(v)
+                    true
+                }
+
+                // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                MotionEvent.ACTION_MOVE -> {
+                    com.example.app.homework.DepthPress.move(v, event)
                     true
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    // Önce çıksın: hızlı çift dokunuşta ve çevrimdışıyken de düğme aşağıda kalmasın.
+                    com.example.app.homework.DepthPress.up(v)
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastClickTime >= 100) {
                         lastClickTime = currentTime
-
-                        v.animate()
-                            .scaleX(1f)
-                            .scaleY(1f)
-                            .setDuration(400)
-                            .setInterpolator(BounceInterpolator())
-                            .start()
 
                         // Tıklama işlemini gerçekleştir (cevabı tek kez hesapla)
                         hasSubmittedAnyAnswer = true
@@ -1652,23 +1655,24 @@ class BlindingLessonFragment : Fragment() {
                     if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
+                            true
+                        }
+
+                        // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            com.example.app.homework.DepthPress.up(v)
                             true
                         }
 
                         MotionEvent.ACTION_UP -> {
                             if (globalPartId == 9) {
-                                v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(400)
-                                    .setInterpolator(BounceInterpolator())
-                                    .start()
+                                com.example.app.homework.DepthPress.up(v)
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 correctPanel.animate()
                                     .translationY(resultPanelHiddenY(correctPanel))
@@ -1689,12 +1693,7 @@ class BlindingLessonFragment : Fragment() {
                                 addExitTouchBlocker()
                             }
                             currentIndex++
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
 
                             binding.root.postDelayed({
@@ -1770,23 +1769,24 @@ class BlindingLessonFragment : Fragment() {
                     if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
+                            true
+                        }
+
+                        // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            com.example.app.homework.DepthPress.up(v)
                             true
                         }
 
                         MotionEvent.ACTION_UP -> {
                             if (globalPartId == 9) {
-                                v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(400)
-                                    .setInterpolator(BounceInterpolator())
-                                    .start()
+                                com.example.app.homework.DepthPress.up(v)
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
                                     .translationY(resultPanelHiddenY(incorrectPanel))
@@ -1804,12 +1804,7 @@ class BlindingLessonFragment : Fragment() {
                             if (isDailyQuestionMode) {
                                 v.isEnabled = false
                                 addExitTouchBlocker()
-                                v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(400)
-                                    .setInterpolator(BounceInterpolator())
-                                    .start()
+                                com.example.app.homework.DepthPress.up(v)
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
                                     .translationY(resultPanelHiddenY(incorrectPanel))
@@ -1823,12 +1818,7 @@ class BlindingLessonFragment : Fragment() {
                                 return@setOnTouchListener true
                             }
                             if (isRacePanelLesson()) {
-                                v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(400)
-                                    .setInterpolator(BounceInterpolator())
-                                    .start()
+                                com.example.app.homework.DepthPress.up(v)
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
                                     .translationY(resultPanelHiddenY(incorrectPanel))
@@ -1844,12 +1834,7 @@ class BlindingLessonFragment : Fragment() {
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
                             currentIndex++
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
 
                             binding.root.postDelayed({

@@ -1,5 +1,7 @@
 package com.example.app
 
+import android.content.DialogInterface
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -59,6 +61,7 @@ class MistakeReviewDialog : DialogFragment() {
     private var player: SobiAbacusPlayer? = null
     private val stepLog = ArrayList<Int>()
     private var recording = true
+    private var mediaPlayer: MediaPlayer? = null
 
     private val tracker = SobiStepTracker()
     private var sheet: SobiChatSheet? = null
@@ -129,9 +132,17 @@ class MistakeReviewDialog : DialogFragment() {
 
     override fun onDestroyView() {
         player?.cancel()
+        mediaPlayer?.release()
+        mediaPlayer = null
         sheet?.dismiss()
         sheet = null
         super.onDestroyView()
+    }
+
+    /** Ders ekranı süreyi bu bildirimle sürdürür (sandık dersi süreli). */
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        if (isAdded) parentFragmentManager.setFragmentResult(RESULT_CLOSED, Bundle())
     }
 
     // ── Adımlar ─────────────────────────────────────────────────────────────
@@ -163,6 +174,7 @@ class MistakeReviewDialog : DialogFragment() {
         val value = c.getCurrentValue()
         tracker.onAnswerChecked()
         if (value == step.target) {
+            playSound(R.raw.correct_answer_sound, 0.3f)
             sobiText.text = appString(R.string.review_correct)
             setButtonsEnabled(false)
             sobiText.postDelayed({
@@ -178,6 +190,47 @@ class MistakeReviewDialog : DialogFragment() {
             appString(R.string.review_found_now) + " "
         } else ""
         sobiText.text = found + appString(R.string.review_wrong, detail)
+        playSound(R.raw.incorrect_answer_sound)
+        rewindToStepStart(step)
+    }
+
+    /**
+     * Yanlışta abaküs adımın başındaki değere döner: çocuk yanlış hamlesini kendisi geri almak zorunda
+     * kalmasın, adımı temiz bir abaküsle yeniden denesin (kullanıcı kararı 31.10.2026). Kısa bir bekleme
+     * var ki çocuk önce kendi yaptığını görsün; geri alma hareketi değer kaydına girmez.
+     */
+    private fun rewindToStepStart(step: Step) {
+        val c = controller ?: return
+        val p = player ?: return
+        if (c.getCurrentValue() == step.base) return
+        recording = false
+        tracker.paused = true
+        c.setEnabled(false)
+        setButtonsEnabled(false)
+        sobiText.postDelayed({
+            if (!isAdded) return@postDelayed
+            p.moveTo(step.base)
+            sobiText.postDelayed({
+                if (!isAdded) return@postDelayed
+                recording = true
+                tracker.paused = false
+                c.setEnabled(true)
+                setButtonsEnabled(true)
+                stepLog.clear()
+                stepLog += c.getCurrentValue()
+            }, REWIND_SETTLE_MS)
+        }, REWIND_DELAY_MS)
+    }
+
+    /** Ders ekranındaki sesler; ayarlarda ses kapalıysa çalmaz. */
+    private fun playSound(resId: Int, volume: Float = 1f) {
+        val c = context ?: return
+        if (!c.getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE).getBoolean("sound_enabled", true)) return
+        mediaPlayer?.release()
+        mediaPlayer = MediaPlayer.create(c, resId)?.apply {
+            setVolume(volume, volume)
+            start()
+        }
     }
 
     /** "Bana göster": bu adımın hamlesini adımın başından oynatır; sonunda abaküs yine başa döner. */
@@ -273,6 +326,10 @@ class MistakeReviewDialog : DialogFragment() {
 
     companion object {
         const val TAG = "MistakeReview"
+        /** Ekran kapanınca ders ekranına giden bildirim (setFragmentResult). */
+        const val RESULT_CLOSED = "MistakeReview.closed"
+        private const val REWIND_DELAY_MS = 700L
+        private const val REWIND_SETTLE_MS = 500L
         private const val ARG_NUMBERS = "numbers"
         private const val ARG_ANSWER = "answer"
         private const val ARG_LOG = "log"
