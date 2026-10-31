@@ -1841,24 +1841,33 @@ class AbacusFragment : Fragment() {
     }
 
     /**
-     * Yanlış cevap panelinde çocuğun nerede yanıldığı ([MistakeAnalyzer], kural motoru). Teşhis
-     * yoksa (adım adım gidilmedi, çarpma, yalnızca sayı yazma sorusu) metin gizli kalır.
+     * Yanlış cevap panelindeki "Sobi ile analiz et": hatayı Sobi anlatır, soru adım adım yeniden
+     * çözülür ([MistakeReviewDialog]). Teşhis paneli kalabalık gösterdiği için ekranda (kullanıcı
+     * kararı 31.10.2026). Yalnızca toplama/çıkarmada; cevap ve değer kaydı bu anki hâliyle gider.
      */
-    private fun bindMistakeDiagnosis() {
-        val view = incorrectPanel.findViewById<TextView>(R.id.incorrectDiagnosisText) ?: return
+    private fun bindReviewButton() {
+        val button = incorrectPanel.findViewById<View>(R.id.incorrectSobiAnalyze) ?: return
         val op = operations.getOrNull(currentIndex)
         val first = op?.firstNumber
         val second = op?.secondNumber
         val sign = op?.operator
-        val diagnosis = if (first != null && second != null && sign != null) {
-            runCatching {
-                com.example.app.abacus.MistakeAnalyzer.analyze(
-                    first, sign, second, mistakeLog, abacusController.getCurrentValue(),
-                )
-            }.getOrNull()
+        val numbers = if (first != null && second != null && (sign == "+" || sign == "-")) {
+            listOf(first, if (sign == "-") -second else second)
         } else null
-        view.text = diagnosis?.text.orEmpty()
-        view.visibility = if (diagnosis != null) View.VISIBLE else View.GONE
+        // Süreli derste yok: ekran açıkken süre işlerdi.
+        if (lessonItem.type == 2 || !MistakeReviewDialog.canReview(numbers)) {
+            button.visibility = View.GONE
+            return
+        }
+        val answer = abacusController.getCurrentValue()
+        val log = mistakeLog.toList()
+        button.visibility = View.VISIBLE
+        com.example.app.homework.DepthPress.attach(button)
+        button.setOnClickListener {
+            if (childFragmentManager.findFragmentByTag(MistakeReviewDialog.TAG) != null) return@setOnClickListener
+            MistakeReviewDialog.newInstance(numbers!!, answer, log, lessonItem.title)
+                .show(childFragmentManager, MistakeReviewDialog.TAG)
+        }
     }
 
     private fun incorrectText() {
@@ -3093,7 +3102,7 @@ class AbacusFragment : Fragment() {
             incorrectPanel.translationY = resultPanelHiddenY(incorrectPanel)
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
-            bindMistakeDiagnosis()
+            bindReviewButton()
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
             
             // Control button'u devre dışı bırak

@@ -1055,6 +1055,35 @@ class BlindingLessonFragment : Fragment() {
     private fun fillIncorrectPanelAnswers() {
         correctAnswerLabel.text = appString(R.string.ui_dogru_cevap_x, answerNumber)
         correctAnswerText.text = appString(R.string.ui_senin_cevabin_x, controlNumber)
+        lastWrongAnswer = controlNumber
+    }
+
+    /** Son yanlış cevap: controlNumber denetimden sonra sıfırlanıyor, analiz ekranı bunu kullanıyor. */
+    private var lastWrongAnswer = 0
+
+    /**
+     * Yanlış cevap panelindeki "Sobi ile analiz et": soru abaküste adım adım yeniden çözülür, Sobi
+     * hatanın yerini bulur ([MistakeReviewDialog]; kullanıcı kararı 31.10.2026). Abaküssüz derste değer
+     * kaydı yok, teşhisi o ekranda çocuğun yeniden çözüşü yapıyor. Kupa modunda ve süreli derste yok:
+     * ekran açıkken süre işlerdi.
+     */
+    private fun bindReviewButton() {
+        val button = incorrectPanel.findViewById<View>(R.id.incorrectSobiAnalyze) ?: return
+        @Suppress("UNCHECKED_CAST")
+        val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>()
+        val timed = globalPartId == 9 || lessonItem.type == 2
+        if (timed || !MistakeReviewDialog.canReview(numbers)) {
+            button.visibility = View.GONE
+            return
+        }
+        val answer = lastWrongAnswer
+        button.visibility = View.VISIBLE
+        com.example.app.homework.DepthPress.attach(button)
+        button.setOnClickListener {
+            if (childFragmentManager.findFragmentByTag(MistakeReviewDialog.TAG) != null) return@setOnClickListener
+            MistakeReviewDialog.newInstance(numbers!!, answer, emptyList(), lessonItem.title)
+                .show(childFragmentManager, MistakeReviewDialog.TAG)
+        }
     }
 
     private fun cupWay(){
@@ -1717,6 +1746,7 @@ class BlindingLessonFragment : Fragment() {
             incorrectPanel.translationY = resultPanelHiddenY(incorrectPanel)
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
+            bindReviewButton()
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
 
             controlButton.isClickable = false

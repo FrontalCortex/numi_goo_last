@@ -95,6 +95,23 @@ object MistakeAnalyzer {
         return null
     }
 
+    /**
+     * Analiz ekranında tek adım: çocuk bu hamleyi yaparken nerede şaştı. [log] hamlenin başından
+     * (ilk kayıt hamlenin başındaki değer), [answer] "Kontrol Et" anındaki değer.
+     */
+    fun diagnoseStep(m: StepExplainer.ColumnMove, log: List<Int>, answer: Int): Diagnosis {
+        val values = dedupe(log + answer)
+        val from = values.indexOf(m.valueBefore.toInt()).coerceAtLeast(0)
+        return diagnoseMove(m, values, from)
+    }
+
+    /** Analiz ekranında sayı yazma adımı: ilk farklı sütun (en büyük basamaktan). */
+    fun diagnoseWrite(target: Int, value: Int): String {
+        val cols = maxOf(target.toString().length, value.toString().length)
+        val col = (cols - 1 downTo 0).firstOrNull { digit(target, it) != digit(value, it) } ?: 0
+        return "${capital(columnName(col))} basamağına ${digit(target, col)} yazılmalı, sende ${digit(value, col)} var."
+    }
+
     private fun diagnoseMove(m: StepExplainer.ColumnMove, values: List<Int>, from: Int): Diagnosis {
         val after = values.subList(from + 1, values.size)
         val target = m.valueAfter.toInt()
