@@ -278,6 +278,55 @@ function moveTrail(m) {
 }
 
 /**
+ * Adım ekrandaki işlemin bir parçasıysa (3 + 2'nin "5 gelir" adımı, 3 → 8), o parçanın bütün
+ * işlemdeki kuralı ve adımları ({ text, groups }); değilse null. Bağlamdaki "Bu adımın işi" satırı ve
+ * hatayi_bul'un ipucu bunu kullanıyor. Adımı tek başına motora verince 3 → 8 "kuralsız"
+ * çıkıyor (beşlik boncuk doğrudan geliyor) ve Sobi 5'lik kural dersinde «Bu hamle kuralsız»
+ * diyordu (31.10.2026, telefondaki deneme). Parça, bütün işlemin adım izinde başlangıç ve hedef
+ * değerinin arası.
+ */
+function partOfWhole(ctx) {
+  const q = (ctx.questionText || '').match(/^\s*(\d+)\s*([+\-−])\s*(\d+)\s*$/);
+  if (!q) return null;
+  const whole = explainer.explain(Number(q[1]), q[2] === '+' ? 'add' : 'sub', Number(q[3]));
+  if (!whole || !whole.moves.length) return null;
+  const trail = stepTrail(whole);
+  const values = [whole.base, ...trail.map((t) => t.sonra)];
+  const i = values.indexOf(ctx.base);
+  const j = i === -1 ? -1 : values.indexOf(ctx.target, i + 1);
+  if (i === 0 && j === values.length - 1) return null; // adım, işlemin tamamı
+  const name = `${whole.base} ${whole.op === 'add' ? '+' : '-'} ${whole.number}`;
+  if (i === -1 || j === -1) {
+    // Ders adımları motordan farklı sırayla yapıyor (33 − 8: "3 gider, 5 gelir, 10 gider"):
+    // adımın kendi hamlesi, o sütundaki bütün işlemin kuralıyla anılır.
+    const e = explainer.explainTransition(ctx.base, ctx.target);
+    const own = e && e.moves.length === 1 ? e.moves[0] : null;
+    const wholeMove = own && whole.moves.find((m) => m.col === own.col);
+    // Sol sütundaki tek hareket, sağdaki 10'luk / boncuk kuralının "10 gelir / 10 gider" adımı olabilir.
+    const carrier = own && !wholeMove && whole.moves.find((m) => m.col === own.col - 1 && (m.rule === 'ten' || m.rule === 'bead'));
+    if (carrier) {
+      const ten = carrier.op === 'add' ? '10 gelir' : '10 gider';
+      const groups = [{ basamak: columnName(carrier.col), kural: RULE_NAMES[carrier.rule], adimlar: [ten] }];
+      const text = `${ctx.base} → ${ctx.target}: ${name} işleminin bir adımı; ${groups[0].basamak} basamağında ${groups[0].kural} yapılıyor, bu adımda "${ten}" (${columnName(own.col)} basamağına 1 ${carrier.op === 'add' ? 'eklenir' : 'çıkarılır'})`;
+      return { text, groups };
+    }
+    if (!wholeMove || wholeMove.rule === own.rule) return null;
+    const groups = [{ basamak: columnName(own.col), kural: RULE_NAMES[wholeMove.rule], adimlar: own.steps.map((s) => stepPhrase(s, own)) }];
+    const text = `${ctx.base} → ${ctx.target}: ${name} işleminin bir adımı; ${groups[0].basamak} basamağında ${groups[0].kural} yapılıyor, bu adımda "${groups[0].adimlar.join(', ')}"`;
+    return { text, groups };
+  }
+  const steps = trail.slice(i, j);
+  const groups = [];
+  for (const s of steps) {
+    const last = groups[groups.length - 1];
+    if (last && last.basamak === s.basamak && last.kural === s.kural) last.adimlar.push(s.adim);
+    else groups.push({ basamak: s.basamak, kural: s.kural, adimlar: [s.adim] });
+  }
+  const text = `${ctx.base} → ${ctx.target}: ${whole.base} ${whole.op === 'add' ? '+' : '-'} ${whole.number} işleminin bir parçası; ${groups.map((g) => `${g.basamak} basamağında ${g.kural}, "${g.adimlar.join(', ')}" ${g.adimlar.length > 1 ? 'adımları' : 'adımı'}`).join('; ')}`;
+  return { text, groups };
+}
+
+/**
  * Çocuk nerede: önce şu anki değer doğru yoldaki bir adımın sonrasıyla eşleşiyor mu (o zaman hangi
  * adımları yaptığı ve sıradaki adım kesin), değilse değer kaydında (abaküsün her değişimdeki
  * değeri) doğru hamlelerin sonraki değerlerini sırayla arar; bulunamayan ilk hamle büyük olasılıkla
@@ -294,6 +343,9 @@ function findMistake(ctx) {
   const e = explainer.explainTransition(ctx.base, ctx.target);
   if (!e) return { durum: 'Bu adımda denetlenecek bir abaküs işlemi yok.' };
   const log = Array.isArray(ctx.valueLog) ? ctx.valueLog : [];
+  // Adım bütün işlemin parçasıysa ipucu o işlemin kuralını söylesin (3 → 8 "kuralsız" değil, 5'lik kural).
+  const part = partOfWhole(ctx);
+  const hint = (basamak, kural) => hintFor(basamak, part ? part.groups[0].kural : kural);
   const current = inRange(ctx.current) ? ctx.current : null;
   const base = {
     islem: describe(e).islem,
@@ -309,7 +361,7 @@ function findMistake(ctx) {
     return {
       ...base,
       durum: 'Çocuk bu adımda abaküste henüz bir şey yapmamış.',
-      ipucu: hintFor(first.basamak, first.kural),
+      ipucu: hint(first.basamak, first.kural),
       siradaki_adim: `${first.basamak}: ${first.adim}`,
       siradaki_adim_ne_zaman: WHEN_TO_TELL,
     };
@@ -322,7 +374,7 @@ function findMistake(ctx) {
         ...base,
         durum: 'Çocuk doğru yolda; yaptığı adımlar doğru, geri dönmesine gerek yok.',
         yapilan_adimlar: trail.slice(0, j + 1).map((t) => `${t.basamak}: ${t.adim}`),
-        ipucu: `Doğru yoldasın; ${hintFor(trail[j + 1].basamak, trail[j + 1].kural).toLocaleLowerCase('tr-TR')}`,
+        ipucu: `Doğru yoldasın; ${hint(trail[j + 1].basamak, trail[j + 1].kural).toLocaleLowerCase('tr-TR')}`,
         siradaki_adim: `${trail[j + 1].basamak}: ${trail[j + 1].adim}`,
         siradaki_adim_ne_zaman: WHEN_TO_TELL,
       };
@@ -337,7 +389,7 @@ function findMistake(ctx) {
         ...base,
         durum: 'Tahmin: bu hamlede şaşmış olabilir.',
         dogru_yapilan_hamle_sayisi: i,
-        ipucu: hintFor(columnName(m.col), RULE_NAMES[m.rule]),
+        ipucu: hint(columnName(m.col), RULE_NAMES[m.rule]),
         ilk_hata: describe({ ...e, moves: [m] }).hamleler[0],
         siradaki_adim_ne_zaman: WHEN_TO_TELL,
       };
@@ -400,5 +452,6 @@ module.exports = {
   stepTrail,
   describe,
   findMistake,
+  partOfWhole,
   runTool,
 };

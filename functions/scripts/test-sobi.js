@@ -210,6 +210,11 @@ async function main() {
     assert.ok(b.includes('İpucu (ilk yardımda bunu kullan): Onlar basamağına bak'));
     assert.ok(b.includes('Sıradaki adım (çocuk cevabı isterse'));
     assert.ok(b.includes("Sobi'nin bu adımdaki mesajı: 2."));
+    // 3 + 2'nin "5 gelir" adımı (3 → 8) tek başına kuralsız görünür; ders 5'lik kuralı anlatıyor.
+    const part = chat.contextBlock(chat.sanitizeContext({ questionText: '3 + 2', stepText: '5 gelir.', base: 3, target: 8, current: 3, valueLog: [3] }));
+    assert.ok(part.includes("birler basamağında 5'lik kural, \"5 gelir\" adımı"));
+    assert.ok(part.includes("bu adımda 5'lik kural kullanılıyor"));
+    assert.ok(!part.includes('kuralsız'));
     const m = chat.contextBlock(chat.sanitizeContext({ questionText: '46 x 3', stepText: 'Çarp.', base: 18, target: 138, current: 18 }));
     assert.ok(m.includes('6 x 3 = 18') && m.includes('4 x 3 = 12') && m.includes('(120)'));
     // Çarpım sayıları artık kaynakta: "4 ile 3'ün çarpımı 12" guard'dan geçiyor.

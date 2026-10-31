@@ -158,7 +158,10 @@ function stepLines(ctx) {
   const e = explainer.explainTransition(ctx.base, ctx.target);
   if (!e || !e.moves.length) return [];
   const d = tools.describe(e);
-  const lines = [`Bu adımın işi: ${ctx.base} → ${ctx.target}: ${d.hamleler.map((h) => `${h.basamak} basamağında ${h.kural} (${h.adimlar.join(', ')})`).join('; ')}`];
+  const part = tools.partOfWhole(ctx);
+  const lines = [part
+    ? `Bu adımın işi: ${part.text}`
+    : `Bu adımın işi: ${ctx.base} → ${ctx.target}: ${d.hamleler.map((h) => `${h.basamak} basamağında ${h.kural} (${h.adimlar.join(', ')})`).join('; ')}`];
   if (ctx.questionText && ctx.questionText.replace(/\s/g, '') !== d.islem.replace(/\s/g, '')) {
     lines.push(`Ekrandaki "${ctx.questionText}" bütün işlem; bu adımda yalnızca yukarıdaki iş yapılıyor, önceki adımları yapıldı.`);
   }
