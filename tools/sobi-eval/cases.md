@@ -1,6 +1,6 @@
 # Sobi değerlendirme girdileri
 
-490 örnek, 551 çocuk mesajı. Üreten: `node tools/sobi-eval/build-cases.js`.
+495 örnek, 556 çocuk mesajı. Üreten: `node tools/sobi-eval/build-cases.js`.
 
 | kategori | örnek |
 |---|---|
@@ -17,8 +17,9 @@
 | kisa_adim | 14 |
 | onceki_konu | 6 |
 | neden_boncuk | 10 |
+| adim_sorusu | 5 |
 
-Adım türü: {"anlatim":286,"soru":204}
+Adım türü: {"anlatim":286,"soru":209}
 
 | id | adım | ders | bağlam | çocuk |
 |---|---|---|---|---|
@@ -512,3 +513,8 @@ Adım türü: {"anlatim":286,"soru":204}
 | 488_neden_boncuk_t16_9 | t16:9 | Boncuk Çıkarma - Kurallar | anlatım: "5 gelir" | boncuk kuralına ne gerek var |
 | 489_neden_boncuk_t17_5 | t17:5 | Boncuk Çıkarma - 3 Basamaklı | anlatım: "10 gider." | niye 10luk kuralla çıkarmıyoruz |
 | 490_neden_boncuk_t17_9 | t17:9 | Boncuk Çıkarma - 3 Basamaklı | anlatım: "10 gider." | 10 gider kardeşi gelir desek olmaz mı |
+| 491_adim_sorusu_t0_1 | t0:1 | Sobi ile analiz | soru 1553 + 473: 1953→2023, abaküste 1953 (dokunmamis) | 10 gelir adımını anlamadım |
+| 492_adim_sorusu_t0_2 | t0:2 | Sobi ile analiz | soru 28 + 7: 28→35, abaküste 28 (dokunmamis) | büyük kardeş ne demek |
+| 493_adim_sorusu_t0_3 | t0:3 | Sobi ile analiz | soru 13 + 4: 13→17, abaküste 13 (dokunmamis) | kardeşi 1 gider ne demek |
+| 494_adim_sorusu_t0_4 | t0:4 | Sobi ile analiz | soru 2003 - 7: 2003→1996, abaküste 2003 (dokunmamis) | 10 gider kısmını anlamadım |
+| 495_adim_sorusu_t0_5 | t0:5 | Sobi ile analiz | soru 95 + 8: 95→103, abaküste 95 (dokunmamis) | 10 gelir nereye geliyor |

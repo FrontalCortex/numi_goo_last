@@ -436,6 +436,12 @@ A yapay zekâsız, kural motoruyla:
   işlemin sonucu sıradaki sayının süresinde de aranır. Analiz ekranı yalnızca hatalı işlemleri çözdürür
   (78 + 9, abaküs 78'den başlar); açılışta "10'luk kuralda 2 hata ve boncuk kuralında 1 hata". Kayıt
   uygun değilse (klavyeyle cevap, yeniden başlatma, bulunamayan hata) bütün dizi çözdürülür. 6 birim testi.
+- Adımın parça balonları (01.11.2026): “10 gelir” ne demek?, Neden bu kural? → `abacus/SubStepExplainer`
+  (kural motoru, ücretsiz). Elde zincirini sütun sütun söyler ("Ama yüzlerde 9 var, sütun dolu. Oraya 1 eklemek de
+  10'luk kuralla olur: binlere 1 boncuk gelir, yüzlerdeki 9 gider."). Sebep: 1953 + 70'te "10 gelir adımını
+  anlamadım" diyen çocuğa Sobi geri soru sordu. Talimata da iki kural eklendi (adımın parçası adıyla sorulunca
+  geri soru yok; 10 gelir/gider zinciri); kullanıcı kararıyla kör karşılaştırmasız yayına alındı. Değerlendirme
+  setinde yeni kategori `adim_sorusu` (5 vaka; `node scripts/sobi-dene.js --senaryo adim`).
 - Sırada: öğreticide "Bir örnek ver" → bu ekranla örnek işlem.
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz

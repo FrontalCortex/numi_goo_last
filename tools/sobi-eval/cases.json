@@ -36562,5 +36562,245 @@
    }
   ],
   "expected": "Neden 10'luk kuralın yetmediğini dersin ya da aracın gerekçesiyle açıklar: toplamada büyük kardeş doğrudan gidemiyor (çıkarmada kardeş doğrudan gelemiyor), çünkü sütunda yeterli birlik boncuk yok; bu yüzden boncuk kuralı. Gerekçe uydurmaz, sorulmayanı eklemez."
+ },
+ {
+  "id": "491_adim_sorusu_t0_1",
+  "tags": [
+   "adim_sorusu",
+   "t0",
+   "soru"
+  ],
+  "tutorial": 0,
+  "stepIndex": 1,
+  "stepKind": "soru",
+  "contexts": [
+   {
+    "stepText": "Onlar basamağına 7 ekle.\nBoncuk kuralı: 2 boncuk gelir, 5 gider, 10 gelir.",
+    "questionText": "1553 + 473",
+    "lessonTitle": "Sobi ile analiz",
+    "recentSteps": [
+     "Çocuk soruyu yanlış cevapladı: 1553 + 473.",
+     "Şimdi soruyu abaküste adım adım birlikte yeniden çözüyorsunuz."
+    ],
+    "taughtRules": [
+     "add_direct",
+     "add_five",
+     "add_ten",
+     "add_bead",
+     "sub_direct",
+     "sub_five",
+     "sub_ten",
+     "sub_bead"
+    ],
+    "practice": false,
+    "base": 1953,
+    "target": 2023,
+    "current": 1953,
+    "valueLog": [
+     1953
+    ],
+    "attempts": 0,
+    "durum": "dokunmamis"
+   }
+  ],
+  "turns": [
+   {
+    "text": "10 gelir adımını anlamadım",
+    "ctx": 0
+   }
+  ],
+  "expected": "Çocuk adımın bir parçasını adıyla soruyor; bu takılma değil, soru. Sobi geri soru sormadan yalnızca o parçayı anlatır (adımın öbür parçalarına ya da sırasına geri çekmez). \"10 gelir\"/\"10 gider\" sorulduysa ve soldaki sütun dolu (9) ya da boşsa (0), oradaki kuralı da zincirle anlatır (ör. yüzlerde 9 var: binlere 1 gelir, yüzlerdeki 9 gider). Sayılar doğru."
+ },
+ {
+  "id": "492_adim_sorusu_t0_2",
+  "tags": [
+   "adim_sorusu",
+   "t0",
+   "soru"
+  ],
+  "tutorial": 0,
+  "stepIndex": 2,
+  "stepKind": "soru",
+  "contexts": [
+   {
+    "stepText": "Birler basamağına 7 ekle.\n10'luk kural: 10 gelir, büyük kardeşi 3 gider.",
+    "questionText": "28 + 7",
+    "lessonTitle": "Sobi ile analiz",
+    "recentSteps": [
+     "Çocuk soruyu yanlış cevapladı: 28 + 7.",
+     "Şimdi soruyu abaküste adım adım birlikte yeniden çözüyorsunuz."
+    ],
+    "taughtRules": [
+     "add_direct",
+     "add_five",
+     "add_ten",
+     "add_bead",
+     "sub_direct",
+     "sub_five",
+     "sub_ten",
+     "sub_bead"
+    ],
+    "practice": false,
+    "base": 28,
+    "target": 35,
+    "current": 28,
+    "valueLog": [
+     28
+    ],
+    "attempts": 0,
+    "durum": "dokunmamis"
+   }
+  ],
+  "turns": [
+   {
+    "text": "büyük kardeş ne demek",
+    "ctx": 0
+   }
+  ],
+  "expected": "Çocuk adımın bir parçasını adıyla soruyor; bu takılma değil, soru. Sobi geri soru sormadan yalnızca o parçayı anlatır (adımın öbür parçalarına ya da sırasına geri çekmez). \"10 gelir\"/\"10 gider\" sorulduysa ve soldaki sütun dolu (9) ya da boşsa (0), oradaki kuralı da zincirle anlatır (ör. yüzlerde 9 var: binlere 1 gelir, yüzlerdeki 9 gider). Sayılar doğru."
+ },
+ {
+  "id": "493_adim_sorusu_t0_3",
+  "tags": [
+   "adim_sorusu",
+   "t0",
+   "soru"
+  ],
+  "tutorial": 0,
+  "stepIndex": 3,
+  "stepKind": "soru",
+  "contexts": [
+   {
+    "stepText": "Birler basamağına 4 ekle.\n5'lik kural: 5 gelir, kardeşi 1 gider.",
+    "questionText": "13 + 4",
+    "lessonTitle": "Sobi ile analiz",
+    "recentSteps": [
+     "Çocuk soruyu yanlış cevapladı: 13 + 4.",
+     "Şimdi soruyu abaküste adım adım birlikte yeniden çözüyorsunuz."
+    ],
+    "taughtRules": [
+     "add_direct",
+     "add_five",
+     "add_ten",
+     "add_bead",
+     "sub_direct",
+     "sub_five",
+     "sub_ten",
+     "sub_bead"
+    ],
+    "practice": false,
+    "base": 13,
+    "target": 17,
+    "current": 13,
+    "valueLog": [
+     13
+    ],
+    "attempts": 0,
+    "durum": "dokunmamis"
+   }
+  ],
+  "turns": [
+   {
+    "text": "kardeşi 1 gider ne demek",
+    "ctx": 0
+   }
+  ],
+  "expected": "Çocuk adımın bir parçasını adıyla soruyor; bu takılma değil, soru. Sobi geri soru sormadan yalnızca o parçayı anlatır (adımın öbür parçalarına ya da sırasına geri çekmez). \"10 gelir\"/\"10 gider\" sorulduysa ve soldaki sütun dolu (9) ya da boşsa (0), oradaki kuralı da zincirle anlatır (ör. yüzlerde 9 var: binlere 1 gelir, yüzlerdeki 9 gider). Sayılar doğru."
+ },
+ {
+  "id": "494_adim_sorusu_t0_4",
+  "tags": [
+   "adim_sorusu",
+   "t0",
+   "soru"
+  ],
+  "tutorial": 0,
+  "stepIndex": 4,
+  "stepKind": "soru",
+  "contexts": [
+   {
+    "stepText": "Birler basamağından 7 çıkar.\nBoncuk kuralı: 10 gider, 5 gelir, kardeşi 2 gider.",
+    "questionText": "2003 - 7",
+    "lessonTitle": "Sobi ile analiz",
+    "recentSteps": [
+     "Çocuk soruyu yanlış cevapladı: 2003 - 7.",
+     "Şimdi soruyu abaküste adım adım birlikte yeniden çözüyorsunuz."
+    ],
+    "taughtRules": [
+     "add_direct",
+     "add_five",
+     "add_ten",
+     "add_bead",
+     "sub_direct",
+     "sub_five",
+     "sub_ten",
+     "sub_bead"
+    ],
+    "practice": false,
+    "base": 2003,
+    "target": 1996,
+    "current": 2003,
+    "valueLog": [
+     2003
+    ],
+    "attempts": 0,
+    "durum": "dokunmamis"
+   }
+  ],
+  "turns": [
+   {
+    "text": "10 gider kısmını anlamadım",
+    "ctx": 0
+   }
+  ],
+  "expected": "Çocuk adımın bir parçasını adıyla soruyor; bu takılma değil, soru. Sobi geri soru sormadan yalnızca o parçayı anlatır (adımın öbür parçalarına ya da sırasına geri çekmez). \"10 gelir\"/\"10 gider\" sorulduysa ve soldaki sütun dolu (9) ya da boşsa (0), oradaki kuralı da zincirle anlatır (ör. yüzlerde 9 var: binlere 1 gelir, yüzlerdeki 9 gider). Sayılar doğru."
+ },
+ {
+  "id": "495_adim_sorusu_t0_5",
+  "tags": [
+   "adim_sorusu",
+   "t0",
+   "soru"
+  ],
+  "tutorial": 0,
+  "stepIndex": 5,
+  "stepKind": "soru",
+  "contexts": [
+   {
+    "stepText": "Birler basamağına 8 ekle.\nBoncuk kuralı: 3 boncuk gelir, 5 gider, 10 gelir.",
+    "questionText": "95 + 8",
+    "lessonTitle": "Sobi ile analiz",
+    "recentSteps": [
+     "Çocuk soruyu yanlış cevapladı: 95 + 8.",
+     "Şimdi soruyu abaküste adım adım birlikte yeniden çözüyorsunuz."
+    ],
+    "taughtRules": [
+     "add_direct",
+     "add_five",
+     "add_ten",
+     "add_bead",
+     "sub_direct",
+     "sub_five",
+     "sub_ten",
+     "sub_bead"
+    ],
+    "practice": false,
+    "base": 95,
+    "target": 103,
+    "current": 95,
+    "valueLog": [
+     95
+    ],
+    "attempts": 0,
+    "durum": "dokunmamis"
+   }
+  ],
+  "turns": [
+   {
+    "text": "10 gelir nereye geliyor",
+    "ctx": 0
+   }
+  ],
+  "expected": "Çocuk adımın bir parçasını adıyla soruyor; bu takılma değil, soru. Sobi geri soru sormadan yalnızca o parçayı anlatır (adımın öbür parçalarına ya da sırasına geri çekmez). \"10 gelir\"/\"10 gider\" sorulduysa ve soldaki sütun dolu (9) ya da boşsa (0), oradaki kuralı da zincirle anlatır (ör. yüzlerde 9 var: binlere 1 gelir, yüzlerdeki 9 gider). Sayılar doğru."
  }
 ]

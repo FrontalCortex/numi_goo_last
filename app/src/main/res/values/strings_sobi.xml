@@ -76,6 +76,8 @@
     <string name="review_mistake_add">%1$d. hata: Abaküste %2$d varken %3$d eklerken %4$d yaptın, %5$d olmalıydı.</string>
     <string name="review_mistake_sub">%1$d. hata: Abaküste %2$d varken %3$d çıkarırken %4$d yaptın, %5$d olmalıydı.</string>
     <string name="review_mistake_write">%1$d. hata: İlk sayı %2$d idi, sen abaküse %3$d yazdın.</string>
+    <!-- Analiz ekranında adımın parça balonları (kural motoru cevaplar) -->
+    <string name="review_why_rule">Neden bu kural?</string>
     <string name="review_label_first">ilk sayı</string>
     <string name="review_done_sequence">Harika, yanıldığın işlemleri birlikte doğru çözdük! Dizinin doğru cevabı %1$d.</string>
     <string name="review_done_tip">\n\nBundan sonra %1$s basamağında %2$s adımlarına dikkat et!</string>

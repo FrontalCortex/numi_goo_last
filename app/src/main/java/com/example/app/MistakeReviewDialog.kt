@@ -351,6 +351,7 @@ class MistakeReviewDialog : DialogFragment() {
         val ctx = context ?: return
         messagesView.removeAllViews()
         for (m in pages[page].orEmpty()) messagesView.addView(messageViews.bubble(ctx, m))
+        partChips(ctx)?.let { messagesView.addView(it) }
         if (sendingPage == page) messagesView.addView(thinkingBubble(ctx))
         else suggestionChips(ctx)?.let { messagesView.addView(it) }
         updateNav()
@@ -533,6 +534,45 @@ class MistakeReviewDialog : DialogFragment() {
     }
 
     /**
+     * Adımın parçaları: “10 gelir” ne demek?, “5 gider” ne demek?, Neden bu kural? Kural motoru
+     * cevaplar ([com.example.app.abacus.SubStepExplainer]): ücretsiz (ileride kredi harcamaz), kesin,
+     * oturum gerekmez. Yapay zekâ balonlarından ayrı görünür (açık renk) ki çocuk farkı görsün.
+     */
+    private fun partChips(ctx: Context): View? {
+        val m = steps.getOrNull(page)?.move ?: return null
+        if (!com.example.app.abacus.SubStepExplainer.hasParts(m)) return null
+        val items = m.steps.map { st ->
+            com.example.app.abacus.SubStepExplainer.question(st, m) to { com.example.app.abacus.SubStepExplainer.explain(st, m) }
+        }.distinctBy { it.first } + (appString(R.string.review_why_rule) to { com.example.app.abacus.SubStepExplainer.whyRule(m) })
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dp(ctx, 6), 0, 0)
+        }
+        for ((label, answer) in items) {
+            val chip = TextView(ctx).apply {
+                text = label
+                setTextColor(ContextCompat.getColor(ctx, R.color.dark_text))
+                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+                background = ContextCompat.getDrawable(ctx, R.drawable.bg_hw_chip)
+                setPadding(dp(ctx, 12), dp(ctx, 7), dp(ctx, 12), dp(ctx, 10))
+                setOnClickListener {
+                    val p = page
+                    addMessage(p, SobiStepTracker.Message(fromChild = true, text = label))
+                    addMessage(p, sobiMessage(answer()))
+                }
+            }
+            DepthPress.attach(chip)
+            row.addView(chip, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { marginEnd = dp(ctx, 8) })
+        }
+        return HorizontalScrollView(ctx).apply {
+            isHorizontalScrollBarEnabled = false
+            addView(row)
+        }
+    }
+
+    /**
      * Sayfanın altındaki balonlar: Sobi'nin son cevabının önerileri; henüz soru sorulmadıysa adımın
      * başlangıç balonları. "Bana göster" ve "Bir daha göster" sunucuya gitmez (yerelde oynar).
      */
@@ -541,7 +581,13 @@ class MistakeReviewDialog : DialogFragment() {
         val show = pageShow[page]
         val keys = ArrayList<String>()
         if (show != null) keys += KEY_WATCH
-        keys += pageSuggestions[page] ?: if (page < steps.size) INITIAL_SUGGESTIONS else emptyList()
+        // "Neden böyle?" parça balonlarındaki "Neden bu kural?" ile aynı işi görürdü; onlar varken yalnızca "Bunu anlamadım".
+        val hasParts = steps.getOrNull(page)?.move?.let { com.example.app.abacus.SubStepExplainer.hasParts(it) } == true
+        keys += pageSuggestions[page] ?: when {
+            page >= steps.size -> emptyList()
+            hasParts -> listOf(SobiChatSheet.KEY_DIDNT_GET)
+            else -> INITIAL_SUGGESTIONS
+        }
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, dp(ctx, 6), 0, dp(ctx, 4))

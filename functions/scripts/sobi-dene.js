@@ -15,6 +15,7 @@
  *   node scripts/sobi-dene.js --model claude-opus-5-5   başka modelle karşılaştırma (varsayılan Haiku 5.5)
  *   node scripts/sobi-dene.js --effort low              düşünme düzeyi (varsayılan medium)
  *   node scripts/sobi-dene.js --senaryo kavram          yalnızca anlatım adımı (kavram) soruları; 'soru' yalnızca soru adımları
+ *   node scripts/sobi-dene.js --senaryo adim            analiz ekranında adımın bir parçasını soran çocuk (değerlendirme setinin adim_sorusu vakaları)
  *
  * Her turda çocuğun mesajı, Sobi'nin cevabı, çağrılan araçlar, ekran işleri, denetim sonucu ve
  * jeton kullanımı yazılır. Cevaplar sınamanın asıl malzemesi: Faz 3'te test setine dönüşecek.
@@ -130,6 +131,12 @@ async function run(client, model, effort, sc) {
   console.log(`\n  jeton: ${JSON.stringify(total)}`);
 }
 
+/** Değerlendirme setinin adim_sorusu vakaları (tools/sobi-eval/build-cases.js). */
+function adimScenarios() {
+  const cases = require('../../tools/sobi-eval/cases.json').filter((c) => c.tags[0] === 'adim_sorusu');
+  return cases.map((c) => ({ ad: `${c.contexts[0].questionText}: ${c.contexts[0].stepText.split('\n')[1]}`, context: c.contexts[0], mesajlar: c.turns.map((t) => t.text) }));
+}
+
 async function main() {
   const model = arg('model') || chat.DEFAULT_MODEL;
   const effort = arg('effort') || chat.DEFAULT_EFFORT;
@@ -141,7 +148,8 @@ async function main() {
       context: { base: Number(arg('baslangic')), target: Number(arg('hedef')), current: Number(arg('baslangic')) },
       mesajlar: [soru],
     }]
-    : arg('senaryo') === 'kavram' ? KAVRAM_SCENARIOS
+    : arg('senaryo') === 'adim' ? adimScenarios()
+      : arg('senaryo') === 'kavram' ? KAVRAM_SCENARIOS
       : arg('senaryo') === 'soru' ? SCENARIOS
         : [...SCENARIOS, ...KAVRAM_SCENARIOS];
   console.log(`Model: ${model}, effort: ${effort}`);

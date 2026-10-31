@@ -263,6 +263,8 @@ const BEKLENEN = {
   cocuk_dili: 'Yazım hatalı ya da çok kısa mesajı doğru anlar; mesaj belirsizse (ör. "?") adımı kısaca anlatır ya da tek bir netleştirici soru sorar.',
   sohbet: 'Sohbet boyunca tutarlıdır; aynı soruyu tekrarlamaz; çocuk takılmaya devam ederse adımı açıkça söyler ya da gösterir; çocuk cevabı isterse söyler; çocuk anladığını söyleyince kısa bir övgüyle kapatır.',
   kisa_adim: 'Adımın metni tek başına bir şey anlatmıyor ("Cevap 8.", "10 gelir."). Sobi bunu az önce anlatılan konuyla birlikte, dersin anlattığı gibi ve basitçe açıklar; geri soru sormaz.',
+  // Kullanıcı kararı (01.11.2026): 1953 + 70'te "10 gelir adımını anlamadım" diyen çocuğa Sobi geri soru sordu.
+  adim_sorusu: 'Çocuk adımın bir parçasını adıyla soruyor; bu takılma değil, soru. Sobi geri soru sormadan yalnızca o parçayı anlatır (adımın öbür parçalarına ya da sırasına geri çekmez). "10 gelir"/"10 gider" sorulduysa ve soldaki sütun dolu (9) ya da boşsa (0), oradaki kuralı da zincirle anlatır (ör. yüzlerde 9 var: binlere 1 gelir, yüzlerdeki 9 gider). Sayılar doğru.',
   onceki_konu: 'Çocuk dersin daha önceki bir kısmını soruyor. Sobi o konuyu dersin anlattığı gibi açıklar. Bağlamda o kısım yoksa uydurmaz; dürüstçe söyler ve bildiği kadarını dersin kurallarıyla anlatır.',
 };
 
@@ -393,6 +395,38 @@ for (const [t, i, text] of NEDEN_BONCUK) {
     expected: "Neden 10'luk kuralın yetmediğini dersin ya da aracın gerekçesiyle açıklar: toplamada büyük kardeş doğrudan gidemiyor (çıkarmada kardeş doğrudan gelemiyor), çünkü sütunda yeterli birlik boncuk yok; bu yüzden boncuk kuralı. Gerekçe uydurmaz, sorulmayanı eklemez.",
   });
 }
+
+// Analiz ekranı ("Sobi ile analiz et"): adımın bir parçasını adıyla soran çocuk. Bağlam uygulamanın
+// MistakeReviewDialog.sobiContext'i gibi: soru adımı, abaküs adımın başında, bütün kurallar öğrenilmiş.
+const ALL_RULES = ['add_direct', 'add_five', 'add_ten', 'add_bead', 'sub_direct', 'sub_five', 'sub_ten', 'sub_bead'];
+const ADIM_SORUSU = [
+  { q: '1553 + 473', base: 1953, target: 2023, step: "Onlar basamağına 7 ekle.\nBoncuk kuralı: 2 boncuk gelir, 5 gider, 10 gelir.", text: '10 gelir adımını anlamadım' },
+  { q: '28 + 7', base: 28, target: 35, step: "Birler basamağına 7 ekle.\n10'luk kural: 10 gelir, büyük kardeşi 3 gider.", text: 'büyük kardeş ne demek' },
+  { q: '13 + 4', base: 13, target: 17, step: "Birler basamağına 4 ekle.\n5'lik kural: 5 gelir, kardeşi 1 gider.", text: 'kardeşi 1 gider ne demek' },
+  { q: '2003 - 7', base: 2003, target: 1996, step: "Birler basamağından 7 çıkar.\nBoncuk kuralı: 10 gider, 5 gelir, kardeşi 2 gider.", text: '10 gider kısmını anlamadım' },
+  { q: '95 + 8', base: 95, target: 103, step: "Birler basamağına 8 ekle.\nBoncuk kuralı: 3 boncuk gelir, 5 gider, 10 gelir.", text: '10 gelir nereye geliyor' },
+];
+ADIM_SORUSU.forEach((a, i) => {
+  const s = { tutorial: 0, index: i + 1 };
+  const ctx = {
+    stepText: a.step,
+    questionText: a.q,
+    lessonTitle: 'Sobi ile analiz',
+    recentSteps: [
+      `Çocuk soruyu yanlış cevapladı: ${a.q}.`,
+      'Şimdi soruyu abaküste adım adım birlikte yeniden çözüyorsunuz.',
+    ],
+    taughtRules: ALL_RULES,
+    practice: false,
+    base: a.base,
+    target: a.target,
+    current: a.base,
+    valueLog: [a.base],
+    attempts: 0,
+    durum: 'dokunmamis',
+  };
+  add('adim_sorusu', s, 'soru', [ctx], one(a.text));
+});
 
 fs.writeFileSync(path.join(__dirname, 'cases.json'), `${JSON.stringify(cases, null, 1)}\n`);
 
