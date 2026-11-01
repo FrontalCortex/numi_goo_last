@@ -1012,8 +1012,10 @@ class MainActivity : AppCompatActivity() {
         binding.currencyText.setOnClickListener(openShop)
         binding.keyIcon.setOnClickListener(openShop)
         binding.keyText.setOnClickListener(openShop)
-        binding.creditIcon.setOnClickListener(openShop)
-        binding.creditText.setOnClickListener(openShop)
+        // Kredi göstergesi Sobi kredisi: mağaza doğrudan Sobi paketlerinde açılsın.
+        val openSobiCredits = View.OnClickListener { openShopFragment(focusSobiCredits = true) }
+        binding.creditIcon.setOnClickListener(openSobiCredits)
+        binding.creditText.setOnClickListener(openSobiCredits)
 
         // Alev: seri ekranını aç. Üst bardaki diğer göstergeler mağazaya gidiyor, bu
         // gitmiyor — seri bir bakiye değil, kendi ekranı var.
@@ -2254,10 +2256,11 @@ class MainActivity : AppCompatActivity() {
     private fun applyWalletToUi(wallet: UserWallet) {
         binding.currencyText.text = wallet.currency.toString()
         binding.keyText.text = wallet.keys.toString()
-        // Kredi yerel önbellekte tutulmuyor; değeri yalnızca bu canlı dinleyici besliyor.
-        // Böylece sunucu tarafındaki değişiklikler (satın alma, soru gönderme, 48 saatlik
-        // iade) panele kendiliğinden yansıyor.
-        binding.creditText.text = wallet.questionCredits.toString()
+        // Panelde Sobi kredisi (öğretmen danışma kredisi şimdilik kullanılmıyor). Yerel
+        // önbellekte tutulmuyor; değeri yalnızca bu canlı dinleyici besliyor. Böylece sunucu
+        // tarafındaki değişiklikler (paket alma, Sobi mesajı, iade) panele kendiliğinden
+        // yansıyor. İade eksiye düşürebilir; çocuğa "-3" göstermek yerine 0.
+        binding.creditText.text = wallet.sobiCredits.coerceAtLeast(0).toString()
 
         // Plan sunucuda değişmiş olabilir (abonelik yenilendi, iptal edildi, süresi doldu
         // ya da başka bir cihazdan işlem yapıldı). Bunların hiçbiri istemcide bir satın

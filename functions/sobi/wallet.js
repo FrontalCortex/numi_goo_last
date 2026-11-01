@@ -119,6 +119,11 @@ module.exports = function createSobiWallet({ functions, db, effectivePlan, isApp
     ]);
     const plan = effectivePlan(userSnap.exists ? userSnap.data() : {});
     const b = balanceOf(chatSnap.exists ? chatSnap.data() : null, plan, Date.now());
+    // Üst para panelindeki gösterim kopyası (users.sobiCredits) tutmuyorsa düzelt: kopyadan
+    // önce paket almış hesaplar ve olası kayma. Belge zaten okundu; yazma yalnızca farkta.
+    if (userSnap.exists && (Number(userSnap.get('sobiCredits')) || 0) !== b.credits) {
+      await db.collection('users').doc(uid).set({ sobiCredits: b.credits }, { merge: true });
+    }
     return { ...b, extraTestKeys: FREE_EXTRA_TEST_PLANS.has(plan) ? 0 : EXTRA_TEST_KEYS };
   });
 

@@ -610,28 +610,29 @@ class ShopFragment : Fragment() {
     }
 
     /**
-     * Danışma kredisi bakiyesini gösterir.
-     *
-     * Bakiye cüzdan önbelleğinde tutulmuyor (o yalnızca altın/anahtar için); alan
-     * sunucuya ait ve seyrek değiştiği için doğrudan tek seferlik okunuyor.
+     * Sobi kredisi sunucuda (sobiChats/{uid}, istemciye kapalı); bölümdeki bakiye satırı ve üst
+     * bakiye paneli sobiBalance'tan. users.sobiCredits kopyası yerine asıl bakiye: mağaza zaten
+     * bu çağrıyı yapıyor. İade sonrası eksi bakiye 0 görünüyor (üst para paneliyle aynı).
      */
-    /** Sobi kredisi sunucuda (sobiChats/{uid}, istemciye kapalı); bakiye satırı sobiBalance'tan. */
     private fun refreshSobiCredits() {
         if (FirebaseAuth.getInstance().currentUser == null) return
         ServerSobi.balance({ b ->
             if (!isAdded) return@balance
             view?.findViewById<TextView>(R.id.shopSobiCreditBalanceText)?.text =
                 getString(R.string.shop_sobi_credit_balance, b.credits, b.freeLimit)
+            view?.findViewById<TextView>(R.id.shopCreditText)?.text = b.credits.coerceAtLeast(0).toString()
         })
     }
 
+    /**
+     * Öğretmen danışma kredisi kartlarındaki Pro bonusu. Kart bölümü şimdilik gizli; bakiye
+     * artık üst panelde gösterilmiyor (o yuva Sobi kredisinin, bkz. [refreshSobiCredits]).
+     */
     private fun refreshCreditBalance() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseFirestore.getInstance().collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
                 if (!isAdded) return@addOnSuccessListener
-                val credits = doc.getLong("questionCredits")?.toInt() ?: 0
-                view?.findViewById<TextView>(R.id.shopCreditText)?.text = credits.toString()
                 applyProCreditBonusUi(doc)
             }
     }

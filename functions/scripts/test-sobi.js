@@ -459,6 +459,9 @@ async function main() {
     assert.strictEqual(env.store.get('sobiChats/u1').credits, 1);
     assert.strictEqual(env.store.get('sobiChats/u1').monthCount, 3);
     assert.strictEqual(env.store.get('sobiChats/u1').monthCreditsUsed, 1);
+    // Üst para paneli için users belgesindeki gösterim kopyası da aynı işlemde düştü.
+    assert.strictEqual(env.store.get('users/u1').sobiCredits, 1);
+    assert.strictEqual(env.store.get('users/u1').plan, 'Free', 'merge: diğer alanlar silinmemeli');
     await assert.rejects(fn({ message: 'x' }, {}), (e) => e.code === 'unauthenticated');
 
     env.store.set('users/u2', { banned: true });
@@ -564,6 +567,11 @@ async function main() {
     const b = await w.sobiBalance({}, ctx);
     assert.strictEqual(b.freeLeft, 2);
     assert.strictEqual(b.extraTestKeys, 3);
+    // Kopyadan önce paket almış hesap: bakiye okununca üst paneldeki gösterim kopyası düzelir.
+    env.store.set('sobiChats/u1', { ...(env.store.get('sobiChats/u1') || {}), credits: 17 });
+    await w.sobiBalance({}, ctx);
+    assert.strictEqual(env.store.get('users/u1').sobiCredits, 17);
+    assert.strictEqual(env.store.get('users/u1').keys, 1, 'merge: diğer alanlar kalmalı');
   });
 
   await test('örnek açma (alistirma_ver): yalnızca Sobi ekranında, öğrenilmiş kurallarla', async () => {

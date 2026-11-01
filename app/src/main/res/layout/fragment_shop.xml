@@ -137,20 +137,18 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <!-- Öğretmene sor kredisi şimdilik satılmıyor (gizli; kod ve ürünler duruyor). -->
+            <!-- Sobi kredisi. Öğretmene sor kredisi şimdilik satılmıyor; bu yuva artık onu göstermiyor. -->
             <LinearLayout
                 android:id="@+id/shopCreditContainer"
-                android:visibility="gone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
-                <ImageView
+                <com.example.app.SobiHeadView
                     android:layout_width="22dp"
                     android:layout_height="22dp"
-                    android:src="@drawable/chat_credit_ic3"
-                    android:contentDescription="@string/fragment_shop_text_desc_3" />
+                    android:contentDescription="@string/shop_sobi_credit_desc" />
 
                 <TextView
                     android:id="@+id/shopCreditText"

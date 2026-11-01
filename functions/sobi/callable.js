@@ -197,6 +197,11 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
         const charge = wallet.chargeMessage(fresh.exists ? fresh.data() : null, plan, now);
         if (charge.paidWith === 'none') console.warn('sobiChat: hak ve kredi işlem sırasında bitti', { uid });
         tx.set(usageRef, charge.update, { merge: true });
+        // Üst para paneli users belgesini dinliyor (sobiChats'i okuyamıyor): kredinin gösterim
+        // kopyası. Okumadan merge yeter; asıl bakiye sobiChats'te kalıyor.
+        if (charge.paidWith === 'credit') {
+          tx.set(db.collection('users').doc(uid), { sobiCredits: charge.update.credits }, { merge: true });
+        }
         return charge.after;
       });
 

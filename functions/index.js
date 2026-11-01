@@ -2821,16 +2821,19 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
         grantedSobiCredits,
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      transaction.update(userRef, {
-        keys: newKeys,
-        currency: newCurrency,
-        questionCredits: newCredits,
-      });
       let sobiCredits = null;
       if (grantedSobiCredits > 0) {
         sobiCredits = (sobiDoc.exists ? Number(sobiDoc.get('credits')) || 0 : 0) + grantedSobiCredits;
         transaction.set(sobiRef, { credits: sobiCredits }, { merge: true });
       }
+      transaction.update(userRef, {
+        keys: newKeys,
+        currency: newCurrency,
+        questionCredits: newCredits,
+        // Üst para paneli users belgesini dinliyor, sobiChats'i okuyamıyor: yalnızca gösterim
+        // kopyası. Asıl bakiye sobiChats/{uid}.credits; harcama kararı hep oradan.
+        ...(sobiCredits != null ? { sobiCredits } : {}),
+      });
 
       return { keys: newKeys, currency: newCurrency, credits: newCredits, sobiCredits };
     });
@@ -5201,6 +5204,7 @@ async function reverseVoidedPurchase(voided) {
       if (revokedSobiCredits > 0) {
         const sobiBefore = sobiDoc.exists ? Number(sobiDoc.get('credits')) || 0 : 0;
         transaction.set(sobiRef, { credits: sobiBefore - revokedSobiCredits }, { merge: true });
+        update.sobiCredits = sobiBefore - revokedSobiCredits; // üst paneldeki gösterim kopyası
       }
       // Danışma kredisi de geri alınmalı. Bu satırlar olmadan "kredi paketi al → hepsini
       // harca → 48 saat içinde iade al" döngüsü tamamen bedavaydı: grantedCredits kayda

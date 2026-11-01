@@ -200,12 +200,13 @@
             android:layout_height="1dp"
             android:layout_weight="1"/>
 
-        <ImageView
+        <!-- Sobi kredisi (öğretmen danışma kredisi şimdilik kullanılmıyor). Sobi'nin kafası:
+             "Sobi'ye sor" düğmeleriyle aynı simge. -->
+        <com.example.app.SobiHeadView
             android:id="@+id/creditIcon"
-            android:src="@drawable/chat_credit_ic3"
             android:layout_width="@dimen/main_energy_icon_size"
             android:layout_height="@dimen/main_energy_icon_size"
-            android:contentDescription="@string/activity_main_credit_icon_desc" />
+            android:contentDescription="@string/shop_sobi_credit_desc" />
 
         <TextView
             android:id="@+id/creditText"

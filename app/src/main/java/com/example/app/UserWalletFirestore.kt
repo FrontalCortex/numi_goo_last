@@ -16,6 +16,13 @@ data class UserWallet(
      */
     val questionCredits: Int = 0,
     /**
+     * Sobi kredisinin gösterim kopyası (users.sobiCredits). Asıl bakiye sunucuda,
+     * istemcinin okuyamadığı sobiChats/{uid}.credits; sunucu her değişiklikte aynı işlemde
+     * buraya da yazıyor. Harcama kararı bu alandan verilmez. İade sonrası eksi olabilir.
+     * [questionCredits] gibi önbellekte tutulmaz, canlı dinleyiciden gelir.
+     */
+    val sobiCredits: Int = 0,
+    /**
      * Süre kontrolü uygulanmış GEÇERLİ plan (bkz. PlanStatus).
      *
      * Plan, istemcide hiçbir olay üretmeden değişebilir: RTDN'nin ilettiği yenileme ve
@@ -62,6 +69,7 @@ object UserWalletFirestore {
     const val FIELD_KEYS = "keys"
     const val FIELD_CURRENCY = "currency"
     const val FIELD_QUESTION_CREDITS = "questionCredits"
+    const val FIELD_SOBI_CREDITS = "sobiCredits"
     const val DEFAULT_KEYS = 1
     const val DEFAULT_CURRENCY = 0
 
@@ -197,6 +205,7 @@ object UserWalletFirestore {
                         visible(context, keys),
                         visible(context, currency),
                         questionCredits = credits,
+                        sobiCredits = snapshot.getLong(FIELD_SOBI_CREDITS)?.toInt() ?: 0,
                         plan = PlanStatus.effectivePlan(snapshot),
                     )
                 )
