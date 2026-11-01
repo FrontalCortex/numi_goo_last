@@ -190,6 +190,9 @@ class HomeworkPlayerFragment : Fragment() {
             id = "", classId = "", className = "", teacherName = "", config = config, blockCount = 1,
             wholeClass = false, assignedUids = emptyList(), createdAtMs = 0L,
         )
+        // Sorular hazır geliyor: ödevdeki yükleme çarkı (düzende görünür başlıyor, ödevi okuyunca
+        // startBlock gizliyor) burada hiç gizlenmiyordu ve test boyunca ortada dönüyordu.
+        binding.loading.visibility = View.GONE
         setupAbacus(true)
         if (list.isEmpty()) return showUnavailable()
         questions = list
