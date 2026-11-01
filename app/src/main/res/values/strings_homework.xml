@@ -183,6 +183,7 @@
     <string name="rule_stats_percent">%%%1$d</string>
     <string name="rule_stats_count">%1$d/%2$d doğru</string>
     <string name="rule_stats_empty">Henüz veri yok. Dersler, ödevler ve Sobi ile çalışmalar çözüldükçe burada her kuralın doğru oranı görünecek.</string>
+    <string name="rule_stats_sobi_level">Sobi testi seviye %1$d/%2$d</string>
     <string name="rule_stats_note">Toplama ve çıkarmada her basamak işlemi, gerektirdiği kurala sayılır: dersler, ödevler ve Sobi ile çalışma birlikte. Çarpmada her ödev sorusu bir deneme.</string>
 
     <!-- Kural başarısı: bu hafta kartı ve başarı grafiği (HomeworkRuleStatsFragment) -->

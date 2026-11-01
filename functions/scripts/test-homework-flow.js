@@ -198,6 +198,9 @@ async function main() {
       questions: { c: 2, w: 0 },
     });
     check('ders sayımı süzgeci: boş', h.sanitizeExtraTally(null), { tally: [], questions: { c: 0, w: 0 } });
+    // Sobi testi seviyeleri: biçim, bir testte en çok 2 seviye, ilk kayıtta en çok 5.
+    check('seviye süzgeci', h.sanitizeSobiLevels({ levels: { add_ten: 6, sub_bead: 20, mulA_2x1: 3, add_five: 'x' } }, { add_ten: 5 }), { add_ten: 6, sub_bead: 5 });
+    check('seviye süzgeci: sıçrama sınırı', [h.sanitizeSobiLevels({ levels: { add_ten: 12 } }, { add_ten: 5 }), h.sanitizeSobiLevels({ levels: { add_ten: 0 } }, { add_ten: 5 })], [{ add_ten: 7 }, { add_ten: 3 }]);
   }
 
   console.log('\n=== HESAP SİLME ===');

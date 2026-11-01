@@ -64,25 +64,34 @@ class HomeworkPlayerFragment : Fragment() {
             arguments = Bundle().apply { putString(ARG_HOMEWORK_ID, homeworkId) }
         }
 
-        private const val ARG_SOBI_FIRST = "sobi_first"
-        private const val ARG_SOBI_SECOND = "sobi_second"
+        private const val ARG_SOBI_OPS = "sobi_ops"
+        private const val ARG_SOBI_SIZES = "sobi_sizes"
+        private const val ARG_SOBI_NUMBERS = "sobi_numbers"
+        private const val ARG_SOBI_INTERVALS = "sobi_intervals"
         private const val ARG_SOBI_WEAK = "sobi_weak"
-        /** Sobi testinde sayıların ekranda kalma süresi: çocuk boncukları rahat oynatsın. */
-        private const val SOBI_INTERVAL_MS = 2600L
+        private const val ARG_SOBI_CURRENT = "sobi_current"
+        private const val ARG_SOBI_PLAYED = "sobi_played"
 
-        /** Sobi'nin günlük testi: [questions] (ilk sayı, ±ikinci), [weakRules] testin çalıştırdığı kurallar. */
-        fun newSobiTest(questions: List<Pair<Int, Int>>, weakRules: List<String>) = HomeworkPlayerFragment().apply {
+        /** Sobi'nin testi ([com.example.app.abacus.SobiTestPlanner.Plan]): sorular, araları, kuralların seviyeleri. */
+        fun newSobiTest(plan: com.example.app.abacus.SobiTestPlanner.Plan) = HomeworkPlayerFragment().apply {
+            val weak = plan.weak.map { it.key }
             arguments = Bundle().apply {
-                putIntArray(ARG_SOBI_FIRST, questions.map { it.first }.toIntArray())
-                putIntArray(ARG_SOBI_SECOND, questions.map { it.second }.toIntArray())
-                putStringArrayList(ARG_SOBI_WEAK, ArrayList(weakRules))
+                putIntArray(ARG_SOBI_OPS, plan.questions.map { if (it.question.op == HomeworkOp.SUB) 1 else 0 }.toIntArray())
+                putIntArray(ARG_SOBI_SIZES, plan.questions.map { it.question.numbers.size }.toIntArray())
+                putLongArray(ARG_SOBI_NUMBERS, plan.questions.flatMap { it.question.numbers }.toLongArray())
+                putLongArray(ARG_SOBI_INTERVALS, plan.questions.map { it.intervalMs }.toLongArray())
+                putStringArrayList(ARG_SOBI_WEAK, ArrayList(weak))
+                putIntArray(ARG_SOBI_CURRENT, weak.map { plan.current[it] ?: 1 }.toIntArray())
+                putIntArray(ARG_SOBI_PLAYED, weak.map { plan.played[it] ?: 1 }.toIntArray())
             }
         }
     }
 
-    /** Sobi'nin günlük testi mi (ödev değil). */
+    /** Sobi'nin testi mi (ödev değil). */
     private var sobiMode = false
     private var sobiWeak: List<String> = emptyList()
+    /** Sorunun sayılarının arası (seviyeye göre); ödevde hep [HomeworkConfig.intervalMs]. */
+    private var sobiIntervals: LongArray = LongArray(0)
 
 
     private var _binding: FragmentHomeworkPlayerBinding? = null
@@ -127,7 +136,7 @@ class HomeworkPlayerFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         homeworkId = requireArguments().getString(ARG_HOMEWORK_ID).orEmpty()
-        sobiMode = requireArguments().containsKey(ARG_SOBI_FIRST)
+        sobiMode = requireArguments().containsKey(ARG_SOBI_OPS)
         binding.quitButton.setOnClickListener { requestQuit() }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = requestQuit()
@@ -162,14 +171,21 @@ class HomeworkPlayerFragment : Fragment() {
     /** Ödev yerine Sobi'nin testi: tek adım, hazır sorular, abaküslü. */
     private fun startSobiTest() {
         val a = requireArguments()
-        val firsts = a.getIntArray(ARG_SOBI_FIRST) ?: intArrayOf()
-        val seconds = a.getIntArray(ARG_SOBI_SECOND) ?: intArrayOf()
+        val ops = a.getIntArray(ARG_SOBI_OPS) ?: intArrayOf()
+        val sizes = a.getIntArray(ARG_SOBI_SIZES) ?: intArrayOf()
+        val numbers = a.getLongArray(ARG_SOBI_NUMBERS) ?: longArrayOf()
+        sobiIntervals = a.getLongArray(ARG_SOBI_INTERVALS) ?: longArrayOf()
         sobiWeak = a.getStringArrayList(ARG_SOBI_WEAK).orEmpty()
-        val list = firsts.indices.mapNotNull { i ->
-            val second = seconds.getOrNull(i) ?: return@mapNotNull null
-            HomeworkQuestion(if (second < 0) HomeworkOp.SUB else HomeworkOp.ADD, listOf(firsts[i].toLong(), Math.abs(second).toLong()))
+        var at = 0
+        val list = ops.indices.mapNotNull { i ->
+            val n = sizes.getOrNull(i) ?: return@mapNotNull null
+            if (at + n > numbers.size) return@mapNotNull null
+            val q = HomeworkQuestion(if (ops[i] == 1) HomeworkOp.SUB else HomeworkOp.ADD, numbers.slice(at until at + n))
+            at += n
+            q
         }
-        val config = HomeworkConfig(op = HomeworkOp.ADD, withAbacus = true, digits = 2, numberCount = 2, intervalMs = SOBI_INTERVAL_MS, questionCount = list.size)
+        // Yalnızca abaküs ve sayıların arası kullanılıyor (ara soru başına: sobiIntervals).
+        val config = HomeworkConfig(op = HomeworkOp.ADD, withAbacus = true, digits = 2, numberCount = 2, intervalMs = 2000L, questionCount = list.size)
         homework = Homeworks.Homework(
             id = "", classId = "", className = "", teacherName = "", config = config, blockCount = 1,
             wholeClass = false, assignedUids = emptyList(), createdAtMs = 0L,
@@ -217,10 +233,26 @@ class HomeworkPlayerFragment : Fragment() {
         b.summaryTitle.text = appString(R.string.sobi_test_done_title)
         b.summaryScore.text = appString(R.string.hw_player_block_score, blockCorrect, questions.size)
         b.summaryScore.visibility = View.VISIBLE
-        val lines = sobiWeak.mapNotNull { key ->
-            val cw = blockTally[key] ?: return@mapNotNull null
-            appString(R.string.sobi_test_rule_line, com.example.app.SobiDailyTest.ruleLabel(key), cw[0] + cw[1], cw[0])
+        // Seviye: o kuralın bu testteki işlemlerinden ([com.example.app.abacus.SobiTestLevels.next]).
+        val a = requireArguments()
+        val current = a.getIntArray(ARG_SOBI_CURRENT) ?: intArrayOf()
+        val played = a.getIntArray(ARG_SOBI_PLAYED) ?: intArrayOf()
+        val newLevels = LinkedHashMap<String, Int>()
+        val lines = sobiWeak.mapIndexedNotNull { i, key ->
+            val cw = blockTally[key] ?: return@mapIndexedNotNull null
+            val total = cw[0] + cw[1]
+            if (total == 0) return@mapIndexedNotNull null
+            val before = current.getOrNull(i) ?: 1
+            val after = com.example.app.abacus.SobiTestLevels.next(before, played.getOrNull(i) ?: before, cw[0] * 100 / total)
+            newLevels[key] = after
+            val levelText = when {
+                after > before -> appString(R.string.sobi_test_level_up, before, after)
+                after < before -> appString(R.string.sobi_test_level_down, after)
+                else -> appString(R.string.sobi_test_level_same, after)
+            }
+            appString(R.string.sobi_test_rule_line, com.example.app.SobiDailyTest.ruleLabel(key), total, cw[0]) + "\n" + levelText
         }
+        com.example.app.SobiDailyTest.saveLevels(ctx, newLevels)
         val pct = if (questions.isEmpty()) 0 else blockCorrect * 100 / questions.size
         val cheer = appString(if (pct >= 80) R.string.sobi_test_cheer_good else R.string.sobi_test_cheer_try)
         b.summaryMessage.text = (lines + cheer).joinToString("\n")
@@ -332,8 +364,9 @@ class HomeworkPlayerFragment : Fragment() {
         b.kontrolButton.text = appString(R.string.hw_player_check)
         b.kontrolButton.isEnabled = false
         b.kontrolButton.setOnClickListener { onKontrol() }
-        val gap = (cfg.intervalMs * GAP_FRACTION).toLong().coerceIn(MIN_GAP_MS, MAX_GAP_MS)
-        val show = (cfg.intervalMs - gap).coerceAtLeast(MIN_GAP_MS)
+        val interval = if (sobiMode) sobiIntervals.getOrNull(questionIndex) ?: cfg.intervalMs else cfg.intervalMs
+        val gap = (interval * GAP_FRACTION).toLong().coerceIn(MIN_GAP_MS, MAX_GAP_MS)
+        val show = (interval - gap).coerceAtLeast(MIN_GAP_MS)
         // Abaküslüde değerler kaydediliyor: hangi kuralda hata yapıldığı buradan çıkıyor
         abacusLog.clear()
         shownAtMs.clear()

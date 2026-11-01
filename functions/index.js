@@ -4484,6 +4484,29 @@ exports.recordRuleTally = functions.https.onCall(async (data, context) => {
   return { success: true, written: true };
 });
 
+/**
+ * Sobi testinin kural seviyeleri (uygulama: SobiDailyTest.saveLevels). Kural başarısıyla aynı belgede
+ * (homeworkRuleStats/{uid}.sobiLevel): telefon değişince kaybolmuyor, veli panelindeki "Kural başarısı"
+ * ve sınıf öğretmeni görüyor. Sınırlar homework.sanitizeSobiLevels'ta; en sık 3 sn'de bir.
+ */
+exports.recordSobiLevels = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const ref = db.collection('homeworkRuleStats').doc(uid);
+  let written = {};
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const prev = snap.exists ? snap.data() : {};
+    const now = Date.now();
+    if (now - (Number(prev.sobiLevelAtMs) || 0) < 3000) {
+      throw new functions.https.HttpsError('resource-exhausted', 'Çok sık gönderildi.');
+    }
+    written = homework.sanitizeSobiLevels(data, prev.sobiLevel);
+    if (!Object.keys(written).length) return;
+    tx.set(ref, { sobiLevel: written, sobiLevelAtMs: now }, { merge: true });
+  });
+  return { success: true, levels: written };
+});
+
 /** Öğretmen ödevi siler; öğrencilerin ilerlemesi de gider. */
 exports.deleteHomework = functions.https.onCall(async (data, context) => {
   const uid = requireAuth(context);

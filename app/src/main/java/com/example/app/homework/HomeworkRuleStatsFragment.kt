@@ -94,6 +94,8 @@ class HomeworkRuleStatsFragment : Fragment() {
     private var tally: Map<String, Cw> = emptyMap()
     private var recent: Map<String, List<Cw>> = emptyMap()
     private var level: Map<String, Int> = emptyMap()
+    /** Sobi testinin kural seviyesi (1..20; functions/index.js recordSobiLevels). */
+    private var sobiLevel: Map<String, Int> = emptyMap()
     private var baseQ: Cw? = null
     /** Türkiye günü (epoch) → kayıt. */
     private var days: Map<Int, RuleProgress.Day> = emptyMap()
@@ -142,6 +144,7 @@ class HomeworkRuleStatsFragment : Fragment() {
         tally = keyed(doc.get("tally")) { cwOf(it) }
         recent = keyed(doc.get("recent")) { v -> (v as? List<*>)?.mapNotNull { cwOf(it) } }
         level = keyed(doc.get("level")) { (it as? Number)?.toInt() }
+        sobiLevel = keyed(doc.get("sobiLevel")) { (it as? Number)?.toInt() }
         baseQ = cwOf((doc.get("base") as? Map<*, *>)?.get("q"))
         val out = HashMap<Int, RuleProgress.Day>()
         for (m in months?.documents.orEmpty()) {
@@ -514,7 +517,9 @@ class HomeworkRuleStatsFragment : Fragment() {
                     appString(R.string.rule_stats_to_master_ops, RuleProgress.MASTERY_WINDOW - window.total, u)
                 else -> appString(R.string.rule_stats_to_master_pct, (RuleProgress.MASTER_PCT - pct).coerceAtLeast(1))
             }
-            item.ruleCount.text = listOfNotNull(counts, toMaster).joinToString(" · ")
+            // Sobi testindeki seviyesi (kullanıcı kararı 01.11.2026: veli de görsün).
+            val sobi = sobiLevel[row.key]?.let { appString(R.string.rule_stats_sobi_level, it, com.example.app.abacus.SobiTestLevels.MAX) }
+            item.ruleCount.text = listOfNotNull(sobi, counts, toMaster).joinToString(" · ")
             // Satıra dokununca grafik bu kurala geçiyor.
             item.root.setOnClickListener {
                 filter = row.key

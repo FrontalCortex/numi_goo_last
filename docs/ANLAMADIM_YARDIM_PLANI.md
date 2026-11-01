@@ -479,6 +479,13 @@ A yapay zekâsız, kural motoruyla:
   yanlışta "Sobi ile analiz et" (flaş analizi); sonda kural kural özet ve sandık (`NewChestFragment`, görev sandığıyla
   aynı açılış; ders sonu zincirine dokunulmadı) + günlük görevlerde ders ilerlemesi.
 - Harita: `MapSobiTestButton` ("Öğretmene sor"un üstünde; bekleyen testte kırmızı nokta, günde bir balon).
+- Seviyeler (01.11.2026): `abacus/SobiTestLevels` kural başına 20 seviye (basamak 1–4, sayı 2–6, ara 3–1 sn).
+  Sorular ödev motoruyla (`HomeworkEngine`; çok sayılı, yalnızca izin verilen kurallar), çalışılan kural içinde
+  geçmeyen soru atılıyor; her kural her seviyede kuruluyor (ölçüldü). Değişim: o kuralın işlemlerinde %80+ → oynanan
+  seviyenin bir üstü, %50 altı → bir altı (mevcut seviyeden düşükse), arası aynı. İlk seviye kural başarısından (1–3).
+  Başlamadan Kolay / Benim seviyem / Zor; günün testi bitince "Bir test daha" (sandıklı; ileride anahtar/Pro).
+  Seviye `homeworkRuleStats/{uid}.sobiLevel` (`recordSobiLevels`, testte en çok ±2, ilk kayıtta en çok 5) ve cihazda;
+  test sonunda "Seviye 5 → 6", veli panelinde Kural başarısı satırında "Sobi testi seviye 6/20".
 
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 

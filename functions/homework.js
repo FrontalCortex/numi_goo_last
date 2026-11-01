@@ -287,6 +287,32 @@ function sanitizeExtraTally(data) {
   return { tally, questions: { c: clamp(q.c), w: clamp(q.w) } };
 }
 
+/**
+ * SOBİ TESTİ SEVİYELERİ — kural başına 1..SOBI_LEVEL_MAX (uygulamada SobiTestLevels; kullanıcı kararı
+ * 01.11.2026). Uygulama testten sonra yeni seviyeyi hesaplayıp gönderiyor (recordSobiLevels); burada
+ * yalnızca biçim ve sıçrama sınırı: bir testte en çok SOBI_LEVEL_STEP seviye (Zor seçip başarmak +2),
+ * kayıtlı seviyesi olmayan kuralda en çok SOBI_LEVEL_FIRST_MAX (başlangıç tahmini 3, Zor ile +2).
+ * Sınırı aşan değer sınıra çekilir (çocuğun ilerlemesi kaybolmasın, ama bir anda 20 olunamasın).
+ */
+const SOBI_LEVEL_MAX = 20;
+const SOBI_LEVEL_STEP = 2;
+const SOBI_LEVEL_FIRST_MAX = 5;
+
+function sanitizeSobiLevels(data, prev) {
+  const d = data && typeof data === 'object' ? data.levels : null;
+  const old = prev && typeof prev === 'object' ? prev : {};
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return {};
+  const out = {};
+  for (const [key, v] of Object.entries(d).slice(0, 8)) {
+    if (!EXTRA_TALLY_KEY.test(key) || !Number.isInteger(v)) continue;
+    const before = Number.isInteger(old[key]) ? old[key] : null;
+    const lo = before === null ? 1 : Math.max(1, before - SOBI_LEVEL_STEP);
+    const hi = before === null ? SOBI_LEVEL_FIRST_MAX : Math.min(SOBI_LEVEL_MAX, before + SOBI_LEVEL_STEP);
+    out[key] = Math.min(Math.max(v, lo), hi);
+  }
+  return out;
+}
+
 /** Günlük kayıt anahtarı Türkiye saatiyle (UTC+3; 2016'dan beri yaz saati yok): { month: '2026-10', day: '26' }. */
 function trDayKey(ms) {
   const iso = new Date(ms + 3 * 3600 * 1000).toISOString();
@@ -311,6 +337,8 @@ module.exports = {
   sanitizeRuleTally,
   sanitizeExtraTally,
   EXTRA_TALLY_MAX,
+  sanitizeSobiLevels,
+  SOBI_LEVEL_MAX,
   countDone,
   doneNoticeText,
   BLOCK_SIZE,
