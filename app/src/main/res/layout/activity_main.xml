@@ -431,6 +431,25 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!--
+      Ders / öğretici / abaküs / flaş gibi ÜST katmandaki bir ekran açıkken mağaza buraya açılır
+      (MainActivity.openShopFragment). Normal mağaza kabı (fragmentContainerID) o ekranların
+      ALTINDA kalıyor; Sobi'de "Kredi al"a dokunan kullanıcı mağazayı göremiyordu. Alttaki ekran
+      yerinde kalır, mağaza kapanınca kaldığı yere dönülür. Opak arka planı mağazanın kendisinde.
+    -->
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/shopOverlayContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:clickable="true"
+        android:focusable="true"
+        android:elevation="28dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- Sezon sonu liderlik ödülü: Splash sonrası MainActivity'de zorunlu topla paneli -->
     <FrameLayout
         android:id="@+id/seasonLeaderboardRewardGateContainer"

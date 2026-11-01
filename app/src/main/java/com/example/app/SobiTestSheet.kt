@@ -1,10 +1,16 @@
 package com.example.app
 
 import android.graphics.Color
+import android.os.Build
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.DynamicDrawableSpan
+import android.text.style.ImageSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.app.abacus.SobiTestLevels
 import com.example.app.abacus.SobiTestPlanner
@@ -22,7 +28,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
  *  - Zorluk kartları: Kolay (seviyenin bir altı) / Benim seviyem / Zor (bir üstü); her kartta seviye ve
  *    ne demek olduğu ("2 basamaklı 3 sayı, 2,4 sn"). Seçili kart mavi; kartlar içe göçer.
  *  - "Başla": sorular arka planda üretilir (düğme "Hazırlanıyor…"), sonra oynatıcı açılır. Ek testte
- *    düğme "Başla · 3 🔑" (Pro'da ücretsiz); anahtar sunucuda düşer, yetmezse Sobi söyler.
+ *    düğme "Başla · 3" + anahtar görseli (Pro'da ücretsiz); anahtar sunucuda düşer, yetmezse Sobi söyler.
  * Veri yoksa Sobi "Biraz ders çöz…" der, düğme "Tamam" olur.
  */
 class SobiTestSheet(private val fragment: Fragment) {
@@ -77,7 +83,7 @@ class SobiTestSheet(private val fragment: Fragment) {
             start.isEnabled = true
             start.alpha = 1f
             val cost = (fragment.activity as? MainActivity)?.let { SobiDailyTest.extraTestCost(it) } ?: 0
-            if (cost > 0) start.text = appString(R.string.sobi_test_start_keys, cost)
+            if (cost > 0) start.text = keyCostLabel(start, cost)
             start.setOnClickListener { pay(view, start, mascot, info, cost) }
         }
     }
@@ -129,6 +135,26 @@ class SobiTestSheet(private val fragment: Fragment) {
             val selected = value == o
             card.setBackgroundResource(if (selected) R.drawable.bg_sobi_test_option_selected else R.drawable.bg_hw_chip)
             card.findViewById<TextView>(R.id.optionLevel).setTextColor(if (selected) 0xFF1CB0F6.toInt() else 0xFF8B949E.toInt())
+        }
+    }
+
+    /**
+     * "Başla · 3" + uygulamanın anahtar görseli (üst paneldeki `key`). Emoji telefona göre farklı
+     * çiziliyordu ve paneldeki anahtara benzemiyordu. Görsel metnin parçası (ImageSpan), düğme
+     * genişliğine yaslanan bir compound drawable değil: metin ortada kalıyor ve düğme sonradan
+     * "Hazırlanıyor…" yazınca simge de kendiliğinden gidiyor.
+     */
+    private fun keyCostLabel(start: TextView, cost: Int): CharSequence {
+        val label = appString(R.string.sobi_test_start_keys, cost)
+        val icon = ContextCompat.getDrawable(start.context, R.drawable.key)?.mutate() ?: return label
+        val size = (start.textSize * 1.25f).toInt()
+        icon.setBounds(0, 0, size, size)
+        // ALIGN_CENTER API 29'da geldi; öncesinde taban çizgisi en yakın görünüş.
+        val align = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) DynamicDrawableSpan.ALIGN_CENTER else DynamicDrawableSpan.ALIGN_BASELINE
+        return SpannableStringBuilder(label).append(' ').apply {
+            val at = length
+            append('￼')
+            setSpan(ImageSpan(icon, align), at, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
     }
 

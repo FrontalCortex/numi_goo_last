@@ -511,6 +511,11 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }
+            // Üst katmanda açılan mağaza kapandı (bkz. openShopFragment): kap boş ama görünür
+            // kalırsa tıklanabilir olduğu için alttaki dersin bütün dokunuşlarını yutardı.
+            if (liveOverlayIn(R.id.shopOverlayContainer) == null) {
+                binding.shopOverlayContainer.visibility = View.GONE
+            }
         }
 
         Log.d("MainActivity", "onCreate intent extras = ${intent?.extras}")
@@ -5275,14 +5280,35 @@ class MainActivity : AppCompatActivity() {
     /**
      * @param focusStreakFreeze true ise mağaza seri dondurma kartında açılır; seri
      *   ekranındaki "Seri dondurma: Yok" satırı böyle çağırıyor.
+     * @return mağaza açıldıysa (ya da zaten açıksa) true; kilit ya da öğretmen engeli varsa false.
      */
-    fun openShopFragment(focusStreakFreeze: Boolean = false, focusSobiCredits: Boolean = false) {
-        if (MainActivityChromeBlocker.currentLockDepth() > 0) return
+    fun openShopFragment(focusStreakFreeze: Boolean = false, focusSobiCredits: Boolean = false): Boolean {
+        val overTopLayer = isTopLayerScreenOpen()
+        // Kilit ders sürerken alt menü / üst panel ile ekrandan kaçılmasın diye; mağazayı da
+        // haritadaki yerine açtırmıyor. Ders açıkken mağaza dersin ÜSTÜNE açıldığı (ve kapanınca
+        // derse dönüldüğü) için orada kilit engel değil: eskiden Sobi'deki "Kredi al" sessizce
+        // hiçbir şey yapmıyordu.
+        if (!overTopLayer && MainActivityChromeBlocker.currentLockDepth() > 0) return false
         // Öğretmenin satın alacağı bir şey yok (bkz. TeacherApprovalGate.blockPurchasesForTeacher).
         // Mağazanın her girişi (üst panel, kupa yolu canı, özelleştirme) buradan geçiyor.
-        if (TeacherApprovalGate.blockPurchasesForTeacher(this)) return
+        if (TeacherApprovalGate.blockPurchasesForTeacher(this)) return false
+
+        if (overTopLayer) {
+            // fragmentContainerID üst katmandaki ekranların ALTINDA; mağaza oraya eklenirse
+            // arkada kalıyordu (öğretici, abaküs, flaş, kupa yolu). Alttaki ekrana dokunulmuyor:
+            // öğreticinin adımı, dersin sorusu olduğu gibi bekliyor.
+            if (isShopOpen()) return true
+            binding.shopOverlayContainer.visibility = View.VISIBLE
+            supportFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_down, R.anim.slide_up, R.anim.slide_down, R.anim.slide_up)
+                .add(R.id.shopOverlayContainer, ShopFragment.newInstance(focusStreakFreeze, focusSobiCredits))
+                .addToBackStack(null)
+                .commit()
+            return true
+        }
+
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-        if (current is ShopFragment) return
+        if (current is ShopFragment) return true
 
         dismissMapLessonOverlayChrome()
 
@@ -5292,6 +5318,45 @@ class MainActivity : AppCompatActivity() {
             .addToBackStack(null)
             .commit()
         binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }
+        return true
+    }
+
+    /**
+     * fragmentContainerID'nin üstündeki kaplardan birinde canlı bir ekran görünüyor mu
+     * (ders, öğretici, flaş, kupa yolu, sonuç, rozet, menü, soru oluşturma).
+     * Görünürlük de şart: boş ya da gizli kapta kalmış bir fragment ekranı kapatmıyor.
+     */
+    private fun isTopLayerScreenOpen(): Boolean {
+        if (!::binding.isInitialized) return false
+        return listOf(
+            binding.abacusFragmentContainer,
+            binding.resultFragmentContainer,
+            binding.badgeFragmentContainter,
+            binding.menuFragmentContainer,
+            binding.createQuestionOverlayContainer,
+        ).any { it.visibility == View.VISIBLE && liveOverlayIn(it.id) != null }
+    }
+
+    /**
+     * Mağaza hangi kapta olursa olsun açık mı. findFragmentById değil: mağazanın üstünde reklam
+     * sandığı açıkken kabın en üstteki fragment'i sandık oluyor.
+     */
+    private fun isShopOpen(): Boolean = supportFragmentManager.fragments.any { it is ShopFragment }
+
+    /** [action]'ı mağaza kapanınca bir kez çalıştırır (mağaza [openShopFragment] ile açılmış olmalı). */
+    fun doAfterShopClosed(action: () -> Unit) {
+        val fm = supportFragmentManager
+        fm.addOnBackStackChangedListener(object : FragmentManager.OnBackStackChangedListener {
+            private var done = false
+            override fun onBackStackChanged() {
+                // İlk tetiklenme mağazanın eklenmesi; sandık gibi mağaza içi girişler de buraya düşer.
+                if (done || isShopOpen()) return
+                done = true
+                // Dinleyici listesi dolaşılırken çıkarmak sıradaki dinleyiciyi atlatabiliyor; sonraki karede.
+                binding.root.post { fm.removeOnBackStackChangedListener(this) }
+                action()
+            }
+        })
     }
 
 }

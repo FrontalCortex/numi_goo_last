@@ -13,6 +13,7 @@ import android.widget.ImageView
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.view.doOnLayout
@@ -58,6 +59,9 @@ class ShopFragment : Fragment() {
      * oranı anlamsızlaşırdı.
      */
     private var freezeOfferLogged = false
+
+    /** Ders/öğretici gibi üst katmandaki bir ekranın üstüne mi açıldı (bkz. MainActivity.openShopFragment). */
+    private val isOverTopLayer: Boolean get() = id == R.id.shopOverlayContainer
 
     // Timer properties for energy section
     private val handler = Handler(Looper.getMainLooper())
@@ -130,7 +134,14 @@ class ShopFragment : Fragment() {
                 if (!isAdded) return@showRewardedAd
                 // Sunucu isteğini fragment eklenmeden önce başlat — ilk açılıştaki gecikmeyi gizler.
                 ServerRewards.prefetchChest(NewChestFragment.ChestRarity.COMMON.name, adNonce)
-                mainActivity.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.VISIBLE
+                // Mağaza dersin üstündeyse abaküs kabında ders duruyor: sandık oraya girerse
+                // mağazanın altında kalır, kapanırken de dersi kapatmaya çalışırdı. O durumda
+                // mağazanın kabında, kendi geri yığını girişiyle açılıyor; NewChestFragment
+                // "shop_chest" girişinde yalnızca kendini kaldırır.
+                val overTopLayer = isOverTopLayer
+                if (!overTopLayer) {
+                    mainActivity.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.VISIBLE
+                }
 
                 // "chest_closed" anahtarını bu FragmentManager'da başka ekranlar da kullanıyor ve
                 // her biri tetiklenince dinleyicisini temizliyor (aynı anahtara yalnızca tek
@@ -140,16 +151,17 @@ class ShopFragment : Fragment() {
                     if (isAdded) refreshCurrencyUi()
                 }
 
-                parentFragmentManager.beginTransaction()
+                val tx = parentFragmentManager.beginTransaction()
                     .add(
-                        R.id.abacusFragmentContainer,
+                        if (overTopLayer) R.id.shopOverlayContainer else R.id.abacusFragmentContainer,
                         NewChestFragment.newInstance(
                             NewChestFragment.ChestRarity.COMMON,
                             adNonce,
                             source = AnalyticsLogger.CHEST_SOURCE_SHOP_AD,
                         ),
                     )
-                    .commit()
+                if (overTopLayer) tx.addToBackStack("shop_chest")
+                tx.commit()
             }
         }
 
@@ -427,6 +439,17 @@ class ShopFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        if (isOverTopLayer) {
+            // Alttaki ders/öğretici kendi geri tuşu geri çağrısını kaydetmiş ("dersten çık?").
+            // O, FragmentManager'ın geri yığını işleyicisinden önce çalışıyor; mağaza açıkken
+            // geri tuşu dersi kapatmaya kalkmasın, önce mağazayı (ya da üstündeki sandığı) kapatsın.
+            requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    parentFragmentManager.popBackStack()
+                }
+            })
+        }
 
         renderStreakFreezeCard()
         // Kart yerel önbellekten çizildi; dondurma dün harcanmış ya da başka bir cihazda

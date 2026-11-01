@@ -137,8 +137,10 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
+            <!-- Öğretmene sor kredisi şimdilik satılmıyor (gizli; kod ve ürünler duruyor). -->
             <LinearLayout
                 android:id="@+id/shopCreditContainer"
+                android:visibility="gone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
@@ -785,7 +787,11 @@
                 (bkz. CARD_PRICE_LABELS). Yer tutucuları güncel tutmak yalnızca ilk karede
                 ve düzen önizlemesinde doğru görünmesi içindir.
             -->
+            <!-- "Öğretmene Sor" kredisi bölümü şimdilik gizli (kullanıcı kararı 01.11.2026): satılmıyor
+                 ama kart kimlikleri, fiyatlar ve ShopFragment kodu duruyor; geri açmak için bu üç
+                 görünümden visibility="gone" kaldırılır. -->
             <TextView
+                android:visibility="gone"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/fragment_shop_text_14"
@@ -798,12 +804,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:id="@+id/shopCreditBalanceText"
+                android:visibility="gone"
                 android:text="@string/fragment_shop_shop_credit_balance_text"
                 android:textColor="#B0BEC5"
                 android:textSize="12sp"
                 android:layout_marginBottom="12dp" />
 
             <LinearLayout
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"

@@ -385,8 +385,11 @@ class MistakeReviewDialog : DialogFragment() {
     /** Ders ekranı süreyi bu bildirimle sürdürür (sandık dersi süreli); öğretici Sobi düğmesini gösterir. */
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        if (isAdded) parentFragmentManager.setFragmentResult(RESULT_CLOSED, Bundle())
+        if (isAdded && !closeResultHeldForShop) parentFragmentManager.setFragmentResult(RESULT_CLOSED, Bundle())
     }
+
+    /** "Kredi al" ile kapandı: kapanış bildirimi mağaza kapanınca gidiyor ([openSobiCredits]). */
+    private var closeResultHeldForShop = false
 
     /**
      * Klavye açılınca abaküs ve alt düğmeler gizlenir: tam ekran pencerede yazma kutusu ile sohbete
@@ -729,10 +732,18 @@ class MistakeReviewDialog : DialogFragment() {
         v.setOnClickListener(if (empty) View.OnClickListener { openSobiCredits() } else null)
     }
 
+    /**
+     * Mağaza, dersin/öğreticinin üstünde açılıyor (MainActivity.openShopFragment). Kapanış bildirimi
+     * ([RESULT_CLOSED]) sandık dersinin süresini yeniden başlatıyor; hemen gitseydi kullanıcı mağazada
+     * kredi alırken arkada dersin süresi akardı. Bu yüzden bildirim mağaza kapanınca gönderiliyor.
+     */
     private fun openSobiCredits() {
         val activity = activity as? MainActivity ?: return
+        val resultFm = parentFragmentManager
+        closeResultHeldForShop = true
         dismissAllowingStateLoss()
-        activity.openShopFragment(focusSobiCredits = true)
+        val sendClosed = { resultFm.setFragmentResult(RESULT_CLOSED, Bundle()) }
+        if (activity.openShopFragment(focusSobiCredits = true)) activity.doAfterShopClosed(sendClosed) else sendClosed()
     }
 
     private fun sendFromInput() {
