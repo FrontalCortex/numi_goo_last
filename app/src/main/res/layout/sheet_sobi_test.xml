@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sobi'nin testi paneli (SobiTestSheet): haritadaki Sobi düğmesinden alttan açılır. Üstte selam veren
+  Sobi ve başlık; yüklenirken dönen çark; sonra testin kuralları (seviye çubuğuyla) ve üç zorluk kartı;
+  altta içe göçen "Başla". Kural satırları ve kartlar koddan eklenir (item_sobi_test_rule/option).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bg_sobi_test_sheet"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="16dp">
+
+    <View
+        android:layout_width="40dp"
+        android:layout_height="5dp"
+        android:layout_gravity="center_horizontal"
+        android:background="@drawable/bg_sobi_test_handle" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <com.example.app.BunnyMascotView
+            android:id="@+id/sobiTestMascot"
+            android:layout_width="84dp"
+            android:layout_height="84dp" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/sobiTestTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sobi_test_dialog_title"
+                android:textColor="@color/dark_text"
+                android:textSize="21sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/sobiTestSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/sobi_test_subtitle"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="14sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/sobiTestLoading"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/sobiTestEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="8dp"
+        android:gravity="center"
+        android:lineSpacingMultiplier="1.15"
+        android:textColor="@color/dark_text"
+        android:textSize="16sp"
+        android:visibility="gone"
+        tools:text="Biraz ders çöz, sana göre bir test hazırlayayım!" />
+
+    <LinearLayout
+        android:id="@+id/sobiTestBody"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:text="@string/sobi_test_rules_label"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/sobiTestRules"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/sobi_test_difficulty_label"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:id="@+id/sobiTestOptions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/sobiTestStart"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/tutorial_control_button_height"
+        android:layout_marginTop="18dp"
+        android:background="@drawable/bg_depth_tutorial_control"
+        android:gravity="center"
+        android:paddingBottom="4dp"
+        android:text="@string/sobi_test_dialog_start"
+        android:textColor="#000000"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/sobiTestLater"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="4dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:text="@string/sobi_test_dialog_later"
+        android:textColor="@color/dark_text_secondary"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+</LinearLayout>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sobi'nin testi panelinde bir zorluk kartı: "🐰 Benim seviyem · Seviye 5" ve altında ne demek olduğu
+  ("2 basamaklı 3 sayı, 2,4 sn"). Seçili kart mavi (bg_sobi_test_option_selected), içe göçer (DepthPress).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="8dp"
+    android:background="@drawable/bg_hw_chip"
+    android:orientation="vertical"
+    android:paddingStart="14dp"
+    android:paddingTop="10dp"
+    android:paddingEnd="14dp"
+    android:paddingBottom="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/optionTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/dark_text"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:text="🐰 Benim seviyem" />
+
+        <TextView
+            android:id="@+id/optionLevel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            tools:text="Seviye 5" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/optionDesc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/dark_text_secondary"
+        android:textSize="14sp"
+        tools:text="2 basamaklı 3 sayı, 2,4 sn" />
+</LinearLayout>

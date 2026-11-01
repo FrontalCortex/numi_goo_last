@@ -109,17 +109,17 @@
     <string name="sobi_test_button_desc">Sobi\'nin günlük testi</string>
     <string name="sobi_test_nudge">Senin için bir test hazırladım!</string>
     <string name="sobi_test_dialog_title">Sobi\'nin bugünkü testi</string>
-    <!-- %1$s: "10'luk toplama ve 5'lik çıkarma" -->
-    <string name="sobi_test_dialog_message">Bugün %1$s çalışalım. 10 soru; bitirince bir sandık kazanırsın. Ne kadar zor olsun?</string>
     <string name="sobi_test_dialog_extra_title">Bir test daha</string>
-    <string name="sobi_test_dialog_extra">Bugünkü testi bitirdin, aferin! İstersen bir test daha: %1$s. 10 soru; bitirince yine bir sandık. Ne kadar zor olsun?</string>
-    <!-- "10'luk toplama (seviye 5)" -->
-    <string name="sobi_test_rule_level">%1$s (seviye %2$d)</string>
-    <string name="sobi_test_diff_easy">Kolay</string>
-    <string name="sobi_test_diff_mine">Benim seviyem</string>
-    <string name="sobi_test_diff_hard">Zor</string>
-    <!-- "Zor · seviye 6 (2 basamaklı 4 sayı, 2,4 sn)" -->
-    <string name="sobi_test_diff_option">%1$s · seviye %2$d (%3$s)</string>
+    <string name="sobi_test_diff_easy">🐢 Kolay</string>
+    <string name="sobi_test_diff_mine">🐰 Benim seviyem</string>
+    <string name="sobi_test_diff_hard">🚀 Zor</string>
+    <string name="sobi_test_subtitle">10 soru · bitirince sandık</string>
+    <string name="sobi_test_subtitle_extra">Bugünkü testi bitirdin, aferin! 10 soru daha · yine sandık</string>
+    <string name="sobi_test_rules_label">BUGÜN ÇALIŞACAĞIMIZ KURALLAR</string>
+    <string name="sobi_test_difficulty_label">NE KADAR ZOR OLSUN?</string>
+    <string name="sobi_test_level_of">Seviye %1$d/%2$d</string>
+    <string name="sobi_test_level_short">Seviye %1$d</string>
+    <string name="sobi_test_preparing">Hazırlanıyor…</string>
     <string name="sobi_test_spec">%1$d basamaklı %2$d sayı, %3$s sn</string>
     <string name="sobi_test_level_up">Seviye %1$d → %2$d, tebrikler!</string>
     <string name="sobi_test_level_down">Seviye %1$d; yarın yine birlikte deneriz.</string>
@@ -127,7 +127,6 @@
     <string name="sobi_test_dialog_start">Başla</string>
     <string name="sobi_test_dialog_later">Sonra</string>
     <string name="sobi_test_no_data">Biraz ders çöz, sana göre bir test hazırlayayım!</string>
-    <string name="sobi_test_loading">Sobi testini hazırlıyor…</string>
     <string name="sobi_test_ok">Tamam</string>
     <string name="sobi_test_rule_add_direct">kuralsız toplama</string>
     <string name="sobi_test_rule_add_five">5\'lik toplama</string>
