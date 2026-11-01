@@ -67,6 +67,9 @@ class HomeworkRuleStatsFragment : Fragment() {
         /** Kalabalık olmasın: en çok bu kadar noktanın üstüne toplam yazılıyor (son noktadan geriye). */
         private const val MAX_POINT_LABELS = 7
 
+        /** Sobi testinin kuralları (çarpma değil). */
+        private val SOBI_KEY = Regex("""^(add|sub)_(direct|five|ten|bead)$""")
+
         private const val LINE_COLOR = 0xFF1CB0F6.toInt()
         private const val GREEN = 0xFF8CC63F.toInt()
         private const val ORANGE = 0xFFFF9600.toInt()
@@ -517,8 +520,12 @@ class HomeworkRuleStatsFragment : Fragment() {
                     appString(R.string.rule_stats_to_master_ops, RuleProgress.MASTERY_WINDOW - window.total, u)
                 else -> appString(R.string.rule_stats_to_master_pct, (RuleProgress.MASTER_PCT - pct).coerceAtLeast(1))
             }
-            // Sobi testindeki seviyesi (kullanıcı kararı 01.11.2026: veli de görsün).
+            // Sobi testindeki seviyesi (kullanıcı kararı 01.11.2026: veli de görsün). Henüz test çözülmemiş
+            // toplama/çıkarma kuralında Sobi'nin başlangıç tahmini, "tahmini" diye (testin kullandığı eşikle).
             val sobi = sobiLevel[row.key]?.let { appString(R.string.rule_stats_sobi_level, it, com.example.app.abacus.SobiTestLevels.MAX) }
+                ?: window.takeIf { SOBI_KEY.matches(row.key) && it.total >= com.example.app.abacus.SobiTestPlanner.MIN_OPS }?.let {
+                    appString(R.string.rule_stats_sobi_level_estimated, com.example.app.abacus.SobiTestLevels.initial(it.pct), com.example.app.abacus.SobiTestLevels.MAX)
+                }
             item.ruleCount.text = listOfNotNull(sobi, counts, toMaster).joinToString(" · ")
             // Satıra dokununca grafik bu kurala geçiyor.
             item.root.setOnClickListener {

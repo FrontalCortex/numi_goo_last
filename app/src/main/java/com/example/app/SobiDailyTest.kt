@@ -81,7 +81,12 @@ object SobiDailyTest {
                 val server = scoresOf(doc.data)
                 // Sunucudaki seviye esas (başka cihazda ilerlemiş olabilir); bu cihazda daha yenisi
                 // varsa (gönderilemedi) o.
-                val levels = localLevels + levelsOf(doc.data).filter { (k, v) -> v >= (localLevels[k] ?: 0) }
+                val serverLevels = levelsOf(doc.data)
+                val levels = localLevels + serverLevels.filter { (k, v) -> v >= (localLevels[k] ?: 0) }
+                // Bu cihazda olup sunucuya gidemeyen seviye (çevrimdışı test, fonksiyon henüz yoktu):
+                // yeniden gönder, veli panelinde görünsün.
+                val unsent = localLevels.filter { (k, v) -> v > (serverLevels[k] ?: 0) }
+                if (unsent.isNotEmpty()) saveLevels(app, unsent)
                 val enough = server.any { it.total >= SobiTestPlanner.MIN_OPS }
                 onResult(Info(if (enough) server else local, levels))
             }
