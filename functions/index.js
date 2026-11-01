@@ -2337,6 +2337,11 @@ const PLAY_PRODUCT_CATALOG = {
   credits_small: { currency: 0, keys: 0, credits: 1 },
   credits_medium: { currency: 0, keys: 0, credits: 5 },
   credits_large: { currency: 0, keys: 0, credits: 10 },
+  // Sobi (yapay zekâ) mesaj kredisi: sobiChats/{uid}.credits (sobi/wallet.js). Öğretmen kredisinden
+  // ayrı; süresiz. Fiyatlar Play Console'da: 12,99 / 24,99 / 49,99 TL (kullanıcı kararı 01.11.2026).
+  sobi_credits_20: { currency: 0, keys: 0, credits: 0, sobiCredits: 20 },
+  sobi_credits_50: { currency: 0, keys: 0, credits: 0, sobiCredits: 50 },
+  sobi_credits_120: { currency: 0, keys: 0, credits: 0, sobiCredits: 120 },
 };
 
 /**
@@ -2781,12 +2786,15 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
   // 2) Token'ı bir kez bozdur ve bakiyeyi aynı transaction'da yaz.
   const userRef = db.collection('users').doc(uid);
   const purchaseRef = db.collection('processedPurchases').doc(purchaseToken);
+  const sobiRef = db.collection('sobiChats').doc(uid);
+  const grantedSobiCredits = reward.sobiCredits || 0;
 
   try {
     const result = await db.runTransaction(async (transaction) => {
-      const [userDoc, purchaseDoc] = await Promise.all([
+      const [userDoc, purchaseDoc, sobiDoc] = await Promise.all([
         transaction.get(userRef),
         transaction.get(purchaseRef),
+        grantedSobiCredits > 0 ? transaction.get(sobiRef) : Promise.resolve(null),
       ]);
 
       if (purchaseDoc.exists) {
@@ -2810,6 +2818,7 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
         grantedKeys: reward.keys,
         grantedCurrency: reward.currency,
         grantedCredits,
+        grantedSobiCredits,
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
       transaction.update(userRef, {
@@ -2817,12 +2826,19 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
         currency: newCurrency,
         questionCredits: newCredits,
       });
+      let sobiCredits = null;
+      if (grantedSobiCredits > 0) {
+        sobiCredits = (sobiDoc.exists ? Number(sobiDoc.get('credits')) || 0 : 0) + grantedSobiCredits;
+        transaction.set(sobiRef, { credits: sobiCredits }, { merge: true });
+      }
 
-      return { keys: newKeys, currency: newCurrency, credits: newCredits };
+      return { keys: newKeys, currency: newCurrency, credits: newCredits, sobiCredits };
     });
 
     console.log('Satın alma işlendi', { uid, productId, orderId: purchase.orderId });
-    return { success: true, keys: result.keys, currency: result.currency, credits: result.credits };
+    return {
+      success: true, keys: result.keys, currency: result.currency, credits: result.credits, sobiCredits: result.sobiCredits,
+    };
   } catch (error) {
     if (error instanceof functions.https.HttpsError) throw error;
     console.error('Satın alma işlenemedi', { uid, productId, error });
@@ -5138,6 +5154,10 @@ async function reverseVoidedPurchase(voided) {
 
     const userRef = db.collection('users').doc(uid);
     const userDoc = await transaction.get(userRef);
+    // Sobi kredisi ayrı belgede; işlemde okumalar yazmalardan önce olmalı.
+    const revokedSobiCredits = record.type === 'subscription' ? 0 : Number.parseInt(record.grantedSobiCredits, 10) || 0;
+    const sobiRef = db.collection('sobiChats').doc(uid);
+    const sobiDoc = revokedSobiCredits > 0 ? await transaction.get(sobiRef) : null;
     if (!userDoc.exists) {
       // Hesap silinmiş; kaydı yine de işaretle ki tekrar tekrar denenmesin.
       transaction.set(
@@ -5177,6 +5197,11 @@ async function reverseVoidedPurchase(voided) {
       const grantedCurrency = Number.parseInt(record.grantedCurrency, 10) || 0;
       update.keys = (Number.parseInt(userData.keys, 10) || 0) - grantedKeys;
       update.currency = (Number.parseInt(userData.currency, 10) || 0) - grantedCurrency;
+      // Sobi kredisi de aynı politika: harcanmışsa eksiye düşer, yeni mesaj ancak yeni paketle.
+      if (revokedSobiCredits > 0) {
+        const sobiBefore = sobiDoc.exists ? Number(sobiDoc.get('credits')) || 0 : 0;
+        transaction.set(sobiRef, { credits: sobiBefore - revokedSobiCredits }, { merge: true });
+      }
       // Danışma kredisi de geri alınmalı. Bu satırlar olmadan "kredi paketi al → hepsini
       // harca → 48 saat içinde iade al" döngüsü tamamen bedavaydı: grantedCredits kayda
       // yazılıyor ama hiç okunmuyordu. Altın/anahtardaki politikanın aynısı geçerli —
@@ -7924,5 +7949,8 @@ async function deleteUserBugReports(uid) {
 // Ayrıntı ve gerekçe: sobi/callable.js, docs/ANLAMADIM_YARDIM_PLANI.md. ANTHROPIC_API_KEY
 // Secret Manager'da (28.10.2026 kuruldu); secret silinirse bu fonksiyonun deploy'u başarısız olur.
 exports.sobiChat = require('./sobi/callable')({ functions, admin, db, isAskQuestionRestricted, effectivePlan });
+const sobiWallet = require('./sobi/wallet')({ functions, db, effectivePlan, isApprovedTeacher });
+exports.sobiBalance = sobiWallet.sobiBalance;
+exports.startSobiExtraTest = sobiWallet.startSobiExtraTest;
 // Sobi cevabına beğen / beğenme; haftalık iyileştirme döngüsünün verisi (sobi/feedback.js).
 exports.sobiFeedback = require('./sobi/feedback')({ functions, admin, db, promptVersion: require('./sobi/callable').PROMPT_VERSION });

@@ -1004,6 +1004,171 @@
 
             </LinearLayout>
 
+            <!-- ── Bölüm: Sobi kredisi (yapay zekâ mesajı; sobiChats/{uid}.credits, functions/sobi/wallet.js).
+                 Bakiye satırı sobiBalance'tan dolar; fiyatlar yine Play'den (CARD_PRICE_LABELS). ── -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/shop_sobi_credit_title"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="2dp" />
+
+            <TextView
+                android:id="@+id/shopSobiCreditBalanceText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/shop_sobi_credit_info"
+                android:textColor="#B0BEC5"
+                android:textSize="12sp"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:id="@+id/shopSobiCreditSection"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="24dp"
+                android:weightSum="3">
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/shopSobiCreditCard1"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="#1E2A30"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:padding="12dp">
+
+                        <com.example.app.SobiHeadView
+                            android:layout_width="64dp"
+                            android:layout_height="64dp"
+                            android:layout_marginTop="4dp"
+                            android:contentDescription="@string/shop_sobi_credit_desc" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/shop_sobi_credit_amount_20"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/shopSobiCreditPrice1"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₺12,99"
+                            android:textColor="#29B6F6"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/shopSobiCreditCard2"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginHorizontal="3dp"
+                    app:cardBackgroundColor="#1E2A30"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:padding="12dp">
+
+                        <com.example.app.SobiHeadView
+                            android:layout_width="64dp"
+                            android:layout_height="64dp"
+                            android:layout_marginTop="4dp"
+                            android:contentDescription="@string/shop_sobi_credit_desc" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/shop_sobi_credit_amount_50"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/shopSobiCreditPrice2"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₺24,99"
+                            android:textColor="#29B6F6"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/shopSobiCreditCard3"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="6dp"
+                    app:cardBackgroundColor="#1E2A30"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal"
+                        android:padding="12dp">
+
+                        <com.example.app.SobiHeadView
+                            android:layout_width="64dp"
+                            android:layout_height="64dp"
+                            android:layout_marginTop="4dp"
+                            android:contentDescription="@string/shop_sobi_credit_desc" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/shop_sobi_credit_amount_120"
+                            android:textColor="@android:color/white"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/shopSobiCreditPrice3"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="₺49,99"
+                            android:textColor="#29B6F6"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="4dp" />
+
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+            </LinearLayout>
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

@@ -227,7 +227,7 @@ Kod `functions/sobi/` altında. ANTHROPIC_API_KEY Secret Manager'a kaydedildi (2
 | `tools.js` | Beş araç (`hamleleri_hesapla`, `hatayi_bul`, `kurali_acikla`, `abakuste_goster`, `alistirma_ver`), hepsi `strict`; anlatım dersteki sözlerle ("1 boncuk gelir, 5 gider, 10 gelir"); kuralların onaylı açıklamaları |
 | `guard.js` | Girişte e-posta/telefon/bağlantı maskeleme, 300 karakter sınırı; çıkışta "her sayı bir kaynakta geçmeli" denetimi, 500 karakter sınırı; denetime takılırsa kural motorundan yedek metin |
 | `chat.js` | Bir sohbet turu: elle yazılmış araç döngüsü (en çok 4 tur), ret ve yarıda kesilen cevap geçmişe eklenmiyor, geçmiş yalnızca eklenerek büyüyor (düşünme blokları değişmeden geri gidiyor), öneri balonları |
-| `callable.js` | `sobiChat` callable fabrikası: oturum, günlük hak (Free 20 / Lite 50 / Pro 100 mesaj), sohbet başına 10 mesaj, `sobiChats/{uid}/sessions/{id}` kaydı (30 gün), API hatasında yedek metin ve hak düşmüyor |
+| `callable.js` | `sobiChat` callable fabrikası: oturum, günlük ücretsiz hak + Sobi kredisi (`wallet.js`), sohbet başına 20 mesaj, `sobiChats/{uid}/sessions/{id}` kaydı (30 gün), API hatasında yedek metin ve hak düşmüyor |
 
 - Model `claude-haiku-5-5` (kullanıcı kararı 28.10.2026: hesabı kural motoru yaptığı için küçük
   model yeterli olmalı), effort `medium`, istem önbelleği açık. Haiku 5.5'te sunucu tarafı yedek
@@ -487,6 +487,28 @@ A yapay zekâsız, kural motoruyla:
   Seviye `homeworkRuleStats/{uid}.sobiLevel` (`recordSobiLevels`, testte en çok ±2, ilk kayıtta en çok 5) ve cihazda;
   test sonunda "Seviye 5 → 6", veli panelinde Kural başarısı satırında "Sobi testi seviye 6/20".
 
+### Sobi ekonomisi (kullanıcı kararları 01.11.2026)
+
+Ölçülen maliyet mesaj başına ~0,001 $ (≈0,05 TL, Haiku 5.5, önbellekli); fiyat maliyetten değil Pro paketine
+göre konuldu (Pro'nun günlük 20 mesajı ayda ~600 mesaj; paketler bunun pahalı tarafında kalsın).
+- **Kredi yalnızca yapay zekâ mesajına.** Hazır açıklama (modelsiz) ve yedek metin (denetime takılan ya da
+  ulaşılamayan model) ne günlük haktan ne krediden düşer. Kural motoru balonları zaten sunucuya gitmiyor.
+- **Günlük ücretsiz hak:** Free 2, Lite 10 (karar yoktu, ara değer), Pro 20. Hak bitince her mesaj 1 kredi;
+  Pro da 20'den sonra kredi kullanabilir. Kredi de yoksa `resource-exhausted`; Sobi ekranındaki etiket
+  "Ücretsiz mesajların bitti · Kredi al ›" olur, dokununca mağaza Sobi kredisi bölümünde açılır.
+- **Paketler (Play, tüketilebilir, süresiz):** `sobi_credits_20` 12,99 TL, `sobi_credits_50` 24,99 TL,
+  `sobi_credits_120` 49,99 TL. Adet sunucuda (`PLAY_PRODUCT_CATALOG.sobiCredits`); iade edilirse kredi geri
+  alınır, eksiye düşebilir (öğretmen kredisiyle aynı politika). **Play Console'da ürünleri kullanıcı açar.**
+- **Bakiye** `sobiChats/{uid}`: `credits`, `usageDay/usageCount`, `monthKey/monthCount/monthCreditsUsed`,
+  `extraTestDay/extraTestIndex`. İstemci erişemiyor; okuma `sobiBalance` ile (Sobi ekranı, mağaza, veli
+  paneli "Sobi'ye sor" kartı: bu ay kaç mesaj, kaç kredi, kalan kredi).
+- **Ek test 3 anahtar** (`startSobiExtraTest`, `users.keys` aynı işlemde düşer); Pro ve onaylı öğretmen
+  ücretsiz; aynı günün aynı sırası bir kez ödenir (yarıda bırakılan test yeniden açılınca ödenmez).
+- Kod: `functions/sobi/wallet.js` (kurallar + iki callable), `callable.js` (bedel oturum kaydıyla aynı işlemde),
+  `index.js` (katalog, bozdurma, iade). Uygulama: `ServerSobi.balance/startExtraTest`, `MistakeReviewDialog`
+  (etiket), `ShopFragment` + `fragment_shop.xml` (Sobi kredisi bölümü), `SobiTestSheet` ("Başla · 3 🔑"),
+  `ProgressHubFragment` (veli kartı).
+
 ### Faz 8 ayrıntısı: öğretmene sor, ama videosuz
 
 Sobi'nin tur sınırı dolduğunda ya da çocuk isterse "Öğretmenine soralım mı?":
@@ -508,8 +530,8 @@ push'tan önce sorulmalı. API anahtarı secret olarak elle tanımlanır (kullan
 
 ## Kullanıcıya açık sorular
 
-1. Sohbet ücretsiz kullanıcıya açık olsun mu, sınırı ne olsun? (Öneri: günde birkaç sohbet
-   ücretsiz, Pro'da yüksek sınır.)
+1. ~~Sohbet ücretsiz kullanıcıya açık olsun mu, sınırı ne olsun?~~ Karar 01.11.2026: Free günde 2,
+   Pro 20 mesaj, sonrası Sobi kredisi (yukarıda "Sobi ekonomisi").
 2. Sobi cevabı sesli okusun mu? (Öneri: evet, varsayılan açık; okuma bilmeyen küçükler için önemli.)
 3. Sohbetler ebeveyne görünsün mü? (Öneri: evet, ebeveyn panelinde; güveni artırır.)
 4. Hangi model sağlayıcısı? (Öneri: Faz 3'teki test setinde iki modeli karşılaştırıp karar vermek.)

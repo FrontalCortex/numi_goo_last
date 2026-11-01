@@ -28,10 +28,18 @@ object BillingCatalog {
     const val CREDITS_MEDIUM = "credits_medium"
     const val CREDITS_LARGE = "credits_large"
 
+    // ── Sobi (yapay zekâ) mesaj kredisi ─────────────────────────────────────
+    // Öğretmen kredisinden ayrı; her kredi günlük ücretsiz hak bittikten sonra bir Sobi mesajı.
+    // Adetler (20 / 50 / 120) sunucuda: functions/index.js → PLAY_PRODUCT_CATALOG.sobiCredits.
+    const val SOBI_CREDITS_20 = "sobi_credits_20"
+    const val SOBI_CREDITS_50 = "sobi_credits_50"
+    const val SOBI_CREDITS_120 = "sobi_credits_120"
+
     val consumables = listOf(
         GOLD_SMALL, GOLD_MEDIUM, GOLD_LARGE,
         KEYS_SMALL, KEYS_MEDIUM, KEYS_LARGE,
         CREDITS_SMALL, CREDITS_MEDIUM, CREDITS_LARGE,
+        SOBI_CREDITS_20, SOBI_CREDITS_50, SOBI_CREDITS_120,
     )
 
     // ── Abonelikler ─────────────────────────────────────────────────────────

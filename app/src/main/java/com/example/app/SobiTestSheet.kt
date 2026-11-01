@@ -21,7 +21,8 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
  *  - Testin kuralları: adı, "Seviye 5/20" ve seviye çubuğu.
  *  - Zorluk kartları: Kolay (seviyenin bir altı) / Benim seviyem / Zor (bir üstü); her kartta seviye ve
  *    ne demek olduğu ("2 basamaklı 3 sayı, 2,4 sn"). Seçili kart mavi; kartlar içe göçer.
- *  - "Başla": sorular arka planda üretilir (düğme "Hazırlanıyor…"), sonra oynatıcı açılır.
+ *  - "Başla": sorular arka planda üretilir (düğme "Hazırlanıyor…"), sonra oynatıcı açılır. Ek testte
+ *    düğme "Başla · 3 🔑" (Pro'da ücretsiz); anahtar sunucuda düşer, yetmezse Sobi söyler.
  * Veri yoksa Sobi "Biraz ders çöz…" der, düğme "Tamam" olur.
  */
 class SobiTestSheet(private val fragment: Fragment) {
@@ -75,7 +76,9 @@ class SobiTestSheet(private val fragment: Fragment) {
             fill(view, choice)
             start.isEnabled = true
             start.alpha = 1f
-            start.setOnClickListener { begin(view, start, mascot, info) }
+            val cost = (fragment.activity as? MainActivity)?.let { SobiDailyTest.extraTestCost(it) } ?: 0
+            if (cost > 0) start.text = appString(R.string.sobi_test_start_keys, cost)
+            start.setOnClickListener { pay(view, start, mascot, info, cost) }
         }
     }
 
@@ -127,6 +130,31 @@ class SobiTestSheet(private val fragment: Fragment) {
             card.setBackgroundResource(if (selected) R.drawable.bg_sobi_test_option_selected else R.drawable.bg_hw_chip)
             card.findViewById<TextView>(R.id.optionLevel).setTextColor(if (selected) 0xFF1CB0F6.toInt() else 0xFF8B949E.toInt())
         }
+    }
+
+    /** Ek testin anahtarı (sunucuda); ücretsizse doğrudan başlar. */
+    private fun pay(view: View, start: TextView, mascot: BunnyMascotView, info: SobiDailyTest.Info, cost: Int) {
+        val ctx = fragment.context ?: return
+        if (cost == 0 || com.google.firebase.auth.FirebaseAuth.getInstance().currentUser == null) {
+            begin(view, start, mascot, info)
+            return
+        }
+        start.isEnabled = false
+        start.text = appString(R.string.sobi_test_preparing)
+        ServerSobi.startExtraTest(SobiDailyTest.testsToday(ctx), onResult = { _, keys ->
+            if (!fragment.isAdded || dialog == null) return@startExtraTest
+            SobiDailyTest.markExtraPaid(ctx)
+            // Üst paneldeki anahtar: canlı dinleyici de getirir, beklemeden göster.
+            (fragment.activity as? MainActivity)?.let { UserWalletFirestore.cacheKeys(it, keys); it.refreshWalletUi() }
+            begin(view, start, mascot, info)
+        }, onFailure = { e ->
+            if (!fragment.isAdded || dialog == null) return@startExtraTest
+            mascot.play(BunnyMascotView.Emote.THINK)
+            val have = (fragment.activity as? MainActivity)?.let { UserWalletFirestore.getCachedKeys(it) } ?: 0
+            showEmpty(view, start, if (ServerSobi.isNotEnoughKeys(e)) {
+                appString(R.string.sobi_test_not_enough_keys, cost, have)
+            } else appString(R.string.sobi_error_network))
+        })
     }
 
     private fun begin(view: View, start: TextView, mascot: BunnyMascotView, info: SobiDailyTest.Info) {

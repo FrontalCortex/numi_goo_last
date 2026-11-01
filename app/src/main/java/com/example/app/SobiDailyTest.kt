@@ -28,6 +28,9 @@ import java.util.TimeZone
  *    gerektiren kurallarda birkaç yüz ms sürebildiği için arka planda.
  *  - Gün Türkiye saatiyle. Yarıda bırakılan test sayılmaz; yeniden açılınca aynı sorular gelir (tohum
  *    günden ve o gün bitirilen test sayısından).
+ *  - Ek test (günün ilk testinden sonrası) 3 anahtar; Pro ve onaylı öğretmen ücretsiz (kullanıcı kararı
+ *    01.11.2026). Anahtar sunucuda düşer (startSobiExtraTest); aynı sıra bir kez ödenir, burada da
+ *    işaretleniyor ki düğme yarıda bırakılan test için yeniden "3 🔑" yazmasın.
  */
 object SobiDailyTest {
 
@@ -37,6 +40,10 @@ object SobiDailyTest {
     private const val KEY_COUNT = "tests_count"
     private const val KEY_NUDGE_DAY = "nudge_day"
     private const val KEY_LEVEL = "level_"
+    private const val KEY_PAID_DAY = "extra_paid_day"
+    private const val KEY_PAID_INDEX = "extra_paid_index"
+    /** functions/sobi/wallet.js EXTRA_TEST_KEYS ile aynı (yalnızca düğme metni; bedeli sunucu belirler). */
+    const val EXTRA_TEST_KEYS = 3
 
     /** Plan için gereken her şey: kural başarısı ve kayıtlı seviyeler. */
     data class Info(val scores: List<SobiTestPlanner.RuleScore>, val levels: Map<String, Int>)
@@ -56,6 +63,20 @@ object SobiDailyTest {
     fun markDone(context: Context) {
         val n = testsToday(context) + 1
         prefs(context).edit().putString(KEY_DAY, today()).putInt(KEY_COUNT, n).apply()
+    }
+
+    /** Bu ek testin (bugünkü sırası [testsToday]) anahtar bedeli: Pro, öğretmen ya da zaten ödendiyse 0. */
+    fun extraTestCost(activity: MainActivity): Int {
+        val n = testsToday(activity)
+        if (n == 0) return 0
+        if (activity.isApprovedTeacher() || PlanStatus.isProPlan(activity.getEnergyManager().getUserPlan())) return 0
+        val p = prefs(activity)
+        val paid = if (p.getString(KEY_PAID_DAY, null) == today()) p.getInt(KEY_PAID_INDEX, 0) else 0
+        return if (n <= paid) 0 else EXTRA_TEST_KEYS
+    }
+
+    fun markExtraPaid(context: Context) {
+        prefs(context).edit().putString(KEY_PAID_DAY, today()).putInt(KEY_PAID_INDEX, testsToday(context)).apply()
     }
 
     /** "Senin için bir test hazırladım!" balonu günde bir kez. */

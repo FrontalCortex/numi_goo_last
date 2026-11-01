@@ -98,5 +98,36 @@
 
             <ImageView style="@style/ProgressHubArrow" />
         </LinearLayout>
+
+        <!-- Sobi kullanımı (yalnızca veli paneli: bakiye kendi hesabından okunuyor, sobiBalance).
+             Dokununca mağaza Sobi kredisi paketlerinde açılır. -->
+        <LinearLayout
+            android:id="@+id/cardSobi"
+            style="@style/ProgressHubCard"
+            android:layout_marginTop="12dp"
+            android:visibility="gone">
+
+            <FrameLayout
+                style="@style/ProgressHubIcon"
+                android:padding="8dp">
+
+                <com.example.app.SobiHeadView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </FrameLayout>
+
+            <LinearLayout style="@style/ProgressHubTexts">
+
+                <TextView
+                    style="@style/ProgressHubTitle"
+                    android:text="@string/progress_hub_sobi" />
+
+                <TextView
+                    android:id="@+id/cardSobiDesc"
+                    style="@style/ProgressHubSubtitle" />
+            </LinearLayout>
+
+            <ImageView style="@style/ProgressHubArrow" />
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

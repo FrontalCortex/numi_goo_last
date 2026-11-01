@@ -5276,7 +5276,7 @@ class MainActivity : AppCompatActivity() {
      * @param focusStreakFreeze true ise mağaza seri dondurma kartında açılır; seri
      *   ekranındaki "Seri dondurma: Yok" satırı böyle çağırıyor.
      */
-    fun openShopFragment(focusStreakFreeze: Boolean = false) {
+    fun openShopFragment(focusStreakFreeze: Boolean = false, focusSobiCredits: Boolean = false) {
         if (MainActivityChromeBlocker.currentLockDepth() > 0) return
         // Öğretmenin satın alacağı bir şey yok (bkz. TeacherApprovalGate.blockPurchasesForTeacher).
         // Mağazanın her girişi (üst panel, kupa yolu canı, özelleştirme) buradan geçiyor.
@@ -5288,7 +5288,7 @@ class MainActivity : AppCompatActivity() {
 
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(R.anim.slide_down, R.anim.slide_up, R.anim.slide_down, R.anim.slide_up)
-            .add(R.id.fragmentContainerID, ShopFragment.newInstance(focusStreakFreeze))
+            .add(R.id.fragmentContainerID, ShopFragment.newInstance(focusStreakFreeze, focusSobiCredits))
             .addToBackStack(null)
             .commit()
         binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }

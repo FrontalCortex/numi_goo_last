@@ -16,6 +16,7 @@ const explainer = require('../sobi/stepExplainer');
 const guard = require('../sobi/guard');
 const chat = require('../sobi/chat');
 const createSobiChat = require('../sobi/callable');
+const wallet = require('../sobi/wallet');
 
 let passed = 0;
 async function test(name, fn) {
@@ -432,7 +433,8 @@ async function main() {
     const r1 = await fn({ message: 'anlamadım', context: { base: 8, target: 14 } }, ctx);
     assert.strictEqual(r1.reply, 'Birler sütununa bak.');
     assert.strictEqual(r1.turnsLeft, createSobiChat.MAX_TURNS - 1);
-    assert.strictEqual(r1.remainingToday, 19);
+    assert.strictEqual(r1.remainingToday, 1, 'Free: günde 2 ücretsiz');
+    assert.strictEqual(r1.credits, 0);
     const session = env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`);
     assert.strictEqual(JSON.parse(session.historyJson).length, 2);
     assert.deepStrictEqual(session.transcript.map((t) => t.from), ['cocuk', 'sobi']);
@@ -443,12 +445,20 @@ async function main() {
     assert.strictEqual(r2.sessionId, r1.sessionId);
     assert.strictEqual(JSON.parse(env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`).historyJson).length, 4);
 
+    // İki mesajla günlük hak bitti; kredi yokken mesaj gitmez, kredi varsa 1 düşer.
+    assert.strictEqual(env.store.get('sobiChats/u1').usageCount, 2);
+    await assert.rejects(fn({ message: 'x' }, ctx), (e) => e.code === 'resource-exhausted');
+    env.store.get('sobiChats/u1').credits = 2;
     env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`).turns = createSobiChat.MAX_TURNS;
     const r3 = await fn({ message: 'bir daha', sessionId: r1.sessionId }, ctx);
     assert.strictEqual(r3.turnLimitReached, true);
-
-    env.store.get('sobiChats/u1').usageCount = 20;
-    await assert.rejects(fn({ message: 'x' }, ctx), (e) => e.code === 'resource-exhausted');
+    responses.push(say('Hadi bakalım.'));
+    const r4 = await fn({ message: 'x', context: { base: 8, target: 14 } }, ctx);
+    assert.strictEqual(r4.remainingToday, 0);
+    assert.strictEqual(r4.credits, 1);
+    assert.strictEqual(env.store.get('sobiChats/u1').credits, 1);
+    assert.strictEqual(env.store.get('sobiChats/u1').monthCount, 3);
+    assert.strictEqual(env.store.get('sobiChats/u1').monthCreditsUsed, 1);
     await assert.rejects(fn({ message: 'x' }, {}), (e) => e.code === 'unauthenticated');
 
     env.store.set('users/u2', { banned: true });
@@ -492,6 +502,69 @@ async function main() {
     assert.ok(r.reply.startsWith('Birlikte bakalım!'));
     assert.strictEqual(env.store.has('sobiChats/u1'), false);
   });
+  await test('yedek metin (denetime takılan cevap) hak ve kredi düşürmüyor', async () => {
+    const env = fakeEnv();
+    const fn = createSobiChat({ ...env, createClient: () => fakeClient([say('Kardeşi 7 gider, sonra 20 olur.')]) });
+    env.store.set('users/u1', {});
+    env.store.set('sobiChats/u1', { credits: 3 });
+    const warn = console.warn; console.warn = () => {};
+    const r = await fn({ message: 'anlamadım', context: { base: 8, target: 14 } }, { auth: { uid: 'u1' } });
+    console.warn = warn;
+    assert.strictEqual(r.fellBack, true);
+    assert.strictEqual(env.store.get('sobiChats/u1').usageCount, undefined);
+    assert.strictEqual(env.store.get('sobiChats/u1').credits, 3);
+    assert.strictEqual(r.remainingToday, 2);
+    assert.strictEqual(r.credits, 3);
+  });
+  await test('cüzdan: plan hakları, bedel sırası, ay sayacı, ek test', async () => {
+    const now = Date.parse('2026-11-01T10:00:00Z');
+    const day = wallet.trDay(now);
+    assert.strictEqual(wallet.balanceOf(null, 'Free', now).freeLeft, 2);
+    assert.strictEqual(wallet.balanceOf(null, 'Lite', now).freeLeft, 10);
+    assert.strictEqual(wallet.balanceOf(null, 'Pro', now).freeLeft, 20);
+    assert.strictEqual(wallet.balanceOf({ usageDay: '2026-10-31', usageCount: 2 }, 'Free', now).freeLeft, 2, 'dün sayılmaz');
+    const c1 = wallet.chargeMessage({ usageDay: day, usageCount: 1, credits: 5 }, 'Free', now);
+    assert.strictEqual(c1.paidWith, 'free');
+    assert.strictEqual(c1.update.usageCount, 2);
+    assert.strictEqual(c1.update.credits, undefined);
+    const c2 = wallet.chargeMessage({ usageDay: day, usageCount: 2, credits: 5, monthKey: '2026-11', monthCount: 7 }, 'Free', now);
+    assert.strictEqual(c2.paidWith, 'credit');
+    assert.strictEqual(c2.update.credits, 4);
+    assert.strictEqual(c2.update.monthCount, 8);
+    assert.strictEqual(c2.after.freeLeft, 0);
+    const c3 = wallet.chargeMessage({ usageDay: day, usageCount: 2, credits: 0, monthKey: '2026-10', monthCount: 40 }, 'Free', now);
+    assert.strictEqual(c3.paidWith, 'none');
+    assert.strictEqual(c3.update.monthCount, 1, 'yeni ay sıfırdan');
+    assert.strictEqual(wallet.canSend({ freeLeft: 0, credits: -2 }), false, 'iade sonrası eksi kredi');
+
+    const base = { plan: 'Free', approvedTeacher: false, keys: 5, chatData: null, testIndex: 1, now };
+    assert.deepStrictEqual(wallet.extraTestDecision(base), { cost: 3, reason: 'keys' });
+    assert.strictEqual(wallet.extraTestDecision({ ...base, keys: 2 }).insufficient, true);
+    assert.strictEqual(wallet.extraTestDecision({ ...base, plan: 'Pro' }).cost, 0);
+    assert.strictEqual(wallet.extraTestDecision({ ...base, approvedTeacher: true, keys: 0 }).cost, 0);
+    const paid = { extraTestDay: day, extraTestIndex: 1 };
+    assert.strictEqual(wallet.extraTestDecision({ ...base, chatData: paid }).reason, 'already_paid');
+    assert.strictEqual(wallet.extraTestDecision({ ...base, chatData: paid, testIndex: 2 }).cost, 3);
+  });
+  await test('ek test callable: anahtar bir kez düşer', async () => {
+    const env = fakeEnv();
+    const w = require('../sobi/wallet')({ ...env, isApprovedTeacher: () => false });
+    const ctx = { auth: { uid: 'u1' } };
+    env.store.set('users/u1', { plan: 'Free', keys: 7 });
+    const r1 = await w.startSobiExtraTest({ testIndex: 1 }, ctx);
+    assert.strictEqual(r1.cost, 3);
+    assert.strictEqual(env.store.get('users/u1').keys, 4);
+    const again = await w.startSobiExtraTest({ testIndex: 1 }, ctx);
+    assert.strictEqual(again.cost, 0, 'yarıda bırakılan test yeniden açılınca');
+    assert.strictEqual(env.store.get('users/u1').keys, 4);
+    await w.startSobiExtraTest({ testIndex: 2 }, ctx);
+    assert.strictEqual(env.store.get('users/u1').keys, 1);
+    await assert.rejects(w.startSobiExtraTest({ testIndex: 3 }, ctx), (e) => e.code === 'failed-precondition');
+    await assert.rejects(w.startSobiExtraTest({ testIndex: 0 }, ctx), (e) => e.code === 'invalid-argument');
+    const b = await w.sobiBalance({}, ctx);
+    assert.strictEqual(b.freeLeft, 2);
+    assert.strictEqual(b.extraTestKeys, 3);
+  });
 
   await test('örnek açma (alistirma_ver): yalnızca Sobi ekranında, öğrenilmiş kurallarla', async () => {
     const input = { baslangic: 3, islem: 'add', sayi: 4 }; // 5'lik kural
@@ -520,7 +593,7 @@ async function main() {
     const r = await fn({ message: 'Bunu anlamadım', suggestion: 'bunu_anlamadim', context: stepContext }, ctx);
     assert.ok(r.reply.startsWith('Abaküste 4 var'));
     assert.strictEqual(r.source, 'hazir');
-    assert.strictEqual(r.remainingToday, 20);
+    assert.strictEqual(r.remainingToday, 2);
     assert.strictEqual(r.messageIndex, 1);
     const path = `sobiChats/u1/sessions/${r.sessionId}`;
     const line = env.store.get(path).transcript[1];
@@ -611,7 +684,7 @@ function fakeEnv() {
       const ops = [];
       const tx = {
         get: (ref) => ref.get(),
-        set: (ref, data) => ops.push(() => ref.set(data)),
+        set: (ref, data, opts) => ops.push(() => ref.set(data, opts)),
         update: (ref, data) => ops.push(() => ref.set(data, { merge: true })),
         delete: (ref) => ops.push(() => ref.delete()),
       };

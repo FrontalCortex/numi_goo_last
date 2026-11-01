@@ -13,6 +13,8 @@ import com.example.app.homework.HomeworkRuleStatsFragment
  * Öğrencinin ilerleme sayfasının girişi: iki kart.
  *  - Dersler → [ParentPanelFragment] (önceden doğrudan açılan ekran, aynen)
  *  - Ödev başarısı → [HomeworkRuleStatsFragment] (ödevlerde kural kural doğru oranı)
+ *  - Sobi (yalnızca veli): bu ay Sobi'ye kaç mesaj gitti, kaç kredi harcandı, kaç kredi kaldı
+ *    (sobiBalance; bakiye kendi hesabından, öğretmen öğrencisininkini göremez). Dokununca mağaza.
  *
  * Veli (Ayarlar → Veli paneli) ve kurs öğretmeni (öğrencinin profilindeki ilerleme düğmesi) buradan
  * giriyor; öğretmende başlık öğrencinin adı, argümanlar iki ekrana da aynen geçiyor.
@@ -52,6 +54,17 @@ class ProgressHubFragment : Fragment() {
         }
         binding.cardRules.setOnClickListener { open(HomeworkRuleStatsFragment.newInstance(uid, studentName)) }
         DepthPress.attach(binding.cardLessons, binding.cardRules)
+        if (uid == null && com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) loadSobi()
+    }
+
+    private fun loadSobi() {
+        ServerSobi.balance({ b ->
+            val bind = _binding ?: return@balance
+            bind.cardSobiDesc.text = appString(R.string.progress_hub_sobi_desc, b.monthCount, b.monthCreditsUsed, b.credits, b.freeLimit)
+            bind.cardSobi.visibility = View.VISIBLE
+            bind.cardSobi.setOnClickListener { (activity as? MainActivity)?.openShopFragment(focusSobiCredits = true) }
+            DepthPress.attach(bind.cardSobi)
+        })
     }
 
     private fun open(fragment: Fragment) {

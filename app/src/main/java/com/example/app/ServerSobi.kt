@@ -7,7 +7,8 @@ import com.google.firebase.functions.FirebaseFunctionsException
 /**
  * "Sobi'ye sor" sohbetinin sunucu çağrısı (`sobiChat`, functions/sobi/callable.js).
  *
- * Sohbetin bütün aklı sunucuda: talimat metni, araçlar, güvenlik denetimi, günlük hak. Uygulama
+ * Sohbetin bütün aklı sunucuda: talimat metni, araçlar, güvenlik denetimi, günlük hak ve kredi
+ * (functions/sobi/wallet.js). Uygulama
  * yalnızca adımın bağlamını ([SobiContext]) ve çocuğun mesajını gönderir, gelen metni gösterir
  * ve ekran işlerini ([Action]: abaküste göster) yapar. API anahtarı uygulamada YOK.
  */
@@ -37,7 +38,10 @@ object ServerSobi {
         val turnLimitReached: Boolean,
         /** Model şu an çağrılamadı; [text] kural motorunun yedek metni. */
         val unavailable: Boolean,
+        /** Bugün kalan ücretsiz mesaj. */
         val remainingToday: Int?,
+        /** Kalan Sobi kredisi (ücretsiz hak bitince her model mesajı 1). */
+        val credits: Int?,
         /** Cevabın sunucudaki sohbet kaydında sırası; beğen / beğenme buna bağlanır. */
         val messageIndex: Int?,
     )
@@ -86,6 +90,7 @@ object ServerSobi {
                         turnLimitReached = data["turnLimitReached"] == true,
                         unavailable = data["unavailable"] == true,
                         remainingToday = (data["remainingToday"] as? Number)?.toInt(),
+                        credits = (data["credits"] as? Number)?.toInt(),
                         messageIndex = (data["messageIndex"] as? Number)?.toInt(),
                     )
                 )
@@ -149,9 +154,61 @@ object ServerSobi {
         return Action(kind, base, op, number, result)
     }
 
-    /** Günlük hak bitti (`resource-exhausted`). */
+    /** Sobi bakiyesi (`sobiBalance`): Sobi ekranı, mağaza ve veli paneli. */
+    data class Balance(
+        val plan: String,
+        val freeLimit: Int,
+        val freeLeft: Int,
+        val credits: Int,
+        /** Bu ay Sobi'ye gönderilen (yapay zekâ) mesaj. */
+        val monthCount: Int,
+        val monthCreditsUsed: Int,
+        /** Ek testin anahtar bedeli; Pro'da 0. */
+        val extraTestKeys: Int,
+    )
+
+    fun balance(onResult: (Balance) -> Unit, onFailure: (Exception) -> Unit = {}) {
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("sobiBalance")
+            .call()
+            .addOnSuccessListener { result ->
+                val d = result.data as? Map<*, *>
+                fun n(k: String) = (d?.get(k) as? Number)?.toInt() ?: 0
+                onResult(Balance(d?.get("plan") as? String ?: "Free", n("freeLimit"), n("freeLeft"), n("credits"),
+                    n("monthCount"), n("monthCreditsUsed"), n("extraTestKeys")))
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "sobiBalance başarısız", e)
+                onFailure(e)
+            }
+    }
+
+    /**
+     * Ek testi başlatmadan önce (`startSobiExtraTest`): Pro değilse 3 anahtar düşer. [testIndex]: bugün
+     * bitirilen test sayısı; aynı sıra iki kez ödenmez (yarıda bırakılıp yeniden açılan test).
+     * [onResult]: düşen anahtar (0 = ücretsiz) ve kalan anahtar.
+     */
+    fun startExtraTest(testIndex: Int, onResult: (cost: Int, keys: Int) -> Unit, onFailure: (Exception) -> Unit) {
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("startSobiExtraTest")
+            .call(hashMapOf("testIndex" to testIndex))
+            .addOnSuccessListener { result ->
+                val d = result.data as? Map<*, *>
+                onResult((d?.get("cost") as? Number)?.toInt() ?: 0, (d?.get("keys") as? Number)?.toInt() ?: 0)
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "startSobiExtraTest başarısız", e)
+                onFailure(e)
+            }
+    }
+
+    /** Günlük ücretsiz hak da kredi de bitti (`resource-exhausted`). */
     fun isDailyLimit(e: Exception): Boolean =
         (e as? FirebaseFunctionsException)?.code == FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED
+
+    /** Ek test için anahtar yetmiyor (`failed-precondition`). */
+    fun isNotEnoughKeys(e: Exception): Boolean =
+        (e as? FirebaseFunctionsException)?.code == FirebaseFunctionsException.Code.FAILED_PRECONDITION
 
     /** Hesap kısıtlı (`permission-denied`); askQuestion kısıtıyla aynı kural. */
     fun isRestricted(e: Exception): Boolean =

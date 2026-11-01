@@ -152,6 +152,8 @@ class MistakeReviewDialog : DialogFragment() {
     private lateinit var showButton: TextView
     private lateinit var checkButton: TextView
     private lateinit var input: EditText
+    /** Bugünkü ücretsiz hak ve Sobi kredisi ([showBalance]). */
+    private var balanceView: TextView? = null
     private lateinit var abacusContainer: View
     private lateinit var buttonsRow: View
 
@@ -237,6 +239,8 @@ class MistakeReviewDialog : DialogFragment() {
         // Sobi'ye yazmak oturum ister (sunucu çağrısı).
         val inputRow = view.findViewById<View>(R.id.reviewInputRow)
         inputRow.visibility = if (loggedIn) View.VISIBLE else View.GONE
+        balanceView = view.findViewById(R.id.reviewBalance)
+        if (loggedIn) ServerSobi.balance({ b -> showBalance(b.freeLeft, b.credits) })
         val send = view.findViewById<View>(R.id.reviewSend)
         send.setOnClickListener { sendFromInput() }
         input.setOnEditorActionListener { _, actionId, _ ->
@@ -706,6 +710,31 @@ class MistakeReviewDialog : DialogFragment() {
 
     // ── Sobi'ye sor ─────────────────────────────────────────────────────────
 
+    /**
+     * "Bugün 2 ücretsiz mesaj · 15 kredi". İkisi de bitince etiket "Kredi al" olur: ekran kapanır,
+     * mağaza Sobi kredisi paketlerinde açılır (satın almayı Play hesabı sahibi, yani ebeveyn onaylar).
+     */
+    private fun showBalance(freeLeft: Int, credits: Int) {
+        val v = balanceView ?: return
+        if (view == null) return
+        v.visibility = View.VISIBLE
+        val empty = freeLeft <= 0 && credits <= 0
+        v.text = when {
+            empty -> appString(R.string.sobi_balance_empty)
+            freeLeft > 0 && credits > 0 -> appString(R.string.sobi_balance_free_credits, freeLeft, credits)
+            freeLeft > 0 -> appString(R.string.sobi_balance_free, freeLeft)
+            else -> appString(R.string.sobi_balance_credits, credits)
+        }
+        v.setTextColor(if (empty) 0xFF1CB0F6.toInt() else 0xFF8B949E.toInt())
+        v.setOnClickListener(if (empty) View.OnClickListener { openSobiCredits() } else null)
+    }
+
+    private fun openSobiCredits() {
+        val activity = activity as? MainActivity ?: return
+        dismissAllowingStateLoss()
+        activity.openShopFragment(focusSobiCredits = true)
+    }
+
     private fun sendFromInput() {
         val text = input.text?.toString()?.trim().orEmpty()
         if (text.isEmpty() || sendingPage != -1) return
@@ -730,6 +759,7 @@ class MistakeReviewDialog : DialogFragment() {
             onResult = { reply ->
                 sendingPage = -1
                 tracker.sessionId = reply.sessionId
+                if (reply.remainingToday != null && reply.credits != null) showBalance(reply.remainingToday, reply.credits)
                 val shown = when {
                     reply.turnLimitReached -> appString(R.string.sobi_turn_limit)
                     else -> reply.text?.takeIf { it.isNotBlank() }
@@ -758,7 +788,10 @@ class MistakeReviewDialog : DialogFragment() {
             onFailure = { e ->
                 sendingPage = -1
                 val msg = when {
-                    ServerSobi.isDailyLimit(e) -> appString(R.string.sobi_error_daily_limit)
+                    ServerSobi.isDailyLimit(e) -> {
+                        showBalance(0, 0)
+                        appString(R.string.sobi_error_daily_limit)
+                    }
                     ServerSobi.isRestricted(e) -> appString(R.string.sobi_error_restricted)
                     else -> appString(R.string.sobi_error_network)
                 }

@@ -43,7 +43,7 @@
 
     <!-- Sorunlar -->
     <string name="sobi_error_network">Şu an Sobi\'ye ulaşamıyorum. İnternetini kontrol edip yeniden dener misin?</string>
-    <string name="sobi_error_daily_limit">Bugün Sobi ile çok konuştun! Yarın yine konuşuruz.</string>
+    <string name="sobi_error_daily_limit">Bugünkü ücretsiz mesajların bitti, yarın yine konuşuruz! Şimdi devam etmek istersen ailen Sobi kredisi alabilir.</string>
     <string name="sobi_error_restricted">Şu an Sobi ile konuşamıyorsun.</string>
     <string name="sobi_turn_limit">Bu sohbet çok uzadı. İstersen öğretmenine sorabilirsin.</string>
 
@@ -136,4 +136,21 @@
     <string name="sobi_test_rule_sub_five">5\'lik çıkarma</string>
     <string name="sobi_test_rule_sub_ten">10\'luk çıkarma</string>
     <string name="sobi_test_rule_sub_bead">boncuk kuralıyla çıkarma</string>
+
+    <!-- Sobi ekonomisi (functions/sobi/wallet.js; kullanıcı kararları 01.11.2026). -->
+    <string name="sobi_balance_free">Bugün %1$d ücretsiz mesaj</string>
+    <string name="sobi_balance_free_credits">Bugün %1$d ücretsiz mesaj · %2$d kredi</string>
+    <string name="sobi_balance_credits">%1$d kredi · her mesaj 1 kredi</string>
+    <string name="sobi_balance_empty">Ücretsiz mesajların bitti · Kredi al ›</string>
+    <string name="sobi_test_start_keys">Başla · %1$d 🔑</string>
+    <string name="sobi_test_not_enough_keys">Ek test için %1$d anahtar gerekiyor, sende %2$d var. Sandıklardan anahtar kazanabilirsin; yarın yine ücretsiz bir test hazırlarım!</string>
+    <string name="shop_sobi_credit_title">Sobi\'ye Sor</string>
+    <string name="shop_sobi_credit_info">Günlük ücretsiz mesaj bitince her Sobi mesajı 1 kredi. Krediler süresiz.</string>
+    <string name="shop_sobi_credit_balance">Sobi kredin: %1$d · Her gün %2$d mesaj ücretsiz. Krediler süresiz.</string>
+    <string name="shop_sobi_credit_amount_20">20 kredi</string>
+    <string name="shop_sobi_credit_amount_50">50 kredi</string>
+    <string name="shop_sobi_credit_amount_120">120 kredi</string>
+    <string name="shop_sobi_credit_desc">Sobi kredisi</string>
+    <string name="progress_hub_sobi">Sobi\'ye sor</string>
+    <string name="progress_hub_sobi_desc">Bu ay %1$d mesaj (%2$d kredi harcandı)\nKalan kredi: %3$d · Günde %4$d mesaj ücretsiz</string>
 </resources>

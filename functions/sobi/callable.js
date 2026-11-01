@@ -11,7 +11,7 @@
  *   bir değişikliğin deploy'unu da bozar. Kurulum: docs/ANLAMADIM_YARDIM_PLANI.md.
  *
  * MODEL
- *   sobiChats/{uid}                       { usageDay, usageCount } — günlük mesaj sayacı
+ *   sobiChats/{uid}                       günlük ücretsiz hak, Sobi kredisi, aylık sayaç (wallet.js)
  *   sobiChats/{uid}/sessions/{sessionId}  bir "Anlamadım" sohbeti:
  *     historyJson    modelin gördüğü geçmiş (düşünme blokları dahil, JSON metni: Firestore iç içe
  *                    dizi saklamıyor, geçmişte de iç içe diziler var)
@@ -29,13 +29,12 @@ const Anthropic = require('@anthropic-ai/sdk').default;
 const chat = require('./chat');
 const guard = require('./guard');
 const tools = require('./tools');
+const wallet = require('./wallet');
 
 const SYSTEM_PROMPT = fs.readFileSync(path.join(__dirname, 'prompt_tr.md'), 'utf8');
 /** Talimat metninin parmak izi; her oturuma yazılır, hangi metinle konuşulduğu bilinsin. */
 const PROMPT_VERSION = crypto.createHash('sha1').update(SYSTEM_PROMPT).digest('hex').slice(0, 10);
 
-/** Günlük mesaj sınırı, plana göre (kullanıcı kararı bekleniyor: plan belgesi, açık soru 1). */
-const DAILY_LIMIT = { Free: 20, Lite: 50, Pro: 100 };
 /**
  * Bir sohbette en fazla çocuk mesajı; sonra öğretmene sor önerilir. Sohbet bir öğreticinin
  * tamamı boyunca sürdüğü için (yalnızca bir soru adımı değil) 20.
@@ -43,10 +42,6 @@ const DAILY_LIMIT = { Free: 20, Lite: 50, Pro: 100 };
 const MAX_TURNS = 20;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const SESSION_ID = /^[A-Za-z0-9_-]{8,64}$/;
-
-function trDay(ms) {
-  return new Date(ms + 3 * 3600 * 1000).toISOString().slice(0, 10);
-}
 
 /** Geçmişteki düşünme bloğu reddedildi mi (geçmişi sıfırlayınca düzelen tek hata). */
 function isStaleHistoryError(err) {
@@ -83,14 +78,17 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       }
 
       const now = Date.now();
-      const today = trDay(now);
-      const limit = DAILY_LIMIT[effectivePlan(userData)] || DAILY_LIMIT.Free;
+      const plan = effectivePlan(userData);
       const usageRef = db.collection('sobiChats').doc(uid);
       const usageSnap = await usageRef.get();
-      const used = usageSnap.exists && usageSnap.get('usageDay') === today ? Number(usageSnap.get('usageCount')) || 0 : 0;
-      // Modelsiz cevap ücretsiz: günlük hakkı bitmiş çocuk da balondaki hazır açıklamayı görür.
-      if (used >= limit && !direct) {
-        throw new functions.https.HttpsError('resource-exhausted', 'Bugünkü Sobi sohbet hakkın doldu.', { limit });
+      const balance = wallet.balanceOf(usageSnap.exists ? usageSnap.data() : null, plan, now);
+      // Uygulamaya giden bakiye: Sobi ekranındaki "bugün 2 ücretsiz / 15 kredi" satırı.
+      const balanceFields = (b) => ({ remainingToday: b.freeLeft, freeLimit: b.freeLimit, credits: b.credits });
+      // Modelsiz cevap ücretsiz: hakkı ve kredisi bitmiş çocuk da balondaki hazır açıklamayı görür.
+      if (!direct && !wallet.canSend(balance)) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Bugünkü Sobi hakkın ve kredin bitti.', {
+          freeLimit: balance.freeLimit, credits: balance.credits, plan,
+        });
       }
 
       const sessionRef = sessionId
@@ -100,7 +98,7 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       const session = sessionSnap && sessionSnap.exists ? sessionSnap.data() : null;
       const turns = session ? Number(session.turns) || 0 : 0;
       if (turns >= MAX_TURNS) {
-        return { sessionId: sessionRef.id, turnLimitReached: true, turnsLeft: 0, remainingToday: limit - used };
+        return { sessionId: sessionRef.id, turnLimitReached: true, turnsLeft: 0, ...balanceFields(balance) };
       }
       let history = [];
       if (session && session.historyJson) {
@@ -149,7 +147,7 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
           suggestions: chat.suggestionsFor(stepContext, []),
           unavailable: true,
           turnsLeft: MAX_TURNS - turns,
-          remainingToday: limit - used,
+          ...balanceFields(balance),
         };
       }
 
@@ -177,23 +175,30 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       for (const [k, v] of Object.entries(result.usage)) totals[k] = (totals[k] || 0) + v;
 
       const ts = admin.firestore.Timestamp;
-      const batch = db.batch();
-      batch.set(sessionRef, {
-        historyJson: JSON.stringify(result.history),
-        transcript,
-        turns: turns + 1,
-        stepId: stepContext.stepId,
-        pendingNote: result.fellBack ? result.reply : null,
-        model: chat.DEFAULT_MODEL,
-        promptVersion: PROMPT_VERSION,
-        usage: totals,
-        ...(session ? {} : { createdAt: ts.fromMillis(now) }),
-        updatedAt: ts.fromMillis(now),
-        expiresAt: ts.fromMillis(now + RETENTION_MS),
-      }, { merge: true });
-      // Modelsiz cevap günlük haktan düşmüyor.
-      if (!direct) batch.set(usageRef, { usageDay: today, usageCount: used + 1 }, { merge: true });
-      await batch.commit();
+      // Oturum ve bedel aynı işlemde: aynı anda iki cihazdan gelen mesaj hakkı iki kez kullanamasın.
+      // Bedel yalnızca modelin geçen cevabına; hazır açıklama ve yedek metin ücretsiz (kullanıcı kararı).
+      const paid = !direct && !result.fellBack;
+      const after = await db.runTransaction(async (tx) => {
+        const fresh = paid ? await tx.get(usageRef) : null;
+        tx.set(sessionRef, {
+          historyJson: JSON.stringify(result.history),
+          transcript,
+          turns: turns + 1,
+          stepId: stepContext.stepId,
+          pendingNote: result.fellBack ? result.reply : null,
+          model: chat.DEFAULT_MODEL,
+          promptVersion: PROMPT_VERSION,
+          usage: totals,
+          ...(session ? {} : { createdAt: ts.fromMillis(now) }),
+          updatedAt: ts.fromMillis(now),
+          expiresAt: ts.fromMillis(now + RETENTION_MS),
+        }, { merge: true });
+        if (!paid) return balance;
+        const charge = wallet.chargeMessage(fresh.exists ? fresh.data() : null, plan, now);
+        if (charge.paidWith === 'none') console.warn('sobiChat: hak ve kredi işlem sırasında bitti', { uid });
+        tx.set(usageRef, charge.update, { merge: true });
+        return charge.after;
+      });
 
       return {
         sessionId: sessionRef.id,
@@ -202,7 +207,7 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
         suggestions: result.suggestions,
         fellBack: result.fellBack,
         turnsLeft: MAX_TURNS - (turns + 1),
-        remainingToday: limit - (direct ? used : used + 1),
+        ...balanceFields(after),
         // Beğen / beğenme bu sıraya bağlanıyor (sobiFeedback).
         messageIndex: transcript.length - 1,
         source: direct ? 'hazir' : 'model',
@@ -211,5 +216,4 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
 };
 
 module.exports.PROMPT_VERSION = PROMPT_VERSION;
-module.exports.DAILY_LIMIT = DAILY_LIMIT;
 module.exports.MAX_TURNS = MAX_TURNS;

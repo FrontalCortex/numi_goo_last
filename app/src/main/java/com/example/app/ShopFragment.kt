@@ -281,9 +281,9 @@ class ShopFragment : Fragment() {
      * hareket binince ekran çalkalanıyor. Vurgu ise açılış animasyonu bittikten sonra
      * oynuyor, yoksa görülmeden biterdi.
      */
-    private fun focusStreakFreezeCard(root: View) {
+    private fun focusCard(root: View, cardId: Int) {
         val scroll = root.findViewById<ScrollView>(R.id.shopScrollView) ?: return
-        val card = root.findViewById<View>(R.id.shopStreakFreezeCard) ?: return
+        val card = root.findViewById<View>(cardId) ?: return
         // Kartın konumu ölçüm bitmeden bilinmiyor.
         scroll.doOnLayout {
             val bounds = Rect()
@@ -439,7 +439,10 @@ class ShopFragment : Fragment() {
         if (savedInstanceState == null &&
             arguments?.getBoolean(ARG_FOCUS_STREAK_FREEZE) == true
         ) {
-            focusStreakFreezeCard(view)
+            focusCard(view, R.id.shopStreakFreezeCard)
+        } else if (savedInstanceState == null && arguments?.getBoolean(ARG_FOCUS_SOBI_CREDITS) == true) {
+            // Sobi ekranında hak ve kredi bitince "Kredi al".
+            focusCard(view, R.id.shopSobiCreditSection)
         }
 
         (activity as? MainActivity)?.billingManager?.let { billing ->
@@ -448,6 +451,7 @@ class ShopFragment : Fragment() {
                 if (isAdded) {
                     refreshCurrencyUi()
                     refreshCreditBalance()
+                    refreshSobiCredits()
                     animatePurchasedItem(productId)
                 }
                 (activity as? MainActivity)?.refreshWalletUi()
@@ -469,6 +473,7 @@ class ShopFragment : Fragment() {
         handler.post(updateRunnable!!)
         refreshCurrencyUi()
         refreshCreditBalance()
+        refreshSobiCredits()
     }
 
     override fun onDestroyView() {
@@ -507,6 +512,12 @@ class ShopFragment : Fragment() {
                 Triple(R.id.shopCreditCard2, R.drawable.chat_credit_ic3, 5)
             BillingCatalog.CREDITS_LARGE ->
                 Triple(R.id.shopCreditCard3, R.drawable.chat_credit_ic3, 10)
+            BillingCatalog.SOBI_CREDITS_20 ->
+                Triple(R.id.shopSobiCreditCard1, R.drawable.chat_credit_ic3, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.SOBI_CREDITS_50 ->
+                Triple(R.id.shopSobiCreditCard2, R.drawable.chat_credit_ic3, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.SOBI_CREDITS_120 ->
+                Triple(R.id.shopSobiCreditCard3, R.drawable.chat_credit_ic3, PURCHASE_ANIMATION_ITEM_COUNT)
             else -> return
         }
         val card = view.findViewById<View>(cardId) ?: return
@@ -581,6 +592,16 @@ class ShopFragment : Fragment() {
      * Bakiye cüzdan önbelleğinde tutulmuyor (o yalnızca altın/anahtar için); alan
      * sunucuya ait ve seyrek değiştiği için doğrudan tek seferlik okunuyor.
      */
+    /** Sobi kredisi sunucuda (sobiChats/{uid}, istemciye kapalı); bakiye satırı sobiBalance'tan. */
+    private fun refreshSobiCredits() {
+        if (FirebaseAuth.getInstance().currentUser == null) return
+        ServerSobi.balance({ b ->
+            if (!isAdded) return@balance
+            view?.findViewById<TextView>(R.id.shopSobiCreditBalanceText)?.text =
+                getString(R.string.shop_sobi_credit_balance, b.credits, b.freeLimit)
+        })
+    }
+
     private fun refreshCreditBalance() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseFirestore.getInstance().collection("users").document(uid).get()
@@ -792,6 +813,7 @@ class ShopFragment : Fragment() {
         const val RESULT_STREAK_FREEZE_BOUGHT = "streak_freeze_bought"
 
         private const val ARG_FOCUS_STREAK_FREEZE = "focus_streak_freeze"
+        private const val ARG_FOCUS_SOBI_CREDITS = "focus_sobi_credits"
 
         /** Karta kaydırıldığında kartın üstünde bırakılan boşluk; başlık kartın tepesine yapışmasın. */
         private const val FOCUS_TOP_GAP_DP = 16
@@ -803,12 +825,14 @@ class ShopFragment : Fragment() {
 
         /**
          * @param focusStreakFreeze true ise mağaza seri dondurma kartında açılır
-         *   (bkz. [focusStreakFreezeCard]).
+         *   (bkz. [focusCard]).
+         * @param focusSobiCredits true ise Sobi kredisi paketlerinde açılır.
          */
-        fun newInstance(focusStreakFreeze: Boolean = false): ShopFragment =
+        fun newInstance(focusStreakFreeze: Boolean = false, focusSobiCredits: Boolean = false): ShopFragment =
             ShopFragment().apply {
                 arguments = Bundle().apply {
                     putBoolean(ARG_FOCUS_STREAK_FREEZE, focusStreakFreeze)
+                    putBoolean(ARG_FOCUS_SOBI_CREDITS, focusSobiCredits)
                 }
             }
 
@@ -823,6 +847,9 @@ class ShopFragment : Fragment() {
             R.id.shopCreditCard1 to BillingCatalog.CREDITS_SMALL,
             R.id.shopCreditCard2 to BillingCatalog.CREDITS_MEDIUM,
             R.id.shopCreditCard3 to BillingCatalog.CREDITS_LARGE,
+            R.id.shopSobiCreditCard1 to BillingCatalog.SOBI_CREDITS_20,
+            R.id.shopSobiCreditCard2 to BillingCatalog.SOBI_CREDITS_50,
+            R.id.shopSobiCreditCard3 to BillingCatalog.SOBI_CREDITS_120,
         )
 
         /** Fiyat etiketi -> Play ürün kimliği. */
@@ -836,6 +863,9 @@ class ShopFragment : Fragment() {
             R.id.shopCreditPrice1 to BillingCatalog.CREDITS_SMALL,
             R.id.shopCreditPrice2 to BillingCatalog.CREDITS_MEDIUM,
             R.id.shopCreditPrice3 to BillingCatalog.CREDITS_LARGE,
+            R.id.shopSobiCreditPrice1 to BillingCatalog.SOBI_CREDITS_20,
+            R.id.shopSobiCreditPrice2 to BillingCatalog.SOBI_CREDITS_50,
+            R.id.shopSobiCreditPrice3 to BillingCatalog.SOBI_CREDITS_120,
         )
     }
 }
