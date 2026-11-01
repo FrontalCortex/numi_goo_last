@@ -3413,6 +3413,8 @@ class MainActivity : AppCompatActivity() {
      * gösteriyor.
      */
     private fun isAskQuestionPromoEligible(): Boolean {
+        // Soru düğmeleri gizliyken tanıtım, kullanıcının bulamayacağı bir özelliği anlatırdı.
+        if (!TeacherQuestionsFeature.ENABLED) return false
         if (FirebaseAuth.getInstance().currentUser == null) return false
         if (energyManager.getUserRole() == "TEACHER") return false
         // Test anahtarı: plan ve cihaz kredisi kapılarını atlar. Release'de hep false,

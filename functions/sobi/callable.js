@@ -36,7 +36,7 @@ const SYSTEM_PROMPT = fs.readFileSync(path.join(__dirname, 'prompt_tr.md'), 'utf
 const PROMPT_VERSION = crypto.createHash('sha1').update(SYSTEM_PROMPT).digest('hex').slice(0, 10);
 
 /**
- * Bir sohbette en fazla çocuk mesajı; sonra öğretmene sor önerilir. Sohbet bir öğreticinin
+ * Bir sohbette en fazla çocuk mesajı; sonra yeni sohbet önerilir (sobi_turn_limit). Sohbet bir öğreticinin
  * tamamı boyunca sürdüğü için (yalnızca bir soru adımı değil) 20.
  */
 const MAX_TURNS = 20;

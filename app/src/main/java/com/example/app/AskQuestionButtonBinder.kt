@@ -23,6 +23,12 @@ object AskQuestionButtonBinder {
         onReadyForBounce: (() -> Unit)? = null,
         canPlayWave: () -> Boolean = { true },
     ) {
+        // Özellik kapalı: düğme hiç görünmüyor, tıklama ve renk dalgası da bağlanmıyor.
+        if (!TeacherQuestionsFeature.ENABLED) {
+            button.visibility = View.GONE
+            onVisibleChanged?.invoke(false)
+            return
+        }
         // Renkli ikon ve ara sıra geçen renk dalgası; bkz. AskQuestionButtonStyle.
         (button as? android.widget.ImageView)?.let { AskQuestionButtonStyle.apply(fragment, it, canPlayWave) }
 

@@ -45,7 +45,7 @@
     <string name="sobi_error_network">Şu an Sobi\'ye ulaşamıyorum. İnternetini kontrol edip yeniden dener misin?</string>
     <string name="sobi_error_daily_limit">Bugünkü ücretsiz mesajların bitti. Devam etmek istersen Sobi kredisi al.</string>
     <string name="sobi_error_restricted">Şu an Sobi ile konuşamıyorsun.</string>
-    <string name="sobi_turn_limit">Bu sohbet çok uzadı. İstersen öğretmenine sorabilirsin.</string>
+    <string name="sobi_turn_limit">Bu sohbet çok uzadı. Yeni bir soruyla yeniden başlayalım.</string>
 
     <!-- "Sobi ile analiz et" ekranı (MistakeReviewDialog) -->
     <string name="review_open_button">Sobi ile analiz et</string>

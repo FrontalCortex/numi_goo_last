@@ -28,10 +28,21 @@ class MapSobiTestButton(private val fragment: Fragment, private val root: Constr
         button = LayoutInflater.from(ctx).inflate(R.layout.view_map_sobi_test, root, false)
         dot = button.findViewById(R.id.mapSobiTestDot)
         root.addView(button, ConstraintLayout.LayoutParams((SIZE_DP * d).toInt(), (SIZE_DP * d).toInt()).apply {
-            endToEnd = anchor.id
-            startToStart = anchor.id
-            bottomToTop = anchor.id
-            bottomMargin = (12 * d).toInt()
+            if (TeacherQuestionsFeature.ENABLED) {
+                endToEnd = anchor.id
+                startToStart = anchor.id
+                bottomToTop = anchor.id
+                bottomMargin = (12 * d).toInt()
+            } else {
+                // "Öğretmene sor" gizli (GONE): ConstraintLayout onu sağ alt köşede bir noktaya
+                // indiriyor, ona ortalanan düğme yarı yarıya ekran dışına taşardı. Onun yerine
+                // geçiyor: aynı alt boşluk, aynı dikey eksen (fragment_map.xml: 60dp, 16dp boşluk).
+                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                val anchorSize = ctx.resources.getDimensionPixelSize(R.dimen.map_fab_size)
+                marginEnd = (16 * d).toInt() + (anchorSize - (SIZE_DP * d).toInt()) / 2
+                bottomMargin = (16 * d).toInt()
+            }
         })
         // Haritadaki öbür düğmelerle aynı katmanda: liste kartlarının üstünde.
         button.elevation = anchor.elevation
