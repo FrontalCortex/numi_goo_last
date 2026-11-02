@@ -438,13 +438,125 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Doğru / yanlış paneli -->
+    <!--
+      Sağdaki düğmeler ve paneller kupa yolundaki BlindingLessonFragment ile aynı (fragment_blinding_lesson.xml);
+      davranışları ortak yardımcılarda: abacus/LessonRulesPanel, abacus/AbacusSettingsPanel, abacus/LessonSideButtons.
+      Sütun alttan yukarı: abaküs ayarı, atla, kural paneli, sıfırla. Kural kitabı sağ üstte.
+    -->
+    <FrameLayout
+        android:id="@+id/rulesFragmentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="20dp"
+        app:layout_constraintTop_toBottomOf="@id/blackboardImage"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/abacusContainer" />
+
+    <ImageView
+        android:id="@+id/rulesBookButton"
+        android:layout_width="@dimen/abacus_fragment_rules_book_size"
+        android:layout_height="@dimen/abacus_fragment_rules_book_size"
+        android:layout_marginEnd="@dimen/abacus_fragment_rules_book_margin_end"
+        android:background="@drawable/fab_background"
+        android:contentDescription="@null"
+        android:padding="@dimen/abacus_fragment_rules_book_padding"
+        android:src="@drawable/math_book_ic2"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/resetButton"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
+        android:layout_marginEnd="-9dp"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:background="@drawable/fab_background"
+        android:elevation="10dp"
+        android:padding="5dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/rulesPanelButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:lottie_autoPlay="false"
+        app:lottie_loop="false"
+        app:lottie_rawRes="@raw/reset" />
+
+    <ImageView
+        android:id="@+id/rulesPanelButton"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
+        android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:background="@drawable/fab_background"
+        android:contentDescription="@null"
+        android:elevation="10dp"
+        android:padding="@dimen/tutorial_rules_panel_button_padding"
+        android:src="@drawable/magic_wand_ic"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/skipStepButton"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/skipStepButton"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
+        android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:background="@drawable/fab_background"
+        android:padding="2dp"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/abacusModeButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:lottie_autoPlay="false"
+        app:lottie_fileName="skip_step_arrow_anim.json"
+        app:lottie_loop="false" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/abacusModeButton"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
+        android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:background="@drawable/fab_background"
+        android:padding="2dp"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/kontrolButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:lottie_autoPlay="false"
+        app:lottie_fileName="abacus_mode_ic_anim.json"
+        app:lottie_loop="false" />
+
+    <include
+        android:id="@+id/rulesPanelScrollView"
+        layout="@layout/view_rules_panel"
+        android:layout_width="wrap_content"
+        android:layout_height="120dp"
+        android:layout_marginBottom="-5dp"
+        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <include
+        android:id="@+id/abacusSettingsPanel"
+        layout="@layout/view_abacus_settings_panel"
+        android:layout_width="340dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintVertical_bias="0.1" />
+
+    <!-- Doğru / yanlış paneli (yan düğmelerin, elevation 10dp, üstünde kalsın: dersteki gibi 14dp) -->
     <LinearLayout
         android:id="@+id/resultPanel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@drawable/bottom_sheet_background"
-        android:elevation="4dp"
+        android:elevation="14dp"
         android:orientation="vertical"
         android:padding="@dimen/tutorial_result_panel_padding"
         android:visibility="gone"

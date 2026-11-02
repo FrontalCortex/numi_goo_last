@@ -17,6 +17,9 @@ import androidx.lifecycle.lifecycleScope
 import com.example.app.MainActivity
 import com.example.app.R
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.AbacusSettingsPanel
+import com.example.app.abacus.LessonRulesPanel
+import com.example.app.abacus.LessonSideButtons
 import com.example.app.appString
 import com.example.app.databinding.FragmentHomeworkPlayerBinding
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +49,15 @@ import kotlinx.coroutines.withContext
  * başarısına yazılır ([com.example.app.SobiRuleStats]; soru başına, ödevle aynı işlem sayımı).
  * Yanlışta "Sobi ile analiz et"; bitince Sobi kural kural özetler, sandık derslerdekiyle aynı sunucu
  * sandığı ([com.example.app.NewChestFragment]). Ödev akışı değişmedi; kip yalnızca bu argümanla açılır.
+ *
+ * SAĞ DÜĞMELER (kupa yolundaki BlindingLessonFragment ile aynı; görünüm ve davranış ortak yardımcılarda:
+ * [LessonRulesPanel], [AbacusSettingsPanel], [LessonSideButtons]). Ödevde ve Sobi testinde aynı çalışıyor:
+ * - Sıfırla: abaküs (abaküssüzde cevap kutusu) sıfırlanır; sayılar akarken soru baştan akar. Akış bitince
+ *   sayılar yeniden gösterilmez: o zaman bedava ikinci bakış olurdu.
+ * - Atla: gösterilen sayıyı hemen geçer (yalnızca çocuğu hızlandırır, puana etkisi yok); çarpmada gizli.
+ * - Kural kitabı / sihirli değnek: kitapta seçilen tablo değnekle abaküsün üstünde açılıp kapanır.
+ * - Abaküs ayarı (yalnızca abaküslüde): boyut paneli. Soru yarıdayken açılırsa soru Başla'ya döner,
+ *   çünkü panel abaküsü sıfırlıyor.
  */
 class HomeworkPlayerFragment : Fragment() {
 
@@ -59,6 +71,8 @@ class HomeworkPlayerFragment : Fragment() {
         private const val RESULT_PANEL_ANIM_MS = 200L
         /** Oynatıcı kayarak kapanırken sandık hemen ardından açılsın (kapsayıcı gizlenmeden). */
         private const val SOBI_CHEST_DELAY_MS = 80L
+        /** Sıfırla'da soru yeniden akmadan önce: abaküsün sıfırlanma animasyonu (300 ms) bitsin, kayda girmesin. */
+        private const val RESTART_FLASH_DELAY_MS = 350L
 
         fun newInstance(homeworkId: String) = HomeworkPlayerFragment().apply {
             arguments = Bundle().apply { putString(ARG_HOMEWORK_ID, homeworkId) }
@@ -115,12 +129,34 @@ class HomeworkPlayerFragment : Fragment() {
     /** Panel kayarken Devam'a basılıp soru atlanmasın. */
     private var resultPanelAnimating = false
 
+    // Sağ düğmeler (bkz. sınıf açıklaması)
+    private var rulesPanel: LessonRulesPanel? = null
+    private var abacusSettings: AbacusSettingsPanel? = null
+
+    // Sayıların akışı adım adım: atla o anki sayıyı kısaltabilsin, sıfırla akışı durdurabilsin.
+    private var flashLabels: List<String> = emptyList()
+    private var flashIndex = 0
+    private var flashShowMs = 0L
+    private var flashGapMs = 0L
+    /** Sayı söndü, sıradaki bekleniyor: atla bu arada bir şey yapmaz (derste de öyle). */
+    private var flashBlank = false
+    private val flashHideRunnable = Runnable { hideFlashNumber() }
+    private val flashNextRunnable = Runnable { showFlashNumber() }
+    private val restartFlashRunnable = Runnable {
+        if (_binding != null && !answered && questions.isNotEmpty()) startFlash(questions[questionIndex])
+    }
+
     // Kural kural başarı (RuleAnalysis): sorudaki abaküs değerleri, sayıların göründüğü anlar, adımın sayımı
     private val abacusLog = ArrayList<RuleAnalysis.Sample>()
     private val shownAtMs = ArrayList<Long>()
     private val blockTally = LinkedHashMap<String, IntArray>()
     /** Soru akarken ve cevaplanana kadar true: abaküsün her değişimi kaydediliyor. */
     private var recordingAbacus = false
+    /**
+     * Sayılar bittikten sonra sıfırlandı: kayıtta sıfırlama bir hamle gibi görünür, kural sayımı yanlış
+     * olurdu. O soru kural kural sayılmaz (doğru/yanlış sayılır).
+     */
+    private var abacusLogBroken = false
 
     private fun recordAbacus() {
         if (!recordingAbacus) return
@@ -139,7 +175,13 @@ class HomeworkPlayerFragment : Fragment() {
         sobiMode = requireArguments().containsKey(ARG_SOBI_OPS)
         binding.quitButton.setOnClickListener { requestQuit() }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() = requestQuit()
+            override fun handleOnBackPressed() {
+                // Önce açık kural kitabı ya da ayar paneli kapansın.
+                if (LessonRulesPanel.closeRulesBookIfOpen(childFragmentManager)) return
+                val settings = abacusSettings
+                if (settings != null && settings.isOpen) return settings.toggle()
+                requestQuit()
+            }
         })
         binding.kontrolButton.setOnClickListener { onKontrol() }
         binding.answerInput.setOnEditorActionListener { _, actionId, _ ->
@@ -147,6 +189,7 @@ class HomeworkPlayerFragment : Fragment() {
         }
         binding.resultButton.setOnClickListener { if (!resultPanelAnimating) hideResultPanel { nextQuestion() } }
         navBarPanelExtension = com.example.app.NavBarPanelExtension(binding.root, binding.resultPanel).also { it.attach() }
+        setupSideButtons()
         setPlayVisible(false)
 
         if (sobiMode) {
@@ -289,9 +332,20 @@ class HomeworkPlayerFragment : Fragment() {
         val b = _binding ?: return
         b.abacusContainer.visibility = if (withAbacus) View.VISIBLE else View.GONE
         if (!withAbacus) return
+        // Ayarlar denetleyiciden önce: kaydedilmiş boncuk boşlukları ona aktarılıyor (derste de bu sırada).
+        abacusSettings = AbacusSettingsPanel(
+            panel = b.abacusSettingsPanel,
+            abacusContainer = b.abacusContainer,
+            modeButton = b.abacusModeButton,
+            sideButtons = listOf(b.resetButton, b.rulesPanelButton, b.skipStepButton, b.abacusModeButton),
+            controller = { abacusController },
+            onOpen = ::onAbacusSettingsOpen,
+            onClose = { abacusController?.setEnabled(true) },
+        ).also { it.attach() }
         val controller = AbacusBeadController(context = requireContext(), root = b.root, animationDurationMs = 300L)
         controller.setup()
         controller.onValueChanged = { recordAbacus() }
+        abacusSettings?.applyBeadOffsets(controller)
         abacusController = controller
         b.abacusLinear.post {
             if (_binding == null || abacusMetricsReady) return@post
@@ -309,6 +363,16 @@ class HomeworkPlayerFragment : Fragment() {
         b.flashText.visibility = v
         b.kontrolButton.visibility = v
         b.stepText.visibility = v
+        val side = if (visible) View.VISIBLE else View.GONE
+        b.rulesBookButton.visibility = side
+        b.resetButton.visibility = side
+        b.rulesPanelButton.visibility = side
+        b.skipStepButton.visibility = side
+        b.abacusModeButton.visibility = if (visible && homework?.config?.withAbacus == true) View.VISIBLE else View.GONE
+        if (!visible) {
+            rulesPanel?.closeIfOpen()
+            abacusSettings?.closeIfOpen()
+        }
     }
 
     /** Sıradaki adımın sorularını arka planda üretir (elde gerektiren ayarlarda birkaç yüz ms sürebilir). */
@@ -347,6 +411,10 @@ class HomeworkPlayerFragment : Fragment() {
         abacusController?.reset(animate = true)
         b.answerInput.text = null
         b.answerInput.visibility = View.GONE
+        // Çarpmada akış yok, atlanacak sayı da (derste de çarpmada gizli).
+        b.skipStepButton.visibility = if (q.op == HomeworkOp.MUL) View.GONE else View.VISIBLE
+        // Tablo açıksa sorunun işlemine göre yenilensin (5'li tablonun başlığı toplama/çıkarma).
+        if (rulesPanel?.isVisible == true) rulesPanel?.show()
 
         if (q.op == HomeworkOp.MUL) {
             setFlash(HomeworkText.questionLine(q))
@@ -373,21 +441,46 @@ class HomeworkPlayerFragment : Fragment() {
         // Abaküslüde değerler kaydediliyor: hangi kuralda hata yapıldığı buradan çıkıyor
         abacusLog.clear()
         shownAtMs.clear()
+        abacusLogBroken = false
         recordingAbacus = cfg.withAbacus
         recordAbacus() // sorunun başındaki değer
-        var t = 0L
-        q.numbers.forEachIndexed { i, n ->
-            // Çıkarmada başlangıçtan sonraki sayılar eksiyle gösteriliyor.
-            val label = if (q.op == HomeworkOp.SUB && i > 0) "−$n" else n.toString()
-            handler.postDelayed({ shownAtMs += android.os.SystemClock.uptimeMillis(); setFlash(label) }, t)
-            t += show
-            handler.postDelayed({ setFlash("") }, t)
-            t += gap
-        }
-        handler.postDelayed({
+        // Çıkarmada başlangıçtan sonraki sayılar eksiyle gösteriliyor.
+        flashLabels = q.numbers.mapIndexed { i, n -> if (q.op == HomeworkOp.SUB && i > 0) "−$n" else n.toString() }
+        flashIndex = 0
+        flashShowMs = show
+        flashGapMs = gap
+        showFlashNumber()
+    }
+
+    /** Sıradaki sayı [flashShowMs] boyunca görünür; sayılar bittiyse akış biter. */
+    private fun showFlashNumber() {
+        if (_binding == null) return
+        if (flashIndex >= flashLabels.size) {
             flashing = false
             onFlashFinished()
-        }, t)
+            return
+        }
+        shownAtMs += android.os.SystemClock.uptimeMillis()
+        setFlash(flashLabels[flashIndex])
+        flashBlank = false
+        handler.postDelayed(flashHideRunnable, flashShowMs)
+    }
+
+    /** Sayı söner, [flashGapMs] sonra sıradaki: ardışık aynı sayılar ayırt edilsin. */
+    private fun hideFlashNumber() {
+        if (_binding == null) return
+        setFlash("")
+        flashBlank = true
+        flashIndex++
+        handler.postDelayed(flashNextRunnable, flashGapMs)
+    }
+
+    private fun stopFlash() {
+        handler.removeCallbacks(flashHideRunnable)
+        handler.removeCallbacks(flashNextRunnable)
+        handler.removeCallbacks(restartFlashRunnable)
+        flashing = false
+        flashBlank = false
     }
 
     private fun onFlashFinished() {
@@ -479,6 +572,7 @@ class HomeworkPlayerFragment : Fragment() {
         val attempts = runCatching {
             when {
                 q.op == HomeworkOp.MUL -> RuleAnalysis.multiplication(cfg, correct)
+                cfg.withAbacus && abacusLogBroken -> emptyList()
                 cfg.withAbacus -> RuleAnalysis.abacus(q, abacusLog.toList(), shownAtMs.toList(), given)
                 else -> emptyList() // abaküssüz toplama/çıkarma sayılmıyor
             }
@@ -642,6 +736,81 @@ class HomeworkPlayerFragment : Fragment() {
         b.summarySecondary.visibility = View.GONE
     }
 
+    // ── Sağ düğmeler ────────────────────────────────────────────────────────
+
+    private fun setupSideButtons() {
+        val b = _binding ?: return
+        rulesPanel = LessonRulesPanel(b.rulesPanelScrollView, layoutInflater) {
+            questions.getOrNull(questionIndex)?.op == HomeworkOp.SUB
+        }
+        LessonSideButtons.setupReset(b.resetButton) { onReset() }
+        LessonSideButtons.setupSkip(b.skipStepButton) { onSkip() }
+        b.rulesBookButton.setOnClickListener { openRulesBook() }
+        b.rulesPanelButton.setOnClickListener {
+            val panel = rulesPanel ?: return@setOnClickListener
+            // Derste kitaptan tablo seçilen bölümlerdeki gibi: tablo seçilmediyse önce kitap açılır.
+            if (panel.hasContentToShow()) panel.toggle() else openRulesBook()
+        }
+    }
+
+    /** Sıfırla (bkz. sınıf açıklaması). Cevaplandıysa ya da soru yoksa bir şey yapmaz. */
+    private fun onReset() {
+        val b = _binding ?: return
+        if (answered || questions.isEmpty() || b.summaryPanel.visibility == View.VISIBLE) return
+        abacusController?.reset(animate = true)
+        b.answerInput.text = null
+        if (flashing) {
+            stopFlash()
+            setFlash("")
+            handler.postDelayed(restartFlashRunnable, RESTART_FLASH_DELAY_MS)
+        } else if (recordingAbacus) {
+            abacusLogBroken = true
+        }
+    }
+
+    /** Atla: gösterilen sayı hemen söner, sıradaki gelir (BlindingLessonFragment.skipToNextSequenceNumber ile aynı). */
+    private fun onSkip() {
+        val b = _binding ?: return
+        if (!flashing) return
+        b.skipStepButton.playAnimation()
+        if (flashBlank) return
+        handler.removeCallbacks(flashHideRunnable)
+        hideFlashNumber()
+    }
+
+    /** Ayar paneli abaküsü sıfırlıyor: yarıdaki soru Başla'ya döner (akış ve kayıt baştan). */
+    private fun onAbacusSettingsOpen() {
+        if (!answered && questions.isNotEmpty() && _binding?.summaryPanel?.visibility != View.VISIBLE) {
+            stopFlash()
+            recordingAbacus = false
+            showQuestion()
+        } else {
+            abacusController?.reset(animate = true)
+        }
+        abacusController?.setEnabled(false)
+    }
+
+    /** Kural kitabı tablo seçme kipinde; bölüm sorunun işlemine göre (çıkarma / çarpım tabloları). */
+    private fun openRulesBook() {
+        val rules = LessonRulesPanel.openRulesBook(childFragmentManager, R.id.rulesFragmentContainer) ?: return
+        LessonRulesPanel.enableTablePicker(rules) { selection ->
+            rulesPanel?.select(selection)
+            rulesPanel?.show()
+        }
+        val op = questions.getOrNull(questionIndex)?.op ?: homework?.config?.op
+        when (op) {
+            HomeworkOp.SUB -> {
+                rules.setActiveRulesContentSection(com.example.app.model.RulesFragment.RulesContentSection.EXTRACTION)
+                rules.updateExtractionFiveRuleTableVisibility(View.VISIBLE)
+                rules.updateTenRuleExtractionTableLayout(View.VISIBLE)
+                rules.updateBeadRuleExtractionTableLayout(View.VISIBLE)
+            }
+            HomeworkOp.MUL -> rules.updateMultiplicationTablesVisibility(View.VISIBLE)
+            else -> Unit
+        }
+        rules.applyRulesTableHeaderTexts(op == HomeworkOp.SUB)
+    }
+
     // ── Çıkış ───────────────────────────────────────────────────────────────
 
     /** Adımın ortasındaysa onay soruluyor: cevaplar kaydedilmiyor, adım baştan başlıyor. */
@@ -680,6 +849,9 @@ class HomeworkPlayerFragment : Fragment() {
         navBarPanelExtension = null
         mediaPlayer?.release()
         mediaPlayer = null
+        abacusSettings?.detach()
+        abacusSettings = null
+        rulesPanel = null
         abacusController = null
         _binding = null
         super.onDestroyView()
