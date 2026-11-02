@@ -86,6 +86,11 @@ object AnalyticsLogger {
     private const val EV_GOLD_SPENT = "gold_spent"
     private const val EV_KEY_SPENT = "key_spent"
     private const val EV_BADGE_LEVEL_UP = "badge_level_up"
+    private const val EV_SOBI_TAB_OPEN = "sobi_tab_open"
+    private const val EV_SOBI_MESSAGE = "sobi_message_"
+    private const val EV_SOBI_EXAMPLE = "sobi_example_"
+    private const val EV_SOBI_LIMIT = "sobi_limit_"
+    private const val EV_SOBI_BUTTON = "sobi_btn_"
     private const val EV_FRIEND_ADDED_SEARCH = "friend_added_search"
     private const val EV_FRIEND_ADDED_LIST = "friend_added_list"
     private const val EV_FRIEND_ADDED_PROFILE = "friend_added_profile"
@@ -1966,6 +1971,40 @@ object AnalyticsLogger {
             if (!currency.isNullOrBlank()) param(FirebaseAnalytics.Param.CURRENCY, sanitize(currency))
         }
     }
+
+    // ── Sobi (yapay zekâ yardımcısı) ────────────────────────────────────────
+
+    /*
+     * Sobi sekmesi ve ders içi Sobi ne kadar kullanılıyor, örnekler ve krediler satıyor mu (02.11.2026).
+     * Kırılım OLAY ADINDA, parametre yok: olay kapsamlı boyut kotası dolu (arşivlemeden sonra da yer
+     * ileride gerekecek boyutlara bırakıldı). Toplam için `matches regex ^sobi_message_`.
+     * Kredi satın alma ayrıca `purchase` olayında (product_id sobi_credits_*).
+     */
+
+    /** Sobi ekranı: sekme ([SobiChatFragment]) ya da ders içi ([MistakeReviewDialog]). */
+    const val SOBI_SCREEN_TAB = "tab"
+    const val SOBI_SCREEN_LESSON = "lesson"
+
+    /** Sobi sekmesi açıldı (sekmeye her geçiş). */
+    fun logSobiTabOpen() = safe { fa -> fa.logEvent(EV_SOBI_TAB_OPEN) {} }
+
+    /** Sobi'ye mesaj ya da balon gönderildi: `sobi_message_tab` / `sobi_message_lesson`. */
+    fun logSobiMessage(screen: String) = safe { fa -> fa.logEvent(EV_SOBI_MESSAGE + sanitize(screen)) {} }
+
+    /**
+     * Yeni örnek açıldı ve ödendi: `sobi_example_free` (günlük ücretsiz hak) / `sobi_example_credit`.
+     * [paidWith] sunucunun cevabı (startSobiExample); oturumsuz ücretsiz örnek gönderilmez.
+     */
+    fun logSobiExample(paidWith: String) = safe { fa -> fa.logEvent(EV_SOBI_EXAMPLE + sanitize(paidWith)) {} }
+
+    /** Hak ve kredi bitti, mesaj ya da örnek açılamadı: `sobi_limit_tab` / `sobi_limit_lesson`. */
+    fun logSobiLimit(screen: String) = safe { fa -> fa.logEvent(EV_SOBI_LIMIT + sanitize(screen)) {} }
+
+    /**
+     * Sobi sekmesinde Sobi'nin koyduğu düğmeye dokunuldu: `sobi_btn_test`, `sobi_btn_kredi`,
+     * `sobi_btn_pro`, `sobi_btn_ders`, `sobi_btn_goster`, `sobi_btn_alistirma` (sunucudaki `tur` adları).
+     */
+    fun logSobiButton(kind: String) = safe { fa -> fa.logEvent(EV_SOBI_BUTTON + sanitize(kind)) {} }
 
     // ── Crashlytics ─────────────────────────────────────────────────────────
 

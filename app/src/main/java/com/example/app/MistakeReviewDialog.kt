@@ -698,8 +698,9 @@ class MistakeReviewDialog : DialogFragment() {
         if (!loggedIn) { open(); return }
         if (payingExample) return
         payingExample = true
-        ServerSobi.startExample({ freeLeft, credits ->
+        ServerSobi.startExample({ freeLeft, credits, paidWith ->
             payingExample = false
+            AnalyticsLogger.logSobiExample(paidWith)
             if (view == null) return@startExample
             showBalance(freeLeft, credits)
             open()
@@ -707,6 +708,7 @@ class MistakeReviewDialog : DialogFragment() {
             payingExample = false
             if (view == null) return@startExample
             val msg = if (ServerSobi.isDailyLimit(e)) {
+                AnalyticsLogger.logSobiLimit(AnalyticsLogger.SOBI_SCREEN_LESSON)
                 showBalance(0, 0)
                 appString(
                     if (SobiProTrialFragment.canOfferTrial(activity as? MainActivity)) R.string.sobi_error_example_limit_trial
@@ -822,6 +824,7 @@ class MistakeReviewDialog : DialogFragment() {
         pageSuggestions.remove(forPage)
         pageShow.remove(forPage)
         addMessage(forPage, SobiStepTracker.Message(fromChild = true, text = text))
+        AnalyticsLogger.logSobiMessage(AnalyticsLogger.SOBI_SCREEN_LESSON)
 
         ServerSobi.send(
             sessionId = tracker.sessionId,
@@ -863,6 +866,7 @@ class MistakeReviewDialog : DialogFragment() {
                 sendingPage = -1
                 val msg = when {
                     ServerSobi.isDailyLimit(e) -> {
+                        AnalyticsLogger.logSobiLimit(AnalyticsLogger.SOBI_SCREEN_LESSON)
                         showBalance(0, 0)
                         appString(
                             if (SobiProTrialFragment.canOfferTrial(activity as? MainActivity)) R.string.sobi_error_daily_limit_trial

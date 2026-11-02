@@ -173,6 +173,7 @@ class SobiChatFragment : Fragment() {
             refreshList()
         }
         render()
+        if (savedInstanceState == null) AnalyticsLogger.logSobiTabOpen()
     }
 
     override fun onDestroyView() {
@@ -295,6 +296,7 @@ class SobiChatFragment : Fragment() {
         stopTyping()
         sending = true
         state.items += Item(SobiStepTracker.Message(fromChild = true, text = text))
+        AnalyticsLogger.logSobiMessage(AnalyticsLogger.SOBI_SCREEN_TAB)
         render()
         val forSession = state.sessionId
         ServerSobi.sendGeneral(
@@ -322,6 +324,7 @@ class SobiChatFragment : Fragment() {
                 if (state.sessionId != forSession) return@sendGeneral
                 val msg = when {
                     ServerSobi.isDailyLimit(e) -> {
+                        AnalyticsLogger.logSobiLimit(AnalyticsLogger.SOBI_SCREEN_TAB)
                         if (view != null) balanceBar?.show(0, 0)
                         appString(
                             if (SobiProTrialFragment.canOfferTrial(activity as? MainActivity)) R.string.sobi_error_daily_limit_trial
@@ -430,6 +433,7 @@ class SobiChatFragment : Fragment() {
     }
 
     private fun onButton(a: ServerSobi.Action) {
+        AnalyticsLogger.logSobiButton(a.kind)
         when (a.kind) {
             ServerSobi.ACTION_TEST -> SobiTestSheet(this).show()
             ServerSobi.ACTION_CREDITS -> openCredits()
