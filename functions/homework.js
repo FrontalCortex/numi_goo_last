@@ -157,7 +157,15 @@ const RULE_LABELS = {
   sub: { direct: 'kuralsız', five: "5'lik", ten: "10'luk", bead: 'boncuk' },
 };
 
-function homeworkSummary(config) {
+/** İngilizcesi uygulamanın sözleriyle (docs/CEVIRI_SOZLUGU.md). */
+const RULE_LABELS_EN = { direct: 'direct', five: 'small friends', ten: 'big friends', bead: 'mixed friends' };
+
+function homeworkSummary(config, lang = 'tr') {
+  if (lang === 'en') {
+    if (config.op === 'mul') return `${config.digits} × ${config.digits2} digit multiplication`;
+    const labels = config.rules.map((r) => RULE_LABELS_EN[r]).join(', ');
+    return `${labels} ${config.op === 'add' ? 'addition' : 'subtraction'}`;
+  }
   if (config.op === 'mul') return `${config.digits} × ${config.digits2} basamak çarpma`;
   const labels = config.rules.map((r) => RULE_LABELS[config.op][r]).join(', ');
   return `${labels} ${config.op === 'add' ? 'toplama' : 'çıkarma'}`;
@@ -173,7 +181,13 @@ function countDone(doneUids, targetUids) {
  * Öğretmene "öğrenci ödevi bitirdi" bildirimi. İstemci ödev başına tek bildirim tutuyor, yani
  * gövde her bitirişte güncel toplamı söylüyor.
  */
-function doneNoticeText({ studentName, summary, correct, answered, doneCount, targetCount }) {
+function doneNoticeText({ studentName, summary, correct, answered, doneCount, targetCount }, lang = 'tr') {
+  if (lang === 'en') {
+    const en = [`${studentName} finished`];
+    if (answered > 0) en.push(`${correct}/${answered} correct`);
+    if (targetCount > 0) en.push(`${doneCount}/${targetCount} students finished`);
+    return { title: `Homework done: ${summary}`, body: en.join(' · ') };
+  }
   const title = `Ödev tamamlandı: ${summary}`;
   const parts = [`${studentName} bitirdi`];
   if (answered > 0) parts.push(`${correct}/${answered} doğru`);

@@ -106,6 +106,8 @@ const withFreeze = streakReminderDecision(
 );
 check('dondurma varsa metin değişiyor', withFreeze.text.body.includes('dondurmanı yarına sakla'), true);
 check('dondurma metninde seri sayısı yok', withFreeze.text.body.includes('12 günlük'), false);
+check('İngilizce metin de karar içinde', alive.textEn.body.includes('12-day streak'), true);
+check('İngilizce dondurma metni', withFreeze.textEn.body.includes('streak freeze'), true);
 
 console.log('\n=== KIRILMIŞ SERİ (sunucuda `current` bayat) ===');
 // Sunucu kırılmayı yazmıyor: 3 gün önce çalışmış kullanıcının kaydında current hâlâ 1.

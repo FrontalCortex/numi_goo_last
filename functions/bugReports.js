@@ -191,7 +191,12 @@ function claimDecision(report, uid) {
 }
 
 /** Karar bildiriminin metni. */
-function decisionNoticeText(status) {
+function decisionNoticeText(status, lang = 'tr') {
+  if (lang === 'en') {
+    return status === 'approved'
+      ? { title: 'Your bug report was approved! 🎉', body: 'Thanks! Your reward is waiting, collect it in Missions.' }
+      : { title: 'Your bug report was reviewed', body: 'Thanks for your report. You can see the details in Missions.' };
+  }
   if (status === 'approved') {
     return {
       title: 'Hata bildirimin onaylandı! 🎉',

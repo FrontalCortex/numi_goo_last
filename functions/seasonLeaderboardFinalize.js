@@ -329,6 +329,7 @@ async function finalizeSeason(db, season, deadlineMs, notify) {
             topic: 'season_medals',
             title: 'Sezon bitti, madalyan hazır',
             body: 'Kazandığın ödüllere bakmak için dokun.',
+            en: { title: 'The season is over, your medal is ready', body: 'Tap to see the rewards you won.' },
           });
         }
       } catch (e) {

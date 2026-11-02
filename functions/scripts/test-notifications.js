@@ -641,5 +641,20 @@ check(
 check('tekil metin', chestNoticeText(1).title, 'Seni bekleyen bir sandık var');
 check('çoğul metin', chestNoticeText(3).title, 'Seni bekleyen 3 sandık var');
 
+console.log('\n=== İNGİLİZCE METİNLER (kullanıcının lang: en) ===');
+const TR_LETTERS = /[çğıöşüÇĞİÖŞÜ]/;
+const enTexts = [
+  chestNoticeText(1, 'en'), chestNoticeText(3, 'en'),
+  teacherPoolText(1, 1, 'en'), teacherPoolText(2, 7, 'en'),
+  seasonOf({ msLeft: 4 * HOUR }).textEn,
+  trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textEn,
+  questionStatusNotice({ status: 'pending' }, { status: 'claimed' }, NOON).en,
+  questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).en,
+];
+enTexts.forEach((t, i) => check(`İngilizce metin ${i + 1} dolu ve Türkçe harfsiz`, Boolean(t && t.title && t.body && !TR_LETTERS.test(t.title + t.body)), true));
+check('İngilizce çoğul', chestNoticeText(3, 'en').title, '3 chests are waiting for you');
+check('İngilizce sezon saati', seasonOf({ msLeft: 4 * HOUR }).textEn.title, 'The season ends in 4 hours');
+check('Türkçe metin değişmedi', chestNoticeText(3).title, 'Seni bekleyen 3 sandık var');
+
 console.log(`\n${fail === 0 ? 'TÜMÜ GEÇTİ' : 'BAŞARISIZ'} — ${pass} geçti, ${fail} hata`);
 process.exit(fail === 0 ? 0 : 1);

@@ -1411,11 +1411,14 @@ exports.onMessageCreated = functions.firestore
     else if (type === 'video') body = 'Video';
     else if (type === 'image') body = 'Görsel';
     else body = 'Yeni mesaj';
+    // İngilizcesi: yazılı mesaj kendisi (kullanıcının metni), türler çevriliyor.
+    const bodyEn = type === 'text' && textContent ? body
+      : ({ audio: 'Voice message', video: 'Video', image: 'Image' })[type] || 'New message';
 
     // Bildirim başlığı artık öğrenci adı yerine soru başlığı olsun.
     // HeaderInput CreateQuestion'da StudentQuestion.message / previewText'e yazılıyor.
-    const questionTitle =
-      (question && (question.previewText || question.message)) || 'Yeni soru';
+    const askedTitle = question && (question.previewText || question.message);
+    const questionTitle = askedTitle || 'Yeni soru';
 
     // Data-only FCM mesajı gönderiyoruz. Böylece Android tarafında
     // MyFirebaseMessagingService.onMessageReceived HER zaman çağrılır
@@ -1433,6 +1436,7 @@ exports.onMessageCreated = functions.firestore
       // Bildirimler soru başlığı altında gruplanabilsin diye title'a soru başlığını yaz.
       title: questionTitle,
       body,
+      en: { title: askedTitle || 'New question', body: bodyEn },
       data: {
         questionId: String(questionId),
         messageId: String(messageId),
@@ -1530,6 +1534,7 @@ function questionStatusNotice(before, after, nowMs) {
       topic: 'question_claimed',
       title: 'Öğretmenin sorunu aldı',
       body: 'Cevap geldiğinde haber vereceğiz.',
+      en: { title: 'Your teacher took your question', body: "We'll let you know when the answer arrives." },
     };
   }
 
@@ -1541,6 +1546,7 @@ function questionStatusNotice(before, after, nowMs) {
       topic: 'question_resolved',
       title: 'Sorun çözüldü olarak işaretlendi',
       body: 'Öğretmenin cevabını sohbette okuyabilirsin.',
+      en: { title: 'Your question was marked as solved', body: "You can read your teacher's answer in the chat." },
     };
   }
 
@@ -1552,6 +1558,7 @@ function questionStatusNotice(before, after, nowMs) {
       topic: 'credit_refunded',
       title: 'Soruna cevap gelemedi',
       body: '1 danışma kredin geri verildi. Dilediğin zaman yeniden sorabilirsin.',
+      en: { title: "Your question couldn't be answered", body: 'Your 1 tutor credit was refunded. You can ask again anytime.' },
     };
   }
 
@@ -1571,6 +1578,7 @@ async function notifyQuestionStatusChange(before, after, questionId) {
       topic: notice.topic,
       title: notice.title,
       body: notice.body,
+      en: notice.en,
       // Bildirime dokunan öğrenci doğrudan sorusuna gitsin.
       data: { questionId: String(questionId) },
     });
@@ -3042,7 +3050,13 @@ function pendingChestCount(cupData, ledgerData) {
 }
 
 /** Bekleyen sandık bildiriminin metni. */
-function chestNoticeText(count) {
+function chestNoticeText(count, lang = 'tr') {
+  if (lang === 'en') {
+    return {
+      title: count === 1 ? 'A chest is waiting for you' : `${count} chests are waiting for you`,
+      body: 'You forgot to open the reward you earned on the Trophy Road.',
+    };
+  }
   return {
     title: count === 1 ? 'Seni bekleyen bir sandık var' : `Seni bekleyen ${count} sandık var`,
     body: 'Kupa yolunda hak ettiğin ödülü açmayı unutmuşsun.',
@@ -3089,6 +3103,7 @@ async function runPendingChestNotices() {
             topic: 'chest_waiting',
             title: text.title,
             body: text.body,
+            en: chestNoticeText(pending, 'en'),
           });
           if (result.sent) counts.sent++;
           else counts.skipped++;
@@ -3171,6 +3186,7 @@ function energyNoticeDecision({ infiniteEnergy, utcOffsetMinutes }, nowMs) {
       title: 'Enerjin doldu',
       body: 'Kaldığın yerden devam edebilirsin.',
     },
+    textEn: { title: 'Your lives are full', body: 'You can pick up where you left off.' },
   };
 }
 
@@ -3212,6 +3228,7 @@ async function runEnergyFullNotices(nowMs) {
             topic: 'energy_full',
             title: decision.text.title,
             body: decision.text.body,
+            en: decision.textEn,
             userData,
           });
           if (result.sent) counts.sent++;
@@ -3282,8 +3299,14 @@ const SEASON_NOTICE_CONCURRENCY = 25;
  * dilimlerde bugün, bazılarında yarın oluyor ve gün adı o kullanıcılarda yanlış olurdu.
  * Saat sayısı her dilimde doğru.
  */
-function seasonNoticeText(hoursLeft) {
+function seasonNoticeText(hoursLeft, lang = 'tr') {
   const h = Math.max(1, Math.round(hoursLeft));
+  if (lang === 'en') {
+    return {
+      title: h === 1 ? 'The season ends in one hour' : `The season ends in ${h} hours`,
+      body: 'Check your rank on the leaderboard.',
+    };
+  }
   const title = h === 1 ? 'Sezon bir saat sonra bitiyor' : `Sezon ${h} saat sonra bitiyor`;
   return { title, body: 'Liderlik tablosundaki sıranı gözden geçir.' };
 }
@@ -3314,7 +3337,7 @@ function seasonNoticeDecision({ season, msLeft, sentSeason, utcOffsetMinutes }, 
     return null;
   }
 
-  return { season, text: seasonNoticeText(hoursLeft) };
+  return { season, text: seasonNoticeText(hoursLeft), textEn: seasonNoticeText(hoursLeft, 'en') };
 }
 
 /** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
@@ -3361,6 +3384,7 @@ async function runSeasonEndingNotices(nowMs) {
             topic: 'season_ending',
             title: decision.text.title,
             body: decision.text.body,
+            en: decision.textEn,
             userData: doc.data(),
           });
           if (!result.sent) {
@@ -3439,7 +3463,13 @@ const TRIAL_NOTICE_SCAN_LIMIT = 500;
  *   kullanıcıyı şaşırtmamanın tek yolu. Aciliyet dili ("SON ŞANS!") burada satış değil
  *   şikâyet üretir.
  */
-function trialNoticeText(days) {
+function trialNoticeText(days, lang = 'tr') {
+  if (lang === 'en') {
+    return {
+      title: days === 1 ? 'Your free trial ends tomorrow' : `Your free trial ends in ${days} days`,
+      body: 'After that, your subscription continues as paid. You can cancel anytime.',
+    };
+  }
   const title = days === 1 ? 'Deneme süren yarın bitiyor' : `Deneme süren ${days} gün sonra bitiyor`;
   return {
     title,
@@ -3484,7 +3514,7 @@ function trialNoticeDecision({ trialEndsAt, sentFor, utcOffsetMinutes }, nowMs) 
     // Bu eşik BU deneme için gönderilmiş mi? Bitiş zamanı karşılaştırılıyor, bayrak değil:
     // kullanıcı yeni bir deneme alırsa (farklı bitiş) bildirim yeniden gitmeli.
     if (Number(sent[String(days)]) === endsAt) return null;
-    return { days, endsAt, text: trialNoticeText(days) };
+    return { days, endsAt, text: trialNoticeText(days), textEn: trialNoticeText(days, 'en') };
   }
   return null;
 }
@@ -3523,6 +3553,7 @@ async function runTrialEndingNotices(nowMs) {
         topic: 'trial_ending',
         title: decision.text.title,
         body: decision.text.body,
+        en: decision.textEn,
         userData: doc.data(),
       });
       if (!result.sent) {
@@ -3595,7 +3626,15 @@ const POOL_NOTIFY_SCAN_LIMIT = 50;
  * @param newCount     Son taramadan bu yana düşen soru sayısı (>0 olmalı).
  * @param totalPending Havuzda şu an cevap bekleyen toplam soru.
  */
-function teacherPoolText(newCount, totalPending) {
+function teacherPoolText(newCount, totalPending, lang = 'tr') {
+  if (lang === 'en') {
+    return {
+      title: newCount === 1 ? 'There is a new question in the pool' : `There are ${newCount} new questions in the pool`,
+      body: totalPending > newCount
+        ? `${totalPending} questions in the pool are waiting for an answer.`
+        : 'Unanswered questions are refunded to the student after 48 hours.',
+    };
+  }
   const title = newCount === 1 ? 'Havuzda yeni bir soru var' : `Havuzda ${newCount} yeni soru var`;
   // Toplam yeniye eşitse tekrar etmiyor: "1 yeni soru geldi, havuzda 1 soru bekliyor"
   // aynı şeyi iki kez söylemek olurdu.
@@ -3694,6 +3733,7 @@ async function runTeacherPoolNotify(nowMs) {
         topic: 'teacher_pool',
         title: text.title,
         body: text.body,
+        en: teacherPoolText(mineNew, total === null ? mineNew : total, 'en'),
         userData: doc.data(),
       });
       if (result.sent) counts.sent++;
@@ -4299,6 +4339,7 @@ exports.inviteStudentToClass = functions.https.onCall(async (data, context) => {
         topic: 'class_invite',
         title: 'Sınıf daveti',
         body: `${teacherName} seni "${classData.name || ''}" sınıfına davet etti.`,
+        en: { title: 'Class invite', body: `${teacherName} invited you to the "${classData.name || ''}" class.` },
         data: { inviteId },
         userData: student,
       });
@@ -4454,6 +4495,10 @@ exports.createHomework = functions.https.onCall(async (data, context) => {
       topic: 'homework',
       title: 'Yeni ödev',
       body,
+      en: {
+        title: 'New homework',
+        body: `${teacherName}: ${homework.homeworkSummary(config, 'en')}, ${config.questionCount} ${config.questionCount === 1 ? 'question' : 'questions'}`,
+      },
       data: { homeworkId: ref.id },
     }).catch((e) => console.error('createHomework: bildirim gönderilemedi', { sid, error: e.message }))
   ));
@@ -4603,14 +4648,15 @@ exports.onHomeworkProgressWritten = functions.firestore
     const classData = classSnap.exists ? classSnap.data() : {};
     const memberNames = new Map(membersSnap.docs.map((d) => [d.id, d.get('name') || d.get('userId') || '']));
     const targetUids = hw.wholeClass === true ? [...memberNames.keys()] : (hw.assignedUids || []);
-    const text = homework.doneNoticeText({
+    const doneParams = {
       studentName: memberNames.get(studentUid) || 'Bir öğrenci',
       summary: homework.homeworkSummary(hw.config),
       correct: Number(after.correct) || 0,
       answered: Number(after.answered) || 0,
       doneCount: homework.countDone(doneUids, targetUids),
       targetCount: targetUids.length,
-    });
+    };
+    const text = homework.doneNoticeText(doneParams);
 
     const teacherUids = Array.isArray(classData.teacherUids) && classData.teacherUids.length
       ? classData.teacherUids
@@ -4621,6 +4667,9 @@ exports.onHomeworkProgressWritten = functions.firestore
         topic: 'homework_done',
         title: text.title,
         body: text.body,
+        en: homework.doneNoticeText({
+          ...doneParams, studentName: memberNames.get(studentUid) || 'A student', summary: homework.homeworkSummary(hw.config, 'en'),
+        }, 'en'),
         data: { homeworkId, classId: hw.classId },
       }).catch((e) => console.error('onHomeworkProgressWritten: bildirim gönderilemedi', { tid, error: e.message }))
     ));
@@ -5754,7 +5803,7 @@ function isDeadTokenError(error) {
 /** Öğretmene gidebilen bildirim konuları: öğrenci mesajı, havuza düşen soru, ödevi bitiren öğrenci. */
 const TEACHER_NOTIFICATION_TOPICS = new Set(['chat', 'teacher_pool', 'homework_done']);
 
-async function sendUserNotification(uid, { type, topic, title, body, data = {}, userData = null }) {
+async function sendUserNotification(uid, { type, topic, title, body, en = null, data = {}, userData = null }) {
   if (!uid) return { sent: false, reason: 'no_uid' };
   const nowMs = Date.now();
 
@@ -5763,6 +5812,14 @@ async function sendUserNotification(uid, { type, topic, title, body, data = {}, 
     const snap = await db.collection('users').doc(uid).get();
     if (!snap.exists) return { sent: false, reason: 'no_user' };
     user = snap.data() || {};
+  }
+
+  // Alıcının uygulama dili: istemci token kaydıyla `lang` yazıyor (MyFirebaseMessagingService).
+  // Çağıran İngilizce karşılığı (`en: { title, body }`) verdiyse ve kullanıcı İngilizceyse o
+  // gider; dil yoksa (eski sürüm) ya da karşılık verilmediyse Türkçe.
+  if (en && user.lang === 'en') {
+    title = en.title;
+    body = en.body;
   }
 
   // Öğretmen yalnızca öğretmenlik işinin bildirimlerini alır. Seri, can, sandık, sezon ve
@@ -7294,6 +7351,7 @@ async function runStreakReminderPass(pass, hourUtc, nowMs, deadline) {
             topic: pass.topic,
             title: decision.text.title,
             body: decision.text.body,
+            en: decision.textEn,
             data: { type: 'streak_reminder' },
             userData: userSnap.data(),
           });
@@ -7894,6 +7952,7 @@ exports.reviewBugReport = functions.https.onCall(async (data, context) => {
       topic: 'bug_report',
       title: text.title,
       body: text.body,
+      en: bugReportNoticeText(outcome.status, 'en'),
       data: { bugReportId: reportId },
     });
   } catch (e) {

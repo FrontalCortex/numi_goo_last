@@ -92,8 +92,17 @@ function liveStreak(state, today) {
  * Ton davet, korku değil: "SERİN BİTMEK ÜZERE!" değil "bugün beş dakikan var mı". Kullanıcı
  * kitlesi 7–10 yaş; kaygı bu yaşta motivasyondan çok bırakma üretiyor.
  */
-function streakReminderText(current, goalMinutes, freezes = 0) {
+function streakReminderText(current, goalMinutes, freezes = 0, lang = 'tr') {
   const dk = goalMinutes > 0 ? goalMinutes : 5;
+  if (lang === 'en') {
+    if (current > 0 && freezes > 0) {
+      return { title: 'Your streak is waiting 🔥', body: `Practice ${dk} minutes today and save your streak freeze for later.` };
+    }
+    if (current > 0) {
+      return { title: 'Your streak is waiting 🔥', body: `Practice ${dk} minutes today to keep your ${current}-day streak going.` };
+    }
+    return { title: 'How about starting today?', body: `Start a new streak with a small ${dk}-minute goal.` };
+  }
   if (current > 0) {
     // Dondurması olan kullanıcının serisi bugün kırılmıyor, ama dondurma 4000 altın ve
     // yarın harcanacak. Bilgi aynı, ton davet: "harcanacak" demek yerine "sakla".
@@ -140,8 +149,11 @@ const SECOND_CHANCE_MIN_STREAK = 3;
  * bir şey söylemiyor, yalnızca tekrar ediyor. Burada kaybın ne olduğu ve çıkışın ne kadar
  * kolay olduğu birlikte söyleniyor.
  */
-function secondChanceText(current, goalMinutes) {
+function secondChanceText(current, goalMinutes, lang = 'tr') {
   const dk = goalMinutes > 0 ? goalMinutes : 5;
+  if (lang === 'en') {
+    return { title: `Your ${current}-day streak could break today`, body: `Got ${dk} minutes? That's enough to finish the day.` };
+  }
   return {
     title: `${current} günlük serin bugün kırılabilir`,
     body: `${dk} dakikan var mı? Günü kapatmak için yeter.`,
@@ -187,6 +199,7 @@ function secondChanceDecision(state, nowMs) {
     send: true,
     today,
     text: secondChanceText(live.current, state.goalMinutes),
+    textEn: secondChanceText(live.current, state.goalMinutes, 'en'),
   };
 }
 
@@ -221,6 +234,7 @@ function streakReminderDecision(state, nowMs) {
     send: true,
     today,
     text: streakReminderText(live.current, state.goalMinutes, live.freezes),
+    textEn: streakReminderText(live.current, state.goalMinutes, live.freezes, 'en'),
   };
 }
 
