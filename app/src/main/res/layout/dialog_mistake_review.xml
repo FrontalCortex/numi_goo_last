@@ -521,7 +521,9 @@
         </LinearLayout>
     </FrameLayout>
 
-    <!-- Alt düğmeler: Bana göster / Kontrol Et (sonuç sayfasında Derse dön). -->
+    <!-- Alt düğme: Kontrol Et (sonuç sayfasında Derse dön). Adımın gösterimi sohbetteki gri
+         "Abaküste göster" seçeneğinde (eskiden burada "Bana göster" vardı; aynı işi gören iki düğme
+         kafa karıştırıyordu, kullanıcı kararı 02.11.2026). -->
     <LinearLayout
         android:id="@+id/reviewButtons"
         android:layout_width="match_parent"
@@ -531,20 +533,6 @@
         android:layout_marginBottom="16dp"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent">
-
-        <TextView
-            android:id="@+id/reviewShow"
-            android:layout_width="0dp"
-            android:layout_height="@dimen/tutorial_control_button_height"
-            android:layout_marginEnd="10dp"
-            android:layout_weight="1"
-            android:background="@drawable/bg_hw_chip"
-            android:gravity="center"
-            android:paddingBottom="4dp"
-            android:text="@string/sobi_suggest_show"
-            android:textColor="@color/dark_text"
-            android:textSize="17sp"
-            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/reviewCheck"

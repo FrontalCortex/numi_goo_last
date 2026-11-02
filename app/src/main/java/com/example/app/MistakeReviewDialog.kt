@@ -149,7 +149,6 @@ class MistakeReviewDialog : DialogFragment() {
     private lateinit var stepLabel: TextView
     private lateinit var prevButton: View
     private lateinit var nextButton: View
-    private lateinit var showButton: TextView
     private lateinit var checkButton: TextView
     private lateinit var input: EditText
     /** Bugünkü ücretsiz hak ve Sobi kredisi ([showBalance]). */
@@ -188,6 +187,19 @@ class MistakeReviewDialog : DialogFragment() {
             MistakeAnalyzer.analyze(numbers[0], if (numbers[1] < 0) "-" else "+", Math.abs(numbers[1]), log, answer)
         } else null
         if (steps.isEmpty()) steps = buildSteps(numbers)
+        // Analizde de soru çözülünce "Başka bir örnek" / "Daha zor bir örnek" (kullanıcı isteği 02.11.2026;
+        // önceden yalnızca öğreticide vardı). Örnek sorunun en zor kuralından, zorluk sorunun büyüklüğünden
+        // başlıyor: iki basamaklı soruyu çözen çocuğa 8 + 7 gelmesin.
+        steps.mapNotNull { it.move }.maxByOrNull { it.rule.ordinal }?.let { m ->
+            exampleRule = (if (m.op == HomeworkOp.ADD) "add_" else "sub_") + m.rule.key
+        }
+        val digits = numbers.map { Math.abs(it).toString().length }
+        exampleLevel = when {
+            digits.any { it >= 3 } -> 4
+            digits.drop(1).any { it >= 2 } -> 3
+            digits.any { it >= 2 } -> 2
+            else -> 1
+        }.coerceAtMost(ExamplePicker.MAX_LEVEL)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View =
@@ -200,7 +212,6 @@ class MistakeReviewDialog : DialogFragment() {
         stepLabel = view.findViewById(R.id.reviewStepLabel)
         prevButton = view.findViewById(R.id.reviewPrev)
         nextButton = view.findViewById(R.id.reviewNext)
-        showButton = view.findViewById(R.id.reviewShow)
         checkButton = view.findViewById(R.id.reviewCheck)
         input = view.findViewById(R.id.reviewInput)
         abacusContainer = view.findViewById(R.id.abacusContainer)
@@ -254,9 +265,8 @@ class MistakeReviewDialog : DialogFragment() {
         }
         prevButton.setOnClickListener { if (page > 0) showPage(page - 1) }
         nextButton.setOnClickListener { if (page < maxPage) showPage(page + 1) }
-        showButton.setOnClickListener { showCurrentStep() }
         checkButton.setOnClickListener { onCheck() }
-        DepthPress.attach(prevButton, nextButton, send, showButton, checkButton)
+        DepthPress.attach(prevButton, nextButton, send, checkButton)
         setupKeyboard(view)
 
         // Abaküs: ödev oynatıcısıyla aynı kurulum (boncukları kimlikleriyle bulur).
@@ -475,7 +485,6 @@ class MistakeReviewDialog : DialogFragment() {
         // Grubun sonuna gelindi: örnek çözüldü (Sobi'ye giden sonuç).
         if (p.step == null) groups.getOrNull(p.group)?.done = true
         stepLabel.text = p.title
-        showButton.visibility = if (p.step == null) View.GONE else View.VISIBLE
         checkButton.text = appString(if (p.step == null) R.string.review_back else R.string.review_check)
         tracker.startStep(i)
         tracker.captureBase(p.value)
@@ -621,14 +630,12 @@ class MistakeReviewDialog : DialogFragment() {
         abacusBusy = hold
         tracker.paused = hold
         controller?.setEnabled(!hold)
-        showButton.isEnabled = !hold
         checkButton.isEnabled = !hold
-        showButton.alpha = if (hold) 0.5f else 1f
         checkButton.alpha = if (hold) 0.5f else 1f
         updateNav()
     }
 
-    /** "Bana göster": bu adımın hamlesini adımın başından oynatır; sonunda abaküs yine başa döner. */
+    /** "Abaküste göster": bu adımın hamlesini adımın başından oynatır; sonunda abaküs yine başa döner. */
     private fun showCurrentStep() {
         val step = currentStep() ?: return
         val action = if (step.move == null) {
@@ -663,7 +670,10 @@ class MistakeReviewDialog : DialogFragment() {
      */
     private fun startExample() {
         val ruleKey = exampleRule ?: return
-        val (a, b) = ExamplePicker.pick(ruleKey, examples * 7 + tutorialNumber * 3, exampleLevel, tutorialRules) ?: return
+        // Analizde öğrenilen kurallar listesi yok: örnek yalnızca sorunun kuralını gerçekten kullansın.
+        val allowed = if (tutorialMode) tutorialRules else null
+        val seed = examples * 7 + if (tutorialMode) tutorialNumber * 3 else numbers.sum()
+        val (a, b) = ExamplePicker.pick(ruleKey, seed, exampleLevel, allowed) ?: return
         examples++
         val nums = listOf(a, b)
         val q = questionText(nums)
@@ -851,11 +861,14 @@ class MistakeReviewDialog : DialogFragment() {
                 }
             }
         }
-        if (tutorialMode && exampleRule != null) {
-            val label = appString(if (examples == 0) R.string.sobi_suggest_example else R.string.sobi_screen_another_example)
+        // Öğreticide her sayfada; analizde soru (ya da örnek) bitince, sonuç sayfasında: çocuk soruyu
+        // çözdü, aynı kuralla bir tane daha.
+        if (exampleRule != null && (tutorialMode || currentStep() == null)) {
+            val first = tutorialMode && examples == 0
+            val label = appString(if (first) R.string.sobi_suggest_example else R.string.sobi_screen_another_example)
             items += label to { startExample() }
             // Zorluğu çocuk seçer (kullanıcı kararı 01.11.2026): örnek yine dersin kuralından, yalnızca büyür.
-            if (examples > 0 && exampleLevel < ExamplePicker.MAX_LEVEL) {
+            if (!first && exampleLevel < ExamplePicker.MAX_LEVEL) {
                 items += appString(R.string.sobi_screen_harder_example) to {
                     exampleLevel++
                     startExample()
