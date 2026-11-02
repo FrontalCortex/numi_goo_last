@@ -43,6 +43,13 @@ object SobiDailyTest {
     private const val KEY_LEVEL = "level_"
     private const val KEY_PAID_DAY = "extra_paid_day"
     private const val KEY_PAID_INDEX = "extra_paid_index"
+    private const val KEY_UNLOCKED = "unlocked_"
+    /**
+     * Sobi testi düğmesi Part 1'in 6. sıradaki dersi (lessonItems[6]) bitince açılıyor (kullanıcı kararı
+     * 02.11.2026): ondan önce kural seviyesi ölçülecek kadar ders yok, test boş kalırdı.
+     */
+    private const val UNLOCK_PART = 1
+    private const val UNLOCK_INDEX = 6
     /** functions/sobi/wallet.js EXTRA_TEST_KEYS ile aynı (yalnızca düğme metni; bedeli sunucu belirler). */
     const val EXTRA_TEST_KEYS = 3
 
@@ -92,6 +99,28 @@ object SobiDailyTest {
 
     fun markExtraPaid(context: Context) {
         prefs(context).edit().putString(KEY_PAID_DAY, today()).putInt(KEY_PAID_INDEX, testsToday(context)).apply()
+    }
+
+    /**
+     * Düğme görünsün mü ([UNLOCK_PART]/[UNLOCK_INDEX]). Açıldıktan sonra hesap başına önbellekte: ders
+     * geri alınmıyor, her ekranda Firestore'a gitmeye gerek yok. Harita Part 1'deyse bellekteki liste
+     * güncel olduğu için ondan bakılıyor (ders dönüşünde hemen açılsın).
+     */
+    fun checkUnlocked(context: Context, onResult: (Boolean) -> Unit) {
+        val key = KEY_UNLOCKED + (FirebaseAuth.getInstance().currentUser?.uid ?: "guest")
+        val p = prefs(context)
+        if (p.getBoolean(key, false)) return onResult(true)
+        val finish = { unlocked: Boolean ->
+            if (unlocked) p.edit().putBoolean(key, true).apply()
+            onResult(unlocked)
+        }
+        val current = GlobalLessonData.lessonItems
+        if (GlobalLessonData.globalPartId == UNLOCK_PART && current.size > UNLOCK_INDEX) {
+            return finish(current[UNLOCK_INDEX].stepIsFinish)
+        }
+        GlobalLessonData.loadLessonItemsForPart(context, UNLOCK_PART) { items ->
+            finish(items.getOrNull(UNLOCK_INDEX)?.stepIsFinish == true)
+        }
     }
 
     /** "Senin için bir test hazırladım!" balonu günde bir kez. */

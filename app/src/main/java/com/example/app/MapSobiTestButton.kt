@@ -72,6 +72,8 @@ class MapSobiTestButton(private val fragment: Fragment, private val root: ViewGr
                 bottomMargin = margin
             }
         }
+        // Part 1'in 6. dersi bitene dek gizli ([SobiDailyTest.checkUnlocked]; refresh açıyor).
+        button.visibility = View.GONE
         root.addView(button, params)
         // Haritadaki öbür düğmelerle aynı katmanda: liste kartlarının üstünde.
         if (anchor != null) button.elevation = anchor.elevation
@@ -81,14 +83,28 @@ class MapSobiTestButton(private val fragment: Fragment, private val root: ViewGr
         refresh()
     }
 
-    /** Ekran her göründüğünde: bugünün testi bitti mi, balon gösterilsin mi. */
-    fun refresh() {
+    /**
+     * Ekran her göründüğünde: düğme açıldı mı, bugünün testi bitti mi, balon gösterilsin mi.
+     * @param nudge false: yalnızca görünürlük ve nokta (haritada ders dönüşü; o anda ekranlar kuyrukta).
+     */
+    fun refresh(nudge: Boolean = true) {
         if (!fragment.isAdded) return
+        SobiDailyTest.checkUnlocked(root.context) { unlocked ->
+            if (fragment.isAdded) apply(unlocked, nudge)
+        }
+    }
+
+    private fun apply(unlocked: Boolean, nudge: Boolean) {
+        button.visibility = if (unlocked) View.VISIBLE else View.GONE
+        if (!unlocked) {
+            this.nudge?.hide()
+            return
+        }
         val done = updateDot()
-        if (!done && SobiDailyTest.shouldNudgeToday(fragment.requireContext())) {
+        if (nudge && !done && SobiDailyTest.shouldNudgeToday(fragment.requireContext())) {
             button.postDelayed({
                 if (!fragment.isAdded || !button.isShown) return@postDelayed
-                val n = nudge ?: SobiNudge(root).also { nudge = it }
+                val n = this.nudge ?: SobiNudge(root).also { this.nudge = it }
                 n.show(button, appString(R.string.sobi_test_nudge)) { open() }
             }, NUDGE_DELAY_MS)
         }

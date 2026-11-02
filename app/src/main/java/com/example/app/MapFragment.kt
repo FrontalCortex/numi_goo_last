@@ -1766,6 +1766,8 @@ class MapFragment : Fragment() {
     private fun changeAdapterList(){
         //GlobalLessonData.initialize(requireContext(),globalPartId)
         lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+        // Part 1'in 6. dersi yeni bittiyse Sobi testi düğmesi ders dönüşünde hemen açılsın.
+        sobiTestButton?.refresh(nudge = false)
 
     }
     
