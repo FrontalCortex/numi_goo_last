@@ -17,12 +17,14 @@ import kotlin.random.Random
  *  2. İki basamaklı ilk sayı, tek basamaklı ikinci (27 + 8).
  *  3. İki basamaklı iki sayı; kural en az iki sütunda (47 + 38).
  *  4. Üç basamaklı iki sayı; kural en az iki sütunda (395 + 128).
+ *  5. Dört basamaklı iki sayı; kural en az iki sütunda (4867 + 3958). Sonuç en çok 5 basamak: Sobi
+ *     ekranının abaküsü 5 sütunlu (kullanıcı isteği 02.11.2026).
  * Kuralsız derste "kural en az iki sütunda" yerine bütün sütunlar kuralsız. İşlem çocuğun öğrenmediği
  * bir kural istemez ([pick] `allowed`). Kural anahtarları [com.example.app.SobiCurriculum] ile aynı.
  */
 object ExamplePicker {
 
-    const val MAX_LEVEL = 4
+    const val MAX_LEVEL = 5
     private const val TRIES = 4000
 
     /**
@@ -62,7 +64,8 @@ object ExamplePicker {
         val (firstRange, secondRange) = when (level) {
             2 -> 10..99 to 1..9
             3 -> 10..99 to 10..99
-            else -> 100..999 to 100..999
+            4 -> 100..999 to 100..999
+            else -> 1000..9999 to 1000..9999
         }
         val rnd = Random(seed * 31 + level)
         repeat(TRIES) {

@@ -195,6 +195,7 @@ class MistakeReviewDialog : DialogFragment() {
         }
         val digits = numbers.map { Math.abs(it).toString().length }
         exampleLevel = when {
+            digits.any { it >= 4 } -> 5
             digits.any { it >= 3 } -> 4
             digits.drop(1).any { it >= 2 } -> 3
             digits.any { it >= 2 } -> 2

@@ -63,4 +63,14 @@ class ExamplePickerTest {
         val e = StepExplainer.explain(base.toLong(), HomeworkOp.ADD, n.toLong())!!
         assertTrue(e.moves.count { it.rule != AbacusRule.DIRECT } >= 2)
     }
+
+    @Test
+    fun besinci_duzey_dort_basamakli_ve_abakuse_sigar() {
+        for (key in order) {
+            val (base, n) = ExamplePicker.pick(key, 7, 5, taughtUpTo(key)) ?: error("$key düzey 5 örnek yok")
+            assertTrue("$key $base", base in 1000..9999)
+            assertTrue("$key $n", Math.abs(n) in 1000..9999)
+            assertTrue("$key sonuç 5 sütuna sığmalı", base + n in 0..99999)
+        }
+    }
 }
