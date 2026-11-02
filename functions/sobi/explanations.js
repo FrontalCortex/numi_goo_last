@@ -19,7 +19,12 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-const FILE = path.join(__dirname, 'aciklamalar_tr.json');
+/**
+ * Dil başına bir dosya: aciklamalar_<dil>.json. İngilizcesi (aciklamalar_en.json) Türkçenin çevirisi,
+ * adımlara İngilizce adım metninin parmak iziyle bağlı (tools/sobi-eval/aciklamalar/yayinla_en.mjs).
+ */
+const fileFor = (lang) => path.join(__dirname, `aciklamalar_${lang}.json`);
+const FILE = fileFor('tr');
 
 /** Noktalama, boşluk ve büyük/küçük harf farkı sayılmasın (strings.xml kaçışları, ’ ile '). */
 function textPrint(text) {
@@ -27,24 +32,24 @@ function textPrint(text) {
   return crypto.createHash('sha1').update(norm).digest('hex').slice(0, 8);
 }
 
-let cache = null;
-function load() {
-  if (cache) return cache;
+const cache = {};
+function load(lang) {
+  if (cache[lang]) return cache[lang];
   try {
-    cache = JSON.parse(fs.readFileSync(FILE, 'utf8'));
+    cache[lang] = JSON.parse(fs.readFileSync(fileFor(lang), 'utf8'));
   } catch (_) {
-    cache = {};
+    cache[lang] = {};
   }
-  return cache;
+  return cache[lang];
 }
 
 /**
- * Bu anlatım adımının onaylı açıklaması ya da null. Soru adımında hep null: orada hamleyi kural
+ * Bu anlatım adımının onaylı açıklaması ya da null; dil bağlamın `lang`'ı (callable koyuyor, yoksa Türkçe). Soru adımında hep null: orada hamleyi kural
  * motoru veriyor.
  */
 function find(ctx) {
   if (!ctx || ctx.target !== null || !Number.isInteger(ctx.tutorialNumber) || !Number.isInteger(ctx.stepIndex)) return null;
-  const parts = load()[String(ctx.tutorialNumber)];
+  const parts = load(ctx.lang || 'tr')[String(ctx.tutorialNumber)];
   if (!Array.isArray(parts)) return null;
   const print = textPrint(ctx.stepText);
   // Önce aynı sıra ve aynı metin. Tutmazsa (öğreticiye adım eklenip sıra kaydıysa) aynı metinli en
@@ -61,4 +66,4 @@ function find(ctx) {
   return bestDist <= 10 ? best : null;
 }
 
-module.exports = { find, textPrint, FILE };
+module.exports = { find, textPrint, FILE, fileFor };

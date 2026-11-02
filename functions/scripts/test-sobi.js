@@ -847,9 +847,22 @@ async function main() {
     assert.strictEqual(client.calls[2].system.length, 1);
     assert.strictEqual(client.calls[3].system.length, 1);
 
-    // Hazır metinler: kredi açıklaması İngilizce; ders açıklamaları (Türkçe) İngilizcede kullanılmıyor.
+    // Hazır metinler: kredi açıklaması İngilizce; ders açıklaması İngilizce adım metniyle İngilizce dosyadan.
     assert.ok(chat.directReplyFor({ mode: 'genel' }, 'krediler', 'en').text.startsWith('You get free messages every day: 2 on the Free plan'));
-    assert.strictEqual(chat.directReplyFor(CTX, 'neden_boyle', 'en'), null);
+    const enStep = chat.sanitizeContext({ tutorialNumber: 3, stepIndex: 0, stepText: "In this lesson you'll learn small friends addition, the first lesson on adding with rules." });
+    const enDirect = chat.directReplyFor({ ...enStep, lang: 'en' }, 'bunu_anlamadim', 'en');
+    assert.strictEqual(enDirect.key, 't3_p1');
+    assert.ok(enDirect.text.includes('small friends addition'), enDirect.text);
+    // Türkçe adım metni İngilizce dosyada eşleşmez; Türkçe bağlam Türkçe dosyayı kullanır.
+    const trStep = chat.sanitizeContext({ tutorialNumber: 3, stepIndex: 0, stepText: "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin." });
+    assert.strictEqual(chat.directReplyFor({ ...trStep, lang: 'en' }, 'bunu_anlamadim', 'en'), null);
+    assert.ok(chat.directReplyFor(trStep, 'bunu_anlamadim').text.startsWith('Bazen'));
+    // Callable: İngilizce balon modelsiz ve ücretsiz döner.
+    const before = client.calls.length;
+    const d = await fn({ message: "I didn't get this", suggestion: 'bunu_anlamadim', context: { tutorialNumber: 3, stepIndex: 0, stepText: enStep.stepText }, lang: 'en' }, ctx);
+    assert.strictEqual(client.calls.length, before, 'model çağrılmadı');
+    assert.strictEqual(d.source, 'hazir');
+    assert.strictEqual(d.reply, enDirect.text);
     // Yedek metin İngilizce ve Türkçe söz içermiyor.
     for (const c of [{ mode: 'genel' }, { ...CTX, target: null, stepText: 'Add 5.' }, CTX]) {
       const t = guard.fallbackReply(c, require('../sobi/tools'), 'en');

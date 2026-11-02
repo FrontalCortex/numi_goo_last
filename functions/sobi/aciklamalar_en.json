@@ -1,0 +1,392 @@
+{
+ "3": [
+  {
+   "key": "t3_p1",
+   "steps": [
+    [
+     0,
+     "82e054a4"
+    ],
+    [
+     1,
+     "97afef17"
+    ]
+   ],
+   "konu": "When to use small friends addition",
+   "basit": "Sometimes there aren't enough free one-beads for the number we want to add. That's when we use small friends addition: we add the number with the help of the five-bead.",
+   "neden": "Each column has only 4 one-beads. When there's no room left, the five-bead helps out."
+  },
+  {
+   "key": "t3_p2",
+   "steps": [
+    [
+     2,
+     "276c8164"
+    ],
+    [
+     3,
+     "21430b77"
+    ]
+   ],
+   "konu": "Why 1 can't be added to 4 directly",
+   "basit": "When you put 4 on the abacus, all 4 one-beads are in. There's no free one-bead left to add 1, so we can't add 1 directly.",
+   "neden": "None of the one-beads are free, but we need 1."
+  },
+  {
+   "key": "t3_p3",
+   "steps": [
+    [
+     4,
+     "b9df75d0"
+    ],
+    [
+     5,
+     "ba67553b"
+    ],
+    [
+     6,
+     "68ff8ece"
+    ],
+    [
+     7,
+     "c05451d2"
+    ],
+    [
+     8,
+     "25605e25"
+    ],
+    [
+     9,
+     "95bd25e4"
+    ],
+    [
+     10,
+     "c4f147c8"
+    ]
+   ],
+   "konu": "Friends and the small friends rule",
+   "basit": "In small friends addition, every number has a friend: together they make 5. 1's friend is 4, 2's friend is 3, 3's friend is 2, 4's friend is 1. If we can't add a number directly, we say \"add 5, take away the friend\".",
+   "neden": "Adding a number is the same as adding 5 and taking away its friend. For example, adding 1 means adding 5 and taking away 4."
+  },
+  {
+   "key": "t3_p4",
+   "steps": [
+    [
+     11,
+     "c0592df1"
+    ],
+    [
+     12,
+     "08d341d9"
+    ],
+    [
+     13,
+     "3270636b"
+    ],
+    [
+     14,
+     "b4c1e131"
+    ],
+    [
+     15,
+     "27afdb7b"
+    ],
+    [
+     16,
+     "68ff8ece"
+    ],
+    [
+     17,
+     "92905c15"
+    ],
+    [
+     18,
+     "92905c15"
+    ],
+    [
+     19,
+     "70eb12e4"
+    ],
+    [
+     20,
+     "70eb12e4"
+    ],
+    [
+     21,
+     "9aae3e72"
+    ]
+   ],
+   "konu": "Doing 4 + 1 with small friends",
+   "basit": "The abacus shows 4 and there's no free one-bead, so we can't add 1 directly. Add 5, take away 1's friend, 4. The answer is 5.",
+   "neden": "Adding 1 is the same as adding 5 and taking away 4. That's why we add 5 and take away its friend, 4."
+  },
+  {
+   "key": "t3_p5",
+   "steps": [
+    [
+     22,
+     "5b7122d2"
+    ],
+    [
+     23,
+     "2cf36e42"
+    ],
+    [
+     24,
+     "1336fc66"
+    ],
+    [
+     25,
+     "c1adce3b"
+    ],
+    [
+     26,
+     "c05451d2"
+    ],
+    [
+     27,
+     "92905c15"
+    ],
+    [
+     28,
+     "92905c15"
+    ],
+    [
+     29,
+     "526584f5"
+    ],
+    [
+     30,
+     "526584f5"
+    ],
+    [
+     31,
+     "203cdb34"
+    ]
+   ],
+   "konu": "Doing 4 + 2 with small friends",
+   "basit": "The abacus shows 4; there's no free one-bead to add 2. So we add 5 and take away 2's friend, 3. The answer is 6.",
+   "neden": "Adding 2 is the same as adding 5 and taking away 3. That's why we add 5 and take away its friend, 3."
+  },
+  {
+   "key": "t3_p6",
+   "steps": [
+    [
+     32,
+     "5b7122d2"
+    ],
+    [
+     33,
+     "fab22d29"
+    ],
+    [
+     34,
+     "fbe75807"
+    ],
+    [
+     35,
+     "c1adce3b"
+    ],
+    [
+     36,
+     "25605e25"
+    ],
+    [
+     37,
+     "92905c15"
+    ],
+    [
+     38,
+     "92905c15"
+    ],
+    [
+     39,
+     "a14389a6"
+    ],
+    [
+     40,
+     "a14389a6"
+    ],
+    [
+     41,
+     "203cdb34"
+    ]
+   ],
+   "konu": "Doing 3 + 3 with small friends",
+   "basit": "The abacus shows 3; only 1 one-bead is free, so we can't add 3 directly. So we add 5 and take away 3's friend, 2. The answer is 6.",
+   "neden": "Adding 3 is the same as adding 5 and taking away 2. That's why we add 5 and take away its friend, 2."
+  },
+  {
+   "key": "t3_p7",
+   "steps": [
+    [
+     43,
+     "006fc548"
+    ],
+    [
+     44,
+     "aa027989"
+    ],
+    [
+     45,
+     "3f228fb9"
+    ],
+    [
+     46,
+     "c1adce3b"
+    ],
+    [
+     47,
+     "95bd25e4"
+    ],
+    [
+     48,
+     "92905c15"
+    ],
+    [
+     49,
+     "92905c15"
+    ],
+    [
+     50,
+     "fb88e962"
+    ],
+    [
+     51,
+     "fb88e962"
+    ],
+    [
+     52,
+     "203cdb34"
+    ]
+   ],
+   "konu": "Doing 2 + 4 with small friends",
+   "basit": "The abacus shows 2; 2 one-beads are free, but we need 4. So we add 5 and take away 4's friend, 1. The answer is 6.",
+   "neden": "Adding 4 is the same as adding 5 and taking away 1. That's why we add 5 and take away its friend, 1."
+  },
+  {
+   "key": "t3_p8",
+   "steps": [
+    [
+     54,
+     "863c7493"
+    ]
+   ],
+   "konu": "The small friends rule is the same in every place",
+   "basit": "The small friends rule works the same way in the tens and hundreds, not just in the ones. In the tens place we also say \"add 5, take away the friend\"; we just do it in the tens column.",
+   "neden": null
+  },
+  {
+   "key": "t3_p9",
+   "steps": [
+    [
+     55,
+     "7a5c90a2"
+    ],
+    [
+     56,
+     "c6f8d456"
+    ],
+    [
+     57,
+     "3e2db819"
+    ],
+    [
+     58,
+     "c1adce3b"
+    ],
+    [
+     59,
+     "95bd25e4"
+    ],
+    [
+     60,
+     "92905c15"
+    ],
+    [
+     61,
+     "92905c15"
+    ],
+    [
+     62,
+     "fb88e962"
+    ],
+    [
+     63,
+     "fb88e962"
+    ],
+    [
+     64,
+     "d6e16542"
+    ]
+   ],
+   "konu": "Doing 30 + 40 with small friends in the tens place",
+   "basit": "The abacus shows 30 and only 1 one-bead is free in the tens column. Adding 40 means adding 4 to the tens column, so in the tens we add 5 and take away 4's friend, 1. The answer is 70.",
+   "neden": "Adding 4 is the same as adding 5 and taking away 1. That's why in the tens place we also add 5 and take away its friend, 1."
+  },
+  {
+   "key": "t3_p10",
+   "steps": [
+    [
+     65,
+     "6c6777d8"
+    ]
+   ],
+   "konu": "Doing examples together",
+   "basit": "Now we'll try small friends addition together on a few problems. If you can't add a number directly, remember the rule \"add 5, take away the friend\".",
+   "neden": null
+  },
+  {
+   "key": "t3_p11",
+   "steps": [
+    [
+     67,
+     "f10b35dd"
+    ],
+    [
+     68,
+     "60f4b6c0"
+    ],
+    [
+     69,
+     "95bd25e4"
+    ],
+    [
+     72,
+     "a1afc7fe"
+    ]
+   ],
+   "konu": "Doing 4 + 4 with small friends",
+   "basit": "The abacus shows 4; there are no free one-beads, so we can't add 4 directly. So we add 5 and take away 4's friend, 1. The answer is 8.",
+   "neden": "Adding 4 is the same as adding 5 and taking away 1. That's why we add 5 and take away its friend, 1."
+  },
+  {
+   "key": "t3_p12",
+   "steps": [
+    [
+     73,
+     "77cc66fc"
+    ],
+    [
+     75,
+     "7743efba"
+    ],
+    [
+     76,
+     "60f4b6c0"
+    ],
+    [
+     77,
+     "c05451d2"
+    ],
+    [
+     80,
+     "9aae3e72"
+    ]
+   ],
+   "konu": "Doing 3 + 2 with small friends",
+   "basit": "The abacus shows 3; 1 one-bead is free, but we need 2. So we add 5 and take away 2's friend, 3. The answer is 5.",
+   "neden": "Adding 2 is the same as adding 5 and taking away 3. That's why we add 5 and take away its friend, 3."
+  }
+ ]
+}

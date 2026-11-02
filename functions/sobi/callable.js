@@ -124,6 +124,8 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       let stepContext = general ? chat.generalContext() : chat.sanitizeContext(payload.context);
       // Çocuk bir öneri balonuna dokunduysa balonun anahtarı (uygulama metni de "message"da gönderiyor).
       const suggestion = typeof payload.suggestion === 'string' && /^[a-z_]{1,30}$/.test(payload.suggestion) ? payload.suggestion : null;
+      // Hazır ders açıklaması uygulamanın dilinde aranır (explanations.find, ctx.lang).
+      if (lang !== 'tr') stepContext = { ...stepContext, lang };
       const direct = chat.directReplyFor(stepContext, suggestion, lang);
       const sessionId = SESSION_ID.test(payload.sessionId || '') ? payload.sessionId : null;
 

@@ -358,15 +358,14 @@ function creditsText(lang = 'tr') {
 const GENERAL_DIRECT = { krediler: { key: 'genel_krediler', text: creditsText } };
 
 /**
- * Balona modelsiz cevap: { text, key } ya da null (model çalışır). İngilizcede ders açıklamaları yok
- * (aciklamalar_tr.json Türkçe ve adım metninin parmak izine bağlı): orada model cevaplıyor.
+ * Balona modelsiz cevap: { text, key } ya da null (model çalışır). Ders açıklamasının dili bağlamın
+ * `lang`'ından (explanations.find); genel sohbetin hazır metni [lang]'dan.
  */
 function directReplyFor(ctx, suggestion, lang = 'tr') {
   if (ctx.mode === 'genel') {
     const d = GENERAL_DIRECT[suggestion];
     return d ? { text: d.text(lang), key: d.key } : null;
   }
-  if (lang !== 'tr') return null;
   const field = DIRECT_SUGGESTIONS[suggestion];
   if (!field) return null;
   const ex = explanations.find(ctx);
