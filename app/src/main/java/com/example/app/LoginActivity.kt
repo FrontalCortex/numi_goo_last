@@ -238,7 +238,7 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     .addToBackStack("otp")
                     .commit()
             } else {
-                if (error == "Kullanıcı bulunamadı") {
+                if (error == appString(R.string.ui_kullanici_bulunamadi)) {
                     showUserInfoFragment(prefillEmail = email)
                 } else {
                     showError(error ?: appString(R.string.ui_kod_gonderilemedi))

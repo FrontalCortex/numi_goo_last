@@ -1,0 +1,823 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="activity_email_verification_text">Email Verification</string>
+    <string name="activity_email_verification_text_2">A verification code was sent to your email address</string>
+    <string name="activity_email_verification_text_3">Enter the 6-digit verification code sent to your email address</string>
+    <string name="activity_email_verification_et_verification_code_hint">Verification Code</string>
+    <string name="activity_email_verification_btn_check_verification">Verify Code</string>
+    <string name="activity_email_verification_btn_resend_email">Resend Email</string>
+    <string name="activity_email_verification_btn_back_to_login">Back to Sign In</string>
+    <string name="activity_email_verification_text_4">Didn\'t get the email? Check your spam folder</string>
+
+    <string name="activity_login_btn_back_desc">Back</string>
+    <string name="activity_login_text">Continue with email</string>
+    <string name="activity_login_et_email_hint">Email</string>
+    <string name="activity_login_btn_continue">Continue</string>
+    <string name="activity_login_btn_google_sign_in">Sign in with Google</string>
+
+    <string name="activity_main_streak_icon_desc">Daily streak</string>
+    <string name="activity_main_diamond_id_desc">Coins</string>
+    <string name="activity_main_energy_icon_desc">Lives</string>
+    <string name="activity_main_key_icon_desc">Keys</string>
+    <string name="activity_main_credit_icon_desc">Tutor credits</string>
+
+    <string name="activity_register_btn_back_desc">Back</string>
+    <string name="activity_register_tv_title">Create Account</string>
+    <string name="activity_register_tv_subtitle">Start your learning journey</string>
+    <string name="activity_register_et_email_hint">Email</string>
+    <string name="activity_register_btn_continue">Continue</string>
+    <string name="activity_register_et_name_hint">Username</string>
+    <string name="activity_register_et_teacher_email_hint">Email</string>
+    <string name="activity_register_et_password_hint">Password</string>
+    <string name="activity_register_et_approval_code_hint">Enter the password again</string>
+    <string name="activity_register_btn_register">Continue</string>
+    <string name="activity_register_btn_google_sign_in">Sign up with Google</string>
+
+    <string name="activity_splash_text_2">Ready to learn?</string>
+
+    <string name="activity_teacher_login_btn_back_desc">Back</string>
+    <string name="activity_teacher_login_text">Education App</string>
+    <string name="activity_teacher_login_text_2">Teacher Sign-In</string>
+    <string name="activity_teacher_login_et_email_hint">Email</string>
+    <string name="activity_teacher_login_et_password_hint">Password</string>
+    <string name="activity_teacher_login_tv_forgot_password">Forgot password</string>
+    <string name="activity_teacher_login_btn_login">Sign In</string>
+    <string name="activity_teacher_login_btn_student_login">Student Sign-In</string>
+    <string name="activity_teacher_login_btn_register">Don\'t have an account? Sign Up</string>
+
+    <string name="bottom_sheet_operator_picker_title">Choose Operator</string>
+    <string name="bottom_sheet_operator_picker_cancel_button">Cancel</string>
+    <string name="bottom_sheet_operator_picker_ok_button">OK</string>
+
+    <string name="dialog_abacus_sound_picker_abacus_sound_picker_title">Choose Abacus Sound</string>
+    <string name="dialog_abacus_sound_picker_text">Sound 1</string>
+    <string name="dialog_abacus_sound_picker_text_2">Sound 2</string>
+    <string name="dialog_abacus_sound_picker_text_3">Sound 3</string>
+    <string name="dialog_abacus_sound_picker_text_4">Sound 4</string>
+    <string name="dialog_abacus_sound_picker_text_5">Sound 5</string>
+
+    <string name="dialog_avatar_customization_text">Avatar Preview</string>
+    <string name="dialog_avatar_customization_text_2">Hair Style</string>
+    <string name="dialog_avatar_customization_text_3">Eye Style</string>
+    <string name="dialog_avatar_customization_text_4">Skin Color</string>
+    <string name="dialog_avatar_customization_text_5">Outfit Color</string>
+    <string name="dialog_avatar_customization_btn_cancel">CANCEL</string>
+    <string name="dialog_avatar_customization_btn_save">SAVE</string>
+
+    <string name="dialog_delete_message_text_desc">Delete</string>
+    <string name="dialog_delete_message_text">Delete message?</string>
+    <string name="dialog_delete_message_text_2">This can\'t be undone</string>
+    <string name="dialog_delete_message_delete_message_close_desc">Close</string>
+    <string name="dialog_delete_message_text_desc_2">Delete for everyone</string>
+    <string name="dialog_delete_message_text_3">Delete for everyone</string>
+    <string name="dialog_delete_message_text_desc_3">Delete for me</string>
+    <string name="dialog_delete_message_text_4">Delete for me</string>
+    <string name="dialog_delete_message_text_desc_4">Report</string>
+    <string name="dialog_delete_message_text_5">Report</string>
+    <string name="dialog_delete_message_delete_cancel">Cancel</string>
+
+    <string name="dialog_image_dialog_image_close_desc">Close</string>
+
+    <string name="dialog_image_annotate_annotate_image_desc">Image</string>
+    <string name="dialog_image_annotate_annotate_done_button_desc">Save and close</string>
+
+    <string name="dialog_question_media_picker_btn_camera_desc">Ask with a photo</string>
+    <string name="dialog_question_media_picker_btn_video_desc">Ask with a video</string>
+
+    <string name="dialog_rating_tv_title">Do you like Sorobit?</string>
+    <string name="dialog_rating_tv_subtitle">You can support us by rating your experience.</string>
+    <string name="dialog_rating_et_feedback_hint">How can we make your experience better?</string>
+    <string name="dialog_rating_btn_submit_feedback">Send</string>
+    <string name="dialog_rating_tv_close">Later</string>
+    <string name="dialog_rating_tv_no_thanks">No, thanks</string>
+
+    <string name="dialog_report_action_text_desc">Report</string>
+    <string name="dialog_report_action_text">Review Report</string>
+    <string name="dialog_report_action_text_2">Choose an action for this user</string>
+    <string name="dialog_report_action_report_dialog_close_desc">Close</string>
+    <string name="dialog_report_action_report_dialog_media_thumb_desc">Reported media</string>
+    <string name="dialog_report_action_report_dialog_play_overlay_desc">Play video</string>
+    <string name="dialog_report_action_report_dialog_audio_play_pause_desc">Play audio</string>
+    <string name="dialog_report_action_report_dialog_audio_time">Play to listen to the recording</string>
+    <string name="dialog_report_action_text_desc_2">Duration</string>
+    <string name="dialog_report_action_text_3">RESTRICTION LENGTH</string>
+    <string name="dialog_report_action_report_restrict1_day">1 day</string>
+    <string name="dialog_report_action_report_restrict3_days">3 days</string>
+    <string name="dialog_report_action_report_restrict7_days">7 days</string>
+    <string name="dialog_report_action_text_desc_3">Ban</string>
+    <string name="dialog_report_action_text_4">Ban permanently</string>
+    <string name="dialog_report_action_text_desc_4">Ignore</string>
+    <string name="dialog_report_action_text_5">Ignore (reject)</string>
+    <string name="dialog_report_action_report_cancel">Cancel</string>
+
+    <string name="dialog_report_reason_text_desc">Report</string>
+    <string name="dialog_report_reason_text">Report message</string>
+    <string name="dialog_report_reason_text_2">Why are you reporting this message?</string>
+    <string name="dialog_report_reason_report_reason_close_desc">Close</string>
+    <string name="dialog_report_reason_text_desc_2">Harassment or bullying</string>
+    <string name="dialog_report_reason_text_3">Harassment or bullying</string>
+    <string name="dialog_report_reason_text_desc_3">Spam</string>
+    <string name="dialog_report_reason_text_4">Spam</string>
+    <string name="dialog_report_reason_text_desc_4">Inappropriate content</string>
+    <string name="dialog_report_reason_text_5">Inappropriate content</string>
+    <string name="dialog_report_reason_text_desc_5">Other</string>
+    <string name="dialog_report_reason_text_6">Other</string>
+    <string name="dialog_report_reason_report_reason_cancel">Cancel</string>
+
+    <string name="dialog_restriction_detail_text_desc">Restriction</string>
+    <string name="dialog_restriction_detail_text">Restriction Details</string>
+    <string name="dialog_restriction_detail_text_2">Reason and content of the restriction</string>
+    <string name="dialog_restriction_detail_restriction_dialog_close_desc">Close</string>
+    <string name="dialog_restriction_detail_report_dialog_media_thumb_desc">Reported media</string>
+    <string name="dialog_restriction_detail_report_dialog_play_overlay_desc">Play video</string>
+    <string name="dialog_restriction_detail_report_dialog_audio_play_pause_desc">Play audio</string>
+    <string name="dialog_restriction_detail_report_dialog_audio_time">Play to listen to the recording</string>
+    <string name="dialog_restriction_detail_text_desc_2">Remove</string>
+    <string name="dialog_restriction_detail_text_3">Remove Restriction</string>
+    <string name="dialog_restriction_detail_restriction_dialog_close_text">Close</string>
+
+    <string name="dialog_video_fullscreen_fullscreen_close_button_desc">Close</string>
+
+    <string name="dialog_video_player_dialog_video_close_desc">Close</string>
+
+    <string name="fragment_abacus_btn_back_desc">Back</string>
+    <string name="fragment_abacus_btn_forward_desc">Forward</string>
+    <string name="fragment_abacus_five_text">Number to add</string>
+    <string name="fragment_abacus_text">Friend</string>
+    <string name="fragment_abacus_five_rule_description_text">Add 5. Take away the friend</string>
+    <string name="fragment_abacus_ten_text">Number to add</string>
+    <string name="fragment_abacus_text_2">Big Friend</string>
+    <string name="fragment_abacus_ten_rule_five_description_text">Add 10. Take away the friend.</string>
+    <string name="fragment_abacus_text_3">Number to add</string>
+    <string name="fragment_abacus_text_4">Friend</string>
+    <string name="fragment_abacus_ten_rule_description_text">Add 10. Take away the friend.</string>
+    <string name="fragment_abacus_text_5">Number to add</string>
+    <string name="fragment_abacus_text_6">Steps</string>
+    <string name="fragment_abacus_text_7">+1</string>
+    <string name="fragment_abacus_text_8">−5</string>
+    <string name="fragment_abacus_text_9">+10</string>
+    <string name="fragment_abacus_text_10">+2</string>
+    <string name="fragment_abacus_text_11">−5</string>
+    <string name="fragment_abacus_text_12">+10</string>
+    <string name="fragment_abacus_text_13">+3</string>
+    <string name="fragment_abacus_text_14">−5</string>
+    <string name="fragment_abacus_text_15">+10</string>
+    <string name="fragment_abacus_text_16">+4</string>
+    <string name="fragment_abacus_text_17">−5</string>
+    <string name="fragment_abacus_text_18">+10</string>
+    <string name="fragment_abacus_text_19">Number to subtract</string>
+    <string name="fragment_abacus_text_20">Steps</string>
+    <string name="fragment_abacus_text_21">−1</string>
+    <string name="fragment_abacus_text_22">+5</string>
+    <string name="fragment_abacus_text_23">−10</string>
+    <string name="fragment_abacus_text_24">−2</string>
+    <string name="fragment_abacus_text_25">+5</string>
+    <string name="fragment_abacus_text_26">−10</string>
+    <string name="fragment_abacus_text_27">−3</string>
+    <string name="fragment_abacus_text_28">+5</string>
+    <string name="fragment_abacus_text_29">−10</string>
+    <string name="fragment_abacus_text_30">−4</string>
+    <string name="fragment_abacus_text_31">+5</string>
+    <string name="fragment_abacus_text_32">−10</string>
+    <string name="fragment_abacus_text_33">Number to subtract</string>
+    <string name="fragment_abacus_text_34">Friend</string>
+    <string name="fragment_abacus_extraction_ten_rule_description_text">Take away 10. Add the friend</string>
+    <string name="fragment_abacus_start_button">Start</string>
+    <string name="fragment_abacus_kontrol_button">Check</string>
+    <string name="fragment_abacus_incorrect_text">Wrong</string>
+    <string name="fragment_abacus_correct_answer_label">Follow the instructions</string>
+    <string name="fragment_abacus_okay_button">Try Again</string>
+    <string name="fragment_abacus_correct_text">Well done!</string>
+    <string name="fragment_abacus_continue_button">Continue</string>
+
+    <string name="fragment_abacus_customization_text_desc">Keys</string>
+    <string name="fragment_abacus_customization_diamond_id_desc">Coins</string>
+
+    <string name="fragment_abacus_practice_kontrol_button">Check</string>
+    <string name="fragment_abacus_practice_incorrect_text">Wrong</string>
+    <string name="fragment_abacus_practice_correct_answer_label">Follow the instructions</string>
+    <string name="fragment_abacus_practice_okay_button">Try Again</string>
+    <string name="fragment_abacus_practice_correct_text">Well done!</string>
+    <string name="fragment_abacus_practice_continue_button">Continue</string>
+
+    <string name="fragment_account_settings_account_settings_header_title">Settings</string>
+    <string name="fragment_account_settings_text">Account</string>
+    <string name="fragment_account_settings_text_2">Profile</string>
+    <string name="fragment_account_settings_text_3">Sound and Notifications</string>
+    <string name="fragment_account_settings_text_4">For parents</string>
+    <string name="fragment_account_settings_text_5">Parent Panel</string>
+    <string name="fragment_account_settings_tv_payments_header">Payments and subscriptions</string>
+    <string name="fragment_account_settings_text_6">Cancel Subscription</string>
+    <string name="fragment_account_settings_text_7">Support</string>
+    <string name="fragment_account_settings_text_8">Feedback</string>
+    <string name="fragment_account_settings_btn_account_settings_logout">SIGN OUT</string>
+
+    <string name="fragment_ad_skip_title_text1">Skip ads with a 7-day free PRO</string>
+    <string name="fragment_ad_skip_title_text2">trial!</string>
+    <string name="fragment_ad_skip_reminder_text">You\'ll get a notification before your trial ends.</string>
+    <string name="fragment_ad_skip_btn_try_free_text">TRY IT FOR FREE</string>
+    <string name="fragment_ad_skip_btn_no_thanks">NO THANKS</string>
+
+    <string name="fragment_add_friend_btn_back_desc">Back</string>
+    <string name="fragment_add_friend_text">Find friends</string>
+    <string name="fragment_add_friend_text_desc">Search</string>
+    <string name="fragment_add_friend_et_search_hint">Search names...</string>
+    <string name="fragment_add_friend_btn_clear_search_desc">Clear</string>
+    <string name="fragment_add_friend_btn_load_more">LOAD MORE</string>
+    <string name="fragment_add_friend_text_2">No users found</string>
+
+    <string name="fragment_ask_question_open_title_text1">Stuck on something?</string>
+    <string name="fragment_ask_question_open_title_text2">Get help from your teacher!</string>
+    <string name="fragment_ask_question_open_info_text">Easily send your teacher a photo or video of where you\'re stuck, and your teacher will answer with a video!</string>
+    <string name="fragment_ask_question_open_btn_buy_credits">BUY CREDITS INSTEAD</string>
+    <string name="fragment_ask_question_open_btn_no_thanks">NO THANKS</string>
+
+    <string name="fragment_avatar_custom_btn_close">Close</string>
+    <string name="fragment_avatar_custom_tv_title">Create Your Avatar</string>
+    <string name="fragment_avatar_custom_btn_save">Save</string>
+    <string name="fragment_avatar_custom_btn_random">Random</string>
+
+    <string name="fragment_badge_tv_badge_piece_header_unit_medal">Unit</string>
+    <string name="fragment_badge_tv_badge_piece_header_season_medal">Season</string>
+    <string name="fragment_badge_tv_badge_piece_header_unit_cup">Unit</string>
+    <string name="fragment_badge_tv_badge_piece_header_season_cup">Season</string>
+
+    <string name="fragment_badge_detail_btn_badge_detail_back_desc">Back</string>
+    <string name="fragment_badge_detail_tv_badge_detail_title">Achievements</string>
+    <string name="fragment_badge_detail_tv_personal_records_title">Personal Records</string>
+    <string name="fragment_badge_detail_tv_awards_title">Badges</string>
+
+    <string name="fragment_blinding_lesson_five_text">Number to add</string>
+    <string name="fragment_blinding_lesson_text">Friend</string>
+    <string name="fragment_blinding_lesson_five_rule_description_text">Add 5. Take away the friend</string>
+    <string name="fragment_blinding_lesson_ten_text">Number to add</string>
+    <string name="fragment_blinding_lesson_text_2">Big Friend</string>
+    <string name="fragment_blinding_lesson_ten_rule_five_description_text">Add 10. Take away the friend.</string>
+    <string name="fragment_blinding_lesson_text_3">Number to add</string>
+    <string name="fragment_blinding_lesson_text_4">Friend</string>
+    <string name="fragment_blinding_lesson_ten_rule_description_text">Add 10. Take away the friend.</string>
+    <string name="fragment_blinding_lesson_text_5">Number to add</string>
+    <string name="fragment_blinding_lesson_text_6">Steps</string>
+    <string name="fragment_blinding_lesson_text_7">+1</string>
+    <string name="fragment_blinding_lesson_text_8">−5</string>
+    <string name="fragment_blinding_lesson_text_9">+10</string>
+    <string name="fragment_blinding_lesson_text_10">+2</string>
+    <string name="fragment_blinding_lesson_text_11">−5</string>
+    <string name="fragment_blinding_lesson_text_12">+10</string>
+    <string name="fragment_blinding_lesson_text_13">+3</string>
+    <string name="fragment_blinding_lesson_text_14">−5</string>
+    <string name="fragment_blinding_lesson_text_15">+10</string>
+    <string name="fragment_blinding_lesson_text_16">+4</string>
+    <string name="fragment_blinding_lesson_text_17">−5</string>
+    <string name="fragment_blinding_lesson_text_18">+10</string>
+    <string name="fragment_blinding_lesson_text_19">Number to subtract</string>
+    <string name="fragment_blinding_lesson_text_20">Steps</string>
+    <string name="fragment_blinding_lesson_text_21">−1</string>
+    <string name="fragment_blinding_lesson_text_22">+5</string>
+    <string name="fragment_blinding_lesson_text_23">−10</string>
+    <string name="fragment_blinding_lesson_text_24">−2</string>
+    <string name="fragment_blinding_lesson_text_25">+5</string>
+    <string name="fragment_blinding_lesson_text_26">−10</string>
+    <string name="fragment_blinding_lesson_text_27">−3</string>
+    <string name="fragment_blinding_lesson_text_28">+5</string>
+    <string name="fragment_blinding_lesson_text_29">−10</string>
+    <string name="fragment_blinding_lesson_text_30">−4</string>
+    <string name="fragment_blinding_lesson_text_31">+5</string>
+    <string name="fragment_blinding_lesson_text_32">−10</string>
+    <string name="fragment_blinding_lesson_text_33">Number to Subtract</string>
+    <string name="fragment_blinding_lesson_text_34">Friend</string>
+    <string name="fragment_blinding_lesson_extraction_ten_rule_description_text">Take away 10. Add the friend</string>
+    <string name="fragment_blinding_lesson_kontrol_button">Check</string>
+    <string name="fragment_blinding_lesson_incorrect_text">Wrong</string>
+    <string name="fragment_blinding_lesson_okay_button">Continue</string>
+    <string name="fragment_blinding_lesson_correct_text">Well done!</string>
+    <string name="fragment_blinding_lesson_continue_button">Continue</string>
+    <string name="fragment_blinding_lesson_start_button">Start</string>
+
+    <string name="fragment_chest_chest_image_desc">chest</string>
+    <string name="fragment_chest_gold_text">150 coins</string>
+    <string name="fragment_chest_claim_reward_button">Claim Reward</string>
+
+    <string name="fragment_chest_result_result_title">Lesson Complete!</string>
+    <string name="fragment_chest_result_text">Time</string>
+    <string name="fragment_chest_result_text_2">SUCCESS</string>
+    <string name="fragment_chest_result_claim_button">Continue</string>
+
+    <string name="fragment_create_question_title_text">Send your question</string>
+    <string name="fragment_create_question_screenshot_image_desc">Screenshot</string>
+    <string name="fragment_create_question_video_fullscreen_button_desc">Full screen</string>
+    <string name="fragment_create_question_screenshot_annotate_button_desc">Draw</string>
+    <string name="fragment_create_question_header_label">Give your question a title</string>
+    <string name="fragment_create_question_header_input_hint">How small friends work</string>
+    <string name="fragment_create_question_description_label">Briefly describe your question</string>
+    <string name="fragment_create_question_description_input_hint">Example: I didn\'t understand this question on this page...</string>
+    <string name="fragment_create_question_send_button">Send</string>
+
+    <string name="fragment_cup_cup_name_text_view">Awesome Trophy</string>
+    <string name="fragment_cup_cup_image_view_desc">Trophy</string>
+    <string name="fragment_cup_motivation_text_view">You did an amazing job! We\'re proud of you!</string>
+    <string name="fragment_cup_claim_button">Continue</string>
+
+    <string name="fragment_cup_history_btn_cup_history_back_desc">Back</string>
+    <string name="fragment_cup_history_tv_cup_history_title">Trophy History</string>
+    <string name="fragment_cup_history_text">Current Trophies</string>
+    <string name="fragment_cup_history_tv_cup_history_single_hint">There\'s only one data point — check back in a few days to compare</string>
+    <string name="fragment_cup_history_tv_cup_history_empty">No history yet</string>
+
+    <string name="fragment_cup_path_road_btn_cup_path_road_back_desc">Back</string>
+    <string name="fragment_cup_path_road_tv_cup_path_road_title">Trophy Road</string>
+
+    <string name="fragment_edit_profile_text">Edit Profile</string>
+    <string name="fragment_edit_profile_text_2">Name</string>
+    <string name="fragment_edit_profile_et_name_hint">Name</string>
+    <string name="fragment_edit_profile_tv_name_error">Name can\'t be empty.</string>
+    <string name="fragment_edit_profile_text_3">User ID</string>
+    <string name="fragment_edit_profile_et_username_hint">User ID</string>
+    <string name="fragment_edit_profile_text_4">Email Address</string>
+    <string name="fragment_edit_profile_text_5">New Password</string>
+    <string name="fragment_edit_profile_et_password_hint">Enter a new password</string>
+    <string name="fragment_edit_profile_text_6">Only fill in this field to change your password. Leave it empty if you don\'t want to change it.</string>
+    <string name="fragment_edit_profile_btn_save">SAVE CHANGES</string>
+    <string name="fragment_edit_profile_btn_delete_account">DELETE ACCOUNT PERMANENTLY</string>
+
+    <string name="fragment_feedback_text">Contact Us</string>
+    <string name="fragment_feedback_text_2">Having a problem or got a great idea? Help us make the app better.</string>
+    <string name="fragment_feedback_text_3">Your message</string>
+    <string name="fragment_feedback_feedback_input_hint">Write here...</string>
+    <string name="fragment_feedback_text_4">We\'ll reply to your email address.</string>
+    <string name="fragment_feedback_close_button">Cancel</string>
+    <string name="fragment_feedback_send_feedback_button">Send</string>
+
+    <string name="fragment_followers_following_btn_back_desc">Back</string>
+    <string name="fragment_followers_following_text">Friends</string>
+    <string name="fragment_followers_following_tv_empty">No one here yet</string>
+
+    <string name="fragment_lesson_result_result_title">Lesson Complete!</string>
+    <string name="fragment_lesson_result_text">TOTAL SCORE</string>
+    <string name="fragment_lesson_result_text_2">SUCCESS</string>
+    <string name="fragment_lesson_result_claim_button">Continue</string>
+
+    <string name="fragment_lesson_result_false_result_title">Lesson Not Passed!</string>
+    <string name="fragment_lesson_result_false_result_title_comment">Success rate is below 75%!</string>
+    <string name="fragment_lesson_result_false_text">TOTAL SCORE</string>
+    <string name="fragment_lesson_result_false_text_2">SUCCESS</string>
+    <string name="fragment_lesson_result_false_claim_button">Exit</string>
+
+    <string name="fragment_mascot_playground_btn_close">Close</string>
+    <string name="fragment_mascot_playground_tv_title">Character Animation</string>
+    <string name="fragment_mascot_playground_tv_current">Idle</string>
+
+    <string name="fragment_new_chest_chest_rarity_label">COMMON</string>
+    <string name="fragment_new_chest_chest_hint_text">Tap for a chance to get something better!</string>
+
+    <string name="fragment_new_streak_new_streak_continue">Continue</string>
+
+    <string name="fragment_notification_notification_title">Questions</string>
+    <string name="fragment_notification_tab_pool">Question pool</string>
+    <string name="fragment_notification_tab_chats">Chats</string>
+    <string name="fragment_notification_tab_reports">Reports</string>
+    <string name="fragment_notification_sub_tab_reports_list">Reported Messages</string>
+    <string name="fragment_notification_sub_tab_restricted_users">Restricted Users</string>
+    <string name="fragment_notification_tab_bekleyen">Pending</string>
+    <string name="fragment_notification_tab_cozulen">Solved</string>
+    <string name="fragment_notification_empty_text">No questions yet</string>
+    <string name="fragment_notification_teacher_approval_pending_message">Your teacher account needs to be approved before you can use messaging.</string>
+    <string name="fragment_notification_teacher_approval_support_button">Contact Support</string>
+
+    <string name="fragment_otp_verification_tv_title">Verify your email</string>
+    <string name="fragment_otp_verification_text">Enter the 6-digit code sent to your email.</string>
+    <string name="fragment_otp_verification_et_code_hint">6-digit code</string>
+    <string name="fragment_otp_verification_btn_verify">Verify</string>
+    <string name="fragment_otp_verification_btn_resend">Resend code</string>
+
+    <string name="fragment_parent_consent_title">Parent approval needed</string>
+    <string name="fragment_parent_consent_message">If you\'re under 13, your mom, dad or guardian needs to approve before you can create an account. Enter your parent\'s email address and we\'ll send them a code. Get the code from your parent and enter it on the next screen. If you\'re creating the account with your parent\'s email, you can enter the same address.</string>
+    <string name="fragment_parent_consent_collected_title">Your parent will see this in the email:</string>
+    <string name="fragment_parent_consent_collected_list">• Your email address, name and year of birth\n• How you heard about us and how well you know the abacus\n• Your lesson progress, scores, streak and trophies\n• Your name and avatar are visible to other users (profile, rankings, following)\n• Messages, photos, videos and screen recordings with audio that you send to a teacher\n• If you join a course class, the teacher sees your name and lesson progress\n• Device ID and usage statistics for notifications</string>
+    <string name="fragment_parent_consent_et_hint">Parent\'s email address</string>
+    <string name="fragment_parent_consent_btn_send">Send code to parent</string>
+    <string name="fragment_parent_consent_note">If your parent doesn\'t approve, the account won\'t be created and your sign-up request will be deleted automatically.</string>
+
+    <string name="fragment_parent_panel_parent_panel_header_title">Parent Panel</string>
+    <string name="fragment_parent_panel_btn_back_desc">Back</string>
+
+    <string name="fragment_part_selection_category_title_addition">Addition</string>
+    <string name="fragment_part_selection_category_title_subtraction">Subtraction</string>
+    <string name="fragment_part_selection_category_title_multiplication">Multiplication</string>
+
+    <string name="fragment_plan_tv_bireysel_price_right">₺99 monthly</string>
+    <string name="fragment_plan_tv_bireysel_price_sub">₺1,188/year</string>
+    <string name="fragment_plan_text">Unlimited energy</string>
+    <string name="fragment_plan_text_2">Ad-free learning</string>
+    <string name="fragment_plan_text_3">Mastery Path</string>
+    <string name="fragment_plan_text_4">20 messages to Sobi a day</string>
+    <string name="fragment_plan_text_8">Unlimited Sobi quizzes</string>
+    <string name="fragment_plan_text_5">Welcome gift: 20 Sobi credits</string>
+    <string name="fragment_plan_tv_lite_title">Lite (with ads)</string>
+    <string name="fragment_plan_tv_lite_price_right">₺49 monthly</string>
+    <string name="fragment_plan_tv_lite_price_sub">₺588/year</string>
+    <string name="fragment_plan_text_6">Double your life limit</string>
+    <string name="fragment_plan_text_7">Lives refill every 7 minutes</string>
+    <string name="fragment_plan_text_9">5 messages to Sobi a day</string>
+    <string name="fragment_plan_tv_footer_text2">"Your subscription renews automatically,\n and you can cancel anytime."</string>
+    <string name="fragment_plan_btn_try_free_text">TRY IT FOR FREE</string>
+
+    <string name="fragment_pro_diffirent_tv_header_free">FREE</string>
+    <string name="fragment_pro_diffirent_row1_text">Lesson content</string>
+    <string name="fragment_pro_diffirent_row2_text">Unlimited lives</string>
+    <string name="fragment_pro_diffirent_row3_text">Ad-free learning</string>
+    <string name="fragment_pro_diffirent_row4_text">Mastery Path</string>
+    <string name="fragment_pro_diffirent_row5_text">Messages to Sobi</string>
+    <string name="fragment_pro_diffirent_row5_free">2/day</string>
+    <string name="fragment_pro_diffirent_row5_pro">20/day</string>
+    <string name="fragment_pro_diffirent_row7_text">Unlimited Sobi quizzes</string>
+    <string name="fragment_pro_diffirent_row7_free">1/day</string>
+    <string name="fragment_pro_diffirent_row6_text">Welcome gift: 20 Sobi credits</string>
+    <string name="fragment_pro_diffirent_btn_try_free_text">TRY IT FOR FREE</string>
+
+    <string name="fragment_profile_btn_other_user_profile_back_desc">Back</string>
+    <string name="fragment_profile_tv_top_left_name">Username</string>
+    <string name="fragment_profile_btn_account_settings_desc">Settings</string>
+    <string name="fragment_profile_img_profile_photo_desc">Profile Photo</string>
+    <string name="fragment_profile_tv_username_and_date">\@BAAR461745 • JOINED IN 2022</string>
+    <string name="fragment_profile_text">Following</string>
+    <string name="fragment_profile_text_2">Followers</string>
+    <string name="fragment_profile_btn_add_friend">ADD FRIEND</string>
+    <string name="fragment_profile_tv_user_progress_title">User Progress</string>
+    <string name="fragment_profile_text_3">User\'s Abacus</string>
+    <string name="fragment_profile_text_4">Trophy road</string>
+    <string name="fragment_profile_tv_profile_badges_title">Badges</string>
+    <string name="fragment_profile_btn_profile_badges_arrow_desc">Badges</string>
+
+    <string name="fragment_question_chat_back_button_desc">Back</string>
+    <string name="fragment_question_chat_restriction_message_text">Your account has been restricted. You can\'t send messages.</string>
+    <string name="fragment_question_chat_restriction_appeal_button">Appeal</string>
+    <string name="fragment_question_chat_teacher_claim_button">Take Question</string>
+    <string name="fragment_question_chat_text_input_hint">Write a message</string>
+    <string name="fragment_question_chat_gallery_button_desc">Gallery</string>
+    <string name="fragment_question_chat_record_audio_button_desc">Record audio</string>
+    <string name="fragment_question_chat_send_text_button_desc">Send</string>
+    <string name="fragment_question_chat_audio_bar_play_pause_desc">Play / Pause</string>
+    <string name="fragment_question_chat_audio_bar_stop_desc">Stop</string>
+    <string name="fragment_question_chat_audio_bar_close_desc">Close</string>
+    <string name="fragment_question_chat_audio_bar_send_desc">Send</string>
+    <string name="fragment_question_chat_caption_bar_thumb_desc">Selected media</string>
+    <string name="fragment_question_chat_caption_bar_thumb_close_desc">Remove selection</string>
+    <string name="fragment_question_chat_caption_input_hint">Write a message...</string>
+    <string name="fragment_question_chat_caption_send_button_desc">Send</string>
+
+    <string name="fragment_question_panel_question_panel_title">Feedback</string>
+
+    <string name="fragment_question_panel_question_panel_subtitle">Your feedback helps us improve the lessons.</string>
+    <string name="fragment_question_panel_question1_title">1) Do you think the test questions help you learn?</string>
+    <string name="fragment_question_panel_q1_option1_text">Not at all</string>
+    <string name="fragment_question_panel_q1_option2_text">Not really</string>
+    <string name="fragment_question_panel_q1_option3_text">Neutral</string>
+    <string name="fragment_question_panel_q1_option4_text">Yes</string>
+    <string name="fragment_question_panel_q1_option5_text">Absolutely</string>
+    <string name="fragment_question_panel_question2_title">2) How hard were the test questions?</string>
+    <string name="fragment_question_panel_q2_option1_text">Very easy</string>
+    <string name="fragment_question_panel_q2_option2_text">Easy</string>
+    <string name="fragment_question_panel_q2_option3_text">Medium</string>
+    <string name="fragment_question_panel_q2_option4_text">Hard</string>
+    <string name="fragment_question_panel_q2_option5_text">Very hard</string>
+    <string name="fragment_question_panel_question3_title">3) If you got stuck somewhere or have something you\'d like us to fix, please write it here.</string>
+
+    <string name="fragment_rules_text">Small Friends</string>
+    <string name="fragment_rules_text_3">Big Friends 1-2-3-4-5</string>
+    <string name="fragment_rules_text_5">Big Friends 6-7-8-9</string>
+    <string name="fragment_rules_text_7">Mixed Friends</string>
+    <string name="fragment_rules_text_21">Small Friends</string>
+    <string name="fragment_rules_text_23">Big Friends</string>
+    <string name="fragment_rules_text_26">Mixed Friends Subtraction</string>
+
+    <string name="fragment_shop_super_title">"Features\n that speed up \n learning"</string>
+    <string name="fragment_shop_super_subtitle">"Unlimited energy and an\n ad-free experience"</string>
+    <string name="fragment_shop_super_button">TRY 1 WEEK FREE</string>
+    <string name="fragment_shop_text">Special Offers</string>
+    <string name="fragment_shop_text_desc_4">Crystal</string>
+    <string name="fragment_shop_text_2">Free Chest</string>
+    <string name="fragment_shop_text_3">Watch an ad to win a chest.</string>
+    <string name="fragment_shop_text_4">WIN A CHEST</string>
+    <string name="fragment_shop_text_5">Free Life</string>
+    <string name="fragment_shop_text_6">Watch an ad to win a life.</string>
+    <string name="fragment_shop_text_7">WIN A LIFE</string>
+    <string name="fragment_shop_text_desc_5">Streak freeze</string>
+    <string name="fragment_shop_text_8">Streak Freeze</string>
+    <string name="fragment_shop_shop_streak_freeze_desc">Protects your streak for 1 day. Keep going even if your streak breaks!</string>
+    <string name="fragment_shop_text_desc_6">Unlimited lives</string>
+    <string name="fragment_shop_text_10">Unlimited</string>
+    <string name="fragment_shop_text_11">Never run out of lives with Pro</string>
+    <string name="fragment_shop_shop_pro_price_text">₺99.00 monthly</string>
+    <string name="fragment_shop_text_12">Extra Life</string>
+    <string name="fragment_shop_text_13">Get 1 life to take on more lessons.</string>
+    <string name="fragment_shop_shop_life_timer_text">FULL</string>
+    <string name="fragment_shop_text_14">Ask a Teacher</string>
+    <string name="fragment_shop_shop_credit_balance_text">Each credit lets you ask a teacher one question.</string>
+
+    <string name="fragment_sound_settings_text">Sound and Notifications</string>
+    <string name="fragment_sound_settings_text_2">Sound effects</string>
+    <string name="fragment_sound_settings_text_3">Abacus sound options</string>
+    <string name="fragment_sound_settings_text_abacus_sound_current">Sound 1</string>
+    <string name="fragment_sound_settings_text_4">Lesson narration</string>
+    <string name="fragment_sound_settings_text_5">Vibration</string>
+    <string name="fragment_sound_settings_text_6">Notifications</string>
+
+    <string name="fragment_streak_text">Daily Streak</string>
+    <string name="fragment_streak_text_2">Today</string>
+    <string name="fragment_streak_streak_challenge_claim">Collect reward</string>
+    <string name="fragment_streak_streak_rewards_title">Streak Rewards</string>
+    <string name="fragment_streak_text_3">Your longest streak</string>
+    <string name="fragment_streak_text_4">Streak freeze</string>
+    <string name="fragment_streak_streak_change_goal">Change daily goal</string>
+    <string name="fragment_streak_streak_change_reminder">Change reminder time</string>
+
+    <string name="fragment_student_email_verification_tv_title">Verify your email</string>
+    <string name="fragment_student_email_verification_et_code_hint">6-digit code</string>
+    <string name="fragment_student_email_verification_et_name_hint">Full Name</string>
+    <string name="fragment_student_email_verification_et_password_hint">Password (at least 6 characters)</string>
+    <string name="fragment_student_email_verification_btn_verify">Verify and Sign In</string>
+    <string name="fragment_student_email_verification_btn_resend">Resend code</string>
+
+    <string name="fragment_teacher_forgot_password_email_tv_title">Forgot password</string>
+    <string name="fragment_teacher_forgot_password_email_text">Enter your email address. We\'ll send you a verification code.</string>
+    <string name="fragment_teacher_forgot_password_email_et_email_hint">Email</string>
+
+    <string name="fragment_teacher_new_password_tv_title">New password</string>
+    <string name="fragment_teacher_new_password_text">Enter your new password.</string>
+    <string name="fragment_teacher_new_password_et_new_password_hint">New password</string>
+    <string name="fragment_teacher_new_password_et_new_password_confirm_hint">Repeat password</string>
+    <string name="fragment_teacher_new_password_btn_update_password">Update password</string>
+
+    <string name="fragment_tutorial_rules_step_text">+10 -&gt; −6</string>
+    <string name="fragment_tutorial_tutorial_text">Sample</string>
+    <string name="fragment_tutorial_question_text">Sample</string>
+    <string name="fragment_tutorial_text_35">Skip tutorial</string>
+
+    <string name="fragment_tutorial_question_panel_question_panel_title">Tutorial feedback</string>
+    <string name="fragment_tutorial_question_panel_question_panel_subtitle">Your feedback helps us improve the tutorials.</string>
+    <string name="fragment_tutorial_question_panel_question1_title">1) Was this tutorial enough for you to learn the topic?</string>
+    <string name="fragment_tutorial_question_panel_q1_option1_text">Not at all</string>
+    <string name="fragment_tutorial_question_panel_q1_option2_text">Not really</string>
+    <string name="fragment_tutorial_question_panel_q1_option3_text">Neutral</string>
+    <string name="fragment_tutorial_question_panel_q1_option4_text">Yes</string>
+    <string name="fragment_tutorial_question_panel_q1_option5_text">Absolutely</string>
+    <string name="fragment_tutorial_question_panel_question2_title">2) Were the examples in the tutorial easy to understand?</string>
+    <string name="fragment_tutorial_question_panel_q2_option1_text">Not clear at all</string>
+    <string name="fragment_tutorial_question_panel_q2_option2_text">Not very clear</string>
+    <string name="fragment_tutorial_question_panel_q2_option3_text">Somewhat clear</string>
+    <string name="fragment_tutorial_question_panel_q2_option4_text">Clear</string>
+    <string name="fragment_tutorial_question_panel_q2_option5_text">Very clear</string>
+    <string name="fragment_tutorial_question_panel_question3_title">3) If there\'s a part where you got stuck or that you think could be better, please write it here.</string>
+
+    <string name="fragment_user_info_et_age_hint">Age</string>
+    <string name="fragment_user_info_challenge_intro_text">Now let\'s help you build a learning habit.</string>
+    <string name="fragment_user_info_btn_later">Not now</string>
+
+    <string name="item_back_part_section_title">Part 1</string>
+    <string name="item_back_part_fast_forward_button">GO BACK!</string>
+
+    <string name="item_badge_detail_award_award_badge_title">Award Title</string>
+    <string name="item_badge_detail_record_record_badge_title">Badge Title</string>
+    <string name="item_badge_detail_record_record_badge_subtext">Default</string>
+
+    <string name="item_bulletin_card_bulletin_card_title">Abacus</string>
+    <string name="item_bulletin_card_bulletin_card_subtitle">Improve yourself by practicing on the abacus.</string>
+    <string name="item_bulletin_card_bulletin_card_chevron_desc">Open</string>
+
+    <string name="item_follow_user_btn_follow_back_desc">Follow</string>
+    <string name="item_follow_user_btn_unfollow_desc">Unfollow</string>
+
+    <string name="item_friend_result_btn_add_friend_desc">Add Friend</string>
+    <string name="item_header_header_text">Intro to small friends addition</string>
+    <string name="item_message_audio_label">Voice recording</string>
+    <string name="item_parent_lesson_lesson_chevron_desc">Show steps</string>
+    <string name="item_parent_part_part_chevron_desc">Show units</string>
+    <string name="item_parent_section_section_chevron_desc">Show lessons</string>
+    <string name="item_parent_summary_text">Lessons done</string>
+    <string name="item_parent_summary_text_2">Today</string>
+    <string name="item_parent_summary_text_3">Daily streak</string>
+    <string name="item_parent_summary_text_4">Last 7 days</string>
+    <string name="item_part_section_title">Part 2</string>
+    <string name="item_part_section_description">Learn words, phrases and grammar concepts for simple conversations</string>
+    <string name="item_part_fast_forward_button">FAST FORWARD!</string>
+    <string name="item_part_open_section_title">Part 2</string>
+    <string name="item_part_open_section_description">Learn words, phrases and grammar concepts for simple conversations</string>
+    <string name="item_part_open_fast_forward_button">CONTINUE</string>
+    <string name="item_question_question_thumbnail_desc">Preview</string>
+    <string name="item_question_question_status_icon_desc">Status icon</string>
+    <string name="item_race_list_race_status">START</string>
+    <string name="item_restricted_user_text_desc">See details</string>
+
+    <string name="layout_tab1_bead_options_text">Choose Bead Type</string>
+    <string name="layout_tab1_bead_options_text_3">Rainbow</string>
+    <string name="layout_tab1_bead_options_text_4">Cloud</string>
+    <string name="layout_tab1_bead_options_text_6">Tennis</string>
+    <string name="layout_tab1_bead_options_text_7">Billiards</string>
+    <string name="layout_tab1_bead_options_text_8">Basketball</string>
+    <string name="layout_tab1_bead_options_text_9">Soccer</string>
+    <string name="layout_tab1_bead_options_text_12">Soccer</string>
+    <string name="layout_tab1_bead_options_text_13">Beach Ball</string>
+    <string name="layout_tab1_bead_options_text_15">Basketball</string>
+    <string name="layout_tab1_bead_options_text_16">Tennis</string>
+    <string name="layout_tab1_bead_options_text_17">Baseball</string>
+    <string name="layout_tab1_bead_options_text_18">Ice Hockey</string>
+    <string name="layout_tab1_bead_options_text_19">Dog</string>
+    <string name="layout_tab1_bead_options_text_20">Monkey</string>
+    <string name="layout_tab1_bead_options_text_21">Duck</string>
+    <string name="layout_tab1_bead_options_text_22">Fox</string>
+    <string name="layout_tab1_bead_options_text_23">Elephant</string>
+    <string name="layout_tab1_bead_options_text_25">Cat</string>
+    <string name="layout_tab1_bead_options_text_26">Walrus</string>
+    <string name="layout_tab1_bead_options_text_27">Tiger</string>
+
+    <string name="layout_tab2_bead_color_text_2">Selected</string>
+
+    <string name="layout_tab3_frame_options_text">Choose Frame Type</string>
+    <string name="layout_tab3_frame_options_text_2">Wood</string>
+    <string name="layout_tab3_frame_options_text_3">Hearts</string>
+    <string name="layout_tab3_frame_options_text_4">Stars</string>
+    <string name="layout_tab3_frame_options_text_5">Gradient</string>
+
+    <string name="lesson_popover_text">Steps</string>
+    <string name="lesson_popover_again_tutorial">Replay tutorial</string>
+
+    <string name="multiplication_table_1_text">Times Table 1x</string>
+    <string name="multiplication_table_2_text">Times Table 2x</string>
+    <string name="multiplication_table_3_text">Times Table 3x</string>
+    <string name="multiplication_table_4_text">Times Table 4x</string>
+    <string name="multiplication_table_5_text">Times Table 5x</string>
+    <string name="multiplication_table_6_text">Times Table 6x</string>
+    <string name="multiplication_table_7_text">Times Table 7x</string>
+    <string name="multiplication_table_8_text">Times Table 8x</string>
+    <string name="multiplication_table_9_text">Times Table 9x</string>
+
+    <string name="panel_bead_skin_select_bead_slot_select_title">Which bead do you want to replace?</string>
+
+    <string name="panel_cup_difficulty_cup_difficulty_title">Difficulty Level</string>
+    <string name="panel_cup_difficulty_cup_difficulty_message">Set the Level</string>
+    <string name="panel_cup_difficulty_text">Number of Digits:</string>
+    <string name="panel_cup_difficulty_cup_difficulty_start_button">START</string>
+
+    <string name="panel_cup_path_text">Trophy Road</string>
+    <string name="panel_cup_path_card1_title">Addition Trophy Road</string>
+    <string name="panel_cup_path_card2_title">Subtraction Trophy Road</string>
+    <string name="panel_cup_path_card3_title">Multiplication Trophy Road</string>
+    <string name="panel_cup_path_card4_title">Addition Trophy Road - Blind</string>
+    <string name="panel_cup_path_card5_title">Subtraction Trophy Road - Blind</string>
+    <string name="panel_cup_path_card6_title">Multiplication Trophy Road - Blind</string>
+
+    <string name="panel_profile_abacus_text">Change profile icon</string>
+
+    <string name="race_bottom_sheet_race_title">Mastery Path</string>
+
+    <string name="result_panel_incorrect_correct_answer_label">Correct answer:</string>
+    <string name="result_panel_incorrect_correct_answer_text">The correct answer will be shown here</string>
+    <string name="result_panel_incorrect_okay_button">CONTINUE</string>
+
+    <string name="view_drawing_controls_overlay_pencil_button_desc">Pencil</string>
+    <string name="view_drawing_controls_overlay_undo_button_desc">Undo</string>
+    <string name="view_drawing_controls_overlay_drawer_button_desc">Open/close drawing panel</string>
+
+    <string name="view_guide_panel_btn_forward_desc">Forward</string>
+
+    <string name="view_recording_overlay_recording_btn_pause_resume_desc">Pause</string>
+    <string name="view_recording_overlay_recording_btn_save_desc">Save</string>
+    <string name="fragment_question_panel_q1_text_input_hint">Anything else you\'d like to add?</string>
+    <string name="fragment_question_panel_q2_text_input_hint">Anything you\'d like to explain?</string>
+    <string name="fragment_question_panel_q3_text_input_hint">Write here…</string>
+    <string name="fragment_question_panel_skip_button">Skip</string>
+    <string name="fragment_question_panel_send_button">Send</string>
+    <string name="fragment_rules_five_text">Number to add</string>
+    <string name="fragment_rules_text_2">Friend</string>
+    <string name="fragment_rules_five_rule_description_text">Add 5. Take away the friend</string>
+    <string name="fragment_rules_ten_text">Number to add</string>
+    <string name="fragment_rules_text_4">Big Friend</string>
+    <string name="fragment_rules_ten_rule_five_description_text">Add 10. Take away the friend.</string>
+    <string name="fragment_rules_ten_text_second">Number to add</string>
+    <string name="fragment_rules_text_6">Friend</string>
+    <string name="fragment_rules_ten_rule_description_text">Add 10. Take away the friend.</string>
+    <string name="fragment_rules_bead_text">Number to add</string>
+    <string name="fragment_rules_text_8">Steps</string>
+    <string name="fragment_rules_text_9">+1</string>
+    <string name="fragment_rules_text_10">−5</string>
+    <string name="fragment_rules_text_11">+10</string>
+    <string name="fragment_rules_text_12">+2</string>
+    <string name="fragment_rules_text_13">−5</string>
+    <string name="fragment_rules_text_14">+10</string>
+    <string name="fragment_rules_text_15">+3</string>
+    <string name="fragment_rules_text_16">−5</string>
+    <string name="fragment_rules_text_17">+10</string>
+    <string name="fragment_rules_text_18">+4</string>
+    <string name="fragment_rules_text_19">−5</string>
+    <string name="fragment_rules_text_20">+10</string>
+    <string name="fragment_rules_extraction_five_text">Number to subtract</string>
+    <string name="fragment_rules_text_22">Friend</string>
+    <string name="fragment_rules_extraction_five_rule_description_text">Take away 5. Add the friend</string>
+    <string name="fragment_rules_text_24">Number to subtract</string>
+    <string name="fragment_rules_text_25">Friend</string>
+    <string name="fragment_rules_extraction_ten_rule_description_text">Take away 10. Add the friend</string>
+    <string name="fragment_rules_bead_extraction_text">Number to subtract</string>
+    <string name="fragment_rules_text_27">Steps</string>
+    <string name="fragment_rules_text_28">−1</string>
+    <string name="fragment_rules_text_29">+5</string>
+    <string name="fragment_rules_text_30">−10</string>
+    <string name="fragment_rules_text_31">−2</string>
+    <string name="fragment_rules_text_32">+5</string>
+    <string name="fragment_rules_text_33">−10</string>
+    <string name="fragment_rules_text_34">−3</string>
+    <string name="fragment_rules_text_35">+5</string>
+    <string name="fragment_rules_text_36">−10</string>
+    <string name="fragment_rules_text_37">−4</string>
+    <string name="fragment_rules_text_38">+5</string>
+    <string name="fragment_rules_text_39">−10</string>
+    <string name="fragment_shop_shop_energy_icon_desc">Lives</string>
+    <string name="fragment_shop_text_desc">Coins</string>
+    <string name="fragment_shop_text_desc_2">Keys</string>
+    <string name="fragment_shop_text_desc_3">Tutor credits</string>
+    <string name="fragment_shop_text_9">Lives</string>
+    <string name="fragment_shop_text_desc_7">Tutor credits</string>
+    <string name="fragment_shop_text_desc_8">Tutor credits</string>
+    <string name="fragment_shop_text_desc_9">Tutor credits</string>
+    <string name="fragment_shop_text_15">Coins</string>
+    <string name="fragment_shop_text_desc_10">Coins</string>
+    <string name="fragment_shop_text_desc_11">Coins</string>
+    <string name="fragment_shop_text_desc_12">Coins</string>
+    <string name="fragment_shop_text_16">Keys</string>
+    <string name="fragment_shop_text_desc_13">Keys</string>
+    <string name="fragment_shop_text_desc_14">Keys</string>
+    <string name="fragment_shop_text_desc_15">Keys</string>
+    <string name="fragment_sound_settings_btn_close_desc">Back</string>
+    <string name="fragment_streak_btn_streak_back_desc">Back</string>
+    <string name="fragment_teacher_forgot_password_email_btn_continue">Continue</string>
+    <string name="fragment_tutorial_five_text">Number to add</string>
+    <string name="fragment_tutorial_text">Friend</string>
+    <string name="fragment_tutorial_five_rule_description_text">Add 5. Take away the friend</string>
+    <string name="fragment_tutorial_extraction_five_text">Number to subtract</string>
+    <string name="fragment_tutorial_text_2">Friend</string>
+    <string name="fragment_tutorial_extraction_five_rule_description_text">Take away 5. Add the friend</string>
+    <string name="fragment_tutorial_ten_text">Number to add</string>
+    <string name="fragment_tutorial_text_3">Big Friend</string>
+    <string name="fragment_tutorial_ten_rule_five_description_text">Add 10. Take away the friend.</string>
+    <string name="fragment_tutorial_ten_text_second">Number to add</string>
+    <string name="fragment_tutorial_text_4">Friend</string>
+    <string name="fragment_tutorial_ten_rule_description_text">Add 10. Take away the friend.</string>
+    <string name="fragment_tutorial_text_5">Number to add</string>
+    <string name="fragment_tutorial_text_6">Steps</string>
+    <string name="fragment_tutorial_text_7">+1</string>
+    <string name="fragment_tutorial_text_8">−5</string>
+    <string name="fragment_tutorial_text_9">+10</string>
+    <string name="fragment_tutorial_text_10">+2</string>
+    <string name="fragment_tutorial_text_11">−5</string>
+    <string name="fragment_tutorial_text_12">+10</string>
+    <string name="fragment_tutorial_text_13">+3</string>
+    <string name="fragment_tutorial_text_14">−5</string>
+    <string name="fragment_tutorial_text_15">+10</string>
+    <string name="fragment_tutorial_text_16">+4</string>
+    <string name="fragment_tutorial_text_17">−5</string>
+    <string name="fragment_tutorial_text_18">+10</string>
+    <string name="fragment_tutorial_text_19">Number to subtract</string>
+    <string name="fragment_tutorial_text_20">Friend</string>
+    <string name="fragment_tutorial_extraction_ten_rule_description_text">Take away 10. Add the friend</string>
+    <string name="fragment_tutorial_text_21">Number to subtract</string>
+    <string name="fragment_tutorial_text_22">Steps</string>
+    <string name="fragment_tutorial_text_23">−1</string>
+    <string name="fragment_tutorial_text_24">+5</string>
+    <string name="fragment_tutorial_text_25">−10</string>
+    <string name="fragment_tutorial_text_26">−2</string>
+    <string name="fragment_tutorial_text_27">+5</string>
+    <string name="fragment_tutorial_text_28">−10</string>
+    <string name="fragment_tutorial_text_29">−3</string>
+    <string name="fragment_tutorial_text_30">+5</string>
+    <string name="fragment_tutorial_text_31">−10</string>
+    <string name="fragment_tutorial_text_32">−4</string>
+    <string name="fragment_tutorial_text_33">+5</string>
+    <string name="fragment_tutorial_text_34">−10</string>
+    <string name="fragment_tutorial_kontrol_button">Check</string>
+    <string name="fragment_tutorial_options_check_button">Check</string>
+    <string name="fragment_tutorial_devam_button">Continue</string>
+    <string name="fragment_tutorial_incorrect_text">Wrong</string>
+    <string name="fragment_tutorial_correct_answer_label">Follow the instructions</string>
+    <string name="fragment_tutorial_okay_button">Try Again</string>
+    <string name="fragment_tutorial_correct_text">Well done!</string>
+    <string name="fragment_tutorial_continue_button">Continue</string>
+    <string name="fragment_tutorial_question_panel_q1_text_input_hint">Anything else you\'d like to add?</string>
+    <string name="fragment_tutorial_question_panel_q2_text_input_hint">Anything you\'d like to explain?</string>
+    <string name="fragment_tutorial_question_panel_q3_text_input_hint">Write here…</string>
+    <string name="fragment_tutorial_question_panel_skip_button">Skip</string>
+    <string name="fragment_tutorial_question_panel_send_button">Send</string>
+    <string name="fragment_user_info_btn_continue">Continue</string>
+    <string name="layout_tab1_bead_options_text_2">Soroban</string>
+    <string name="layout_tab1_bead_options_text_5">Bowling</string>
+    <string name="layout_tab1_bead_options_text_10">Birto</string>
+    <string name="layout_tab1_bead_options_text_11">Golf</string>
+    <string name="layout_tab1_bead_options_text_14">Bowling</string>
+    <string name="layout_tab1_bead_options_text_24">Panda</string>
+    <string name="layout_tab2_bead_color_text">Normal</string>
+    <string name="panel_cup_path_panel_cup_path_energy_icon_desc">Lives</string>
+    <string name="result_panel_correct_correct_text">Well done!</string>
+    <string name="result_panel_correct_continue_button">Continue</string>
+    <string name="result_panel_incorrect_incorrect_text">Wrong</string>
+    <string name="view_guide_panel_btn_back_desc">Back</string>
+    <string name="view_recording_overlay_recording_btn_cancel_desc">Cancel</string>
+</resources>

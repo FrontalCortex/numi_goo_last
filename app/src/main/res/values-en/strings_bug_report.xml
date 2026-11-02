@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bug_report_card_title">Bug Hunter</string>
+    <string name="bug_report_card_subtitle_default">Spotted a bug in the app? Tell us. If it\'s confirmed, the reward is yours!</string>
+    <string name="bug_report_card_subtitle_pending">Your report is being reviewed. We\'ll let you know the result.</string>
+    <string name="bug_report_card_subtitle_pending_many">%1$d of your reports are being reviewed. We\'ll let you know the results.</string>
+    <string name="bug_report_card_subtitle_claimable">Your report was approved! Collect your reward.</string>
+    <string name="bug_report_card_claim">Collect your reward</string>
+
+    <string name="bug_report_reward_credits">%1$d tutor questions</string>
+    <string name="bug_report_reward_keys">%1$d keys</string>
+
+    <string name="bug_report_title">Report a Bug</string>
+    <string name="bug_report_intro">Did you see something that looks broken, works wrong or gets stuck? Tell us what happened, and add a screenshot if you like. If we confirm it\'s a real bug, you win this reward:</string>
+    <string name="bug_report_pick_image">Add a screenshot (optional)</string>
+    <string name="bug_report_change_image">Choose another image</string>
+    <string name="bug_report_annotate">Mark where the bug is</string>
+    <string name="bug_report_text_label">What happened? Where were you, what did you tap?</string>
+    <string name="bug_report_text_hint">E.g. The screen freezes when I tap Continue at the end of a lesson.</string>
+    <string name="bug_report_send">Send</string>
+    <string name="bug_report_close">Close</string>
+    <string name="bug_report_need_text">Please describe the problem in a bit more detail.</string>
+    <string name="bug_report_image_failed">Couldn\'t open the image. Try another one.</string>
+    <string name="bug_report_upload_failed">Couldn\'t upload the screenshot. Check your internet connection and try again.</string>
+    <string name="bug_report_generic_error">Something went wrong. Try again in a little while.</string>
+    <string name="bug_report_sent">Thanks! We\'ll review your report and let you know.</string>
+    <string name="bug_report_rules">Reviews can take a few days. The first person to report a bug gets the full reward. You can report problems other than crashes too.</string>
+    <string name="bug_report_mine_title">My reports</string>
+    <string name="bug_report_status_pending">In review</string>
+    <string name="bug_report_status_approved">Approved</string>
+    <string name="bug_report_status_claimed">Reward claimed</string>
+    <string name="bug_report_status_rejected">Rejected</string>
+    <string name="bug_report_reject_reason_line">Reason: %1$s</string>
+    <string name="bug_report_reject_not_a_bug">This isn\'t a bug; it\'s how the app normally works.</string>
+    <string name="bug_report_reject_duplicate">This bug has already been reported.</string>
+    <string name="bug_report_reject_unclear">We couldn\'t understand the bug from the image and description.</string>
+    <string name="bug_report_reject_other">The report wasn\'t accepted.</string>
+
+    <string name="bug_report_admin_card_title">Bug Reports (Admin)</string>
+    <string name="bug_report_admin_card_subtitle">Review pending reports, then approve or reject them.</string>
+    <string name="bug_report_admin_title">Bug Reports</string>
+    <string name="bug_report_admin_empty">No pending reports.</string>
+    <string name="bug_report_admin_pending_count">%1$d pending reports</string>
+    <string name="bug_report_admin_no_access">Couldn\'t read the reports. If admin access was just granted, sign out and sign back in.</string>
+    <string name="bug_report_admin_approve_big">Approve: Big reward</string>
+    <string name="bug_report_admin_approve_small">Approve: Small reward</string>
+    <string name="bug_report_admin_reject">Reject</string>
+    <string name="bug_report_admin_note_hint">Note to the user (optional)</string>
+    <string name="bug_report_admin_reject_title">Reason for rejection</string>
+    <string name="bug_report_admin_confirm_approve">Give %1$s?</string>
+    <string name="bug_report_admin_confirm">Yes</string>
+    <string name="bug_report_admin_cancel">Cancel</string>
+    <string name="bug_report_admin_done">Decision saved.</string>
+    <string name="bug_report_admin_user_line">User: %1$s</string>
+    <string name="bug_report_image_desc">Bug screenshot</string>
+    <string name="bug_report_admin_no_image">No screenshot attached.</string>
+</resources>

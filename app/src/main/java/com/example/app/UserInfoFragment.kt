@@ -741,7 +741,7 @@ class UserInfoFragment : Fragment() {
             Step.MEET -> {
                 // Kendini tanıtıyor, 2 sn arayla el sallıyor.
                 binding.introMascot.repeatWithPause(BunnyMascotView.Emote.GREET, INTRO_PAUSE_MS)
-                introSay("Selamlar! Benim adım ${getString(R.string.mascot_name)}!")
+                introSay(getString(R.string.ui_selamlar_benim_adim_x, getString(R.string.mascot_name)))
                 updateContinueButton(enabled = true)
             }
             Step.BRIEF -> {

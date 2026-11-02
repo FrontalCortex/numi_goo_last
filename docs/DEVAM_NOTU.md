@@ -36,6 +36,26 @@ Ayrıca önerildi (sıra verilmedi): deploy iş akışında önce testler + kıs
 deneme, staging projesi, hep kırmızı "Build Debug APK" iş akışı, sunucu hata metinlerinin
 yerelleştirilmesi, ödev saklama süresi.
 
+## Dil seçeneği: İngilizce (02.11.2026 — uygulama tarafı yazıldı; telefonda denenmedi; sunucu tarafı kullanıcı kararı bekliyor)
+- **Çeviri:** `res/values-en/` altında bütün `strings*.xml` (3.257 metin). Terimler
+  `docs/CEVIRI_SOZLUGU.md`'de, kullanıcı onaylı: 5'lik → small friends, 10'luk → big friends, boncuk
+  kuralı → mixed friends, kardeş → friend, körleme → Blind, altın → coins, Strike Ustası → Streak Master.
+  Çevrilmeyen 148 anahtar dilden bağımsız (çarpım tablosu satırları, "PRO", sayılar); Türkçeye düşüyor.
+- **Dil seçimi:** `AppLanguage` (Ayarlar → Dil: Telefonun dili / Türkçe / English). AppCompat'ın
+  `setApplicationLocales`'ı kullanılmadı: metinler uygulama context'inden okunuyor ve Android 13 öncesinde
+  o yol uygulama context'ini değiştirmiyor. Dil `NumiGooApplication.attachBaseContext` + `FontScaleLimiter.wrap`
+  (her aktivite) ile veriliyor; seçim süreci yeniden başlatıyor. "Telefonun dili" Türkçe değilse İngilizce
+  (varsayılan `values/` Türkçe, Endonezce telefonda Türkçe çıkmasın diye).
+- **Koddaki metinler:** `MistakeAnalyzer` + `SubStepExplainerEn` (Sobi analiz ekranı) İngilizce dalı,
+  `HomeworkText.withAccusative` İngilizcede ek koymuyor, `SobiSpeaker` seçili dilde okuyor,
+  `LoginActivity` "Kullanıcı bulunamadı" karşılaştırması kaynağa bağlandı (İngilizcede kayıt ekranına
+  yönlenmiyordu). Log/hata kayıtlarındaki Türkçe bilerek bırakıldı.
+- **Açık kalanlar (kullanıcıya soruldu):** (1) Sobi sunucusu Türkçe cevaplıyor — `lang` parametresi +
+  istem eki gerekiyor, functions deploy'u ister; (2) sunucu hata metinleri (`HttpsError` mesajları, OTP
+  "Çok fazla yanlış deneme…") Türkçe ve `OtpVerificationFragment` bu Türkçe metni arıyor; (3) öğretici
+  seslendirmeleri (`res/raw/*.mp3`) Türkçe — şimdilik İngilizcede susturuldu (`TutorialFragment.playSound`); (4) Play Store sayfası; (5) TR kaynaktaki iki yazım hatası:
+  `tutorial_ipucu_114` "10 x 1 = 1", `tutorial_ipucu_134` "8'i" (56 olmalı) — EN'de doğru yazıldı.
+
 ## Reklam yükleme hataları (02.11.2026 — derlendi, commit + push edildi (yalnızca uygulama, deploy yok); telefonda denenmedi; GA4 "Reklamlar" filtresi güncellenmedi)
 - **Asıl sebep AdMob'da:** Sorobit (com.numigo.app) "Onaylanacak uygulamalar"da, durumu
   "Kurulum tamamlanmadı" (son 7 günde 186 istek). Uygulama AdMob listesine eklenip mağaza

@@ -1,0 +1,744 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ui_dis_cerceve">Outer frame</string>
+    <string name="ui_ic_zemin">Inner background</string>
+    <string name="ui_sag_yansima">Right reflection</string>
+    <string name="ui_kulak_dis">Ear (outer)</string>
+    <string name="ui_kulak_ic">Ear (inner)</string>
+    <string name="ui_govde">Body</string>
+    <string name="ui_beyaz_alanlar">White areas</string>
+    <string name="ui_burun">Nose</string>
+    <string name="ui_agiz">Mouth</string>
+    <string name="ui_gozler">Eyes</string>
+    <string name="ui_kafa">Head</string>
+    <string name="ui_goz_cevresi">Around the eyes</string>
+    <string name="ui_kulak_dudak">Ear/Lip</string>
+    <string name="ui_goz_agiz">Eye/Mouth</string>
+    <string name="ui_yuz">Face</string>
+    <string name="ui_goz_burun">Eye/Nose</string>
+    <string name="ui_ic_kulak">Inner Ear</string>
+    <string name="ui_agiz_cevresi">Around the Mouth</string>
+    <string name="ui_cizgiler">Stripes</string>
+    <string name="ui_govde_kafa">Body/Head</string>
+    <string name="ui_gozler_burun">Eyes/Nose</string>
+    <string name="ui_yuz_agiz">Face/Mouth</string>
+    <string name="ui_kulak_ici_detay">Inner Ear/Detail</string>
+    <string name="ui_goz">Eye</string>
+    <string name="ui_kulak_ici">Inner ear</string>
+    <string name="ui_kulak_disi">Outer ear</string>
+    <string name="ui_dis">Tooth</string>
+    <string name="ui_kulak_agiz">Ear/Mouth</string>
+    <string name="ui_kulak">Ear</string>
+    <string name="ui_biyik">Whiskers</string>
+    <string name="ui_cene">Chin</string>
+    <string name="ui_ana_renk">Main Color</string>
+    <string name="ui_golgeler">Shadows</string>
+    <string name="ui_parlaklik">Shine</string>
+    <string name="ui_delik_ici">Inside the Hole</string>
+    <string name="ui_isik">Light</string>
+    <string name="ui_golge">Shadow</string>
+
+    <string name="ui_yetersiz_anahtar">Not enough keys</string>
+    <string name="ui_yetersiz_altin">Not enough coins</string>
+    <string name="ui_kayit_hatasi_tekrar_deneyin">Save error. Try again.</string>
+    <string name="ui_islem_basarisiz_tekrar_deneyin">Something went wrong. Try again.</string>
+    <string name="ui_hata_olustu">An error occurred</string>
+    <string name="ui_stokta_kalmadi">Out of stock</string>
+    <string name="ui_kayit_hatasi">Save error</string>
+    <string name="ui_islem_basarisiz">Action failed</string>
+    <string name="ui_bu_boncuktan_kalmadi">This bead is sold out!</string>
+    <string name="ui_renk">Color</string>
+    <string name="ui_odeme_hatasi">Payment error</string>
+    <string name="ui_ahsap_rengi">Wood color</string>
+    <string name="ui_yildiz_rengi">Star color</string>
+
+    <string name="ui_cikarilacak_sayi">Number to Subtract</string>
+    <string name="ui_5_gider_kardes_gelir">Take away 5. Add the friend.</string>
+    <string name="ui_eklenecek_sayi">Number to add</string>
+    <string name="ui_5_gelir_kardes_gider">Add 5. Take away the friend.</string>
+    <string name="ui_internet_baglantiniz_yok">You\'re not connected to the internet.</string>
+    <string name="ui_senin_cevabin_x">Your answer %1$s</string>
+    <string name="ui_dogru_cevap_x">Correct answer %1$s</string>
+
+    <string name="ui_dogru_cevap_x_2">Correct answer: %1$s</string>
+    <string name="ui_senin_cevabin_x_2">Your answer: %1$s</string>
+
+    <string name="ui_play_store_acilamadi">Couldn\'t open the Play Store</string>
+
+    <string name="ui_yukleniyor">LOADING...</string>
+    <string name="ui_daha_fazla_yukle">LOAD MORE</string>
+    <plurals name="ui_x_sonuc_gosteriliyor">
+        <item quantity="one">Showing %1$s result</item>
+        <item quantity="other">Showing %1$s results</item>
+    </plurals>
+    <string name="ui_oturum_bilgisi_alinamadi">Couldn\'t get session info.</string>
+    <string name="ui_zaten_takip_ediyorsunuz">You\'re already following them.</string>
+    <string name="ui_x_takip_edildi">You\'re now following %1$s.</string>
+    <string name="ui_takip_edilemedi_x">Couldn\'t follow: %1$s</string>
+    <string name="ui_hata_x">Error: %1$s</string>
+
+    <string name="ui_odul_icin_giris_yapmalisiniz">You need to sign in to get the reward.</string>
+    <string name="ui_reklam_henuz_yuklenmedi_lutfen_bekleyin">The ad hasn\'t loaded yet, please wait.</string>
+
+    <string name="ui_x_gunluk_ucretsiz_pro">Skip ads with a %1$s-day free PRO</string>
+    <string name="ui_denemesiyle_reklamlari_atla">trial!</string>
+    <string name="ui_deneme_suren_sona_ermeden_once_bildirim">You\'ll get a notification before your trial ends.</string>
+    <string name="ui_pro_ile_reklamsiz">Learn ad-free and</string>
+    <string name="ui_kesintisiz_ogren">uninterrupted with PRO!</string>
+    <string name="ui_aboneligini_istedigin_zaman_iptal_edebilirsi">You can cancel your subscription anytime.</string>
+
+    <string name="ui_uzgunuz">We\'re sorry 😔</string>
+    <string name="ui_deneyimini_gelistirmek_icin_geri_bildirimine">We need your feedback to improve your experience.</string>
+    <string name="ui_geri_bildiriminiz_icin_tesekkurler">Thanks for your feedback!</string>
+    <string name="ui_lutfen_bir_seyler_yazin">Please write something.</string>
+
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar">Your account has been permanently restricted due to a rule violation.</string>
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine">Your account has been restricted until %1$s due to a rule violation.</string>
+    <string name="ui_itiraz_et">Appeal</string>
+    <string name="ui_hesap_kisitlamasi_itirazi">Account restriction appeal</string>
+    <string name="ui_merhaba_hesabimin_kisitlanmasina_itiraz_etme">"Hello,\n\nI would like to appeal the restriction on my account.\n\nUser ID: %1$s\n\n"</string>
+
+    <string name="ui_e_posta_adresi_girin">Enter an email address</string>
+    <string name="ui_e_posta_gonderilemedi">Couldn\'t send the email</string>
+    <string name="ui_kod_dogrulanamadi">Couldn\'t verify the code</string>
+    <string name="ui_sifre_guncellenemedi">Couldn\'t update the password</string>
+    <string name="ui_gecersiz_bilgiler">Invalid information</string>
+    <string name="ui_token_alinamadi">Couldn\'t get a token</string>
+    <string name="ui_oturum_acilamadi">Couldn\'t sign in</string>
+    <string name="ui_bu_hesap_ogretmen_hesabi_ogrenci_giris">This is a teacher account. It can\'t be used on the student sign-in screen.</string>
+    <string name="ui_google_hesap_bilgisi_alinamadi_lutfen_tekrar">Couldn\'t get Google account info. Please try again.</string>
+    <string name="ui_ag_baglanti_hatasi_internet_baglantinizi_kon">Network error. Check your internet connection.</string>
+    <string name="ui_gecersiz_kimlik_bilgisi_web_client_id">Invalid credentials. Check that the Web Client ID is correct.</string>
+    <string name="ui_yapilandirma_hatasi_1_web_client_id">"Configuration error:\n\n1. Is the Web Client ID correct? (strings.xml)\n2. Was the SHA-1 fingerprint added in the Firebase Console?\n3. Is Google Sign-In enabled in the Firebase Console?\n\nError: %1$s"</string>
+    <string name="ui_giris_basarisiz_code_x_x_logcat">"Sign-in failed (Code: %1$s)\n\n%2$s\n\nCheck the \'AuthManager\' tag in Logcat for details."</string>
+    <string name="ui_kullanici_bulunamadi">User not found</string>
+    <string name="ui_giris_bilgileri_dogrulanamadi">Couldn\'t verify the sign-in details.</string>
+    <string name="ui_google_hesabi_secilemedi">Couldn\'t select a Google account</string>
+    <string name="ui_kullanici_girisi_iptal_edildi">Sign-in was canceled</string>
+    <string name="ui_yapilandirma_hatasi_web_client_id_eksik">Configuration error: Web Client ID is missing or wrong. Get the Web Client ID from the Firebase Console and add it to strings.xml.</string>
+    <string name="ui_istek_limiti_asildi_lutfen_daha_sonra">Too many requests. Please try again later.</string>
+    <string name="ui_google_girisi_basarisiz_hata_x_x">Google sign-in failed (Error: %1$s): %2$s</string>
+    <string name="ui_bu_hesap_ogrenci_degil">This is not a student account</string>
+    <string name="ui_e_posta_dogrulamasi_gerekli_lutfen_e">Email verification required. Please verify your email.</string>
+    <string name="ui_kullanici_bilgileri_alinamadi">Couldn\'t get user info</string>
+    <string name="ui_sifre_veya_e_posta_hatali">Wrong password or email</string>
+    <string name="ui_bu_hesap_ogretmen_degil">This is not a teacher account</string>
+    <string name="ui_bu_e_posta_adresi_zaten_kayitli">This email address is already registered. Please sign in.</string>
+    <string name="ui_sifre_cok_zayif_daha_guclu_bir">The password is too weak. Choose a stronger one.</string>
+    <string name="ui_gecersiz_e_posta_adresi">Invalid email address.</string>
+    <string name="ui_kayit_basarisiz_lutfen_tekrar_deneyin">Sign-up failed. Please try again.</string>
+    <string name="ui_kullanici_olusturulamadi">Couldn\'t create the user</string>
+    <string name="ui_kayit_basarisiz_x">Sign-up failed: %1$s</string>
+    <string name="ui_gecersiz_veya_suresi_dolmus_kod">Invalid or expired code</string>
+    <string name="ui_kod_gonderilemedi">Couldn\'t send the code</string>
+
+    <string name="ui_sac">Hair</string>
+    <string name="ui_sac_rengi">Hair color</string>
+    <string name="ui_kiyafet">Outfit</string>
+
+    <string name="ui_avatarin_kaydedildi">Your avatar was saved</string>
+
+    <string name="ui_x_dersi_hatasiz_tamamlayarak_kusursuz_odak">You earned the Flawless Focus badge by completing %1$s lessons with no mistakes.</string>
+    <string name="ui_x_dersi_1_gunde_tamamlayarak_sinir">You earned the Limitless badge by completing %1$s lessons in 1 day.</string>
+    <string name="ui_x_gunluk_gorev_tamamlayarak_strike_ustasi">You earned the Streak Master badge by completing %1$s daily missions.</string>
+    <string name="ui_x_kere_egitmene_danisarak_nokta_atisi">You earned the Bullseye badge by asking a tutor %1$s times.</string>
+    <string name="ui_x_gun_ust_uste_gunluk_soru">You earned the Deep Hunter badge by completing the Daily Question challenge %1$s days in a row.</string>
+    <string name="ui_toplama_kupa_yolunda_x_kupa_kazanarak">You earned the Dino badge by winning %1$s trophies on the Addition Trophy Road.</string>
+    <string name="ui_x_toplama_ustalik_yolu_adimini_tamamlayarak">You earned the Hurricane badge by completing %1$s Addition Mastery Path steps.</string>
+    <string name="ui_x_cikarma_ustalik_yolu_adimini_tamamlayarak">You earned the Hurricane badge by completing %1$s Subtraction Mastery Path steps.</string>
+    <string name="ui_cikarma_kupa_yolunda_x_kupa_kazanarak">You earned the Timo badge by winning %1$s trophies on the Subtraction Trophy Road.</string>
+    <string name="ui_carpma_kupa_yolunda_x_kupa_kazanarak">You earned the Keço badge by winning %1$s trophies on the Multiplication Trophy Road.</string>
+    <string name="ui_toplama_kupa_yolu_korleme_de_x">You earned the Karti badge by winning %1$s trophies on the Addition Trophy Road - Blind.</string>
+    <string name="ui_cikarma_kupa_yolu_korleme_de_x">You earned the Sino badge by winning %1$s trophies on the Subtraction Trophy Road - Blind.</string>
+    <string name="ui_carpma_kupa_yolu_korleme_de_x">You earned the Kapi badge by winning %1$s trophies on the Multiplication Trophy Road - Blind.</string>
+    <string name="ui_unite_maratonunda_x_olarak_elit_seviye">You won the Elite Level trophy by finishing #%1$s in the Unit Marathon.</string>
+    <string name="ui_x_unite_maratonunu_3_yildiz_ile">You earned the Black Belt badge by completing %1$s Unit Marathons with 3 stars.</string>
+    <string name="ui_unite_maratonunda_1_olarak_altin_madalya">You won the Gold Medal by finishing 1st in the unit marathon.</string>
+    <string name="ui_unite_maratonunda_2_olarak_gumus_madalya">You won the Silver Medal by finishing 2nd in the unit marathon.</string>
+    <string name="ui_unite_maratonunda_3_olarak_bronz_madalya">You won the Bronze Medal by finishing 3rd in the unit marathon.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_dersi">Complete 3 lessons with no mistakes to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_dersi_2">Complete 3 lessons in 1 day to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_5_gunluk">Complete 5 daily missions to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_kere">Ask a teacher 3 times to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_gun">Solve the Daily Question challenge 3 days in a row to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_kupa">Reach 500 trophies on the Addition Trophy Road to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_ustalik">Complete 1 step on the Addition Mastery Path to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_ustalik">Complete 1 step on the Subtraction Mastery Path to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_kupa">Win 500 trophies on the Subtraction Trophy Road to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_carpma_kupa">Win 500 trophies on the Multiplication Trophy Road to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_kupa_2">Win 500 trophies on the Addition Trophy Road - Blind to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_kupa_2">Win 500 trophies on the Subtraction Trophy Road - Blind to earn this badge.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_carpma_kupa_2">Win 500 trophies on the Multiplication Trophy Road - Blind to earn this badge.</string>
+    <string name="ui_bu_kupayi_kazanmak_icin_unite_maratonunda">Make the top 100 in a unit marathon to win this trophy.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_unite_maratonunu">Complete a unit marathon with 3 stars to earn this badge.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite">Finish first on a unit marathon leaderboard to win this medal.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite_2">Finish second on a unit marathon leaderboard to win this medal.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite_3">Finish third on a unit marathon leaderboard to win this medal.</string>
+    <string name="ui_tamamlandi">Completed!</string>
+
+    <string name="ui_elit_seviye_kupasi">Elite Level Trophy</string>
+    <string name="ui_sampiyonluk_madalyasi">Champion Medal</string>
+    <string name="ui_gumus_madalya">Silver Medal</string>
+    <string name="ui_siyah_kusak">Black Belt</string>
+    <string name="ui_strike_ustasi">Streak Master</string>
+    <string name="ui_derin_avci">Deep Hunter</string>
+    <string name="ui_nokta_atisi">Bullseye</string>
+    <string name="ui_sinir_tanimaz">Limitless</string>
+    <string name="ui_kasirga">Hurricane</string>
+    <string name="ui_yanardag">Volcano</string>
+    <string name="ui_keci">Goat</string>
+
+    <string name="ui_urun_su_anda_alinamiyor_daha_sonra">This item can\'t be purchased right now. Try again later.</string>
+    <string name="ui_abonelik_teklifi_bulunamadi">No subscription offer found.</string>
+    <string name="ui_satin_alma_baslatilamadi">Couldn\'t start the purchase.</string>
+    <string name="ui_satin_alma_tamamlanamadi">Couldn\'t complete the purchase.</string>
+    <string name="ui_bu_abonelik_bu_cihazdaki_google_play">"This subscription belongs to a different Sorobit account "</string>
+    <string name="ui_hesabina_tanimli_aboneligi_o_hesapla_kullana">on this device\'s Google Play account. You can use the subscription with that account.</string>
+    <string name="ui_satin_alma_dogrulanamadi_uygulamayi_tekrar_a">Couldn\'t verify the purchase. We\'ll try again when you reopen the app.</string>
+
+    <string name="ui_gunluk_soru">Daily Question</string>
+    <string name="ui_kupa_modu">Trophy Mode</string>
+    <string name="ui_kupa_zorlugu">Trophy Difficulty</string>
+
+    <string name="ui_atla">Skip</string>
+    <plurals name="ui_x_gun">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <string name="ui_gun">\? days</string>
+    <string name="ui_hiyaa">HI-YAH!</string>
+
+    <string name="ui_x_altin">%1$s coins</string>
+
+    <string name="ui_video_bulunamadi">Video not found.</string>
+    <string name="ui_ekran_goruntusu_alinamadi">Couldn\'t take a screenshot.</string>
+    <string name="ui_ekran_goruntusu_bulunamadi">Screenshot not found.</string>
+    <string name="ui_lutfen_baslik_yazin">Please write a title.</string>
+    <string name="ui_lutfen_aciklama_yazin">Please write a description.</string>
+    <string name="ui_oturum_acik_degil">You\'re not signed in.</string>
+    <string name="ui_soru_gonderildi">Question sent.</string>
+    <string name="ui_yukleme_hatasi_x">Upload error: %1$s</string>
+    <string name="ui_video_yukleme_hatasi">Video upload error.</string>
+    <string name="ui_video_yukleme_hatasi_x">Video upload error: %1$s</string>
+    <string name="ui_danisma_kredin_kalmadi_magazadan_kredi_alabi">You\'re out of tutor credits. You can buy credits in the shop.</string>
+    <string name="ui_gonderilemedi_x">Couldn\'t send: %1$s</string>
+
+    <string name="ui_bilgelik_kupasi">Wisdom Trophy</string>
+    <string name="ui_tum_sorular_senin_zekanla_boy_olcustu">Every question tried to outsmart you, but you came out on top</string>
+    <string name="ui_zirve_senin_bu_basari_tesaduf_degil">The top is yours — this is no accident!</string>
+    <string name="ui_mukemmel_bir_is_cikardin">You did an amazing job!</string>
+    <string name="ui_bu_seviye_sadece_cok_calisanlarin_ulasabildi">Only the hardest workers make it to this level.</string>
+    <string name="ui_sen_artik_bu_konunun_ustasisin_neyi">You\'re a master of this topic now — what can\'t you do?</string>
+    <string name="ui_usta_kupasi">Master Trophy</string>
+    <string name="ui_gercek_ustalik_bilgi_sabir_ve_kararlilikla">True mastery comes from knowledge, patience and determination. Congratulations!</string>
+    <string name="ui_gayet_iyi">Pretty good!</string>
+    <string name="ui_biraz_daha_pratikle_zirveye_ulasman_an">A little more practice and you\'ll reach the top in no time.</string>
+    <string name="ui_azmin_gucuyle_her_adim_seni_daha">With your determination, every step takes you further!</string>
+    <string name="ui_cok_iyi_gidiyorsun_birkac_adim_sonra">You\'re doing great! A few more steps and you\'re at the top.</string>
+    <string name="ui_gelisimin_fark_ediliyor_pes_etme_devam">Your progress shows. Don\'t give up, keep going!</string>
+    <string name="ui_deneyim_kupasi">Experience Trophy</string>
+    <string name="ui_her_usta_bir_zamanlar_amatordu_sen">Every master was once a beginner. You\'re on your way too!</string>
+    <string name="ui_cesaret_ettin_basladin_bu_en_onemli">You were brave and you started. That was the most important step.</string>
+    <string name="ui_unutma_basari_tekrar_tekrar_denemekten_gecer">Remember, success comes from trying again and again!</string>
+    <string name="ui_bugun_attigin_adim_yarinin_basarisini_baslat">The step you take today starts tomorrow\'s success.</string>
+    <string name="ui_ayip_olmasin_diye_bu_kupayi_verdik">We gave you this trophy just to be polite.</string>
+    <string name="ui_biraz_fazla_mi_yavas_oldu_ne">Was that a little too slow, maybe?</string>
+    <string name="ui_yanii_hic_yapmamis_olmaktan_iyi">Well... better than not doing it at all.</string>
+    <string name="ui_en_azindan_ekrani_actin_bu_da">At least you opened the screen. That\'s something.</string>
+    <string name="ui_kupayi_biz_de_pek_vermek_istemedik">We didn\'t really want to give you the trophy, but...</string>
+    <string name="ui_kupa_geldi_ama_vicdanimiz_biraz_sizladi">Here\'s your trophy, though our conscience hurts a little.</string>
+
+    <string name="ui_haftalik">Weekly</string>
+    <string name="ui_aylik">Monthly</string>
+    <string name="ui_yillik">Yearly</string>
+    <string name="ui_tum_zamanlar">All Time</string>
+
+    <string name="ui_tamamlandi_2">Completed</string>
+    <string name="ui_sandik_hazir">Chest ready!</string>
+    <string name="ui_cikarma_kupa_yolu">Subtraction Trophy Road</string>
+    <string name="ui_carpma_kupa_yolu">Multiplication Trophy Road</string>
+    <string name="ui_toplama_kupa_yolu_korleme">Addition Trophy Road - Blind</string>
+    <string name="ui_cikarma_kupa_yolu_korleme">Subtraction Trophy Road - Blind</string>
+    <string name="ui_carpma_kupa_yolu_korleme">Multiplication Trophy Road - Blind</string>
+
+    <string name="ui_bu_sandigi_zaten_aldin">You already got this chest</string>
+    <string name="ui_x_kupaya_ulasinca_acilir">Unlocks at %1$s trophies</string>
+
+    <string name="ui_ad_bos_birakilamaz">Name can\'t be empty.</string>
+    <string name="ui_kaydediliyor">SAVING...</string>
+    <string name="ui_firestore_guncellenemedi">Couldn\'t update Firestore.</string>
+    <string name="ui_auth_profil_guncellenemedi">Couldn\'t update the auth profile.</string>
+    <string name="ui_parola_en_az_6_karakter_olmalidir">The password must be at least 6 characters.</string>
+    <string name="ui_parola_basariyla_guncellendi">Password updated.</string>
+    <string name="ui_guvenlik_nedeniyle_parolayi_degistirmek_icin">For security, please sign in again to change your password.</string>
+    <string name="ui_parola_guncellenemedi_x">Couldn\'t update the password: %1$s</string>
+    <string name="ui_degisiklikler_kaydedildi">Changes saved.</string>
+    <string name="ui_degisiklikleri_kaydet">SAVE CHANGES</string>
+    <string name="ui_hesabi_sil">Delete Account</string>
+    <string name="ui_hesabinizi_kalici_olarak_silmek_istediginize">Are you sure you want to permanently delete your account? This can\'t be undone.</string>
+    <string name="ui_sil">DELETE</string>
+    <string name="ui_iptal">CANCEL</string>
+    <string name="ui_hesabiniz_ve_iliskili_verileriniz_siliniyor">Deleting your account and related data...</string>
+    <string name="ui_hesabiniz_basariyla_silindi">Your account was deleted.</string>
+    <string name="ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen">For security, please sign in again and delete the account right away.</string>
+
+    <string name="ui_gonderiliyor">Sending...</string>
+    <string name="ui_e_postayi_tekrar_gonder">Resend Email</string>
+    <string name="ui_dogrulama_kodu_tekrar_gonderildi">Verification code resent</string>
+    <string name="ui_lutfen_dogrulama_kodunu_girin">Please enter the verification code</string>
+    <string name="ui_kod_6_haneli_olmalidir">The code must be 6 digits</string>
+    <string name="ui_dogrulaniyor">Verifying...</string>
+    <string name="ui_kodu_dogrula">Verify Code</string>
+    <string name="ui_kayit_basarili_giris_yapabilirsiniz">Sign-up complete! You can sign in now.</string>
+    <string name="ui_kod_dogrulanamadi_lutfen_tekrar_deneyin">Couldn\'t verify the code. Please try again.</string>
+
+    <string name="ui_son_1_saat_icinde_cok_fazla">You\'ve sent too many reports in the last hour. Please try again later.</string>
+    <string name="ui_gorusleriniz_basariyla_iletildi_tesekkurler">Your feedback was sent. Thank you!</string>
+
+    <string name="ui_takip_edilen">FOLLOWING</string>
+    <string name="ui_takipci">FOLLOWERS</string>
+    <string name="ui_henuz_kimseyi_takip_etmiyorsun">You\'re not following anyone yet</string>
+    <string name="ui_henuz_takipcin_yok">You don\'t have any followers yet</string>
+    <string name="ui_avatar_yuklenemedi_x">Couldn\'t load avatar: %1$s</string>
+    <string name="ui_yuklenemedi_x">Couldn\'t load: %1$s</string>
+    <string name="ui_x_takip_edildi_2">You\'re now following %1$s</string>
+    <string name="ui_x_adli_kullaniciyi_takip_etmeyi_birakmak">Do you want to unfollow %1$s?</string>
+    <string name="ui_takibi_birak">Unfollow</string>
+    <string name="ui_iptal_2">Cancel</string>
+    <string name="ui_x_takipten_cikarildi">You unfollowed %1$s</string>
+
+    <string name="ui_bu_testte_toplama_islemini_abakuste_yapacaks">In this test, you\'ll do the addition on the abacus.</string>
+    <string name="ui_once_abakuse_ilk_sayiyi_yazip">First enter the first number on the abacus...</string>
+    <string name="ui_sonrasinda_ikinci_sayiyi_ekle">Then add the second number.</string>
+    <string name="ui_ve_islem_bitince_kontrol_et_butonuna">and when you\'re done, tap the Check button.</string>
+    <string name="ui_sakin_aklindan_toplayip_o_sayiyi_abakuse">Don\'t add it in your head and just enter the answer on the abacus. You won\'t learn that way.</string>
+    <string name="ui_kurallari_unutursan_sagdaki_sihirli_degneye">If you forget the rules, tap the magic wand on the right to open the rule table.</string>
+    <string name="ui_burada_derste_ogrendigin_sayilar_ve_kardesle">This shows the numbers you learned in the lesson and their friends.</string>
+    <string name="ui_kurallari_unutursan_sag_ustteki_kitaba_tikla">If you forget the rules, tap the book at the top right to go to the rule book.</string>
+    <string name="ui_burada_ogrendigin_kurallar_yer_alir">The rules you\'ve learned are here.</string>
+    <string name="ui_kurallar_kitabina_tikladiginda_ekrana_gelen">When you tap the rule book, tap any of the rules that appear to place the table above the abacus.</string>
+    <string name="ui_kurallar_kitabina_tikla">Tap the rule book.</string>
+    <string name="ui_ekrana_gelen_kurallardan_herhangi_birisini_s">Pick any of the rules that appear.</string>
+    <string name="ui_eger_tahtada_gosterilen_sayiyi_hemen_gecmek">If you want to skip the number shown on the board, tap the arrow button at the bottom right.</string>
+    <string name="ui_bu_butona_tahtada_bir_sayi_varken">If you tap this button while a number is on the board, you go straight to the next number.</string>
+    <string name="ui_abakusun_boyutunu_sag_alttaki_olcekleme_buto">You can change the size of the abacus with the resize button at the bottom right.</string>
+
+    <string name="ui_resim_bulunamadi">Image not found.</string>
+    <string name="ui_kaydedilemedi">Couldn\'t save.</string>
+
+    <string name="ui_bugun">TODAY</string>
+
+    <string name="ui_unite_maratonu">UNIT MARATHON</string>
+    <string name="ui_ders">LESSON</string>
+    <string name="ui_rekor_x">Record: %1$s</string>
+    <string name="ui_tekrar_dene">Try again</string>
+    <string name="ui_gozden_gecir">Review</string>
+    <string name="ui_devam_et">Continue</string>
+    <string name="ui_basla">Start</string>
+    <string name="ui_kilidi_acmak_icin_onceki_dersleri_tamamla">Complete the previous lessons to unlock.</string>
+    <string name="ui_kilitli">Locked</string>
+    <string name="ui_sayi_gosterilme_periyodu_x_saniye">A number every %1$s seconds</string>
+    <string name="ui_baslat">START</string>
+
+    <string name="ui_puan_500_den_dusuk">Score is below 500!</string>
+    <string name="ui_basari_orani_75_ten_dusuk" formatted="false">Success rate is below 75%!</string>
+
+    <string name="ui_lutfen_e_posta_girin">Please enter an email</string>
+    <string name="ui_gecerli_bir_e_posta_adresi_girin">Enter a valid email address</string>
+    <string name="ui_devam_et_2">Continue</string>
+    <string name="ui_google_girisi_baslatilamadi">Couldn\'t start Google sign-in</string>
+    <string name="ui_google_girisi_baslatilamadi_x">Couldn\'t start Google sign-in: %1$s</string>
+    <string name="ui_google_girisi_basarisiz_x">Google sign-in failed: %1$s</string>
+    <string name="ui_google_girisi_basarisiz">Google sign-in failed</string>
+
+    <string name="ui_ses_kaydi_icin_izin_gerekli">Permission is needed to record audio.</string>
+    <string name="ui_ekran_kaydi_baslatilamadi">Couldn\'t start screen recording.</string>
+    <string name="ui_cikmak_icin_tekrar_bas">Press again to exit</string>
+    <string name="ui_goruntu_alinamadi">Couldn\'t capture the image.</string>
+    <string name="ui_lutfen_bir_soru_secin">Please choose a question.</string>
+    <string name="ui_sohbete_gonderildi">Sent to the chat.</string>
+    <string name="ui_durdur">Stop</string>
+    <string name="ui_kayit_basarisiz">Recording failed.</string>
+    <string name="ui_ekran_kaydi_bu_cihazda_baslatilamadi">Screen recording couldn\'t be started on this device.</string>
+    <string name="ui_dun_calisamadin_ama_seri_dondurman_serini">You missed yesterday, but your streak freeze saved your streak!</string>
+    <string name="ui_seri_dondurman_bir_gunu_kapatti_ama">Your streak freeze covered one day, but you missed two days in a row, so your streak was broken.</string>
+    <string name="ui_bugunku_hedefini_tamamladin">You reached today\'s goal!</string>
+    <string name="ui_serin_basladi">Your streak has started</string>
+    <string name="ui_x_gunluk_seri">%1$s-day streak</string>
+
+    <string name="ui_unite_maratonunda_hatasiz_en_hizli_cozumler">The fastest mistake-free runs in the unit marathon are recorded.</string>
+    <string name="ui_unite_maratonu_panelindeki_rekor_a_tiklayara">Tap Record on the unit marathon panel to see the leaderboard and your rank.</string>
+
+    <string name="ui_0_altin">0 coins</string>
+    <string name="ui_odul_alinamadi_tekrar_deneyin">Couldn\'t claim the reward. Try again.</string>
+
+    <string name="ui_taciz_veya_zorbalik">Harassment or bullying</string>
+    <string name="ui_uygunsuz_icerik">Inappropriate content</string>
+    <string name="ui_diger">Other</string>
+
+    <string name="ui_eklenecek_sayi_2">Number to Add</string>
+
+    <string name="ui_efsanevi">LEGENDARY</string>
+    <string name="ui_sandik_acilamadi_tekrar_deneyin">Couldn\'t open the chest. Try again.</string>
+    <string name="ui_sandigi_acmak_icin_dokun">Tap to open the chest!</string>
+
+    <string name="ui_simdi_bir_ogrenme_aliskanligi_kazanmana_yard">Now let\'s help you build a learning habit.</string>
+    <string name="ui_kac_gun_ust_uste_ogreneceksin">How many days in a row will you learn?</string>
+    <string name="ui_gunde_x_dakika_bu_secim_seri">%1$s minutes a day. This choice stays the same for the whole streak.</string>
+    <string name="ui_x_altin_2">+%1$s coins</string>
+
+    <string name="ui_sorularim">My Questions</string>
+    <string name="ui_giris_yapin">Please sign in.</string>
+    <string name="ui_henuz_soru_yok">No questions yet</string>
+    <string name="ui_henuz_sohbet_yok">No chats yet.</string>
+    <string name="ui_bekleyen_rapor_yok">No pending reports.</string>
+    <string name="ui_ses_kaydini_dinlemek_icin_oynat">Play to listen to the recording</string>
+    <string name="ui_ses_oynatilamadi">Couldn\'t play the audio.</string>
+    <string name="ui_rapor_reddedildi">Report rejected.</string>
+    <string name="ui_islem_basarisiz_2">Action failed.</string>
+    <string name="ui_kullanici_kisitlandi">User restricted.</string>
+    <string name="ui_islem_basarisiz_x">Action failed: %1$s</string>
+    <string name="ui_kisitli_kullanici_yok">No restricted users.</string>
+    <string name="ui_kisitlamayi_kaldir">Remove restriction</string>
+    <string name="ui_x_kullanicisinin_kisitlamasi_kaldirilsin_mi">Remove the restriction on %1$s?</string>
+    <string name="ui_kaldir">Remove</string>
+    <string name="ui_kisitlama_kaldirildi">Restriction removed.</string>
+    <string name="ui_kalici_ban">Permanent ban</string>
+    <string name="ui_bu_kisitlamanin_kaynagi_hakkinda_bilgi_yok">There\'s no information about where this restriction came from.</string>
+    <string name="ui_x_tarihinde_kisitlandi">Restricted on %1$s</string>
+    <string name="ui_x_tarihinde_x_tarafindan_kisitlandi">Restricted on %1$s by %2$s</string>
+    <string name="ui_kisitli">Restricted</string>
+    <string name="ui_suresi_doldu">Expired</string>
+    <plurals name="ui_x_gun_kaldi">
+        <item quantity="one">%1$s day left</item>
+        <item quantity="other">%1$s days left</item>
+    </plurals>
+    <plurals name="ui_x_saat_kaldi">
+        <item quantity="one">%1$s hour left</item>
+        <item quantity="other">%1$s hours left</item>
+    </plurals>
+    <string name="ui_1_saatten_az_kaldi">Less than 1 hour left</string>
+    <string name="ui_bekleyen_soru_yok">No pending questions.</string>
+    <string name="ui_cozulen_soru_yok">No solved questions.</string>
+    <string name="ui_cozuldu_olarak_isaretlenen_sorulari_silebili">You can delete questions marked as solved.</string>
+    <string name="ui_soruyu_silmek_istedigine_emin_misin">Are you sure you want to delete the question</string>
+    <string name="ui_bu_islem_geri_alinamaz">This can\'t be undone.</string>
+    <string name="ui_listeden_kaldirildi">Removed from the list.</string>
+    <string name="ui_kaldirilamadi">Couldn\'t remove.</string>
+    <string name="ui_soruyu_silmek_istedigine_emin_misin_2">Are you sure you want to delete the question?</string>
+    <string name="ui_bu_islem_geri_alinamaz_soruyu_sildiginde">This can\'t be undone. Once you delete the question, you can\'t access it again.</string>
+    <string name="ui_sil_2">Delete</string>
+    <string name="ui_soru_silindi">Question deleted.</string>
+    <string name="ui_silinemedi">Couldn\'t delete.</string>
+    <string name="ui_soru_cevaplanmadi">Question not answered</string>
+    <string name="ui_bu_soru_48_saat_icinde_cevaplanmadi">This question wasn\'t answered within 48 hours, so your credit was refunded. Asking again costs 1 credit.</string>
+    <string name="ui_vazgec">Cancel</string>
+    <string name="ui_tekrar_sor">Ask again</string>
+    <string name="ui_soru_tekrar_gonderildi">Question sent again.</string>
+    <string name="ui_cozulen_sorulara_mesaj_gonderemezsin">You can\'t send messages to solved questions.</string>
+
+    <string name="ui_hala_cevrimdisisiniz_lutfen_baglantinizi_kon">You\'re still offline. Please check your connection.</string>
+
+    <string name="ui_sifre_sifirlama">Reset password</string>
+    <string name="ui_hesap_olustur">Create account</string>
+    <string name="ui_e_postani_dogrula">Verify your email</string>
+    <string name="ui_dogrula">Verify</string>
+    <string name="ui_kod_tekrar_gonderildi">Code resent</string>
+
+    <string name="ui_ilerleme_bilgisi_alinamadi_internet_baglanti">Couldn\'t get progress info. Check your internet connection and try again.</string>
+    <string name="ui_ilerleme_bilgisi_alinamadi">Couldn\'t get progress info.</string>
+    <string name="ui_henuz_baslanmis_bir_ders_yok_cocugunuz">No lessons started yet. Your child\'s progress will show up here once they open the first lesson.</string>
+
+    <string name="ui_mufredattaki_x_dersten_x_tanesi_tamamlandi">%2$s of %1$s lessons in the curriculum completed.</string>
+    <string name="ui_toplam_calisma_suresi_x">" Total study time: %1$s."</string>
+    <string name="ui_en_cok_denemeyi_gerektiren_ders_x">" Lesson that took the most tries: %1$s (%2$s tries)."</string>
+    <string name="ui_bolum_x">Section %1$s</string>
+    <string name="ui_bolum_x_x">Section %1$s - %2$s</string>
+    <string name="ui_x_x_ders_bitti">%1$s/%2$s lessons done</string>
+    <string name="ui_x_x_ders">%1$s/%2$s lessons</string>
+    <plurals name="ui_x_adim">
+        <item quantity="one">%1$s step</item>
+        <item quantity="other">%1$s steps</item>
+    </plurals>
+    <string name="ui_devam_ediyor_x_x_adim_gecildi">In progress · %1$s/%2$s steps passed</string>
+    <string name="ui_adim_x">Step %1$s</string>
+    <string name="ui_ilk_denemede_gecti">Passed on the first try</string>
+    <string name="ui_x_denemede_gecti">Passed on try #%1$s</string>
+    <string name="ui_baslandi">Started</string>
+    <plurals name="ui_deniyor_x_basarisiz_deneme">
+        <item quantity="one">Trying · %1$s failed attempt</item>
+        <item quantity="other">Trying · %1$s failed attempts</item>
+    </plurals>
+    <string name="ui_sirasi_gelmedi">Not yet</string>
+
+    <string name="ui_abakusun_temeli_ve_toplama">Abacus Basics and Addition</string>
+    <string name="ui_abakuste_cikarma">Subtraction on the Abacus</string>
+    <string name="ui_abakuste_carpma">Multiplication on the Abacus</string>
+    <string name="ui_korleme_toplama">Blind Addition</string>
+    <string name="ui_korleme_cikarma">Blind Subtraction</string>
+    <string name="ui_korleme_carpma">Blind Multiplication</string>
+    <string name="ui_paz">Sun</string>
+    <string name="ui_pzt">Mon</string>
+    <string name="ui_sal">Tue</string>
+    <string name="ui_car">Wed</string>
+    <string name="ui_per">Thu</string>
+    <string name="ui_cum">Fri</string>
+    <string name="ui_cmt">Sat</string>
+
+    <string name="ui_ustalik_yolu_toplama">Mastery Path - Addition</string>
+    <string name="ui_ustalik_yolu_cikarma">Mastery Path - Subtraction</string>
+
+    <string name="ui_abakusun_temeli_ve_toplama_kismini_bitir">Finish the Abacus Basics and Addition part.</string>
+    <string name="ui_abakuste_cikarma_kismini_bitir">Finish the Subtraction on the Abacus part.</string>
+    <string name="ui_abakuste_carpma_kismini_bitir">Finish the Multiplication on the Abacus part.</string>
+    <string name="ui_bu_kismi_acmak_icin_plani_pro">Upgrade your plan to Pro to unlock this part.</string>
+    <string name="ui_abakuste_toplama_kismini_bitir">Finish the Addition on the Abacus part.</string>
+    <string name="ui_toplama_ustaligi">Addition Mastery</string>
+    <string name="ui_cikarma_ustaligi">Subtraction Mastery</string>
+
+    <string name="ui_pro_ile_daha_hizli_ogren_daha">Learn faster and practice more with Pro!</string>
+
+    <string name="ui_google_ile_kimlik_dogrulama_basarisiz_x">Google authentication failed: %1$s</string>
+    <string name="ui_kullanici">User</string>
+    <string name="ui_x_x_yilinda_katildi">\@%1$s • JOINED IN %2$s</string>
+    <string name="ui_x_yilinda_katildi">JOINED IN %1$s</string>
+    <string name="ui_hesaplaniyor">Calculating...</string>
+    <string name="ui_x_tamamlandi">%1$s%% completed</string>
+    <plurals name="ui_en_uzun_seri_x_gun">
+        <item quantity="one">Longest streak: %1$s day</item>
+        <item quantity="other">Longest streak: %1$s days</item>
+    </plurals>
+    <string name="ui_en_uzun_seri_0_gun">Longest streak: 0 days</string>
+    <string name="ui_takip_ediliyor">FOLLOWING</string>
+    <string name="ui_takip_et">FOLLOW</string>
+    <string name="ui_takip_birakildi">Unfollowed.</string>
+    <string name="ui_takip_edildi">Following!</string>
+    <string name="ui_sadece_1_adet_boncugun_var">You only have 1 bead</string>
+    <string name="ui_x_gun_x_saat_x_dakika">%1$s days %2$s hours %3$s minutes</string>
+    <string name="ui_x_saat_x_dakika">%1$s hours %2$s minutes</string>
+    <plurals name="ui_x_dakika">
+        <item quantity="one">%1$s minute</item>
+        <item quantity="other">%1$s minutes</item>
+    </plurals>
+    <string name="ui_dogrulama_e_postasi_gonderildi_e_postanizi">Verification email sent. Come back to this screen after verifying your email.</string>
+    <string name="ui_e_posta_gonderilemedi_x">Couldn\'t send the email: %1$s</string>
+    <string name="ui_e_posta_basariyla_dogrulandi">Email verified!</string>
+    <string name="ui_kullanici_adi">Username</string>
+    <string name="ui_profili_duzenle">Edit Profile</string>
+    <string name="ui_kaydet">Save</string>
+    <string name="ui_kullanici_adi_bos_olamaz">Username can\'t be empty</string>
+    <string name="ui_kullanici_adi_guncellendi">Username updated</string>
+    <string name="ui_kullanici_adi_guncellenemedi_x">Couldn\'t update username: %1$s</string>
+    <string name="ui_yeni_sifre">New Password</string>
+    <string name="ui_sifre_degistir">Change Password</string>
+    <string name="ui_yeni_sifrenizi_girin_en_az_6">Enter your new password (at least 6 characters)</string>
+    <string name="ui_degistir">Change</string>
+    <string name="ui_sifre_en_az_6_karakter_olmali">The password must be at least 6 characters</string>
+    <string name="ui_google_hesabi_ile_giris_yaptiniz_sifre">You signed in with a Google account. The password can\'t be changed.</string>
+    <string name="ui_sifre_basariyla_degistirildi">Password changed</string>
+    <string name="ui_sifre_degistirilemedi_x">Couldn\'t change the password: %1$s</string>
+    <string name="ui_cikis_yap">Sign Out</string>
+    <string name="ui_cikis_yapmak_istediginize_emin_misiniz">Are you sure you want to sign out?</string>
+    <string name="ui_evet">Yes</string>
+    <string name="ui_hayir">No</string>
+    <string name="ui_hesabinizi_silmek_istediginize_emin_misiniz">Are you sure you want to delete your account? This can\'t be undone!</string>
+    <string name="ui_evet_sil">Yes, Delete</string>
+    <string name="ui_sifrenizi_girin">Enter your password</string>
+    <string name="ui_hesabinizi_silmek_icin_sifrenizi_girin">Enter your password to delete your account</string>
+    <string name="ui_onayla">Confirm</string>
+    <string name="ui_sifre_bos_olamaz">Password can\'t be empty</string>
+    <string name="ui_kimlik_dogrulama_basarisiz_x">Authentication failed: %1$s</string>
+    <string name="ui_hesap_basariyla_silindi">Account deleted</string>
+    <string name="ui_toplama">Addition</string>
+    <string name="ui_cikarma">Subtraction</string>
+    <string name="ui_carpma">Multiplication</string>
+
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar_2">Your account has been permanently restricted due to a rule violation. You can\'t send messages.</string>
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine_2">Your account has been restricted until %1$s due to a rule violation. You can\'t send messages.</string>
+    <string name="ui_hesabiniz_kisitlanmistir_mesaj_gonderemezsin">Your account has been restricted. You can\'t send messages.</string>
+    <string name="ui_tekrar_gonderilemedi">Couldn\'t resend.</string>
+    <string name="ui_gonderim_iptal_edildi">Sending canceled.</string>
+    <string name="ui_mesaj_herkesten_silindi">Message deleted for everyone.</string>
+    <string name="ui_silinemedi_x">Couldn\'t delete: %1$s</string>
+    <string name="ui_mesaj_sizden_silindi">Message deleted for you.</string>
+    <string name="ui_fotograf">Photo</string>
+    <string name="ui_bildiriminiz_alindi">Your report was received.</string>
+    <string name="ui_bu_mesaji_zaten_bildirdiniz">You already reported this message.</string>
+    <string name="ui_bildirim_gonderilemedi_x">Couldn\'t send the report: %1$s</string>
+    <string name="ui_video_adresi_bulunamadi">Video address not found.</string>
+    <string name="ui_video_oynatilamadi">Couldn\'t play the video.</string>
+    <string name="ui_ses_kopyalanamadi">Couldn\'t copy the audio.</string>
+    <string name="ui_video_acilamadi">Couldn\'t open the video.</string>
+    <string name="ui_resim_acilamadi">Couldn\'t open the image.</string>
+    <string name="ui_bu_soruyu_cozuldu_olarak_isaretlemek_istiyor">Do you want to mark this question as solved? If you do, the student won\'t be able to send messages.</string>
+    <string name="ui_isaretle">Mark</string>
+    <string name="ui_bu_soru_cozuldu_olarak_isaretli_tekrar">This question is marked as solved. Do you want to reactivate it?</string>
+    <string name="ui_aktiflestir">Reactivate</string>
+    <string name="ui_soru_cozuldu_olarak_isaretlendi">Question marked as solved.</string>
+    <string name="ui_soru_tekrar_aktiflestirildi">Question reactivated.</string>
+    <string name="ui_bu_soru_baska_bir_ogretmen_tarafindan">Another teacher has already taken this question.</string>
+    <string name="ui_soruyu_sahiplendiniz">You took this question.</string>
+
+    <string name="ui_indiriliyor">Downloading</string>
+
+    <string name="ui_cevaplanmadi">Not answered</string>
+    <string name="ui_cevaplaniyor">Being answered</string>
+    <string name="ui_cozuldu">Solved</string>
+    <string name="ui_az_once">Just now</string>
+    <plurals name="ui_x_dakika_once">
+        <item quantity="one">%1$s minute ago</item>
+        <item quantity="other">%1$s minutes ago</item>
+    </plurals>
+    <plurals name="ui_x_saat_once">
+        <item quantity="one">%1$s hour ago</item>
+        <item quantity="other">%1$s hours ago</item>
+    </plurals>
+    <plurals name="ui_x_gun_once">
+        <item quantity="one">%1$s day ago</item>
+        <item quantity="other">%1$s days ago</item>
+    </plurals>
+
+    <string name="ui_kilitli_2">LOCKED</string>
+    <string name="ui_basla_2">START</string>
+
+    <string name="ui_gecerli_bir_e_posta_adresi_giriniz">Enter a valid email address.</string>
+    <string name="ui_hesap_olusturarak_kullanim_sartlarini_ve_giz">By creating an account, you agree to the Terms of Use and Privacy Policy.</string>
+    <string name="ui_kullanim_sartlarini">Terms of Use</string>
+    <string name="ui_gizlilik_politikasini">Privacy Policy</string>
+    <string name="ui_bu_e_posta_ile_ogrenci_hesabi">A student account can\'t be created with this email.</string>
+    <string name="ui_google_kaydi_baslatilamadi">Couldn\'t start Google sign-up</string>
+    <string name="ui_google_kaydi_baslatilamadi_x">Couldn\'t start Google sign-up: %1$s</string>
+    <string name="ui_google_kaydi_basarisiz_x">Google sign-up failed: %1$s</string>
+    <string name="ui_google_kaydi_basarisiz">Google sign-up failed</string>
+    <string name="ui_lutfen_tum_alanlari_doldurun">Please fill in all fields</string>
+    <string name="ui_sifreler_eslesmiyor">Passwords don\'t match</string>
+    <string name="ui_bu_e_posta_zaten_bir_ogretmen">This email is already registered with a teacher account. Please use the teacher sign-in screen.</string>
+    <string name="ui_bu_e_posta_baska_bir_hesapta">This email is used by another account.</string>
+
+    <string name="ui_ekran_kaydi_yapiliyor">Recording the screen...</string>
+
+    <string name="ui_bir_kac_dakika_sonra_tekrar_dene">Try again in a few minutes.</string>
+
+    <string name="ui_can_alinamadi_tekrar_deneyin">Couldn\'t get a life. Try again.</string>
+    <string name="ui_aylik_x">%1$s monthly</string>
+    <string name="ui_yetersiz_anahtar_2">Not enough keys!</string>
+    <string name="ui_gunluk_sinira_ulasildi_yarin_tekrar_deneyin">Daily limit reached. Try again tomorrow.</string>
+    <string name="ui_islem_tamamlanamadi_tekrar_deneyin">Couldn\'t complete the action. Try again.</string>
+    <string name="ui_serin_korunuyor_kullaninca_yenisini_alabilir">Your streak is protected. You can get a new one after you use it.</string>
+    <string name="ui_hazir">"✓  READY"</string>
+    <string name="ui_serini_1_gun_boyunca_korur_serin">Protects your streak for 1 day. Keep going even if your streak breaks!</string>
+    <string name="ui_yetersiz_altin_2">Not enough coins!</string>
+    <string name="ui_seri_dondurma">Streak Freeze</string>
+    <string name="ui_bir_gun_calisamazsan_serin_bozulmaz_x">If you miss a day, your streak won\'t break. Costs %1$s coins.</string>
+    <string name="ui_satin_al">Buy</string>
+    <string name="ui_bonus_dahil">bonus included</string>
+    <string name="ui_pro_da_x">+%1$s with Pro</string>
+
+    <string name="ui_ses_x">Sound %1$s</string>
+
+    <string name="ui_bildirim_saatini_degistir">"Change reminder time · "</string>
+    <string name="ui_gun_ust_uste">days in a row</string>
+    <string name="ui_serin_su_anda_kirik">Your streak is broken right now</string>
+    <string name="ui_bugunku_hedefini_tamamladin_yarin_da_bekleri">You reached today\'s goal. See you tomorrow!</string>
+    <string name="ui_bugun_x_dakika_daha_calis_serin">Practice %1$s more minutes today to keep your streak going.</string>
+    <string name="ui_bugun_x_dakika_calis_yeni_serini">Practice %1$s minutes today to start a new streak.</string>
+    <string name="ui_hedef_tamamlandi">Goal complete ✓</string>
+    <string name="ui_x_x_dakika">%1$s / %2$s minutes</string>
+    <string name="ui_hazir_2">Ready</string>
+    <string name="ui_yok">None</string>
+    <string name="ui_x_gunluk_meydan_okuma">%1$s-Day Challenge</string>
+    <string name="ui_tamamlandi_odulunu_topla">COMPLETED — collect your reward</string>
+    <string name="ui_tamamlandi_odulun_hazirlaniyor">COMPLETED — your reward is being prepared</string>
+    <string name="ui_bugun_basliyor">STARTS TODAY</string>
+    <string name="ui_x_gunun_x_gunu">DAY %2$s OF %1$s</string>
+    <string name="ui_gunluk_hedefin">Your daily goal</string>
+    <string name="ui_her_gun_ne_kadar_ogrenmek_istersin">How much do you want to learn each day?</string>
+    <string name="ui_rahat">Casual</string>
+    <string name="ui_duzenli">Regular</string>
+    <string name="ui_ciddi">Serious</string>
+    <string name="ui_bildirim_saatin">Your reminder time</string>
+    <string name="ui_sobi_sana_her_gun_ne_zaman">When should Sobi remind you each day?</string>
+
+    <string name="ui_seri_dondurma_almak_icin_giris_yapman">You need to sign in to get a streak freeze.</string>
+    <string name="ui_satin_alinamadi_birazdan_tekrar_dene">Couldn\'t buy it. Try again in a moment.</string>
+    <string name="ui_satin_alinamadi">Couldn\'t buy it.</string>
+    <string name="ui_odul_alinamadi">Couldn\'t claim the reward.</string>
+    <string name="ui_x_internetini_kontrol_edip_tekrar_dene">%1$s Check your internet and try again.</string>
+    <string name="ui_sunucuya_su_an_ulasilamiyor_birazdan_tekrar">Can\'t reach the server right now. Try again in a moment.</string>
+    <string name="ui_odulu_almak_icin_giris_yapman_gerekiyor">You need to sign in to claim the reward.</string>
+    <string name="ui_x_kazandin">You won %1$s!</string>
+
+    <string name="ui_week_initials_monday_first">M T W T F S S</string>
+    <string name="ui_aksamustu">Late afternoon</string>
+    <string name="ui_aksam">Evening</string>
+    <string name="ui_baska_bir_saat">Another time</string>
+    <string name="ui_sec">Pick ›</string>
+    <string name="ui_saat_sec">Pick a time</string>
+    <string name="ui_sobi_sana_her_gun_bu_saatte">Sobi will remind you at this time every day</string>
+    <string name="ui_topla">Collect</string>
+    <string name="ui_seri_dondurma_kullanildi">Streak freeze used</string>
+
+    <string name="ui_kod_tekrar_gonderildi_2">Code resent</string>
+    <string name="ui_kod_gonderilemedi_2">Couldn\'t send the code</string>
+    <string name="ui_kod_6_haneli_olmalidir_2">The code must be 6 digits</string>
+    <string name="ui_lutfen_ad_soyad_girin">Please enter your full name</string>
+    <string name="ui_sifre_en_az_6_karakter_olmali_2">The password must be at least 6 characters</string>
+    <string name="ui_dogrulaniyor_2">Verifying...</string>
+    <string name="ui_dogrula_ve_giris_yap">Verify and Sign In</string>
+    <string name="ui_kod_dogrulanamadi_2">Couldn\'t verify the code</string>
+    <string name="ui_giris_basarisiz">Sign-in failed</string>
+
+    <string name="ui_e_posta_veya_tarayici_acilamadi">Couldn\'t open email or the browser.</string>
+
+    <string name="ui_basari_x">" - Success: %1$s%%"</string>
+    <string name="ui_abakus">Abacus</string>
+    <string name="ui_abakuste_pratik_yaparak_kendini_gelistir">Improve yourself by practicing on the abacus.</string>
+    <string name="ui_karakter_animasyonu">Character Animation</string>
+    <string name="ui_maskotun_butun_hareketlerini_dene">Try all of the mascot\'s moves.</string>
+    <string name="ui_kupa_yolu">Trophy Road</string>
+    <string name="ui_basarilarini_kupalarla_olc_seviyeni_yukselt">Measure your success in trophies, level up and move on to new challenges.</string>
+    <string name="ui_burayi_acmak_icin_x_yi_bitir">Finish %1$s to unlock this.</string>
+
+    <string name="ui_merhaba_kullanici_id_x">"Hello,\n\n\n\nUser ID: %1$s\n"</string>
+
+    <string name="ui_sifre_en_az_x_karakter_olmalidir">The password must be at least %1$s characters</string>
+    <string name="ui_guncelleniyor">Updating...</string>
+    <string name="ui_sifreyi_guncelle">Update password</string>
+    <string name="ui_sifre_guncellendi_giris_yapabilirsiniz">Password updated. You can sign in now.</string>
+
+    <string name="ui_google_aramasi">Google Search</string>
+    <string name="ui_arkadas_aile">Friends/Family</string>
+    <string name="ui_okul_ogretmen">School/Teacher</string>
+    <string name="ui_uygulama_magazasi">App Store</string>
+    <string name="ui_bu_e_posta_adresi_kayitli_degil">This email address isn\'t registered. You\'ve been taken to the sign-up page.</string>
+    <string name="ui_lutfen_gecerli_bir_yas_girin">Please enter a valid age</string>
+    <string name="ui_evet_hatirlat">Yes, remind me</string>
+    <string name="ui_sobi_sana_her_gun_hatirlatsin_mi">Should Sobi remind you every day?</string>
+    <string name="ui_saati_istedigin_zaman_degistirebilirsin">You can change the time whenever you want</string>
+    <string name="ui_kac_yasindasin">How old are you?</string>
+    <string name="ui_abakus_kullanmayi_biliyor_musun">Do you know how to use an abacus?</string>
+    <string name="ui_abakus_hic_bilmiyorum">Not at all</string>
+    <string name="ui_abakus_biraz_biliyorum">A little</string>
+    <string name="ui_abakus_iyi_biliyorum">I know it well</string>
+    <string name="ui_her_gun">"Just "</string>
+    <string name="ui_buraya_varacaksin">" a day will get you here!"</string>
+    <string name="ui_ilk_dersinden_once_seni_tanimak_icin">"I just have "</string>
+    <string name="ui_x_kisa_sorum">%1$s quick questions</string>
+    <string name="ui_var">" to get to know you before your first lesson!"</string>
+    <string name="ui_x_dakikayla">%1$s minutes</string>
+    <string name="ui_abakusu_tani">Get to know the abacus</string>
+    <string name="ui_buyuk_sayilar_ile_islem_yap">Work with big numbers</string>
+    <string name="ui_kafadan_hesap_ustasi_ol">Become a mental math master</string>
+    <string name="ui_bu_hedefi_istedigin_zaman_degistirebilirsin">You can change this goal whenever you want</string>
+    <string name="ui_gunde_x_dakika_bu_secim_sonradan">%1$s minutes a day. You can\'t change this later, so think it over.</string>
+    <string name="ui_veli_onayi">Parent approval</string>
+    <string name="ui_veli_e_postasi_x">Parent\'s email: %1$s</string>
+    <string name="ui_once_kendi_e_postana_gelen_kodu_gir">First enter the 6-digit code sent to your email. Then we\'ll send an approval code to your parent\'s email.</string>
+    <string name="ui_veli_e_postasina_gelen_kodu_gir">Enter the 6-digit code sent to your parent\'s email. The code is valid for 30 minutes. Entering it means your parent gives their approval.</string>
+    <string name="ui_guncelleme_gerekli">Update required</string>
+    <string name="ui_bu_surum_artik_kullanilamiyor">This version of Sorobit can no longer be used. Update the app to continue.</string>
+    <string name="ui_guncelle">Update</string>
+    <string name="ui_cik">Exit</string>
+    <string name="ui_tamamlandi_buyuk">COMPLETED ✓</string>
+    <string name="ui_selamlar_benim_adim_x">Hi there! My name is %1$s!</string>
+</resources>

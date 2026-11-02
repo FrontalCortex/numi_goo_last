@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hw_op_add">Addition</string>
+    <string name="hw_op_sub">Subtraction</string>
+    <string name="hw_op_mul">Multiplication</string>
+    <string name="hw_op_add_lower">addition</string>
+    <string name="hw_op_sub_lower">subtraction</string>
+    <string name="hw_rule_direct">Direct</string>
+    <string name="hw_rule_five">Small friends</string>
+    <string name="hw_rule_ten">Big friends</string>
+    <string name="hw_rule_bead">Mixed friends</string>
+    <string name="hw_and">and</string>
+    <string name="hw_with_abacus">With abacus</string>
+    <string name="hw_without_abacus">Without abacus</string>
+    <string name="hw_digits">%1$d digits</string>
+    <string name="hw_mul_digits">%1$d × %2$d digits</string>
+    <string name="hw_mul_title">Multiplication (%1$d × %2$d digits)</string>
+    <plurals name="hw_numbers">
+        <item quantity="one">%d number</item>
+        <item quantity="other">%d numbers</item>
+    </plurals>
+    <plurals name="hw_sub_numbers">
+        <item quantity="one">%d number subtracted</item>
+        <item quantity="other">%d numbers subtracted</item>
+    </plurals>
+    <plurals name="hw_questions">
+        <item quantity="one">%d question</item>
+        <item quantity="other">%d questions</item>
+    </plurals>
+    <string name="hw_seconds">%1$s s</string>
+
+    <string name="hw_class_button">Homework</string>
+    <string name="hw_list_title">Homework · %1$s</string>
+    <string name="hw_list_empty">No homework has been assigned to this class yet.</string>
+    <string name="hw_new_button">+ New homework</string>
+    <string name="hw_new_short">New homework</string>
+    <string name="hw_list_done_bar">%1$d/%2$d finished</string>
+    <string name="hw_target_whole_class">Whole class</string>
+    <plurals name="hw_target_students">
+        <item quantity="one">%d student</item>
+        <item quantity="other">%d students</item>
+    </plurals>
+
+    <string name="hw_list_done_summary">%2$s of %1$d students finished</string>
+    <string name="hw_list_done_none">Nobody has finished yet · %1$d students</string>
+    <string name="hw_list_done_all">Everyone finished ✓ · %1$d students</string>
+
+    <string name="hw_detail_title">Homework</string>
+    <string name="hw_detail_students">Students</string>
+    <string name="hw_detail_not_started">Not started</string>
+    <string name="hw_detail_progress">Step %1$d/%2$d · %3$d/%4$d correct</string>
+    <string name="hw_detail_done">Done · %1$d/%2$d correct</string>
+    <string name="hw_delete">Delete homework</string>
+    <string name="hw_delete_title">Delete homework?</string>
+    <string name="hw_delete_message">The homework will be removed from students\' lists and their progress will be deleted.</string>
+    <string name="hw_deleted">Homework deleted.</string>
+    <string name="hw_left_class">Left the class</string>
+
+    <string name="hw_create_title">New homework</string>
+    <string name="hw_field_op">Operation</string>
+    <string name="hw_field_rules">Topic</string>
+    <string name="hw_field_rules_hint">You can pick more than one; questions will only use the rules you pick.</string>
+    <string name="hw_field_type">Type</string>
+    <string name="hw_section_settings">Settings</string>
+    <string name="hw_field_digits">Number of digits</string>
+    <string name="hw_field_digits1">Digits in the 1st number</string>
+    <string name="hw_field_digits2">Digits in the 2nd number</string>
+    <string name="hw_field_count_add">How many numbers</string>
+    <string name="hw_field_count_sub">How many numbers to subtract</string>
+    <string name="hw_field_count_sub_hint">Not counting the starting number. The starting number is chosen so the result never goes below zero and the rules you picked can be practiced.</string>
+    <string name="hw_field_interval">Display speed (s)</string>
+    <string name="hw_field_interval_hint">Numbers are shown one at a time at this interval (0.1 – 30 s).</string>
+    <string name="hw_field_questions">Number of questions</string>
+    <string name="hw_field_questions_hint">Split into steps of 10: %1$d steps.</string>
+    <string name="hw_field_target">Assign to</string>
+    <string name="hw_target_select">Choose students</string>
+    <string name="hw_target_none_selected">Choose at least one student.</string>
+    <string name="hw_target_no_students">No students in the class yet; the homework will be visible to everyone who joins.</string>
+    <string name="hw_count_max">Up to %1$d</string>
+    <string name="hw_count_max_recommended">Up to %1$d · recommended %2$d</string>
+    <string name="hw_count_impossible">Questions can\'t be generated with %1$d digits using these rules. Change the digits, the topic or the advanced settings.</string>
+    <string name="hw_count_forced">With these rules, if you pick %1$d numbers, every digit of every number becomes %2$s (e.g. %3$s). A healthy value is %4$d.</string>
+    <string name="hw_mul_capacity">The two numbers can have at most %1$d digits in total.</string>
+    <string name="hw_preview_title">Sample question</string>
+    <string name="hw_preview_pick_rule">Pick a topic</string>
+    <string name="hw_preview_refresh">Another sample</string>
+    <string name="hw_send">Send homework</string>
+    <string name="hw_sent">Homework sent to %1$d students.</string>
+    <string name="hw_invalid">Check the settings.</string>
+    <string name="hw_count_measuring">Calculating the maximum…</string>
+    <string name="hw_wait_measuring">Calculating the number limit; wait a few seconds.</string>
+
+    <string name="hw_advanced">Advanced</string>
+    <string name="hw_advanced_all_digits">All numbers</string>
+    <string name="hw_advanced_title_add">Which numbers should be added?</string>
+    <string name="hw_advanced_title_sub">Which numbers should be subtracted?</string>
+    <string name="hw_advanced_title_mul">Which digits should appear in each place?</string>
+    <string name="hw_advanced_desc_add">For each topic, the numbers that can be added with that rule. A number you turn off won\'t be added with that rule; e.g. if only 4 is on for small friends, that rule is always practiced as +4 (+5 −1).</string>
+    <string name="hw_advanced_desc_sub">For each topic, the numbers that can be subtracted with that rule. A number you turn off won\'t be subtracted with that rule; e.g. if only 4 is on for small friends, that rule is always practiced as −4 (−5 +1).</string>
+    <string name="hw_advanced_desc_mul">Each place is picked only from the digits that are on.</string>
+    <string name="hw_advanced_select_all">All</string>
+    <string name="hw_advanced_done">Done</string>
+    <string name="hw_advanced_min_one">At least one number must stay on.</string>
+    <string name="hw_advanced_pick_rule">Pick a topic first.</string>
+    <string name="hw_advanced_mul_group">Number %1$d · %2$s place</string>
+    <string name="hw_advanced_mul_digits">Number %1$d %2$s: %3$s</string>
+    <string-array name="hw_place_names">
+        <item>ones</item>
+        <item>tens</item>
+        <item>hundreds</item>
+        <item>thousands</item>
+        <item>ten thousands</item>
+        <item>hundred thousands</item>
+        <item>millions</item>
+    </string-array>
+
+    <string name="notification_channel_account_quiet_name">Homework and account (silent)</string>
+    <string name="notification_channel_account_quiet_desc">Homework notifications that arrive at night — shown silently</string>
+
+    <string name="hw_card_title">My homework</string>
+    <plurals name="hw_student_card_pending">
+        <item quantity="one">%d homework is waiting for you</item>
+        <item quantity="other">%d homeworks are waiting for you</item>
+    </plurals>
+    <string name="hw_student_card_all_done">You finished them all</string>
+    <string name="hw_student_card_none">No homework yet</string>
+    <string name="hw_tab_homework">My homework</string>
+    <string name="hw_student_empty">Your teacher hasn\'t assigned any homework yet.</string>
+    <string name="hw_classmates_empty">There are no other students in your class yet.</string>
+    <string name="hw_classmate_teacher">Teacher</string>
+    <string name="hw_classmate_me">%1$s (you)</string>
+    <string name="hw_card_from">From %1$s</string>
+    <string name="hw_card_progress">%1$d/%2$d steps</string>
+    <string name="hw_card_done">Completed ✓</string>
+
+    <string name="hw_player_quit_desc">Close</string>
+    <string name="hw_player_step">Step %1$d/%2$d · Question %3$d/%4$d</string>
+    <string name="hw_player_start">Start</string>
+    <string name="hw_player_check">Check</string>
+    <string name="hw_player_answer_hint">Your answer</string>
+    <string name="hw_player_correct">Correct!</string>
+    <string name="hw_player_wrong">Correct answer: %1$s</string>
+    <string name="hw_player_next">Continue</string>
+    <string name="hw_player_block_done">Step complete!</string>
+    <string name="hw_player_block_score">%1$d/%2$d correct</string>
+    <string name="hw_player_next_block">Next step</string>
+    <string name="hw_player_finish">Finish</string>
+    <string name="hw_player_all_done">Homework complete! 🎉</string>
+    <string name="hw_player_save_failed">Couldn\'t save your progress. Check your internet connection and try again.</string>
+    <string name="hw_player_retry_save">Save again</string>
+    <string name="hw_player_unavailable">This homework can\'t be opened. Let your teacher know.</string>
+    <string name="hw_player_quit_title">Leave the homework?</string>
+    <string name="hw_player_quit_message">Your answers in this step won\'t be saved; you\'ll restart the step from the beginning.</string>
+    <string name="hw_player_quit_confirm">Leave</string>
+
+    <string name="progress_hub_lessons">Lessons</string>
+    <string name="progress_hub_lessons_desc">Lesson progress and study time</string>
+    <string name="progress_hub_rules">Rule success</string>
+    <string name="progress_hub_rules_desc">Accuracy for each rule across lessons, homework and Sobi</string>
+    <string name="rule_stats_title">%1$s — Rule success</string>
+    <string name="rule_stats_add">Addition</string>
+    <string name="rule_stats_sub">Subtraction</string>
+    <string name="rule_stats_mul_abacus">Multiplication with abacus</string>
+    <string name="rule_stats_mul_mental">Mental multiplication</string>
+    <string name="rule_stats_mul_digits">%1$d × %2$d digits</string>
+    <string name="rule_stats_percent">%1$d%%</string>
+    <string name="rule_stats_count">%1$d/%2$d correct</string>
+    <string name="rule_stats_empty">No data yet. As lessons, homework and Sobi practice get solved, each rule\'s accuracy will show up here.</string>
+    <string name="rule_stats_sobi_level">Sobi quiz level %1$d/%2$d</string>
+    <string name="rule_stats_sobi_level_estimated">Sobi quiz level %1$d/%2$d (estimated)</string>
+    <string name="rule_stats_note">In addition and subtraction, each place-value step counts toward the rule it needs: lessons, homework and Sobi practice together. In multiplication, each homework question is one attempt.</string>
+
+    <string name="rule_progress_unit_question">questions</string>
+    <string name="rule_progress_unit_op">steps</string>
+    <string name="rule_progress_week_title">This week</string>
+    <string name="rule_progress_week_sub">%1$d %2$s · last week %3$d%%</string>
+    <string name="rule_progress_week_sub_no_last">%1$d %2$s · no practice last week</string>
+    <string name="rule_progress_week_none">No questions solved this week yet</string>
+    <string name="rule_progress_week_none_sub">Last week %1$d%% · %2$d %3$s</string>
+    <string name="rule_progress_delta_up">+%1$d points</string>
+    <string name="rule_progress_delta_down">−%1$d points</string>
+    <string name="rule_progress_delta_same">Same as last week</string>
+    <string name="rule_progress_total">%1$d %2$s so far</string>
+    <string name="rule_progress_chart_title">Progress chart</string>
+    <string name="rule_progress_all_rules">All</string>
+    <string name="rule_progress_chip_mul_abacus">%1$d×%2$d with abacus</string>
+    <string name="rule_progress_chip_mul_mental">%1$d×%2$d mental</string>
+    <string name="rule_progress_range_week">1 week</string>
+    <string name="rule_progress_range_month">1 month</string>
+    <string name="rule_progress_range_quarter">3 months</string>
+    <string name="rule_progress_range_all">All</string>
+    <string name="rule_progress_chart_hint">Each point is the accuracy for that period; the number above it is the total %1$s solved up to then. Tap a point for details.</string>
+    <string name="rule_progress_chart_empty">No questions solved in this period</string>
+    <string name="rule_progress_chart_empty_last">Last practice: %1$s · %2$d%% correct. Switch to All to see it.</string>
+    <string name="rule_progress_base">Start</string>
+    <string name="rule_progress_point_detail">%1$s · %2$d %3$s · %4$d%% correct · %5$d total</string>
+    <string name="rule_progress_base_detail">Start: %1$d %2$s before the chart · %3$d%% correct</string>
+    <string name="rule_stats_mastery_title">Rule mastery</string>
+    <string name="rule_stats_mastery_desc">You master a rule when you get 90% of your last 50 steps right. A stage you reach never drops back.</string>
+    <string name="rule_stats_stage_started">Started</string>
+    <string name="rule_stats_stage_improving">Improving</string>
+    <string name="rule_stats_stage_master">Master ⭐</string>
+    <string name="rule_stats_recent">Last %1$d %2$s · %3$d%% correct</string>
+    <string name="rule_stats_ops">%1$d %2$s · %3$d%% correct</string>
+    <string name="rule_stats_to_master_pct">%1$d%% to go to master</string>
+    <string name="rule_stats_to_master_ops">%1$d %2$s to go to master</string>
+    <string-array name="rule_progress_months">
+        <item>Jan</item>
+        <item>Feb</item>
+        <item>Mar</item>
+        <item>Apr</item>
+        <item>May</item>
+        <item>Jun</item>
+        <item>Jul</item>
+        <item>Aug</item>
+        <item>Sep</item>
+        <item>Oct</item>
+        <item>Nov</item>
+        <item>Dec</item>
+    </string-array>
+</resources>

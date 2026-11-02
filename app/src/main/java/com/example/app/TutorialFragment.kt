@@ -19727,6 +19727,9 @@ class TutorialFragment : Fragment() {
     private fun playSound(soundResource: Int?, soundStoragePath: String? = null) {
         val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
         if (!prefs.getBoolean("tutorial_sound_enabled", true)) return
+        // Seslendirmeler yalnızca Türkçe kayıtlı; İngilizce metnin üstüne Türkçe ses çalmasın.
+        // Ses akışı ilerletmiyor (adımlar dokunmayla geçiyor), susturmak güvenli.
+        if (!AppLanguage.isTurkish()) return
         if (soundResource == null && soundStoragePath == null) return
         try {
             // Önceki ses varsa durdur

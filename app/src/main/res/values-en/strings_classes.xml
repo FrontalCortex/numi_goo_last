@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="class_pool_tab_mine">My class</string>
+    <string name="class_pool_tab_general">General pool</string>
+    <string name="class_classes_button">My classes</string>
+    <string name="class_pool_empty_mine">No pending questions from your classes.</string>
+
+    <string name="class_list_title">My classes</string>
+    <string name="class_back_desc">Back</string>
+    <string name="class_help_general_title">Help the general pool too</string>
+    <string name="class_help_general_desc">If you turn this on, questions from students who aren\'t in a course also appear in the \"General pool\" tab of the Pool.</string>
+    <string name="class_list_empty">You don\'t have a class yet. Create one and give the join code to your students.</string>
+    <string name="class_new_button">+ New class</string>
+    <string name="class_new_title">New class</string>
+    <string name="class_new_hint">Class name (e.g. Saturday 10:00)</string>
+    <string name="class_new_create">Create class</string>
+    <string name="class_cancel">Cancel</string>
+    <string name="class_created">Class created. Code: %1$s</string>
+    <plurals name="class_student_count">
+        <item quantity="one">%d student</item>
+        <item quantity="other">%d students</item>
+    </plurals>
+    <string name="class_student_members_title">In this class</string>
+    <string name="class_card_no_students">No students yet</string>
+    <string name="class_code_label">Code: %1$s</string>
+
+    <string name="class_join_code_title">Join code</string>
+    <string name="class_join_code_hint">The student enters this code in the app under Settings → Join a class.</string>
+    <string name="class_copy">Copy</string>
+    <string name="class_share">Share</string>
+    <string name="class_regenerate">New code</string>
+    <string name="class_copied">Code copied</string>
+    <string name="class_share_text">Join my \"%1$s\" class on Sorobit: in the app, go to Settings → Join a class and enter the code %2$s.</string>
+    <string name="class_regenerate_title">Create a new code?</string>
+    <string name="class_regenerate_message">The old code stops working right away. Students already in the class stay; new students use the new code.</string>
+    <string name="class_regenerate_confirm">Renew</string>
+    <string name="class_regenerated">New code: %1$s</string>
+    <string name="class_students_title">Students</string>
+    <string name="class_students_empty">No students in the class yet. Give the code to your students or invite them by username.</string>
+    <string name="class_invite_button">Add student</string>
+    <string name="class_invite_short">Add</string>
+    <string name="class_settings_title">Class settings</string>
+    <string name="class_students_empty_settings">No students in the class yet. Share the join code from the settings at the top right, or tap Add to invite by username.</string>
+    <string name="class_homeworks_none">No homework yet · assign the first one</string>
+    <plurals name="class_homeworks_count">
+        <item quantity="one">%d homework</item>
+        <item quantity="other">%d homeworks</item>
+    </plurals>
+    <string name="class_invite_title">Add student</string>
+    <string name="class_invite_message">Enter the student\'s username (shown with @ on their profile). The student gets an invite and appears in the list once they accept.</string>
+    <string name="class_invite_hint">Username (e.g. 835398VV)</string>
+    <string name="class_invite_send">Send invite</string>
+    <string name="class_invite_sent">Invite sent to %1$s.</string>
+    <string name="class_invite_already_member">%1$s is already in this class.</string>
+    <string name="class_pending_invites">Pending invites: %1$s</string>
+    <string name="class_remove_title">Remove from class?</string>
+    <string name="class_remove_message">%1$s will be removed from the class. Their pending questions move to the general pool and you will no longer see their progress.</string>
+    <string name="class_remove_confirm">Remove</string>
+    <string name="class_removed">%1$s was removed from the class.</string>
+    <string name="class_generic_error">Something went wrong. Check your internet connection and try again.</string>
+
+    <string name="class_settings_header">Class</string>
+    <string name="class_settings_join">Join a class</string>
+    <string name="class_settings_my_class">My class</string>
+    <string name="class_settings_invites">You have a class invite waiting</string>
+    <string name="class_student_title">My class</string>
+    <string name="class_student_current">Your class</string>
+    <string name="class_student_teacher">Your teacher: %1$s</string>
+    <string name="class_student_info">Your questions go straight to your teacher. Your teacher can see your lesson progress.</string>
+    <string name="class_student_leave">Leave class</string>
+    <string name="class_student_leave_title">Do you want to leave the class?</string>
+    <string name="class_student_leave_message">From now on your questions will go to teachers in the general pool, and your teacher won\'t see your progress. To rejoin, you\'ll need to enter the code again.</string>
+    <string name="class_student_left">You left the class.</string>
+    <string name="class_student_join_title">Enter the class code</string>
+    <string name="class_student_join_desc">Enter the 6-character code from your teacher. Once you join, your questions go to your teacher and your teacher can see your lesson progress.</string>
+    <string name="class_student_join_hint">ABC 234</string>
+    <string name="class_student_join_button">Join</string>
+    <string name="class_student_code_length">The code must be 6 characters.</string>
+    <string name="class_student_joined">You joined the \"%1$s\" class!</string>
+    <string name="class_student_invites_title">Invites</string>
+    <string name="class_student_invite_text">%1$s invited you to the \"%2$s\" class.</string>
+    <string name="class_student_invite_accept">Join</string>
+    <string name="class_student_invite_decline">Decline</string>
+    <string name="class_student_switch_title">Switch classes?</string>
+    <string name="class_student_switch_message">You\'ll leave your current class (%1$s) and move to the \"%2$s\" class.</string>
+    <string name="class_student_switch_confirm">Switch</string>
+
+    <string name="class_student_progress_desc">Student\'s progress</string>
+    <string name="class_student_progress_title">%1$s — Progress</string>
+    <string name="class_student_progress_empty">The student hasn\'t started a lesson yet. Their progress will show up here once they open the first lesson.</string>
+</resources>

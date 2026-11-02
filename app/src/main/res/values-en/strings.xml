@@ -1,0 +1,143 @@
+<resources>
+    <string name="lesson_hint_step1">Enter the numbers on the abacus starting from the largest place.</string>
+    <string name="lesson_hint_step2">Enter the first number. Start adding from the largest place of the 2nd number.</string>
+    <string name="lesson_hint_step3">Finish as fast as you can with no mistakes.</string>
+    <string name="lesson_hint_step4">Add 5, take away the friend.</string>
+    <string name="lesson_hint_step5">While doing the \"add 10\" step, you may need the small friends rule.</string>
+    <string name="login_start_student_title">Power Up Your Mind</string>
+    <string name="login_start_student_subtitle">Learn mental math by playing with the abacus, think faster and feel confident in math.</string>
+    <string name="login_start_teacher_title">Guide Your Students</string>
+    <string name="login_start_teacher_subtitle">Answer your students\' questions and support their progress on the abacus.</string>
+    <string name="login_start_start_button">Get started</string>
+    <string name="login_start_login_button">I already have an account</string>
+    <string name="login_start_teacher_mode_button">Teacher sign-in</string>
+    <string name="login_start_student_mode_button">Student sign-in</string>
+    <string name="otp_resend_button">Resend code</string>
+    <string name="otp_resend_cooldown">%1$d s</string>
+    <string name="otp_resend_limit_reached">Resend limit reached</string>
+    <string name="otp_too_many_wrong">Too many wrong attempts. You can try again in 15 minutes.</string>
+    <string name="otp_wrong_cooldown">You can try again in %1$d min %2$d s</string>
+    <string name="otp_wrong_cooldown_btn">Try again in %1$d min %2$d s</string>
+    <string name="otp_can_retry">You can try again.</string>
+    <string name="otp_wrong_cooldown_try_later">Too many wrong attempts. Try again in %1$d minutes.</string>
+    <string name="otp_resend_cooldown_try_again">Again in %1$d s</string>
+    <string name="notification_channel_upload">Uploads</string>
+    <string name="notification_channel_upload_desc">Images, videos and messages sent to a question chat</string>
+    <string name="notification_uploading_generic">Sending…</string>
+    <string name="notification_uploading">Sending %1$s…</string>
+    <string name="notification_uploading_with_queue">Sending %1$s… (%2$d waiting)</string>
+    <string name="notification_upload_type_text">Message</string>
+    <string name="notification_upload_type_image">Image</string>
+    <string name="notification_upload_type_video">Video</string>
+    <string name="notification_upload_type_audio">Audio</string>
+    <string name="notification_eta_sec">~%1$d s left</string>
+    <string name="notification_eta_min">~%1$d min left</string>
+    <string name="notification_eta_min_sec">~%1$d min %2$d s left</string>
+    <string name="notification_eta_hour">~%1$d h left</string>
+
+    <string name="notification_channel_messages_name">Chat messages</string>
+    <string name="notification_channel_messages_desc">New chat message notifications</string>
+    <string name="notification_channel_messages_quiet_name">Chat messages (silent)</string>
+    <string name="notification_channel_messages_quiet_desc">Chat messages that arrive at night — shown silently</string>
+    <string name="notification_channel_streak_name">Daily streak reminder</string>
+    <string name="notification_channel_streak_desc">A single reminder on evenings when you haven\'t reached your daily goal yet</string>
+    <string name="notification_channel_rewards_name">Rewards and events</string>
+    <string name="notification_channel_rewards_desc">Waiting chests, season endings and similar game notifications</string>
+    <string name="notification_channel_account_name">Account and payments</string>
+    <string name="notification_channel_account_desc">Important info such as free trials, credit refunds and the status of your question</string>
+    <string name="notification_channel_pool_name">Questions in the pool</string>
+    <string name="notification_channel_pool_desc">For teachers: lets you know when a new question lands in the pool</string>
+    <string name="notification_channel_pool_quiet_name">Questions in the pool (silent)</string>
+    <string name="notification_channel_pool_quiet_desc">Questions that land in the pool at night — shown silently</string>
+
+    <string name="settings_notify_chat">Teacher messages</string>
+    <string name="settings_notify_chat_desc">This notification tells you when your question has been answered</string>
+    <string name="settings_notify_streak">Daily reminder</string>
+    <string name="settings_notify_reward">Rewards and events</string>
+
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">Phone language</string>
+
+    <string name="notification_download_cancel">Cancel</string>
+
+    <string name="chat_retry_upload">Try again</string>
+
+    <string name="send">Send</string>
+
+    <string name="offline_title">Offline</string>
+    <string name="offline_message">You\'re not connected to the internet. Please turn on Wi‑Fi or mobile data.</string>
+    <string name="offline_retry">Try again</string>
+
+    <string name="tutorial_options_pick_first">Pick an option first.</string>
+
+    <string name="record_leaderboard_title">Leaderboard</string>
+    <string name="record_leaderboard_subtitle">Best times</string>
+    <string name="record_leaderboard_empty">No records yet. Be the first!</string>
+    <string name="record_leaderboard_rank_list">Rankings</string>
+    <string name="record_leaderboard_load_error">Couldn\'t load the list.</string>
+
+    <string name="missions_daily_title">DAILY MISSIONS</string>
+    <string name="daily_question_card_title">Daily question</string>
+    <string name="daily_question_card_open">Open</string>
+    <string name="daily_question_card_subtitle_default">A three-question challenge based on your lesson progress.</string>
+    <string name="daily_question_challenge_complete">Challenge complete!</string>
+    <string name="daily_question_claim_requires_complete">Complete the challenge to claim the reward.</string>
+    <string name="daily_question_focus_format">Level: %1$s</string>
+    <string name="daily_question_progress_complete_label">Completed</string>
+    <string name="daily_question_pool_empty">Complete more lessons to unlock this.</string>
+    <string name="daily_question_continue_title">Continue the challenge</string>
+    <string name="daily_question_continue_message">Use 1 key to continue the challenge.</string>
+    <string name="daily_question_continue_close">Close</string>
+    <string name="race_fast_forward_title">Fast Forward</string>
+    <string name="race_fast_forward_message">Use 1 key to fast forward.</string>
+    <string name="daily_question_insufficient_diamonds">You don\'t have enough diamonds.</string>
+    <string name="daily_question_insufficient_keys">You don\'t have enough keys.</string>
+    <string name="missions_weekly_title">WEEKLY MISSIONS</string>
+    <string name="missions_hours_short">%d H</string>
+    <string name="missions_days_short">%d DAYS</string>
+    <string name="mission_finish_one_lesson">Finish 1 lesson step</string>
+    <string name="mission_finish_two_lessons">Finish 2 lesson steps</string>
+    <string name="mission_finish_five_lessons">Finish 5 lessons</string>
+    <string name="mission_finish_twenty_lessons">Finish 20 lessons</string>
+    <string name="mission_finish_five_steps">Finish 5 lesson steps</string>
+    <string name="race_unlock_complete_all_lessons">Complete all lessons to unlock this.</string>
+    <string name="mission_finish_two_lessons_perfect">Complete 2 lessons with no mistakes</string>
+    <string name="mission_finish_ten_lessons_perfect">Complete 10 lessons with no mistakes</string>
+    <string name="mission_break_chest_record">Beat your own unit marathon record</string>
+    <string name="mission_gain_one_star_in_unit_eval">Earn 5 stars</string>
+    <string name="mission_gain_two_stars">Earn 2 stars</string>
+    <string name="mission_learn_for_10_minutes">Learn for 10 minutes</string>
+    <string name="mission_completed_label">Claim reward!</string>
+    <string name="mission_reward_claimed_label">Reward claimed!</string>
+    <string name="mission_chest_toast">chest opened</string>
+    <string name="mission_chest_reward_title">Mission progress</string>
+    <string name="mission_continue">Continue</string>
+
+    <string name="season_leaderboard_reward_gate_title">Collect this season\'s rewards</string>
+    <string name="season_leaderboard_reward_gate_collect">Collect</string>
+    <string name="season_leaderboard_reward_gate_season_line">Season %1$d</string>
+
+    <string name="record_season_countdown_days_hours">%1$d d %2$d h</string>
+    <string name="record_season_countdown_hours_minutes">%1$d h %2$d min</string>
+
+    <string name="ask_question_teacher_not_approved">Your account needs to be approved before you can use this feature.</string>
+    <string name="teacher_approval_pending_banner">Your account is awaiting approval</string>
+    <string name="teacher_account_banner">Teacher account</string>
+    <string name="teacher_shop_unlimited">Coins, keys and lives are unlimited on a teacher account; there\'s nothing you need to buy.</string>
+    <string name="teacher_not_approved_contact_support">Contact Support</string>
+    <string name="teacher_not_approved_support_subject">Teacher account approval</string>
+    <string name="ask_question_account_restricted">This account has been restricted due to a rule violation.</string>
+    <string name="ask_question_alert_ok">OK</string>
+
+    <string name="plan_price_monthly">%1$s monthly</string>
+    <string name="plan_price_yearly">%1$s/year</string>
+    <string name="sub_cta_trial_days">TRY %1$d DAYS FREE</string>
+    <string name="sub_cta_trial_weeks">TRY %1$d WEEKS FREE</string>
+    <string name="sub_cta_no_trial_pro">GO PRO</string>
+    <string name="sub_cta_no_trial_lite">GET LITE</string>
+
+    <string name="ask_promo_cta_buy_credits">BUY CREDITS</string>
+    <string name="ask_promo_secondary_buy_credits">BUY CREDITS INSTEAD</string>
+    <string name="ask_promo_secondary_pro_bonus" formatted="false">GO PRO · 20% BONUS ON CREDITS</string>
+    <string name="ask_promo_info_pro_out_of_credits">You\'re out of tutor credits. As a Pro member you get 6 credits in the 5-pack and 12 in the 10-pack.</string>
+</resources>

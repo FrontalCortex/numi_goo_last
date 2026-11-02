@@ -68,6 +68,12 @@
     <string name="settings_notify_streak">Günlük hatırlatma</string>
     <string name="settings_notify_reward">Ödüller ve etkinlikler</string>
 
+    <!-- Ayarlar → Dil (AppLanguage). Dil adları kendi dillerinde, çevrilmez. -->
+    <string name="settings_language">Dil</string>
+    <string name="settings_language_system">Telefonun dili</string>
+    <string name="settings_language_tr" translatable="false">Türkçe</string>
+    <string name="settings_language_en" translatable="false">English</string>
+
     <!-- Soru medya indirme bildirimi (ayrı kanal yerine upload kanalı kullanılıyor) -->
     <string name="notification_download_cancel">İptal et</string>
 

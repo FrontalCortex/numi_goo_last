@@ -816,4 +816,7 @@
     <string name="ui_bu_surum_artik_kullanilamiyor">Sorobit\'in bu sürümü artık kullanılamıyor. Devam etmek için uygulamayı güncelle.</string>
     <string name="ui_guncelle">Güncelle</string>
     <string name="ui_cik">Çık</string>
+    <!-- Kodda sabit duran metinler (dil seçimiyle buraya taşındı) -->
+    <string name="ui_tamamlandi_buyuk">TAMAMLANDI ✓</string>
+    <string name="ui_selamlar_benim_adim_x">Selamlar! Benim adım %1$s!</string>
 </resources>

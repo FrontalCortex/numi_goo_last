@@ -121,6 +121,8 @@ object HomeworkText {
      * Sınıf en fazla 60 kişi; 100'e kadar doğru.
      */
     fun withAccusative(n: Int): String {
+        // İngilizcede ek yok ("8 of 12 students").
+        if (!com.example.app.AppLanguage.isTurkish()) return n.toString()
         val lastDigit = n % 10
         val suffix = if (lastDigit != 0 || n == 0) {
             when (lastDigit) {

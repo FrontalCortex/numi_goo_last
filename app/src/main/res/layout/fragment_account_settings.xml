@@ -155,6 +155,47 @@
                         android:src="@drawable/dualingo_arrow_ic"
                         app:tint="#607887" />
                 </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#3B4A55" />
+
+                <!-- Uygulamanın dili (AppLanguage); seçim uygulamayı yeniden başlatır. -->
+                <LinearLayout
+                    android:id="@+id/btnLanguage"
+                    android:layout_width="match_parent"
+                    android:layout_height="72dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="18dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/settings_language"
+                        android:textColor="#E6EEF2"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvLanguageValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:textColor="#9FB3BF"
+                        android:textSize="16sp" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/dualingo_arrow_ic"
+                        app:tint="#607887" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

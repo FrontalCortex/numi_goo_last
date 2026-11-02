@@ -91,6 +91,26 @@ class AccountSettingsFragment : Fragment() {
             }
     }
 
+    /** Dil adları kendi dillerinde ("Türkçe", "English"); yalnızca "telefonun dili" çevriliyor. */
+    private fun languageLabel(choice: String): String = when (choice) {
+        AppLanguage.TURKISH -> getString(R.string.settings_language_tr)
+        AppLanguage.ENGLISH -> getString(R.string.settings_language_en)
+        else -> getString(R.string.settings_language_system)
+    }
+
+    private fun showLanguagePicker() {
+        val choices = AppLanguage.CHOICES
+        val selected = choices.indexOf(AppLanguage.choice(requireContext()))
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(R.string.settings_language)
+            .setSingleChoiceItems(choices.map(::languageLabel).toTypedArray(), selected) { dialog, which ->
+                dialog.dismiss()
+                AppLanguage.apply(requireActivity(), choices[which])
+            }
+            .setNegativeButton(R.string.class_cancel, null)
+            .show()
+    }
+
     private fun setupClickListeners() {
         binding.btnBack.setOnClickListener {
             // Geri tuşu: Hesap Ayarları önceki fragmana (ProfileFragment) gelsin.
@@ -149,7 +169,10 @@ class AccountSettingsFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
-        
+
+        binding.tvLanguageValue.text = languageLabel(AppLanguage.choice(requireContext()))
+        binding.btnLanguage.setOnClickListener { showLanguagePicker() }
+
         binding.btnCancelSubscription.setOnClickListener {
             try {
                 val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/account/subscriptions"))

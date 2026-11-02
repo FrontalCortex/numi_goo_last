@@ -24,7 +24,9 @@ object FontScaleLimiter {
     private const val TABLET_TARGET_SW_DP = 480f
     private const val TABLET_TARGET_LONG_DP = 800f
 
-    fun wrap(base: Context): Context {
+    /** Yazı boyutu sınırı ve tablet ölçeğiyle birlikte uygulamanın dilini de ([AppLanguage]) verir. */
+    fun wrap(context: Context): Context {
+        val base = AppLanguage.wrap(context)
         val current = base.resources.configuration
         val limited = Configuration(current)
         var changed = false

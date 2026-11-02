@@ -2,6 +2,7 @@ package com.example.app
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Log
@@ -241,6 +242,11 @@ class NumiGooApplication : Application() {
             val elapsed = (SystemClock.elapsedRealtime() - currentScreenStartMs).coerceAtLeast(0L)
             AnalyticsLogger.logAppExitScreen(screen, elapsed)
         }
+    }
+
+    /** Uygulama context'i seçili dilde: [appString] ve ders şablonu buradan okuyor (bkz. [AppLanguage]). */
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(AppLanguage.wrap(base))
     }
 
     override fun onCreate() {

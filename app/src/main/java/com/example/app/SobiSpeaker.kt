@@ -22,7 +22,8 @@ class SobiSpeaker(context: Context, private val onReady: () -> Unit) {
     init {
         tts = TextToSpeech(appContext) { status ->
             if (status == TextToSpeech.SUCCESS) {
-                val r = tts.setLanguage(Locale("tr", "TR"))
+                // Uygulamanın dili (AppLanguage varsayılan dili de ayarlıyor).
+                val r = tts.setLanguage(if (AppLanguage.isTurkish()) Locale("tr", "TR") else Locale.US)
                 ready = r != TextToSpeech.LANG_MISSING_DATA && r != TextToSpeech.LANG_NOT_SUPPORTED
                 if (ready) {
                     // Çocuk için biraz yavaş.
@@ -68,10 +69,13 @@ class SobiSpeaker(context: Context, private val onReady: () -> Unit) {
         private const val KEY_AUTO = "auto_read"
 
         /** Ses motorunun takıldığı işaretler: tırnaklar, eksi işareti ("434 - 86" → "434 eksi 86"). */
-        fun clean(text: String): String = text
-            .replace(Regex("""(\d)\s*[-−]\s*(\d)"""), "$1 eksi $2")
-            .replace(Regex("""(\d)\s*\+\s*(\d)"""), "$1 artı $2")
+        fun clean(text: String): String {
+            val (minus, plus) = if (AppLanguage.isTurkish()) "eksi" to "artı" else "minus" to "plus"
+            return text
+            .replace(Regex("""(\d)\s*[-−]\s*(\d)"""), "$1 $minus $2")
+            .replace(Regex("""(\d)\s*\+\s*(\d)"""), "$1 $plus $2")
             .replace(Regex("""[«»“”"]"""), "")
             .replace("‹", "")
+        }
     }
 }

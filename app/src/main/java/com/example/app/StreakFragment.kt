@@ -231,7 +231,7 @@ class StreakFragment : Fragment() {
 
         b.streakChallengeTitle.text = appString(R.string.ui_x_gunluk_meydan_okuma, days)
         b.streakChallengeSub.text = when {
-            claimedDays > 0 -> "TAMAMLANDI ✓"
+            claimedDays > 0 -> appString(R.string.ui_tamamlandi_buyuk)
             claimable -> appString(R.string.ui_tamamlandi_odulunu_topla)
             complete -> appString(R.string.ui_tamamlandi_odulun_hazirlaniyor)
             state.current <= 0 -> appString(R.string.ui_bugun_basliyor)

@@ -1,5 +1,6 @@
 package com.example.app.abacus
 
+import com.example.app.AppLanguage
 import com.example.app.homework.AbacusRule
 import com.example.app.homework.HomeworkOp
 
@@ -39,10 +40,21 @@ object MistakeAnalyzer {
     data class Diagnosis(val kind: Kind, val text: String, val move: StepExplainer.ColumnMove?)
 
     private val COLUMN_NAMES = listOf("birler", "onlar", "yüzler", "binler", "on binler")
+    private val COLUMN_NAMES_EN = listOf("ones", "tens", "hundreds", "thousands", "ten thousands")
 
-    fun columnName(col: Int): String = COLUMN_NAMES.getOrElse(col) { "${col + 1}. sütun" }
+    /** Metinlerin İngilizcesi (AppLanguage); kurallar ve sıralama iki dilde aynı. */
+    private fun en() = !AppLanguage.isTurkish()
 
-    fun ruleName(rule: AbacusRule): String = when (rule) {
+    fun columnName(col: Int): String =
+        if (en()) COLUMN_NAMES_EN.getOrElse(col) { "column ${col + 1}" }
+        else COLUMN_NAMES.getOrElse(col) { "${col + 1}. sütun" }
+
+    fun ruleName(rule: AbacusRule): String = if (en()) when (rule) {
+        AbacusRule.DIRECT -> "direct"
+        AbacusRule.FIVE -> "small friends"
+        AbacusRule.TEN -> "big friends"
+        AbacusRule.BEAD -> "mixed friends"
+    } else when (rule) {
         AbacusRule.DIRECT -> "kuralsız"
         AbacusRule.FIVE -> "5'lik kural"
         AbacusRule.TEN -> "10'luk kural"
@@ -53,6 +65,14 @@ object MistakeAnalyzer {
     fun stepPhrase(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String {
         val add = m.op == HomeworkOp.ADD
         val amount = Math.abs(s.upper) * 5 + Math.abs(s.lower)
+        if (en()) return when (s.role) {
+            StepExplainer.Role.DIRECT -> "${if (s.upper + s.lower > 0) "add" else "take away"} $amount"
+            StepExplainer.Role.FIVE -> if (s.upper > 0) "add 5" else "take away 5"
+            StepExplainer.Role.FRIEND -> "${if (s.lower > 0) "add" else "take away"} its friend ${Math.abs(s.lower)}"
+            StepExplainer.Role.BIG_FRIEND -> if (add) "take away its big friend $amount" else "add its friend $amount"
+            StepExplainer.Role.BEADS -> "add ${s.lower} beads"
+            StepExplainer.Role.TEN -> if (add) "add 10" else "take away 10"
+        }
         return when (s.role) {
             StepExplainer.Role.DIRECT -> "$amount ${if (s.upper + s.lower > 0) "gelir" else "gider"}"
             StepExplainer.Role.FIVE -> if (s.upper > 0) "5 gelir" else "5 gider"
@@ -109,6 +129,7 @@ object MistakeAnalyzer {
     fun diagnoseWrite(target: Int, value: Int): String {
         val cols = maxOf(target.toString().length, value.toString().length)
         val col = (cols - 1 downTo 0).firstOrNull { digit(target, it) != digit(value, it) } ?: 0
+        if (en()) return "The ${columnName(col)} place should be ${digit(target, col)}, but you have ${digit(value, col)}."
         return "${capital(columnName(col))} basamağına ${digit(target, col)} yazılmalı, sende ${digit(value, col)} var."
     }
 
@@ -178,12 +199,23 @@ object MistakeAnalyzer {
     fun ruleSummary(mistakes: List<SequenceMistake>): String {
         val parts = mistakes.groupBy { it.rule }.entries
             .sortedWith(compareByDescending<Map.Entry<AbacusRule?, List<SequenceMistake>>> { it.value.size }.thenBy { it.key?.ordinal ?: -1 })
-            .map { (rule, list) -> "${ruleLocative(rule)} ${list.size} hata" }
+            .map { (rule, list) ->
+                if (en()) "${list.size} ${if (list.size == 1) "mistake" else "mistakes"} ${ruleLocativeEn(rule)}"
+                else "${ruleLocative(rule)} ${list.size} hata"
+            }
         return when (parts.size) {
             0 -> ""
             1 -> parts[0]
-            else -> parts.dropLast(1).joinToString(", ") + " ve " + parts.last()
+            else -> parts.dropLast(1).joinToString(", ") + (if (en()) " and " else " ve ") + parts.last()
         }
+    }
+
+    private fun ruleLocativeEn(rule: AbacusRule?): String = when (rule) {
+        null -> "while writing the first number"
+        AbacusRule.DIRECT -> "in direct steps"
+        AbacusRule.FIVE -> "with small friends"
+        AbacusRule.TEN -> "with big friends"
+        AbacusRule.BEAD -> "with mixed friends"
     }
 
     private fun ruleLocative(rule: AbacusRule?): String = when (rule) {
@@ -240,7 +272,10 @@ object MistakeAnalyzer {
     private fun diagnoseMove(m: StepExplainer.ColumnMove, values: List<Int>, from: Int): Diagnosis {
         val after = values.subList(from + 1, values.size)
         val target = m.valueAfter.toInt()
-        val head = "${capital(columnName(m.col))} basamağında ${m.x} ${if (m.op == HomeworkOp.ADD) "eklerken" else "çıkarırken"} " +
+        val head = if (en()) {
+            "In the ${columnName(m.col)} place, ${if (m.op == HomeworkOp.ADD) "adding" else "taking away"} ${m.x} " +
+                "needed ${ruleName(m.rule)}: ${m.steps.joinToString(", ") { stepPhrase(it, m) }}."
+        } else "${capital(columnName(m.col))} basamağında ${m.x} ${if (m.op == HomeworkOp.ADD) "eklerken" else "çıkarırken"} " +
             "${ruleName(m.rule)} gerekiyordu: ${m.steps.joinToString(", ") { stepPhrase(it, m) }}."
 
         // Unutulan adım (yalnızca çok adımlı hamlede: tek adımlıda "hiçbir şey yapmamak" da bu kalıba uyardı).
@@ -253,6 +288,14 @@ object MistakeAnalyzer {
                 // yanlış yapmış: aşağıdaki "yanlış sütun değeri" anlatır.
                 val movedOn = missingAt != -1 && after.drop(missingAt + 1).any { differsOnlyIn(it, target, m.col) }
                 if (missing != m.valueBefore.toInt() && missingAt != -1 && !movedOn) {
+                    if (en()) {
+                        val tailEn = when {
+                            s.carry != null && m.op == HomeworkOp.ADD -> " 1 bead should have been added to the ${columnName(s.col)} column."
+                            s.carry != null -> " 1 bead should have been taken away from the ${columnName(s.col)} column."
+                            else -> ""
+                        }
+                        return Diagnosis(Kind.MISSING_STEP, "$head You skipped the \"${stepPhrase(s, m)}\" step.$tailEn", m)
+                    }
                     val tail = when {
                         s.carry != null && m.op == HomeworkOp.ADD ->
                             " ${capital(columnName(s.col))} sütununa 1 boncuk gelmeliydi."
@@ -270,11 +313,12 @@ object MistakeAnalyzer {
         if (wrong != null) {
             return Diagnosis(
                 Kind.WRONG_COLUMN,
+                if (en()) "$head The ${columnName(m.col)} column should be ${digit(target, m.col)}, but you got ${digit(wrong, m.col)}." else
                 "$head ${capital(columnName(m.col))} sütununda ${digit(target, m.col)} olmalıydı, sende ${digit(wrong, m.col)} oldu.",
                 m,
             )
         }
-        return Diagnosis(Kind.AT_MOVE, "Hata burada: $head", m)
+        return Diagnosis(Kind.AT_MOVE, if (en()) "Here's the mistake: $head" else "Hata burada: $head", m)
     }
 
     private fun wrongFirstNumber(first: Int, wrote: Int): Diagnosis {
@@ -283,6 +327,8 @@ object MistakeAnalyzer {
         val col = (cols - 1 downTo 0).firstOrNull { digit(first, it) != digit(wrote, it) } ?: 0
         return Diagnosis(
             Kind.WRONG_FIRST_NUMBER,
+            if (en()) "When writing the first number, the ${columnName(col)} place should have been ${digit(first, col)}, " +
+                "but you got ${digit(wrote, col)}. You did the second number right!" else
             "İlk sayıyı yazarken ${columnName(col)} basamağına ${digit(first, col)} yazılmalıydı, sende ${digit(wrote, col)} oldu. " +
                 "İkinci sayıyı doğru işlemişsin!",
             null,
