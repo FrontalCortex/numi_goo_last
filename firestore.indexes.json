@@ -141,6 +141,24 @@
   ],
   "fieldOverrides": [
     {
+      "collectionGroup": "sessions",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "sobiFeedback",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "sobiReports",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "adRewards",
       "fieldPath": "expireAt",
       "ttl": true,

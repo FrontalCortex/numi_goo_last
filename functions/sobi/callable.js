@@ -18,7 +18,8 @@
  *     transcript     [{ from: 'cocuk'|'sobi', text, at }] — çocuğun ve gördüğünün düz kaydı
  *                    (ebeveyn paneli ve bildirilen cevapların incelenmesi için)
  *     pendingNote    son cevap denetime takıldıysa çocuğun gördüğü yedek metin
- *     expiresAt      30 gün sonrası; Firestore TTL ilkesi bu alanla siler (konsolda elle açılır)
+ *     expiresAt      30 gün sonrası; Firestore TTL ilkesi bu alanla siler (firestore.indexes.json,
+ *                    fieldOverrides; 02.11.2026'ya dek ilke kurulmamıştı, hiçbir sohbet silinmiyordu)
  *     kind, title    yalnızca genel sohbette (Sobi sekmesi, `mode: 'genel'`): 'genel' ve ilk mesajdan
  *                    kısaltılmış başlık; liste ve silme sessions.js'te (sobiSessions)
  *   İstemci bu koleksiyona erişmiyor; yazma da okuma da yalnızca sunucudan (Admin SDK).
@@ -30,6 +31,7 @@ const path = require('path');
 const Anthropic = require('@anthropic-ai/sdk').default;
 const chat = require('./chat');
 const guard = require('./guard');
+const sessions = require('./sessions');
 const tools = require('./tools');
 const wallet = require('./wallet');
 
@@ -266,6 +268,15 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
         }
         return charge.after;
       });
+
+      // Yeni genel sohbet: kullanıcının en eski genel sohbetleri sınırın üstündeyse silinir (sessions.js).
+      if (general && !session) {
+        try {
+          await sessions.pruneGeneral(db, uid);
+        } catch (err) {
+          console.warn('sobiChat: eski genel sohbetler silinemedi', { uid, message: err.message });
+        }
+      }
 
       return {
         sessionId: sessionRef.id,

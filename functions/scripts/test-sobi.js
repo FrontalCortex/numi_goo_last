@@ -828,6 +828,31 @@ async function main() {
     await assert.rejects(list({ action: 'get', sessionId: 'x' }, ctx), (e) => e.code === 'invalid-argument');
     await assert.rejects(list({ action: 'list' }, {}), (e) => e.code === 'unauthenticated');
   });
+  await test('genel sohbet sınırı: yeni sohbet açılınca en eskiler silinir, ders sohbetleri kalır', async () => {
+    const env = fakeEnv();
+    const sessions = require('../sobi/sessions');
+    const fn = createSobiChat({ ...env, createClient: () => ({ messages: { create: async () => { throw new Error('model çağrılmamalı'); } } }) });
+    env.store.set('users/u1', {});
+    for (let i = 0; i < sessions.MAX_GENERAL; i++) {
+      env.store.set(`sobiChats/u1/sessions/genel${String(i).padStart(4, '0')}`, { kind: 'genel', updatedAt: { ms: 1000 + i } });
+    }
+    env.store.set('sobiChats/u1/sessions/dersEski0001', { updatedAt: { ms: 1 } });
+    // Hazır cevap da yeni bir genel sohbet açar.
+    const r = await fn({ mode: 'genel', message: 'Krediler nasıl çalışır?', suggestion: 'krediler' }, { auth: { uid: 'u1' } });
+    assert.strictEqual(env.store.has('sobiChats/u1/sessions/genel0000'), false, 'en eski silindi');
+    assert.strictEqual(env.store.has('sobiChats/u1/sessions/genel0001'), true);
+    assert.strictEqual(env.store.has(`sobiChats/u1/sessions/${r.sessionId}`), true, 'yeni sohbet kaldı');
+    assert.strictEqual(env.store.has('sobiChats/u1/sessions/dersEski0001'), true, 'ders sohbetine dokunulmaz');
+    // Var olan sohbete yazmak bir şey silmez.
+    await fn({ mode: 'genel', message: 'Krediler nasıl çalışır?', suggestion: 'krediler', sessionId: r.sessionId }, { auth: { uid: 'u1' } });
+    assert.strictEqual(env.store.has('sobiChats/u1/sessions/genel0001'), true);
+  });
+  await test('TTL ilkeleri: Sobi sohbetleri, beğeniler ve bildirimler expiresAt ile silinir', () => {
+    const overrides = require('../../firestore.indexes.json').fieldOverrides;
+    for (const cg of ['sessions', 'sobiFeedback', 'sobiReports']) {
+      assert.ok(overrides.some((o) => o.collectionGroup === cg && o.fieldPath === 'expiresAt' && o.ttl === true), cg);
+    }
+  });
   await test('başlık: kısa metin aynen, uzun metin kelime sınırında', () => {
     assert.strictEqual(createSobiChat.titleOf('Merhaba'), 'Merhaba');
     assert.strictEqual(createSobiChat.titleOf(''), 'Sohbet');
@@ -868,7 +893,11 @@ function fakeEnv() {
     collection: (name) => colRef(name),
     batch: () => {
       const ops = [];
-      return { set: (ref, data, opts) => ops.push(() => ref.set(data, opts)), commit: async () => { for (const op of ops) await op(); } };
+      return {
+        set: (ref, data, opts) => ops.push(() => ref.set(data, opts)),
+        delete: (ref) => ops.push(() => ref.delete()),
+        commit: async () => { for (const op of ops) await op(); },
+      };
     },
     runTransaction: async (fn) => {
       const ops = [];

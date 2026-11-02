@@ -20,6 +20,12 @@
 
 const SESSION_ID = /^[A-Za-z0-9_-]{8,64}$/;
 const MAX_LIST = 50;
+/**
+ * Bir kullanıcının en çok genel sohbeti (kullanıcı kararı 02.11.2026: "çok birikmesin"). Yeni sohbet
+ * açılınca fazlası en eskiden silinir (pruneGeneral). 30 günlük silme (expiresAt, TTL ilkesi
+ * firestore.indexes.json'da) ayrıca geçerli.
+ */
+const MAX_GENERAL = 20;
 
 const toMs = (t) => (t && typeof t.toMillis === 'function' ? t.toMillis() : (t && Number.isFinite(t.ms) ? t.ms : 0));
 
@@ -74,4 +80,24 @@ module.exports = function createSobiSessions({ functions, db }) {
   });
 };
 
+/**
+ * En yeni MAX_GENERAL genel sohbet kalır, gerisi silinir. sobiChat yeni bir genel sohbet açtıktan sonra
+ * çağırıyor; hata çocuğun cevabını bozmasın diye orada yakalanıyor.
+ */
+async function pruneGeneral(db, uid, keep = MAX_GENERAL) {
+  const sessions = db.collection('sobiChats').doc(uid).collection('sessions');
+  const snap = await sessions.where('kind', '==', 'genel').select('updatedAt').get();
+  if (snap.docs.length <= keep) return 0;
+  const old = snap.docs
+    .map((d) => ({ ref: d.ref || sessions.doc(d.id), at: toMs(d.get('updatedAt')) }))
+    .sort((a, b) => b.at - a.at)
+    .slice(keep);
+  const batch = db.batch();
+  for (const o of old) batch.delete(o.ref);
+  await batch.commit();
+  return old.length;
+}
+
 module.exports.MAX_LIST = MAX_LIST;
+module.exports.MAX_GENERAL = MAX_GENERAL;
+module.exports.pruneGeneral = pruneGeneral;
