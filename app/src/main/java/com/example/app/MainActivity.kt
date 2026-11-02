@@ -3397,24 +3397,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Pro/Premium olmayan, öğretmen olmayan, oturumu açık kullanıcı — VE bu cihaz hoş geldin
-     * kredisini henüz almamış olmalı.
+     * Pro deneme tanıtımına ([SobiProTrialFragment]) uygun mu: Pro/Premium olmayan, öğretmen
+     * olmayan, oturumu açık kullanıcı — VE bu cihaz hoş geldin hediyesini henüz almamış olmalı.
      *
-     * Son koşulun sebebi: AskQuestionOpenFragment'ın vaadi öğretmene soru sormak. Cihaz
-     * krediyi daha önce tükettiyse (aynı telefonda ikinci uygulama hesabı) kullanıcı denemeyi
-     * başlatsa bile kredi almıyor — Pro oluyor ama soru soramıyor. O kullanıcıya bu tanıtımı
-     * OTOMATİK açmak, ekranın tek işlevini teslim etmemek olur.
+     * Son koşul öğretmen tanıtımından kalma (eskiden vaat danışma kredisiydi); kullanıcı kararıyla
+     * (02.11.2026) aynı kişiler korunuyor: hediyeyi daha önce almış cihaz, aynı telefonda ikinci
+     * hesapla denemeyi yeniden yaşamaya çalışan kullanıcı demek.
      *
-     * Butonla açılan yolda ekran yine gösteriliyor ama düzeni değişiyor: büyük düğme Pro değil
-     * kredi satın alma oluyor (bkz. AskQuestionOpenFragment.bindActions).
-     *
-     * Butona basarak açma yolu (AskQuestionButtonBinder) bu koşula tabi değil: orada niyet
-     * kullanıcıdan geliyor ve ekranın "BUNUN YERİNE KREDİ AL" seçeneği ona doğru yolu
-     * gösteriyor.
+     * Ders dönüşü tanıtımı ve Sobi ekranındaki deneme bağlantısı (MistakeReviewDialog) bu kapıyı
+     * paylaşıyor. Öğretmen düğmesinden açılan yol (AskQuestionButtonBinder) bu koşula tabi değil.
      */
-    private fun isAskQuestionPromoEligible(): Boolean {
-        // Soru düğmeleri gizliyken tanıtım, kullanıcının bulamayacağı bir özelliği anlatırdı.
-        if (!TeacherQuestionsFeature.ENABLED) return false
+    fun isProTrialPromoEligible(): Boolean {
         if (FirebaseAuth.getInstance().currentUser == null) return false
         if (energyManager.getUserRole() == "TEACHER") return false
         // Test anahtarı: plan ve cihaz kredisi kapılarını atlar. Release'de hep false,
@@ -3443,7 +3436,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun lockTouchForPendingAskQuestionPromo(caller: String) {
         if (!::binding.isInitialized || askQuestionPromoPendingLock) return
-        if (!isAskQuestionPromoEligible()) return
+        if (!isProTrialPromoEligible()) return
         val nextCount = GlobalValues.peekAskQuestionPromoLessonReturnCount(this) + 1
         if (nextCount < askQuestionPromoThreshold) return
 
@@ -3477,13 +3470,14 @@ class MainActivity : AppCompatActivity() {
 
     /**
      * Pro olmayan/öğretmen olmayan kullanıcıya, türü LESSON olan (chest hariç) bir item'dan haritaya
-     * her dönüşte 1 artan sayaç 3'e ulaşınca AskQuestionOpenFragment'ı otomatik gösterir.
+     * her dönüşte 1 artan sayaç 3'e ulaşınca Sobi'nin Pro deneme tanıtımını ([SobiProTrialFragment];
+     * eskiden AskQuestionOpenFragment) otomatik gösterir. Adlardaki "AskQuestionPromo" o günden kalma.
      * Guide/rozet/rating/tasks yönlendirmesiyle üst üste binmesin diye [askQuestionPromoMapBlockReason]
      * ile kapılanır; harita o an temiz değilse sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
      */
     private fun maybeShowAskQuestionPromo(caller: String) {
         if (!::binding.isInitialized) return
-        if (!isAskQuestionPromoEligible()) {
+        if (!isProTrialPromoEligible()) {
             releaseAskQuestionPromoLock("notEligible:$caller")
             return
         }
@@ -3528,9 +3522,9 @@ class MainActivity : AppCompatActivity() {
         }
         GlobalValues.resetAskQuestionPromoLessonReturnCount(this)
         logMapTouchDiag("askQuestionPromo", "SHOW", "caller=$caller count=$count attempt=$attempt")
-        AskQuestionOpenFragment
-            .newInstance(AnalyticsLogger.PROMO_TRIGGER_AUTO)
-            .show(supportFragmentManager, "AskQuestionOpen")
+        SobiProTrialFragment
+            .newInstance(AnalyticsLogger.PROMO_TRIGGER_SOBI_AUTO)
+            .show(supportFragmentManager, SobiProTrialFragment.TAG)
         // Dialog penceresi bir sonraki frame'de öne gelir; kilidi ondan önce bırakma.
         binding.root.post { releaseAskQuestionPromoLock("shown:$caller") }
     }

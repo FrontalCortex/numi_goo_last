@@ -144,6 +144,19 @@
         android:textSize="12sp"
         android:visibility="gone" />
 
+    <!-- Hak ve kredi bitince, denemeye uygun kullanıcıya ikinci yol: "1 hafta Pro'yu ücretsiz dene ›"
+         (MistakeReviewDialog.showBalance → SobiProTrialFragment). -->
+    <TextView
+        android:id="@+id/reviewProTrial"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginBottom="3dp"
+        android:textColor="#1CB0F6"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

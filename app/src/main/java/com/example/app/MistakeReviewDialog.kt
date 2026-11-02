@@ -154,6 +154,7 @@ class MistakeReviewDialog : DialogFragment() {
     private lateinit var input: EditText
     /** Bugünkü ücretsiz hak ve Sobi kredisi ([showBalance]). */
     private var balanceView: TextView? = null
+    private var proTrialView: TextView? = null
     private lateinit var abacusContainer: View
     private lateinit var buttonsRow: View
 
@@ -240,6 +241,7 @@ class MistakeReviewDialog : DialogFragment() {
         val inputRow = view.findViewById<View>(R.id.reviewInputRow)
         inputRow.visibility = if (loggedIn) View.VISIBLE else View.GONE
         balanceView = view.findViewById(R.id.reviewBalance)
+        proTrialView = view.findViewById(R.id.reviewProTrial)
         if (loggedIn) ServerSobi.balance({ b -> showBalance(b.freeLeft, b.credits) })
         val send = view.findViewById<View>(R.id.reviewSend)
         send.setOnClickListener { sendFromInput() }
@@ -388,7 +390,7 @@ class MistakeReviewDialog : DialogFragment() {
         if (isAdded && !closeResultHeldForShop) parentFragmentManager.setFragmentResult(RESULT_CLOSED, Bundle())
     }
 
-    /** "Kredi al" ile kapandı: kapanış bildirimi mağaza kapanınca gidiyor ([openSobiCredits]). */
+    /** "Kredi al" ya da Pro denemesiyle kapandı: kapanış bildirimi o ekran kapanınca gidiyor ([openSobiCredits], [openProTrial]). */
     private var closeResultHeldForShop = false
 
     /**
@@ -730,6 +732,31 @@ class MistakeReviewDialog : DialogFragment() {
         }
         v.setTextColor(if (empty) 0xFF1CB0F6.toInt() else 0xFF8B949E.toInt())
         v.setOnClickListener(if (empty) View.OnClickListener { openSobiCredits() } else null)
+        // Hak ve kredi bitti: denemeye uygunsa "Kredi al"ın altında ücretsiz Pro denemesi de (Pro'da günde
+        // 20 mesaj). Uygun değilse (zaten Pro, teklif yok, hediye cihazda kullanılmış) yalnızca kredi.
+        val trial = proTrialView ?: return
+        val offerTrial = empty && SobiProTrialFragment.canOfferTrial(activity as? MainActivity)
+        trial.visibility = if (offerTrial) View.VISIBLE else View.GONE
+        if (offerTrial) {
+            val days = (activity as? MainActivity)?.billingManager?.freeTrialDays(BillingCatalog.SUB_PRO)
+            trial.text = SobiProTrialFragment.titleText(requireContext(), days) + " ›"
+            trial.setOnClickListener { openProTrial() }
+        }
+    }
+
+    /**
+     * Pro deneme tanıtımı: kendi penceresi olduğu için dersin/öğreticinin önünde açılıyor. Kapanış
+     * bildirimi ([RESULT_CLOSED]) mağaza yolundaki gibi tanıtım kapanınca gidiyor; ders süresi
+     * kullanıcı Play penceresindeyken akmasın.
+     */
+    private fun openProTrial() {
+        val activity = activity as? MainActivity ?: return
+        val resultFm = parentFragmentManager
+        closeResultHeldForShop = true
+        dismissAllowingStateLoss()
+        val promo = SobiProTrialFragment.newInstance(AnalyticsLogger.PROMO_TRIGGER_SOBI_LIMIT)
+        promo.onClosed = { resultFm.setFragmentResult(RESULT_CLOSED, Bundle()) }
+        promo.show(activity.supportFragmentManager, SobiProTrialFragment.TAG)
     }
 
     /**
@@ -801,7 +828,10 @@ class MistakeReviewDialog : DialogFragment() {
                 val msg = when {
                     ServerSobi.isDailyLimit(e) -> {
                         showBalance(0, 0)
-                        appString(R.string.sobi_error_daily_limit)
+                        appString(
+                            if (SobiProTrialFragment.canOfferTrial(activity as? MainActivity)) R.string.sobi_error_daily_limit_trial
+                            else R.string.sobi_error_daily_limit,
+                        )
                     }
                     ServerSobi.isRestricted(e) -> appString(R.string.sobi_error_restricted)
                     else -> appString(R.string.sobi_error_network)

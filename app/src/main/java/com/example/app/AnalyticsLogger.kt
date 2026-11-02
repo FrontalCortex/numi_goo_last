@@ -319,6 +319,13 @@ object AnalyticsLogger {
      * Bu durum şimdiye kadar düz bir AlertDialog'du ve hiçbir yere kaydedilmiyordu.
      */
     const val PROMO_TRIGGER_PRO_OUT_OF_CREDITS = "pro_out_of_credits"
+    /**
+     * Sobi'nin Pro deneme tanıtımı ([SobiProTrialFragment]) ders dönüşünde kendiliğinden açıldı.
+     * Aynı olaylara yazılıyor (GA4 boyut kotası dolu, yeni parametre açılamıyor); ekran farkı bu değerde.
+     */
+    const val PROMO_TRIGGER_SOBI_AUTO = "sobi_trial_auto"
+    /** Sobi ekranında ücretsiz mesaj ve kredi bitti, kullanıcı "Pro'yu ücretsiz dene"ye bastı. */
+    const val PROMO_TRIGGER_SOBI_LIMIT = "sobi_trial_limit"
 
     /** "1 hafta ücretsiz dene" — huni [ProDiffirentFragment] ile sürüyor. */
     const val PROMO_TRY_FREE = "try_free"
@@ -423,6 +430,8 @@ object AnalyticsLogger {
     const val PRO_ENTRY_AD_SKIP = "ad_skip"
     /** Öğretmene sorma tanıtımı ([AskQuestionOpenFragment]). */
     const val PRO_ENTRY_ASK_QUESTION = "ask_question"
+    /** Sobi'nin Pro deneme tanıtımı ([SobiProTrialFragment]). */
+    const val PRO_ENTRY_SOBI_TRIAL = "sobi_trial"
     /** Mağaza ([ShopFragment]). */
     const val PRO_ENTRY_SHOP = "shop"
     /** Kapı belirlenemedi (süreç akışın ortasında yeniden başlamış olabilir). */
