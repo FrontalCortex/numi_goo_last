@@ -21,15 +21,20 @@ import com.example.app.homework.HomeworkOp
 object SubStepExplainer {
 
     /** Parçanın balon etiketi: “10 gelir” ne demek? */
-    fun question(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String =
-        if (!AppLanguage.isTurkish()) "What does “${MistakeAnalyzer.stepPhrase(s, m)}” mean?"
-        else "“${MistakeAnalyzer.stepPhrase(s, m)}” ne demek?"
+    fun question(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String = when (AppLanguage.textLanguage()) {
+        AppLanguage.ENGLISH -> "What does “${MistakeAnalyzer.stepPhrase(s, m)}” mean?"
+        AppLanguage.INDONESIAN -> "Apa arti “${MistakeAnalyzer.stepPhrase(s, m)}”?"
+        else -> "“${MistakeAnalyzer.stepPhrase(s, m)}” ne demek?"
+    }
 
     /** Hamlenin parçaları balona değer mi: kuralsız tek parça kendini anlatıyor. */
     fun hasParts(m: StepExplainer.ColumnMove): Boolean = m.rule != AbacusRule.DIRECT
 
     fun explain(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String {
-        if (!AppLanguage.isTurkish()) return SubStepExplainerEn.explain(s, m)
+        when (AppLanguage.textLanguage()) {
+            AppLanguage.ENGLISH -> return SubStepExplainerEn.explain(s, m)
+            AppLanguage.INDONESIAN -> return SubStepExplainerId.explain(s, m)
+        }
         val phrase = "“${MistakeAnalyzer.stepPhrase(s, m)}”"
         val col = MistakeAnalyzer.columnName(m.col)
         return when (s.role) {
@@ -68,7 +73,10 @@ object SubStepExplainer {
 
     /** "Neden bu kural?": neden doğrudan olmuyor ve kural neden işe yarıyor (derslerin gerekçesi). */
     fun whyRule(m: StepExplainer.ColumnMove): String {
-        if (!AppLanguage.isTurkish()) return SubStepExplainerEn.whyRule(m)
+        when (AppLanguage.textLanguage()) {
+            AppLanguage.ENGLISH -> return SubStepExplainerEn.whyRule(m)
+            AppLanguage.INDONESIAN -> return SubStepExplainerId.whyRule(m)
+        }
         val d = m.digitBefore
         val x = m.x
         val where = "${cap(locative(MistakeAnalyzer.columnName(m.col)))} $d var"
