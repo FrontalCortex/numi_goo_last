@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Sobi sekmesinin sohbet listesi (SobiChatFragment): "Yeni sohbet", önceki genel sohbetler (uzun basınca
-  ya da sağa kaydırınca sil) ve altta sınıfı/eski soruları olan öğrenci için eski Sohbet ekranına geçiş.
-  Telefonda soldan kayan çekmece, tablette solda kalıcı sütun.
+  Sobi sekmesinin sohbet listesi (SobiChatFragment): "Yeni sohbet" ve önceki genel sohbetler (uzun basınca
+  ya da sağa kaydırınca sil). Telefonda soldan kayan çekmece, tablette solda kalıcı sütun.
 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -60,18 +59,4 @@
             android:textSize="14sp"
             android:visibility="gone" />
     </FrameLayout>
-
-    <TextView
-        android:id="@+id/sobiDrawerMyClass"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/selectableItemBackground"
-        android:paddingStart="16dp"
-        android:paddingTop="14dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="16dp"
-        android:text="@string/sobi_tab_my_class"
-        android:textColor="#1CB0F6"
-        android:textSize="14sp"
-        android:textStyle="bold" />
 </LinearLayout>

@@ -190,6 +190,5 @@
     <string name="sobi_tab_delete">Sil</string>
     <string name="sobi_tab_cancel">Vazgeç</string>
     <string name="sobi_tab_load_error">Sohbet açılamadı. İnternetini kontrol edip yeniden dener misin?</string>
-    <string name="sobi_tab_my_class">Sınıfım ve sorularım ›</string>
     <string name="sobi_tab_login">Sobi ile konuşmak için giriş yapmalısın.</string>
 </resources>

@@ -43,8 +43,7 @@ import com.google.firebase.auth.FirebaseAuth
  *    ve bir işlemi abaküste gör / çöz (abaküslü "Sobi ile analiz et" ekranı, [MistakeReviewDialog]).
  *
  * Öğretmen hesabında ve [TeacherQuestionsFeature.ENABLED] açıkken bu ekran yok, eski Sohbet sekmesi
- * duruyor (MainActivity.isSobiTab). Sınıfı olan öğrenci ödevlerine ve eski sorularına listenin
- * altındaki bağlantıdan gidiyor.
+ * duruyor (MainActivity.applySobiTab).
  */
 class SobiChatFragment : Fragment() {
 
@@ -103,7 +102,6 @@ class SobiChatFragment : Fragment() {
         }
         view.findViewById<View>(R.id.sobiChatNew).setOnClickListener { newChat() }
         view.findViewById<View>(R.id.sobiDrawerNew).setOnClickListener { newChat() }
-        view.findViewById<View>(R.id.sobiDrawerMyClass).setOnClickListener { openMyClass() }
         DepthPress.attach(view.findViewById(R.id.sobiChatNew), view.findViewById(R.id.sobiDrawerNew))
 
         messageViews = SobiMessageViews(
@@ -392,15 +390,6 @@ class SobiChatFragment : Fragment() {
         } else {
             main.openShopFragment()
         }
-    }
-
-    /** Sınıfı olan öğrencinin ödevleri ve önceden sorduğu sorular eski Sohbet ekranında duruyor. */
-    private fun openMyClass() {
-        closeDrawer()
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainerID, NotificationFragment())
-            .addToBackStack(null)
-            .commit()
     }
 
     // ── Sohbet listesi ──────────────────────────────────────────────────────
