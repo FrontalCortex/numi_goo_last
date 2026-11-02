@@ -314,8 +314,10 @@ class OtpVerificationFragment : Fragment() {
             } else {
                 Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_dogrulanamadi), Toast.LENGTH_LONG).show()
             }
-            // Sunucu 15 dk cooldown döndüyse istemcide de kilidi başlat
-            if (error != null && (error.contains("15 dakika") || error.contains("Çok fazla yanlış"))) {
+            // Sunucu 15 dk cooldown döndüyse istemcide de kilidi başlat. Türkçede sunucunun mesajı geliyor;
+            // başka dilde serverErrorText resource-exhausted'ı ui_server_too_many'ye çeviriyor.
+            if (error != null && (error.contains("15 dakika") || error.contains("Çok fazla yanlış") ||
+                    error == appString(R.string.ui_server_too_many))) {
                 wrongAttempts = MAX_WRONG_ATTEMPTS
                 startWrongAttemptCooldown()
             }

@@ -159,9 +159,11 @@ object ServerSobi {
     }
 
     private fun call(payload: Map<String, Any>, onResult: (Reply) -> Unit, onFailure: (Exception) -> Unit) {
+        // Uygulamanın dili: "en" ise sunucu talimatın sonuna İngilizce dil bloğu ekliyor (sobi/callable.js).
+        val withLang = payload + ("lang" to AppStrings.context().let(AppLanguage::current))
         FirebaseFunctions.getInstance()
             .getHttpsCallable("sobiChat")
-            .call(payload)
+            .call(withLang)
             .addOnSuccessListener { result ->
                 val data = result.data as? Map<*, *>
                 val id = data?.get("sessionId") as? String

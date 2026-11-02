@@ -50,9 +50,17 @@ yerelleştirilmesi, ödev saklama süresi.
   `HomeworkText.withAccusative` İngilizcede ek koymuyor, `SobiSpeaker` seçili dilde okuyor,
   `LoginActivity` "Kullanıcı bulunamadı" karşılaştırması kaynağa bağlandı (İngilizcede kayıt ekranına
   yönlenmiyordu). Log/hata kayıtlarındaki Türkçe bilerek bırakıldı.
-- **Açık kalanlar (kullanıcıya soruldu):** (1) Sobi sunucusu Türkçe cevaplıyor — `lang` parametresi +
-  istem eki gerekiyor, functions deploy'u ister; (2) sunucu hata metinleri (`HttpsError` mesajları, OTP
-  "Çok fazla yanlış deneme…") Türkçe ve `OtpVerificationFragment` bu Türkçe metni arıyor; (3) öğretici
+- **Sobi İngilizce (02.11.2026, sunucu commit'i deploy onayı bekliyor):** uygulama her `sobiChat`
+  isteğine `lang` koyuyor; sunucu `lang: 'en'`de talimatların SONUNA `sobi/prompt_lang_en.md` blokunu
+  ekliyor (Türkçe istek bayt bayt aynı, önbelleği bozulmuyor). Oturuma `lang` ve `promptVersion+en`
+  yazılıyor (haftalık rapor ayırabilsin). İngilizcede hazır ders açıklamaları kullanılmıyor (Türkçe ve
+  adım metnine bağlı → model cevaplıyor, kredi harcar); kredi açıklaması ve yedek metinler İngilizce.
+  Gerçek modelde denendi (`node scripts/sobi-dene.js --dil en`): cevaplar İngilizce, terimler doğru;
+  bir cevapta numaralı liste kullandı (Türkçe talimat yasaklıyor, İngilizcede de izlenmeli).
+- **Sunucu hata metinleri:** giriş/doğrulama akışında (`AuthManager`) `serverErrorText`: Türkçede sunucunun
+  mesajı, başka dilde hata kodundan metin. Diğer ~45 yer (ödev, sınıf, mağaza…) hâlâ sunucunun Türkçe
+  mesajını gösteriyor.
+- **Açık kalanlar:** (3) öğretici
   seslendirmeleri (`res/raw/*.mp3`) Türkçe — şimdilik İngilizcede susturuldu (`TutorialFragment.playSound`); (4) Play Store sayfası; (5) TR kaynaktaki iki yazım hatası:
   `tutorial_ipucu_114` "10 x 1 = 1", `tutorial_ipucu_134` "8'i" (56 olmalı) — EN'de doğru yazıldı.
 

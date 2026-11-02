@@ -1,6 +1,7 @@
 package com.example.app.auth
 
 import com.example.app.appString
+import com.example.app.serverErrorText
 import com.example.app.R
 import android.content.Context
 import android.content.Intent
@@ -157,9 +158,7 @@ class AuthManager {
                 callback(true, null)
             }
             .addOnFailureListener { e ->
-                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
-                    ?: e.localizedMessage
-                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
+                callback(false, serverErrorText(e, R.string.ui_kod_dogrulanamadi))
             }
     }
 
@@ -177,9 +176,7 @@ class AuthManager {
                 callback(true, null)
             }
             .addOnFailureListener { e ->
-                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
-                    ?: e.localizedMessage
-                callback(false, msg ?: appString(R.string.ui_sifre_guncellenemedi))
+                callback(false, serverErrorText(e, R.string.ui_sifre_guncellenemedi))
             }
     }
 
@@ -414,9 +411,7 @@ class AuthManager {
                     .addOnFailureListener { e -> callback(false, e.localizedMessage) }
             }
             .addOnFailureListener { e ->
-                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
-                    ?: e.localizedMessage
-                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
+                callback(false, serverErrorText(e, R.string.ui_kod_dogrulanamadi))
             }
     }
 
@@ -1011,9 +1006,7 @@ class AuthManager {
                     callback(false, CHILD_EMAIL_NOT_VERIFIED)
                     return@addOnFailureListener
                 }
-                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
-                    ?: e.localizedMessage
-                callback(false, msg ?: appString(R.string.ui_kod_gonderilemedi))
+                callback(false, serverErrorText(e, R.string.ui_kod_gonderilemedi))
             }
     }
 
@@ -1081,9 +1074,7 @@ class AuthManager {
                 callback(verified, if (verified) null else appString(R.string.ui_kod_dogrulanamadi))
             }
             .addOnFailureListener { e ->
-                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
-                    ?: e.localizedMessage
-                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
+                callback(false, serverErrorText(e, R.string.ui_kod_dogrulanamadi))
             }
     }
 
@@ -1153,9 +1144,7 @@ class AuthManager {
                     .addOnFailureListener { callback(true, null) }
             }
             .addOnFailureListener { e ->
-                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
-                    ?: e.localizedMessage
-                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
+                callback(false, serverErrorText(e, R.string.ui_kod_dogrulanamadi))
             }
     }
 
@@ -1228,9 +1217,7 @@ class AuthManager {
                     .addOnFailureListener { e -> callback(false, e.localizedMessage) }
             }
             .addOnFailureListener { e ->
-                val msg = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.message
-                    ?: e.localizedMessage
-                callback(false, msg ?: appString(R.string.ui_kod_dogrulanamadi))
+                callback(false, serverErrorText(e, R.string.ui_kod_dogrulanamadi))
             }
     }
     
