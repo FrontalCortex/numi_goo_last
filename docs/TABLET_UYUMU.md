@@ -30,5 +30,7 @@ sorularım, keşfet, kupa yolu listesi ve zorluk penceresi, flaş dersi, kupa yo
 (ödev oynatıcısı; abaküs ayar paneli açılıp kapanıyor, kapalıyken görünmüyor), abaküs dersinde
 ayar paneli ve yanlış cevap paneli, Sobi ekranı, ayarlar, veli paneli (dersler, kural başarısı).
 
-Henüz bakılmayanlar: Sobi testi paneli (haritadaki düğme bu hesapta çıkmadı), plan/Pro ekranları
-(öğretmen hesabında girişi yok). İkisi de alttan açılan panel; pencere ölçüsüne özel kodları yok.
+Sobi testi paneli de doğrulandı (kural sayımını silen sunucu hatası 50db074'te düzeltildikten sonra).
+
+Henüz bakılmayan: plan/Pro ekranları (öğretmen hesabında girişi yok). Alttan açılan panel;
+pencere ölçüsüne özel kodu yok.
