@@ -1,0 +1,825 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Koddan arayüze giden metinler; appString(R.string.x, …) / appPlural(R.plurals.x, sayı, …) ile okunur.
+  %1$s, %2$s… yer tutucuları korunmalı (sıraları cümleye göre değişebilir). Aynı metin tek anahtar:
+  bazı metinler kodda karşılaştırılıyor (ör. AuthManager mesajları), ayrı çevrilmemeli.
+-->
+<resources>
+
+    <!-- AbacusPreferences.kt -->
+    <string name="ui_dis_cerceve">Bingkai luar</string>
+    <string name="ui_ic_zemin">Latar dalam</string>
+    <string name="ui_sag_yansima">Pantulan kanan</string>
+    <string name="ui_kulak_dis">Telinga (luar)</string>
+    <string name="ui_kulak_ic">Telinga (dalam)</string>
+    <string name="ui_govde">Badan</string>
+    <string name="ui_beyaz_alanlar">Bagian putih</string>
+    <string name="ui_burun">Hidung</string>
+    <string name="ui_agiz">Mulut</string>
+    <string name="ui_gozler">Mata</string>
+    <string name="ui_kafa">Kepala</string>
+    <string name="ui_goz_cevresi">Sekitar mata</string>
+    <string name="ui_kulak_dudak">Telinga/Bibir</string>
+    <string name="ui_goz_agiz">Mata/Mulut</string>
+    <string name="ui_yuz">Wajah</string>
+    <string name="ui_goz_burun">Mata/Hidung</string>
+    <string name="ui_ic_kulak">Telinga Dalam</string>
+    <string name="ui_agiz_cevresi">Sekitar Mulut</string>
+    <string name="ui_cizgiler">Garis</string>
+    <string name="ui_govde_kafa">Badan/Kepala</string>
+    <string name="ui_gozler_burun">Mata/Hidung</string>
+    <string name="ui_yuz_agiz">Wajah/Mulut</string>
+    <string name="ui_kulak_ici_detay">Telinga Dalam/Detail</string>
+    <string name="ui_goz">Mata</string>
+    <string name="ui_kulak_ici">Telinga dalam</string>
+    <string name="ui_kulak_disi">Telinga luar</string>
+    <string name="ui_dis">Gigi</string>
+    <string name="ui_kulak_agiz">Telinga/Mulut</string>
+    <string name="ui_kulak">Telinga</string>
+    <string name="ui_biyik">Kumis</string>
+    <string name="ui_cene">Dagu</string>
+    <string name="ui_ana_renk">Warna Utama</string>
+    <string name="ui_golgeler">Bayangan</string>
+    <string name="ui_parlaklik">Kilau</string>
+    <string name="ui_delik_ici">Dalam Lubang</string>
+    <string name="ui_isik">Cahaya</string>
+    <string name="ui_golge">Bayangan</string>
+
+    <!-- AbacusCustomizationFragment.kt -->
+    <string name="ui_yetersiz_anahtar">Kunci tidak cukup</string>
+    <string name="ui_yetersiz_altin">Koin tidak cukup</string>
+    <string name="ui_kayit_hatasi_tekrar_deneyin">Gagal menyimpan. Coba lagi.</string>
+    <string name="ui_islem_basarisiz_tekrar_deneyin">Gagal. Coba lagi.</string>
+    <string name="ui_hata_olustu">Terjadi kesalahan</string>
+    <string name="ui_stokta_kalmadi">Stok habis</string>
+    <string name="ui_kayit_hatasi">Gagal menyimpan</string>
+    <string name="ui_islem_basarisiz">Gagal</string>
+    <string name="ui_bu_boncuktan_kalmadi">Manik ini sudah habis!</string>
+    <string name="ui_renk">Warna</string>
+    <string name="ui_odeme_hatasi">Pembayaran gagal</string>
+    <string name="ui_ahsap_rengi">Warna kayu</string>
+    <string name="ui_yildiz_rengi">Warna bintang</string>
+
+    <!-- AbacusFragment.kt -->
+    <string name="ui_cikarilacak_sayi">Angka yang Dikurangkan</string>
+    <string name="ui_5_gider_kardes_gelir">Kurangi 5. Tambah temannya.</string>
+    <string name="ui_eklenecek_sayi">Angka yang ditambahkan</string>
+    <string name="ui_5_gelir_kardes_gider">Tambah 5. Kurangi temannya.</string>
+    <string name="ui_internet_baglantiniz_yok">Kamu tidak terhubung ke internet.</string>
+    <string name="ui_senin_cevabin_x">Jawabanmu %1$s</string>
+    <string name="ui_dogru_cevap_x">Jawaban benar %1$s</string>
+
+    <!-- AbacusPracticeFragment.kt -->
+    <string name="ui_dogru_cevap_x_2">Jawaban benar: %1$s</string>
+    <string name="ui_senin_cevabin_x_2">Jawabanmu: %1$s</string>
+
+    <!-- AccountSettingsFragment.kt -->
+    <string name="ui_play_store_acilamadi">Play Store tidak bisa dibuka</string>
+
+    <!-- AddFriendFragment.kt -->
+    <string name="ui_yukleniyor">MEMUAT...</string>
+    <string name="ui_daha_fazla_yukle">MUAT LEBIH BANYAK</string>
+    <plurals name="ui_x_sonuc_gosteriliyor">
+        <item quantity="one">Menampilkan %1$s hasil</item>
+        <item quantity="other">Menampilkan %1$s hasil</item>
+    </plurals>
+    <string name="ui_oturum_bilgisi_alinamadi">Info sesi tidak bisa diambil.</string>
+    <string name="ui_zaten_takip_ediyorsunuz">Kamu sudah mengikutinya.</string>
+    <string name="ui_x_takip_edildi">Kamu mengikuti %1$s.</string>
+    <string name="ui_takip_edilemedi_x">Gagal mengikuti: %1$s</string>
+    <string name="ui_hata_x">Kesalahan: %1$s</string>
+
+    <!-- AdManager.kt -->
+    <string name="ui_odul_icin_giris_yapmalisiniz">Kamu harus masuk untuk mendapat hadiah.</string>
+    <string name="ui_reklam_henuz_yuklenmedi_lutfen_bekleyin">Iklan belum dimuat, tunggu sebentar.</string>
+
+    <!-- AdSkipFragment.kt: iki satır alt alta ("titleText1" + "titleText2") -->
+    <string name="ui_x_gunluk_ucretsiz_pro">Uji coba PRO gratis %1$s hari:</string>
+    <string name="ui_denemesiyle_reklamlari_atla">lewati semua iklan!</string>
+    <string name="ui_deneme_suren_sona_ermeden_once_bildirim">Kamu akan mendapat notifikasi sebelum uji coba gratismu berakhir.</string>
+    <string name="ui_pro_ile_reklamsiz">Dengan PRO, belajar tanpa iklan</string>
+    <string name="ui_kesintisiz_ogren">dan tanpa gangguan!</string>
+    <string name="ui_aboneligini_istedigin_zaman_iptal_edebilirsi">Kamu bisa membatalkan langganan kapan saja.</string>
+
+    <!-- AppRatingManager.kt -->
+    <string name="ui_uzgunuz">Maaf 😔</string>
+    <string name="ui_deneyimini_gelistirmek_icin_geri_bildirimine">Kami butuh masukanmu untuk membuat pengalamanmu lebih baik.</string>
+    <string name="ui_geri_bildiriminiz_icin_tesekkurler">Terima kasih atas masukanmu!</string>
+    <string name="ui_lutfen_bir_seyler_yazin">Tolong tulis sesuatu.</string>
+
+    <!-- AskQuestionButtonBinder.kt -->
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar">Akunmu dibatasi permanen karena pelanggaran aturan.</string>
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine">Akunmu dibatasi sampai %1$s karena pelanggaran aturan.</string>
+    <string name="ui_itiraz_et">Ajukan Banding</string>
+    <string name="ui_hesap_kisitlamasi_itirazi">Banding pembatasan akun</string>
+    <string name="ui_merhaba_hesabimin_kisitlanmasina_itiraz_etme">"Halo,\n\nSaya ingin mengajukan banding atas pembatasan akun saya.\n\nID Pengguna: %1$s\n\n"</string>
+
+    <!-- AuthManager.kt -->
+    <string name="ui_e_posta_adresi_girin">Masukkan alamat email</string>
+    <string name="ui_e_posta_gonderilemedi">Email tidak bisa dikirim</string>
+    <string name="ui_kod_dogrulanamadi">Kode tidak bisa diverifikasi</string>
+    <string name="ui_sifre_guncellenemedi">Kata sandi tidak bisa diperbarui</string>
+    <string name="ui_gecersiz_bilgiler">Info tidak valid</string>
+    <string name="ui_token_alinamadi">Token tidak bisa diambil</string>
+    <string name="ui_oturum_acilamadi">Gagal masuk</string>
+    <string name="ui_bu_hesap_ogretmen_hesabi_ogrenci_giris">Akun ini adalah akun guru. Tidak bisa masuk dari layar masuk murid.</string>
+    <string name="ui_google_hesap_bilgisi_alinamadi_lutfen_tekrar">Info akun Google tidak bisa diambil. Coba lagi.</string>
+    <string name="ui_ag_baglanti_hatasi_internet_baglantinizi_kon">Kesalahan jaringan. Periksa koneksi internetmu.</string>
+    <string name="ui_gecersiz_kimlik_bilgisi_web_client_id">Kredensial tidak valid. Periksa apakah Web Client ID sudah benar.</string>
+    <string name="ui_yapilandirma_hatasi_1_web_client_id">"Kesalahan konfigurasi:\n\n1. Apakah Web Client ID benar? (strings.xml)\n2. Apakah sidik jari SHA-1 sudah ditambahkan ke Firebase Console?\n3. Apakah Google Sign-In aktif di Firebase Console?\n\nKesalahan: %1$s"</string>
+    <string name="ui_giris_basarisiz_code_x_x_logcat">"Gagal masuk (Code: %1$s)\n\n%2$s\n\nUntuk info detail, periksa tag \'AuthManager\' di Logcat."</string>
+    <string name="ui_kullanici_bulunamadi">Pengguna tidak ditemukan</string>
+    <string name="ui_giris_bilgileri_dogrulanamadi">Info masuk tidak bisa diverifikasi.</string>
+    <string name="ui_google_hesabi_secilemedi">Akun Google tidak bisa dipilih</string>
+    <string name="ui_kullanici_girisi_iptal_edildi">Proses masuk dibatalkan</string>
+    <string name="ui_yapilandirma_hatasi_web_client_id_eksik">Kesalahan konfigurasi: Web Client ID tidak ada atau salah. Ambil Web Client ID dari Firebase Console lalu tambahkan ke strings.xml.</string>
+    <string name="ui_istek_limiti_asildi_lutfen_daha_sonra">Batas permintaan terlampaui. Coba lagi nanti.</string>
+    <string name="ui_google_girisi_basarisiz_hata_x_x">Gagal masuk dengan Google (Kesalahan: %1$s): %2$s</string>
+    <string name="ui_bu_hesap_ogrenci_degil">Akun ini bukan akun murid</string>
+    <string name="ui_e_posta_dogrulamasi_gerekli_lutfen_e">Verifikasi email diperlukan. Verifikasi emailmu dulu.</string>
+    <string name="ui_kullanici_bilgileri_alinamadi">Info pengguna tidak bisa diambil</string>
+    <string name="ui_sifre_veya_e_posta_hatali">Kata sandi atau email salah</string>
+    <string name="ui_bu_hesap_ogretmen_degil">Akun ini bukan akun guru</string>
+    <string name="ui_bu_e_posta_adresi_zaten_kayitli">Alamat email ini sudah terdaftar. Silakan masuk.</string>
+    <string name="ui_sifre_cok_zayif_daha_guclu_bir">Kata sandi terlalu lemah. Pilih kata sandi yang lebih kuat.</string>
+    <string name="ui_gecersiz_e_posta_adresi">Alamat email tidak valid.</string>
+    <string name="ui_kayit_basarisiz_lutfen_tekrar_deneyin">Pendaftaran gagal. Coba lagi.</string>
+    <string name="ui_kullanici_olusturulamadi">Pengguna tidak bisa dibuat</string>
+    <string name="ui_kayit_basarisiz_x">Pendaftaran gagal: %1$s</string>
+    <string name="ui_gecersiz_veya_suresi_dolmus_kod">Kode tidak valid atau sudah kedaluwarsa</string>
+    <string name="ui_kod_gonderilemedi">Kode tidak bisa dikirim</string>
+
+    <!-- AvatarArt.kt -->
+    <string name="ui_sac">Rambut</string>
+    <string name="ui_sac_rengi">Warna rambut</string>
+    <string name="ui_kiyafet">Pakaian</string>
+
+    <!-- AvatarCustomFragment.kt -->
+    <string name="ui_avatarin_kaydedildi">Avatarmu disimpan</string>
+
+    <!-- BadgeFragment.kt -->
+    <string name="ui_x_dersi_hatasiz_tamamlayarak_kusursuz_odak">Kamu mendapat lencana Fokus Sempurna karena menyelesaikan %1$s pelajaran tanpa salah.</string>
+    <string name="ui_x_dersi_1_gunde_tamamlayarak_sinir">Kamu mendapat lencana Tanpa Batas karena menyelesaikan %1$s pelajaran dalam 1 hari.</string>
+    <string name="ui_x_gunluk_gorev_tamamlayarak_strike_ustasi">Kamu mendapat lencana Master Streak karena menyelesaikan %1$s misi harian.</string>
+    <string name="ui_x_kere_egitmene_danisarak_nokta_atisi">Kamu mendapat lencana Tepat Sasaran karena berkonsultasi dengan tutor %1$s kali.</string>
+    <string name="ui_x_gun_ust_uste_gunluk_soru">Kamu mendapat lencana Pemburu Ulung karena menyelesaikan tantangan Soal Harian %1$s hari berturut-turut.</string>
+    <string name="ui_toplama_kupa_yolunda_x_kupa_kazanarak">Kamu mendapat lencana Dino karena meraih %1$s piala di Jalur Piala Penjumlahan.</string>
+    <string name="ui_x_toplama_ustalik_yolu_adimini_tamamlayarak">Kamu mendapat lencana Badai karena menyelesaikan %1$s langkah Jalur Penguasaan Penjumlahan.</string>
+    <string name="ui_x_cikarma_ustalik_yolu_adimini_tamamlayarak">Kamu mendapat lencana Badai karena menyelesaikan %1$s langkah Jalur Penguasaan Pengurangan.</string>
+    <string name="ui_cikarma_kupa_yolunda_x_kupa_kazanarak">Kamu mendapat lencana Timo karena meraih %1$s piala di Jalur Piala Pengurangan.</string>
+    <string name="ui_carpma_kupa_yolunda_x_kupa_kazanarak">Kamu mendapat lencana Keço karena meraih %1$s piala di Jalur Piala Perkalian.</string>
+    <string name="ui_toplama_kupa_yolu_korleme_de_x">Kamu mendapat lencana Karti karena meraih %1$s piala di Jalur Piala Penjumlahan - Tanpa Sempoa.</string>
+    <string name="ui_cikarma_kupa_yolu_korleme_de_x">Kamu mendapat lencana Sino karena meraih %1$s piala di Jalur Piala Pengurangan - Tanpa Sempoa.</string>
+    <string name="ui_carpma_kupa_yolu_korleme_de_x">Kamu mendapat lencana Kapi karena meraih %1$s piala di Jalur Piala Perkalian - Tanpa Sempoa.</string>
+    <string name="ui_unite_maratonunda_x_olarak_elit_seviye">Kamu mendapat Piala Level Elite karena meraih peringkat ke-%1$s di Maraton Unit.</string>
+    <string name="ui_x_unite_maratonunu_3_yildiz_ile">Kamu mendapat lencana Sabuk Hitam karena menyelesaikan %1$s Maraton Unit dengan 3 bintang.</string>
+    <string name="ui_unite_maratonunda_1_olarak_altin_madalya">Kamu mendapat Medali Emas karena menjadi juara 1 di maraton unit.</string>
+    <string name="ui_unite_maratonunda_2_olarak_gumus_madalya">Kamu mendapat Medali Perak karena menjadi juara 2 di maraton unit.</string>
+    <string name="ui_unite_maratonunda_3_olarak_bronz_madalya">Kamu mendapat Medali Perunggu karena menjadi juara 3 di maraton unit.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_dersi">Untuk mendapat lencana ini, selesaikan 3 pelajaran tanpa salah.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_dersi_2">Untuk mendapat lencana ini, selesaikan 3 pelajaran dalam 1 hari.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_5_gunluk">Untuk mendapat lencana ini, selesaikan 5 misi harian.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_kere">Untuk mendapat lencana ini, berkonsultasilah dengan guru 3 kali.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_gun">Untuk mendapat lencana ini, selesaikan tantangan Soal Harian 3 hari berturut-turut.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_kupa">Untuk mendapat lencana ini, raih 500 piala di Jalur Piala Penjumlahan.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_ustalik">Untuk mendapat lencana ini, selesaikan 1 langkah di Jalur Penguasaan Penjumlahan.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_ustalik">Untuk mendapat lencana ini, selesaikan 1 langkah di Jalur Penguasaan Pengurangan.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_kupa">Untuk mendapat lencana ini, raih 500 piala di Jalur Piala Pengurangan.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_carpma_kupa">Untuk mendapat lencana ini, raih 500 piala di Jalur Piala Perkalian.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_kupa_2">Untuk mendapat lencana ini, raih 500 piala di Jalur Piala Penjumlahan - Tanpa Sempoa.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_kupa_2">Untuk mendapat lencana ini, raih 500 piala di Jalur Piala Pengurangan - Tanpa Sempoa.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_carpma_kupa_2">Untuk mendapat lencana ini, raih 500 piala di Jalur Piala Perkalian - Tanpa Sempoa.</string>
+    <string name="ui_bu_kupayi_kazanmak_icin_unite_maratonunda">Untuk mendapat piala ini, masuklah 100 besar di maraton unit.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_unite_maratonunu">Untuk mendapat lencana ini, selesaikan maraton unit dengan 3 bintang.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite">Untuk mendapat medali ini, jadilah juara 1 di papan peringkat sebuah maraton unit.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite_2">Untuk mendapat medali ini, jadilah juara 2 di papan peringkat sebuah maraton unit.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite_3">Untuk mendapat medali ini, jadilah juara 3 di papan peringkat sebuah maraton unit.</string>
+    <string name="ui_tamamlandi">Selesai!</string>
+
+    <!-- BadgeProgressEngine.kt -->
+    <string name="ui_elit_seviye_kupasi">Piala Level Elite</string>
+    <string name="ui_sampiyonluk_madalyasi">Medali Juara</string>
+    <string name="ui_gumus_madalya">Medali Perak</string>
+    <string name="ui_siyah_kusak">Sabuk Hitam</string>
+    <string name="ui_strike_ustasi">Master Streak</string>
+    <string name="ui_derin_avci">Pemburu Ulung</string>
+    <string name="ui_nokta_atisi">Tepat Sasaran</string>
+    <string name="ui_sinir_tanimaz">Tanpa Batas</string>
+    <string name="ui_kasirga">Badai</string>
+    <string name="ui_yanardag">Gunung Api</string>
+    <string name="ui_keci">Kambing</string>
+
+    <!-- BillingManager.kt: iki parça art arda eklenir -->
+    <string name="ui_urun_su_anda_alinamiyor_daha_sonra">Produk ini tidak bisa dibeli sekarang. Coba lagi nanti.</string>
+    <string name="ui_abonelik_teklifi_bulunamadi">Penawaran langganan tidak ditemukan.</string>
+    <string name="ui_satin_alma_baslatilamadi">Pembelian tidak bisa dimulai.</string>
+    <string name="ui_satin_alma_tamamlanamadi">Pembelian tidak bisa diselesaikan.</string>
+    <string name="ui_bu_abonelik_bu_cihazdaki_google_play">"Langganan ini terhubung ke akun Sorobit lain milik akun Google Play "</string>
+    <string name="ui_hesabina_tanimli_aboneligi_o_hesapla_kullana">di perangkat ini. Kamu bisa memakai langganan itu dengan akun tersebut.</string>
+    <string name="ui_satin_alma_dogrulanamadi_uygulamayi_tekrar_a">Pembelian tidak bisa diverifikasi. Akan dicoba lagi saat kamu membuka aplikasi lagi.</string>
+
+    <!-- BlindingLessonFragment.kt -->
+    <string name="ui_gunluk_soru">Soal Harian</string>
+    <string name="ui_kupa_modu">Mode Piala</string>
+    <string name="ui_kupa_zorlugu">Kesulitan Piala</string>
+
+    <!-- BunnyMascotView.kt -->
+    <string name="ui_atla">Lewati</string>
+    <plurals name="ui_x_gun">
+        <item quantity="one">%1$s hari</item>
+        <item quantity="other">%1$s hari</item>
+    </plurals>
+    <string name="ui_gun">\? hari</string>
+    <string name="ui_hiyaa">HIAAT!</string>
+
+    <!-- ChestCrystalPolicy.kt -->
+    <string name="ui_x_altin">%1$s koin</string>
+
+    <!-- CreateQuestionFragment.kt -->
+    <string name="ui_video_bulunamadi">Video tidak ditemukan.</string>
+    <string name="ui_ekran_goruntusu_alinamadi">Tangkapan layar tidak bisa diambil.</string>
+    <string name="ui_ekran_goruntusu_bulunamadi">Tangkapan layar tidak ditemukan.</string>
+    <string name="ui_lutfen_baslik_yazin">Tolong tulis judul.</string>
+    <string name="ui_lutfen_aciklama_yazin">Tolong tulis penjelasan.</string>
+    <string name="ui_oturum_acik_degil">Kamu belum masuk.</string>
+    <string name="ui_soru_gonderildi">Pertanyaan terkirim.</string>
+    <string name="ui_yukleme_hatasi_x">Gagal mengunggah: %1$s</string>
+    <string name="ui_video_yukleme_hatasi">Gagal mengunggah video.</string>
+    <string name="ui_video_yukleme_hatasi_x">Gagal mengunggah video: %1$s</string>
+    <string name="ui_danisma_kredin_kalmadi_magazadan_kredi_alabi">Kredit konsultasimu habis. Kamu bisa membeli kredit di toko.</string>
+    <string name="ui_gonderilemedi_x">Gagal mengirim: %1$s</string>
+
+    <!-- CupFragment.kt -->
+    <string name="ui_bilgelik_kupasi">Piala Kebijaksanaan</string>
+    <string name="ui_tum_sorular_senin_zekanla_boy_olcustu">Semua soal menantang kecerdasanmu, tapi kamulah pemenangnya</string>
+    <string name="ui_zirve_senin_bu_basari_tesaduf_degil">Puncak milikmu, keberhasilan ini bukan kebetulan!</string>
+    <string name="ui_mukemmel_bir_is_cikardin">Kerjamu luar biasa!</string>
+    <string name="ui_bu_seviye_sadece_cok_calisanlarin_ulasabildi">Level ini hanya bisa dicapai oleh mereka yang rajin berlatih.</string>
+    <string name="ui_sen_artik_bu_konunun_ustasisin_neyi">Sekarang kamu ahli di topik ini – apa yang tidak bisa kamu capai?</string>
+    <string name="ui_usta_kupasi">Piala Master</string>
+    <string name="ui_gercek_ustalik_bilgi_sabir_ve_kararlilikla">Keahlian sejati datang dari ilmu, kesabaran, dan tekad. Selamat!</string>
+    <string name="ui_gayet_iyi">Bagus sekali!</string>
+    <string name="ui_biraz_daha_pratikle_zirveye_ulasman_an">Sedikit latihan lagi, dan kamu pasti sampai di puncak.</string>
+    <string name="ui_azmin_gucuyle_her_adim_seni_daha">Dengan semangatmu, setiap langkah membawamu makin jauh!</string>
+    <string name="ui_cok_iyi_gidiyorsun_birkac_adim_sonra">Kamu hebat! Beberapa langkah lagi kamu sampai di puncak.</string>
+    <string name="ui_gelisimin_fark_ediliyor_pes_etme_devam">Kemajuanmu terlihat. Jangan menyerah, terus maju!</string>
+    <string name="ui_deneyim_kupasi">Piala Pengalaman</string>
+    <string name="ui_her_usta_bir_zamanlar_amatordu_sen">Setiap ahli dulunya pemula. Kamu juga sedang di jalan yang benar!</string>
+    <string name="ui_cesaret_ettin_basladin_bu_en_onemli">Kamu berani memulai. Itu langkah yang paling penting.</string>
+    <string name="ui_unutma_basari_tekrar_tekrar_denemekten_gecer">Ingat, keberhasilan datang dari mencoba lagi dan lagi!</string>
+    <string name="ui_bugun_attigin_adim_yarinin_basarisini_baslat">Langkahmu hari ini memulai keberhasilanmu besok.</string>
+    <string name="ui_ayip_olmasin_diye_bu_kupayi_verdik">Piala ini kami berikan supaya kamu tidak kecewa.</string>
+    <string name="ui_biraz_fazla_mi_yavas_oldu_ne">Agak terlalu lambat, ya?</string>
+    <string name="ui_yanii_hic_yapmamis_olmaktan_iyi">Yah.. Lebih baik daripada tidak sama sekali.</string>
+    <string name="ui_en_azindan_ekrani_actin_bu_da">Setidaknya kamu sudah membuka layarnya, itu sudah sesuatu.</string>
+    <string name="ui_kupayi_biz_de_pek_vermek_istemedik">Sebenarnya kami juga agak berat memberikan pialanya, tapi...</string>
+    <string name="ui_kupa_geldi_ama_vicdanimiz_biraz_sizladi">Pialanya datang, tapi hati kami agak berat.</string>
+
+    <!-- CupHistoryFragment.kt -->
+    <string name="ui_haftalik">Mingguan</string>
+    <string name="ui_aylik">Bulanan</string>
+    <string name="ui_yillik">Tahunan</string>
+    <string name="ui_tum_zamanlar">Sepanjang Masa</string>
+
+    <!-- CupPathRewardRepository.kt -->
+    <string name="ui_tamamlandi_2">Selesai</string>
+    <string name="ui_sandik_hazir">Peti siap!</string>
+    <string name="ui_cikarma_kupa_yolu">Jalur Piala Pengurangan</string>
+    <string name="ui_carpma_kupa_yolu">Jalur Piala Perkalian</string>
+    <string name="ui_toplama_kupa_yolu_korleme">Jalur Piala Penjumlahan - Tanpa Sempoa</string>
+    <string name="ui_cikarma_kupa_yolu_korleme">Jalur Piala Pengurangan - Tanpa Sempoa</string>
+    <string name="ui_carpma_kupa_yolu_korleme">Jalur Piala Perkalian - Tanpa Sempoa</string>
+
+    <!-- CupPathRoadFragment.kt -->
+    <string name="ui_bu_sandigi_zaten_aldin">Kamu sudah mengambil peti ini</string>
+    <string name="ui_x_kupaya_ulasinca_acilir">Terbuka setelah mencapai %1$s piala</string>
+
+    <!-- EditProfileFragment.kt -->
+    <string name="ui_ad_bos_birakilamaz">Nama tidak boleh kosong.</string>
+    <string name="ui_kaydediliyor">MENYIMPAN...</string>
+    <string name="ui_firestore_guncellenemedi">Firestore tidak bisa diperbarui.</string>
+    <string name="ui_auth_profil_guncellenemedi">Profil Auth tidak bisa diperbarui.</string>
+    <string name="ui_parola_en_az_6_karakter_olmalidir">Kata sandi minimal 6 karakter.</string>
+    <string name="ui_parola_basariyla_guncellendi">Kata sandi berhasil diperbarui.</string>
+    <string name="ui_guvenlik_nedeniyle_parolayi_degistirmek_icin">Demi keamanan, masuk lagi untuk mengganti kata sandi.</string>
+    <string name="ui_parola_guncellenemedi_x">Kata sandi tidak bisa diperbarui: %1$s</string>
+    <string name="ui_degisiklikler_kaydedildi">Perubahan disimpan.</string>
+    <string name="ui_degisiklikleri_kaydet">SIMPAN PERUBAHAN</string>
+    <string name="ui_hesabi_sil">Hapus Akun</string>
+    <string name="ui_hesabinizi_kalici_olarak_silmek_istediginize">Yakin ingin menghapus akunmu secara permanen? Tindakan ini tidak bisa dibatalkan.</string>
+    <string name="ui_sil">HAPUS</string>
+    <string name="ui_iptal">BATAL</string>
+    <string name="ui_hesabiniz_ve_iliskili_verileriniz_siliniyor">Akunmu dan data terkait sedang dihapus...</string>
+    <string name="ui_hesabiniz_basariyla_silindi">Akunmu berhasil dihapus.</string>
+    <string name="ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen">Demi keamanan, masuk lagi lalu segera coba hapus akunnya.</string>
+
+    <!-- EmailVerificationActivity.kt -->
+    <string name="ui_gonderiliyor">Mengirim...</string>
+    <string name="ui_e_postayi_tekrar_gonder">Kirim Ulang Email</string>
+    <string name="ui_dogrulama_kodu_tekrar_gonderildi">Kode verifikasi dikirim ulang</string>
+    <string name="ui_lutfen_dogrulama_kodunu_girin">Masukkan kode verifikasi</string>
+    <string name="ui_kod_6_haneli_olmalidir">Kode harus 6 digit</string>
+    <string name="ui_dogrulaniyor">Memverifikasi...</string>
+    <string name="ui_kodu_dogrula">Verifikasi Kode</string>
+    <string name="ui_kayit_basarili_giris_yapabilirsiniz">Pendaftaran berhasil! Kamu sudah bisa masuk.</string>
+    <string name="ui_kod_dogrulanamadi_lutfen_tekrar_deneyin">Kode tidak bisa diverifikasi. Coba lagi.</string>
+
+    <!-- FeedbackFragment.kt -->
+    <string name="ui_son_1_saat_icinde_cok_fazla">Kamu sudah mengirim terlalu banyak laporan dalam 1 jam terakhir. Coba lagi nanti.</string>
+    <string name="ui_gorusleriniz_basariyla_iletildi_tesekkurler">Pendapatmu berhasil dikirim. Terima kasih!</string>
+
+    <!-- FollowersFollowingFragment.kt -->
+    <string name="ui_takip_edilen">MENGIKUTI</string>
+    <string name="ui_takipci">PENGIKUT</string>
+    <string name="ui_henuz_kimseyi_takip_etmiyorsun">Kamu belum mengikuti siapa pun</string>
+    <string name="ui_henuz_takipcin_yok">Kamu belum punya pengikut</string>
+    <string name="ui_avatar_yuklenemedi_x">Avatar tidak bisa dimuat: %1$s</string>
+    <string name="ui_yuklenemedi_x">Tidak bisa dimuat: %1$s</string>
+    <string name="ui_x_takip_edildi_2">Kamu mengikuti %1$s</string>
+    <string name="ui_x_adli_kullaniciyi_takip_etmeyi_birakmak">Kamu mau berhenti mengikuti %1$s?</string>
+    <string name="ui_takibi_birak">Berhenti mengikuti</string>
+    <string name="ui_iptal_2">Batal</string>
+    <string name="ui_x_takipten_cikarildi">Kamu berhenti mengikuti %1$s</string>
+
+    <!-- GuideHelper.kt -->
+    <string name="ui_bu_testte_toplama_islemini_abakuste_yapacaks">Di kuis ini kamu akan menjumlahkan di sempoa.</string>
+    <string name="ui_once_abakuse_ilk_sayiyi_yazip">Pertama tulis angka pertama di sempoa...</string>
+    <string name="ui_sonrasinda_ikinci_sayiyi_ekle">Setelah itu tambahkan angka kedua.</string>
+    <string name="ui_ve_islem_bitince_kontrol_et_butonuna">lalu setelah selesai, ketuk tombol periksa.</string>
+    <string name="ui_sakin_aklindan_toplayip_o_sayiyi_abakuse">Jangan menjumlahkan di kepala lalu menulis hasilnya di sempoa. Dengan cara itu kamu tidak akan belajar.</string>
+    <string name="ui_kurallari_unutursan_sagdaki_sihirli_degneye">Kalau kamu lupa rumusnya, ketuk tongkat ajaib di kanan untuk membuka tabel rumus.</string>
+    <string name="ui_burada_derste_ogrendigin_sayilar_ve_kardesle">Di sini ditampilkan angka yang kamu pelajari dan teman-temannya.</string>
+    <string name="ui_kurallari_unutursan_sag_ustteki_kitaba_tikla">Kalau kamu lupa rumusnya, ketuk buku di kanan atas untuk membuka buku rumus.</string>
+    <string name="ui_burada_ogrendigin_kurallar_yer_alir">Di sini ada rumus-rumus yang sudah kamu pelajari.</string>
+    <string name="ui_kurallar_kitabina_tikladiginda_ekrana_gelen">Setelah membuka buku rumus, ketuk salah satu rumus yang muncul untuk menaruh tabelnya di atas sempoa.</string>
+    <string name="ui_kurallar_kitabina_tikla">Ketuk buku rumus.</string>
+    <string name="ui_ekrana_gelen_kurallardan_herhangi_birisini_s">Pilih salah satu rumus yang muncul.</string>
+    <string name="ui_eger_tahtada_gosterilen_sayiyi_hemen_gecmek">Kalau kamu ingin langsung melewati angka di papan, ketuk tombol panah di kanan bawah.</string>
+    <string name="ui_bu_butona_tahtada_bir_sayi_varken">Kalau kamu menekan tombol ini saat ada angka di papan, kamu langsung pindah ke angka berikutnya.</string>
+    <string name="ui_abakusun_boyutunu_sag_alttaki_olcekleme_buto">Kamu bisa mengatur ukuran sempoa dengan tombol skala di kanan bawah.</string>
+
+    <!-- ImageAnnotateDialogFragment.kt -->
+    <string name="ui_resim_bulunamadi">Gambar tidak ditemukan.</string>
+    <string name="ui_kaydedilemedi">Tidak bisa disimpan.</string>
+
+    <!-- LearningPathPlan.kt -->
+    <string name="ui_bugun">HARI INI</string>
+
+    <!-- LessonAdapter.kt -->
+    <string name="ui_unite_maratonu">MARATON UNIT</string>
+    <string name="ui_ders">PELAJARAN</string>
+    <string name="ui_rekor_x">Rekor: %1$s</string>
+    <string name="ui_tekrar_dene">Coba lagi</string>
+    <string name="ui_gozden_gecir">Tinjau</string>
+    <string name="ui_devam_et">Lanjut</string>
+    <string name="ui_basla">Mulai</string>
+    <string name="ui_kilidi_acmak_icin_onceki_dersleri_tamamla">Selesaikan pelajaran sebelumnya untuk membuka kunci.</string>
+    <string name="ui_kilitli">Terkunci</string>
+    <string name="ui_sayi_gosterilme_periyodu_x_saniye">Angka ditampilkan setiap %1$s detik</string>
+    <string name="ui_baslat">MULAI</string>
+
+    <!-- LessonResultFalse.kt -->
+    <string name="ui_puan_500_den_dusuk">Skor di bawah 500!</string>
+    <string name="ui_basari_orani_75_ten_dusuk" formatted="false">Persentase keberhasilan di bawah 75%!</string>
+
+    <!-- LoginActivity.kt -->
+    <string name="ui_lutfen_e_posta_girin">Masukkan email</string>
+    <string name="ui_gecerli_bir_e_posta_adresi_girin">Masukkan alamat email yang valid</string>
+    <string name="ui_devam_et_2">Lanjut</string>
+    <string name="ui_google_girisi_baslatilamadi">Masuk dengan Google tidak bisa dimulai</string>
+    <string name="ui_google_girisi_baslatilamadi_x">Masuk dengan Google tidak bisa dimulai: %1$s</string>
+    <string name="ui_google_girisi_basarisiz_x">Gagal masuk dengan Google: %1$s</string>
+    <string name="ui_google_girisi_basarisiz">Gagal masuk dengan Google</string>
+
+    <!-- MainActivity.kt -->
+    <string name="ui_ses_kaydi_icin_izin_gerekli">Perlu izin untuk merekam suara.</string>
+    <string name="ui_ekran_kaydi_baslatilamadi">Perekaman layar tidak bisa dimulai.</string>
+    <string name="ui_cikmak_icin_tekrar_bas">Tekan lagi untuk keluar</string>
+    <string name="ui_goruntu_alinamadi">Gambar tidak bisa diambil.</string>
+    <string name="ui_lutfen_bir_soru_secin">Pilih satu pertanyaan.</string>
+    <string name="ui_sohbete_gonderildi">Terkirim ke obrolan.</string>
+    <string name="ui_durdur">Berhenti</string>
+    <string name="ui_kayit_basarisiz">Perekaman gagal.</string>
+    <string name="ui_ekran_kaydi_bu_cihazda_baslatilamadi">Perekaman layar tidak bisa dimulai di perangkat ini.</string>
+    <string name="ui_dun_calisamadin_ama_seri_dondurman_serini">Kemarin kamu tidak belajar, tapi pembeku streak menjaga streak-mu!</string>
+    <string name="ui_seri_dondurman_bir_gunu_kapatti_ama">Pembeku streak menutup satu hari, tapi karena kamu absen dua hari berturut-turut, streak-mu putus.</string>
+    <string name="ui_bugunku_hedefini_tamamladin">Kamu sudah menyelesaikan target hari ini!</string>
+    <string name="ui_serin_basladi">Streak-mu dimulai</string>
+    <string name="ui_x_gunluk_seri">Streak %1$s hari</string>
+
+    <!-- MapFragment.kt -->
+    <string name="ui_unite_maratonunda_hatasiz_en_hizli_cozumler">Di maraton unit, penyelesaian tercepat tanpa salah dicatat.</string>
+    <string name="ui_unite_maratonu_panelindeki_rekor_a_tiklayara">Ketuk Rekor di panel maraton unit untuk melihat papan peringkat dan peringkatmu.</string>
+
+    <!-- MissionRewardRevealDialogFragment.kt -->
+    <string name="ui_0_altin">0 koin</string>
+    <string name="ui_odul_alinamadi_tekrar_deneyin">Hadiah tidak bisa diambil. Coba lagi.</string>
+
+    <!-- MessageReport.kt -->
+    <string name="ui_taciz_veya_zorbalik">Pelecehan atau perundungan</string>
+    <string name="ui_uygunsuz_icerik">Konten tidak pantas</string>
+    <string name="ui_diger">Lainnya</string>
+
+    <!-- RulesFragment.kt -->
+    <string name="ui_eklenecek_sayi_2">Angka yang Ditambahkan</string>
+
+    <!-- NewChestFragment.kt -->
+    <string name="ui_efsanevi">LEGENDARIS</string>
+    <string name="ui_sandik_acilamadi_tekrar_deneyin">Peti tidak bisa dibuka. Coba lagi.</string>
+    <string name="ui_sandigi_acmak_icin_dokun">Ketuk untuk membuka peti!</string>
+
+    <!-- NewStreakFragment.kt -->
+    <string name="ui_simdi_bir_ogrenme_aliskanligi_kazanmana_yard">Sekarang ayo bantu kamu membangun kebiasaan belajar.</string>
+    <string name="ui_kac_gun_ust_uste_ogreneceksin">Berapa hari berturut-turut kamu akan belajar?</string>
+    <string name="ui_gunde_x_dakika_bu_secim_seri">%1$s menit sehari. Pilihan ini tidak berubah selama streak.</string>
+    <string name="ui_x_altin_2">+%1$s koin</string>
+
+    <!-- NotificationFragment.kt -->
+    <string name="ui_sorularim">Pertanyaanku</string>
+    <string name="ui_giris_yapin">Silakan masuk.</string>
+    <string name="ui_henuz_soru_yok">Belum ada pertanyaan</string>
+    <string name="ui_henuz_sohbet_yok">Belum ada obrolan.</string>
+    <string name="ui_bekleyen_rapor_yok">Tidak ada laporan yang menunggu.</string>
+    <string name="ui_ses_kaydini_dinlemek_icin_oynat">Putar untuk mendengarkan rekaman suara</string>
+    <string name="ui_ses_oynatilamadi">Suara tidak bisa diputar.</string>
+    <string name="ui_rapor_reddedildi">Laporan ditolak.</string>
+    <string name="ui_islem_basarisiz_2">Gagal.</string>
+    <string name="ui_kullanici_kisitlandi">Pengguna dibatasi.</string>
+    <string name="ui_islem_basarisiz_x">Gagal: %1$s</string>
+    <string name="ui_kisitli_kullanici_yok">Tidak ada pengguna yang dibatasi.</string>
+    <string name="ui_kisitlamayi_kaldir">Cabut pembatasan</string>
+    <string name="ui_x_kullanicisinin_kisitlamasi_kaldirilsin_mi">Cabut pembatasan pengguna %1$s?</string>
+    <string name="ui_kaldir">Cabut</string>
+    <string name="ui_kisitlama_kaldirildi">Pembatasan dicabut.</string>
+    <string name="ui_kalici_ban">Blokir permanen</string>
+    <string name="ui_bu_kisitlamanin_kaynagi_hakkinda_bilgi_yok">Tidak ada info tentang asal pembatasan ini.</string>
+    <string name="ui_x_tarihinde_kisitlandi">Dibatasi pada %1$s</string>
+    <string name="ui_x_tarihinde_x_tarafindan_kisitlandi">Dibatasi pada %1$s oleh %2$s</string>
+    <string name="ui_kisitli">Dibatasi</string>
+    <string name="ui_suresi_doldu">Kedaluwarsa</string>
+    <plurals name="ui_x_gun_kaldi">
+        <item quantity="one">%1$s hari lagi</item>
+        <item quantity="other">%1$s hari lagi</item>
+    </plurals>
+    <plurals name="ui_x_saat_kaldi">
+        <item quantity="one">%1$s jam lagi</item>
+        <item quantity="other">%1$s jam lagi</item>
+    </plurals>
+    <string name="ui_1_saatten_az_kaldi">Kurang dari 1 jam lagi</string>
+    <string name="ui_bekleyen_soru_yok">Tidak ada pertanyaan yang menunggu.</string>
+    <string name="ui_cozulen_soru_yok">Tidak ada pertanyaan yang terjawab.</string>
+    <string name="ui_cozuldu_olarak_isaretlenen_sorulari_silebili">Kamu bisa menghapus pertanyaan yang ditandai terjawab.</string>
+    <string name="ui_soruyu_silmek_istedigine_emin_misin">Yakin ingin menghapus pertanyaan ini</string>
+    <string name="ui_bu_islem_geri_alinamaz">Tindakan ini tidak bisa dibatalkan.</string>
+    <string name="ui_listeden_kaldirildi">Dihapus dari daftar.</string>
+    <string name="ui_kaldirilamadi">Tidak bisa dihapus.</string>
+    <string name="ui_soruyu_silmek_istedigine_emin_misin_2">Yakin ingin menghapus pertanyaan ini?</string>
+    <string name="ui_bu_islem_geri_alinamaz_soruyu_sildiginde">Tindakan ini tidak bisa dibatalkan. Setelah dihapus, kamu tidak bisa membuka pertanyaan ini lagi.</string>
+    <string name="ui_sil_2">Hapus</string>
+    <string name="ui_soru_silindi">Pertanyaan dihapus.</string>
+    <string name="ui_silinemedi">Tidak bisa dihapus.</string>
+    <string name="ui_soru_cevaplanmadi">Pertanyaan belum dijawab</string>
+    <string name="ui_bu_soru_48_saat_icinde_cevaplanmadi">Pertanyaan ini tidak dijawab dalam 48 jam dan kreditmu sudah dikembalikan. Bertanya lagi memakai 1 kredit.</string>
+    <string name="ui_vazgec">Batal</string>
+    <string name="ui_tekrar_sor">Tanya lagi</string>
+    <string name="ui_soru_tekrar_gonderildi">Pertanyaan dikirim ulang.</string>
+    <string name="ui_cozulen_sorulara_mesaj_gonderemezsin">Kamu tidak bisa mengirim pesan ke pertanyaan yang sudah terjawab.</string>
+
+    <!-- OfflineFragment.kt -->
+    <string name="ui_hala_cevrimdisisiniz_lutfen_baglantinizi_kon">Kamu masih offline. Periksa koneksimu.</string>
+
+    <!-- OtpVerificationFragment.kt -->
+    <string name="ui_sifre_sifirlama">Atur ulang kata sandi</string>
+    <string name="ui_hesap_olustur">Buat akun</string>
+    <string name="ui_e_postani_dogrula">Verifikasi emailmu</string>
+    <string name="ui_dogrula">Verifikasi</string>
+    <string name="ui_kod_tekrar_gonderildi">Kode dikirim ulang</string>
+
+    <!-- ParentPanelFragment.kt -->
+    <string name="ui_ilerleme_bilgisi_alinamadi_internet_baglanti">Info kemajuan tidak bisa diambil. Periksa koneksi internet lalu coba lagi.</string>
+    <string name="ui_ilerleme_bilgisi_alinamadi">Info kemajuan tidak bisa diambil.</string>
+    <string name="ui_henuz_baslanmis_bir_ders_yok_cocugunuz">Belum ada pelajaran yang dimulai. Kemajuan anak akan muncul di sini setelah ia membuka pelajaran pertama.</string>
+
+    <!-- ParentReportAdapter.kt: üç cümle art arda eklenir (baştaki boşluklar bu yüzden) -->
+    <string name="ui_mufredattaki_x_dersten_x_tanesi_tamamlandi">%2$s dari %1$s pelajaran di kurikulum sudah selesai.</string>
+    <string name="ui_toplam_calisma_suresi_x">" Total waktu belajar %1$s."</string>
+    <string name="ui_en_cok_denemeyi_gerektiren_ders_x">" Pelajaran dengan percobaan terbanyak: %1$s (%2$s percobaan)."</string>
+    <string name="ui_bolum_x">Bagian %1$s</string>
+    <string name="ui_bolum_x_x">Bagian %1$s - %2$s</string>
+    <string name="ui_x_x_ders_bitti">%1$s/%2$s pelajaran selesai</string>
+    <string name="ui_x_x_ders">%1$s/%2$s pelajaran</string>
+    <plurals name="ui_x_adim">
+        <item quantity="one">%1$s langkah</item>
+        <item quantity="other">%1$s langkah</item>
+    </plurals>
+    <string name="ui_devam_ediyor_x_x_adim_gecildi">Sedang berjalan · %1$s/%2$s langkah lulus</string>
+    <string name="ui_adim_x">Langkah %1$s</string>
+    <string name="ui_ilk_denemede_gecti">Lulus di percobaan pertama</string>
+    <string name="ui_x_denemede_gecti">Lulus di percobaan ke-%1$s</string>
+    <string name="ui_baslandi">Sudah dimulai</string>
+    <plurals name="ui_deniyor_x_basarisiz_deneme">
+        <item quantity="one">Sedang mencoba · %1$s percobaan gagal</item>
+        <item quantity="other">Sedang mencoba · %1$s percobaan gagal</item>
+    </plurals>
+    <string name="ui_sirasi_gelmedi">Belum gilirannya</string>
+
+    <!-- ParentReportRepository.kt -->
+    <string name="ui_abakusun_temeli_ve_toplama">Dasar Sempoa dan Penjumlahan</string>
+    <string name="ui_abakuste_cikarma">Pengurangan di Sempoa</string>
+    <string name="ui_abakuste_carpma">Perkalian di Sempoa</string>
+    <string name="ui_korleme_toplama">Penjumlahan Tanpa Sempoa</string>
+    <string name="ui_korleme_cikarma">Pengurangan Tanpa Sempoa</string>
+    <string name="ui_korleme_carpma">Perkalian Tanpa Sempoa</string>
+    <string name="ui_paz">Min</string>
+    <string name="ui_pzt">Sen</string>
+    <string name="ui_sal">Sel</string>
+    <string name="ui_car">Rab</string>
+    <string name="ui_per">Kam</string>
+    <string name="ui_cum">Jum</string>
+    <string name="ui_cmt">Sab</string>
+
+    <!-- PartCardAdapter.kt -->
+    <string name="ui_ustalik_yolu_toplama">Jalur Penguasaan - Penjumlahan</string>
+    <string name="ui_ustalik_yolu_cikarma">Jalur Penguasaan - Pengurangan</string>
+
+    <!-- PartSelectionFragment.kt -->
+    <string name="ui_abakusun_temeli_ve_toplama_kismini_bitir">Selesaikan bagian Dasar Sempoa dan Penjumlahan.</string>
+    <string name="ui_abakuste_cikarma_kismini_bitir">Selesaikan bagian Pengurangan di Sempoa.</string>
+    <string name="ui_abakuste_carpma_kismini_bitir">Selesaikan bagian Perkalian di Sempoa.</string>
+    <string name="ui_bu_kismi_acmak_icin_plani_pro">Tingkatkan paketmu ke Pro untuk membuka bagian ini.</string>
+    <string name="ui_abakuste_toplama_kismini_bitir">Selesaikan bagian Penjumlahan di Sempoa.</string>
+    <string name="ui_toplama_ustaligi">Penguasaan Penjumlahan</string>
+    <string name="ui_cikarma_ustaligi">Penguasaan Pengurangan</string>
+
+    <!-- ProDiffirentFragment.kt -->
+    <string name="ui_pro_ile_daha_hizli_ogren_daha">Dengan Pro, belajar lebih cepat dan berlatih lebih banyak!</string>
+
+    <!-- ProfileFragment.kt -->
+    <string name="ui_google_ile_kimlik_dogrulama_basarisiz_x">Verifikasi dengan Google gagal: %1$s</string>
+    <string name="ui_kullanici">Pengguna</string>
+    <string name="ui_x_x_yilinda_katildi">\@%1$s • BERGABUNG SEJAK %2$s</string>
+    <string name="ui_x_yilinda_katildi">BERGABUNG SEJAK %1$s</string>
+    <string name="ui_hesaplaniyor">Menghitung...</string>
+    <string name="ui_x_tamamlandi">%1$s%% selesai</string>
+    <plurals name="ui_en_uzun_seri_x_gun">
+        <item quantity="one">Streak terpanjang: %1$s hari</item>
+        <item quantity="other">Streak terpanjang: %1$s hari</item>
+    </plurals>
+    <string name="ui_en_uzun_seri_0_gun">Streak terpanjang: 0 hari</string>
+    <string name="ui_takip_ediliyor">MENGIKUTI</string>
+    <string name="ui_takip_et">IKUTI</string>
+    <string name="ui_takip_birakildi">Berhenti mengikuti.</string>
+    <string name="ui_takip_edildi">Kamu mengikutinya!</string>
+    <string name="ui_sadece_1_adet_boncugun_var">Kamu hanya punya 1 manik</string>
+    <string name="ui_x_gun_x_saat_x_dakika">%1$s Hari %2$s jam %3$s menit</string>
+    <string name="ui_x_saat_x_dakika">%1$s jam %2$s menit</string>
+    <plurals name="ui_x_dakika">
+        <item quantity="one">%1$s menit</item>
+        <item quantity="other">%1$s menit</item>
+    </plurals>
+    <string name="ui_dogrulama_e_postasi_gonderildi_e_postanizi">Email verifikasi sudah dikirim. Kembali ke layar ini setelah memverifikasi emailmu.</string>
+    <string name="ui_e_posta_gonderilemedi_x">Email tidak bisa dikirim: %1$s</string>
+    <string name="ui_e_posta_basariyla_dogrulandi">Email berhasil diverifikasi!</string>
+    <string name="ui_kullanici_adi">Nama Pengguna</string>
+    <string name="ui_profili_duzenle">Edit Profil</string>
+    <string name="ui_kaydet">Simpan</string>
+    <string name="ui_kullanici_adi_bos_olamaz">Nama pengguna tidak boleh kosong</string>
+    <string name="ui_kullanici_adi_guncellendi">Nama pengguna diperbarui</string>
+    <string name="ui_kullanici_adi_guncellenemedi_x">Nama pengguna tidak bisa diperbarui: %1$s</string>
+    <string name="ui_yeni_sifre">Kata Sandi Baru</string>
+    <string name="ui_sifre_degistir">Ganti Kata Sandi</string>
+    <string name="ui_yeni_sifrenizi_girin_en_az_6">Masukkan kata sandi baru (minimal 6 karakter)</string>
+    <string name="ui_degistir">Ganti</string>
+    <string name="ui_sifre_en_az_6_karakter_olmali">Kata sandi minimal 6 karakter</string>
+    <string name="ui_google_hesabi_ile_giris_yaptiniz_sifre">Kamu masuk dengan akun Google. Kata sandi tidak bisa diganti.</string>
+    <string name="ui_sifre_basariyla_degistirildi">Kata sandi berhasil diganti</string>
+    <string name="ui_sifre_degistirilemedi_x">Kata sandi tidak bisa diganti: %1$s</string>
+    <string name="ui_cikis_yap">Keluar</string>
+    <string name="ui_cikis_yapmak_istediginize_emin_misiniz">Yakin ingin keluar?</string>
+    <string name="ui_evet">Ya</string>
+    <string name="ui_hayir">Tidak</string>
+    <string name="ui_hesabinizi_silmek_istediginize_emin_misiniz">Yakin ingin menghapus akunmu? Tindakan ini tidak bisa dibatalkan!</string>
+    <string name="ui_evet_sil">Ya, Hapus</string>
+    <string name="ui_sifrenizi_girin">Masukkan kata sandimu</string>
+    <string name="ui_hesabinizi_silmek_icin_sifrenizi_girin">Masukkan kata sandimu untuk menghapus akun</string>
+    <string name="ui_onayla">Konfirmasi</string>
+    <string name="ui_sifre_bos_olamaz">Kata sandi tidak boleh kosong</string>
+    <string name="ui_kimlik_dogrulama_basarisiz_x">Verifikasi gagal: %1$s</string>
+    <string name="ui_hesap_basariyla_silindi">Akun berhasil dihapus</string>
+    <string name="ui_toplama">Penjumlahan</string>
+    <string name="ui_cikarma">Pengurangan</string>
+    <string name="ui_carpma">Perkalian</string>
+
+    <!-- QuestionChatFragment.kt -->
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar_2">Akunmu dibatasi permanen karena pelanggaran aturan. Kamu tidak bisa mengirim pesan.</string>
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine_2">Akunmu dibatasi sampai %1$s karena pelanggaran aturan. Kamu tidak bisa mengirim pesan.</string>
+    <string name="ui_hesabiniz_kisitlanmistir_mesaj_gonderemezsin">Akunmu dibatasi. Kamu tidak bisa mengirim pesan.</string>
+    <string name="ui_tekrar_gonderilemedi">Tidak bisa dikirim ulang.</string>
+    <string name="ui_gonderim_iptal_edildi">Pengiriman dibatalkan.</string>
+    <string name="ui_mesaj_herkesten_silindi">Pesan dihapus untuk semua orang.</string>
+    <string name="ui_silinemedi_x">Tidak bisa dihapus: %1$s</string>
+    <string name="ui_mesaj_sizden_silindi">Pesan dihapus untukmu.</string>
+    <string name="ui_fotograf">Foto</string>
+    <string name="ui_bildiriminiz_alindi">Laporanmu sudah diterima.</string>
+    <string name="ui_bu_mesaji_zaten_bildirdiniz">Kamu sudah melaporkan pesan ini.</string>
+    <string name="ui_bildirim_gonderilemedi_x">Laporan tidak bisa dikirim: %1$s</string>
+    <string name="ui_video_adresi_bulunamadi">Alamat video tidak ditemukan.</string>
+    <string name="ui_video_oynatilamadi">Video tidak bisa diputar.</string>
+    <string name="ui_ses_kopyalanamadi">Suara tidak bisa disalin.</string>
+    <string name="ui_video_acilamadi">Video tidak bisa dibuka.</string>
+    <string name="ui_resim_acilamadi">Gambar tidak bisa dibuka.</string>
+    <string name="ui_bu_soruyu_cozuldu_olarak_isaretlemek_istiyor">Kamu mau menandai pertanyaan ini sebagai terjawab? Kalau ditandai, murid tidak bisa mengirim pesan lagi.</string>
+    <string name="ui_isaretle">Tandai</string>
+    <string name="ui_bu_soru_cozuldu_olarak_isaretli_tekrar">Pertanyaan ini sudah ditandai terjawab. Mau mengaktifkannya lagi?</string>
+    <string name="ui_aktiflestir">Aktifkan</string>
+    <string name="ui_soru_cozuldu_olarak_isaretlendi">Pertanyaan ditandai terjawab.</string>
+    <string name="ui_soru_tekrar_aktiflestirildi">Pertanyaan diaktifkan lagi.</string>
+    <string name="ui_bu_soru_baska_bir_ogretmen_tarafindan">Pertanyaan ini sudah diambil guru lain.</string>
+    <string name="ui_soruyu_sahiplendiniz">Kamu mengambil pertanyaan ini.</string>
+
+    <!-- QuestionDownloadForegroundService.kt -->
+    <string name="ui_indiriliyor">Mengunduh</string>
+
+    <!-- QuestionListAdapter.kt -->
+    <string name="ui_cevaplanmadi">Belum dijawab</string>
+    <string name="ui_cevaplaniyor">Sedang dijawab</string>
+    <string name="ui_cozuldu">Terjawab</string>
+    <string name="ui_az_once">Baru saja</string>
+    <plurals name="ui_x_dakika_once">
+        <item quantity="one">%1$s menit lalu</item>
+        <item quantity="other">%1$s menit lalu</item>
+    </plurals>
+    <plurals name="ui_x_saat_once">
+        <item quantity="one">%1$s jam lalu</item>
+        <item quantity="other">%1$s jam lalu</item>
+    </plurals>
+    <plurals name="ui_x_gun_once">
+        <item quantity="one">%1$s hari lalu</item>
+        <item quantity="other">%1$s hari lalu</item>
+    </plurals>
+
+    <!-- RaceAdapter.kt -->
+    <string name="ui_kilitli_2">TERKUNCI</string>
+    <string name="ui_basla_2">MULAI</string>
+
+    <!-- RegisterActivity.kt: iki bağlantı metni tam cümlenin içinde aynen geçmeli -->
+    <string name="ui_gecerli_bir_e_posta_adresi_giriniz">Masukkan alamat email yang valid.</string>
+    <string name="ui_hesap_olusturarak_kullanim_sartlarini_ve_giz">Dengan membuat akun, kamu menyetujui Ketentuan Penggunaan dan Kebijakan Privasi.</string>
+    <string name="ui_kullanim_sartlarini">Ketentuan Penggunaan</string>
+    <string name="ui_gizlilik_politikasini">Kebijakan Privasi</string>
+    <string name="ui_bu_e_posta_ile_ogrenci_hesabi">Akun murid tidak bisa dibuat dengan email ini.</string>
+    <string name="ui_google_kaydi_baslatilamadi">Pendaftaran dengan Google tidak bisa dimulai</string>
+    <string name="ui_google_kaydi_baslatilamadi_x">Pendaftaran dengan Google tidak bisa dimulai: %1$s</string>
+    <string name="ui_google_kaydi_basarisiz_x">Pendaftaran dengan Google gagal: %1$s</string>
+    <string name="ui_google_kaydi_basarisiz">Pendaftaran dengan Google gagal</string>
+    <string name="ui_lutfen_tum_alanlari_doldurun">Isi semua kolom</string>
+    <string name="ui_sifreler_eslesmiyor">Kata sandi tidak cocok</string>
+    <string name="ui_bu_e_posta_zaten_bir_ogretmen">Email ini sudah terdaftar sebagai akun guru. Gunakan layar masuk guru.</string>
+    <string name="ui_bu_e_posta_baska_bir_hesapta">Email ini sudah dipakai di akun lain.</string>
+
+    <!-- ScreenRecordingService.kt -->
+    <string name="ui_ekran_kaydi_yapiliyor">Sedang merekam layar...</string>
+
+    <!-- SessionDeviceManager.kt -->
+    <string name="ui_bir_kac_dakika_sonra_tekrar_dene">Coba lagi beberapa menit lagi.</string>
+
+    <!-- ShopFragment.kt -->
+    <string name="ui_can_alinamadi_tekrar_deneyin">Nyawa tidak bisa dibeli. Coba lagi.</string>
+    <string name="ui_aylik_x">%1$s per bulan</string>
+    <string name="ui_yetersiz_anahtar_2">Kunci tidak cukup!</string>
+    <string name="ui_gunluk_sinira_ulasildi_yarin_tekrar_deneyin">Batas harian tercapai. Coba lagi besok.</string>
+    <string name="ui_islem_tamamlanamadi_tekrar_deneyin">Tidak bisa diselesaikan. Coba lagi.</string>
+    <string name="ui_serin_korunuyor_kullaninca_yenisini_alabilir">Streak-mu terlindungi. Setelah dipakai, kamu bisa membeli yang baru.</string>
+    <string name="ui_hazir">"✓  SIAP"</string>
+    <string name="ui_serini_1_gun_boyunca_korur_serin">Melindungi streak-mu selama 1 hari. Walaupun streak-mu putus, terus belajar ya!</string>
+    <string name="ui_yetersiz_altin_2">Koin tidak cukup!</string>
+    <string name="ui_seri_dondurma">Pembeku Streak</string>
+    <string name="ui_bir_gun_calisamazsan_serin_bozulmaz_x">Kalau satu hari kamu tidak belajar, streak-mu tidak putus. Memakai %1$s koin.</string>
+    <string name="ui_satin_al">Beli</string>
+    <string name="ui_bonus_dahil">termasuk bonus</string>
+    <string name="ui_pro_da_x">+%1$s di Pro</string>
+
+    <!-- SoundSettingsFragment.kt -->
+    <string name="ui_ses_x">Suara %1$s</string>
+
+    <!-- StreakFragment.kt: "Ubah jam notifikasi · 19.00" -->
+    <string name="ui_bildirim_saatini_degistir">"Ubah jam notifikasi · "</string>
+    <string name="ui_gun_ust_uste">hari berturut-turut</string>
+    <string name="ui_serin_su_anda_kirik">Streak-mu sedang putus</string>
+    <string name="ui_bugunku_hedefini_tamamladin_yarin_da_bekleri">Kamu sudah menyelesaikan target hari ini. Sampai jumpa besok!</string>
+    <string name="ui_bugun_x_dakika_daha_calis_serin">Belajar %1$s menit lagi hari ini supaya streak-mu berlanjut.</string>
+    <string name="ui_bugun_x_dakika_calis_yeni_serini">Belajar %1$s menit hari ini untuk memulai streak baru.</string>
+    <string name="ui_hedef_tamamlandi">Target tercapai ✓</string>
+    <string name="ui_x_x_dakika">%1$s / %2$s menit</string>
+    <string name="ui_hazir_2">Siap</string>
+    <string name="ui_yok">Tidak ada</string>
+    <string name="ui_x_gunluk_meydan_okuma">Tantangan %1$s Hari</string>
+    <string name="ui_tamamlandi_odulunu_topla">SELESAI — ambil hadiahmu</string>
+    <string name="ui_tamamlandi_odulun_hazirlaniyor">SELESAI — hadiahmu sedang disiapkan</string>
+    <string name="ui_bugun_basliyor">MULAI HARI INI</string>
+    <string name="ui_x_gunun_x_gunu">HARI KE-%2$s DARI %1$s</string>
+    <string name="ui_gunluk_hedefin">Target harianmu</string>
+    <string name="ui_her_gun_ne_kadar_ogrenmek_istersin">Berapa lama kamu ingin belajar setiap hari?</string>
+    <string name="ui_rahat">Santai</string>
+    <string name="ui_duzenli">Teratur</string>
+    <string name="ui_ciddi">Serius</string>
+    <string name="ui_bildirim_saatin">Jam notifikasimu</string>
+    <string name="ui_sobi_sana_her_gun_ne_zaman">Kapan Sobi mengingatkanmu setiap hari?</string>
+
+    <!-- StreakSyncService.kt -->
+    <string name="ui_seri_dondurma_almak_icin_giris_yapman">Kamu harus masuk untuk membeli pembeku streak.</string>
+    <string name="ui_satin_alinamadi_birazdan_tekrar_dene">Tidak bisa dibeli. Coba lagi sebentar lagi.</string>
+    <string name="ui_satin_alinamadi">Tidak bisa dibeli.</string>
+    <string name="ui_odul_alinamadi">Hadiah tidak bisa diambil.</string>
+    <string name="ui_x_internetini_kontrol_edip_tekrar_dene">%1$s Periksa internetmu lalu coba lagi.</string>
+    <string name="ui_sunucuya_su_an_ulasilamiyor_birazdan_tekrar">Server tidak bisa dihubungi sekarang. Coba lagi sebentar lagi.</string>
+    <string name="ui_odulu_almak_icin_giris_yapman_gerekiyor">Kamu harus masuk untuk mengambil hadiah.</string>
+    <string name="ui_x_kazandin">Kamu mendapat %1$s!</string>
+
+    <!-- StreakViews.kt: Senin'den başlayan 7 harf (Sen Sel Rab Kam Jum Sab Min) -->
+    <string name="ui_week_initials_monday_first">S S R K J S M</string>
+    <string name="ui_aksamustu">Sore</string>
+    <string name="ui_aksam">Malam</string>
+    <string name="ui_baska_bir_saat">Jam lain</string>
+    <string name="ui_sec">Pilih ›</string>
+    <string name="ui_saat_sec">Pilih jam</string>
+    <string name="ui_sobi_sana_her_gun_bu_saatte">Sobi akan mengingatkanmu setiap hari pada jam ini</string>
+    <string name="ui_topla">Ambil</string>
+    <string name="ui_seri_dondurma_kullanildi">Pembeku streak dipakai</string>
+
+    <!-- StudentEmailVerificationFragment.kt -->
+    <string name="ui_kod_tekrar_gonderildi_2">Kode dikirim ulang</string>
+    <string name="ui_kod_gonderilemedi_2">Kode tidak bisa dikirim</string>
+    <string name="ui_kod_6_haneli_olmalidir_2">Kode harus 6 digit</string>
+    <string name="ui_lutfen_ad_soyad_girin">Masukkan nama lengkap</string>
+    <string name="ui_sifre_en_az_6_karakter_olmali_2">Kata sandi minimal 6 karakter</string>
+    <string name="ui_dogrulaniyor_2">Memverifikasi...</string>
+    <string name="ui_dogrula_ve_giris_yap">Verifikasi dan Masuk</string>
+    <string name="ui_kod_dogrulanamadi_2">Kode tidak bisa diverifikasi</string>
+    <string name="ui_giris_basarisiz">Gagal masuk</string>
+
+    <!-- SupportContactHelper.kt -->
+    <string name="ui_e_posta_veya_tarayici_acilamadi">Email atau browser tidak bisa dibuka.</string>
+
+    <!-- TasksFragment.kt -->
+    <string name="ui_basari_x">" - Keberhasilan: %1$s%%"</string>
+    <string name="ui_abakus">Sempoa</string>
+    <string name="ui_abakuste_pratik_yaparak_kendini_gelistir">Kembangkan dirimu dengan berlatih di sempoa.</string>
+    <string name="ui_karakter_animasyonu">Animasi Karakter</string>
+    <string name="ui_maskotun_butun_hareketlerini_dene">Coba semua gerakan maskot.</string>
+    <string name="ui_kupa_yolu">Jalur Piala</string>
+    <string name="ui_basarilarini_kupalarla_olc_seviyeni_yukselt">Ukur prestasimu dengan piala, naikkan levelmu, dan hadapi tantangan baru.</string>
+    <string name="ui_burayi_acmak_icin_x_yi_bitir">Selesaikan %1$s untuk membuka bagian ini.</string>
+
+    <!-- TeacherApprovalGate.kt -->
+    <string name="ui_merhaba_kullanici_id_x">"Halo,\n\n\n\nID Pengguna: %1$s\n"</string>
+
+    <!-- TeacherNewPasswordFragment.kt -->
+    <string name="ui_sifre_en_az_x_karakter_olmalidir">Kata sandi minimal %1$s karakter</string>
+    <string name="ui_guncelleniyor">Memperbarui...</string>
+    <string name="ui_sifreyi_guncelle">Perbarui kata sandi</string>
+    <string name="ui_sifre_guncellendi_giris_yapabilirsiniz">Kata sandi diperbarui. Kamu sudah bisa masuk.</string>
+
+    <!-- UserInfoFragment.kt -->
+    <string name="ui_google_aramasi">Pencarian Google</string>
+    <string name="ui_arkadas_aile">Teman/Keluarga</string>
+    <string name="ui_okul_ogretmen">Sekolah/Guru</string>
+    <string name="ui_uygulama_magazasi">Toko Aplikasi</string>
+    <string name="ui_bu_e_posta_adresi_kayitli_degil">Alamat email ini belum terdaftar. Kamu diarahkan ke halaman pendaftaran.</string>
+    <string name="ui_lutfen_gecerli_bir_yas_girin">Masukkan usia yang valid</string>
+    <string name="ui_evet_hatirlat">Ya, ingatkan aku</string>
+    <string name="ui_sobi_sana_her_gun_hatirlatsin_mi">Mau Sobi mengingatkanmu setiap hari?</string>
+    <string name="ui_saati_istedigin_zaman_degistirebilirsin">Kamu bisa mengubah jamnya kapan saja</string>
+    <string name="ui_kac_yasindasin">Berapa umurmu?</string>
+    <string name="ui_abakus_kullanmayi_biliyor_musun">Kamu sudah bisa memakai sempoa?</string>
+    <string name="ui_abakus_hic_bilmiyorum">Belum bisa sama sekali</string>
+    <string name="ui_abakus_biraz_biliyorum">Sedikit bisa</string>
+    <string name="ui_abakus_iyi_biliyorum">Sudah lancar</string>
+    <!-- "Hanya " + "10 menit" + " sehari, kamu akan sampai di sini!" -->
+    <string name="ui_her_gun">"Hanya "</string>
+    <string name="ui_buraya_varacaksin">" sehari, kamu akan sampai di sini!"</string>
+    <!-- "Sebelum pelajaran pertamamu, aku hanya punya " + "4 pertanyaan singkat" + " untuk mengenalmu!" -->
+    <string name="ui_ilk_dersinden_once_seni_tanimak_icin">"Sebelum pelajaran pertamamu, aku hanya punya "</string>
+    <string name="ui_x_kisa_sorum">%1$s pertanyaan singkat</string>
+    <string name="ui_var">" untuk mengenalmu!"</string>
+    <string name="ui_x_dakikayla">%1$s menit</string>
+    <string name="ui_abakusu_tani">Kenali sempoa</string>
+    <string name="ui_buyuk_sayilar_ile_islem_yap">Berhitung dengan angka besar</string>
+    <string name="ui_kafadan_hesap_ustasi_ol">Jadi jago berhitung di luar kepala</string>
+    <string name="ui_bu_hedefi_istedigin_zaman_degistirebilirsin">Kamu bisa mengubah target ini kapan saja</string>
+    <string name="ui_gunde_x_dakika_bu_secim_sonradan">%1$s menit sehari. Pilihan ini tidak bisa diubah nanti, pikirkan baik-baik.</string>
+    <string name="ui_veli_onayi">Persetujuan orang tua</string>
+    <string name="ui_veli_e_postasi_x">Email orang tua: %1$s</string>
+    <string name="ui_once_kendi_e_postana_gelen_kodu_gir">Pertama masukkan kode 6 digit yang dikirim ke emailmu. Setelah itu kami akan mengirim kode persetujuan ke email orang tuamu.</string>
+    <string name="ui_veli_e_postasina_gelen_kodu_gir">Masukkan kode 6 digit yang dikirim ke email orang tuamu. Kode berlaku 30 menit. Memasukkan kode berarti orang tuamu memberi persetujuan.</string>
+    <!-- Zorunlu güncelleme penceresi (ForceUpdateManager) -->
+    <string name="ui_guncelleme_gerekli">Perlu pembaruan</string>
+    <string name="ui_bu_surum_artik_kullanilamiyor">Versi Sorobit ini sudah tidak bisa dipakai. Perbarui aplikasi untuk melanjutkan.</string>
+    <string name="ui_guncelle">Perbarui</string>
+    <string name="ui_cik">Keluar</string>
+    <!-- Kodda sabit duran metinler (dil seçimiyle buraya taşındı) -->
+    <string name="ui_tamamlandi_buyuk">SELESAI ✓</string>
+    <string name="ui_selamlar_benim_adim_x">Halo! Namaku %1$s!</string>
+    <!-- serverErrorText: sunucu hatası -->
+    <string name="ui_server_too_many">Terlalu banyak percobaan. Coba lagi sebentar lagi.</string>
+</resources>

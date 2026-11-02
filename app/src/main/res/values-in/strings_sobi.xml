@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Sobi'ye sor" yapay zekâ yardımcısı ve Sobi ekranı
+     (bkz. MistakeReviewDialog.kt, functions/sobi/, docs/ANLAMADIM_YARDIM_PLANI.md). -->
+<resources>
+    <string name="sobi_ai_note">Sobi adalah asisten AI; kadang bisa keliru.</string>
+    <string name="sobi_ask_button">Tanya Sobi</string>
+    <string name="sobi_send_desc">Kirim</string>
+    <string name="sobi_close_desc">Tutup</string>
+    <string name="sobi_thinking">Sobi sedang berpikir…</string>
+    <string name="sobi_watch_button">Lihat di sempoa</string>
+    <string name="sobi_suggest_show_abacus">Tunjukkan di sempoa</string>
+    <string name="sobi_error_example_limit">Contoh baru dihitung 1 pesan dan pesan gratismu hari ini sudah habis. Kalau mau lanjut, beli kredit Sobi.</string>
+    <string name="sobi_error_example_limit_trial">Contoh baru dihitung 1 pesan dan pesan gratismu hari ini sudah habis. Kamu bisa beli kredit Sobi atau coba Pro gratis: di Pro ada 20 pesan setiap hari!</string>
+    <!-- Kendiliğinden açılan balonlar (SobiNudge) -->
+    <string name="sobi_nudge_wrong">Mau kita lihat bersama?</string>
+    <string name="sobi_nudge_idle">Tanya aku bagian yang belum kamu pahami!</string>
+
+    <!-- Öneri balonları: etiket ve gönderilen metin aynı -->
+    <string name="sobi_suggest_dont_know">Aku tidak tahu harus bagaimana</string>
+    <string name="sobi_suggest_why">Kenapa begitu?</string>
+    <string name="sobi_suggest_show">Tunjukkan padaku</string>
+    <string name="sobi_suggest_show_again">Tunjukkan sekali lagi</string>
+    <string name="sobi_suggest_got_it">Aku paham!</string>
+    <string name="sobi_suggest_didnt_get">Aku belum paham ini</string>
+    <string name="sobi_suggest_example">Beri satu contoh</string>
+
+    <!-- Beğen / beğenme -->
+    <string name="sobi_speak">Bacakan</string>
+    <string name="sobi_auto_read">Bacakan pesan Sobi</string>
+    <string name="sobi_next_question">Soal berikutnya</string>
+    <string name="sobi_next_question_message">Beri satu soal lagi</string>
+    <string name="sobi_rate_up">Aku suka jawaban ini</string>
+    <string name="sobi_rate_down">Aku tidak suka jawaban ini</string>
+    <string name="sobi_feedback_more">Beri kami info lebih lanjut</string>
+    <string name="sobi_feedback_thanks">Terima kasih!</string>
+    <string name="sobi_feedback_title">Apa yang terjadi?</string>
+    <string name="sobi_feedback_hint">Tulis singkat (mis. angkanya salah, terlalu panjang, bagus sekali)</string>
+    <string name="sobi_feedback_send">Kirim</string>
+    <string name="sobi_feedback_cancel">Batal</string>
+    <!-- Bildir: uygunsuz ya da zararlı cevap için -->
+    <string name="sobi_report">Laporkan jawaban ini</string>
+    <string name="sobi_report_message">Ada yang tidak pantas, menakutkan, atau salah di jawaban ini? Kalau mau, tulis apa masalahnya. Tim Sobi akan memeriksanya.</string>
+    <string name="sobi_report_send">Laporkan</string>
+    <string name="sobi_report_done">Laporanmu terkirim, terima kasih!</string>
+
+    <!-- Sorunlar -->
+    <string name="sobi_error_network">Aku tidak bisa menghubungi Sobi sekarang. Bisa periksa internetmu lalu coba lagi?</string>
+    <string name="sobi_error_daily_limit">Pesan gratismu hari ini sudah habis. Kalau mau lanjut, beli kredit Sobi.</string>
+    <string name="sobi_error_restricted">Kamu tidak bisa mengobrol dengan Sobi sekarang.</string>
+    <string name="sobi_turn_limit">Obrolan ini sudah terlalu panjang. Ayo mulai lagi dengan pertanyaan baru.</string>
+
+    <!-- "Sobi ile analiz et" ekranı (MistakeReviewDialog) -->
+    <string name="review_open_button">Analisis dengan Sobi</string>
+    <string name="review_title">Analisis dengan Sobi</string>
+    <string name="review_check">Periksa</string>
+    <string name="review_back">Kembali ke pelajaran</string>
+    <string name="review_intro_question">Di soal %1$s jawabanmu %2$d, yang benar %3$d.</string>
+    <string name="review_prev">Langkah sebelumnya</string>
+    <string name="review_next">Langkah berikutnya</string>
+    <string name="review_step_result">Hasil</string>
+    <string name="review_input_hint">Tulis ke Sobi tentang langkah ini…</string>
+    <string name="review_step_label">Langkah %1$d / %2$d</string>
+    <string name="review_step_label_number">Langkah %1$d / %2$d · mengerjakan %3$s</string>
+    <string name="review_intro_found">Aku menemukan kesalahanmu! %1$s\n\nSekarang ayo kerjakan soal ini bersama langkah demi langkah.</string>
+    <string name="review_intro_unknown">Ayo kerjakan soal ini bersama langkah demi langkah; kita cari bersama di mana kamu keliru.</string>
+    <string name="review_step_write">Pertama tulis angka %1$d di sempoa, lalu ketuk \"Periksa\".</string>
+    <string name="review_step_add">Tambahkan %2$d ke kolom %1$s.\n%3$s: %4$s.</string>
+    <string name="review_step_sub">Kurangi %2$d dari kolom %1$s.\n%3$s: %4$s.</string>
+    <string name="review_was_here">Hati-hati! Tadi kamu keliru di sini.</string>
+    <string name="review_correct">Hebat, benar!</string>
+    <string name="review_wrong">Ayo lihat sekali lagi. %1$s\n\nAku sudah mengembalikan sempoa ke awal langkah ini, coba lagi. Kalau mau, ketuk \"Tunjukkan padaku\".</string>
+    <string name="review_found_now">Nah, kesalahannya kemungkinan besar di sini!</string>
+    <string name="review_done">Hebat, kita menyelesaikannya dengan benar bersama: %1$s = %2$d.</string>
+    <string name="review_intro_sequence">Di deret ini kamu keliru di %1$d tempat: %2$s. Yang sudah benar tidak perlu diulang; sekarang ayo kerjakan bersama operasi-operasi ini saja.</string>
+    <string name="review_mistake_add">Kesalahan ke-%1$d: Saat sempoa menunjukkan %2$d dan kamu menambah %3$d, hasilmu %4$d, seharusnya %5$d.</string>
+    <string name="review_mistake_sub">Kesalahan ke-%1$d: Saat sempoa menunjukkan %2$d dan kamu mengurangi %3$d, hasilmu %4$d, seharusnya %5$d.</string>
+    <string name="review_mistake_write">Kesalahan ke-%1$d: Angka pertama %2$d, tetapi kamu menulis %3$d di sempoa.</string>
+    <!-- Sobi ekranı öğreticiden açılınca (MistakeReviewDialog.forTutorial) -->
+    <string name="sobi_screen_lesson_step">Langkah di pelajaran</string>
+    <string name="sobi_screen_lesson_intro">Sekarang kita ada di bagian pelajaran ini:\n«%1$s»\n\nBagian mana yang membingungkan? Pilih di bawah atau tulis padaku.</string>
+    <string name="sobi_screen_lesson_op_intro">Di pelajaran sedang dijelaskan operasi ini: %1$s\n«%2$s»\n\nAyo kerjakan bersama di sempoa langkah demi langkah. Kalau mau tanya hal lain, tulis di bawah atau kembali ke langkah pelajaran dengan ‹.</string>
+    <string name="sobi_screen_lesson_op_done">Hebat, kita sudah mengerjakan operasinya bersama! Kalau mau, kerjakan satu contoh lagi atau ketuk \"Kembali ke pelajaran\".</string>
+    <string name="sobi_screen_question_intro">Sekarang kita di soal ini: «%1$s»\n\nAyo kerjakan bersama langkah demi langkah. Kalau bingung, ketuk balon di bawah.</string>
+    <string name="sobi_screen_question_done">Hebat, kita berhasil bersama! Sekarang ketuk \"Kembali ke pelajaran\" dan kerjakan sendiri di pelajaran.</string>
+    <string name="sobi_screen_example_intro">Contoh: %1$s. Angka pertama sudah siap di sempoa; operasi ini memakai %2$s. Ayo kerjakan bersama langkah demi langkah.</string>
+    <string name="sobi_screen_example_intro_direct">Contoh: %1$s. Angka pertama sudah siap di sempoa; operasi ini tidak perlu rumus. Ayo kerjakan bersama langkah demi langkah.</string>
+    <string name="sobi_screen_example_title">Contoh selesai</string>
+    <string name="sobi_screen_example_done">Hebat, kita sudah menyelesaikan contohnya: %1$s = %2$d. Kalau mau, ketuk \"Contoh lain\" atau kembali ke pelajaran.</string>
+    <string name="sobi_screen_example_done_ai">Hebat, %1$s = %2$d! Kalau mau, ketuk \"Soal berikutnya\"; aku pilihkan soal yang cocok untukmu.</string>
+    <string name="sobi_screen_harder_example">Contoh yang lebih sulit</string>
+    <string name="sobi_screen_example_level">Tingkat kesulitan %1$d/%2$d.</string>
+    <string name="sobi_screen_another_example">Contoh lain</string>
+    <!-- Analiz ekranında adımın parça balonları -->
+    <string name="review_why_rule">Kenapa rumus ini?</string>
+    <string name="review_label_first">angka pertama</string>
+    <string name="review_done_sequence">Hebat, kita sudah mengerjakan dengan benar operasi yang tadi keliru! Jawaban benar deret ini %1$d.</string>
+    <string name="review_done_tip">\n\nMulai sekarang, perhatikan langkah %2$s di kolom %1$s!</string>
+
+    <!-- Sobi'nin günlük testi -->
+    <string name="sobi_test_title">Kuis Sobi</string>
+    <string name="sobi_test_step">Soal %1$d / %2$d</string>
+    <string name="sobi_test_done_title">Kuis Sobi selesai!</string>
+    <!-- "Penjumlahan teman besar: 11 dari 14 operasi benar" -->
+    <string name="sobi_test_rule_line">%1$s: %3$d dari %2$d operasi benar</string>
+    <string name="sobi_test_cheer_good">Kamu hebat! Besok aku siapkan kuis baru.</string>
+    <string name="sobi_test_cheer_try">Besok kita lihat rumus ini lagi; setiap hari kamu akan makin baik.</string>
+    <string name="sobi_test_open_chest">Buka petimu</string>
+    <string name="sobi_test_quit_title">Keluar dari kuis?</string>
+    <string name="sobi_test_quit_message">Kalau kamu keluar sebelum kuis selesai, kuis hari ini tidak dihitung; saat dibuka lagi, soalnya sama.</string>
+    <string name="sobi_test_button_desc">Kuis harian Sobi</string>
+    <string name="sobi_test_nudge">Aku sudah menyiapkan kuis untukmu!</string>
+    <string name="sobi_test_dialog_title">Kuis Sobi hari ini</string>
+    <string name="sobi_test_dialog_extra_title">Satu kuis lagi</string>
+    <string name="sobi_test_diff_easy">🐢 Mudah</string>
+    <string name="sobi_test_diff_mine">🐰 Levelku</string>
+    <string name="sobi_test_diff_hard">🚀 Sulit</string>
+    <string name="sobi_test_subtitle">10 soal · selesai dapat peti</string>
+    <string name="sobi_test_subtitle_extra">Kamu sudah menyelesaikan kuis hari ini, hebat! 10 soal lagi · dapat peti lagi</string>
+    <string name="sobi_test_rules_label">RUMUS YANG KITA LATIH HARI INI</string>
+    <string name="sobi_test_difficulty_label">SESULIT APA?</string>
+    <string name="sobi_test_level_of">Level %1$d/%2$d</string>
+    <string name="sobi_test_level_short">Level %1$d</string>
+    <string name="sobi_test_preparing">Menyiapkan…</string>
+    <string name="sobi_test_spec">%2$d angka %1$d digit, %3$s dtk</string>
+    <string name="sobi_test_level_up">Level %1$d → %2$d, selamat!</string>
+    <string name="sobi_test_level_down">Level %1$d; besok kita coba lagi bersama.</string>
+    <string name="sobi_test_level_same">Level %1$d</string>
+    <string name="sobi_test_dialog_start">Mulai</string>
+    <string name="sobi_test_dialog_later">Nanti</string>
+    <string name="sobi_test_no_data">Kerjakan beberapa pelajaran dulu, nanti aku siapkan kuis yang cocok untukmu!</string>
+    <string name="sobi_test_ok">Oke</string>
+    <string name="sobi_test_rule_add_direct">penjumlahan langsung</string>
+    <string name="sobi_test_rule_add_five">penjumlahan teman kecil</string>
+    <string name="sobi_test_rule_add_ten">penjumlahan teman besar</string>
+    <string name="sobi_test_rule_add_bead">penjumlahan rumus gabungan</string>
+    <string name="sobi_test_rule_sub_direct">pengurangan langsung</string>
+    <string name="sobi_test_rule_sub_five">pengurangan teman kecil</string>
+    <string name="sobi_test_rule_sub_ten">pengurangan teman besar</string>
+    <string name="sobi_test_rule_sub_bead">pengurangan rumus gabungan</string>
+
+    <!-- Sobi ekonomisi (functions/sobi/wallet.js; kullanıcı kararları 01.11.2026). -->
+    <string name="sobi_balance_free">%1$d pesan gratis hari ini</string>
+    <string name="sobi_balance_free_credits">%1$d pesan gratis hari ini · %2$d kredit</string>
+    <string name="sobi_balance_credits">%1$d kredit · setiap pesan 1 kredit</string>
+    <string name="sobi_balance_empty">Pesan gratismu habis · Beli kredit ›</string>
+    <!-- Sobi'nin Pro deneme tanıtımı (SobiProTrialFragment) -->
+    <string name="sobi_trial_title_weeks">Coba Pro gratis %1$d minggu</string>
+    <string name="sobi_trial_title_days">Coba Pro gratis %1$d hari</string>
+    <string name="sobi_trial_title_no_trial">Dengan Pro, Sobi selalu menemanimu</string>
+    <string name="sobi_trial_subtitle">Biar Sobi membantumu setiap kali kamu bingung!</string>
+    <string name="sobi_trial_benefit_messages">20 pesan Sobi per hari</string>
+    <string name="sobi_trial_benefit_tests">Kuis Sobi tanpa batas</string>
+    <string name="sobi_trial_benefit_energy">Nyawa tanpa batas</string>
+    <string name="sobi_trial_benefit_no_ads">Belajar tanpa iklan</string>
+    <string name="sobi_trial_benefit_welcome">Selamat datang: 20 kredit Sobi</string>
+    <string name="sobi_test_pro_free">Kuis tambahan gratis di Pro ›</string>
+    <string name="sobi_trial_not_now">NANTI SAJA</string>
+    <string name="sobi_error_daily_limit_trial">Pesan gratismu hari ini sudah habis. Kamu bisa beli kredit Sobi atau coba Pro gratis: di Pro ada 20 pesan setiap hari!</string>
+    <string name="sobi_test_start_keys">Mulai · %1$d</string>
+    <string name="sobi_test_not_enough_keys">Kuis tambahan butuh %1$d kunci, kamu punya %2$d. Kamu bisa dapat kunci dari peti; besok aku siapkan kuis gratis lagi!</string>
+    <string name="shop_sobi_credit_title">Tanya Sobi</string>
+    <string name="shop_sobi_credit_info">Setelah pesan gratis harian habis, setiap pesan Sobi 1 kredit. Kredit tidak kedaluwarsa.</string>
+    <string name="shop_sobi_credit_balance">Kredit Sobi-mu: %1$d · %2$d pesan gratis setiap hari. Kredit tidak kedaluwarsa.</string>
+    <string name="shop_sobi_credit_amount_20">20 kredit</string>
+    <string name="shop_sobi_credit_amount_50">50 kredit</string>
+    <string name="shop_sobi_credit_amount_120">120 kredit</string>
+    <string name="shop_sobi_credit_desc">Kredit Sobi</string>
+    <string name="progress_hub_sobi">Tanya Sobi</string>
+    <string name="progress_hub_sobi_desc">%1$d pesan bulan ini (%2$d kredit terpakai)\nSisa kredit: %3$d · %4$d pesan gratis per hari</string>
+
+    <!-- Sobi sekmesi (SobiChatFragment): ders dışı genel sohbet -->
+    <string name="sobi_tab_menu">Obrolan</string>
+    <string name="sobi_tab_new_chat">Obrolan baru</string>
+    <string name="sobi_tab_history">Obrolan sebelumnya</string>
+    <string name="sobi_tab_no_history">Belum ada obrolan</string>
+    <string name="sobi_tab_greeting">Halo! Aku Sobi.</string>
+    <string name="sobi_tab_greeting_sub">Tanyakan apa saja yang ingin kamu tahu tentang sempoa, pelajaran, atau aplikasi!</string>
+    <string name="sobi_tab_hint">Tulis ke Sobi…</string>
+    <string name="sobi_tab_starter_today">Hari ini aku belajar apa?</string>
+    <string name="sobi_tab_starter_ten">Jelaskan penjumlahan teman besar</string>
+    <string name="sobi_tab_starter_test">Siapkan kuis untukku</string>
+    <string name="sobi_tab_starter_credits">Bagaimana cara kerja kredit?</string>
+    <string name="sobi_tab_button_test">Mulai kuis ›</string>
+    <string name="sobi_tab_button_credits">Beli kredit ›</string>
+    <string name="sobi_tab_search">Cari di obrolan</string>
+    <string name="sobi_tab_button_lesson">📚 Ke pelajaran %1$s ›</string>
+    <string name="sobi_tab_button_pro">Lihat Pro ›</string>
+    <string name="sobi_tab_button_show">%1$s · lihat di sempoa ›</string>
+    <string name="sobi_tab_button_practice">%1$s · kerjakan di sempoa ›</string>
+    <string name="sobi_tab_delete_title">Hapus obrolan?</string>
+    <string name="sobi_tab_delete_message">Obrolan \"%1$s\" akan dihapus.</string>
+    <string name="sobi_tab_delete">Hapus</string>
+    <string name="sobi_tab_cancel">Batal</string>
+    <string name="sobi_tab_load_error">Obrolan tidak bisa dibuka. Bisa periksa internetmu lalu coba lagi?</string>
+    <string name="sobi_tab_login">Kamu harus masuk dulu untuk mengobrol dengan Sobi.</string>
+</resources>
