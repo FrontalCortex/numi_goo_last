@@ -903,14 +903,19 @@ class MistakeReviewDialog : DialogFragment() {
         }
         // Öğreticide her sayfada; analizde soru (ya da örnek) bitince, sonuç sayfasında: çocuk soruyu
         // çözdü, aynı kuralla bir tane daha.
+        // Yeni örnek 1 hak ya da kredi: yeşil (renk kuralı: yeşil harcar, gri ücretsiz; kullanıcı kararı 02.11.2026).
+        val paid = HashSet<String>()
         if (exampleRule != null && (tutorialMode || currentStep() == null)) {
             val first = tutorialMode && examples == 0
             val label = appString(if (first) R.string.sobi_suggest_example else R.string.sobi_screen_another_example)
             items += label to { startExample() }
+            paid += label
             // Zorluğu çocuk seçer (kullanıcı kararı 01.11.2026): örnek yine dersin kuralından, yalnızca büyür.
             if (!first && exampleLevel < ExamplePicker.MAX_LEVEL) {
                 // Kademe ancak örnek açılınca (ödendikten sonra) artar.
-                items += appString(R.string.sobi_screen_harder_example) to { startExample(exampleLevel + 1) }
+                val harder = appString(R.string.sobi_screen_harder_example)
+                items += harder to { startExample(exampleLevel + 1) }
+                paid += harder
             }
         }
         if (items.isEmpty()) return null
@@ -921,10 +926,7 @@ class MistakeReviewDialog : DialogFragment() {
         for ((label, action) in items) {
             val chip = TextView(ctx).apply {
                 text = label
-                setTextColor(ContextCompat.getColor(ctx, R.color.dark_text))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                background = ContextCompat.getDrawable(ctx, R.drawable.bg_hw_chip)
-                setPadding(dp(ctx, 12), dp(ctx, 7), dp(ctx, 12), dp(ctx, 10))
+                styleChip(ctx, this, label in paid)
                 setOnClickListener { if (!abacusBusy) action() }
             }
             DepthPress.attach(chip)
@@ -939,8 +941,19 @@ class MistakeReviewDialog : DialogFragment() {
     }
 
     /**
-     * Yapay zekâya giden balonlar (yeşil): Sobi'nin son cevabının önerileri; henüz soru sorulmadıysa
-     * başlangıç balonları. "Bana göster" ve "Bir daha göster" sunucuya gitmez (yerelde oynar).
+     * Balon rengi bedeli söyler: yeşil mesaj hakkı ya da kredi harcar (yapay zekâ mesajı, yeni örnek),
+     * gri ücretsizdir (gösterim, kural motorunun açıklamaları).
+     */
+    private fun styleChip(ctx: Context, chip: TextView, paid: Boolean) {
+        chip.setTextColor(ContextCompat.getColor(ctx, if (paid) R.color.white else R.color.dark_text))
+        chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
+        chip.background = ContextCompat.getDrawable(ctx, if (paid) R.drawable.bg_sobi_pill else R.drawable.bg_hw_chip)
+        chip.setPadding(dp(ctx, 12), dp(ctx, 7), dp(ctx, 12), dp(ctx, if (paid) 7 else 10))
+    }
+
+    /**
+     * Sobi'nin son cevabının önerileri; henüz soru sorulmadıysa başlangıç balonları. Yapay zekâya
+     * gidenler yeşil; "Bana göster" ve "Bir daha göster" sunucuya gitmez (yerelde oynar), gri.
      */
     private fun suggestionChips(ctx: Context): View? {
         if (!loggedIn) return null
@@ -972,14 +985,13 @@ class MistakeReviewDialog : DialogFragment() {
                 KEY_NEXT -> appString(R.string.sobi_next_question)
                 else -> SobiSuggestions.labelOf(key) ?: continue
             }
+            val free = key == KEY_WATCH || key == SobiSuggestions.KEY_SHOW || key == SobiSuggestions.KEY_SHOW_AGAIN
             val chip = TextView(ctx).apply {
                 text = label
-                setTextColor(ContextCompat.getColor(ctx, R.color.white))
-                setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-                background = ContextCompat.getDrawable(ctx, R.drawable.bg_sobi_pill)
-                setPadding(dp(ctx, 12), dp(ctx, 7), dp(ctx, 12), dp(ctx, 7))
+                styleChip(ctx, this, paid = !free)
                 setOnClickListener { onSuggestion(key) }
             }
+            if (free) DepthPress.attach(chip)
             row.addView(chip, LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT,
             ).apply { marginEnd = dp(ctx, 8) })
