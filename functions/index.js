@@ -4478,7 +4478,11 @@ async function writeRuleTally(studentUid, tally, questions, { extraFields = {}, 
     const snap = await tx.get(statsRef);
     const prev = snap.exists ? snap.data() : {};
     if (beforeWrite) beforeWrite(prev, now);
-    const next = homework.applyBlockToStats(prev, tally);
+    // Boş harita yazılmamalı: merge'de Firestore boş haritayı yaprak sayıp alanın tamamını boşaltıyor.
+    // Kurala bağlanamayan soru (yalnızca soru sayısı) gelince öğrencinin bütün kural geçmişi
+    // siliniyordu (hata 02.11.2026). Dolu haritalar kural kural birleşiyor, öteki kurallar duruyor.
+    const next = Object.fromEntries(Object.entries(homework.applyBlockToStats(prev, tally))
+      .filter(([, v]) => Object.keys(v).length));
     tx.set(statsRef, { ...next, ...extraFields, updatedAtMs: now }, { merge: true });
     tx.set(statsRef.collection('months').doc(month), {
       days: { [day]: { q: { c: inc(questions.c), w: inc(questions.w) }, t } },

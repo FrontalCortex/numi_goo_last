@@ -160,7 +160,7 @@ async function main() {
     await writeProgress(S2, { uid: S2, completedBlocks: 2, answered: 20, correct: 20, lastBlockCorrect: 10, updatedAtMs: 4,
       ruleTally: { add_five: { c: 50, w: 0 } } });
     check('tekrar: değişmedi', ((await db.doc(hwPath).get()).get('doneUids') || []).length, 2);
-    check('tekrar: adım ilerlemeden sayım eklenmez', (await db.doc(`homeworkRuleStats/${S2}`).get()).get('tally'), {});
+    check('tekrar: adım ilerlemeden sayım eklenmez (boş harita da yazılmaz)', (await db.doc(`homeworkRuleStats/${S2}`).get()).get('tally'), undefined);
 
     // Günlük kayıt ve ustalık (grafik ve aşamalar).
     const { month, day } = require('../homework').trDayKey(Date.now());
@@ -172,6 +172,18 @@ async function main() {
     const s1 = (await db.doc(`homeworkRuleStats/${S1}`).get()).data();
     check('pencere: iki adım', s1.recent.add_five, [{ c: 7, w: 2 }, { c: 5, w: 1 }]);
     check('aşama: 50 işlemden az → başladı', s1.level.add_five, 0);
+    // Kurala bağlanamayan soru (yalnızca soru sayısı): boş haritalar merge ile yazılınca Firestore
+    // bütün alanı boşaltıyordu; öğrencinin kural geçmişi siliniyordu (hata 02.11.2026).
+    await fns.recordRuleTally.run({ q: { c: 0, w: 1 } }, ctx(S1));
+    const s1q = (await db.doc(`homeworkRuleStats/${S1}`).get()).data();
+    check('yalnızca soru: kural sayımı silinmez', [s1q.tally.add_five, s1q.recent.add_five, s1q.level.add_five],
+      [{ c: 12, w: 3 }, [{ c: 7, w: 2 }, { c: 5, w: 1 }], 0]);
+    // Tek kurallı gönderim öteki kuralları ezmez.
+    await db.doc(`homeworkRuleStats/${S1}`).update({ extraTallyAtMs: 0 });
+    await fns.recordRuleTally.run({ tally: { add_ten: { c: 1, w: 0 } }, q: { c: 1, w: 0 } }, ctx(S1));
+    const s1t = (await db.doc(`homeworkRuleStats/${S1}`).get()).data();
+    check('tek kural: ötekiler duruyor', [s1t.tally.add_ten, s1t.tally.add_five, s1t.tally.add_bead].map((x) => ({ c: x.c, w: x.w })), // alan sırası belirsiz
+      [{ c: 4, w: 0 }, { c: 12, w: 3 }, { c: 1, w: 1 }]);
     const hm = require('../homework');
     check('pencere 50\'yi karşılayınca eski adım düşer', hm.pushRecent([{ c: 30, w: 0 }, { c: 40, w: 10 }], 5, 0), [{ c: 40, w: 10 }, { c: 5, w: 0 }]);
     check('aşamalar', [hm.masteryStage(45, 5), hm.masteryStage(40, 10), hm.masteryStage(30, 20), hm.masteryStage(20, 0)], [2, 1, 0, 0]);
