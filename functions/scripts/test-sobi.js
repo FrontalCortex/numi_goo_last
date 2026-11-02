@@ -633,6 +633,7 @@ async function main() {
     await feedback({ sessionId: r.sessionId, messageIndex: 1, value: -1 }, ctx);
     const fb = env.store.get(`sobiChats/u1/sobiFeedback/${r.sessionId}_1`);
     assert.strictEqual(fb.value, -1);
+    assert.strictEqual(fb.kind, 'ders');
     assert.strictEqual(fb.childText, 'Bunu anlamadım');
     assert.strictEqual(fb.aciklama, 't3_p5');
     assert.strictEqual(fb.tutorialNumber, 3);
@@ -802,6 +803,12 @@ async function main() {
     assert.strictEqual(k.source, 'hazir');
     assert.ok(k.reply.includes('Free planda 2, Lite\'ta 5, Pro\'da 20'));
     assert.strictEqual(env.store.get(`sobiChats/u1/sessions/${k.sessionId}`).transcript[1].aciklama, 'genel_krediler');
+    // Beğeni kaydı Sobi sekmesinin sohbeti olduğunu ve genel talimatın sürümünü taşır (haftalık rapor ayırıyor).
+    const feedback = require('../sobi/feedback')({ ...env, promptVersion: createSobiChat.PROMPT_VERSION });
+    await feedback({ sessionId: r1.sessionId, messageIndex: 1, value: 1 }, ctx);
+    const fb = env.store.get(`sobiChats/u1/sobiFeedback/${r1.sessionId}_1`);
+    assert.strictEqual(fb.kind, 'genel');
+    assert.strictEqual(fb.promptVersion, createSobiChat.GENERAL_PROMPT_VERSION);
     // Ders sohbetinde aynı balon anahtarı hazır cevap değil.
     assert.strictEqual(chat.directReplyFor(CTX, 'krediler'), null);
   });

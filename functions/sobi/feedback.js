@@ -7,7 +7,8 @@
  * MODEL
  *   sobiChats/{uid}/sessions/{sessionId}.transcript[i].rating   1 | -1 | 0 (geri alındı)
  *   sobiChats/{uid}/sobiFeedback/{sessionId}_{i}                 analiz kaydı: oy, cevap, çocuğun
- *     önceki mesajı (temizlenmiş), kaynak (hazir / model), açıklama anahtarı, adım, talimat sürümü
+ *     önceki mesajı (temizlenmiş), kaynak (hazir / model), açıklama anahtarı, adım, talimat sürümü,
+ *     sohbetin türü (kind: ders / genel; 02.11.2026'dan önceki kayıtlarda yok)
  *   Hesap silinince sobiChats/{uid} bütünüyle siliniyor (index.js), oylar da gidiyor. Kayıt
  *   sohbetle aynı sürede (30 gün, expiresAt) TTL ile silinir. İstemci erişmiyor; yalnızca sunucu.
  *
@@ -67,6 +68,9 @@ module.exports = function createSobiFeedback({ functions, admin, db, promptVersi
       const record = {
         sessionId,
         messageIndex: index,
+        // Hangi ekranın sohbeti: 'genel' Sobi sekmesi, 'ders' ders içi "Sobi'ye sor". Haftalık rapor
+        // ikisini ayırıyor (genel sohbette adım yok; ders gruplarına karışmasın).
+        kind: snap.get('kind') === 'genel' ? 'genel' : 'ders',
         reply: line.text,
         childText: prev,
         source: line.source || 'model',

@@ -44,7 +44,10 @@ async function main() {
   const since = Date.now() - DAYS * 24 * 3600 * 1000;
   // Koleksiyon grubu sorgusu filtresiz: süzme burada (filtreli sorgu ayrı bir dizin isterdi).
   const snap = await db.collectionGroup('sobiFeedback').get();
-  const rows = snap.docs.map((d) => d.data()).filter((r) => r.at && r.at.toMillis && r.at.toMillis() >= since);
+  const all = snap.docs.map((d) => d.data()).filter((r) => r.at && r.at.toMillis && r.at.toMillis() >= since);
+  // Sobi sekmesi (genel sohbet, kind: 'genel'): adım yok; ders gruplarına karışmasın, bölüm 5'te.
+  const genel = all.filter((r) => r.kind === 'genel');
+  const rows = all.filter((r) => r.kind !== 'genel');
 
   // Bildirimler (uygunsuz / zararlı cevap): haftadan bağımsız, incelenmemiş olanların hepsi.
   const reports = (await db.collectionGroup('sobiReports').get()).docs
@@ -78,7 +81,7 @@ async function main() {
     `${rows.length} oy: ${up} beğeni, ${down} beğenmeme (${pct(up, up + down)} beğeni). Hazır açıklama: ${bySource('hazir').length} oy, model: ${bySource('model').length} oy.`, '',
     `## 0. İncelenmemiş bildirimler (${reports.length})`, '',
     ...(reports.length ? reports.flatMap((r) => [
-      `- ${r.at && r.at.toDate ? r.at.toDate().toISOString().slice(0, 16) : ''} ${r.local ? `${r.screen} «${r.question || '?'}»` : `t${r.tutorialNumber} adım ${r.stepIndex}`} — ${r.path}`,
+      `- ${r.at && r.at.toDate ? r.at.toDate().toISOString().slice(0, 16) : ''} ${r.local ? `${r.screen} «${r.question || '?'}»` : r.kind === 'genel' ? 'Sobi sekmesi' : `t${r.tutorialNumber} adım ${r.stepIndex}`} — ${r.path}`,
       `  - çocuk: «${r.childText || r.suggestion || '?'}»`,
       `  - Sobi: «${r.reply}»`,
       `  - not: «${r.comment || '—'}»`,
@@ -117,6 +120,15 @@ async function main() {
     const l = rows.filter((r) => r.tutorialNumber === t);
     const u = l.filter((r) => r.value === 1).length;
     out.push(`| t${t} | ${u} | ${l.length - u} | ${pct(u, l.length)} |`);
+  }
+  const genelUp = genel.filter((r) => r.value === 1).length;
+  out.push('', `## 5. Sobi sekmesi (genel sohbet): ${genel.length} oy, ${genelUp} 👍 (${pct(genelUp, genel.length)} beğeni)`, '');
+  const genelDown = genel.filter((r) => r.value === -1);
+  if (!genelDown.length) out.push('_Beğenilmeyen yok._');
+  for (const r of genelDown.slice(0, 60)) {
+    out.push(`- ${r.source === 'hazir' ? `[hazır: ${r.aciklama}] ` : ''}${r.fellBack ? '[yedek metin] ' : ''}çocuk: «${r.childText || r.suggestion || '?'}»`);
+    out.push(`  - Sobi: «${r.reply}»`);
+    if (r.comment) out.push(`  - yorum: «${r.comment}»`);
   }
   const file = path.join(__dirname, `rapor-${new Date().toISOString().slice(0, 10)}.md`);
   fs.writeFileSync(file, `${out.join('\n')}\n`);
