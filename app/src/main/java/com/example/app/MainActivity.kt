@@ -2935,8 +2935,12 @@ class MainActivity : AppCompatActivity() {
      * kapanışı. [finishTasksOverlayAnimated]'ı KULLANMIYOR: o yol Görevler'e özgü (dönüşte
      * reklam, seri sorusu, Görevler'i yeniden gösterme). Ödevden dönen çocuğa reklam çıkmıyor ve
      * altta Sorularım duruyor; yalnızca katman kayarak kalkıyor.
+     *
+     * @param showInterstitialAd Sobi testinden çıkış: kayma bitince derslerdeki geçiş reklamı kapısı
+     *   ([checkAndShowInterstitialAdIfAllowed]; aralık, Pro ve ilk sandık kuralları aynı). Kullanıcı
+     *   kararı 02.11.2026. Test sandıkla bittiyse reklamı sandığın kapanışı soruyor, burası değil.
      */
-    fun finishHomeworkOverlay(caller: String) {
+    fun finishHomeworkOverlay(caller: String, showInterstitialAd: Boolean = false) {
         if (!::binding.isInitialized) return
         val fm = supportFragmentManager
         fm.executePendingTransactions()
@@ -2955,6 +2959,7 @@ class MainActivity : AppCompatActivity() {
             }
             releasePracticeTouchBlocker()
             ensureChromeUnlockedAfterOverlayDismiss("finishHomeworkOverlay:$caller")
+            if (showInterstitialAd) checkAndShowInterstitialAdIfAllowed("finishHomeworkOverlay:$caller")
         }, HOMEWORK_OVERLAY_CLOSE_MS)
     }
 

@@ -2290,9 +2290,12 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- İpucu balonu düğmeden uzun ve açılırken kuyruğundan büyüyüp biraz taşıyor; kesilmesin diye
-         bu kap ve içindeki düzen çocuklarını kırpmıyor. -->
+         bu kap ve içindeki düzen çocuklarını kırpmıyor.
+         İpucu düğmesi kaldırıldı (kullanıcı kararı 02.11.2026): kap ve dokunma alanı gizli; kod ve
+         kimlikler duruyor, geri açmak için yalnızca bu iki görünürlük. -->
     <FrameLayout
         android:id="@+id/hintContainer"
+        android:visibility="gone"
         android:layout_width="wrap_content"
         android:layout_height="@dimen/abacus_side_button_size"
         android:layout_marginEnd="@dimen/abacus_fragment_hint_container_margin_end"
@@ -2347,6 +2350,7 @@
     </FrameLayout>
     <View
         android:id="@+id/fabHintTouchArea"
+        android:visibility="gone"
         android:layout_width="@dimen/abacus_fragment_fab_touch_width"
         android:layout_height="@dimen/abacus_fragment_fab_touch_width"
         android:layout_marginBottom="@dimen/abacus_fragment_fab_touch_margin_bottom"
@@ -2355,24 +2359,28 @@
         android:layout_marginEnd="@dimen/abacus_fragment_fab_touch_margin_end"
         app:layout_constraintTop_toBottomOf="@id/blackboardImage"/>
 
+    <!--
+      Sağ sütun Kontrol'ün üstünden yukarı dizili (kupa yolu ve ödevdeki gibi); eskiden tahtanın
+      altından aşağı diziliyordu. Alttan yukarı: abaküs ayarı, sihirli değnek, öğretmene sor.
+    -->
     <ImageView
         android:id="@+id/askQuestionButton"
         android:layout_width="@dimen/abacus_side_button_size"
         android:layout_height="@dimen/abacus_side_button_size"
-        android:layout_marginTop="@dimen/abacus_fragment_fab_touch_margin_bottom_negative"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:textAllCaps="false"
         android:padding="@dimen/tutorial_ask_button_padding"
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/fabHintTouchArea"
+        app:layout_constraintBottom_toTopOf="@id/rulesPanelButton"
         android:src="@drawable/teacher_ask_ic"/>
     <ImageView
         android:id="@+id/rulesPanelButton"
         android:layout_width="@dimen/abacus_side_button_size"
         android:layout_height="@dimen/abacus_side_button_size"
-        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:textAllCaps="false"
         android:visibility="visible"
@@ -2380,7 +2388,7 @@
         android:background="@drawable/fab_background"
         android:textColor="@android:color/black"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/askQuestionButton"
+        app:layout_constraintBottom_toTopOf="@id/abacusModeButton"
         android:src="@drawable/magic_wand_ic"/>
 
 
@@ -2388,7 +2396,7 @@
         android:id="@+id/abacusModeButton"
         android:layout_width="@dimen/abacus_side_button_size"
         android:layout_height="@dimen/abacus_side_button_size"
-        android:layout_marginTop="@dimen/abacus_fragment_ask_button_margin_top"
+        android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:visibility="visible"
         android:padding="2dp"
@@ -2398,7 +2406,7 @@
         app:lottie_autoPlay="false"
         app:lottie_loop="false"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/rulesPanelButton"/>
+        app:layout_constraintBottom_toTopOf="@id/kontrolButton"/>
 
     <LinearLayout
         android:id="@+id/abacusSettingsPanel"

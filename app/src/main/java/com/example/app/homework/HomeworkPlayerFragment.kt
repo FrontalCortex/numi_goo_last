@@ -42,7 +42,8 @@ import kotlinx.coroutines.withContext
  *
  * Adım bitince ilerleme yazılıyor ([Homeworks.submitBlock]); yazılamazsa sonuç ekranı "Tekrar
  * kaydet" gösteriyor, çocuğun çözdüğü adım kaybolmuyor. Adımın ortasında çıkılırsa adım sayılmıyor.
- * Can (enerji) harcanmıyor, reklam yok: ödev öğretmenin verdiği iş.
+ * Can (enerji) harcanmıyor, reklam yok: ödev öğretmenin verdiği iş. Sobi testinden çıkışta ise derslerdeki
+ * geçiş reklamı kapısı soruluyor (bkz. [close]).
  *
  * SOBİ TESTİ KİPİ ([newSobiTest]; kullanıcı kararı 01.11.2026): Sobi'nin günlük testi aynı ekranda.
  * Ödev belgesi yok: sorular hazır gelir ([com.example.app.abacus.SobiTestPlanner]), sonuç kural
@@ -170,6 +171,8 @@ class HomeworkPlayerFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         homeworkId = requireArguments().getString(ARG_HOMEWORK_ID).orEmpty()
         sobiMode = requireArguments().containsKey(ARG_SOBI_OPS)
+        // Derslerdeki gibi: dönüşte geçiş reklamı sorulsun (kapı MainActivity.checkAndShowInterstitialAdIfAllowed).
+        if (sobiMode && savedInstanceState == null) com.example.app.GlobalValues.shouldShowAdOnReturn = true
         binding.quitButton.setOnClickListener { requestQuit() }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -312,7 +315,8 @@ class HomeworkPlayerFragment : Fragment() {
     /** Ders sandığıyla aynı sunucu sandığı; ders sonu zincirine (harita ilerlemesi) dokunmadan. */
     private fun openSobiChest() {
         val main = activity as? MainActivity ?: return close()
-        close()
+        // Reklamı sandığın kapanışı soruyor (bayrak kalkık kalıyor): sandığın üstüne açılmasın.
+        close(showInterstitialAd = false)
         main.window.decorView.postDelayed({
             if (main.isFinishing || main.isDestroyed) return@postDelayed
             // Görev sandığıyla aynı açılış (MissionsSection): kapanışı NewChestFragment kendisi yapıyor
@@ -833,11 +837,12 @@ class HomeworkPlayerFragment : Fragment() {
             ?.setTextColor(ContextCompat.getColor(requireContext(), R.color.dark_error))
     }
 
-    private fun close() {
+    /** @param showInterstitialAd Sobi testinden çıkışta geçiş reklamı (ödevde hiç yok). */
+    private fun close(showInterstitialAd: Boolean = sobiMode) {
         handler.removeCallbacksAndMessages(null)
         hideKeyboard()
         val main = activity as? MainActivity
-        if (main != null) main.finishHomeworkOverlay("HomeworkPlayer.close")
+        if (main != null) main.finishHomeworkOverlay("HomeworkPlayer.close", showInterstitialAd)
         else parentFragmentManager.popBackStack()
     }
 
