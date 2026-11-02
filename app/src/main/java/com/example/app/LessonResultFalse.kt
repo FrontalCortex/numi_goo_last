@@ -146,6 +146,10 @@ class LessonResultFalse : Fragment() {
 
         val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
 
+        // Göçen düğme (bg_depth_result_continue): basılıyken dudak kadar iner.
+
+        com.example.app.homework.DepthPress.attach(binding.claimButton)
+
         binding.claimButton.setOnClickListener {
 
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)

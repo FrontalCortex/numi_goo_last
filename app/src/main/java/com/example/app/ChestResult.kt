@@ -103,6 +103,8 @@ class ChestResult : Fragment() {
     }
 
     private fun continueFragment() {
+        // Göçen düğme (bg_depth_result_continue): basılıyken dudak kadar iner.
+        com.example.app.homework.DepthPress.attach(binding.claimButton)
         binding.claimButton.setOnClickListener {
             val shouldPassRecordBreakMission = shouldIncrementChestRecordBreakMission
             shouldIncrementChestRecordBreakMission = false

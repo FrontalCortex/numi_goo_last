@@ -115,6 +115,12 @@
         android:layout_marginBottom="20dp"
         android:textStyle="bold"
         android:textColor="#101820"
-        android:backgroundTint="#8CC63F"
+        android:background="@drawable/bg_depth_result_continue"
+        app:backgroundTint="@null"
+        android:stateListAnimator="@null"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:paddingTop="0dp"
+        android:paddingBottom="4dp"
         android:textSize="18sp"/>
 </LinearLayout>

@@ -111,6 +111,8 @@ class LessonResult : Fragment() {
             // Bu verileri kullanarak UI'ı güncelle
             updateUI()
         }
+        // Göçen düğme (bg_depth_result_continue): basılıyken dudak kadar iner.
+        com.example.app.homework.DepthPress.attach(binding.claimButton)
         binding.claimButton.setOnClickListener {
             val clickAtMs = System.currentTimeMillis()
             if (claimHandled) {

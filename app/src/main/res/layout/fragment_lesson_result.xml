@@ -115,7 +115,13 @@
         android:layout_width="match_parent"
         android:layout_height="60dp"
         android:layout_marginTop="16dp"
-        android:backgroundTint="#8CC63F"
+        android:background="@drawable/bg_depth_result_continue"
+        app:backgroundTint="@null"
+        android:stateListAnimator="@null"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:paddingTop="0dp"
+        android:paddingBottom="4dp"
         android:text="@string/fragment_lesson_result_claim_button"
         android:layout_marginHorizontal="10dp"
         android:textAllCaps="false"
@@ -124,6 +130,5 @@
         android:textSize="18sp"
         android:textStyle="bold"
         android:visibility="invisible"
-        android:alpha="0"
-        app:cornerRadius="15dp"/>
+        android:alpha="0"/>
 </LinearLayout>
