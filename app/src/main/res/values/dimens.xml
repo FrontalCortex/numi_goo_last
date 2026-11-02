@@ -334,6 +334,9 @@
     <dimen name="abacus_fragment_blackboard_margin_top">20dp</dimen>
     <dimen name="abacus_fragment_equation_text_size">36sp</dimen>
     <dimen name="abacus_fragment_equation_padding">16dp</dimen>
+    <!-- Ödev oynatıcısının sayı kartı: kural paneliyle (abaküsün üstünde) çakışmayacak kadar alçak. -->
+    <dimen name="hw_flash_card_height">140dp</dimen>
+    <dimen name="hw_flash_text_size">56sp</dimen>
     <dimen name="abacus_fragment_equation_margin_bottom">20dp</dimen>
     <dimen name="abacus_fragment_result_panel_margin_neg">-10dp</dimen>
     <dimen name="abacus_fragment_hint_container_height">56dp</dimen>

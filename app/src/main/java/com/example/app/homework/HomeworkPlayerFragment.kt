@@ -359,7 +359,7 @@ class HomeworkPlayerFragment : Fragment() {
     private fun setPlayVisible(visible: Boolean) {
         val b = _binding ?: return
         val v = if (visible) View.VISIBLE else View.INVISIBLE
-        b.blackboardImage.visibility = v
+        b.flashCard.visibility = v
         b.flashText.visibility = v
         b.kontrolButton.visibility = v
         b.stepText.visibility = v
@@ -498,10 +498,10 @@ class HomeworkPlayerFragment : Fragment() {
         }
     }
 
-    /** Uzun sayılar (8 basamak, çarpma) tahtaya sığsın diye yazı küçülüyor. */
+    /** Uzun sayılar (8 basamak, çarpma) karta sığsın diye yazı küçülüyor. */
     private fun setFlash(text: String) {
         val b = _binding ?: return
-        val base = resources.getDimension(R.dimen.abacus_fragment_equation_text_size)
+        val base = resources.getDimension(R.dimen.hw_flash_text_size)
         val scale = when {
             text.length <= 5 -> 1f
             text.length <= 8 -> 0.75f
