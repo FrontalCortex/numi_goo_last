@@ -585,6 +585,9 @@ class LessonAdapter(
             arrow.alpha = 0f
             arrow.visibility = View.VISIBLE
             arrow.animate().alpha(1f).setStartDelay(60L).setDuration(160L).start()
+            // Dokunuşun dalgası (ripple) görüntüye açık renkli bir yay olarak geçmesin.
+            card.isPressed = false
+            card.jumpDrawablesToCurrentState()
             runCatching { card.drawToBitmap() }.getOrNull()?.let { bmp ->
                 // Bitmap cihazın fiziksel yoğunluğuyla doğuyor; tablette uygulama yoğunluğu büyütülünce (FontScaleLimiter)
                 // ImageView onu yeniden ölçekleyip kartın üstüne kaymış/büyümüş koyuyordu.

@@ -2102,6 +2102,8 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <!-- Sonuç panelleri 14dp: rehber kapanınca yan düğmeler 10dp'ye çıkıyor (disableGuidePanelMode),
+         panel onların altında kalıp abaküs ayar düğmesi panelin üstünde yüzüyordu. Körleme dersiyle aynı. -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/incorrectPanel"
         android:layout_width="match_parent"
@@ -2109,7 +2111,7 @@
         android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
         android:descendantFocusability="blocksDescendants"
-        android:elevation="4dp"
+        android:elevation="14dp"
         android:padding="3dp"
         android:fitsSystemWindows="true"
         android:layout_marginStart="@dimen/abacus_fragment_result_panel_margin_neg"
@@ -2230,7 +2232,7 @@
         android:background="@drawable/bottom_sheet_background"
         android:clickable="false"
         android:descendantFocusability="blocksDescendants"
-        android:elevation="4dp"
+        android:elevation="14dp"
         android:padding="@dimen/tutorial_result_panel_padding"
         android:clipToPadding="false"
         android:focusable="false"

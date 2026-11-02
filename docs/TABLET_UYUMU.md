@@ -27,6 +27,8 @@ tablet ~480–530 dp genişliğinde, ~800 dp boyunda büyük bir telefon gibi da
 
 Açılış, part kartları, harita ve ders paneli, öğretici, abaküs dersi, profil, görevler, mağaza,
 sorularım, keşfet, kupa yolu listesi ve zorluk penceresi, flaş dersi, kupa yolu oynatıcısı
-(ödev oynatıcısı; abaküs ayar paneli açılıp kapanıyor, kapalıyken görünmüyor).
+(ödev oynatıcısı; abaküs ayar paneli açılıp kapanıyor, kapalıyken görünmüyor), abaküs dersinde
+ayar paneli ve yanlış cevap paneli, Sobi ekranı, ayarlar, veli paneli (dersler, kural başarısı).
 
-Henüz bakılmayanlar: Sobi ekranı ve Sobi testi paneli, veli paneli, plan ekranları, ayarlar.
+Henüz bakılmayanlar: Sobi testi paneli (haritadaki düğme bu hesapta çıkmadı), plan/Pro ekranları
+(öğretmen hesabında girişi yok). İkisi de alttan açılan panel; pencere ölçüsüne özel kodları yok.
