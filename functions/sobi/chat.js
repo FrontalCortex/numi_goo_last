@@ -350,6 +350,12 @@ function creditsText(lang = 'tr') {
       + 'Credits come from the shop and never expire; your mom or dad approves the purchase. '
       + "Ready-made answers and messages I couldn't answer don't cost anything.";
   }
+  if (lang === 'id') {
+    return `Kamu dapat pesan gratis setiap hari: ${f.Free} di paket Free, ${f.Lite} di Lite, dan ${f.Pro} di Pro. `
+      + 'Kalau sudah habis, setiap pesan memakai 1 kredit Sobi. Setiap contoh baru yang kamu kerjakan bersamaku di sempoa juga dihitung 1 pesan. '
+      + 'Kredit dibeli di toko dan tidak pernah kedaluwarsa; pembeliannya disetujui ayah atau ibumu. '
+      + 'Jawaban siap dan pesan yang tidak bisa kujawab tidak memakai apa-apa.';
+  }
   return `Her gün ücretsiz mesaj hakkın var: Free planda ${f.Free}, Lite'ta ${f.Lite}, Pro'da ${f.Pro}. `
     + 'Hakkın bitince her mesaj 1 Sobi kredisi harcar. Benimle abaküste çözdüğün her yeni örnek de 1 mesaj sayılır. '
     + 'Krediler mağazadan alınır, süresizdir; satın almayı annen ya da baban onaylar. '

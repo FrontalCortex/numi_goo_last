@@ -159,12 +159,19 @@ const RULE_LABELS = {
 
 /** İngilizcesi uygulamanın sözleriyle (docs/CEVIRI_SOZLUGU.md). */
 const RULE_LABELS_EN = { direct: 'direct', five: 'small friends', ten: 'big friends', bead: 'mixed friends' };
+/** Endonezcesi sempoa kurslarının sözleriyle (docs/CEVIRI_SOZLUGU_ID.md); işlem adı önde. */
+const RULE_LABELS_ID = { direct: 'langsung', five: 'teman kecil', ten: 'teman besar', bead: 'gabungan' };
 
 function homeworkSummary(config, lang = 'tr') {
   if (lang === 'en') {
     if (config.op === 'mul') return `${config.digits} × ${config.digits2} digit multiplication`;
     const labels = config.rules.map((r) => RULE_LABELS_EN[r]).join(', ');
     return `${labels} ${config.op === 'add' ? 'addition' : 'subtraction'}`;
+  }
+  if (lang === 'id') {
+    if (config.op === 'mul') return `perkalian ${config.digits} × ${config.digits2} digit`;
+    const labels = config.rules.map((r) => RULE_LABELS_ID[r]).join(', ');
+    return `${config.op === 'add' ? 'penjumlahan' : 'pengurangan'} ${labels}`;
   }
   if (config.op === 'mul') return `${config.digits} × ${config.digits2} basamak çarpma`;
   const labels = config.rules.map((r) => RULE_LABELS[config.op][r]).join(', ');
@@ -187,6 +194,12 @@ function doneNoticeText({ studentName, summary, correct, answered, doneCount, ta
     if (answered > 0) en.push(`${correct}/${answered} correct`);
     if (targetCount > 0) en.push(`${doneCount}/${targetCount} students finished`);
     return { title: `Homework done: ${summary}`, body: en.join(' · ') };
+  }
+  if (lang === 'id') {
+    const id = [`${studentName} selesai`];
+    if (answered > 0) id.push(`${correct}/${answered} benar`);
+    if (targetCount > 0) id.push(`${doneCount}/${targetCount} murid selesai`);
+    return { title: `PR selesai: ${summary}`, body: id.join(' · ') };
   }
   const title = `Ödev tamamlandı: ${summary}`;
   const parts = [`${studentName} bitirdi`];

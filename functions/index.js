@@ -1414,6 +1414,8 @@ exports.onMessageCreated = functions.firestore
     // İngilizcesi: yazılı mesaj kendisi (kullanıcının metni), türler çevriliyor.
     const bodyEn = type === 'text' && textContent ? body
       : ({ audio: 'Voice message', video: 'Video', image: 'Image' })[type] || 'New message';
+    const bodyId = type === 'text' && textContent ? body
+      : ({ audio: 'Pesan suara', video: 'Video', image: 'Gambar' })[type] || 'Pesan baru';
 
     // Bildirim başlığı artık öğrenci adı yerine soru başlığı olsun.
     // HeaderInput CreateQuestion'da StudentQuestion.message / previewText'e yazılıyor.
@@ -1437,6 +1439,7 @@ exports.onMessageCreated = functions.firestore
       title: questionTitle,
       body,
       en: { title: askedTitle || 'New question', body: bodyEn },
+      id: { title: askedTitle || 'Pertanyaan baru', body: bodyId },
       data: {
         questionId: String(questionId),
         messageId: String(messageId),
@@ -1535,6 +1538,7 @@ function questionStatusNotice(before, after, nowMs) {
       title: 'Öğretmenin sorunu aldı',
       body: 'Cevap geldiğinde haber vereceğiz.',
       en: { title: 'Your teacher took your question', body: "We'll let you know when the answer arrives." },
+      id: { title: 'Gurumu mengambil pertanyaanmu', body: 'Kami akan kabari kalau jawabannya sudah datang.' },
     };
   }
 
@@ -1547,6 +1551,7 @@ function questionStatusNotice(before, after, nowMs) {
       title: 'Sorun çözüldü olarak işaretlendi',
       body: 'Öğretmenin cevabını sohbette okuyabilirsin.',
       en: { title: 'Your question was marked as solved', body: "You can read your teacher's answer in the chat." },
+      id: { title: 'Pertanyaanmu ditandai selesai', body: 'Kamu bisa membaca jawaban gurumu di obrolan.' },
     };
   }
 
@@ -1559,6 +1564,7 @@ function questionStatusNotice(before, after, nowMs) {
       title: 'Soruna cevap gelemedi',
       body: '1 danışma kredin geri verildi. Dilediğin zaman yeniden sorabilirsin.',
       en: { title: "Your question couldn't be answered", body: 'Your 1 tutor credit was refunded. You can ask again anytime.' },
+      id: { title: 'Pertanyaanmu belum bisa dijawab', body: '1 kredit tutormu sudah dikembalikan. Kamu bisa bertanya lagi kapan saja.' },
     };
   }
 
@@ -1579,6 +1585,7 @@ async function notifyQuestionStatusChange(before, after, questionId) {
       title: notice.title,
       body: notice.body,
       en: notice.en,
+      id: notice.id,
       // Bildirime dokunan öğrenci doğrudan sorusuna gitsin.
       data: { questionId: String(questionId) },
     });
@@ -3057,6 +3064,12 @@ function chestNoticeText(count, lang = 'tr') {
       body: 'You forgot to open the reward you earned on the Trophy Road.',
     };
   }
+  if (lang === 'id') {
+    return {
+      title: count === 1 ? 'Ada peti yang menunggumu' : `Ada ${count} peti yang menunggumu`,
+      body: 'Kamu lupa membuka hadiah yang kamu dapat di Jalur Piala.',
+    };
+  }
   return {
     title: count === 1 ? 'Seni bekleyen bir sandık var' : `Seni bekleyen ${count} sandık var`,
     body: 'Kupa yolunda hak ettiğin ödülü açmayı unutmuşsun.',
@@ -3104,6 +3117,7 @@ async function runPendingChestNotices() {
             title: text.title,
             body: text.body,
             en: chestNoticeText(pending, 'en'),
+            id: chestNoticeText(pending, 'id'),
           });
           if (result.sent) counts.sent++;
           else counts.skipped++;
@@ -3187,6 +3201,7 @@ function energyNoticeDecision({ infiniteEnergy, utcOffsetMinutes }, nowMs) {
       body: 'Kaldığın yerden devam edebilirsin.',
     },
     textEn: { title: 'Your lives are full', body: 'You can pick up where you left off.' },
+    textId: { title: 'Nyawamu sudah penuh', body: 'Kamu bisa lanjut dari tempat terakhir.' },
   };
 }
 
@@ -3229,6 +3244,7 @@ async function runEnergyFullNotices(nowMs) {
             title: decision.text.title,
             body: decision.text.body,
             en: decision.textEn,
+            id: decision.textId,
             userData,
           });
           if (result.sent) counts.sent++;
@@ -3307,6 +3323,12 @@ function seasonNoticeText(hoursLeft, lang = 'tr') {
       body: 'Check your rank on the leaderboard.',
     };
   }
+  if (lang === 'id') {
+    return {
+      title: h === 1 ? 'Musim berakhir satu jam lagi' : `Musim berakhir ${h} jam lagi`,
+      body: 'Cek peringkatmu di papan peringkat.',
+    };
+  }
   const title = h === 1 ? 'Sezon bir saat sonra bitiyor' : `Sezon ${h} saat sonra bitiyor`;
   return { title, body: 'Liderlik tablosundaki sıranı gözden geçir.' };
 }
@@ -3337,7 +3359,12 @@ function seasonNoticeDecision({ season, msLeft, sentSeason, utcOffsetMinutes }, 
     return null;
   }
 
-  return { season, text: seasonNoticeText(hoursLeft), textEn: seasonNoticeText(hoursLeft, 'en') };
+  return {
+    season,
+    text: seasonNoticeText(hoursLeft),
+    textEn: seasonNoticeText(hoursLeft, 'en'),
+    textId: seasonNoticeText(hoursLeft, 'id'),
+  };
 }
 
 /** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
@@ -3385,6 +3412,7 @@ async function runSeasonEndingNotices(nowMs) {
             title: decision.text.title,
             body: decision.text.body,
             en: decision.textEn,
+            id: decision.textId,
             userData: doc.data(),
           });
           if (!result.sent) {
@@ -3470,6 +3498,12 @@ function trialNoticeText(days, lang = 'tr') {
       body: 'After that, your subscription continues as paid. You can cancel anytime.',
     };
   }
+  if (lang === 'id') {
+    return {
+      title: days === 1 ? 'Uji coba gratismu berakhir besok' : `Uji coba gratismu berakhir ${days} hari lagi`,
+      body: 'Setelah itu, langgananmu berlanjut dengan berbayar. Kamu bisa membatalkannya kapan saja.',
+    };
+  }
   const title = days === 1 ? 'Deneme süren yarın bitiyor' : `Deneme süren ${days} gün sonra bitiyor`;
   return {
     title,
@@ -3514,7 +3548,7 @@ function trialNoticeDecision({ trialEndsAt, sentFor, utcOffsetMinutes }, nowMs) 
     // Bu eşik BU deneme için gönderilmiş mi? Bitiş zamanı karşılaştırılıyor, bayrak değil:
     // kullanıcı yeni bir deneme alırsa (farklı bitiş) bildirim yeniden gitmeli.
     if (Number(sent[String(days)]) === endsAt) return null;
-    return { days, endsAt, text: trialNoticeText(days), textEn: trialNoticeText(days, 'en') };
+    return { days, endsAt, text: trialNoticeText(days), textEn: trialNoticeText(days, 'en'), textId: trialNoticeText(days, 'id') };
   }
   return null;
 }
@@ -3554,6 +3588,7 @@ async function runTrialEndingNotices(nowMs) {
         title: decision.text.title,
         body: decision.text.body,
         en: decision.textEn,
+        id: decision.textId,
         userData: doc.data(),
       });
       if (!result.sent) {
@@ -3633,6 +3668,14 @@ function teacherPoolText(newCount, totalPending, lang = 'tr') {
       body: totalPending > newCount
         ? `${totalPending} questions in the pool are waiting for an answer.`
         : 'Unanswered questions are refunded to the student after 48 hours.',
+    };
+  }
+  if (lang === 'id') {
+    return {
+      title: newCount === 1 ? 'Ada pertanyaan baru di kumpulan soal' : `Ada ${newCount} pertanyaan baru di kumpulan soal`,
+      body: totalPending > newCount
+        ? `${totalPending} pertanyaan di kumpulan soal menunggu jawaban.`
+        : 'Pertanyaan yang tidak dijawab dikembalikan ke murid setelah 48 jam.',
     };
   }
   const title = newCount === 1 ? 'Havuzda yeni bir soru var' : `Havuzda ${newCount} yeni soru var`;
@@ -3734,6 +3777,7 @@ async function runTeacherPoolNotify(nowMs) {
         title: text.title,
         body: text.body,
         en: teacherPoolText(mineNew, total === null ? mineNew : total, 'en'),
+        id: teacherPoolText(mineNew, total === null ? mineNew : total, 'id'),
         userData: doc.data(),
       });
       if (result.sent) counts.sent++;
@@ -4340,6 +4384,7 @@ exports.inviteStudentToClass = functions.https.onCall(async (data, context) => {
         title: 'Sınıf daveti',
         body: `${teacherName} seni "${classData.name || ''}" sınıfına davet etti.`,
         en: { title: 'Class invite', body: `${teacherName} invited you to the "${classData.name || ''}" class.` },
+        id: { title: 'Undangan kelas', body: `${teacherName} mengundangmu ke kelas "${classData.name || ''}".` },
         data: { inviteId },
         userData: student,
       });
@@ -4499,6 +4544,8 @@ exports.createHomework = functions.https.onCall(async (data, context) => {
         title: 'New homework',
         body: `${teacherName}: ${homework.homeworkSummary(config, 'en')}, ${config.questionCount} ${config.questionCount === 1 ? 'question' : 'questions'}`,
       },
+      // Endonezcede ad çoğul almıyor: "1 soal", "10 soal".
+      id: { title: 'PR baru', body: `${teacherName}: ${homework.homeworkSummary(config, 'id')}, ${config.questionCount} soal` },
       data: { homeworkId: ref.id },
     }).catch((e) => console.error('createHomework: bildirim gönderilemedi', { sid, error: e.message }))
   ));
@@ -4670,6 +4717,9 @@ exports.onHomeworkProgressWritten = functions.firestore
         en: homework.doneNoticeText({
           ...doneParams, studentName: memberNames.get(studentUid) || 'A student', summary: homework.homeworkSummary(hw.config, 'en'),
         }, 'en'),
+        id: homework.doneNoticeText({
+          ...doneParams, studentName: memberNames.get(studentUid) || 'Seorang murid', summary: homework.homeworkSummary(hw.config, 'id'),
+        }, 'id'),
         data: { homeworkId, classId: hw.classId },
       }).catch((e) => console.error('onHomeworkProgressWritten: bildirim gönderilemedi', { tid, error: e.message }))
     ));
@@ -5803,7 +5853,7 @@ function isDeadTokenError(error) {
 /** Öğretmene gidebilen bildirim konuları: öğrenci mesajı, havuza düşen soru, ödevi bitiren öğrenci. */
 const TEACHER_NOTIFICATION_TOPICS = new Set(['chat', 'teacher_pool', 'homework_done']);
 
-async function sendUserNotification(uid, { type, topic, title, body, en = null, data = {}, userData = null }) {
+async function sendUserNotification(uid, { type, topic, title, body, en = null, id = null, data = {}, userData = null }) {
   if (!uid) return { sent: false, reason: 'no_uid' };
   const nowMs = Date.now();
 
@@ -5815,11 +5865,12 @@ async function sendUserNotification(uid, { type, topic, title, body, en = null, 
   }
 
   // Alıcının uygulama dili: istemci token kaydıyla `lang` yazıyor (MyFirebaseMessagingService).
-  // Çağıran İngilizce karşılığı (`en: { title, body }`) verdiyse ve kullanıcı İngilizceyse o
-  // gider; dil yoksa (eski sürüm) ya da karşılık verilmediyse Türkçe.
-  if (en && user.lang === 'en') {
-    title = en.title;
-    body = en.body;
+  // Çağıran kullanıcının dilinde karşılık (`en` / `id`: { title, body }) verdiyse o gider; dil
+  // yoksa (eski sürüm) ya da o dilde karşılık verilmediyse Türkçe.
+  const translated = user.lang === 'en' ? en : user.lang === 'id' ? id : null;
+  if (translated) {
+    title = translated.title;
+    body = translated.body;
   }
 
   // Öğretmen yalnızca öğretmenlik işinin bildirimlerini alır. Seri, can, sandık, sezon ve
@@ -7352,6 +7403,7 @@ async function runStreakReminderPass(pass, hourUtc, nowMs, deadline) {
             title: decision.text.title,
             body: decision.text.body,
             en: decision.textEn,
+            id: decision.textId,
             data: { type: 'streak_reminder' },
             userData: userSnap.data(),
           });
@@ -7953,6 +8005,7 @@ exports.reviewBugReport = functions.https.onCall(async (data, context) => {
       title: text.title,
       body: text.body,
       en: bugReportNoticeText(outcome.status, 'en'),
+      id: bugReportNoticeText(outcome.status, 'id'),
       data: { bugReportId: reportId },
     });
   } catch (e) {

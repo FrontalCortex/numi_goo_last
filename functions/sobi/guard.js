@@ -31,8 +31,9 @@ const URL = /\b(?:https?:\/\/|www\.)\S+/gi;
 const LONG_DIGITS = /(?:\+?\d[\s.-]?){9,}/g;
 // "benim adım Ali", "ismim Ayşe": ad modele gitmesin (denemede Sobi adı geri söyledi). Tek başına
 // "adım" maskelenmiyor: derste "bu adım" (basamak) anlamında da geçiyor. Büyük harfler açıkça
-// yazılı: /i bayrağı Türkçe "İ"yi "i" ile eşleştirmiyor.
-const NAME = /([Bb]enim\s+[Aa]d[ıi]m|[Bb]enim\s+[İi]smim|[İi]smim|[Mm]y\s+name\s+is|[Mm]y\s+name's)\s+\p{L}+/gu;
+// yazılı: /i bayrağı Türkçe "İ"yi "i" ile eşleştirmiyor. Endonezce "nama saya (adalah) Budi",
+// "namaku Budi": "adalah" kalıba dahil, yoksa ad yerine o maskelenirdi.
+const NAME = /([Bb]enim\s+[Aa]d[ıi]m|[Bb]enim\s+[İi]smim|[İi]smim|[Mm]y\s+name\s+is|[Mm]y\s+name's|[Nn]ama\s+saya(?:\s+adalah)?|[Nn]amaku(?:\s+adalah)?)\s+\p{L}+/gu;
 
 /** Çocuğun metni: kırpılmış, kısaltılmış, kişisel kalıplar maskelenmiş. */
 function cleanChildText(text) {
@@ -94,6 +95,7 @@ function checkReply(reply, sources, { explanation = false } = {}) {
  */
 function fallbackReply(ctx, tools, lang = 'tr') {
   if (lang === 'en') return fallbackReplyEn(ctx);
+  if (lang === 'id') return fallbackReplyId(ctx);
   // Genel sohbette (Sobi sekmesi) adım yok; kural motorunun söyleyeceği bir hamle de yok.
   if (ctx && ctx.mode === 'genel') {
     return 'Bunu şu an cevaplayamadım. Abaküs ya da uygulama hakkında başka bir şey sormak ister misin?';
@@ -134,6 +136,19 @@ function fallbackReplyEn(ctx) {
       : "Let's think about it together! Which part was hard? Can you tell me a bit more?";
   }
   return 'Let\'s look at it together on the abacus! You can tap "Show me".';
+}
+
+/** Endonezce yedek metin: İngilizcedeki gibi hamleyi söylemiyor, "Tunjukkan"a yönlendiriyor. */
+function fallbackReplyId(ctx) {
+  if (ctx && ctx.mode === 'genel') {
+    return 'Aku belum bisa menjawab itu sekarang. Mau tanya hal lain tentang sempoa atau aplikasinya?';
+  }
+  if (!ctx || !Number.isInteger(ctx.target)) {
+    return ctx && ctx.stepText
+      ? `Ayo kita lihat bersama! Di pelajaran kita bilang: "${ctx.stepText}" Bagian mana yang sulit?`
+      : 'Ayo kita pikirkan bersama! Bagian mana yang sulit? Bisa ceritakan sedikit lagi?';
+  }
+  return 'Ayo kita lihat bersama di sempoa! Kamu bisa ketuk "Tunjukkan".';
 }
 
 module.exports = {

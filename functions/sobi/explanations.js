@@ -21,7 +21,7 @@ const path = require('path');
 
 /**
  * Dil başına bir dosya: aciklamalar_<dil>.json. İngilizcesi (aciklamalar_en.json) Türkçenin çevirisi,
- * adımlara İngilizce adım metninin parmak iziyle bağlı (tools/sobi-eval/aciklamalar/yayinla_en.mjs).
+ * adımlara İngilizce adım metninin parmak iziyle bağlı (tools/sobi-eval/aciklamalar/yayinla_dil.mjs en).
  */
 const fileFor = (lang) => path.join(__dirname, `aciklamalar_${lang}.json`);
 const FILE = fileFor('tr');

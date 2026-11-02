@@ -103,6 +103,15 @@ function streakReminderText(current, goalMinutes, freezes = 0, lang = 'tr') {
     }
     return { title: 'How about starting today?', body: `Start a new streak with a small ${dk}-minute goal.` };
   }
+  if (lang === 'id') {
+    if (current > 0 && freezes > 0) {
+      return { title: 'Streak-mu menunggumu 🔥', body: `Berlatihlah ${dk} menit hari ini dan simpan pembeku streak-mu untuk nanti.` };
+    }
+    if (current > 0) {
+      return { title: 'Streak-mu menunggumu 🔥', body: `Berlatihlah ${dk} menit hari ini agar streak ${current} harimu terus berlanjut.` };
+    }
+    return { title: 'Bagaimana kalau mulai hari ini?', body: `Mulai streak baru dengan target kecil ${dk} menit.` };
+  }
   if (current > 0) {
     // Dondurması olan kullanıcının serisi bugün kırılmıyor, ama dondurma 4000 altın ve
     // yarın harcanacak. Bilgi aynı, ton davet: "harcanacak" demek yerine "sakla".
@@ -154,6 +163,9 @@ function secondChanceText(current, goalMinutes, lang = 'tr') {
   if (lang === 'en') {
     return { title: `Your ${current}-day streak could break today`, body: `Got ${dk} minutes? That's enough to finish the day.` };
   }
+  if (lang === 'id') {
+    return { title: `Streak ${current} harimu bisa putus hari ini`, body: `Punya ${dk} menit? Itu cukup untuk menyelesaikan hari ini.` };
+  }
   return {
     title: `${current} günlük serin bugün kırılabilir`,
     body: `${dk} dakikan var mı? Günü kapatmak için yeter.`,
@@ -200,6 +212,7 @@ function secondChanceDecision(state, nowMs) {
     today,
     text: secondChanceText(live.current, state.goalMinutes),
     textEn: secondChanceText(live.current, state.goalMinutes, 'en'),
+    textId: secondChanceText(live.current, state.goalMinutes, 'id'),
   };
 }
 
@@ -235,6 +248,7 @@ function streakReminderDecision(state, nowMs) {
     today,
     text: streakReminderText(live.current, state.goalMinutes, live.freezes),
     textEn: streakReminderText(live.current, state.goalMinutes, live.freezes, 'en'),
+    textId: streakReminderText(live.current, state.goalMinutes, live.freezes, 'id'),
   };
 }
 

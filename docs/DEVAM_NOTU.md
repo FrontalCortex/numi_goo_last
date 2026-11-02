@@ -55,7 +55,7 @@ yerelleştirilmesi, ödev saklama süresi.
   ekliyor (Türkçe istek bayt bayt aynı, önbelleği bozulmuyor). Oturuma `lang` ve `promptVersion+en`
   yazılıyor (haftalık rapor ayırabilsin). Hazır ders açıklamalarının İngilizcesi (t3, 12 parça; Türkçe
   onaylıların çevirisi, kullanıcıya gösterildi): metin `tools/sobi-eval/aciklamalar/aciklamalar_en.json`,
-  yayın `yayinla_en.mjs` → `functions/sobi/aciklamalar_en.json` (adımlar İngilizce adım metninin parmak
+  yayın `yayinla_dil.mjs en` → `functions/sobi/aciklamalar_en.json` (adımlar İngilizce adım metninin parmak
   iziyle; Türkçe yayın değişince bunu da çalıştır). Kredi açıklaması ve yedek metinler İngilizce.
   Gerçek modelde denendi (`node scripts/sobi-dene.js --dil en`): cevaplar İngilizce, terimler doğru;
   bir cevapta numaralı liste kullandı (Türkçe talimat yasaklıyor, İngilizcede de izlenmeli).
@@ -75,6 +75,19 @@ yerelleştirilmesi, ödev saklama süresi.
 - **Açık kalanlar:** (3) öğretici
   seslendirmeleri (`res/raw/*.mp3`) Türkçe — şimdilik İngilizcede susturuldu (`TutorialFragment.playSound`); (4) Play Store sayfası; (5) TR kaynaktaki iki yazım hatası:
   `tutorial_ipucu_114` "10 x 1 = 1", `tutorial_ipucu_134` "8'i" (56 olmalı) — EN'de doğru yazıldı.
+
+## Dil seçeneği: Endonezce — sunucu (03.11.2026 — claude/id-sunucu dalında commit; push/deploy kullanıcı onayı bekliyor)
+- **Sobi:** `lang: 'id'` → talimatın sonuna `sobi/prompt_lang_id.md` (sözlük: `docs/CEVIRI_SOZLUGU_ID.md`;
+  düğme adları "Tunjukkan"/"Periksa" sözlükten seçildi, `values-in/strings_sobi.xml` gelince karşılaştır).
+  Kredi açıklaması, yedek metinler, boş sohbet başlığı ("Obrolan") Endonezce; ad maskesi "nama saya
+  (adalah)", "namaku". Gerçek modelde denendi (`sobi-dene.js --dil id`, 3 senaryo): cevaplar Endonezce,
+  terimler doğru; bir cevapta `**kalın**` ve numaralı liste kullandı (İngilizcedeki gibi izlenmeli).
+- **Hazır açıklamalar:** metinler `tools/sobi-eval/aciklamalar/aciklamalar_id.json` (12 parça) hazır;
+  YAYINLANMADI: `values-in/strings_tutorial.xml` yok. O gelince `node tools/sobi-eval/aciklamalar/yayinla_dil.mjs id`
+  (eski `yayinla_en.mjs` → `yayinla_dil.mjs en|id`; dosya yoksa hiçbir şey yazmaz).
+- **Bildirimler:** `sendUserNotification` `en` yanında `id: { title, body }` alıyor; karar fonksiyonları
+  `textId` döndürüyor. İngilizcesi olan 13 bildirimin hepsine Endonezce eklendi; `test:notifications`
+  yeni bir çağrıda `en:` olup `id:` yoksa kırılıyor. Hata bildiriminde sekme adı "Misi" varsayıldı.
 
 ## Reklam yükleme hataları (02.11.2026 — derlendi, commit + push edildi (yalnızca uygulama, deploy yok); telefonda denenmedi; GA4 "Reklamlar" filtresi güncellenmedi)
 - **Asıl sebep AdMob'da:** Sorobit (com.numigo.app) "Onaylanacak uygulamalar"da, durumu

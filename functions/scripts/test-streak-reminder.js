@@ -108,6 +108,11 @@ check('dondurma varsa metin değişiyor', withFreeze.text.body.includes('dondurm
 check('dondurma metninde seri sayısı yok', withFreeze.text.body.includes('12 günlük'), false);
 check('İngilizce metin de karar içinde', alive.textEn.body.includes('12-day streak'), true);
 check('İngilizce dondurma metni', withFreeze.textEn.body.includes('streak freeze'), true);
+check('Endonezce metin de karar içinde', alive.textId.body.includes('streak 12 harimu'), true);
+check('Endonezce dondurma metni', withFreeze.textId.body.includes('pembeku streak'), true);
+check('Endonezce "başla" metni', fresh.textId.title, 'Bagaimana kalau mulai hari ini?');
+check('Endonezce hedef dakikası', fresh.textId.body.includes('20 menit'), true);
+check('İngilizce değişmedi', fresh.textEn.title, 'How about starting today?');
 
 console.log('\n=== KIRILMIŞ SERİ (sunucuda `current` bayat) ===');
 // Sunucu kırılmayı yazmıyor: 3 gün önce çalışmış kullanıcının kaydında current hâlâ 1.
@@ -190,6 +195,10 @@ check(
   second.text.title === streakReminderText(base.current, base.goalMinutes, 0).title,
   false
 );
+
+check('Endonezce ikinci şans', second.textId.title, 'Streak 5 harimu bisa putus hari ini');
+check('Endonezce ikinci şans dakikası', second.textId.body.includes('5 menit'), true);
+check('Endonezce ikinci şans birinciden farklı', second.textId.title === streakReminderText(5, 5, 0, 'id').title, false);
 
 console.log(`\n${pass} geçti, ${fail} kaldı`);
 process.exit(fail > 0 ? 1 : 0);
