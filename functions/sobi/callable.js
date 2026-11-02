@@ -19,6 +19,8 @@
  *                    (ebeveyn paneli ve bildirilen cevapların incelenmesi için)
  *     pendingNote    son cevap denetime takıldıysa çocuğun gördüğü yedek metin
  *     expiresAt      30 gün sonrası; Firestore TTL ilkesi bu alanla siler (konsolda elle açılır)
+ *     kind, title    yalnızca genel sohbette (Sobi sekmesi, `mode: 'genel'`): 'genel' ve ilk mesajdan
+ *                    kısaltılmış başlık; liste ve silme sessions.js'te (sobiSessions)
  *   İstemci bu koleksiyona erişmiyor; yazma da okuma da yalnızca sunucudan (Admin SDK).
  */
 
@@ -34,6 +36,50 @@ const wallet = require('./wallet');
 const SYSTEM_PROMPT = fs.readFileSync(path.join(__dirname, 'prompt_tr.md'), 'utf8');
 /** Talimat metninin parmak izi; her oturuma yazılır, hangi metinle konuşulduğu bilinsin. */
 const PROMPT_VERSION = crypto.createHash('sha1').update(SYSTEM_PROMPT).digest('hex').slice(0, 10);
+/**
+ * Genel sohbetin (Sobi sekmesi) ek talimatı: ders talimatının ardından ayrı sistem bloğu
+ * (chat.runTurn). Uygulama rehberindeki sayılar (plan hakları, can, anahtar) cevapta serbest:
+ * guard yalnızca kaynakta geçen sayıya izin veriyor, bu metin de kaynak.
+ */
+const GENERAL_PROMPT = fs.readFileSync(path.join(__dirname, 'prompt_genel_tr.md'), 'utf8');
+const GENERAL_PROMPT_VERSION = crypto.createHash('sha1').update(SYSTEM_PROMPT + GENERAL_PROMPT).digest('hex').slice(0, 10);
+const GENERAL_SOURCES = guard.numbersIn(GENERAL_PROMPT);
+/** Genel sohbetin listedeki başlığı: çocuğun ilk mesajından (maskelenmiş). */
+const TITLE_MAX = 40;
+/** Sohbete düğme olarak düşen ekran işleri (genel sohbet); yeniden açılan sohbette de görünsün diye kayıtta. */
+const BUTTON_KINDS = new Set(['goster', 'alistirma', 'test', 'kredi', 'pro']);
+
+function titleOf(text) {
+  const t = String(text || '').trim();
+  if (t.length <= TITLE_MAX) return t || 'Sohbet';
+  const cut = t.slice(0, TITLE_MAX);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > 20 ? cut.slice(0, space) : cut).trim()}…`;
+}
+
+/**
+ * homeworkRuleStats/{uid} → genel sohbet bağlamının kural satırları. Ustalık penceresi (son ~50
+ * işlem, `recent`) varsa o: toplam zamanla düzleşip son durumu göstermiyor. Yoksa toplam (`tally`).
+ */
+function ruleFacts(stats) {
+  const s = stats || {};
+  const keys = new Set([...Object.keys(s.tally || {}), ...Object.keys(s.recent || {})]);
+  const rules = [];
+  for (const key of keys) {
+    if (!chat.RULE_LABELS[key]) continue;
+    const win = s.recent && Array.isArray(s.recent[key]) ? s.recent[key] : null;
+    const sum = win
+      ? win.reduce((a, x) => ({ c: a.c + (Number(x && x.c) || 0), w: a.w + (Number(x && x.w) || 0) }), { c: 0, w: 0 })
+      : { c: Number(s.tally[key] && s.tally[key].c) || 0, w: Number(s.tally[key] && s.tally[key].w) || 0 };
+    if (sum.c + sum.w > 0) rules.push({ key, ...sum });
+  }
+  const levels = Object.entries(s.sobiLevel || {})
+    .filter(([key, v]) => chat.RULE_LABELS[key] && Number.isInteger(v))
+    .map(([key, level]) => ({ key, level }));
+  const order = Object.keys(chat.RULE_LABELS);
+  const byRule = (a, b) => order.indexOf(a.key) - order.indexOf(b.key);
+  return { rules: rules.sort(byRule), levels: levels.sort(byRule) };
+}
 
 /**
  * Bir sohbette en fazla çocuk mesajı; sonra yeni sohbet önerilir (sobi_turn_limit). Sohbet bir öğreticinin
@@ -64,13 +110,18 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       const uid = context.auth.uid;
       const payload = data || {};
       const message = typeof payload.message === 'string' ? payload.message : '';
-      const stepContext = chat.sanitizeContext(payload.context);
+      // Genel sohbet (Sobi sekmesi): adım bağlamı yok; bağlamı aşağıda sunucu kendisi kuruyor.
+      const general = payload.mode === 'genel';
+      let stepContext = general ? chat.generalContext() : chat.sanitizeContext(payload.context);
       // Çocuk bir öneri balonuna dokunduysa balonun anahtarı (uygulama metni de "message"da gönderiyor).
       const suggestion = typeof payload.suggestion === 'string' && /^[a-z_]{1,30}$/.test(payload.suggestion) ? payload.suggestion : null;
       const direct = chat.directReplyFor(stepContext, suggestion);
       const sessionId = SESSION_ID.test(payload.sessionId || '') ? payload.sessionId : null;
 
-      const userSnap = await db.collection('users').doc(uid).get();
+      const [userSnap, statsSnap] = await Promise.all([
+        db.collection('users').doc(uid).get(),
+        general ? db.collection('homeworkRuleStats').doc(uid).get() : Promise.resolve(null),
+      ]);
       if (!userSnap.exists) throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
       const userData = userSnap.data();
       if (isAskQuestionRestricted(userData)) {
@@ -82,6 +133,12 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       const usageRef = db.collection('sobiChats').doc(uid);
       const usageSnap = await usageRef.get();
       const balance = wallet.balanceOf(usageSnap.exists ? usageSnap.data() : null, plan, now);
+      if (general) {
+        stepContext = chat.generalContext({
+          plan, freeLeft: balance.freeLeft, freeLimit: balance.freeLimit, credits: balance.credits,
+          ...ruleFacts(statsSnap && statsSnap.exists ? statsSnap.data() : null),
+        });
+      }
       // Uygulamaya giden bakiye: Sobi ekranındaki "bugün 2 ücretsiz / 15 kredi" satırı.
       const balanceFields = (b) => ({ remainingToday: b.freeLeft, freeLimit: b.freeLimit, credits: b.credits });
       // Modelsiz cevap ücretsiz: hakkı ve kredisi bitmiş çocuk da balondaki hazır açıklamayı görür.
@@ -107,11 +164,12 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
 
       const runWith = (h) => chat.runTurn({
         client: getClient(),
-        system: SYSTEM_PROMPT,
+        system: general ? [SYSTEM_PROMPT, GENERAL_PROMPT] : SYSTEM_PROMPT,
         history: h,
         context: stepContext,
         childText: message,
         note: session ? session.pendingNote || null : null,
+        extraSources: general ? GENERAL_SOURCES : null,
       });
       let result;
       try {
@@ -160,10 +218,12 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       }
 
       const childLine = guard.cleanChildText(message).text;
+      const buttons = general ? result.actions.filter((a) => BUTTON_KINDS.has(a.tur)) : [];
       const transcript = (session && Array.isArray(session.transcript) ? session.transcript : []).concat([
         { from: 'cocuk', text: childLine, at: now },
         {
           from: 'sobi', text: result.reply, at: Date.now(), ...(result.fellBack ? { fellBack: true } : {}),
+          ...(buttons.length ? { buttons } : {}),
           // Beğeni ve haftalık iyileştirme için: cevap hazır açıklamadan mı, modelden mi; hangi adımda.
           source: direct ? 'hazir' : 'model',
           ...(direct ? { aciklama: direct.key } : {}),
@@ -187,9 +247,11 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
           stepId: stepContext.stepId,
           pendingNote: result.fellBack ? result.reply : null,
           model: chat.DEFAULT_MODEL,
-          promptVersion: PROMPT_VERSION,
+          promptVersion: general ? GENERAL_PROMPT_VERSION : PROMPT_VERSION,
           usage: totals,
           ...(session ? {} : { createdAt: ts.fromMillis(now) }),
+          // Genel sohbet listesi (sobiSessions) bu alanla süzüyor; ders sohbetlerinde alan yok.
+          ...(general && !session ? { kind: 'genel', title: titleOf(childLine) } : {}),
           updatedAt: ts.fromMillis(now),
           expiresAt: ts.fromMillis(now + RETENTION_MS),
         }, { merge: true });
@@ -221,4 +283,7 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
 };
 
 module.exports.PROMPT_VERSION = PROMPT_VERSION;
+module.exports.GENERAL_PROMPT_VERSION = GENERAL_PROMPT_VERSION;
+module.exports.titleOf = titleOf;
+module.exports.ruleFacts = ruleFacts;
 module.exports.MAX_TURNS = MAX_TURNS;

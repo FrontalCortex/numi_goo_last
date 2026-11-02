@@ -7975,3 +7975,5 @@ exports.sobiBalance = sobiWallet.sobiBalance;
 exports.startSobiExtraTest = sobiWallet.startSobiExtraTest;
 // Sobi cevabına beğen / beğenme; haftalık iyileştirme döngüsünün verisi (sobi/feedback.js).
 exports.sobiFeedback = require('./sobi/feedback')({ functions, admin, db, promptVersion: require('./sobi/callable').PROMPT_VERSION });
+// Sobi sekmesindeki genel sohbetlerin listesi, açılması ve silinmesi (sobi/sessions.js).
+exports.sobiSessions = require('./sobi/sessions')({ functions, db });

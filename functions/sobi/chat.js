@@ -25,6 +25,7 @@ const tools = require('./tools');
 const guard = require('./guard');
 const explainer = require('./stepExplainer');
 const explanations = require('./explanations');
+const wallet = require('./wallet');
 
 /**
  * Model: claude-haiku-5-5 (kullanıcı kararı 28.10.2026). Hesabı kural motoru yaptığı için model
@@ -134,13 +135,73 @@ function sanitizeContext(raw) {
   };
 }
 
+/**
+ * Genel sohbet (Sobi sekmesi, kullanıcı kararı 02.11.2026): adım ve soru yok. Uygulama bağlam
+ * göndermiyor; [facts] sunucunun kendi okuduğu bilgi (plan, bakiye, homeworkRuleStats), istemciye
+ * güvenilmiyor. Örnek açılabiliyor (practice): düğmeye dokununca abaküslü ekranda açılıyor.
+ *   facts: { plan, freeLeft, freeLimit, credits, rules: [{ key, c, w }], levels: [{ key, level }] }
+ */
+function generalContext(facts = {}) {
+  const f = facts || {};
+  const n = (v) => (Number.isInteger(v) ? v : 0);
+  return {
+    ...sanitizeContext({ practice: true }),
+    mode: 'genel',
+    general: {
+      plan: typeof f.plan === 'string' ? f.plan : 'Free',
+      freeLeft: n(f.freeLeft),
+      freeLimit: n(f.freeLimit),
+      credits: n(f.credits),
+      rules: (Array.isArray(f.rules) ? f.rules : [])
+        .filter((r) => r && RULE_LABELS[r.key] && Number.isInteger(r.c) && Number.isInteger(r.w) && r.c + r.w > 0),
+      levels: (Array.isArray(f.levels) ? f.levels : [])
+        .filter((l) => l && RULE_LABELS[l.key] && Number.isInteger(l.level)),
+    },
+  };
+}
+
+/** En çok zorlandığı kural: en az 10 işlem içinde başarısı en düşük olan (%90 ve üstü sayılmaz). */
+function weakestRule(rules) {
+  let best = null;
+  for (const r of rules) {
+    const total = r.c + r.w;
+    const pct = Math.round((r.c * 100) / total);
+    if (total < 10 || pct >= 90) continue;
+    if (!best || pct < best.pct) best = { key: r.key, pct };
+  }
+  return best;
+}
+
+function generalBlock(ctx) {
+  const g = ctx.general;
+  const lines = ['Genel sohbet: çocuk Sobi sekmesinde, bir dersin içinde değil. Ekranda abaküs yok; gösterim ve örnekler düğmeyle ayrı ekranda açılır.'];
+  lines.push(`Planı: ${g.plan}. Bugün kalan ücretsiz Sobi mesajı: ${g.freeLeft} / ${g.freeLimit}. Sobi kredisi: ${g.credits}.`);
+  if (g.rules.length) {
+    lines.push(`Çocuğun kural başarısı (son çalıştıkları: dersler, ödevler, Sobi testleri): ${g.rules.map((r) => {
+      const pct = Math.round((r.c * 100) / (r.c + r.w));
+      return `${RULE_LABELS[r.key]}: ${r.c} doğru, ${r.w} yanlış (yüzde ${pct})`;
+    }).join('; ')}`);
+    const weak = weakestRule(g.rules);
+    lines.push(weak
+      ? `En çok zorlandığı kural: ${RULE_LABELS[weak.key]}`
+      : 'Belirgin biçimde zorlandığı bir kural yok (ya da henüz az işlem çözdü).');
+  } else {
+    lines.push('Çocuğun henüz kural geçmişi yok: az ders çözmüş olabilir.');
+  }
+  if (g.levels.length) {
+    lines.push(`Sobi testi seviyeleri (1 ile 20 arası): ${g.levels.map((l) => `${RULE_LABELS[l.key]} ${l.level}`).join('; ')}`);
+  }
+  return `<baglam>\n${lines.join('\n')}\n</baglam>`;
+}
+
 /** Bu bağlamda modele verilecek araçlar. */
-function toolsFor() {
+function toolsFor(ctx) {
   // Liste sohbet boyunca HİÇ değişmemeli: model önceki turlardaki düşünme bloklarının aynı araç
   // listesiyle yazıldığını doğruluyor, liste değişince isteği reddediyor ("The `tools` list
   // differs from the one this block was created with"; 28.10.2026'da anlatım adımında
   // abakuste_goster'i çıkarınca oldu). Bu adımda yapılamayan araçları runTool reddediyor.
-  return tools.TOOL_DEFS;
+  // Genel sohbetin listesi ayrı ama o da kendi içinde hiç değişmiyor.
+  return ctx && ctx.mode === 'genel' ? tools.GENERAL_TOOL_DEFS : tools.TOOL_DEFS;
 }
 
 /**
@@ -195,6 +256,7 @@ function stepLines(ctx) {
  * yardımda ipucu, sonra hamle; talimat "Nasıl anlatırsın").
  */
 function contextBlock(ctx, extra = {}) {
+  if (ctx.mode === 'genel') return generalBlock(ctx);
   const lines = [];
   if (ctx.lessonTitle) lines.push(`Ders: ${ctx.lessonTitle}`);
   if (ctx.taughtRules && ctx.taughtRules.length) {
@@ -258,6 +320,8 @@ function previousInStep(history, key) {
 
 /** Cevabın altındaki öneri balonları. Sabit liste; uygulama metinleri kendi dilinde gösterir. */
 function suggestionsFor(ctx, actions) {
+  // Genel sohbet: balonlar uygulamanın kendi başlangıç önerileri; cevabın altında balon yok.
+  if (ctx.mode === 'genel') return [];
   // Anlatım adımı: gösterim yok, örnek istemek anlamlı.
   if (ctx.target === null) return ['neden_boyle', 'ornek_ver', 'anladim'];
   const out = [];
@@ -274,8 +338,24 @@ function suggestionsFor(ctx, actions) {
  */
 const DIRECT_SUGGESTIONS = { bunu_anlamadim: 'basit', neden_boyle: 'neden' };
 
+/**
+ * Genel sohbetin "Krediler nasıl çalışır?" balonu: kuralları sabit, model gerekmez (ücretsiz, anında).
+ * Sayılar wallet.js'ten; plan hakları değişince metin de değişir.
+ */
+function creditsText() {
+  const f = wallet.FREE_DAILY;
+  return `Her gün ücretsiz mesaj hakkın var: Free planda ${f.Free}, Lite'ta ${f.Lite}, Pro'da ${f.Pro}. `
+    + 'Hakkın bitince her mesaj 1 Sobi kredisi harcar. Krediler mağazadan alınır, süresizdir; satın almayı annen ya da baban onaylar. '
+    + 'Hazır cevaplar ve benim cevap veremediğim mesajlar hiçbir şey harcamaz.';
+}
+const GENERAL_DIRECT = { krediler: { key: 'genel_krediler', text: creditsText } };
+
 /** Balona modelsiz cevap: { text, key } ya da null (model çalışır). */
 function directReplyFor(ctx, suggestion) {
+  if (ctx.mode === 'genel') {
+    const d = GENERAL_DIRECT[suggestion];
+    return d ? { text: d.text(), key: d.key } : null;
+  }
   const field = DIRECT_SUGGESTIONS[suggestion];
   if (!field) return null;
   const ex = explanations.find(ctx);
@@ -313,14 +393,15 @@ function addUsage(total, u) {
  * Tek tur.
  * @param {object} p
  * @param {object} p.client     Anthropic istemcisi (messages.create; yedek modelli modellerde beta.messages.create)
- * @param {string} p.system     Talimat metni (prompt_tr.md)
+ * @param {string|string[]} p.system  Talimat metni (prompt_tr.md); genel sohbette [prompt_tr.md, prompt_genel_tr.md]
+ * @param {Set<number>} [p.extraSources]  Cevapta serbest sayılar (genel sohbette ek talimattaki plan hakları, can, anahtar…)
  * @param {Array}  p.history    Önceki turların mesajları (düşünme blokları dahil, değiştirilmemiş)
  * @param {object} p.context    sanitizeContext çıktısı
  * @param {string} p.childText  Çocuğun mesajı (henüz temizlenmemiş)
  * @param {string} [p.note]     Önceki turda çocuğa gösterilen yedek metin (denetime takıldıysa)
  * @returns {Promise<{reply, actions, suggestions, history, usage, fellBack, reasons, stopReason, masked}>}
  */
-async function runTurn({ client, system, history, context, childText, note, model = DEFAULT_MODEL, effort = DEFAULT_EFFORT }) {
+async function runTurn({ client, system, history, context, childText, note, extraSources = null, model = DEFAULT_MODEL, effort = DEFAULT_EFFORT }) {
   const messages = [...(history || [])];
   const { text: cleaned, masked } = guard.cleanChildText(childText);
   const messageInStep = previousInStep(history, stepKey(contextBlock(context))) + 1;
@@ -342,7 +423,10 @@ async function runTurn({ client, system, history, context, childText, note, mode
     // Talimatın sonunda ayrı bir önbellek noktası: araç tanımları + talimat (~6.400 jeton) bütün
     // sohbetlerde aynı. Yalnızca sondaki otomatik noktayla her yeni sohbet bu öneki baştan
     // yazıyordu (değerlendirmede 20 sohbetin 20'si); şimdi sohbetler ortak öneki okuyor.
-    system: [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }],
+    // Genel sohbetin ek talimatı ayrı blok ve kendi önbellek noktası: ders talimatı aynen kalıyor,
+    // ek metin değişince yalnızca genel sohbetlerin önbelleği yeniden yazılıyor.
+    system: (Array.isArray(system) ? system : [system])
+      .map((text) => ({ type: 'text', text, cache_control: { type: 'ephemeral' } })),
     tools: toolsFor(context),
     messages,
     output_config: { effort },
@@ -389,10 +473,14 @@ async function runTurn({ client, system, history, context, childText, note, mode
 
   let fellBack = reply === null;
   if (reply !== null) {
-    const check = guard.checkReply(reply, guard.sourceNumbers(messages), { explanation: context.target === null });
+    const sources = guard.sourceNumbers(messages);
+    if (extraSources) extraSources.forEach((n) => sources.add(n));
+    const check = guard.checkReply(reply, sources, { explanation: context.target === null });
     if (!check.ok) { reasons.push(...check.reasons); fellBack = true; }
     // "Örneği açtım" deyip açmamış (araç çağrılmadı ya da reddedildi): çocuk boş ekrana bakardı.
-    if (context.practice && /(açtım|hazırladım)/i.test(reply) && !actions.some((a) => a.tur === 'alistirma')) {
+    // Genel sohbette "Testi hazırladım", "Gösterimi açtım" da düğmeyle doğru olabilir.
+    const opened = context.mode === 'genel' ? ['alistirma', 'goster', 'test'] : ['alistirma'];
+    if (context.practice && /(açtım|hazırladım)/i.test(reply) && !actions.some((a) => opened.includes(a.tur))) {
       reasons.push('acilmayan_ornek');
       fellBack = true;
     }
@@ -424,6 +512,9 @@ module.exports = {
   FALLBACK_MODELS,
   RULE_LABELS,
   sanitizeContext,
+  generalContext,
+  weakestRule,
+  creditsText,
   toolsFor,
   contextBlock,
   suggestionsFor,

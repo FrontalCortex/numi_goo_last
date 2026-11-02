@@ -246,6 +246,33 @@ const TOOL_DEFS = [
   },
 ];
 
+/**
+ * Genel sohbetin (Sobi sekmesi, ders dışı) araçları: dersin araçları + iki ekran işi. Ayrı liste,
+ * çünkü ders sohbetlerinin listesi değişirse eski ders sohbetlerinin düşünme blokları reddedilir
+ * (bkz. chat.toolsFor). Genel sohbette ekranda abaküs yok: abakuste_goster ve alistirma_ver orada
+ * sohbete bir düğme koyar, çocuk dokununca işlem abaküslü ekranda adım adım açılır.
+ */
+const GENERAL_TOOL_DEFS = [
+  ...TOOL_DEFS,
+  {
+    name: 'test_baslat',
+    description: 'Sohbete "Teste başla" düğmesi koyar; düğme Sobi\'nin testini açar (çocuğun seviyesine göre 10 soru, bitince sandık). Çocuk test isterse ya da ne çalışacağını sorup bir test önerdiysen kullan. Girdi almaz. Bir mesajda en fazla bir kez.',
+    input_schema: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    strict: true,
+  },
+  {
+    name: 'magaza_goster',
+    description: 'Sohbete mağaza düğmesi koyar. kredi: Sobi kredisi paketleri ("Kredi al"). pro: Pro planı (uygunsa ücretsiz deneme). Çocuk kredi ya da Pro sorarsa ya da mesaj hakkı bittiyse kullan; satın almayı ebeveyn onaylar. Bir mesajda en fazla bir kez.',
+    input_schema: {
+      type: 'object',
+      properties: { neyi: { type: 'string', enum: ['kredi', 'pro'] } },
+      required: ['neyi'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+];
+
 // ── Çalıştırma ───────────────────────────────────────────────────────────
 
 const inRange = (n) => Number.isInteger(n) && n >= 0 && n <= MAX_VALUE;
@@ -417,6 +444,7 @@ function findMistake(ctx) {
  * action, uygulamaya giden ekran işi ("goster" / "alistirma"); [state] tur içindeki sayaçlar.
  */
 function runTool(name, input, ctx, state) {
+  const general = !!(ctx && ctx.mode === 'genel');
   const ok = (obj, action) => ({ content: JSON.stringify(obj), isError: false, action });
   const fail = (msg) => ({ content: JSON.stringify({ hata: msg }), isError: true });
   switch (name) {
@@ -425,12 +453,14 @@ function runTool(name, input, ctx, state) {
       return error ? fail(error) : ok(describe(e));
     }
     case 'hatayi_bul':
+      if (general) return fail('Bu sohbette çözülen bir soru yok.');
       return ok(findMistake(ctx));
     case 'kurali_acikla': {
       const text = RULE_TEXTS[input && input.islem] && RULE_TEXTS[input.islem][input.kural];
       return text ? ok({ kural: RULE_NAMES[input.kural], aciklama: text }) : fail('Böyle bir kural yok.');
     }
     case 'sutunu_goster': {
+      if (general) return fail('Bu ekranda abaküs yok; abakuste_goster ile işlemi açabilirsin.');
       const col = ['birler', 'onlar', 'yuzler', 'binler', 'on_binler'].indexOf(input && input.sutun);
       if (col === -1) return fail('Böyle bir sütun yok.');
       if (state.isaret) return fail('Bu mesajda bu araç zaten kullanıldı.');
@@ -453,7 +483,8 @@ function runTool(name, input, ctx, state) {
         }
       }
       // Anlatım adımında öğreticinin abaküsü dersin kendi animasyonlarında; gösterim dersi bozar.
-      if (kind === 'goster' && !(ctx && Number.isInteger(ctx.base) && Number.isInteger(ctx.target))) {
+      // Genel sohbette gösterim ayrı ekranda açıldığı için bir ders bozulmuyor.
+      if (kind === 'goster' && !general && !(ctx && Number.isInteger(ctx.base) && Number.isInteger(ctx.target))) {
         return fail('Bu anlatım adımında abaküste gösterim yapılamıyor; anlatarak açıkla.');
       }
       if (state[kind]) return fail('Bu mesajda bu araç zaten kullanıldı.');
@@ -461,9 +492,27 @@ function runTool(name, input, ctx, state) {
       if (error) return fail(error);
       state[kind] = true;
       const action = { tur: kind, baslangic: e.base, islem: e.op, sayi: e.number, sonuc: e.result, plan: explainer.encode(e) };
+      if (general) {
+        return kind === 'goster'
+          ? ok({ durum: 'Sohbete düğme kondu; çocuk dokununca işlem abaküste adım adım açılır.', ...describe(e) }, action)
+          : ok({ durum: 'Sohbete düğme kondu; çocuk dokununca işlemi abaküste adım adım çözer.', islem: describe(e).islem, beklenen: e.result }, action);
+      }
       return kind === 'goster'
         ? ok({ durum: 'Çocuğun abaküsünde oynatılıyor.', ...describe(e) }, action)
         : ok({ durum: 'Alıştırma çocuğun abaküsünde hazırlandı; cevabını uygulama denetleyecek.', islem: describe(e).islem, beklenen: e.result }, action);
+    }
+    case 'test_baslat':
+      if (!general) return fail('Bu ekranda test açılamıyor.');
+      if (state.test) return fail('Bu mesajda bu araç zaten kullanıldı.');
+      state.test = true;
+      return ok({ durum: 'Sohbete "Teste başla" düğmesi kondu.' }, { tur: 'test' });
+    case 'magaza_goster': {
+      const which = input && input.neyi;
+      if (!general) return fail('Bu ekranda mağaza açılamıyor.');
+      if (which !== 'kredi' && which !== 'pro') return fail('neyi: kredi ya da pro olmalı.');
+      if (state.magaza) return fail('Bu mesajda bu araç zaten kullanıldı.');
+      state.magaza = true;
+      return ok({ durum: `Sohbete ${which === 'kredi' ? '"Kredi al"' : 'Pro'} düğmesi kondu.` }, { tur: which });
     }
     default:
       return fail(`Bilinmeyen araç: ${name}`);
@@ -472,6 +521,7 @@ function runTool(name, input, ctx, state) {
 
 module.exports = {
   TOOL_DEFS,
+  GENERAL_TOOL_DEFS,
   RULE_NAMES,
   RULE_TEXTS,
   columnName,

@@ -93,6 +93,10 @@ function checkReply(reply, sources, { explanation = false } = {}) {
  * hamlesi kural motorundan; sayılar hesaplanmış olduğu için güvenli.
  */
 function fallbackReply(ctx, tools) {
+  // Genel sohbette (Sobi sekmesi) adım yok; kural motorunun söyleyeceği bir hamle de yok.
+  if (ctx && ctx.mode === 'genel') {
+    return 'Bunu şu an cevaplayamadım. Abaküs ya da uygulama hakkında başka bir şey sormak ister misin?';
+  }
   // Çarpma adımında kural motoru yalnızca toplamayı görür ("10'luk kural: 10 gelir…"); çarpma
   // dersinde çocuğa anlamsız geliyordu (değerlendirme 29.10.2026). Adımın kendi sözü daha güvenli.
   if (ctx && Number.isInteger(ctx.target) && /^\s*\d+\s*[x×*]\s*\d+\s*$/.test(ctx.questionText || '') && ctx.stepText) {

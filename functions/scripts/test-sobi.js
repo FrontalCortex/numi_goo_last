@@ -663,6 +663,177 @@ async function main() {
     assert.ok(chat.contextBlock(chat.sanitizeContext(stepContext)).includes('Onaylı açıklama'));
   });
 
+  console.log('genel sohbet (Sobi sekmesi)');
+  await test('bağlam: plan, bakiye, kural başarısı, en zorlandığı kural, seviyeler', () => {
+    const g = chat.generalContext({
+      plan: 'Lite', freeLeft: 3, freeLimit: 5, credits: 7,
+      rules: [{ key: 'add_five', c: 45, w: 5 }, { key: 'add_ten', c: 30, w: 20 }, { key: 'sub_ten', c: 2, w: 3 }, { key: 'yok', c: 1, w: 1 }],
+      levels: [{ key: 'add_ten', level: 4 }],
+    });
+    assert.strictEqual(g.mode, 'genel');
+    assert.strictEqual(g.practice, true);
+    assert.strictEqual(g.general.rules.length, 3, 'bilinmeyen kural atılır');
+    const block = chat.contextBlock(g);
+    assert.ok(block.includes('Genel sohbet'));
+    assert.ok(block.includes('Planı: Lite. Bugün kalan ücretsiz Sobi mesajı: 3 / 5. Sobi kredisi: 7.'));
+    assert.ok(block.includes("10'luk toplama: 30 doğru, 20 yanlış (yüzde 60)"));
+    // sub_ten'in oranı daha düşük ama 10 işlemden az: güvenilmez, sayılmaz.
+    assert.ok(block.includes("En çok zorlandığı kural: 10'luk toplama"));
+    assert.ok(block.includes("Sobi testi seviyeleri (1 ile 20 arası): 10'luk toplama 4"));
+    assert.ok(!block.includes('Adımın metni'));
+    assert.ok(chat.contextBlock(chat.generalContext({})).includes('henüz kural geçmişi yok'));
+    assert.strictEqual(chat.weakestRule([{ key: 'add_five', c: 95, w: 5 }]), null, '%90 üstü zorlanma sayılmaz');
+    assert.strictEqual(chat.toolsFor(g), tools.GENERAL_TOOL_DEFS);
+    assert.strictEqual(chat.toolsFor(CTX), tools.TOOL_DEFS, 'ders sohbetinin araç listesi değişmedi');
+    assert.deepStrictEqual(tools.GENERAL_TOOL_DEFS.slice(0, tools.TOOL_DEFS.length), tools.TOOL_DEFS);
+    assert.deepStrictEqual(chat.suggestionsFor(g, []), []);
+  });
+  await test('kural özeti homeworkRuleStats\'tan: pencere toplamdan önce, çarpma atılır', () => {
+    const f = createSobiChat.ruleFacts({
+      tally: { add_ten: { c: 500, w: 20 }, sub_five: { c: 8, w: 4 }, mul_1x1: { c: 3, w: 3 } },
+      recent: { add_ten: [{ c: 20, w: 10 }, { c: 15, w: 5 }] },
+      sobiLevel: { add_ten: 6, mul_1x1: 2 },
+    });
+    assert.deepStrictEqual(f.rules, [{ key: 'add_ten', c: 35, w: 15 }, { key: 'sub_five', c: 8, w: 4 }]);
+    assert.deepStrictEqual(f.levels, [{ key: 'add_ten', level: 6 }]);
+    assert.deepStrictEqual(createSobiChat.ruleFacts(null), { rules: [], levels: [] });
+  });
+  await test('araçlar: test ve mağaza düğmesi yalnızca genel sohbette; abaküs araçları düğmeye döner', () => {
+    const g = chat.generalContext({});
+    const t = tools.runTool('test_baslat', {}, g, {});
+    assert.deepStrictEqual(t.action, { tur: 'test' });
+    assert.strictEqual(tools.runTool('test_baslat', {}, CTX, {}).isError, true);
+    const st = {};
+    assert.deepStrictEqual(tools.runTool('magaza_goster', { neyi: 'kredi' }, g, st).action, { tur: 'kredi' });
+    assert.strictEqual(tools.runTool('magaza_goster', { neyi: 'pro' }, g, st).isError, true, 'bir mesajda bir kez');
+    assert.deepStrictEqual(tools.runTool('magaza_goster', { neyi: 'pro' }, g, {}).action, { tur: 'pro' });
+    assert.strictEqual(tools.runTool('magaza_goster', { neyi: 'altin' }, g, {}).isError, true);
+    assert.strictEqual(tools.runTool('hatayi_bul', {}, g, {}).isError, true);
+    assert.strictEqual(tools.runTool('sutunu_goster', { sutun: 'birler' }, g, {}).isError, true);
+    const show = tools.runTool('abakuste_goster', { baslangic: 8, islem: 'add', sayi: 6 }, g, {});
+    assert.strictEqual(show.isError, false, 'adım yokken de gösterim (ayrı ekranda)');
+    assert.strictEqual(show.action.tur, 'goster');
+    assert.ok(show.content.includes('düğme'));
+    const ex = tools.runTool('alistirma_ver', { baslangic: 3, islem: 'add', sayi: 4 }, g, {});
+    assert.strictEqual(ex.action.tur, 'alistirma');
+  });
+  await test('tur: iki sistem bloğu (ikisi de önbellekli), genel araçlar, rehber sayıları serbest', async () => {
+    const client = fakeClient([callTool('test_baslat', {}), say("Pro'da günde 20 mesaj var. Teste başla düğmesine dokun!")]);
+    const r = await chat.runTurn({
+      client, system: ['DERS', 'GENEL'], history: [], context: chat.generalContext({}), childText: 'test',
+      extraSources: new Set([20]),
+    });
+    assert.strictEqual(r.fellBack, false);
+    assert.deepStrictEqual(r.actions, [{ tur: 'test' }]);
+    assert.deepStrictEqual(client.calls[0].system.map((b) => [b.text, b.cache_control.type]), [['DERS', 'ephemeral'], ['GENEL', 'ephemeral']]);
+    assert.deepStrictEqual(client.calls[0].tools.map((t) => t.name), tools.GENERAL_TOOL_DEFS.map((t) => t.name));
+    // Ders sohbeti: tek blok, aynen eskisi gibi.
+    const c2 = fakeClient([say('Tamam.')]);
+    await chat.runTurn({ client: c2, system: 'DERS', history: [], context: CTX, childText: 'x' });
+    assert.strictEqual(c2.calls[0].system.length, 1);
+    // Rehberde olmayan bir sayı: yedek metin (genel sohbetin kendi metni, hamle değil).
+    const r3 = await chat.runTurn({ client: fakeClient([say('Pro 77 lira.')]), system: ['D', 'G'], history: [], context: chat.generalContext({}), childText: 'pro kaç para', extraSources: new Set([20]) });
+    assert.strictEqual(r3.fellBack, true);
+    assert.ok(r3.reply.startsWith('Bunu şu an cevaplayamadım'));
+  });
+  await test('genel sohbet callable: bağlam sunucudan, başlık, düğme kaydı, kredi düşümü', async () => {
+    const env = fakeEnv();
+    const responses = [];
+    const client = fakeClient(responses);
+    const fn = createSobiChat({ ...env, createClient: () => client });
+    const ctx = { auth: { uid: 'u1' } };
+    const day = wallet.trDay(Date.now());
+    env.store.set('users/u1', { plan: 'Free' });
+    env.store.set('sobiChats/u1', { usageDay: day, usageCount: 2, credits: 2 });
+    env.store.set('homeworkRuleStats/u1', { tally: { add_ten: { c: 10, w: 10 } } });
+
+    responses.push(callTool('test_baslat', {}), say('Sana bir test hazırladım, düğmeye dokun!'));
+    // Uygulamanın gönderdiği bağlam genel kipte yok sayılır: adımı uydurup bedava hazır açıklama alamasın.
+    const r1 = await fn({ mode: 'genel', message: 'En çok nerede zorlanıyorum? Bana bir test hazırlar mısın lütfen', context: { tutorialNumber: 3, stepIndex: 25 } }, ctx);
+    assert.strictEqual(r1.reply, 'Sana bir test hazırladım, düğmeye dokun!');
+    assert.deepStrictEqual(r1.actions, [{ tur: 'test' }]);
+    assert.strictEqual(r1.source, 'model');
+    assert.strictEqual(r1.remainingToday, 0);
+    assert.strictEqual(r1.credits, 1, 'ücretsiz hak bitmiş: 1 kredi düştü');
+    assert.strictEqual(env.store.get('sobiChats/u1').credits, 1);
+    assert.strictEqual(env.store.get('users/u1').sobiCredits, 1);
+    const sent = client.calls[0];
+    assert.strictEqual(sent.system.length, 2);
+    assert.ok(sent.system[1].text.startsWith('# Genel sohbet'));
+    assert.ok(sent.system[1].text.includes('yalnızca'), 'konu sınırı talimatta');
+    const block = sent.messages[0].content[0].text;
+    assert.ok(block.includes("En çok zorlandığı kural: 10'luk toplama"));
+    assert.ok(block.includes('Sobi kredisi: 2.'), 'bağlam bedelden önceki bakiye');
+    const session = env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`);
+    assert.strictEqual(session.kind, 'genel');
+    assert.strictEqual(session.title, 'En çok nerede zorlanıyorum? Bana bir…');
+    assert.strictEqual(session.promptVersion, createSobiChat.GENERAL_PROMPT_VERSION);
+    assert.deepStrictEqual(session.transcript[1].buttons, [{ tur: 'test' }]);
+
+    // Sohbet sürerken başlık değişmez.
+    responses.push(say('Aferin!'));
+    await fn({ mode: 'genel', message: 'tamam', sessionId: r1.sessionId }, ctx);
+    assert.strictEqual(env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`).title, 'En çok nerede zorlanıyorum? Bana bir…');
+    assert.strictEqual(env.store.get('sobiChats/u1').credits, 0);
+    // Hak da kredi de bitti: mesaj gitmez; ama "Krediler nasıl çalışır?" hazır cevap, ücretsiz.
+    await assert.rejects(fn({ mode: 'genel', message: 'merhaba' }, ctx), (e) => e.code === 'resource-exhausted');
+    const before = client.calls.length;
+    const k = await fn({ mode: 'genel', message: 'Krediler nasıl çalışır?', suggestion: 'krediler' }, ctx);
+    assert.strictEqual(client.calls.length, before, 'model çağrılmadı');
+    assert.strictEqual(k.source, 'hazir');
+    assert.ok(k.reply.includes('Free planda 2, Lite\'ta 5, Pro\'da 20'));
+    assert.strictEqual(env.store.get(`sobiChats/u1/sessions/${k.sessionId}`).transcript[1].aciklama, 'genel_krediler');
+    // Ders sohbetinde aynı balon anahtarı hazır cevap değil.
+    assert.strictEqual(chat.directReplyFor(CTX, 'krediler'), null);
+  });
+  await test('konu dışı: model cevabı rehberde olmayan sayı uydurursa yedek metin, bedel yok', async () => {
+    const env = fakeEnv();
+    const fn = createSobiChat({ ...env, createClient: () => fakeClient([say('Türkiye\'nin başkenti Ankara, nüfusu 5800000.')]) });
+    env.store.set('users/u1', {});
+    const warn = console.warn; console.warn = () => {};
+    const r = await fn({ mode: 'genel', message: 'Türkiyenin başkenti ne?' }, { auth: { uid: 'u1' } });
+    console.warn = warn;
+    assert.strictEqual(r.fellBack, true);
+    assert.ok(r.reply.startsWith('Bunu şu an cevaplayamadım'));
+    assert.strictEqual(r.remainingToday, 2);
+    // Rehberdeki sayılar (plan hakları, can, anahtar, kredi paketleri) cevapta serbest.
+    const fn2 = createSobiChat({ ...env, createClient: () => fakeClient([say("Lite'ta 10 can var, her 7 dakikada 1 dolar; ek test 3 anahtar. Paketler 50 ve 120 kredi.")]) });
+    const r2 = await fn2({ mode: 'genel', message: 'Lite ne verir?' }, { auth: { uid: 'u1' } });
+    assert.strictEqual(r2.fellBack, false);
+  });
+  await test('sobiSessions: liste yalnızca genel sohbetler, aç, sil; ders sohbetine dokunulmaz', async () => {
+    const env = fakeEnv();
+    const list = require('../sobi/sessions')(env);
+    const ctx = { auth: { uid: 'u1' } };
+    const ts = (ms) => ({ ms });
+    env.store.set('sobiChats/u1/sessions/genelEski01', { kind: 'genel', title: 'Eski', updatedAt: ts(1000), turns: 2,
+      transcript: [{ from: 'cocuk', text: 'selam' }, { from: 'sobi', text: 'Merhaba!', rating: 1, buttons: [{ tur: 'test' }] }] });
+    env.store.set('sobiChats/u1/sessions/genelYeni01', { kind: 'genel', title: 'Yeni', updatedAt: ts(5000), turns: 1, transcript: [] });
+    env.store.set('sobiChats/u1/sessions/dersSohbet1', { stepId: 'x', updatedAt: ts(9000), turns: 3, transcript: [] });
+    env.store.set('sobiChats/u2/sessions/baskasi0001', { kind: 'genel', title: 'Başkası', updatedAt: ts(7000) });
+
+    const l = await list({ action: 'list' }, ctx);
+    assert.deepStrictEqual(l.sessions.map((s) => [s.id, s.title, s.updatedAt]), [['genelYeni01', 'Yeni', 5000], ['genelEski01', 'Eski', 1000]]);
+    const g = await list({ action: 'get', sessionId: 'genelEski01' }, ctx);
+    assert.deepStrictEqual(g.messages.map((m) => [m.from, m.index, m.rating]), [['cocuk', 0, 0], ['sobi', 1, 1]]);
+    assert.deepStrictEqual(g.messages[1].buttons, [{ tur: 'test' }]);
+    await assert.rejects(list({ action: 'get', sessionId: 'dersSohbet1' }, ctx), (e) => e.code === 'not-found');
+    await assert.rejects(list({ action: 'delete', sessionId: 'dersSohbet1' }, ctx), (e) => e.code === 'not-found');
+    await assert.rejects(list({ action: 'delete', sessionId: 'baskasi0001' }, ctx), (e) => e.code === 'not-found', 'başkasının sohbeti');
+    assert.deepStrictEqual(await list({ action: 'delete', sessionId: 'genelEski01' }, ctx), { deleted: true });
+    assert.strictEqual(env.store.has('sobiChats/u1/sessions/genelEski01'), false);
+    assert.strictEqual(env.store.has('sobiChats/u1/sessions/dersSohbet1'), true);
+    assert.strictEqual(env.store.has('sobiChats/u2/sessions/baskasi0001'), true);
+    assert.deepStrictEqual((await list({ action: 'list' }, ctx)).sessions.map((s) => s.id), ['genelYeni01']);
+    await assert.rejects(list({ action: 'get', sessionId: 'x' }, ctx), (e) => e.code === 'invalid-argument');
+    await assert.rejects(list({ action: 'list' }, {}), (e) => e.code === 'unauthenticated');
+  });
+  await test('başlık: kısa metin aynen, uzun metin kelime sınırında', () => {
+    assert.strictEqual(createSobiChat.titleOf('Merhaba'), 'Merhaba');
+    assert.strictEqual(createSobiChat.titleOf(''), 'Sohbet');
+    assert.ok(createSobiChat.titleOf('a'.repeat(80)).length <= 41);
+  });
+
   console.log(`\n${passed} test geçti.`);
 }
 
@@ -681,7 +852,18 @@ function fakeEnv() {
     delete: async () => { store.delete(p); },
     collection: (name) => colRef(`${p}/${name}`),
   });
-  const colRef = (p) => ({ doc: (id) => docRef(`${p}/${id || `oto${++seq}abcdefgh`}`) });
+  // Sorgu: yalnızca eşitlik süzgeci ve select (sobiSessions); doğrudan alt belgeler.
+  const query = (p, filters) => ({
+    where: (field, op, value) => query(p, [...filters, (d) => op === '==' && d[field] === value]),
+    select: () => query(p, filters),
+    get: async () => ({
+      docs: [...store.keys()]
+        .filter((k) => k.startsWith(`${p}/`) && !k.slice(p.length + 1).includes('/'))
+        .filter((k) => filters.every((f) => f(store.get(k))))
+        .map(snap),
+    }),
+  });
+  const colRef = (p) => ({ doc: (id) => docRef(`${p}/${id || `oto${++seq}abcdefgh`}`), ...query(p, []) });
   const db = {
     collection: (name) => colRef(name),
     batch: () => {
