@@ -326,6 +326,8 @@ object AnalyticsLogger {
     const val PROMO_TRIGGER_SOBI_AUTO = "sobi_trial_auto"
     /** Sobi ekranında ücretsiz mesaj ve kredi bitti, kullanıcı "Pro'yu ücretsiz dene"ye bastı. */
     const val PROMO_TRIGGER_SOBI_LIMIT = "sobi_trial_limit"
+    /** Ek Sobi testine anahtar yetmedi, kullanıcı "Pro'da ek testler ücretsiz"e bastı. */
+    const val PROMO_TRIGGER_SOBI_KEYS = "sobi_trial_keys"
 
     /** "1 hafta ücretsiz dene" — huni [ProDiffirentFragment] ile sürüyor. */
     const val PROMO_TRY_FREE = "try_free"

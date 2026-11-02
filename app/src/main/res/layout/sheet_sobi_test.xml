@@ -132,6 +132,21 @@
         android:textSize="17sp"
         android:textStyle="bold" />
 
+    <!-- Ek teste anahtar yetmeyince, Pro'ya uygun kullanıcıya: Pro'da ek testler ücretsiz
+         (SobiTestSheet.pay → SobiProTrialFragment). -->
+    <TextView
+        android:id="@+id/sobiTestPro"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="4dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:text="@string/sobi_test_pro_free"
+        android:textColor="#1CB0F6"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <TextView
         android:id="@+id/sobiTestLater"
         android:layout_width="match_parent"

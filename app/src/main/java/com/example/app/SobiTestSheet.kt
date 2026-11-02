@@ -177,9 +177,11 @@ class SobiTestSheet(private val fragment: Fragment) {
             if (!fragment.isAdded || dialog == null) return@startExtraTest
             mascot.play(BunnyMascotView.Emote.THINK)
             val have = (fragment.activity as? MainActivity)?.let { UserWalletFirestore.getCachedKeys(it) } ?: 0
-            showEmpty(view, start, if (ServerSobi.isNotEnoughKeys(e)) {
+            val noKeys = ServerSobi.isNotEnoughKeys(e)
+            showEmpty(view, start, if (noKeys) {
                 appString(R.string.sobi_test_not_enough_keys, cost, have)
             } else appString(R.string.sobi_error_network))
+            if (noKeys) offerPro(view)
         })
     }
 
@@ -197,6 +199,24 @@ class SobiTestSheet(private val fragment: Fragment) {
             }
             dismiss()
             (fragment.activity as? MainActivity)?.let { SobiDailyTest.start(it, plan) }
+        }
+    }
+
+    /**
+     * Anahtar yetmedi: Pro'da ek testler ücretsiz (kullanıcı kararı 02.11.2026). Ders dönüşü tanıtımıyla
+     * aynı kişilere ([MainActivity.isProTrialPromoEligible]) ve aynı ekran; deneme teklifi yoksa ekran
+     * kendisi "Pro'ya geç" diyor.
+     */
+    private fun offerPro(view: View) {
+        val main = fragment.activity as? MainActivity ?: return
+        if (!main.isProTrialPromoEligible()) return
+        view.findViewById<TextView>(R.id.sobiTestPro).apply {
+            visibility = View.VISIBLE
+            setOnClickListener {
+                dismiss()
+                SobiProTrialFragment.newInstance(AnalyticsLogger.PROMO_TRIGGER_SOBI_KEYS)
+                    .show(main.supportFragmentManager, SobiProTrialFragment.TAG)
+            }
         }
     }
 

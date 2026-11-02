@@ -152,6 +152,7 @@
     <string name="sobi_trial_benefit_energy">Sınırsız can</string>
     <string name="sobi_trial_benefit_no_ads">Reklamsız öğrenim</string>
     <string name="sobi_trial_benefit_welcome">Hoş geldin: 20 Sobi kredisi</string>
+    <string name="sobi_test_pro_free">Pro\'da ek testler ücretsiz ›</string>
     <string name="sobi_trial_not_now">ŞİMDİ DEĞİL</string>
     <string name="sobi_error_daily_limit_trial">Bugünkü ücretsiz mesajların bitti. Sobi kredisi alabilir ya da Pro\'yu ücretsiz deneyebilirsin: Pro\'da her gün 20 mesaj!</string>
     <string name="sobi_test_start_keys">Başla · %1$d</string>

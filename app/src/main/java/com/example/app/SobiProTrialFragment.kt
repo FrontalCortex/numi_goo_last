@@ -30,6 +30,8 @@ import com.example.app.databinding.FragmentSobiProTrialBinding
  *  - [AnalyticsLogger.PROMO_TRIGGER_SOBI_LIMIT]: Sobi ekranında ücretsiz mesaj ve kredi bitince
  *    "Pro'yu ücretsiz dene" bağlantısı ([MistakeReviewDialog]). Kendi penceresi olduğu için dersin ve
  *    öğreticinin önünde açılıyor.
+ *  - [AnalyticsLogger.PROMO_TRIGGER_SOBI_KEYS]: ek Sobi testine anahtar yetmeyince "Pro'da ek testler
+ *    ücretsiz" ([SobiTestSheet]).
  *
  * Ana düğme PlanFragment'in satın alma yolu: Play abonelik penceresi doğrudan açılıyor. Metin sabit
  * değil ([SubscriptionCta]): Play ücretsiz denemeyi Google hesabı başına bir kez veriyor; teklif yoksa
