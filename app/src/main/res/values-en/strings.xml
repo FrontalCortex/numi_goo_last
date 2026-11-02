@@ -83,6 +83,9 @@
     <string name="daily_question_challenge_complete">Challenge complete!</string>
     <string name="daily_question_claim_requires_complete">Complete the challenge to claim the reward.</string>
     <string name="daily_question_focus_format">Level: %1$s</string>
+    <string name="daily_question_difficulty_easy">Easy</string>
+    <string name="daily_question_difficulty_medium">Medium</string>
+    <string name="daily_question_difficulty_hard">Hard</string>
     <string name="daily_question_progress_complete_label">Completed</string>
     <string name="daily_question_pool_empty">Complete more lessons to unlock this.</string>
     <string name="daily_question_continue_title">Continue the challenge</string>

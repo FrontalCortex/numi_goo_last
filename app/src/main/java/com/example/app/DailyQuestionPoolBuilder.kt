@@ -74,7 +74,10 @@ object DailyQuestionPoolBuilder {
             return null
         }
 
-        val titleUnit = source.item.titleUnit?.takeIf { it.isNotBlank() } ?: source.item.title
+        // Ünite adı kimlik: ortak başarı istatistiğinin belge adı ve ölçüm. Dil ne olursa olsun Türkçe
+        // saklanıyor (aynı ders iki dilde iki kayıt olmasın); kart onu [displayTitleUnit] ile gösterir.
+        val item = GlobalLessonData.turkishItem(source.partId, source.item.stableId) ?: source.item
+        val titleUnit = item.titleUnit?.takeIf { it.isNotBlank() } ?: item.title
 
         return DailyQuestionSlot(
             sequence = sequence,
@@ -86,6 +89,19 @@ object DailyQuestionPoolBuilder {
             displayIntervalMs = displayIntervalMs,
         )
     }
+
+    /**
+     * Kayıtlı zorluk ("Kolay" / "Orta" / "Zor") kimlik: istatistik anahtarı onunla seçiliyor
+     * (DailyQuestionRepository). Gösterimde uygulamanın dilinde.
+     */
+    fun displayDifficulty(stored: String): String = when (stored) {
+        "Kolay" -> appString(R.string.daily_question_difficulty_easy)
+        "Orta" -> appString(R.string.daily_question_difficulty_medium)
+        "Zor" -> appString(R.string.daily_question_difficulty_hard)
+        else -> stored
+    }
+
+    fun displayTitleUnit(stored: String): String = GlobalLessonData.localizeLessonText(stored)
 
     fun difficultyLabel(item: LessonItem): String {
         val record = item.record

@@ -101,6 +101,10 @@
     <string name="daily_question_challenge_complete">Mücadeleyi tamamladın!</string>
     <string name="daily_question_claim_requires_complete">Ödülü almak için mücadeleyi tamamla.</string>
     <string name="daily_question_focus_format">Seviye: %1$s</string>
+    <!-- Gösterim; kayıtta Türkçe "Kolay/Orta/Zor" kimlik olarak kalıyor (DailyQuestionPoolBuilder.displayDifficulty) -->
+    <string name="daily_question_difficulty_easy">Kolay</string>
+    <string name="daily_question_difficulty_medium">Orta</string>
+    <string name="daily_question_difficulty_hard">Zor</string>
     <string name="daily_question_progress_format">%1$d/%2$d</string>
     <string name="daily_question_progress_complete_label">Tamamlandı</string>
     <string name="daily_question_refresh_countdown">%1$s</string>

@@ -1145,7 +1145,7 @@ class BadgeFragment : Fragment() {
             val cupRows = progress.cupPiece.filter { pieceSeasonFilter == null || it.season == pieceSeasonFilter }
             cupRows.forEachIndexed { index, row ->
                 val rowView = inflater.inflate(R.layout.item_badge_piece_popup_cup, rows, false)
-                rowView.findViewById<TextView>(R.id.tvPieceTitle).text = row.titleUnit
+                rowView.findViewById<TextView>(R.id.tvPieceTitle).text = GlobalLessonData.localizeLessonText(row.titleUnit)
                 rowView.findViewById<TextView>(R.id.tvPieceRank).text = row.rank.toString()
                 rowView.findViewById<TextView>(R.id.tvPieceSeason).text = row.season.toString()
 
@@ -1189,7 +1189,7 @@ class BadgeFragment : Fragment() {
             }
             list.forEachIndexed { index, row ->
                 val rowView = inflater.inflate(R.layout.item_badge_piece_popup_medal, rows, false)
-                rowView.findViewById<TextView>(R.id.tvPieceTitle).text = row.titleUnit
+                rowView.findViewById<TextView>(R.id.tvPieceTitle).text = GlobalLessonData.localizeLessonText(row.titleUnit)
                 rowView.findViewById<TextView>(R.id.tvPieceSeason).text = row.season.toString()
                 medalAsset?.let { asset ->
                     val medalAnim = rowView.findViewById<LottieAnimationView>(R.id.lottiePieceMedal)

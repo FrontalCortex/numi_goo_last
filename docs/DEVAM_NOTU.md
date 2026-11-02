@@ -53,10 +53,20 @@ yerelleştirilmesi, ödev saklama süresi.
 - **Sobi İngilizce (02.11.2026, sunucu commit'i deploy onayı bekliyor):** uygulama her `sobiChat`
   isteğine `lang` koyuyor; sunucu `lang: 'en'`de talimatların SONUNA `sobi/prompt_lang_en.md` blokunu
   ekliyor (Türkçe istek bayt bayt aynı, önbelleği bozulmuyor). Oturuma `lang` ve `promptVersion+en`
-  yazılıyor (haftalık rapor ayırabilsin). İngilizcede hazır ders açıklamaları kullanılmıyor (Türkçe ve
-  adım metnine bağlı → model cevaplıyor, kredi harcar); kredi açıklaması ve yedek metinler İngilizce.
+  yazılıyor (haftalık rapor ayırabilsin). Hazır ders açıklamalarının İngilizcesi (t3, 12 parça; Türkçe
+  onaylıların çevirisi, kullanıcıya gösterildi): metin `tools/sobi-eval/aciklamalar/aciklamalar_en.json`,
+  yayın `yayinla_en.mjs` → `functions/sobi/aciklamalar_en.json` (adımlar İngilizce adım metninin parmak
+  iziyle; Türkçe yayın değişince bunu da çalıştır). Kredi açıklaması ve yedek metinler İngilizce.
   Gerçek modelde denendi (`node scripts/sobi-dene.js --dil en`): cevaplar İngilizce, terimler doğru;
   bir cevapta numaralı liste kullandı (Türkçe talimat yasaklıyor, İngilizcede de izlenmeli).
+- **Kimlik olarak saklanan Türkçe metinler (03.11.2026):** günlük sorunun ünite adı ve zorluğu ortak
+  başarı istatistiğinin anahtarı, liderlik `titleUnit`'i sezon madalya/kupa parçasının adı. Bunlar dil ne
+  olursa olsun Türkçe yazılıyor (`GlobalLessonData.turkishItem`), gösterimde `localizeLessonText` /
+  `DailyQuestionPoolBuilder.displayDifficulty`. Telefonda İngilizceye geçmeden oluşmuş günlük soru kartı
+  Türkçe görünüyordu.
+- **Bildirimler (açık):** sunucunun push metinleri (seri hatırlatması, sınıf daveti, yeni ödev, sezon sonu,
+  hata bildirimi… ~25 metin) Türkçe; sunucu kullanıcının dilini bilmiyor. Çözüm önerisi: uygulama
+  `users/{uid}.lang` yazsın, sunucu metin tablosundan seçsin (functions deploy'u).
 - **Sunucu hata metinleri:** giriş/doğrulama akışında (`AuthManager`) `serverErrorText`: Türkçede sunucunun
   mesajı, başka dilde hata kodundan metin. Diğer ~45 yer (ödev, sınıf, mağaza…) hâlâ sunucunun Türkçe
   mesajını gösteriyor.

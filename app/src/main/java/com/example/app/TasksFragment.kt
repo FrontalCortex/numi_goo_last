@@ -576,9 +576,10 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                 val ctx = itemView.context
                 progressZone.isClickable = false
                 progressZone.isFocusable = false
+                // Kayıttaki ünite adı ve zorluk Türkçe kimlik; ekranda uygulamanın dilinde.
                 val titleUnit = state.titleUnit.ifBlank {
                     ctx.getString(R.string.daily_question_card_subtitle_default)
-                }
+                }.let(DailyQuestionPoolBuilder::displayTitleUnit)
                 unitSubtitle.text = titleUnit
                 startCountdownTicker(state.periodKey)
 
@@ -589,7 +590,7 @@ class TasksFragment : Fragment(), AnalyticsScreenName {
                     val rateText = state.globalSuccessRate?.let { appString(R.string.ui_basari_x, it) } ?: ""
                     focusLabel.text = ctx.getString(
                         R.string.daily_question_focus_format,
-                        state.difficulty + rateText,
+                        DailyQuestionPoolBuilder.displayDifficulty(state.difficulty) + rateText,
                     )
                 }
 

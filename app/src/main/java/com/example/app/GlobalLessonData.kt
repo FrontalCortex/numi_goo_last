@@ -37,7 +37,64 @@ object GlobalLessonData {
     }
 
     private fun str(id: Int): String =
-        checkNotNull(appContext) { "GlobalLessonData.init çağrılmadan ders şablonu istendi" }.getString(id)
+        (turkishOverride.get() ?: checkNotNull(appContext) { "GlobalLessonData.init çağrılmadan ders şablonu istendi" })
+            .getString(id)
+
+    /**
+     * Ders adları bazı kayıtlarda KİMLİK olarak duruyor: günlük sorunun ünite adı (ortak başarı
+     * istatistiğinin belge adı), sezon madalya/kupa parçaları. Bunlar dil ne olursa olsun Türkçe
+     * yazılmalı, yoksa aynı ders iki dilde iki ayrı kayıt olur; gösterirken [localizeLessonText].
+     * Thread'e özel: o sırada başka thread şablon okursa kendi dilinde okur.
+     */
+    private val turkishOverride = ThreadLocal<Context?>()
+    private val turkishContext: Context by lazy {
+        val base = checkNotNull(appContext) { "GlobalLessonData.init çağrılmadan ders şablonu istendi" }
+        val config = android.content.res.Configuration(base.resources.configuration)
+        config.setLocale(java.util.Locale(AppLanguage.TURKISH))
+        base.createConfigurationContext(config)
+    }
+
+    /** [partId] şablonunun Türkçesi (kimlik olarak saklanacak metinler için). */
+    fun createLessonItemsInTurkish(partId: Int): List<LessonItem> {
+        turkishOverride.set(turkishContext)
+        try {
+            return createLessonItems(partId)
+        } finally {
+            turkishOverride.remove()
+        }
+    }
+
+    private val turkishParts = java.util.concurrent.ConcurrentHashMap<Int, List<LessonItem>>()
+
+    /** Dersin Türkçe şablonu (ad ve ünite adı kimlik olarak saklanacaksa); bulunamazsa null. */
+    fun turkishItem(partId: Int, stableId: String): LessonItem? =
+        turkishParts.getOrPut(partId) { createLessonItemsInTurkish(partId) }.firstOrNull { it.stableId == stableId }
+
+    private const val LAST_PART_ID = 9
+
+    /** Türkçe ders metni (ad, ünite adı, yarış adı) → uygulamanın dilindeki karşılığı. */
+    private val lessonTextMap: Map<String, String> by lazy {
+        val out = HashMap<String, String>()
+        for (partId in 1..LAST_PART_ID) {
+            val tr = createLessonItemsInTurkish(partId)
+            val current = createLessonItems(partId)
+            if (tr.size != current.size) continue
+            for (i in tr.indices) {
+                fun put(a: String?, b: String?) { if (!a.isNullOrBlank() && !b.isNullOrBlank()) out.putIfAbsent(a, b) }
+                put(tr[i].title, current[i].title)
+                put(tr[i].titleUnit, current[i].titleUnit)
+                put(tr[i].raceTitle, current[i].raceTitle)
+            }
+        }
+        out
+    }
+
+    /**
+     * Kimlik olarak saklanmış Türkçe ders metnini gösterim için uygulamanın diline çevirir;
+     * tanınmayan metin (eski kayıt, sunucunun yazdığı başka bir şey) olduğu gibi döner.
+     */
+    fun localizeLessonText(turkish: String): String =
+        if (AppLanguage.isTurkish()) turkish else lessonTextMap[turkish] ?: turkish
 
     var globalPartId = 1 // geçici: test için Part 4'ten başlat
     private var _lessonItems: MutableList<LessonItem> = mutableListOf()
@@ -556,7 +613,9 @@ object GlobalLessonData {
                         newItem.stableId,
                         lbScore,
                         season = seasonNow,
-                        titleUnit = newItem.titleUnit?.trim()?.take(127),
+                        // Sezon sonunda madalya/kupa parçasının adı olur: Türkçe kimlik (localizeLessonText).
+                        titleUnit = (turkishItem(globalPartId, newItem.stableId)?.titleUnit ?: newItem.titleUnit)
+                            ?.trim()?.take(127),
                     )
                 }
             }
