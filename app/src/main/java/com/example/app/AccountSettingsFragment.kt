@@ -48,6 +48,7 @@ class AccountSettingsFragment : Fragment() {
      * daveti burada görsün).
      */
     private fun loadCourseRow() {
+        if (!StudentClassFeature.ENABLED) return
         if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) return
         if (FirebaseAuth.getInstance().currentUser == null) return
         binding.tvCourseHeader.visibility = View.VISIBLE
