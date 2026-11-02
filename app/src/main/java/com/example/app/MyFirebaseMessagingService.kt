@@ -402,7 +402,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     // Sessiz saatler sunucuda bu alana bakıyor (functions/notifications.js).
                     // Token ile birlikte yazılıyor: ikisi de "bu cihaz şu an burada" bilgisi
                     // ve ikisinin tazeliği de aynı anda gerekiyor.
-                    "utcOffsetMinutes" to deviceUtcOffsetMinutes()
+                    "utcOffsetMinutes" to deviceUtcOffsetMinutes(),
+                    // Bildirim metinlerinin dili (functions: sendUserNotification). Dil değişince süreç
+                    // yeniden başlıyor ve bu kayıt açılışta yeniden yazılıyor.
+                    "lang" to AppLanguage.current(applicationContext)
                 )
                 updateMap["fcmToken"] = lastToken
 
@@ -595,7 +598,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                             val updateMap = mutableMapOf<String, Any?>(
                                 "fcmDevices" to trimmed,
                                 "fcmTokenUpdatedAt" to Timestamp.now(),
-                                "utcOffsetMinutes" to deviceUtcOffsetMinutes()
+                                "utcOffsetMinutes" to deviceUtcOffsetMinutes(),
+                                "lang" to AppLanguage.current(AppStrings.context())
                             )
                             updateMap["fcmToken"] = lastToken
                             userRef.set(updateMap, SetOptions.merge())

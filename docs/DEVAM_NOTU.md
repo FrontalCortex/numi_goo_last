@@ -64,9 +64,11 @@ yerelleştirilmesi, ödev saklama süresi.
   olursa olsun Türkçe yazılıyor (`GlobalLessonData.turkishItem`), gösterimde `localizeLessonText` /
   `DailyQuestionPoolBuilder.displayDifficulty`. Telefonda İngilizceye geçmeden oluşmuş günlük soru kartı
   Türkçe görünüyordu.
-- **Bildirimler (açık):** sunucunun push metinleri (seri hatırlatması, sınıf daveti, yeni ödev, sezon sonu,
-  hata bildirimi… ~25 metin) Türkçe; sunucu kullanıcının dilini bilmiyor. Çözüm önerisi: uygulama
-  `users/{uid}.lang` yazsın, sunucu metin tablosundan seçsin (functions deploy'u).
+- **Bildirimler (03.11.2026, sunucu commit'i deploy onayı bekliyor):** uygulama token kaydıyla
+  `users/{uid}.lang` yazıyor (kural değişikliği gerekmedi, users yasak listeli). `sendUserNotification`
+  `en: { title, body }` alıyor; kullanıcı `lang: 'en'` ise o gidiyor. Metin üreticileri `lang` parametresi
+  aldı (Türkçe çıktıları aynı), karar fonksiyonları `textEn` döndürüyor. Yeni bildirim eklerken `en` vermeyi
+  unutma: verilmezse İngilizce kullanıcıya Türkçe gider.
 - **Sunucu hata metinleri:** giriş/doğrulama akışında (`AuthManager`) `serverErrorText`: Türkçede sunucunun
   mesajı, başka dilde hata kodundan metin. Diğer ~45 yer (ödev, sınıf, mağaza…) hâlâ sunucunun Türkçe
   mesajını gösteriyor.
