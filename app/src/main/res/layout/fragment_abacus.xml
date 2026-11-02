@@ -2417,7 +2417,7 @@
         android:elevation="12dp"
         android:padding="16dp"
         android:translationX="400dp"
-        android:visibility="visible"
+        android:visibility="invisible"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

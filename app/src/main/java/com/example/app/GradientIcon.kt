@@ -27,6 +27,8 @@ fun gradientIcon(context: Context, drawableRes: Int, colors: IntArray, scale: In
     val w = source.intrinsicWidth.coerceAtLeast(1) * scale
     val h = source.intrinsicHeight.coerceAtLeast(1) * scale
     val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+    // Tablette uygulama yoğunluğu cihazınkinden büyük (FontScaleLimiter); ikon kendi boyunda kalsın.
+    bitmap.density = context.resources.displayMetrics.densityDpi
     val canvas = Canvas(bitmap)
     source.setBounds(0, 0, w, h)
     source.draw(canvas)

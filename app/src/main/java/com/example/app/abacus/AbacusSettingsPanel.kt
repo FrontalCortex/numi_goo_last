@@ -143,22 +143,50 @@ class AbacusSettingsPanel(
     private fun open() {
         onOpen()
         isOpen = true
-        panel.root.animate()
-            .translationX(0f)
-            .setDuration(300)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
-            .start()
+        slideIn(panel.root)
     }
 
     private fun close() {
         onClose()
         isOpen = false
-        val offset = panel.root.width.toFloat() + (100f * density)
-        panel.root.animate()
-            .translationX(offset)
-            .setDuration(300)
-            .setInterpolator(android.view.animation.AccelerateInterpolator())
-            .start()
+        slideOut(panel.root)
+    }
+
+    companion object {
+        /**
+         * Panel ortalı duruyor; sabit bir dp kadar sağa itmek geniş ekranda (tablet) yetmiyor, panelin
+         * bir kısmı ekranda kalıyordu. Bu yüzden sol kenarı ebeveynin sağ kenarını geçecek kadar
+         * itiliyor ve kapalıyken görünmez (dokunmaları da yakalamasın).
+         */
+        private fun hiddenOffset(view: View): Float {
+            val parentWidth = (view.parent as? View)?.width ?: view.resources.displayMetrics.widthPixels
+            return (parentWidth - view.left).toFloat() + view.resources.displayMetrics.density * 16f
+        }
+
+        /** Ayar panelini sağdan kaydırarak açar (AbacusFragment'teki kendi kopyası da kullanıyor). */
+        fun slideIn(view: View) {
+            view.animate().cancel()
+            if (view.visibility != View.VISIBLE) {
+                view.translationX = hiddenOffset(view)
+                view.visibility = View.VISIBLE
+            }
+            view.animate()
+                .translationX(0f)
+                .setDuration(300)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+        }
+
+        /** Ayar panelini sağa kaydırıp gizler. */
+        fun slideOut(view: View) {
+            view.animate().cancel()
+            view.animate()
+                .translationX(hiddenOffset(view))
+                .setDuration(300)
+                .setInterpolator(android.view.animation.AccelerateInterpolator())
+                .withEndAction { view.visibility = View.INVISIBLE }
+                .start()
+        }
     }
 
     private fun resetToDefaults() {

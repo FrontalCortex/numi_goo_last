@@ -565,9 +565,13 @@ class LessonAdapter(
         val hasCard = card != null && card.isAttachedToWindow && card.height > 0
         if (hasCard) {
             val loc = IntArray(2).also { card!!.getLocationInWindow(it) }
-            val cardTop = (loc[1] - coordLoc[1]).toFloat()
-            val cardBottom = cardTop + card!!.height
-            val cardLeft = (loc[0] - coordLoc[0]).toFloat()
+            // Kart bu anda basılma (lesson_card_press_animator) ya da "sıradaki ders" nefes ölçeğinde
+            // olabiliyor; konum ölçeklenmiş köşeyi veriyor ama drawToBitmap kartı tam boy çiziyor.
+            // Ölçeksiz köşeye çevrilmezse görüntü kartın ~%2 sağında/altında duruyordu (tablette belirgin).
+            val c = card!!
+            val cardTop = (loc[1] - coordLoc[1]).toFloat() - c.pivotY * (1f - c.scaleY)
+            val cardBottom = cardTop + c.height
+            val cardLeft = (loc[0] - coordLoc[0]).toFloat() - c.pivotX * (1f - c.scaleX)
             val fitsBelow = cardBottom + gap + arrowH + panelH + edge <= coordH
             val fitsAbove = cardTop - gap - arrowH - panelH - edge >= 0f
             pointUp = fitsBelow || !fitsAbove
@@ -582,6 +586,9 @@ class LessonAdapter(
             arrow.visibility = View.VISIBLE
             arrow.animate().alpha(1f).setStartDelay(60L).setDuration(160L).start()
             runCatching { card.drawToBitmap() }.getOrNull()?.let { bmp ->
+                // Bitmap cihazın fiziksel yoğunluğuyla doğuyor; tablette uygulama yoğunluğu büyütülünce (FontScaleLimiter)
+                // ImageView onu yeniden ölçekleyip kartın üstüne kaymış/büyümüş koyuyordu.
+                bmp.density = context.resources.displayMetrics.densityDpi
                 snapshot.setImageBitmap(bmp)
                 snapshot.x = cardLeft
                 snapshot.y = cardTop

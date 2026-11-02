@@ -100,6 +100,8 @@ class AvatarView @JvmOverloads constructor(
         fun toBitmap(context: Context, config: AvatarConfig, sizePx: Int, withBackground: Boolean = true): Bitmap {
             val pic = render(context, config, withBackground, closeUp = false)
             val bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+            // Tablette uygulama yoğunluğu cihazınkinden büyük (FontScaleLimiter); BitmapDrawable büyütmesin.
+            bmp.density = context.resources.displayMetrics.densityDpi
             val c = Canvas(bmp)
             c.scale(sizePx / pic.width.toFloat(), sizePx / pic.height.toFloat())
             c.drawPicture(pic)

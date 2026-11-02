@@ -3450,22 +3450,13 @@ class AbacusFragment : Fragment() {
         resetAbacus()
         abacusController.setEnabled(false)
         isAbacusSettingsPanelOpen = true
-        binding.abacusSettingsPanel.animate()
-            .translationX(0f)
-            .setDuration(300)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
-            .start()
+        com.example.app.abacus.AbacusSettingsPanel.slideIn(binding.abacusSettingsPanel)
     }
 
     private fun hideAbacusSettingsPanel() {
         abacusController.setEnabled(true)
         isAbacusSettingsPanelOpen = false
-        val offset = binding.abacusSettingsPanel.width.toFloat() + (100f * resources.displayMetrics.density)
-        binding.abacusSettingsPanel.animate()
-            .translationX(offset)
-            .setDuration(300)
-            .setInterpolator(android.view.animation.AccelerateInterpolator())
-            .start()
+        com.example.app.abacus.AbacusSettingsPanel.slideOut(binding.abacusSettingsPanel)
     }
 
     private fun setAllBeadsScale(scaleX: Float?, scaleY: Float?) {
