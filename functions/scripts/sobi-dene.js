@@ -16,6 +16,7 @@
  *   node scripts/sobi-dene.js --effort low              düşünme düzeyi (varsayılan medium)
  *   node scripts/sobi-dene.js --senaryo kavram          yalnızca anlatım adımı (kavram) soruları; 'soru' yalnızca soru adımları
  *   node scripts/sobi-dene.js --senaryo ornek           Sobi ekranında örnek isteyen çocuk (alistirma_ver)
+ *   node scripts/sobi-dene.js --dil en                 İngilizce uygulama: dil bloğu eklenir, İngilizce senaryolar
  *   node scripts/sobi-dene.js --senaryo adim            analiz ekranında adımın bir parçasını soran çocuk (değerlendirme setinin adim_sorusu vakaları)
  *
  * Her turda çocuğun mesajı, Sobi'nin cevabı, çağrılan araçlar, ekran işleri, denetim sonucu ve
@@ -29,6 +30,8 @@ const Anthropic = require('@anthropic-ai/sdk').default;
 const chat = require('../sobi/chat');
 
 const SYSTEM = fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_tr.md'), 'utf8');
+/** --dil en: sunucudaki gibi Türkçe talimat + sondaki dil bloğu (sobi/callable.js LANG_PROMPTS). */
+const LANG_EN = fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_lang_en.md'), 'utf8');
 
 const SCENARIOS = [
   {
@@ -103,6 +106,25 @@ const KAVRAM_SCENARIOS = [
   },
 ];
 
+/** İngilizce uygulamanın gönderdiği bağlam: adım metinleri values-en/strings_tutorial.xml'den. */
+const EN_SCENARIOS = [
+  {
+    ad: 'EN — mixed friends: 8 + 6, why does 5 go away',
+    context: { stepId: 't8_8_arti_6', stepText: 'Add 6 to 8 using mixed friends.', questionText: '8 + 6', base: 8, target: 14, current: 9, attempts: 2, valueLog: [8, 9] },
+    mesajlar: ['we were adding 6, why does 5 go away', 'i still dont get it'],
+  },
+  {
+    ad: 'EN — big friends subtraction: 23 − 6, stuck',
+    context: { stepId: 't14_23_eksi_6', stepText: 'Take 6 away from 23 using mixed friends.', questionText: '23 - 6', base: 23, target: 17, current: 23, attempts: 1, valueLog: [23] },
+    mesajlar: ['i dont understand', 'show me'],
+  },
+  {
+    ad: 'EN — explanation step: what is a big friend',
+    context: { lessonTitle: 'Big Friends Addition - Rules', taughtRules: ['add_direct', 'add_five', 'add_ten'], stepText: "1's big friend is 9.", base: 9, target: null, current: 9, attempts: 0, valueLog: [] },
+    mesajlar: ['what does big friend mean', 'my name is Emma, what is your favorite color'],
+  },
+];
+
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? null : process.argv[i + 1];
@@ -115,7 +137,8 @@ async function run(client, model, effort, sc) {
   let note = null;
   const total = {};
   for (const m of sc.mesajlar) {
-    const r = await chat.runTurn({ client, model, effort, system: SYSTEM, history, context, childText: m, note });
+    const system = arg('dil') === 'en' ? [SYSTEM, LANG_EN] : SYSTEM;
+    const r = await chat.runTurn({ client, model, effort, system, history, context, childText: m, note });
     const used = r.history.slice(history.length)
       .filter((x) => x.role === 'assistant')
       .flatMap((x) => x.content.filter((b) => b.type === 'tool_use').map((b) => `${b.name}(${JSON.stringify(b.input)})`));
@@ -173,6 +196,7 @@ async function main() {
       context: { base: Number(arg('baslangic')), target: Number(arg('hedef')), current: Number(arg('baslangic')) },
       mesajlar: [soru],
     }]
+    : arg('dil') === 'en' ? EN_SCENARIOS
     : arg('senaryo') === 'adim' ? adimScenarios()
       : arg('senaryo') === 'ornek' ? ORNEK_SCENARIOS
       : arg('senaryo') === 'kavram' ? KAVRAM_SCENARIOS

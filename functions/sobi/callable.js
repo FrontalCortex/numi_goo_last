@@ -46,14 +46,19 @@ const PROMPT_VERSION = crypto.createHash('sha1').update(SYSTEM_PROMPT).digest('h
 const GENERAL_PROMPT = fs.readFileSync(path.join(__dirname, 'prompt_genel_tr.md'), 'utf8');
 const GENERAL_PROMPT_VERSION = crypto.createHash('sha1').update(SYSTEM_PROMPT + GENERAL_PROMPT).digest('hex').slice(0, 10);
 const GENERAL_SOURCES = guard.numbersIn(GENERAL_PROMPT);
+/**
+ * Uygulama İngilizceyse (istemcinin `lang`'ı) talimatların SONUNA eklenen dil bloğu: Türkçe talimat
+ * ve önbelleği aynen kalıyor, Türkçe sohbetler hiç değişmiyor. Sözler docs/CEVIRI_SOZLUGU.md ile aynı.
+ */
+const LANG_PROMPTS = { en: fs.readFileSync(path.join(__dirname, 'prompt_lang_en.md'), 'utf8') };
 /** Genel sohbetin listedeki başlığı: çocuğun ilk mesajından (maskelenmiş). */
 const TITLE_MAX = 40;
 /** Sohbete düğme olarak düşen ekran işleri (genel sohbet); yeniden açılan sohbette de görünsün diye kayıtta. */
 const BUTTON_KINDS = new Set(['goster', 'alistirma', 'test', 'kredi', 'pro', 'ders']);
 
-function titleOf(text) {
+function titleOf(text, lang = 'tr') {
   const t = String(text || '').trim();
-  if (t.length <= TITLE_MAX) return t || 'Sohbet';
+  if (t.length <= TITLE_MAX) return t || (lang === 'en' ? 'Chat' : 'Sohbet');
   const cut = t.slice(0, TITLE_MAX);
   const space = cut.lastIndexOf(' ');
   return `${(space > 20 ? cut.slice(0, space) : cut).trim()}…`;
@@ -114,10 +119,12 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
       const message = typeof payload.message === 'string' ? payload.message : '';
       // Genel sohbet (Sobi sekmesi): adım bağlamı yok; bağlamı aşağıda sunucu kendisi kuruyor.
       const general = payload.mode === 'genel';
+      // Uygulamanın dili; eski sürümler göndermiyor, onlar Türkçe.
+      const lang = Object.prototype.hasOwnProperty.call(LANG_PROMPTS, payload.lang) ? payload.lang : 'tr';
       let stepContext = general ? chat.generalContext() : chat.sanitizeContext(payload.context);
       // Çocuk bir öneri balonuna dokunduysa balonun anahtarı (uygulama metni de "message"da gönderiyor).
       const suggestion = typeof payload.suggestion === 'string' && /^[a-z_]{1,30}$/.test(payload.suggestion) ? payload.suggestion : null;
-      const direct = chat.directReplyFor(stepContext, suggestion);
+      const direct = chat.directReplyFor(stepContext, suggestion, lang);
       const sessionId = SESSION_ID.test(payload.sessionId || '') ? payload.sessionId : null;
 
       const [userSnap, statsSnap] = await Promise.all([
@@ -166,7 +173,7 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
 
       const runWith = (h) => chat.runTurn({
         client: getClient(),
-        system: general ? [SYSTEM_PROMPT, GENERAL_PROMPT] : SYSTEM_PROMPT,
+        system: [SYSTEM_PROMPT, ...(general ? [GENERAL_PROMPT] : []), ...(lang !== 'tr' ? [LANG_PROMPTS[lang]] : [])],
         history: h,
         context: stepContext,
         childText: message,
@@ -202,7 +209,7 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
         else throw err;
         return {
           sessionId: sessionRef.id,
-          reply: guard.fallbackReply(stepContext, tools),
+          reply: guard.fallbackReply(stepContext, tools, lang),
           actions: [],
           suggestions: chat.suggestionsFor(stepContext, []),
           unavailable: true,
@@ -249,11 +256,12 @@ module.exports = function createSobiChat({ functions, admin, db, isAskQuestionRe
           stepId: stepContext.stepId,
           pendingNote: result.fellBack ? result.reply : null,
           model: chat.DEFAULT_MODEL,
-          promptVersion: general ? GENERAL_PROMPT_VERSION : PROMPT_VERSION,
+          promptVersion: (general ? GENERAL_PROMPT_VERSION : PROMPT_VERSION) + (lang !== 'tr' ? `+${lang}` : ''),
+          lang,
           usage: totals,
           ...(session ? {} : { createdAt: ts.fromMillis(now) }),
           // Genel sohbet listesi (sobiSessions) bu alanla süzüyor; ders sohbetlerinde alan yok.
-          ...(general && !session ? { kind: 'genel', title: titleOf(childLine) } : {}),
+          ...(general && !session ? { kind: 'genel', title: titleOf(childLine, lang) } : {}),
           updatedAt: ts.fromMillis(now),
           expiresAt: ts.fromMillis(now + RETENTION_MS),
         }, { merge: true });

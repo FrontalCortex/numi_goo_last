@@ -32,7 +32,7 @@ const LONG_DIGITS = /(?:\+?\d[\s.-]?){9,}/g;
 // "benim adım Ali", "ismim Ayşe": ad modele gitmesin (denemede Sobi adı geri söyledi). Tek başına
 // "adım" maskelenmiyor: derste "bu adım" (basamak) anlamında da geçiyor. Büyük harfler açıkça
 // yazılı: /i bayrağı Türkçe "İ"yi "i" ile eşleştirmiyor.
-const NAME = /([Bb]enim\s+[Aa]d[ıi]m|[Bb]enim\s+[İi]smim|[İi]smim)\s+\p{L}+/gu;
+const NAME = /([Bb]enim\s+[Aa]d[ıi]m|[Bb]enim\s+[İi]smim|[İi]smim|[Mm]y\s+name\s+is|[Mm]y\s+name's)\s+\p{L}+/gu;
 
 /** Çocuğun metni: kırpılmış, kısaltılmış, kişisel kalıplar maskelenmiş. */
 function cleanChildText(text) {
@@ -92,7 +92,8 @@ function checkReply(reply, sources, { explanation = false } = {}) {
  * Model cevap veremediğinde ya da cevabı denetime takıldığında çocuğa giden metin. Adımın ilk
  * hamlesi kural motorundan; sayılar hesaplanmış olduğu için güvenli.
  */
-function fallbackReply(ctx, tools) {
+function fallbackReply(ctx, tools, lang = 'tr') {
+  if (lang === 'en') return fallbackReplyEn(ctx);
   // Genel sohbette (Sobi sekmesi) adım yok; kural motorunun söyleyeceği bir hamle de yok.
   if (ctx && ctx.mode === 'genel') {
     return 'Bunu şu an cevaplayamadım. Abaküs ya da uygulama hakkında başka bir şey sormak ister misin?';
@@ -117,6 +118,22 @@ function fallbackReply(ctx, tools) {
       : 'Bunu birlikte düşünelim! Neresi zor geldi, biraz daha anlatır mısın?';
   }
   return 'Bunu birlikte abaküste görelim mi? "Bana göster"e dokunabilirsin.';
+}
+
+/**
+ * İngilizce yedek metin. Kural motorunun hamle metni (tools.describe) Türkçe olduğu için hamleyi
+ * söylemiyor; çocuğu "Show me"a ve adımın kendi (İngilizce) metnine yönlendiriyor.
+ */
+function fallbackReplyEn(ctx) {
+  if (ctx && ctx.mode === 'genel') {
+    return "I couldn't answer that right now. Do you want to ask something else about the abacus or the app?";
+  }
+  if (!ctx || !Number.isInteger(ctx.target)) {
+    return ctx && ctx.stepText
+      ? `Let's look at it together! In the lesson we say: "${ctx.stepText}" Which part was hard?`
+      : "Let's think about it together! Which part was hard? Can you tell me a bit more?";
+  }
+  return 'Let\'s look at it together on the abacus! You can tap "Show me".';
 }
 
 module.exports = {

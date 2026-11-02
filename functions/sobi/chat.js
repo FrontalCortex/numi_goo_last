@@ -342,8 +342,14 @@ const DIRECT_SUGGESTIONS = { bunu_anlamadim: 'basit', neden_boyle: 'neden' };
  * Genel sohbetin "Krediler nasıl çalışır?" balonu: kuralları sabit, model gerekmez (ücretsiz, anında).
  * Sayılar wallet.js'ten; plan hakları değişince metin de değişir.
  */
-function creditsText() {
+function creditsText(lang = 'tr') {
   const f = wallet.FREE_DAILY;
+  if (lang === 'en') {
+    return `You get free messages every day: ${f.Free} on the Free plan, ${f.Lite} on Lite and ${f.Pro} on Pro. `
+      + 'When they run out, each message costs 1 Sobi credit. Every new example you solve with me on the abacus also counts as 1 message. '
+      + 'Credits come from the shop and never expire; your mom or dad approves the purchase. '
+      + "Ready-made answers and messages I couldn't answer don't cost anything.";
+  }
   return `Her gün ücretsiz mesaj hakkın var: Free planda ${f.Free}, Lite'ta ${f.Lite}, Pro'da ${f.Pro}. `
     + 'Hakkın bitince her mesaj 1 Sobi kredisi harcar. Benimle abaküste çözdüğün her yeni örnek de 1 mesaj sayılır. '
     + 'Krediler mağazadan alınır, süresizdir; satın almayı annen ya da baban onaylar. '
@@ -351,12 +357,16 @@ function creditsText() {
 }
 const GENERAL_DIRECT = { krediler: { key: 'genel_krediler', text: creditsText } };
 
-/** Balona modelsiz cevap: { text, key } ya da null (model çalışır). */
-function directReplyFor(ctx, suggestion) {
+/**
+ * Balona modelsiz cevap: { text, key } ya da null (model çalışır). İngilizcede ders açıklamaları yok
+ * (aciklamalar_tr.json Türkçe ve adım metninin parmak izine bağlı): orada model cevaplıyor.
+ */
+function directReplyFor(ctx, suggestion, lang = 'tr') {
   if (ctx.mode === 'genel') {
     const d = GENERAL_DIRECT[suggestion];
-    return d ? { text: d.text(), key: d.key } : null;
+    return d ? { text: d.text(lang), key: d.key } : null;
   }
+  if (lang !== 'tr') return null;
   const field = DIRECT_SUGGESTIONS[suggestion];
   if (!field) return null;
   const ex = explanations.find(ctx);

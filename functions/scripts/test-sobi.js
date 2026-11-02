@@ -815,6 +815,48 @@ async function main() {
     // Ders sohbetinde aynı balon anahtarı hazır cevap değil.
     assert.strictEqual(chat.directReplyFor(CTX, 'krediler'), null);
   });
+  await test('İngilizce (lang: en): dil bloğu en sonda, Türkçe istek aynen; yedek ve hazır metin İngilizce', async () => {
+    const env = fakeEnv();
+    const responses = [];
+    const client = fakeClient(responses);
+    const fn = createSobiChat({ ...env, createClient: () => client });
+    const ctx = { auth: { uid: 'u1' } };
+    env.store.set('users/u1', { plan: 'Pro' });
+
+    // Ders sohbeti: tek Türkçe talimat + dil bloğu; oturum dili ve sürüm eki kaydediliyor.
+    responses.push(say("Let's look at it together!"));
+    const r1 = await fn({ message: "I don't get it", context: CTX, lang: 'en' }, ctx);
+    assert.strictEqual(r1.reply, "Let's look at it together!");
+    const sent = client.calls[0];
+    assert.strictEqual(sent.system.length, 2);
+    assert.ok(sent.system[1].text.startsWith('## Language: English'));
+    const s1 = env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`);
+    assert.strictEqual(s1.lang, 'en');
+    assert.strictEqual(s1.promptVersion, `${createSobiChat.PROMPT_VERSION}+en`);
+
+    // Genel sohbet: ders + genel + dil = üç blok.
+    responses.push(say('Sure!'));
+    await fn({ mode: 'genel', message: 'hi', lang: 'en' }, ctx);
+    assert.strictEqual(client.calls[1].system.length, 3);
+    assert.ok(client.calls[1].system[2].text.startsWith('## Language: English'));
+
+    // Türkçe (ve dil göndermeyen eski sürüm, bilinmeyen dil): istek eskisiyle aynı, tek blok.
+    responses.push(say('Tamam.'), say('Tamam.'));
+    await fn({ message: 'anlamadım', context: CTX }, ctx);
+    await fn({ message: 'anlamadım', context: CTX, lang: 'xx' }, ctx);
+    assert.strictEqual(client.calls[2].system.length, 1);
+    assert.strictEqual(client.calls[3].system.length, 1);
+
+    // Hazır metinler: kredi açıklaması İngilizce; ders açıklamaları (Türkçe) İngilizcede kullanılmıyor.
+    assert.ok(chat.directReplyFor({ mode: 'genel' }, 'krediler', 'en').text.startsWith('You get free messages every day: 2 on the Free plan'));
+    assert.strictEqual(chat.directReplyFor(CTX, 'neden_boyle', 'en'), null);
+    // Yedek metin İngilizce ve Türkçe söz içermiyor.
+    for (const c of [{ mode: 'genel' }, { ...CTX, target: null, stepText: 'Add 5.' }, CTX]) {
+      const t = guard.fallbackReply(c, require('../sobi/tools'), 'en');
+      assert.ok(!/[çğıöşüÇĞİÖŞÜ]/.test(t), t);
+    }
+    assert.strictEqual(guard.cleanChildText('my name is Emma').text, 'my name is [ad]');
+  });
   await test('konu dışı: model cevabı rehberde olmayan sayı uydurursa yedek metin, bedel yok', async () => {
     const env = fakeEnv();
     const fn = createSobiChat({ ...env, createClient: () => fakeClient([say('Türkiye\'nin başkenti Ankara, nüfusu 5800000.')]) });
