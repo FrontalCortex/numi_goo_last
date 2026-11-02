@@ -49,7 +49,7 @@ const GENERAL_SOURCES = guard.numbersIn(GENERAL_PROMPT);
 /** Genel sohbetin listedeki başlığı: çocuğun ilk mesajından (maskelenmiş). */
 const TITLE_MAX = 40;
 /** Sohbete düğme olarak düşen ekran işleri (genel sohbet); yeniden açılan sohbette de görünsün diye kayıtta. */
-const BUTTON_KINDS = new Set(['goster', 'alistirma', 'test', 'kredi', 'pro']);
+const BUTTON_KINDS = new Set(['goster', 'alistirma', 'test', 'kredi', 'pro', 'ders']);
 
 function titleOf(text) {
   const t = String(text || '').trim();

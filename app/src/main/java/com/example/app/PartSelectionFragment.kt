@@ -115,6 +115,27 @@ class PartSelectionFragment : Fragment() {
         setupRecyclerView(view, R.id.additionRecyclerView, listOf(1, 4, 7).map { getPartState(it) })
         setupRecyclerView(view, R.id.subtractionRecyclerView, listOf(2, 5, 8).map { getPartState(it) })
         setupRecyclerView(view, R.id.multiplicationRecyclerView, listOf(3, 6).map { getPartState(it) })
+
+        // Sobi'nin "… derslerine git" düğmesinden gelindi: bölüm açıksa haritası açılır, kapalıysa kartın
+        // kendi kilit mesajı (karta dokunmakla aynı kural). Bir kez; geri dönünce yeniden açılmasın.
+        val openPart = arguments?.getInt(ARG_OPEN_PART, 0) ?: 0
+        if (openPart > 0) {
+            arguments?.remove(ARG_OPEN_PART)
+            val state = getPartState(openPart)
+            if (state.functionalActive) openMapForPart(openPart)
+            else if (state.inactiveMessage.isNotBlank()) {
+                android.widget.Toast.makeText(requireContext(), state.inactiveMessage, android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    companion object {
+        private const val ARG_OPEN_PART = "open_part"
+
+        /** Ana ekran, açılınca [partId] bölümünün ders haritasına geçer (Sobi sekmesi, derse_git). */
+        fun openingPart(partId: Int) = PartSelectionFragment().apply {
+            arguments = Bundle().apply { putInt(ARG_OPEN_PART, partId) }
+        }
     }
 
     private fun setupRecyclerView(root: View, recyclerViewId: Int, parts: List<PartState>) {

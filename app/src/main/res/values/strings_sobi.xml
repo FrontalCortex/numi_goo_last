@@ -185,6 +185,8 @@
     <string name="sobi_tab_starter_credits">Krediler nasıl çalışır?</string>
     <string name="sobi_tab_button_test">Teste başla ›</string>
     <string name="sobi_tab_button_credits">Kredi al ›</string>
+    <string name="sobi_tab_search">Sohbetlerde ara</string>
+    <string name="sobi_tab_button_lesson">📚 %1$s derslerine git ›</string>
     <string name="sobi_tab_button_pro">Pro\'ya bak ›</string>
     <string name="sobi_tab_button_show">%1$s · abaküste gör ›</string>
     <string name="sobi_tab_button_practice">%1$s · abaküste çöz ›</string>

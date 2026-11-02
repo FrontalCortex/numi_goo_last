@@ -28,6 +28,8 @@ object ServerSobi {
         val result: Int,
         /** [ACTION_POINT]: parlatılacak sütun (0 = birler). */
         val column: Int? = null,
+        /** [ACTION_LESSON]: açılacak ders bölümü (PartSelectionFragment: 1–6). */
+        val part: Int? = null,
     )
 
     data class Reply(
@@ -58,6 +60,8 @@ object ServerSobi {
     const val ACTION_TEST = "test"
     const val ACTION_CREDITS = "kredi"
     const val ACTION_PRO = "pro"
+    /** Bölümün ders haritasına giden düğme (derse_git). */
+    const val ACTION_LESSON = "ders"
     /** Sobi sekmesinin "Krediler nasıl çalışır?" balonu: sunucu modelsiz, ücretsiz cevaplıyor. */
     const val KEY_CREDITS = "krediler"
 
@@ -228,6 +232,10 @@ object ServerSobi {
         val m = raw as? Map<*, *> ?: return null
         val kind = m["tur"] as? String ?: return null
         if (kind == ACTION_TEST || kind == ACTION_CREDITS || kind == ACTION_PRO) return Action(kind, 0, "", 0, 0)
+        if (kind == ACTION_LESSON) {
+            val part = (m["bolum"] as? Number)?.toInt()?.takeIf { it in 1..6 } ?: return null
+            return Action(kind, 0, "", 0, 0, part = part)
+        }
         if (kind == ACTION_POINT) {
             val col = (m["sutun"] as? Number)?.toInt()?.takeIf { it in 0..4 } ?: return null
             return Action(kind, 0, "", 0, 0, col)

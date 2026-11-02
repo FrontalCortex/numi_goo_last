@@ -1091,6 +1091,16 @@ class MainActivity : AppCompatActivity() {
             android.graphics.drawable.BitmapDrawable(resources, bitmap)
     }
 
+    /**
+     * Sobi'nin "… derslerine git" düğmesi: ana ekrana geçip [partId] bölümünün haritasını açar (kilit
+     * kuralı ana ekranınki, [PartSelectionFragment.openingPart]). Alt menüde ana sayfa işaretlenir;
+     * işaretleme dinleyiciyi tetiklemiyor.
+     */
+    fun openLessonPart(partId: Int) {
+        binding.bottomNavigationID.menu.findItem(R.id.map)?.isChecked = true
+        changeFragment(PartSelectionFragment.openingPart(partId))
+    }
+
     /** Sohbet sekmesi şu an Sobi sekmesi mi ([applySobiTab]). */
     private var sobiTabActive = false
 

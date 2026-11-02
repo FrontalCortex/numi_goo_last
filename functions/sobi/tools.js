@@ -247,6 +247,14 @@ const TOOL_DEFS = [
 ];
 
 /**
+ * derse_git'in bölümleri → uygulamadaki bölüm kimliği (PartSelectionFragment: 1–6; 7–8 Ustalık
+ * Yolu, ders haritası değil, burada yok).
+ */
+const LESSON_PARTS = {
+  toplama: 1, cikarma: 2, carpma: 3, korleme_toplama: 4, korleme_cikarma: 5, korleme_carpma: 6,
+};
+
+/**
  * Genel sohbetin (Sobi sekmesi, ders dışı) araçları: dersin araçları + iki ekran işi. Ayrı liste,
  * çünkü ders sohbetlerinin listesi değişirse eski ders sohbetlerinin düşünme blokları reddedilir
  * (bkz. chat.toolsFor). Genel sohbette ekranda abaküs yok: abakuste_goster ve alistirma_ver orada
@@ -267,6 +275,17 @@ const GENERAL_TOOL_DEFS = [
       type: 'object',
       properties: { neyi: { type: 'string', enum: ['kredi', 'pro'] } },
       required: ['neyi'],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    name: 'derse_git',
+    description: 'Sohbete "… derslerine git" düğmesi koyar; düğme ana ekrandaki o bölümün ders haritasını açar (bölüm kilitliyse uygulama nedenini söyler). Bir kuralı çalışmayı ya da bir dersi tekrar etmeyi önerdiğinde kullan: toplama kuralları "toplama", çıkarma kuralları "cikarma", çarpma "carpma"; abaküssüz zihinden işlem "korleme_*". Bir mesajda en fazla bir kez.',
+    input_schema: {
+      type: 'object',
+      properties: { bolum: { type: 'string', enum: Object.keys(LESSON_PARTS) } },
+      required: ['bolum'],
       additionalProperties: false,
     },
     strict: true,
@@ -514,6 +533,14 @@ function runTool(name, input, ctx, state) {
       state.magaza = true;
       return ok({ durum: `Sohbete ${which === 'kredi' ? '"Kredi al"' : 'Pro'} düğmesi kondu.` }, { tur: which });
     }
+    case 'derse_git': {
+      const part = LESSON_PARTS[input && input.bolum];
+      if (!general) return fail('Bu ekranda derse gidilemiyor.');
+      if (!part) return fail('Böyle bir bölüm yok.');
+      if (state.ders) return fail('Bu mesajda bu araç zaten kullanıldı.');
+      state.ders = true;
+      return ok({ durum: 'Sohbete bölümün derslerine giden düğme kondu.' }, { tur: 'ders', bolum: part });
+    }
     default:
       return fail(`Bilinmeyen araç: ${name}`);
   }
@@ -522,6 +549,7 @@ function runTool(name, input, ctx, state) {
 module.exports = {
   TOOL_DEFS,
   GENERAL_TOOL_DEFS,
+  LESSON_PARTS,
   RULE_NAMES,
   RULE_TEXTS,
   columnName,

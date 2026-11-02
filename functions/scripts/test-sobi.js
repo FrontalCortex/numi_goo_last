@@ -734,6 +734,9 @@ async function main() {
     assert.strictEqual(show.isError, false, 'adım yokken de gösterim (ayrı ekranda)');
     assert.strictEqual(show.action.tur, 'goster');
     assert.ok(show.content.includes('düğme'));
+    assert.deepStrictEqual(tools.runTool('derse_git', { bolum: 'cikarma' }, g, {}).action, { tur: 'ders', bolum: 2 });
+    assert.strictEqual(tools.runTool('derse_git', { bolum: 'cikarma' }, CTX, {}).isError, true, 'ders sohbetinde yok');
+    assert.strictEqual(tools.runTool('derse_git', { bolum: 'ustalik' }, g, {}).isError, true);
     const ex = tools.runTool('alistirma_ver', { baslangic: 3, islem: 'add', sayi: 4 }, g, {});
     assert.strictEqual(ex.action.tur, 'alistirma');
   });

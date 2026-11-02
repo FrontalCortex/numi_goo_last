@@ -148,6 +148,14 @@ class SobiChatFragment : Fragment() {
         view.findViewById<View>(R.id.sobiChatLogin).visibility = if (loggedIn) View.GONE else View.VISIBLE
 
         setupStarters(view.findViewById(R.id.sobiChatStarters))
+        view.findViewById<EditText>(R.id.sobiDrawerSearch).addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: android.text.Editable?) {
+                query = s?.toString().orEmpty()
+                applyFilter()
+            }
+        })
         listView.layoutManager = LinearLayoutManager(requireContext())
         listView.adapter = adapter
         ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
@@ -168,6 +176,7 @@ class SobiChatFragment : Fragment() {
     }
 
     override fun onDestroyView() {
+        stopTyping()
         speaker?.shutdown()
         speaker = null
         mascot = null
@@ -213,6 +222,13 @@ class SobiChatFragment : Fragment() {
         val ctx = context ?: return
         messagesView.removeAllViews()
         for (item in state.items) {
+            if (item === typing) {
+                // Yazılırken: metnin gelen kısmı; oy satırı ve düğmeler yazı bitince (kopya oylanamıyor).
+                messagesView.addView(messageViews.bubble(ctx, item.message.copy(
+                    text = item.message.text.take(typedChars), serverIndex = null, localId = null,
+                )))
+                continue
+            }
             messagesView.addView(messageViews.bubble(ctx, item.message))
             if (item.buttons.isNotEmpty()) messagesView.addView(buttonRow(ctx, item.buttons))
         }
@@ -225,11 +241,45 @@ class SobiChatFragment : Fragment() {
         scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
     }
 
-    private fun addSobi(m: SobiStepTracker.Message, buttons: List<ServerSobi.Action> = emptyList()) {
-        state.items += Item(m, buttons)
+    private fun addSobi(m: SobiStepTracker.Message, buttons: List<ServerSobi.Action> = emptyList(), animate: Boolean = false) {
+        val item = Item(m, buttons)
+        state.items += item
         if (view == null) return
-        render()
+        if (animate) startTyping(item) else render()
         speaker?.speakIfAuto(m.text)
+    }
+
+    // ── Akarak yazma ───────────────────────────────────────────────────────
+    //
+    // Sobi'nin cevabı sunucuda bütün hâlinde denetlendikten sonra geliyor (guard: kaynaksız sayı, uzunluk);
+    // gerçek akış (streaming) denetlenmemiş metni çocuğa gösterirdi. Bu yüzden cevap geldikten sonra
+    // ekranda yazılıyormuş gibi açılıyor (kullanıcı isteği 02.11.2026): ~1 saniye, uzun cevapta da.
+
+    private var typing: Item? = null
+    private var typedChars = 0
+    private val typingHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val typingTick = object : Runnable {
+        override fun run() {
+            val item = typing ?: return
+            val len = item.message.text.length
+            typedChars = minOf(len, typedChars + maxOf(2, len / TYPING_STEPS))
+            if (typedChars >= len) typing = null
+            render()
+            if (typing != null) typingHandler.postDelayed(this, TYPING_TICK_MS)
+        }
+    }
+
+    private fun startTyping(item: Item) {
+        stopTyping()
+        typing = item
+        typedChars = 0
+        typingTick.run()
+    }
+
+    /** Yazı yarıda kalırsa (yeni mesaj, sohbet değişti, ekran kapandı) mesaj bütün görünür. */
+    private fun stopTyping() {
+        typingHandler.removeCallbacks(typingTick)
+        typing = null
     }
 
     private fun sendFromInput() {
@@ -242,6 +292,7 @@ class SobiChatFragment : Fragment() {
 
     private fun send(text: String, suggestion: String? = null) {
         if (sending || !loggedIn) return
+        stopTyping()
         sending = true
         state.items += Item(SobiStepTracker.Message(fromChild = true, text = text))
         render()
@@ -261,7 +312,7 @@ class SobiChatFragment : Fragment() {
                 val shown = if (reply.turnLimitReached) appString(R.string.sobi_turn_limit) else reply.text?.takeIf { it.isNotBlank() }
                 val index = if (reply.turnLimitReached) null else reply.messageIndex
                 val buttons = reply.actions.filter { it.kind in BUTTON_KINDS }
-                if (shown != null) addSobi(SobiStepTracker.Message(fromChild = false, text = shown, serverIndex = index), buttons)
+                if (shown != null) addSobi(SobiStepTracker.Message(fromChild = false, text = shown, serverIndex = index), buttons, animate = true)
                 else if (view != null) render()
                 // Yeni sohbet listede görünsün (başlığı ilk mesajdan).
                 if (forSession == null) refreshList()
@@ -286,6 +337,7 @@ class SobiChatFragment : Fragment() {
     }
 
     private fun newChat() {
+        stopTyping()
         closeDrawer()
         if (sending) return
         state.sessionId = null
@@ -300,6 +352,7 @@ class SobiChatFragment : Fragment() {
         if (sending || info.id == state.sessionId) return
         speaker?.stop()
         ServerSobi.loadSession(info.id, { list ->
+            stopTyping()
             state.sessionId = info.id
             state.items.clear()
             for (m in list) {
@@ -352,8 +405,20 @@ class SobiChatFragment : Fragment() {
         ServerSobi.ACTION_TEST -> appString(R.string.sobi_tab_button_test)
         ServerSobi.ACTION_CREDITS -> appString(R.string.sobi_tab_button_credits)
         ServerSobi.ACTION_PRO -> appString(R.string.sobi_tab_button_pro)
+        ServerSobi.ACTION_LESSON -> partName(a.part)?.let { appString(R.string.sobi_tab_button_lesson, it) }
         ServerSobi.ACTION_SHOW -> operationNumbers(a)?.let { appString(R.string.sobi_tab_button_show, MistakeReviewDialog.questionText(it)) }
         ServerSobi.ACTION_PRACTICE -> operationNumbers(a)?.let { appString(R.string.sobi_tab_button_practice, MistakeReviewDialog.questionText(it)) }
+        else -> null
+    }
+
+    /** Ana ekrandaki bölüm kartının adı (PartCardAdapter ile aynı). */
+    private fun partName(part: Int?): String? = when (part) {
+        1 -> appString(R.string.ui_abakusun_temeli_ve_toplama)
+        2 -> appString(R.string.ui_abakuste_cikarma)
+        3 -> appString(R.string.ui_abakuste_carpma)
+        4 -> appString(R.string.ui_korleme_toplama)
+        5 -> appString(R.string.ui_korleme_cikarma)
+        6 -> appString(R.string.ui_korleme_carpma)
         else -> null
     }
 
@@ -369,6 +434,7 @@ class SobiChatFragment : Fragment() {
             ServerSobi.ACTION_TEST -> SobiTestSheet(this).show()
             ServerSobi.ACTION_CREDITS -> openCredits()
             ServerSobi.ACTION_PRO -> openPro()
+            ServerSobi.ACTION_LESSON -> a.part?.let { (activity as? MainActivity)?.openLessonPart(it) }
             ServerSobi.ACTION_SHOW, ServerSobi.ACTION_PRACTICE -> {
                 val nums = operationNumbers(a) ?: return
                 val fm = activity?.supportFragmentManager ?: return
@@ -397,10 +463,20 @@ class SobiChatFragment : Fragment() {
     private fun refreshList() {
         if (!loggedIn) return
         ServerSobi.listSessions({ list ->
-            adapter.items = list
-            adapter.notifyDataSetChanged()
-            if (view != null) listEmpty.visibility = if (list.isEmpty()) View.VISIBLE else View.GONE
+            allSessions = list
+            applyFilter()
         }, {})
+    }
+
+    /** Listenin tamamı; arama kutusu başlıklarda süzüyor (büyük/küçük harf ve Türkçe İ/ı farkı yok). */
+    private var allSessions: List<ServerSobi.SessionInfo> = emptyList()
+    private var query = ""
+
+    private fun applyFilter() {
+        val q = query.trim().lowercase(TR)
+        adapter.items = if (q.isEmpty()) allSessions else allSessions.filter { it.title.lowercase(TR).contains(q) }
+        adapter.notifyDataSetChanged()
+        if (view != null) listEmpty.visibility = if (adapter.items.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun confirmDelete(info: ServerSobi.SessionInfo) {
@@ -484,9 +560,13 @@ class SobiChatFragment : Fragment() {
     }
 
     companion object {
+        private val TR = java.util.Locale("tr", "TR")
+        private const val TYPING_TICK_MS = 30L
+        /** Yazının bölündüğü adım sayısı: her cevap ~1 saniyede (30 ms × ~40) açılır. */
+        private const val TYPING_STEPS = 40
         private val BUTTON_KINDS = setOf(
             ServerSobi.ACTION_TEST, ServerSobi.ACTION_CREDITS, ServerSobi.ACTION_PRO,
-            ServerSobi.ACTION_SHOW, ServerSobi.ACTION_PRACTICE,
+            ServerSobi.ACTION_SHOW, ServerSobi.ACTION_PRACTICE, ServerSobi.ACTION_LESSON,
         )
         private var lastState = State(null)
     }
