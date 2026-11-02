@@ -1,7 +1,10 @@
 package com.example.app
 
+import android.content.SharedPreferences
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
@@ -14,21 +17,46 @@ import com.example.app.homework.DepthPress
  * oturtuldu; oraya dokunmamak için düğme listenin üstünde, "Öğretmene sor"un hemen üstünde duruyor.
  * Bugünün testi bekliyorsa köşesinde nokta var ve günde bir kez "Senin için bir test hazırladım!" balonu
  * çıkıyor ([SobiNudge]). Dokununca Sobi'nin testi paneli ([SobiTestSheet]) açılıyor.
+ *
+ * Part kartları ekranında da ([PartSelectionFragment]; kullanıcı kararı 01.11.2026) aynı düğme: orada
+ * [anchor] yok, düğme kökün sağ alt köşesinde. Balonun günlük hakkı iki ekranda ortak
+ * ([SobiDailyTest.shouldNudgeToday]); hangisinde önce görünürse öbüründe o gün çıkmıyor.
+ *
+ * @param root ConstraintLayout ya da FrameLayout.
+ * @param anchor Haritadaki "Öğretmene sor" düğmesi: Sobi onun üstünde duruyor. Yoksa sağ alt köşe.
  */
-class MapSobiTestButton(private val fragment: Fragment, private val root: ConstraintLayout, anchor: View) {
+class MapSobiTestButton(private val fragment: Fragment, private val root: ViewGroup, anchor: View? = null) {
 
     private val button: View
     private val dot: View
     private var nudge: SobiNudge? = null
     private var sheet: SobiTestSheet? = null
+    /**
+     * Test bitince nokta hemen sönsün. Test başka bir katmanda (abacusFragmentContainer) açılıyor,
+     * alttaki ekran durmuyor: dönüşte onResume gelmiyor. SharedPreferences dinleyiciyi zayıf
+     * tuttuğu için alan olarak saklanıyor.
+     */
+    private val testsListener: SharedPreferences.OnSharedPreferenceChangeListener
 
     init {
         val ctx = root.context
         val d = ctx.resources.displayMetrics.density
         button = LayoutInflater.from(ctx).inflate(R.layout.view_map_sobi_test, root, false)
         dot = button.findViewById(R.id.mapSobiTestDot)
-        root.addView(button, ConstraintLayout.LayoutParams((SIZE_DP * d).toInt(), (SIZE_DP * d).toInt()).apply {
-            if (TeacherQuestionsFeature.ENABLED) {
+        val size = (SIZE_DP * d).toInt()
+        val margin = (16 * d).toInt()
+        val params = if (root !is ConstraintLayout) {
+            FrameLayout.LayoutParams(size, size, Gravity.BOTTOM or Gravity.END).apply {
+                marginEnd = margin
+                bottomMargin = margin
+            }
+        } else ConstraintLayout.LayoutParams(size, size).apply {
+            if (anchor == null) {
+                endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+                marginEnd = margin
+                bottomMargin = margin
+            } else if (TeacherQuestionsFeature.ENABLED) {
                 endToEnd = anchor.id
                 startToStart = anchor.id
                 bottomToTop = anchor.id
@@ -40,22 +68,23 @@ class MapSobiTestButton(private val fragment: Fragment, private val root: Constr
                 endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
                 bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
                 val anchorSize = ctx.resources.getDimensionPixelSize(R.dimen.map_fab_size)
-                marginEnd = (16 * d).toInt() + (anchorSize - (SIZE_DP * d).toInt()) / 2
-                bottomMargin = (16 * d).toInt()
+                marginEnd = margin + (anchorSize - size) / 2
+                bottomMargin = margin
             }
-        })
+        }
+        root.addView(button, params)
         // Haritadaki öbür düğmelerle aynı katmanda: liste kartlarının üstünde.
-        button.elevation = anchor.elevation
+        if (anchor != null) button.elevation = anchor.elevation
         DepthPress.attach(button.findViewById(R.id.mapSobiTestFace))
         button.findViewById<View>(R.id.mapSobiTestFace).setOnClickListener { open() }
+        testsListener = SobiDailyTest.addTestsListener(ctx) { updateDot() }
         refresh()
     }
 
-    /** Harita her göründüğünde: bugünün testi bitti mi, balon gösterilsin mi. */
+    /** Ekran her göründüğünde: bugünün testi bitti mi, balon gösterilsin mi. */
     fun refresh() {
         if (!fragment.isAdded) return
-        val done = SobiDailyTest.isDoneToday(fragment.requireContext())
-        dot.visibility = if (done) View.GONE else View.VISIBLE
+        val done = updateDot()
         if (!done && SobiDailyTest.shouldNudgeToday(fragment.requireContext())) {
             button.postDelayed({
                 if (!fragment.isAdded || !button.isShown) return@postDelayed
@@ -65,7 +94,14 @@ class MapSobiTestButton(private val fragment: Fragment, private val root: Constr
         }
     }
 
+    private fun updateDot(): Boolean {
+        val done = SobiDailyTest.isDoneToday(root.context)
+        dot.visibility = if (done) View.GONE else View.VISIBLE
+        return done
+    }
+
     fun release() {
+        SobiDailyTest.removeTestsListener(root.context, testsListener)
         sheet?.dismiss()
         sheet = null
         nudge?.hide()

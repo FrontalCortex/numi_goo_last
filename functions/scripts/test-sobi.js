@@ -523,7 +523,7 @@ async function main() {
     const now = Date.parse('2026-11-01T10:00:00Z');
     const day = wallet.trDay(now);
     assert.strictEqual(wallet.balanceOf(null, 'Free', now).freeLeft, 2);
-    assert.strictEqual(wallet.balanceOf(null, 'Lite', now).freeLeft, 10);
+    assert.strictEqual(wallet.balanceOf(null, 'Lite', now).freeLeft, 5);
     assert.strictEqual(wallet.balanceOf(null, 'Pro', now).freeLeft, 20);
     assert.strictEqual(wallet.balanceOf({ usageDay: '2026-10-31', usageCount: 2 }, 'Free', now).freeLeft, 2, 'dün sayılmaz');
     const c1 = wallet.chargeMessage({ usageDay: day, usageCount: 1, credits: 5 }, 'Free', now);

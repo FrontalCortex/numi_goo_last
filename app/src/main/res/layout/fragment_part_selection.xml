@@ -1,17 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<!--
+  Kök FrameLayout: sağ altta Sobi'nin testi düğmesi (MapSobiTestButton, PartSelectionFragment ekliyor)
+  kaydırılan kartların üstünde sabit dursun diye.
+-->
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/partSelectionRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
     android:background="@color/background_color">
+
+<ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:paddingTop="16dp"
-        android:paddingBottom="32dp">
+        android:paddingBottom="88dp">
+        <!-- Alt boşluk 88dp = Sobi düğmesi (56dp) + üstünde/altında 16dp: son kartlar düğmenin
+             altından kaydırılıp çıkarılabilsin. -->
 
         <!-- Toplama -->
         <TextView
@@ -80,3 +91,5 @@
 
     </LinearLayout>
 </ScrollView>
+
+</FrameLayout>

@@ -286,25 +286,68 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/row4Text" />
 
+        <!-- Sobi mesajı her iki planda var, fark miktarda: hücrelerde ✓/— yerine günlük hak. -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:text="—"
-            android:textColor="#999999"
+            android:text="@string/fragment_pro_diffirent_row5_free"
+            android:textColor="#4A4A4A"
+            android:textSize="13sp"
             app:layout_constraintBottom_toBottomOf="@id/row5Text"
             app:layout_constraintEnd_toEndOf="@id/tvHeaderFree"
             app:layout_constraintStart_toStartOf="@id/tvHeaderFree"
             app:layout_constraintTop_toTopOf="@id/row5Text" />
 
-        <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:src="@drawable/correct_ic2"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-black"
+            android:text="@string/fragment_pro_diffirent_row5_pro"
+            android:textColor="#000000"
+            android:textSize="13sp"
             app:layout_constraintBottom_toBottomOf="@id/row5Text"
             app:layout_constraintEnd_toEndOf="@id/superColumnBg"
             app:layout_constraintStart_toStartOf="@id/superColumnBg"
             app:layout_constraintTop_toTopOf="@id/row5Text" />
+
+        <!-- Row 7: Sobi testi. Ücretsizde günün ilk testi bedava, ek test 3 anahtar; Pro'da hepsi
+             ücretsiz. Satır 6'dan (hoş geldin) önce duruyor: hoş geldin satırı gizlenebildiği
+             için listenin sonunda kalmalı. -->
+        <TextView
+            android:id="@+id/row7Text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/fragment_pro_diffirent_row7_text"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/row5Text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-black"
+            android:text="@string/fragment_pro_diffirent_row7_free"
+            android:textColor="#4A4A4A"
+            android:textSize="13sp"
+            app:layout_constraintBottom_toBottomOf="@id/row7Text"
+            app:layout_constraintEnd_toEndOf="@id/tvHeaderFree"
+            app:layout_constraintStart_toStartOf="@id/tvHeaderFree"
+            app:layout_constraintTop_toTopOf="@id/row7Text" />
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/correct_ic2"
+            app:layout_constraintBottom_toBottomOf="@id/row7Text"
+            app:layout_constraintEnd_toEndOf="@id/superColumnBg"
+            app:layout_constraintStart_toStartOf="@id/superColumnBg"
+            app:layout_constraintTop_toTopOf="@id/row7Text" />
 
 
         <!-- Row 6 -->
@@ -320,7 +363,7 @@
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/row5Text" />
+            app:layout_constraintTop_toBottomOf="@id/row7Text" />
 
         <TextView
             android:id="@+id/row6Free"

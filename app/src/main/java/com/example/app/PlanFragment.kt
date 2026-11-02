@@ -51,7 +51,7 @@ class PlanFragment : DialogFragment() {
         AnalyticsLogger.logPlanShown()
 
         // Hoş geldin kredisi CİHAZ başına bir kez veriliyor (sunucuda welcomeCreditGrants).
-        // Cihaz krediyi tükettiyse "Hoş geldin: 1 danışma kredisi" satırı yerine getirilemeyecek
+        // Cihaz krediyi tükettiyse "Hoş geldin: 20 Sobi kredisi" satırı yerine getirilemeyecek
         // bir vaat olur: kullanıcı abone olur, krediyi alamaz, geldiği işi yapamaz. Düğme
         // metninde düzelttiğimiz sorunun aynısı, sadece fayda listesinde.
         if (!WelcomeCreditEligibility.isEligible(requireContext())) {

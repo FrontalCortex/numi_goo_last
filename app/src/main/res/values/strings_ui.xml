@@ -474,13 +474,15 @@
     <string name="fragment_plan_text">Sınırsız enerji</string>
     <string name="fragment_plan_text_2">Reklamsız öğrenim</string>
     <string name="fragment_plan_text_3">Ustalık Yolu</string>
-    <string name="fragment_plan_text_4">Danışma kredilerinde %20 bonus</string>
-    <string name="fragment_plan_text_5">Hoş geldin: 1 danışma kredisi</string>
+    <string name="fragment_plan_text_4">Sobi\'ye günde 20 mesaj</string>
+    <string name="fragment_plan_text_8">Sınırsız Sobi testi</string>
+    <string name="fragment_plan_text_5">Hoş geldin: 20 Sobi kredisi</string>
     <string name="fragment_plan_tv_lite_title">Lite (reklamlı)</string>
     <string name="fragment_plan_tv_lite_price_right">Aylık ₺49</string>
     <string name="fragment_plan_tv_lite_price_sub">₺588/yıl</string>
     <string name="fragment_plan_text_6">Can sınırını ikiye katla</string>
     <string name="fragment_plan_text_7">Canın 7 dakikada yenilensin</string>
+    <string name="fragment_plan_text_9">Sobi\'ye günde 5 mesaj</string>
     <string name="fragment_plan_tv_footer_text2">"Aboneliğin otomatik olarak yenilenir,\n istediğin zaman iptal edebilirsin."</string>
     <string name="fragment_plan_btn_try_free_text">₺0,00 ÖDEYEREK DENE</string>
 
@@ -492,8 +494,12 @@
     <string name="fragment_pro_diffirent_row2_text">Sınırsız can</string>
     <string name="fragment_pro_diffirent_row3_text">Reklamsız öğrenim</string>
     <string name="fragment_pro_diffirent_row4_text">Ustalık Yolu</string>
-    <string name="fragment_pro_diffirent_row5_text">Danışma kredilerinde %20 bonus</string>
-    <string name="fragment_pro_diffirent_row6_text">Hoş geldin: 1 danışma kredisi</string>
+    <string name="fragment_pro_diffirent_row5_text">Sobi\'ye mesaj</string>
+    <string name="fragment_pro_diffirent_row5_free">2/gün</string>
+    <string name="fragment_pro_diffirent_row5_pro">20/gün</string>
+    <string name="fragment_pro_diffirent_row7_text">Sınırsız Sobi testi</string>
+    <string name="fragment_pro_diffirent_row7_free">1/gün</string>
+    <string name="fragment_pro_diffirent_row6_text">Hoş geldin: 20 Sobi kredisi</string>
     <string name="fragment_pro_diffirent_btn_try_free_text">₺0,00 ÖDEYEREK DENE</string>
 
     <!-- layout/fragment_profile.xml -->

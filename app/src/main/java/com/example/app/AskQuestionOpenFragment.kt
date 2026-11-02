@@ -123,8 +123,9 @@ class AskQuestionOpenFragment : DialogFragment() {
      * Büyük düğmeye, kullanıcıya KREDİ GETİREN eylemi bağlar.
      *
      * ## Neden duruma göre değişiyor
-     * Pro aboneliği danışma kredisi olarak yalnızca bir kerelik hoş geldin kredisi veriyor
-     * (sunucuda `PRO_WELCOME_CREDITS = 1`) ve o da cihaz başına bir kez. Cihaz krediyi daha önce
+     * Pro aboneliği danışma kredisi olarak yalnızca bir kerelik hoş geldin kredisi veriyordu
+     * ve o da cihaz başına bir kez. (01.11.2026'dan beri hoş geldin hediyesi 20 Sobi kredisi —
+     * sunucuda `PRO_WELCOME_SOBI_CREDITS`; bu ekranın yeniden tasarımı ayrıca konuşuluyor.) Cihaz krediyi daha önce
      * tükettiyse kullanıcı "Pro'ya geç"e basıp parayı öder ve **hâlâ 0 kredisi olur** — yani
      * geldiği işi, öğretmene soru sormayı, yine yapamaz. Zaten Pro olan kullanıcı için de Pro
      * satmanın anlamı yok.

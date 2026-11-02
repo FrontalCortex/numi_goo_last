@@ -13,6 +13,9 @@ import com.example.app.model.LessonItem
 
 class PartSelectionFragment : Fragment() {
 
+    /** Sobi'nin günlük testi düğmesi; haritadakinin aynısı (bkz. [MapSobiTestButton]). */
+    private var sobiTestButton: MapSobiTestButton? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -26,7 +29,20 @@ class PartSelectionFragment : Fragment() {
         // lessonPartBackButton kapat (part secim ekraninda geri buton olmayacak)
         requireActivity().findViewById<ImageButton>(R.id.lessonPartBackButton)?.visibility = View.GONE
 
+        sobiTestButton = MapSobiTestButton(this, view.findViewById(R.id.partSelectionRoot))
+
         loadStatesAndSetup(view)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        sobiTestButton?.refresh()
+    }
+
+    override fun onDestroyView() {
+        sobiTestButton?.release()
+        sobiTestButton = null
+        super.onDestroyView()
     }
     
     private fun loadStatesAndSetup(view: View) {

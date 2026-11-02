@@ -144,6 +144,26 @@
                     android:textSize="14sp" />
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginTop="2dp"
+                    android:src="@drawable/correct_ic2"
+                    app:tint="#00B0FF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/fragment_plan_text_8"
+                    android:textColor="#666666"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
             <!-- Hoş geldin kredisi CİHAZ başına bir kez; cihaz tükettiyse PlanFragment gizler. -->
             <LinearLayout
                 android:id="@+id/welcomeCreditRow"
@@ -275,6 +295,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
                 android:orientation="horizontal">
                 <ImageView
                     android:layout_width="16dp"
@@ -287,6 +308,25 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:text="@string/fragment_plan_text_7"
+                    android:textColor="#666666"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_marginTop="2dp"
+                    android:src="@drawable/correct_ic2"
+                    app:tint="#00B0FF" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/fragment_plan_text_9"
                     android:textColor="#666666"
                     android:textSize="14sp" />
             </LinearLayout>

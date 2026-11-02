@@ -2357,10 +2357,14 @@ const PRO_CREDIT_BONUS = {
 };
 
 /**
- * Pro'ya ilk geçişte verilen hoş geldin kredisi.
+ * Pro'ya ilk geçişte verilen hoş geldin hediyesi: SOBİ kredisi (sobiChats/{uid}.credits).
+ *
+ * 01.11.2026'ya kadar 1 öğretmen danışma kredisiydi (questionCredits); "Öğretmene sor"
+ * gizlenince (TeacherQuestionsFeature) Sobi kredisine çevrildi. Daha önce danışma kredisi
+ * almış abonelik/cihaz yeniden hediye ALMAZ — aynı iki kapı geçerli.
  *
  * Denemeyle mi doğrudan mı abone olunduğu fark etmez; aksi halde ücretsiz denemeyi
- * başlatan kullanıcı 1 kredi alırken doğrudan ödeme yapan hiç alamıyordu.
+ * başlatan kullanıcı hediye alırken doğrudan ödeme yapan hiç alamıyordu.
  *
  * İKİ KAPI birden geçilmeli:
  *   1. processedPurchases/{token}.welcomeCreditGranted — aynı abonelik iki kez vermesin.
@@ -2373,7 +2377,7 @@ const PRO_CREDIT_BONUS = {
  *      temizleme, yeniden kurulum) kapatıyor; fabrika ayarları, ikinci cihaz ve ikincil
  *      kullanıcı profili açık kalıyor — bilinçli kabul.
  */
-const PRO_WELCOME_CREDITS = 1;
+const PRO_WELCOME_SOBI_CREDITS = 20;
 
 /**
  * Hoş geldin kredisinin CİHAZ başına da bir kez verilmesi için kullanılan gizli salt.
@@ -4762,6 +4766,7 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
   const deviceGrantRef = deviceHash
     ? db.collection('welcomeCreditGrants').doc(deviceHash)
     : null;
+  const sobiRef = db.collection('sobiChats').doc(uid);
 
   // Devir kararı transaction'dan ÖNCE veriliyor: Auth sorgusu bir yan etkili okuma ve
   // transaction içinde yapılmamalı. Uid'ler yeniden kullanılmadığı için araya girme
@@ -4786,10 +4791,13 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
 
   try {
     await db.runTransaction(async (transaction) => {
-      const [userDoc, purchaseDoc, deviceGrantDoc] = await Promise.all([
+      // sobiChats her seferinde okunuyor: hediye kararı okumalardan sonra veriliyor ve
+      // transaction'da yazmadan sonra okuma yapılamıyor. Tek belge, ucuz.
+      const [userDoc, purchaseDoc, deviceGrantDoc, sobiDoc] = await Promise.all([
         transaction.get(userRef),
         transaction.get(purchaseRef),
         deviceGrantRef ? transaction.get(deviceGrantRef) : Promise.resolve(null),
+        transaction.get(sobiRef),
       ]);
 
       // Sahiplik: tek bir aboneliğin birden fazla hesaba Pro vermesini engeller.
@@ -4877,8 +4885,12 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
       }
 
       if (grantWelcome) {
-        const current = Number.parseInt(userDoc.data().questionCredits, 10) || 0;
-        planUpdate.questionCredits = current + PRO_WELCOME_CREDITS;
+        const sobiCredits =
+          (sobiDoc.exists ? Number(sobiDoc.get('credits')) || 0 : 0) + PRO_WELCOME_SOBI_CREDITS;
+        transaction.set(sobiRef, { credits: sobiCredits }, { merge: true });
+        // Üst para paneli users belgesini dinliyor, sobiChats'i okuyamıyor: yalnızca gösterim
+        // kopyası (bkz. redeemGooglePlayPurchase).
+        planUpdate.sobiCredits = sobiCredits;
         if (deviceGrantRef) {
           // Yalnızca özet + zaman damgası; ham cihaz kimliği hiçbir yerde tutulmuyor.
           transaction.set(deviceGrantRef, {
@@ -4887,9 +4899,10 @@ async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, we
             productId,
           });
         }
-        console.log('Pro hoş geldin kredisi verildi', {
+        console.log('Pro hoş geldin Sobi kredisi verildi', {
           uid,
           productId,
+          sobiCredits: PRO_WELCOME_SOBI_CREDITS,
           deviceChecked: !!deviceGrantRef,
         });
       } else if (stillValid && entry.plan === 'Pro' && allowWelcomeCredit && alreadyWelcomedOnDevice) {
@@ -5191,7 +5204,7 @@ async function reverseVoidedPurchase(voided) {
           activePlan: effectivePlan(userData),
         });
       }
-      // NOT: Pro hoş geldin kredisi (PRO_WELCOME_CREDITS) bilinçli olarak geri ALINMIYOR.
+      // NOT: Pro hoş geldin Sobi kredisi (PRO_WELCOME_SOBI_CREDITS) bilinçli olarak geri ALINMIYOR.
       // Ücretsiz deneme akışı henüz kurulmadı; hoş geldin kredisinin iade/yeniden abonelik
       // davranışı o iş yapılırken birlikte ele alınacak.
     } else {

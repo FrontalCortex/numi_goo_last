@@ -493,7 +493,7 @@ A yapay zekâsız, kural motoruyla:
 göre konuldu (Pro'nun günlük 20 mesajı ayda ~600 mesaj; paketler bunun pahalı tarafında kalsın).
 - **Kredi yalnızca yapay zekâ mesajına.** Hazır açıklama (modelsiz) ve yedek metin (denetime takılan ya da
   ulaşılamayan model) ne günlük haktan ne krediden düşer. Kural motoru balonları zaten sunucuya gitmiyor.
-- **Günlük ücretsiz hak:** Free 2, Lite 10 (karar yoktu, ara değer), Pro 20. Hak bitince her mesaj 1 kredi;
+- **Günlük ücretsiz hak:** Free 2, Lite 5, Pro 20. Hak bitince her mesaj 1 kredi;
   Pro da 20'den sonra kredi kullanabilir. Kredi de yoksa `resource-exhausted`; Sobi ekranındaki etiket
   "Ücretsiz mesajların bitti · Kredi al ›" olur, dokununca mağaza Sobi kredisi bölümünde açılır.
 - **Paketler (Play, tüketilebilir, süresiz):** `sobi_credits_20` 12,99 TL, `sobi_credits_50` 24,99 TL,
@@ -504,6 +504,11 @@ göre konuldu (Pro'nun günlük 20 mesajı ayda ~600 mesaj; paketler bunun pahal
   paneli "Sobi'ye sor" kartı: bu ay kaç mesaj, kaç kredi, kalan kredi).
 - **Ek test 3 anahtar** (`startSobiExtraTest`, `users.keys` aynı işlemde düşer); Pro ve onaylı öğretmen
   ücretsiz; aynı günün aynı sırası bir kez ödenir (yarıda bırakılan test yeniden açılınca ödenmez).
+- **Pro hoş geldin hediyesi 20 Sobi kredisi** (`PRO_WELCOME_SOBI_CREDITS`; eskiden 1 danışma kredisiydi).
+  Aynı iki kapı: abonelik token'ı (`processedPurchases.welcomeCreditGranted`) ve cihaz (`welcomeCreditGrants`);
+  daha önce danışma kredisi almış abonelik/cihaz yeniden almaz.
+- **Sobi testi düğmesi** haritada ve part kartları ekranında (`MapSobiTestButton`); günlük balon iki ekranda
+  ortak, günde bir kez.
 - Kod: `functions/sobi/wallet.js` (kurallar + iki callable), `callable.js` (bedel oturum kaydıyla aynı işlemde),
   `index.js` (katalog, bozdurma, iade). Uygulama: `ServerSobi.balance/startExtraTest`, `MistakeReviewDialog`
   (etiket), `ShopFragment` + `fragment_shop.xml` (Sobi kredisi bölümü), `SobiTestSheet` ("Başla · 3 🔑"),

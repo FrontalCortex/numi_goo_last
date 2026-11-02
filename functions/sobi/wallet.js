@@ -4,8 +4,8 @@
  * Sobi ekonomisi (kullanıcı kararları 01.11.2026):
  *   - Kredi yalnızca yapay zekâ mesajına. Hazır açıklama (modelsiz) ve yedek metin (model cevabı
  *     denetime takıldı ya da model ulaşılamadı) ne günlük haktan ne krediden düşer.
- *   - Günlük ücretsiz hak plana göre: Free 2, Pro 20. Lite için karar yoktu; reklamlı ara plan
- *     olduğu için arada 10. Hak bitince her mesaj 1 kredi; kredi de yoksa mesaj gitmez.
+ *   - Günlük ücretsiz hak plana göre: Free 2, Lite 5, Pro 20 (Lite önce 10'du;
+ *     reklamlı ara plan Pro'dan belirgin aşağıda kalsın diye 5'e indi). Hak bitince her mesaj 1 kredi; kredi de yoksa mesaj gitmez.
  *   - Kredi süresiz; paketler Play'den (index.js PLAY_PRODUCT_CATALOG → sobiCredits).
  *   - Sobi'nin günün ilk testinden sonraki ek testi 3 anahtar; Pro (ve üstü) ile onaylı öğretmene
  *     ücretsiz.
@@ -21,7 +21,7 @@
  *                                 yeniden açılınca bir daha ödenmesin)
  */
 
-const FREE_DAILY = { Free: 2, Lite: 10, Pro: 20, Premium: 20 };
+const FREE_DAILY = { Free: 2, Lite: 5, Pro: 20, Premium: 20 };
 const EXTRA_TEST_KEYS = 3;
 const FREE_EXTRA_TEST_PLANS = new Set(['Pro', 'Premium']);
 /** Bir günde en fazla ek test sırası; istemci bundan büyüğünü gönderemez. */

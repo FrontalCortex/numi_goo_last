@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
@@ -63,6 +64,20 @@ object SobiDailyTest {
     fun markDone(context: Context) {
         val n = testsToday(context) + 1
         prefs(context).edit().putString(KEY_DAY, today()).putInt(KEY_COUNT, n).apply()
+    }
+
+    /**
+     * Bugün bitirilen test sayısı değişince [action] (ana iş parçacığında). Dönen dinleyici saklanmalı
+     * (SharedPreferences zayıf tutuyor) ve [removeTestsListener] ile bırakılmalı.
+     */
+    fun addTestsListener(context: Context, action: () -> Unit): SharedPreferences.OnSharedPreferenceChangeListener {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key -> if (key == KEY_COUNT) action() }
+        prefs(context).registerOnSharedPreferenceChangeListener(listener)
+        return listener
+    }
+
+    fun removeTestsListener(context: Context, listener: SharedPreferences.OnSharedPreferenceChangeListener) {
+        prefs(context).unregisterOnSharedPreferenceChangeListener(listener)
     }
 
     /** Bu ek testin (bugünkü sırası [testsToday]) anahtar bedeli: Pro, öğretmen ya da zaten ödendiyse 0. */
