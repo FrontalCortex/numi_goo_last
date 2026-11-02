@@ -16,7 +16,10 @@ object ServerSobi {
 
     private const val TAG = "ServerSobi"
 
-    /** Sunucunun abaküste yapılmasını istediği iş. Şimdilik yalnızca "goster". */
+    /**
+     * Sunucunun ekranda yapılmasını istediği iş: abaküste göster, örnek aç, sütun parlat; Sobi
+     * sekmesinde ayrıca test / kredi / Pro düğmesi (bunlarda sayı alanları 0).
+     */
     data class Action(
         val kind: String,
         val base: Int,
@@ -51,6 +54,66 @@ object ServerSobi {
     const val ACTION_PRACTICE = "alistirma"
     /** Abaküste bir sütunu kısa süre parlat (sutunu_goster). */
     const val ACTION_POINT = "isaret"
+    /** Yalnızca Sobi sekmesinde, sohbete düğme olarak: Sobi'nin testi, kredi paketleri, Pro. */
+    const val ACTION_TEST = "test"
+    const val ACTION_CREDITS = "kredi"
+    const val ACTION_PRO = "pro"
+    /** Sobi sekmesinin "Krediler nasıl çalışır?" balonu: sunucu modelsiz, ücretsiz cevaplıyor. */
+    const val KEY_CREDITS = "krediler"
+
+    /** Sobi sekmesinin sohbet listesindeki satır (`sobiSessions`). */
+    data class SessionInfo(val id: String, val title: String, val updatedAt: Long)
+
+    /** Yeniden açılan sohbetin satırı. [index]: sunucudaki sırası (beğeni buna bağlı). */
+    data class SessionMessage(
+        val fromChild: Boolean,
+        val text: String,
+        val index: Int,
+        val rating: Int,
+        val reported: Boolean,
+        val buttons: List<Action>,
+    )
+
+    fun listSessions(onResult: (List<SessionInfo>) -> Unit, onFailure: (Exception) -> Unit) {
+        sessionsCall(hashMapOf("action" to "list"), { d ->
+            onResult((d["sessions"] as? List<*>).orEmpty().mapNotNull { raw ->
+                val m = raw as? Map<*, *> ?: return@mapNotNull null
+                val id = m["id"] as? String ?: return@mapNotNull null
+                SessionInfo(id, m["title"] as? String ?: "", (m["updatedAt"] as? Number)?.toLong() ?: 0L)
+            })
+        }, onFailure)
+    }
+
+    fun loadSession(sessionId: String, onResult: (List<SessionMessage>) -> Unit, onFailure: (Exception) -> Unit) {
+        sessionsCall(hashMapOf("action" to "get", "sessionId" to sessionId), { d ->
+            onResult((d["messages"] as? List<*>).orEmpty().mapNotNull { raw ->
+                val m = raw as? Map<*, *> ?: return@mapNotNull null
+                SessionMessage(
+                    fromChild = m["from"] != "sobi",
+                    text = m["text"] as? String ?: "",
+                    index = (m["index"] as? Number)?.toInt() ?: return@mapNotNull null,
+                    rating = (m["rating"] as? Number)?.toInt() ?: 0,
+                    reported = m["reported"] == true,
+                    buttons = (m["buttons"] as? List<*>).orEmpty().mapNotNull(::parseAction),
+                )
+            })
+        }, onFailure)
+    }
+
+    fun deleteSession(sessionId: String, onDone: () -> Unit, onFailure: (Exception) -> Unit) {
+        sessionsCall(hashMapOf("action" to "delete", "sessionId" to sessionId), { onDone() }, onFailure)
+    }
+
+    private fun sessionsCall(payload: Map<String, Any>, onResult: (Map<*, *>) -> Unit, onFailure: (Exception) -> Unit) {
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("sobiSessions")
+            .call(payload)
+            .addOnSuccessListener { result -> onResult(result.data as? Map<*, *> ?: emptyMap<Any, Any>()) }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "sobiSessions başarısız", e)
+                onFailure(e)
+            }
+    }
 
     /**
      * [suggestion]: çocuk bir öneri balonuna dokunduysa balonun anahtarı. Anlatım adımında hazır
@@ -70,7 +133,28 @@ object ServerSobi {
         )
         if (!sessionId.isNullOrBlank()) payload["sessionId"] = sessionId
         if (suggestion != null) payload["suggestion"] = suggestion
+        call(payload, onResult, onFailure)
+    }
 
+    /**
+     * Sobi sekmesindeki genel sohbet (`mode: 'genel'`): adım bağlamı gönderilmez; sunucu planı,
+     * bakiyeyi ve kural başarısını kendisi okuyor. Ekonomi ders içi sohbetle aynı. [suggestion]:
+     * başlangıç balonunun anahtarı ([KEY_CREDITS] sunucuda hazır cevap, ücretsiz).
+     */
+    fun sendGeneral(
+        sessionId: String?,
+        message: String,
+        onResult: (Reply) -> Unit,
+        onFailure: (Exception) -> Unit,
+        suggestion: String? = null,
+    ) {
+        val payload = hashMapOf<String, Any>("message" to message, "mode" to "genel")
+        if (!sessionId.isNullOrBlank()) payload["sessionId"] = sessionId
+        if (suggestion != null) payload["suggestion"] = suggestion
+        call(payload, onResult, onFailure)
+    }
+
+    private fun call(payload: Map<String, Any>, onResult: (Reply) -> Unit, onFailure: (Exception) -> Unit) {
         FirebaseFunctions.getInstance()
             .getHttpsCallable("sobiChat")
             .call(payload)
@@ -143,6 +227,7 @@ object ServerSobi {
     private fun parseAction(raw: Any?): Action? {
         val m = raw as? Map<*, *> ?: return null
         val kind = m["tur"] as? String ?: return null
+        if (kind == ACTION_TEST || kind == ACTION_CREDITS || kind == ACTION_PRO) return Action(kind, 0, "", 0, 0)
         if (kind == ACTION_POINT) {
             val col = (m["sutun"] as? Number)?.toInt()?.takeIf { it in 0..4 } ?: return null
             return Action(kind, 0, "", 0, 0, col)

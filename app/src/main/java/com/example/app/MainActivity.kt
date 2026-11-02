@@ -712,6 +712,7 @@ class MainActivity : AppCompatActivity() {
             itemRippleColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
         }
         refreshProfileNavIcon()
+        applySobiTab()
         // Üst panelin altındaki çizgi, panel görünürlüğü nereden değişirse değişsin eşitlensin.
         binding.root.viewTreeObserver.addOnGlobalLayoutListener { syncCurrencyPanelDivider() }
 
@@ -968,7 +969,11 @@ class MainActivity : AppCompatActivity() {
                     R.id.shop ->
                         if (currentFragment is AbacusCustomizationFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(AbacusCustomizationFragment())
-                    R.id.notification -> {
+                    // Öğrencide (danışma kapalıyken) bu sekme Sobi: bkz. applySobiTab.
+                    R.id.notification -> if (sobiTabActive) {
+                        if (currentFragment is SobiChatFragment) return@requireOnlineAndLoggedInOrLogin
+                        changeFragment(SobiChatFragment())
+                    } else {
                         if (currentFragment is NotificationFragment) return@requireOnlineAndLoggedInOrLogin
                         // CreateQuestion'dan Gönder ile açılan seçim modu fragment'ı üzerine yazma
                         if (teacherPendingMediaPath != null) return@requireOnlineAndLoggedInOrLogin
@@ -1084,6 +1089,29 @@ class MainActivity : AppCompatActivity() {
         val bitmap = AvatarView.toBitmap(this, AvatarStore.loadActive(this), sizePx * 2)
         binding.bottomNavigationID.menu.findItem(R.id.profile)?.icon =
             android.graphics.drawable.BitmapDrawable(resources, bitmap)
+    }
+
+    /** Sohbet sekmesi şu an Sobi sekmesi mi ([applySobiTab]). */
+    private var sobiTabActive = false
+
+    /**
+     * Öğrencide eski "Sohbet" (öğretmene soru) sekmesinin yerinde Sobi sekmesi ([SobiChatFragment];
+     * kullanıcı kararı 02.11.2026). Menüde yeni öğe yok (alt menü en çok 6 öğe alıyor, 6'sı dolu):
+     * aynı öğenin simgesi Sobi'nin kafası olur ve dokununca Sobi açılır. Öğretmen gelen soruları bu
+     * sekmeden cevapladığı için öğretmende eski ekran kalıyor; [TeacherQuestionsFeature.ENABLED]
+     * açılırsa öğrencide de geri geliyor. [role]: users belgesindeki rol (yoksa son bilinen).
+     */
+    private fun applySobiTab(role: String = authManager.getCurrentUserType()) {
+        sobiTabActive = !TeacherQuestionsFeature.ENABLED && role != AuthManager.ROLE_TEACHER
+        val item = binding.bottomNavigationID.menu.findItem(R.id.notification) ?: return
+        if (sobiTabActive) {
+            val sizePx = resources.getDimensionPixelSize(R.dimen.main_bottom_nav_icon_size)
+            item.icon = android.graphics.drawable.BitmapDrawable(resources, SobiHeadView.toBitmap(this, sizePx * 2))
+            androidx.core.view.MenuItemCompat.setContentDescription(item, getString(R.string.sobi_tab_title))
+        } else {
+            item.setIcon(R.drawable.chat_pair_ic)
+            androidx.core.view.MenuItemCompat.setContentDescription(item, null)
+        }
     }
 
     /**
@@ -2547,6 +2575,7 @@ class MainActivity : AppCompatActivity() {
                     // kullanıcının avatarına çekiliyor. Aynı dokümandan, ayrı okuma yok.
                     AvatarStore.applyRemote(this, doc.getString(AvatarStore.FIRESTORE_FIELD))
                     refreshProfileNavIcon()
+                    applySobiTab(role)
                     GlobalValues.isTeacherApproved = teacherApproved
                     energyManager.setUserPlan(plan)
                     energyManager.setUserRoleApproval(role, teacherApproved)

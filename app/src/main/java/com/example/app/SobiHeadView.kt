@@ -71,4 +71,17 @@ class SobiHeadView @JvmOverloads constructor(
         }
         canvas.restore()
     }
+
+    companion object {
+        /** Alt menüdeki Sobi sekmesinin simgesi (MainActivity.applySobiTab): aynı çizim, kare bitmap. */
+        fun toBitmap(context: Context, sizePx: Int): android.graphics.Bitmap {
+            val view = SobiHeadView(context)
+            val spec = MeasureSpec.makeMeasureSpec(sizePx, MeasureSpec.EXACTLY)
+            view.measure(spec, spec)
+            view.layout(0, 0, sizePx, sizePx)
+            val bitmap = android.graphics.Bitmap.createBitmap(sizePx, sizePx, android.graphics.Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            return bitmap
+        }
+    }
 }

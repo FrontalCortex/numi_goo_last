@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sobi sekmesinin sohbet alanı (SobiChatFragment): üst çubuk, bakiye satırı, mesajlar ya da boş
+  sohbetin selamı ve başlangıç balonları, yazma kutusu. Telefonda ve tablette aynı; yalnızca sohbet
+  listesinin yeri değişiyor (fragment_sobi_chat.xml).
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="6dp"
+        android:paddingEnd="8dp">
+
+        <ImageButton
+            android:id="@+id/sobiChatMenu"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/sobi_tab_menu"
+            android:padding="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_sobi_menu" />
+
+        <com.example.app.SobiHeadView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_marginStart="4dp" />
+
+        <TextView
+            android:id="@+id/sobiChatTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/sobi_tab_title"
+            android:textColor="@color/dark_text"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <!-- Sesli okuma aç/kapat; ses motoru hazır olunca görünür (MistakeReviewDialog'daki gibi). -->
+        <ImageButton
+            android:id="@+id/sobiChatSpeak"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_hw_chip"
+            android:contentDescription="@string/sobi_auto_read"
+            android:paddingStart="8dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="10dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/volume_up_ic"
+            android:visibility="gone" />
+
+        <ImageButton
+            android:id="@+id/sobiChatNew"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/bg_hw_chip"
+            android:contentDescription="@string/sobi_tab_new_chat"
+            android:paddingStart="9dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="9dp"
+            android:paddingBottom="11dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/ic_hw_add" />
+    </LinearLayout>
+
+    <!-- Bugünkü ücretsiz hak ve kredi; bitince "Kredi al ›" ve uygunsa Pro denemesi (SobiBalanceBar). -->
+    <TextView
+        android:id="@+id/sobiChatBalance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:textColor="#8B949E"
+        android:textSize="12sp"
+        android:visibility="gone"
+        tools:text="Bugün 2 ücretsiz mesaj · 15 kredi"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/sobiChatProTrial"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="2dp"
+        android:textColor="#1CB0F6"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <ScrollView
+            android:id="@+id/sobiChatScroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:fillViewport="true"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="6dp">
+
+            <LinearLayout
+                android:id="@+id/sobiChatMessages"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </ScrollView>
+
+        <!-- Boş sohbet: selam veren Sobi ve başlangıç balonları (dokununca mesaj olarak gider). -->
+        <LinearLayout
+            android:id="@+id/sobiChatEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp">
+
+            <com.example.app.BunnyMascotView
+                android:id="@+id/sobiChatMascot"
+                android:layout_width="120dp"
+                android:layout_height="120dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/sobi_tab_greeting"
+                android:textColor="@color/dark_text"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:gravity="center"
+                android:text="@string/sobi_tab_greeting_sub"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="15sp" />
+
+            <LinearLayout
+                android:id="@+id/sobiChatStarters"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center_horizontal"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/sobiChatLogin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="12dp"
+        android:text="@string/sobi_tab_login"
+        android:textColor="@color/dark_text_secondary"
+        android:textSize="14sp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/sobiChatInputRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="8dp">
+
+        <EditText
+            android:id="@+id/sobiChatInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/chat_bubble_sobi"
+            android:hint="@string/sobi_tab_hint"
+            android:imeOptions="actionSend"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:maxLength="300"
+            android:maxLines="3"
+            android:paddingStart="14dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="10dp"
+            android:textColor="@color/dark_text"
+            android:textSize="15sp" />
+
+        <ImageButton
+            android:id="@+id/sobiChatSend"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_hw_send"
+            android:contentDescription="@string/sobi_send_desc"
+            android:paddingStart="11dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="11dp"
+            android:paddingBottom="14dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/send_ic" />
+    </LinearLayout>
+</LinearLayout>

@@ -166,4 +166,30 @@
     <string name="shop_sobi_credit_desc">Sobi kredisi</string>
     <string name="progress_hub_sobi">Sobi\'ye sor</string>
     <string name="progress_hub_sobi_desc">Bu ay %1$d mesaj (%2$d kredi harcandı)\nKalan kredi: %3$d · Günde %4$d mesaj ücretsiz</string>
+
+    <!-- Sobi sekmesi (SobiChatFragment): ders dışı genel sohbet -->
+    <string name="sobi_tab_title">Sobi</string>
+    <string name="sobi_tab_menu">Sohbetler</string>
+    <string name="sobi_tab_new_chat">Yeni sohbet</string>
+    <string name="sobi_tab_history">Önceki sohbetler</string>
+    <string name="sobi_tab_no_history">Henüz sohbet yok</string>
+    <string name="sobi_tab_greeting">Merhaba! Ben Sobi.</string>
+    <string name="sobi_tab_greeting_sub">Abaküs, dersler ya da uygulama hakkında ne merak ediyorsan sor!</string>
+    <string name="sobi_tab_hint">Sobi\'ye yaz…</string>
+    <string name="sobi_tab_starter_today">Bugün ne çalışayım?</string>
+    <string name="sobi_tab_starter_ten">10\'luk toplamayı anlat</string>
+    <string name="sobi_tab_starter_test">Bana test hazırla</string>
+    <string name="sobi_tab_starter_credits">Krediler nasıl çalışır?</string>
+    <string name="sobi_tab_button_test">Teste başla ›</string>
+    <string name="sobi_tab_button_credits">Kredi al ›</string>
+    <string name="sobi_tab_button_pro">Pro\'ya bak ›</string>
+    <string name="sobi_tab_button_show">%1$s · abaküste gör ›</string>
+    <string name="sobi_tab_button_practice">%1$s · abaküste çöz ›</string>
+    <string name="sobi_tab_delete_title">Sohbet silinsin mi?</string>
+    <string name="sobi_tab_delete_message">\"%1$s\" sohbeti silinecek.</string>
+    <string name="sobi_tab_delete">Sil</string>
+    <string name="sobi_tab_cancel">Vazgeç</string>
+    <string name="sobi_tab_load_error">Sohbet açılamadı. İnternetini kontrol edip yeniden dener misin?</string>
+    <string name="sobi_tab_my_class">Sınıfım ve sorularım ›</string>
+    <string name="sobi_tab_login">Sobi ile konuşmak için giriş yapmalısın.</string>
 </resources>

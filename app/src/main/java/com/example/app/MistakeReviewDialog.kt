@@ -153,8 +153,7 @@ class MistakeReviewDialog : DialogFragment() {
     private lateinit var checkButton: TextView
     private lateinit var input: EditText
     /** Bugünkü ücretsiz hak ve Sobi kredisi ([showBalance]). */
-    private var balanceView: TextView? = null
-    private var proTrialView: TextView? = null
+    private var balanceBar: SobiBalanceBar? = null
     private lateinit var abacusContainer: View
     private lateinit var buttonsRow: View
 
@@ -240,8 +239,13 @@ class MistakeReviewDialog : DialogFragment() {
         // Sobi'ye yazmak oturum ister (sunucu çağrısı).
         val inputRow = view.findViewById<View>(R.id.reviewInputRow)
         inputRow.visibility = if (loggedIn) View.VISIBLE else View.GONE
-        balanceView = view.findViewById(R.id.reviewBalance)
-        proTrialView = view.findViewById(R.id.reviewProTrial)
+        balanceBar = SobiBalanceBar(
+            balanceView = view.findViewById(R.id.reviewBalance),
+            trialView = view.findViewById(R.id.reviewProTrial),
+            activity = { activity as? MainActivity },
+            onBuyCredits = { openSobiCredits() },
+            onProTrial = { openProTrial() },
+        )
         if (loggedIn) ServerSobi.balance({ b -> showBalance(b.freeLeft, b.credits) })
         val send = view.findViewById<View>(R.id.reviewSend)
         send.setOnClickListener { sendFromInput() }
@@ -716,32 +720,12 @@ class MistakeReviewDialog : DialogFragment() {
     // ── Sobi'ye sor ─────────────────────────────────────────────────────────
 
     /**
-     * "Bugün 2 ücretsiz mesaj · 15 kredi". İkisi de bitince etiket "Kredi al" olur: ekran kapanır,
-     * mağaza Sobi kredisi paketlerinde açılır (satın almayı Play hesabı sahibi, yani ebeveyn onaylar).
+     * Bakiye satırı ([SobiBalanceBar]). "Kredi al": ekran kapanır, mağaza Sobi kredisi paketlerinde
+     * açılır (satın almayı Play hesabı sahibi, yani ebeveyn onaylar).
      */
     private fun showBalance(freeLeft: Int, credits: Int) {
-        val v = balanceView ?: return
         if (view == null) return
-        v.visibility = View.VISIBLE
-        val empty = freeLeft <= 0 && credits <= 0
-        v.text = when {
-            empty -> appString(R.string.sobi_balance_empty)
-            freeLeft > 0 && credits > 0 -> appString(R.string.sobi_balance_free_credits, freeLeft, credits)
-            freeLeft > 0 -> appString(R.string.sobi_balance_free, freeLeft)
-            else -> appString(R.string.sobi_balance_credits, credits)
-        }
-        v.setTextColor(if (empty) 0xFF1CB0F6.toInt() else 0xFF8B949E.toInt())
-        v.setOnClickListener(if (empty) View.OnClickListener { openSobiCredits() } else null)
-        // Hak ve kredi bitti: denemeye uygunsa "Kredi al"ın altında ücretsiz Pro denemesi de (Pro'da günde
-        // 20 mesaj). Uygun değilse (zaten Pro, teklif yok, hediye cihazda kullanılmış) yalnızca kredi.
-        val trial = proTrialView ?: return
-        val offerTrial = empty && SobiProTrialFragment.canOfferTrial(activity as? MainActivity)
-        trial.visibility = if (offerTrial) View.VISIBLE else View.GONE
-        if (offerTrial) {
-            val days = (activity as? MainActivity)?.billingManager?.freeTrialDays(BillingCatalog.SUB_PRO)
-            trial.text = SobiProTrialFragment.titleText(requireContext(), days) + " ›"
-            trial.setOnClickListener { openProTrial() }
-        }
+        balanceBar?.show(freeLeft, credits)
     }
 
     /**
