@@ -806,6 +806,9 @@ class MistakeReviewDialog : DialogFragment() {
                 reply.actions.lastOrNull { it.kind == ServerSobi.ACTION_POINT }?.column?.let { col ->
                     if (page == forPage) highlightColumn(col)
                 }
+                // Sobi abaküste gösterdiyse ("sen yap") hemen oynasın; "Abaküste izle"ye ayrıca basmak
+                // gerekmesin (kullanıcı isteği 02.11.2026). Çocuk bu arada başka sayfaya geçtiyse oynamaz.
+                pageShow[forPage]?.let { if (page == forPage) play(it) }
             },
             onFailure = { e ->
                 sendingPage = -1
@@ -834,6 +837,9 @@ class MistakeReviewDialog : DialogFragment() {
      */
     private fun localChips(ctx: Context): View? {
         val items = ArrayList<Pair<String, () -> Unit>>()
+        // Adımı abaküste görmek için Sobi'ye yazıp cevabı beklemek uzun yoldu (kullanıcı isteği
+        // 02.11.2026): adım sayfasında ilk seçenek doğrudan gösterim, ücretsiz.
+        if (currentStep() != null) items += appString(R.string.sobi_suggest_show_abacus) to { showCurrentStep() }
         currentStep()?.move?.takeIf { SubStepExplainer.hasParts(it) }?.let { m ->
             val parts = m.steps.map { st -> SubStepExplainer.question(st, m) to { SubStepExplainer.explain(st, m) } }
                 .distinctBy { it.first } + (appString(R.string.review_why_rule) to { SubStepExplainer.whyRule(m) })
@@ -889,7 +895,9 @@ class MistakeReviewDialog : DialogFragment() {
         if (!loggedIn) return null
         val show = pageShow[page]
         val keys = ArrayList<String>()
-        if (show != null) keys += KEY_WATCH
+        // Gösterim cevapla birlikte kendiliğinden oynadı; balon yeniden oynatmak için. Sunucu zaten
+        // "Bir daha göster" önerdiyse ikinci kez eklenmez.
+        if (show != null && pageSuggestions[page]?.contains(SobiSuggestions.KEY_SHOW_AGAIN) != true) keys += KEY_WATCH
         val step = currentStep()
         // "Neden böyle?" parça balonlarındaki "Neden bu kural?" ile aynı işi görürdü; onlar varken yalnızca "Bunu anlamadım".
         val hasParts = step?.move?.let { SubStepExplainer.hasParts(it) } == true
@@ -909,7 +917,7 @@ class MistakeReviewDialog : DialogFragment() {
             // "Bir örnek ver" yapay zekâya gitmiyor: öğreticide yerel balon, analizde yok.
             if (key == SobiSuggestions.KEY_EXAMPLE) continue
             val label = when (key) {
-                KEY_WATCH -> appString(R.string.sobi_watch_button)
+                KEY_WATCH -> appString(R.string.sobi_suggest_show_again)
                 KEY_NEXT -> appString(R.string.sobi_next_question)
                 else -> SobiSuggestions.labelOf(key) ?: continue
             }
