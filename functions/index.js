@@ -7973,6 +7973,8 @@ exports.sobiChat = require('./sobi/callable')({ functions, admin, db, isAskQuest
 const sobiWallet = require('./sobi/wallet')({ functions, db, effectivePlan, isApprovedTeacher });
 exports.sobiBalance = sobiWallet.sobiBalance;
 exports.startSobiExtraTest = sobiWallet.startSobiExtraTest;
+// Sobi ekranında yeni örnek: 1 ücretsiz hak ya da 1 kredi (sobi/wallet.js).
+exports.startSobiExample = sobiWallet.startSobiExample;
 // Sobi cevabına beğen / beğenme; haftalık iyileştirme döngüsünün verisi (sobi/feedback.js).
 exports.sobiFeedback = require('./sobi/feedback')({ functions, admin, db, promptVersion: require('./sobi/callable').PROMPT_VERSION });
 // Sobi sekmesindeki genel sohbetlerin listesi, açılması ve silinmesi (sobi/sessions.js).

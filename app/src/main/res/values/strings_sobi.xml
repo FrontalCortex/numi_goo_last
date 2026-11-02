@@ -9,6 +9,8 @@
     <string name="sobi_thinking">Sobi düşünüyor…</string>
     <string name="sobi_watch_button">Abaküste izle</string>
     <string name="sobi_suggest_show_abacus">Abaküste göster</string>
+    <string name="sobi_error_example_limit">Yeni bir örnek 1 mesaj sayılıyor ve bugünkü ücretsiz mesajların bitti. Devam etmek istersen Sobi kredisi al.</string>
+    <string name="sobi_error_example_limit_trial">Yeni bir örnek 1 mesaj sayılıyor ve bugünkü ücretsiz mesajların bitti. Sobi kredisi alabilir ya da Pro\'yu ücretsiz deneyebilirsin: Pro\'da her gün 20 mesaj!</string>
     <!-- Kendiliğinden açılan balonlar (SobiNudge) -->
     <string name="sobi_nudge_wrong">Birlikte bakalım mı?</string>
     <string name="sobi_nudge_idle">Anlamadığın yeri bana sor!</string>

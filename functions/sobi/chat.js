@@ -345,7 +345,8 @@ const DIRECT_SUGGESTIONS = { bunu_anlamadim: 'basit', neden_boyle: 'neden' };
 function creditsText() {
   const f = wallet.FREE_DAILY;
   return `Her gün ücretsiz mesaj hakkın var: Free planda ${f.Free}, Lite'ta ${f.Lite}, Pro'da ${f.Pro}. `
-    + 'Hakkın bitince her mesaj 1 Sobi kredisi harcar. Krediler mağazadan alınır, süresizdir; satın almayı annen ya da baban onaylar. '
+    + 'Hakkın bitince her mesaj 1 Sobi kredisi harcar. Benimle abaküste çözdüğün her yeni örnek de 1 mesaj sayılır. '
+    + 'Krediler mağazadan alınır, süresizdir; satın almayı annen ya da baban onaylar. '
     + 'Hazır cevaplar ve benim cevap veremediğim mesajlar hiçbir şey harcamaz.';
 }
 const GENERAL_DIRECT = { krediler: { key: 'genel_krediler', text: creditsText } };

@@ -669,17 +669,55 @@ class MistakeReviewDialog : DialogFragment() {
      * "Bir örnek ver" (öğretici): dersin kuralıyla bir işlem ([ExamplePicker]) sayfa sayfa çözdürülür;
      * sonunda "Başka örnek" ya da "Derse dön".
      */
-    private fun startExample() {
+    private fun startExample(level: Int = exampleLevel) {
         val ruleKey = exampleRule ?: return
         // Analizde öğrenilen kurallar listesi yok: örnek yalnızca sorunun kuralını gerçekten kullansın.
         val allowed = if (tutorialMode) tutorialRules else null
         val seed = examples * 7 + if (tutorialMode) tutorialNumber * 3 else numbers.sum()
-        val (a, b) = ExamplePicker.pick(ruleKey, seed, exampleLevel, allowed) ?: return
-        examples++
+        val (a, b) = ExamplePicker.pick(ruleKey, seed, level, allowed) ?: return
         val nums = listOf(a, b)
         val q = questionText(nums)
         val group = exampleSteps(nums, q)
         if (group.isEmpty()) return
+        // Örnek bulundu: şimdi ödenir (bulunamasaydı para alınmasın). Ödeme başarısızsa açılmaz.
+        payForExample {
+            exampleLevel = level
+            examples++
+            openExample(nums, q, group)
+        }
+    }
+
+    /** Yeni örnek bir mesaj gibi 1 ücretsiz hak ya da 1 kredi (sunucu: startSobiExample). */
+    private var payingExample = false
+
+    /**
+     * Oturum yoksa ücretsiz: giriş yapmadan oynanan ilk öğreticide de örnek görülebilsin (sunucu
+     * çağrısı oturum istiyor). Hak ve kredi bitince örnek açılmaz, Sobi bunu söyler ve "Kredi al" çıkar.
+     */
+    private fun payForExample(open: () -> Unit) {
+        if (!loggedIn) { open(); return }
+        if (payingExample) return
+        payingExample = true
+        ServerSobi.startExample({ freeLeft, credits ->
+            payingExample = false
+            if (view == null) return@startExample
+            showBalance(freeLeft, credits)
+            open()
+        }, { e ->
+            payingExample = false
+            if (view == null) return@startExample
+            val msg = if (ServerSobi.isDailyLimit(e)) {
+                showBalance(0, 0)
+                appString(
+                    if (SobiProTrialFragment.canOfferTrial(activity as? MainActivity)) R.string.sobi_error_example_limit_trial
+                    else R.string.sobi_error_example_limit,
+                )
+            } else appString(R.string.sobi_error_network)
+            addMessage(page, SobiStepTracker.Message(fromChild = false, text = msg))
+        })
+    }
+
+    private fun openExample(nums: List<Int>, q: String, group: List<Step>) {
         addMessage(page, SobiStepTracker.Message(fromChild = true, text = appString(R.string.sobi_suggest_example)))
         val rule = group.mapNotNull { it.move }.maxByOrNull { it.rule.ordinal }?.rule
         val intro = appString(R.string.sobi_screen_example_level, exampleLevel, ExamplePicker.MAX_LEVEL) + " " +
@@ -844,7 +882,8 @@ class MistakeReviewDialog : DialogFragment() {
     /**
      * Kural motorunun cevapladığı balonlar (açık renk; yapay zekâ balonlarından ayrı ki çocuk farkı
      * görsün): adımın parçaları (“10 gelir” ne demek?, Neden bu kural? — [SubStepExplainer]) ve
-     * öğreticide "Bir örnek ver". Ücretsiz (ileride kredi harcamaz), kesin, oturum gerekmez.
+     * örnekler ("Bir örnek ver", "Başka bir örnek", "Daha zor bir örnek"). Kesin, yapay zekâ yok. Parça
+     * açıklamaları ve "Abaküste göster" ücretsiz; yeni örnek 1 hak ya da kredi ([payForExample]).
      */
     private fun localChips(ctx: Context): View? {
         val items = ArrayList<Pair<String, () -> Unit>>()
@@ -870,10 +909,8 @@ class MistakeReviewDialog : DialogFragment() {
             items += label to { startExample() }
             // Zorluğu çocuk seçer (kullanıcı kararı 01.11.2026): örnek yine dersin kuralından, yalnızca büyür.
             if (!first && exampleLevel < ExamplePicker.MAX_LEVEL) {
-                items += appString(R.string.sobi_screen_harder_example) to {
-                    exampleLevel++
-                    startExample()
-                }
+                // Kademe ancak örnek açılınca (ödendikten sonra) artar.
+                items += appString(R.string.sobi_screen_harder_example) to { startExample(exampleLevel + 1) }
             }
         }
         if (items.isEmpty()) return null

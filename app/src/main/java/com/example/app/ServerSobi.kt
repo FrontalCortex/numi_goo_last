@@ -287,6 +287,24 @@ object ServerSobi {
             }
     }
 
+    /**
+     * Sobi ekranında yeni örnek ("Başka bir örnek", "Daha zor bir örnek"): 1 ücretsiz hak ya da 1 kredi
+     * (`startSobiExample`). [onResult]: kalan ücretsiz hak ve kredi. Hak ve kredi bitince [isDailyLimit].
+     */
+    fun startExample(onResult: (freeLeft: Int, credits: Int) -> Unit, onFailure: (Exception) -> Unit) {
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("startSobiExample")
+            .call()
+            .addOnSuccessListener { result ->
+                val d = result.data as? Map<*, *>
+                onResult((d?.get("remainingToday") as? Number)?.toInt() ?: 0, (d?.get("credits") as? Number)?.toInt() ?: 0)
+            }
+            .addOnFailureListener { e ->
+                Log.w(TAG, "startSobiExample başarısız", e)
+                onFailure(e)
+            }
+    }
+
     /** Günlük ücretsiz hak da kredi de bitti (`resource-exhausted`). */
     fun isDailyLimit(e: Exception): Boolean =
         (e as? FirebaseFunctionsException)?.code == FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED

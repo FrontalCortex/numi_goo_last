@@ -2,8 +2,9 @@
 
 /**
  * Sobi ekonomisi (kullanıcı kararları 01.11.2026):
- *   - Kredi yalnızca yapay zekâ mesajına. Hazır açıklama (modelsiz) ve yedek metin (model cevabı
- *     denetime takıldı ya da model ulaşılamadı) ne günlük haktan ne krediden düşer.
+ *   - Kredi yapay zekâ mesajına ve Sobi ekranında açılan her yeni örneğe (startSobiExample; 02.11.2026
+ *     eklendi). Hazır açıklama (modelsiz) ve yedek metin (model cevabı denetime takıldı ya da model
+ *     ulaşılamadı) ne günlük haktan ne krediden düşer.
  *   - Günlük ücretsiz hak plana göre: Free 2, Lite 5, Pro 20 (Lite önce 10'du;
  *     reklamlı ara plan Pro'dan belirgin aşağıda kalsın diye 5'e indi). Hak bitince her mesaj 1 kredi; kredi de yoksa mesaj gitmez.
  *   - Kredi süresiz; paketler Play'den (index.js PLAY_PRODUCT_CATALOG → sobiCredits).
@@ -17,6 +18,7 @@
  *   usageDay, usageCount    bugünkü ücretsiz hakla gönderilen mesaj
  *   monthKey, monthCount    bu ay gönderilen (model) mesaj — veli paneli
  *   monthCreditsUsed        bu ay harcanan kredi
+ *   monthExamples           bu ay açılan ücretli örnek (monthCount'a da sayılıyor)
  *   extraTestDay, extraTestIndex  bugün parası ödenmiş son ek test sırası (yarıda bırakılan test
  *                                 yeniden açılınca bir daha ödenmesin)
  */
@@ -164,7 +166,38 @@ module.exports = function createSobiWallet({ functions, db, effectivePlan, isApp
     });
   });
 
-  return { sobiBalance, startSobiExtraTest };
+  /**
+   * Sobi ekranında kural motorunun açtığı yeni örnek ("Başka bir örnek", "Daha zor bir örnek"): bir
+   * mesaj gibi 1 ücretsiz hak, o bitince 1 kredi (kullanıcı kararı 02.11.2026). Model çalışmıyor ama
+   * sınırsız örnek Sobi'yi bedava alıştırma makinesine çeviriyordu. Örneğin içindeki her şey ("Abaküste
+   * göster", parça açıklamaları, Kontrol Et) ve çocuğun kendi yanlış sorusunun analizi ücretsiz kalıyor.
+   * Sobi'nin sohbetten açtığı örnek (alistirma_ver) zaten model mesajı olarak ödendiği için buraya gelmez.
+   */
+  const startSobiExample = functions.https.onCall(async (_data, context) => {
+    const uid = requireUid(context);
+    const userRef = db.collection('users').doc(uid);
+    const chatRef = db.collection('sobiChats').doc(uid);
+    return db.runTransaction(async (tx) => {
+      const [userSnap, chatSnap] = await Promise.all([tx.get(userRef), tx.get(chatRef)]);
+      if (!userSnap.exists) throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+      const plan = effectivePlan(userSnap.data());
+      const now = Date.now();
+      const data = chatSnap.exists ? chatSnap.data() : null;
+      const before = balanceOf(data, plan, now);
+      if (!canSend(before)) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Bugünkü Sobi hakkın ve kredin bitti.', {
+          freeLimit: before.freeLimit, credits: before.credits, plan,
+        });
+      }
+      const charge = chargeMessage(data, plan, now);
+      tx.set(chatRef, { ...charge.update, monthExamples: (data && data.monthKey === trMonth(now) ? Number(data.monthExamples) || 0 : 0) + 1 }, { merge: true });
+      // Üst para panelinin gösterim kopyası (sobiChat'teki gibi).
+      if (charge.paidWith === 'credit') tx.set(userRef, { sobiCredits: charge.update.credits }, { merge: true });
+      return { paidWith: charge.paidWith, remainingToday: charge.after.freeLeft, freeLimit: charge.after.freeLimit, credits: charge.after.credits };
+    });
+  });
+
+  return { sobiBalance, startSobiExtraTest, startSobiExample };
 };
 
 Object.assign(module.exports, {

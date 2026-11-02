@@ -574,6 +574,25 @@ async function main() {
     assert.strictEqual(env.store.get('users/u1').keys, 1, 'merge: diğer alanlar kalmalı');
   });
 
+  await test('yeni örnek (startSobiExample): önce günlük hak, sonra kredi, ikisi de yoksa reddedilir', async () => {
+    const env = fakeEnv();
+    const w = require('../sobi/wallet')({ ...env, isApprovedTeacher: () => false });
+    const ctx = { auth: { uid: 'u1' } };
+    env.store.set('users/u1', { plan: 'Free' });
+    env.store.set('sobiChats/u1', { credits: 1 });
+    const r1 = await w.startSobiExample({}, ctx);
+    assert.deepStrictEqual([r1.paidWith, r1.remainingToday, r1.credits], ['free', 1, 1]);
+    await w.startSobiExample({}, ctx);
+    const r3 = await w.startSobiExample({}, ctx);
+    assert.deepStrictEqual([r3.paidWith, r3.remainingToday, r3.credits], ['credit', 0, 0]);
+    assert.strictEqual(env.store.get('users/u1').sobiCredits, 0, 'üst paneldeki kopya');
+    assert.strictEqual(env.store.get('sobiChats/u1').monthExamples, 3);
+    assert.strictEqual(env.store.get('sobiChats/u1').monthCount, 3);
+    await assert.rejects(w.startSobiExample({}, ctx), (e) => e.code === 'resource-exhausted');
+    await assert.rejects(w.startSobiExample({}, {}), (e) => e.code === 'unauthenticated');
+    assert.ok(chat.creditsText().includes('yeni örnek de 1 mesaj'));
+  });
+
   await test('örnek açma (alistirma_ver): yalnızca Sobi ekranında, öğrenilmiş kurallarla', async () => {
     const input = { baslangic: 3, islem: 'add', sayi: 4 }; // 5'lik kural
     assert.strictEqual(tools.runTool('alistirma_ver', input, { practice: false }, {}).isError, true);
