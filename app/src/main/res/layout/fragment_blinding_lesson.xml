@@ -564,7 +564,7 @@
 
     <Button
         android:id="@+id/kontrolButton"
-        android:background="@drawable/bg_depth_tutorial_control"
+        android:background="@drawable/bg_depth_hw_control"
         app:backgroundTint="@null"
         android:stateListAnimator="@null"
         android:insetTop="0dp"

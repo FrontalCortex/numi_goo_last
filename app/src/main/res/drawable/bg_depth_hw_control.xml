@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Ödev oynatıcısı: Başla / Kontrol. bg_depth_tutorial_control ile aynı göçen düğme (altta 4 dp dudak,
-  göçmeyi DepthPress yapıyor), ek olarak pasif hali gri: sayılar akarken Kontrol basılamıyor.
+  Ödev oynatıcısı (Başla / Kontrol) ve kupa yolu (BlindingLessonFragment) Kontrol'ü. bg_depth_tutorial_control
+  ile aynı göçen düğme (altta 4 dp dudak, göçmeyi DepthPress yapıyor), ek olarak pasif hali gri: sayılar
+  akarken Kontrol basılamıyor.
 -->
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:state_enabled="false">

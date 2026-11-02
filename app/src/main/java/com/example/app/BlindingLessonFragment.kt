@@ -268,8 +268,8 @@ class BlindingLessonFragment : Fragment() {
 
     private fun finishSequencePlayback() {
         isShowingSequence = false
+        // Renk arka planın durumundan (bg_depth_hw_control); setBackgroundColor göçen düğmeyi düz dikdörtgene çeviriyordu.
         controlButton.isEnabled = true
-        controlButton.setBackgroundColor(resources.getColor(R.color.button_enabled, null))
         controlButton.setTextColor(resources.getColor(R.color.button_text_enabled, null))
     }
 
@@ -2046,7 +2046,6 @@ class BlindingLessonFragment : Fragment() {
         currentSequenceIndex = 0
         isShowingSequence = true
         controlButton.isEnabled = false
-        controlButton.setBackgroundColor(resources.getColor(R.color.button_disabled, null))
         controlButton.setTextColor(resources.getColor(R.color.button_text_disabled, null))
 
         flashLog.clear()
