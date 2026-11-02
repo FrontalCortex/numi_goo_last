@@ -36,6 +36,26 @@ Ayrıca önerildi (sıra verilmedi): deploy iş akışında önce testler + kıs
 deneme, staging projesi, hep kırmızı "Build Debug APK" iş akışı, sunucu hata metinlerinin
 yerelleştirilmesi, ödev saklama süresi.
 
+## Reklam yükleme hataları (02.11.2026 — derlendi, commit + push edildi (yalnızca uygulama, deploy yok); telefonda denenmedi; GA4 "Reklamlar" filtresi güncellenmedi)
+- **Asıl sebep AdMob'da:** Sorobit (com.numigo.app) "Onaylanacak uygulamalar"da, durumu
+  "Kurulum tamamlanmadı" (son 7 günde 186 istek). Uygulama AdMob listesine eklenip mağaza
+  kaydına bağlanmadıkça reklam sunumu sınırlı → release'te ~33 kullanıcının 31'inde açılış
+  yüklemesi başarısız, 18+ yetişkinlerde bile. "Kurulumu bitir"i kullanıcı yapacak.
+  (AdMob, tarayıcıdaki Google hesabında değil, başka hesapta.)
+- `ad_load_failed` şişkindi: açılışta herkese, Pro/onaylı öğretmen/2. sandığa gelmemiş
+  kullanıcıya da önden yükleme yapılıyordu. Çocuğun gördüğü hata `ad_not_ready`
+  (28 günde geçiş 76 gösterim/8 hazır değil, ödüllü 7/5). Ödüllü yalnızca mağazadaki 2 düğmede.
+- Yapılanlar: hata kodu olay adında (`ad_load_failed_no_fill`, `_network`, `_internal`…;
+  Keşif'te `^ad_load_failed` ile filtrele — "Reklamlar" keşfinin regex'i güncellenmeli);
+  AdManager log'larındaki `\$` hatası (mesaj hiç yazılmıyordu); geçiş reklamı artık
+  yalnızca uygun kullanıcıya, AdMob başlayınca ve ders başlarken yükleniyor
+  (`GlobalValues.shouldShowAdOnReturn` setter'ı → `MainActivity.preloadInterstitialIfEligible`).
+- Başarısız yükleme arka planda yeniden deneniyor (`AdManager.LoadRetry`: 30 sn, 1, 2, 4 dk,
+  sonra durur; yalnızca no_fill/network/internal'da). Reklamı göstermez, yalnızca indirir.
+  Zincirde yalnızca ilk hata olaya yazılıyor (denemeler oranı şişirmesin).
+- AdMob'da "Google Play'e bağla" → "Eşleşen uygulama bulunamadı": uygulama Play'de herkese
+  açık değil (kapalı test). Bağlantı üretim yayınında yapılacak; o zamana kadar dolgu düşük.
+
 ## PLAN: "Sobi'ye sor" sohbet eden yardımcı (28.10.2026 — Faz 1 canlıda (fcad0fb); Faz 2 kodu `functions/sobi/` altında, testler geçiyor, ANTHROPIC_API_KEY secret'ı kuruldu, sobiChat canlıda; Faz 4 ilk sürüm (öğreticide sohbet paneli) yazıldı ve derlendi, telefonda denenmedi)
 
 "Öğretmene sor"un video akışı çok zahmetli. Kullanıcı kararı: öğretici adımında "Anlamadım" diyen

@@ -18,7 +18,22 @@ object GlobalValues {
      */
     var isTeacherApproved: Boolean = false
 
+    /**
+     * Derse girilince true; haritaya dönüşte geçiş reklamı sorulur
+     * ([MainActivity.checkAndShowInterstitialAdIfAllowed]).
+     *
+     * true'ya çekildiği an [onAdReturnArmed] çağrılıyor: geçiş reklamı artık açılışta herkese
+     * değil, ders başlarken ve yalnızca gösterilebilecek kullanıcıya yükleniyor; ders sürerken
+     * hazır olsun diye.
+     */
     var shouldShowAdOnReturn = false
+        set(value) {
+            field = value
+            if (value) onAdReturnArmed?.invoke()
+        }
+
+    /** [MainActivity] onCreate'te kurar, onDestroy'da kaldırır. */
+    var onAdReturnArmed: (() -> Unit)? = null
     var lastInterstitialAdShownTime: Long = 0L
     var scrollPosition = 0  // Scroll pozisyonunu global olarak tutacak değişken
     /** Tutorial 1 akışındayken 1; login gösterildikten veya başka tutorial'a geçildikten sonra 0. */

@@ -70,9 +70,8 @@ class MainActivity : AppCompatActivity() {
                 val now = System.currentTimeMillis()
                 // Reklam gösterim aralığı: 5 dakika (5 * 60 * 1000 ms)
                 if (now - GlobalValues.lastInterstitialAdShownTime >= 5 * 60 * 1000L) {
-                    GlobalLessonData.loadLessonItemsForPart(this, 1) { items ->
-                        val chests = items.filter { it.type == com.example.app.model.LessonItem.TYPE_CHEST }
-                        if (chests.size >= 2 && chests[1].stepIsFinish) {
+                    isPastInterstitialLessonGate { pastGate ->
+                        if (pastGate) {
                             GlobalValues.lastInterstitialAdShownTime = System.currentTimeMillis()
                             Log.d("AdDiag", "Showing Interstitial Ad on $logContext")
                             val shouldShowSkip = GlobalValues.pendingCupPathRevealPartId == null
@@ -94,6 +93,42 @@ class MainActivity : AppCompatActivity() {
         }
         onDone()
     }
+
+    /** Geçiş reklamı 1. bölümün 2. sandığı bitmeden hiç gösterilmiyor. */
+    private fun isPastInterstitialLessonGate(onResult: (Boolean) -> Unit) {
+        GlobalLessonData.loadLessonItemsForPart(this, 1) { items ->
+            val chests = items.filter { it.type == com.example.app.model.LessonItem.TYPE_CHEST }
+            onResult(chests.size >= 2 && chests[1].stepIsFinish)
+        }
+    }
+
+    /** AdMob rıza akışı bitip başlatıldı mı; öncesinde reklam isteği atılmamalı. */
+    private var adsInitialized = false
+
+    /**
+     * Geçiş reklamını yalnızca gösterilebilecek kullanıcıya önceden yükler.
+     *
+     * ## Neden açılışta herkese yüklenmiyor
+     * Eskiden her açılışta koşulsuz yükleniyordu: Pro, onaylı öğretmen ve 2. sandığa
+     * gelmemiş yeni kullanıcılar da istek atıyor, reklamı hiç görmeyecekleri hâlde AdMob'un
+     * dolgu veremediği her istek `ad_load_failed` olarak sayılıyordu. Hata oranı şişiyor,
+     * gerçek sorun (reklam istendiğinde hazır olmaması, `ad_not_ready`) gözden kaçıyordu.
+     *
+     * Kapı [checkAndShowInterstitialAdIfAllowed] ile aynı; 5 dakikalık aralık hariç, çünkü
+     * ders bitene kadar o süre dolabilir. Ders başlarken ([GlobalValues.shouldShowAdOnReturn])
+     * ve AdMob başlatılınca çağrılıyor. Pro durumu Firestore'dan geç gelebilir; o arada
+     * yüklenen tek reklam zararsız, gösterim kapısı yine Pro'yu ayırıyor.
+     */
+    private fun preloadInterstitialIfEligible() {
+        if (!adsInitialized || isFinishing || isDestroyed) return
+        if (FirebaseAuth.getInstance().currentUser == null) return
+        if (isInfiniteEnergy() || GlobalValues.isTeacherApproved) return
+        isPastInterstitialLessonGate { pastGate ->
+            if (pastGate && !isFinishing && !isDestroyed) adManager.preloadInterstitialAd()
+        }
+    }
+
+    private val adReturnArmedHook: () -> Unit = { preloadInterstitialIfEligible() }
 
 
     companion object {
@@ -493,9 +528,11 @@ class MainActivity : AppCompatActivity() {
         // Yaşa ve ülkeye göre reklam muamelesi (TFAT) altyapısıyla AdMob'u başlat.
         // adManager preload işlemleri bu callback'in içinde yapılır;
         // böylece Firestore'dan birthYear gelmeden reklam isteği atılmaz (Claude planı).
+        GlobalValues.onAdReturnArmed = adReturnArmedHook
         AgeConsentManager.initializeAdMobWithAgeConsent(this) {
+            adsInitialized = true
             adManager.preloadAd()
-            adManager.preloadInterstitialAd()
+            preloadInterstitialIfEligible()
         }
         
         enableEdgeToEdge()
@@ -4052,6 +4089,10 @@ class MainActivity : AppCompatActivity() {
     }
     
     override fun onDestroy() {
+        // Yeniden yaratılan activity kendi kancasını kurmuş olabilir; yalnızca bizimkini kaldır.
+        if (GlobalValues.onAdReturnArmed === adReturnArmedHook) GlobalValues.onAdReturnArmed = null
+        // Bekleyen reklam yükleme denemeleri ölü activity'nin bağlamıyla istek atmasın.
+        adManager.release()
         seasonLeaderboardGateRetryLifecycleCallbacks?.let {
             supportFragmentManager.unregisterFragmentLifecycleCallbacks(it)
         }

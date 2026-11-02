@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.util.Log
+import com.google.android.gms.ads.AdRequest
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
@@ -1348,9 +1349,35 @@ object AnalyticsLogger {
         fa.logEvent(EV_AD_SHOWN) { param(P_AD_TYPE, sanitize(adType)) }
     }
 
-    /** Reklam yüklenemedi (AdMob dolgu veremedi, ağ hatası vb.). Gösterim hiç denenmedi. */
-    fun logAdLoadFailed(adType: String) = safe { fa ->
-        fa.logEvent(EV_AD_LOAD_FAILED) { param(P_AD_TYPE, sanitize(adType)) }
+    /**
+     * Reklam yüklenemedi (AdMob dolgu veremedi, ağ hatası vb.). Gösterim hiç denenmedi.
+     *
+     * ## Neden hata kodu olay adında
+     * Yalnızca "yüklenemedi" demek sebebi gizliyordu: dolgu yokluğu (AdMob hesabı/uygulama
+     * kurulumu, çocuk etiketi), ağ hatası ve hatalı istek tamamen farklı çözümler istiyor.
+     * Sebep parametre olsaydı boyut slotu gerekirdi; o kota dolu, olay adı kotası bol. Olay adı
+     * `ad_load_failed_<sebep>` biçiminde — hepsini birden görmek için Keşif'te
+     * `^ad_load_failed` ile filtrele.
+     *
+     * @param errorCode [com.google.android.gms.ads.LoadAdError.getCode].
+     */
+    fun logAdLoadFailed(adType: String, errorCode: Int) = safe { fa ->
+        fa.logEvent(EV_AD_LOAD_FAILED + "_" + adLoadErrorReason(errorCode)) {
+            param(P_AD_TYPE, sanitize(adType))
+        }
+    }
+
+    /** AdMob yükleme hata kodunu olay adına girecek kısa bir sebebe çevirir. */
+    private fun adLoadErrorReason(code: Int): String = when (code) {
+        AdRequest.ERROR_CODE_INTERNAL_ERROR -> "internal"
+        AdRequest.ERROR_CODE_INVALID_REQUEST -> "invalid_request"
+        AdRequest.ERROR_CODE_NETWORK_ERROR -> "network"
+        AdRequest.ERROR_CODE_NO_FILL -> "no_fill"
+        AdRequest.ERROR_CODE_APP_ID_MISSING -> "app_id_missing"
+        AdRequest.ERROR_CODE_MEDIATION_NO_FILL -> "mediation_no_fill"
+        AdRequest.ERROR_CODE_REQUEST_ID_MISMATCH -> "request_id_mismatch"
+        AdRequest.ERROR_CODE_INVALID_AD_STRING -> "invalid_ad_string"
+        else -> "other"
     }
 
     /** Reklam yüklüydü ama gösterilemedi. */
