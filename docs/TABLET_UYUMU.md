@@ -26,7 +26,7 @@ tablet ~480–530 dp genişliğinde, ~800 dp boyunda büyük bir telefon gibi da
 ## Doğrulanan ekranlar (Tab M10)
 
 Açılış, part kartları, harita ve ders paneli, öğretici, abaküs dersi, profil, görevler, mağaza,
-sorularım, keşfet, kupa yolu listesi.
+sorularım, keşfet, kupa yolu listesi ve zorluk penceresi, flaş dersi, kupa yolu oynatıcısı
+(ödev oynatıcısı; abaküs ayar paneli açılıp kapanıyor, kapalıyken görünmüyor).
 
-Henüz bakılmayanlar (yeni hesapta kilitli/erişilemedi): flaş dersi, ödev/Sobi testi oynatıcısı,
-kupa yolu oynatıcısı, Sobi ekranı, veli paneli, plan ekranları, ayarlar.
+Henüz bakılmayanlar: Sobi ekranı ve Sobi testi paneli, veli paneli, plan ekranları, ayarlar.
