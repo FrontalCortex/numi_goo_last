@@ -42,11 +42,11 @@
     <View
         android:id="@+id/flashCard"
         android:layout_width="0dp"
-        android:layout_height="@dimen/hw_flash_card_height"
+        android:layout_height="@dimen/flash_card_height"
         android:layout_marginStart="24dp"
         android:layout_marginTop="12dp"
         android:layout_marginEnd="24dp"
-        android:background="@drawable/bg_hw_flash_card"
+        android:background="@drawable/bg_flash_card"
         android:importantForAccessibility="no"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -429,17 +429,22 @@
         android:layout_marginStart="@dimen/tutorial_control_button_side_margin"
         android:layout_marginEnd="@dimen/tutorial_control_button_side_margin"
         android:layout_marginBottom="@dimen/tutorial_bottom_panel_margin_bottom"
-        android:backgroundTint="#8CC63F"
+        android:background="@drawable/bg_depth_hw_control"
         android:elevation="0dp"
         android:fontFamily="@font/font_regular"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
         android:maxHeight="@dimen/tutorial_back_button_size"
         android:minHeight="@dimen/tutorial_back_button_size"
+        android:paddingTop="0dp"
+        android:paddingBottom="4dp"
+        android:stateListAnimator="@null"
         android:text="@string/hw_player_check"
         android:textAllCaps="false"
-        android:textColor="#000000"
+        android:textColor="@color/hw_control_text"
         android:textSize="@dimen/tutorial_control_button_text_size"
         android:textStyle="bold"
-        app:cornerRadius="@dimen/tutorial_control_button_corner_radius"
+        app:backgroundTint="@null"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -536,12 +541,17 @@
         app:lottie_fileName="abacus_mode_ic_anim.json"
         app:lottie_loop="false" />
 
+    <!-- Kural paneli kartın altından abaküsün üstüne kadar uzayabiliyor; içerik kısaysa abaküse yapışık. -->
     <include
         android:id="@+id/rulesPanelScrollView"
         layout="@layout/view_rules_panel"
         android:layout_width="wrap_content"
-        android:layout_height="120dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:layout_marginBottom="-5dp"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintVertical_bias="1"
+        app:layout_constraintTop_toBottomOf="@id/flashCard"
         app:layout_constraintBottom_toTopOf="@id/abacusContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -622,12 +632,18 @@
             android:layout_width="match_parent"
             android:layout_height="@dimen/tutorial_result_button_height"
             android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
+            android:background="@drawable/bg_depth_tutorial_continue"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="4dp"
+            android:stateListAnimator="@null"
             android:text="@string/hw_player_next"
             android:textAllCaps="false"
             android:textColor="#000000"
             android:textSize="@dimen/tutorial_result_button_text_size"
             android:textStyle="bold"
-            app:cornerRadius="@dimen/tutorial_result_button_corner_radius" />
+            app:backgroundTint="@null" />
     </LinearLayout>
 
     <!-- Adım sonu / ödev bitti / açılamadı -->

@@ -196,14 +196,21 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
+    <!--
+      Sayı kartı (eski kara tahta görseli yerine; ödev oynatıcısıyla aynı, bg_flash_card). Kimlik eski
+      adıyla kaldı: sayılar ve tahtanın altındakiler ona bağlı. Alçak olduğu için abaküsün üstünde açılan
+      kural paneline yer kalıyor.
+    -->
     <ImageView
         android:id="@+id/blackboardImage"
         android:layout_width="0dp"
-        android:layout_height="300dp"
-        android:scaleType="centerCrop"
-        android:layout_marginTop="20dp"
-        android:src="@drawable/class_board"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_height="@dimen/flash_card_height"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_flash_card"
+        android:importantForAccessibility="no"
+        app:layout_constraintTop_toBottomOf="@id/quitButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
@@ -579,18 +586,22 @@
     <FrameLayout
         android:id="@+id/rulesPanelScrollView"
         android:layout_width="wrap_content"
-        android:layout_height="120dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:layout_marginBottom="-5dp"
         android:visibility="gone"
         android:clipChildren="true"
         android:clipToPadding="true"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintVertical_bias="1"
+        app:layout_constraintTop_toBottomOf="@id/timerTextView"
         app:layout_constraintBottom_toTopOf="@id/abacusContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <ScrollView
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:scrollbars="vertical"
             android:clipChildren="true"
             android:clipToPadding="true"

@@ -323,21 +323,21 @@
     <dimen name="abacus_fragment_back_btn_padding">10dp</dimen>
     <dimen name="abacus_fragment_lottie_size">300dp</dimen>
     <dimen name="abacus_fragment_timer_text_size">18sp</dimen>
-    <dimen name="abacus_fragment_timer_margin_top">-10dp</dimen>
+    <!-- Zamanlayıcı sayı kartının hemen altında (tahta görselinde eksi paydı: görselin alt boşluğu). -->
+    <dimen name="abacus_fragment_timer_margin_top">6dp</dimen>
     <dimen name="abacus_fragment_progress_width">250dp</dimen>
     <dimen name="abacus_fragment_progress_height">16dp</dimen>
     <dimen name="abacus_fragment_progress_margin">16dp</dimen>
     <dimen name="abacus_fragment_quit_size">48dp</dimen>
-    <dimen name="abacus_fragment_blackboard_height">360dp</dimen>
-    <dimen name="abacus_fragment_blackboard_width">372dp</dimen>
     <dimen name="abacus_fragment_timer_margin_bottom">120dp</dimen>
     <dimen name="abacus_fragment_blackboard_margin_top">20dp</dimen>
     <dimen name="abacus_fragment_equation_text_size">36sp</dimen>
     <dimen name="abacus_fragment_equation_padding">16dp</dimen>
-    <!-- Ödev oynatıcısının sayı kartı: kural paneliyle (abaküsün üstünde) çakışmayacak kadar alçak. -->
-    <dimen name="hw_flash_card_height">140dp</dimen>
+    <!-- Sayı kartı (eski kara tahta yerine; ödev, ders, kupa, abaküs pratiği): kural paneline yer kalsın diye alçak. -->
+    <dimen name="flash_card_height">140dp</dimen>
     <dimen name="hw_flash_text_size">56sp</dimen>
-    <dimen name="abacus_fragment_equation_margin_bottom">20dp</dimen>
+    <!-- Sayılar kartın ortasında; kartın alttaki 4 dp dudağı kadar yukarıda. -->
+    <dimen name="abacus_fragment_equation_margin_bottom">4dp</dimen>
     <dimen name="abacus_fragment_result_panel_margin_neg">-10dp</dimen>
     <dimen name="abacus_fragment_hint_container_height">56dp</dimen>
     <dimen name="abacus_fragment_hint_container_margin_end">16dp</dimen>

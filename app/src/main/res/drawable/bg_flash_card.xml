@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Ödev oynatıcısında sayıların göründüğü kart (eski kara tahta görseli yerine): ödev kartlarıyla
-  (bg_depth_card) aynı dil, altta 4 dp koyu "dudak". Basılmadığı için seçici yok.
+  Sayıların göründüğü kart (eski kara tahta görseli yerine): ödev oynatıcısı, ders (AbacusFragment),
+  kupa yolu (BlindingLessonFragment) ve abaküs pratiği. Ödev kartlarıyla (bg_depth_card) aynı dil, altta
+  4 dp koyu "dudak". Basılmadığı için seçici yok.
 -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:top="4dp">

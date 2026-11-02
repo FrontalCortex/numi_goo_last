@@ -52,8 +52,8 @@ import kotlinx.coroutines.withContext
  *
  * SAĞ DÜĞMELER (kupa yolundaki BlindingLessonFragment ile aynı; görünüm ve davranış ortak yardımcılarda:
  * [LessonRulesPanel], [AbacusSettingsPanel], [LessonSideButtons]). Ödevde ve Sobi testinde aynı çalışıyor:
- * - Sıfırla: abaküs (abaküssüzde cevap kutusu) sıfırlanır; sayılar akarken soru baştan akar. Akış bitince
- *   sayılar yeniden gösterilmez: o zaman bedava ikinci bakış olurdu.
+ * - Sıfırla: abaküs (abaküssüzde cevap kutusu) sıfırlanır; Başla'ya basıldıysa ve cevap verilmediyse
+ *   sayılar baştan akar (derste de öyle; kullanıcı kararı 02.11.2026).
  * - Atla: gösterilen sayıyı hemen geçer (yalnızca çocuğu hızlandırır, puana etkisi yok); çarpmada gizli.
  * - Kural kitabı / sihirli değnek: kitapta seçilen tablo değnekle abaküsün üstünde açılıp kapanır.
  * - Abaküs ayarı (yalnızca abaküslüde): boyut paneli. Soru yarıdayken açılırsa soru Başla'ya döner,
@@ -152,11 +152,8 @@ class HomeworkPlayerFragment : Fragment() {
     private val blockTally = LinkedHashMap<String, IntArray>()
     /** Soru akarken ve cevaplanana kadar true: abaküsün her değişimi kaydediliyor. */
     private var recordingAbacus = false
-    /**
-     * Sayılar bittikten sonra sıfırlandı: kayıtta sıfırlama bir hamle gibi görünür, kural sayımı yanlış
-     * olurdu. O soru kural kural sayılmaz (doğru/yanlış sayılır).
-     */
-    private var abacusLogBroken = false
+    /** Bu soruda Başla'ya basıldı (sıfırla sayıları baştan akıtsın diye). */
+    private var flashStarted = false
 
     private fun recordAbacus() {
         if (!recordingAbacus) return
@@ -188,6 +185,8 @@ class HomeworkPlayerFragment : Fragment() {
             if (actionId == EditorInfo.IME_ACTION_DONE) { onKontrol(); true } else false
         }
         binding.resultButton.setOnClickListener { if (!resultPanelAnimating) hideResultPanel { nextQuestion() } }
+        // Başla / Kontrol ve sonuç panelinin düğmesi derslerdeki gibi içe göçüyor.
+        DepthPress.attach(binding.kontrolButton, binding.resultButton)
         navBarPanelExtension = com.example.app.NavBarPanelExtension(binding.root, binding.resultPanel).also { it.attach() }
         setupSideButtons()
         setPlayVisible(false)
@@ -405,6 +404,7 @@ class HomeworkPlayerFragment : Fragment() {
         val hw = homework ?: return
         val q = questions[questionIndex]
         answered = false
+        flashStarted = false
         b.resultPanel.visibility = View.GONE
         b.stepText.text = if (sobiMode) appString(R.string.sobi_test_step, questionIndex + 1, questions.size)
         else appString(R.string.hw_player_step, blockIndex + 1, hw.blockCount, questionIndex + 1, questions.size)
@@ -441,7 +441,7 @@ class HomeworkPlayerFragment : Fragment() {
         // Abaküslüde değerler kaydediliyor: hangi kuralda hata yapıldığı buradan çıkıyor
         abacusLog.clear()
         shownAtMs.clear()
-        abacusLogBroken = false
+        flashStarted = true
         recordingAbacus = cfg.withAbacus
         recordAbacus() // sorunun başındaki değer
         // Çıkarmada başlangıçtan sonraki sayılar eksiyle gösteriliyor.
@@ -452,17 +452,20 @@ class HomeworkPlayerFragment : Fragment() {
         showFlashNumber()
     }
 
-    /** Sıradaki sayı [flashShowMs] boyunca görünür; sayılar bittiyse akış biter. */
+    /**
+     * Sıradaki sayı [flashShowMs] boyunca görünür. Son sayı ekranda kalır ve Kontrol hemen açılır
+     * (BlindingLessonFragment.onSequenceRevealStep ile aynı; eskiden son sayı sönüp "?" geliyordu).
+     */
     private fun showFlashNumber() {
-        if (_binding == null) return
-        if (flashIndex >= flashLabels.size) {
+        if (_binding == null || flashIndex >= flashLabels.size) return
+        shownAtMs += android.os.SystemClock.uptimeMillis()
+        setFlash(flashLabels[flashIndex])
+        flashBlank = false
+        if (flashIndex == flashLabels.lastIndex) {
             flashing = false
             onFlashFinished()
             return
         }
-        shownAtMs += android.os.SystemClock.uptimeMillis()
-        setFlash(flashLabels[flashIndex])
-        flashBlank = false
         handler.postDelayed(flashHideRunnable, flashShowMs)
     }
 
@@ -486,7 +489,6 @@ class HomeworkPlayerFragment : Fragment() {
     private fun onFlashFinished() {
         val b = _binding ?: return
         val withAbacus = homework?.config?.withAbacus == true
-        if (questions[questionIndex].op != HomeworkOp.MUL) setFlash("?")
         b.kontrolButton.text = appString(R.string.hw_player_check)
         b.kontrolButton.isEnabled = true
         b.kontrolButton.setOnClickListener { onKontrol() }
@@ -538,7 +540,8 @@ class HomeworkPlayerFragment : Fragment() {
         // Yanlışta işlemin tamamı: çocuk hangi sayıda kaydığını görebilsin.
         b.resultMessage.visibility = if (correct) View.GONE else View.VISIBLE
         b.resultMessage.text = HomeworkText.questionLine(q) + " = " + q.answer
-        b.resultButton.backgroundTintList = android.content.res.ColorStateList.valueOf(color)
+        // Göçen düğme (dersteki doğru/yanlış panelleriyle aynı arka planlar).
+        b.resultButton.setBackgroundResource(if (correct) R.drawable.bg_depth_tutorial_continue else R.drawable.bg_depth_tutorial_okay)
         bindSobiReview(q, given, correct)
         b.kontrolButton.isEnabled = false
         // Ses ve ses düzeyi AbacusFragment.showResultPanel ile aynı.
@@ -572,7 +575,6 @@ class HomeworkPlayerFragment : Fragment() {
         val attempts = runCatching {
             when {
                 q.op == HomeworkOp.MUL -> RuleAnalysis.multiplication(cfg, correct)
-                cfg.withAbacus && abacusLogBroken -> emptyList()
                 cfg.withAbacus -> RuleAnalysis.abacus(q, abacusLog.toList(), shownAtMs.toList(), given)
                 else -> emptyList() // abaküssüz toplama/çıkarma sayılmıyor
             }
@@ -759,12 +761,14 @@ class HomeworkPlayerFragment : Fragment() {
         if (answered || questions.isEmpty() || b.summaryPanel.visibility == View.VISIBLE) return
         abacusController?.reset(animate = true)
         b.answerInput.text = null
-        if (flashing) {
+        if (flashStarted && questions[questionIndex].op != HomeworkOp.MUL) {
             stopFlash()
             setFlash("")
+            // Akış bittiyse Kontrol açılmıştı, abaküssüzde cevap kutusu da: sayılar yeniden akarken kapansın.
+            b.kontrolButton.isEnabled = false
+            b.answerInput.visibility = View.GONE
+            hideKeyboard()
             handler.postDelayed(restartFlashRunnable, RESTART_FLASH_DELAY_MS)
-        } else if (recordingAbacus) {
-            abacusLogBroken = true
         }
     }
 
