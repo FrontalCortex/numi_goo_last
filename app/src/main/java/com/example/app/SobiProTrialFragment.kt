@@ -97,7 +97,8 @@ class SobiProTrialFragment : DialogFragment() {
             welcomeCreditAvailable = welcomeCreditAvailable,
         )
 
-        binding.mascotView.play(BunnyMascotView.Emote.GREET, then = BunnyMascotView.Emote.HEART)
+        // "Mükemmel": taç ve havalı gözlük iniyor, sonra pozda kalıyor (Pro hâli).
+        binding.mascotView.play(BunnyMascotView.Emote.PERFECT)
         binding.btnTryFree.setOnClickListener { startTrial() }
         binding.btnNotNow.setOnClickListener {
             logClosed(AnalyticsLogger.PROMO_NO_THANKS)
