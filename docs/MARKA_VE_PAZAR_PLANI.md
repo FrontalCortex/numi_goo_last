@@ -44,6 +44,17 @@ Madrid ücretleri (2 sınıf, WIPO tablosu 23.08.2026): temel 653 CHF; Çin 330,
 - Play Store: abaküs nişi küçük (en büyük 1M+: Simple Soroban, Know Abacus; Hirokuma 500K+). Çoğu basit alıştırma aracı, bazıları 3.2–3.8 puan. Seri/maskot/ders yolu olan Duolingo tarzı abaküs kursu öne çıkmıyor. Almanca, Endonezce (tek rakip 5K+) ve Türkçe ders veren güçlü abaküs uygulaması yok.
 - Google Trends (son 12 ay, göreli): Hindistan "abacus" 81, Endonezya "sempoa" 41 (2026 yazı yükselişte), ABD "abacus" 28 (şirket aramalarıyla kirli), Almanya "abakus" 14, Türkiye "abaküs" 10.
 - Dil sırası: İngilizce → Endonezce → (veriye göre) Hintçe / Almanca / Arapça.
+- **Sıradaki dil karşılaştırması (03.11.2026, Google Trends son 12 ay + Play Store):** "sempoa" hacmi = 1,0
+  alınınca: soroban 1,05 (Japonya ağırlıklı), ábaco 1,0 (Latin Amerika + Brezilya; birlikte aranan "¿qué
+  es el ábaco?" — okul ödevi, kurs talebi değil), cálculo mental 0,47 (Meksika; "ejercicios primaria"),
+  Arapça "الحساب الذهني" 0,22 (Tunus, Yemen, Libya, Suriye, Bahreyn, Fas, Irak, Mısır, Körfez; birlikte
+  "öğren", "birinci seviye", "yarışma" — seviyeli abaküs kursu kültürü), Rusça "ментальная арифметика" 0,2
+  (Kırgızistan, Kazakistan, Özbekistan, Belarus, Rusya; birlikte "тренажер", "для детей", "абакус").
+  Play Store: Rusçada yerli güçlü rakip var (Mental arithmetic 1M+, 4.6); Rusya'da Google Play ödemeleri
+  2022'den beri kapalı. Arapçada yerli rakip küçük (10K+, 50K+), gerisi İngilizce genel uygulamalar.
+  İspanyolca/Portekizce aramalarda yine İngilizce Simple Soroban (1M+) önde, yerli güçlü kurs yok.
+  "Abacus" konusu ve kelimesi kirli (fon, restoran), kullanılmamalı. Öneri: Arapça (sağdan sola düzen işi
+  gerekir), ucuz alternatif İspanyolca.
 - Yerelleştirme ön koşulu: ~2.100 Kotlin + ~940 düzen metni koda gömülü (strings.xml'de 114), ~920 ses dosyası (rehber anlatımı) — metinler strings.xml'e taşınacak, sesler yeniden seslendirilecek (TTS ya da sanatçı).
 
 ## Riskler / dikkat
