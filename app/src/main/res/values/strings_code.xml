@@ -376,6 +376,8 @@
     <string name="ui_basla">Başla</string>
     <string name="ui_kilidi_acmak_icin_onceki_dersleri_tamamla">Kilidi açmak için önceki dersleri tamamla.</string>
     <string name="ui_kilitli">Kilitli</string>
+    <string name="ui_1_anahtarla_kilidi_ac">1 anahtarla kilidi aç</string>
+    <string name="ui_onceki_dersleri_tamamla_ya_da_anahtarla_ac">Önceki dersleri tamamla ya da 1 anahtarla bu dersi hemen aç.</string>
     <string name="ui_sayi_gosterilme_periyodu_x_saniye">Sayı gösterilme periyodu %1$s saniye</string>
     <string name="ui_baslat">BAŞLAT</string>
 

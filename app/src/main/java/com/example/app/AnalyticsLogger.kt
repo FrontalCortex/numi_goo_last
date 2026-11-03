@@ -42,6 +42,9 @@ object AnalyticsLogger {
     private const val EV_LESSON_STEP_FAIL = "lesson_step_fail"
     private const val EV_LESSON_ITEM_FINISH = "lesson_item_finish"
     private const val EV_LESSON_ITEM_REPLAY = "lesson_item_replay"
+    private const val EV_LESSON_UNLOCK_OFFER = "lesson_unlock_offer"
+    private const val EV_LESSON_UNLOCK_KEY = "lesson_unlock_key"
+    private const val EV_LESSON_UNLOCK_NO_KEYS = "lesson_unlock_no_keys"
     private const val EV_LESSON_QUESTION_ENTRY = "lesson_question_entry"
     private const val EV_LESSON_ABANDON_NO_ANSWER = "lesson_abandon_no_answer"
     private const val EV_ACQUISITION_SOURCE = "acquisition_source"
@@ -230,6 +233,8 @@ object AnalyticsLogger {
     const val ITEM_RACE_FAST_FORWARD = "race_fast_forward"
     /** Günlük soruya anahtarla devam etme ([TasksFragment]). */
     const val ITEM_DAILY_QUESTION_CONTINUE = "daily_question_continue"
+    /** Kilitli dersi anahtarla açma ([LessonAdapter]). */
+    const val ITEM_LESSON_UNLOCK = "lesson_unlock"
     /** Mağazadan altınla seri dondurma ([ShopFragment]). */
     const val ITEM_STREAK_FREEZE = "streak_freeze"
 
@@ -475,6 +480,9 @@ object AnalyticsLogger {
      */
     private const val USER_PROPERTY_ENERGY_WALL_HIT = "energy_wall_hit"
 
+    /** Kullanıcı en az bir dersi anahtarla açtı; bkz. [logLessonUnlockKey]. */
+    private const val USER_PROPERTY_KEY_UNLOCKER = "key_unlocker"
+
     /** Bkz. [setBuildType]. */
     private const val USER_PROPERTY_BUILD_TYPE = "build_type"
 
@@ -638,6 +646,42 @@ object AnalyticsLogger {
             param(P_POSITION, position.toString())
             if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
             if (chestStars != null) param(P_CHEST_STARS, chestStars.toString())
+        }
+    }
+
+    // ── Anahtarla ders kilidi açma ──────────────────────────────────────────
+    //
+    // "Kilitli dersi 1 anahtarla açmak doğru bir karar mı?" sorusunun üç yüzü var:
+    // 1. Talep: teklifi görenlerin (`lesson_unlock_offer`) yüzde kaçı açıyor (`lesson_unlock_key`)?
+    // 2. Gelir: anahtarı yetmeyenlerin (`lesson_unlock_no_keys`) yüzde kaçı mağazada
+    //    `purchase_started`'a gidiyor? Mağaza bu olaydan hemen sonra açılıyor.
+    // 3. Öğrenme: ders atlamak çocuğu zorluyor mu? `key_unlocker` kullanıcı özelliğiyle
+    //    `lesson_step_fail` / `lesson_item_finish` oranları atlayanlar ve atlamayanlar için
+    //    kıyaslanır. Olay kapsamlı boyut kotası dolu olduğu için yeni parametre eklenmedi;
+    //    yalnızca kayıtlı `part_id` ve `lesson_id` kullanılıyor.
+
+    /** Kilitli ders paneli "1 anahtarla kilidi aç" teklifiyle açıldı (huninin paydası). */
+    fun logLessonUnlockOffer(partId: Int, lessonId: String?) = safe { fa ->
+        fa.logEvent(EV_LESSON_UNLOCK_OFFER) {
+            param(P_PART_ID, partId.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /** Ders anahtarla açıldı; anahtar sunucuda düşüldükten SONRA çağrılır. */
+    fun logLessonUnlockKey(partId: Int, lessonId: String?) = safe { fa ->
+        fa.logEvent(EV_LESSON_UNLOCK_KEY) {
+            param(P_PART_ID, partId.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+        }
+        fa.setUserProperty(USER_PROPERTY_KEY_UNLOCKER, "true")
+    }
+
+    /** Kilidi açmak istedi ama anahtarı yetmedi; ardından mağaza açılıyor. */
+    fun logLessonUnlockNoKeys(partId: Int, lessonId: String?) = safe { fa ->
+        fa.logEvent(EV_LESSON_UNLOCK_NO_KEYS) {
+            param(P_PART_ID, partId.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
         }
     }
 
@@ -1227,7 +1271,8 @@ object AnalyticsLogger {
      * toplanırlarsa rakamlar anlamsız olur. Para birimini parametre yapmak bir boyut slotu
      * daha harcardı; olay adı kotası (500) ise bol. Ayrıntı için bkz. [logGoldSpent].
      *
-     * Anahtar iki yerde harcanır: yarışı hızlandırma ([ITEM_RACE_FAST_FORWARD]) ve günlük
+     * Anahtar şu yerlerde harcanır: yarışı hızlandırma ([ITEM_RACE_FAST_FORWARD]), kilitli
+     * dersi açma ([ITEM_LESSON_UNLOCK]) ve günlük
      * soruya devam etme ([ITEM_DAILY_QUESTION_CONTINUE]). Bunların sayısı, çocuğun beklemek
      * yerine ödemeyi seçtiği anlardır — sabırsızlık ölçüsü.
      */

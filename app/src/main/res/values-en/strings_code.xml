@@ -337,6 +337,8 @@
     <string name="ui_basla">Start</string>
     <string name="ui_kilidi_acmak_icin_onceki_dersleri_tamamla">Complete the previous lessons to unlock.</string>
     <string name="ui_kilitli">Locked</string>
+    <string name="ui_1_anahtarla_kilidi_ac">Unlock with 1 key</string>
+    <string name="ui_onceki_dersleri_tamamla_ya_da_anahtarla_ac">Complete the previous lessons, or unlock this lesson now with 1 key.</string>
     <string name="ui_sayi_gosterilme_periyodu_x_saniye">A number every %1$s seconds</string>
     <string name="ui_baslat">START</string>
 

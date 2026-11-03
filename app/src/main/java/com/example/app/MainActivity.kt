@@ -2576,6 +2576,44 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    /**
+     * [spendKeys]'in sunucu onaylı hâli: karşılığı geri alınamayan bir şey verilecekse
+     * (ör. ders kilidi açmak) kullanılır. [onSuccess] ancak anahtar sunucuda GERÇEKTEN
+     * düşüldükten sonra çağrılır; [spendKeys] iyimser olduğu için reddedilen harcamada da
+     * karşılığı verirdi ve kullanıcı bedavaya ders açardı.
+     *
+     * @return Bakiye yetmiyorsa false (hiçbir çağrı yapılmaz), aksi halde true.
+     */
+    fun spendKeysConfirmed(
+        amount: Int,
+        itemId: String,
+        onSuccess: () -> Unit,
+        onFailure: () -> Unit,
+    ): Boolean {
+        val uid = auth.currentUser?.uid ?: return false
+        val current = (if (::binding.isInitialized) binding.keyText.text.toString().toIntOrNull() else null)
+            ?: UserWalletFirestore.getCachedKeys(this)
+        if (current < amount) return false
+        // Anlık (iyimser) gösterim; sunucu reddederse bakiye sunucudan yeniden okunur.
+        if (::binding.isInitialized) binding.keyText.text = (current - amount).toString()
+        UserWalletFirestore.applyKeyDelta(
+            context = this,
+            uid = uid,
+            delta = -amount,
+            reason = WalletReason.SPEND,
+            itemId = itemId,
+            onSuccess = { wallet ->
+                if (::binding.isInitialized) applyWalletToUi(wallet)
+                onSuccess()
+            },
+            onFailure = {
+                resyncWalletFromServer()
+                onFailure()
+            },
+        )
+        return true
+    }
+
     private fun updateEnergyDisplay(energy: Int) {
         // NOT: Burada checkSubscriptionAndUpdateEnergy() ÇAĞIRMA — o fonksiyon Firestore'dan
         // veri çekip energyManager.setUserPlan()/setUserRoleApproval() çağırıyor, onlar da bu

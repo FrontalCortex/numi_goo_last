@@ -383,6 +383,8 @@
     <string name="ui_basla">ابدأ</string>
     <string name="ui_kilidi_acmak_icin_onceki_dersleri_tamamla">أكمل الدروس السابقة لفتح هذا الدرس.</string>
     <string name="ui_kilitli">مقفل</string>
+    <string name="ui_1_anahtarla_kilidi_ac">افتح بمفتاح واحد</string>
+    <string name="ui_onceki_dersleri_tamamla_ya_da_anahtarla_ac">أكمل الدروس السابقة، أو افتح هذا الدرس الآن بمفتاح واحد.</string>
     <string name="ui_sayi_gosterilme_periyodu_x_saniye">عدد كل %1$s ث</string>
     <string name="ui_baslat">ابدأ</string>
 

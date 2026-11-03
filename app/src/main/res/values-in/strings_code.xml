@@ -375,6 +375,8 @@
     <string name="ui_basla">Mulai</string>
     <string name="ui_kilidi_acmak_icin_onceki_dersleri_tamamla">Selesaikan pelajaran sebelumnya untuk membuka kunci.</string>
     <string name="ui_kilitli">Terkunci</string>
+    <string name="ui_1_anahtarla_kilidi_ac">Buka dengan 1 kunci</string>
+    <string name="ui_onceki_dersleri_tamamla_ya_da_anahtarla_ac">Selesaikan pelajaran sebelumnya, atau buka pelajaran ini sekarang dengan 1 kunci.</string>
     <string name="ui_sayi_gosterilme_periyodu_x_saniye">Angka ditampilkan setiap %1$s detik</string>
     <string name="ui_baslat">MULAI</string>
 

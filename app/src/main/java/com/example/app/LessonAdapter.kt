@@ -28,6 +28,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import android.os.Handler
+import android.os.Looper
 import androidx.cardview.widget.CardView
 import com.google.android.material.card.MaterialCardView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
@@ -59,6 +61,9 @@ class LessonAdapter(
         // Ders paneli karartma oranı: harita (scrimView), üst panel/alt menü ve sistem şeritleri
         // hep aynı oranda kararmalı, yoksa ekran parça parça görünüyor.
         private const val LESSON_PANEL_DIM_ALPHA = 0.7f
+
+        /** Kilitli dersi açmanın anahtar bedeli (mağazada 1 can da 1 anahtar). */
+        private const val LESSON_UNLOCK_KEY_COST = 1
 
         /** Ders paneli açılmadan önceki üst ve alt sistem şeridi renkleri (dimSystemBars). */
         var savedBarColors: IntArray? = null
@@ -301,6 +306,22 @@ class LessonAdapter(
                 actionButton.text = if (doneSteps > 0) appString(R.string.ui_devam_et) else appString(R.string.ui_basla)
             }
             actionButton.isEnabled = true
+        } else if (isKeyUnlockable(item)) {
+            // Kilitli ders 1 anahtarla açılabiliyor. Düğme "açık" mavisinde: gri kalsaydı
+            // devre dışı sanılırdı.
+            descriptionText.visibility = View.VISIBLE
+            descriptionText.text = appString(R.string.ui_onceki_dersleri_tamamla_ya_da_anahtarla_ac)
+            againTutorial.visibility = View.GONE
+            actionButton.text = appString(R.string.ui_1_anahtarla_kilidi_ac)
+            actionButton.icon = ContextCompat.getDrawable(context, R.drawable.key)
+            actionButton.iconTint = null
+            actionButton.iconSize = (20 * density).toInt()
+            actionButton.iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
+            val open = panelPalette(PanelState.OPEN)
+            actionButton.backgroundTintList = android.content.res.ColorStateList.valueOf(open.buttonBg)
+            actionButton.setTextColor(open.buttonText)
+            actionButton.isEnabled = true
+            if (!isGuidePanelVisible) AnalyticsLogger.logLessonUnlockOffer(globalPartId, item.stableId)
         } else {
             descriptionText.visibility = View.VISIBLE
             descriptionText.text = appString(R.string.ui_kilidi_acmak_icin_onceki_dersleri_tamamla)
@@ -415,8 +436,10 @@ class LessonAdapter(
                 spendLessonEnergyThen(item, dismissPanel) {
                     continueWithLesson(item, dismissPanel)
                 }
+            } else if (isKeyUnlockable(item)) {
+                unlockLessonWithKey(item, position, actionButton, dismissPanel)
             }
-            // Kilitli: düğme zaten devre dışı.
+            // Diğer kilitliler: düğme zaten devre dışı.
         }
 
         // Konum: tıklanan kartın altında (yer yoksa üstünde); panel ölçüldükten sonra.
@@ -650,6 +673,75 @@ class LessonAdapter(
             EnergySessionCounter.onLessonStarted()
 
             onGranted()
+        }
+    }
+
+    /**
+     * Kilitli bir item anahtarla açılabilir mi: yalnızca 1–6. bölümlerdeki DERS item'ları.
+     *
+     * Ünite maratonu (sandık) bilerek dışarıda: bitince anahtar/altın ödülü veriyor; 1
+     * anahtarla açılabilseydi ödül maliyetini aşar ve bedava anahtar döngüsü kurulurdu. Ayrıca
+     * maraton, ünitenin derslerini gerçekten öğrenip öğrenmediğini ölçen sınav. 7–8'de kilit
+     * `raceBusyLevel` ile yönetiliyor, o bölümler bu panele gelmiyor.
+     */
+    private fun isKeyUnlockable(item: LessonItem): Boolean =
+        !item.isCompleted && item.type == LessonItem.TYPE_LESSON && globalPartId in 1..6
+
+    private var keyUnlockInProgress = false
+
+    /**
+     * Kilitli dersi [LESSON_UNLOCK_KEY_COST] anahtarla açar: anahtar sunucuda düşüldükten SONRA
+     * item `isCompleted = true` yazılır (bellek + Firestore) ve panel açılmış hâliyle yeniden
+     * gösterilir. Can harcanmaz; can, ders "Başla"ya basılınca her zamanki gibi gider.
+     * Anahtar yetmiyorsa mağaza açılır.
+     */
+    private fun unlockLessonWithKey(
+        item: LessonItem,
+        position: Int,
+        button: MaterialButton,
+        dismissPanel: () -> Unit,
+    ) {
+        if (keyUnlockInProgress) return
+        val main = context as? MainActivity ?: return
+        button.isEnabled = false
+        keyUnlockInProgress = true
+        val started = main.spendKeysConfirmed(
+            amount = LESSON_UNLOCK_KEY_COST,
+            itemId = AnalyticsLogger.ITEM_LESSON_UNLOCK,
+            onSuccess = {
+                keyUnlockInProgress = false
+                // Panel açıkken liste değişmiş olabilir; en güncel item üzerine yazılıyor.
+                val current = LessonManager.getLessonItem(position)
+                    ?.takeIf { it.stableId == item.stableId } ?: item
+                val unlocked = current.copy(isCompleted = true)
+                LessonManager.updateLessonItem(context, position, unlocked)
+                AnalyticsLogger.logLessonUnlockKey(globalPartId, item.stableId)
+                dismissPanel()
+                // Kapanma animasyonu (140 ms) bitince eski karartmayı gizleyen geri çağrı
+                // yeni paneli de karartmasız bırakmasın diye biraz sonra açılıyor.
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (!main.isFinishing && !main.isDestroyed) {
+                        showLessonBottomSheet(unlocked, position)
+                    }
+                }, 220L)
+            },
+            onFailure = {
+                keyUnlockInProgress = false
+                button.isEnabled = true
+                Toast.makeText(
+                    context,
+                    appString(R.string.ui_islem_tamamlanamadi_tekrar_deneyin),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            },
+        )
+        if (!started) {
+            keyUnlockInProgress = false
+            button.isEnabled = true
+            AnalyticsLogger.logLessonUnlockNoKeys(globalPartId, item.stableId)
+            Toast.makeText(context, appString(R.string.ui_yetersiz_anahtar_2), Toast.LENGTH_SHORT).show()
+            dismissPanel()
+            main.openShopFragment()
         }
     }
 

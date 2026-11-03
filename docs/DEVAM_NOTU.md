@@ -23,6 +23,31 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## GA4 kopma analizi (03.11.2026, son 28 gün 6 Eki–2 Kas, `Build type ≠ debug` filtreli)
+
+Ayıklama: son 28 günde `tester = true` olan kullanıcı YOK (değer listesinde yalnızca `false`); ayıklama
+`Build type` (olay boyutu, `customDimensionsGroup1Slot04`) ile. Rapor filtresi URL'de
+`_r..dataFilters` parametresiyle taşınabiliyor. Otomatik olaylarda (first_open, session_start) bu
+parametre olmadığı için onlar filtreden etkilenmiyor; release cihazındaki kendi denemeler de içeride.
+Huni (kullanıcı): first_open 98 → öğretici 1 açıldı 70 → öğretici 1'in ilk sorusuna ~38 →
+son sorusuna 30 → kayıt start 36 (7'si öğretmen) → intro 28 → age 27 → source 24 → email 24 →
+completed 20 → ders 2 (`p1_i02`) açıldı 14 → seri günü tamamlayan 12. En büyük kayıp öğretici 1'in
+soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `TutorialFragment` 31 kullanıcıyla 1.).
+Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
+Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
+
+## Kilitli ders 1 anahtarla açılıyor (04.11.2026 — derlendi, cihazda denenmedi)
+- Can yapısı DEĞİŞMEDİ (kullanıcı kararı 04.11.2026): her ders başlatma 1 can; ücretsiz 5 can / 10 dk,
+  Lite 10 can / 7 dk, Pro/Premium sonsuz. "Yalnızca çıkış/başarısızlıkta can" önerisi reddedildi.
+- 1–6. bölümde kilitli DERS paneli: "1 anahtarla kilidi aç" (`LessonAdapter.unlockLessonWithKey`).
+  Anahtar `MainActivity.spendKeysConfirmed` ile sunucuda düşülür, ONAYDAN sonra `isCompleted = true`
+  yazılır ve panel açık hâliyle yeniden gösterilir. Can harcanmaz (can "Başla"da gider). Anahtar
+  yetmezse mağaza açılır. Ünite maratonu (sandık) bilerek dışarıda: ödülü 1 anahtardan büyük.
+- Ölçüm: `lesson_unlock_offer` → `lesson_unlock_key` (talep), `lesson_unlock_no_keys` → mağaza
+  `purchase_started` (gelir), `key_spent` (`spend_item = lesson_unlock`), kullanıcı özelliği
+  `key_unlocker = true` (öğrenme: atlayanların `lesson_step_fail` oranı). Yeni olay boyutu YOK.
+  GA4'te `key_unlocker` kullanıcı kapsamlı özel boyut olarak TANIMLANMALI (henüz yapılmadı).
+
 ## SONRA YAPILACAK: kurs testinden önce güvenlik (kullanıcı kararı 23.10.2026, "sonra yapacağız")
 
 1. **Öğretmenin `users` okuması:** kurallar onaylı HER öğretmene her kullanıcı dokümanını (e-posta,
@@ -35,6 +60,15 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
 Ayrıca önerildi (sıra verilmedi): deploy iş akışında önce testler + kısmi başarısızlıkta yeniden
 deneme, staging projesi, hep kırmızı "Build Debug APK" iş akışı, sunucu hata metinlerinin
 yerelleştirilmesi, ödev saklama süresi.
+
+## Gizlilik politikası: Sobi eklendi (03.11.2026 — commit 52a2c0a; CANLIDA: kullanıcı onayıyla push edildi, Functions ve Hosting deploy'ları başarılı)
+- Dört dilde `public/privacy-policy*.html`: 2.4 Sobi bölümü, Bölüm 3'te Anthropic, 5.2/6/7'de Sobi;
+  danışma "şu an kapalı". Veli onay e-postası (`mailTexts.js`) aynı; `PARENTAL_CONSENT_VERSION` .3.
+- Sayfalar push'la yayınlanmaz: `firebase deploy --only hosting` elle. E-posta push'la (Functions).
+- Play Console'da elle: Veri güvenliği formu (danışma kapalıysa fotoğraf/video/ses çıkarılabilir),
+  içerik derecelendirme anketi, mağaza açıklaması. Sonraki sürüm: manifestten `RECORD_AUDIO`,
+  `ScreenRecordingService` (mediaProjection|microphone) kaldırılabilir — danışma kapalıyken
+  Play ön plan hizmeti beyanı istiyor. Danışma açılırsa politika ve e-posta maddesi geri gelmeli.
 
 ## Dil seçeneği: İngilizce (02.11.2026 — uygulama tarafı yazıldı; telefonda denenmedi; sunucu tarafı kullanıcı kararı bekliyor)
 - **Çeviri:** `res/values-en/` altında bütün `strings*.xml` (3.257 metin). Terimler
@@ -173,6 +207,31 @@ yerelleştirilmesi, ödev saklama süresi.
   Zincirde yalnızca ilk hata olaya yazılıyor (denemeler oranı şişirmesin).
 - AdMob'da "Google Play'e bağla" → "Eşleşen uygulama bulunamadı": uygulama Play'de herkese
   açık değil (kapalı test). Bağlantı üretim yayınında yapılacak; o zamana kadar dolgu düşük.
+
+## Sobi sekmesi: öğrencide Sohbet yerine tam ekran Sobi (02.11.2026 — commit 1fad2be sunucu + 468fbbb uygulama + ce1fd52 çöküş düzeltmesi + 87ea2e0 "Sınıfım" bağlantısı kaldırıldı; CANLIDA: 87ea2e0 push edildi, Functions deploy'u başarılı, sobiSessions canlıda; telefona kuruldu, kullanıcı deniyor)
+- Sunucu: `sobiChat` `mode: 'genel'` (bağlam sunucuda: plan, bakiye, homeworkRuleStats özeti),
+  `prompt_genel_tr.md` ayrı önbellekli sistem bloğu (konu sınırı + uygulama rehberi), genel araç
+  listesi (+test_baslat, magaza_goster; abakuste_goster/alistirma_ver düğmeye döner), "krediler"
+  balonu hazır cevap, yeni callable `sobiSessions` (liste/aç/sil; `kind: 'genel'`). test-sobi 66 geçti.
+- Uygulama: `SobiChatFragment` (çekmece liste, tablette kalıcı), alt menüde `R.id.notification`
+  öğrencide Sobi (`MainActivity.applySobiTab`), öğretmende eski ekran. `SobiBalanceBar` ortak.
+- Push gerekince: functions/ değişti → seçici deploy sobiChat + yeni sobiSessions'ı almalı.
+- 02.11.2026 akşam: 5bc9d7c ve 68df096 push edildi (ders içi Sobi: "Abaküste göster" seçeneği,
+  gösterim kendiliğinden, analizde başka/zor örnek, alttaki "Bana göster" kalktı). d436b70 (örnek
+  zorluğu 5. kademe, 4 basamak) ve 118df2e (TTL ilkesi + genel sohbet en çok 20) CANLIDA: kullanıcı
+  onayıyla push edildi, Functions ve Firestore deploy'ları başarılı; TTL ilkeleri (sessions,
+  sobiFeedback, sobiReports) "CREATING" durumunda, Firestore birkaç saatte ACTIVE yapar. TTL kurulana
+  dek hiçbir Sobi sohbeti silinmiyordu.
+- 0b1b73b CANLIDA (kullanıcı onayıyla push, deploy başarılı): Sobi ekranında her yeni örnek 1 ücretsiz
+  hak ya da 1 kredi (`startSobiExample`, sobiChats.monthExamples). Örneğin içi ve yanlış sorunun
+  analizi ücretsiz; oturumsuz ilk öğreticide örnek ücretsiz.
+- 6050f88 CANLIDA (b57b2d6 beğeni türü + ef7f7aa sınıf kartı gizli ile birlikte): derse_git düğmesi
+  (bölüm haritası), cevap akarak açılıyor (gerçek streaming yok: guard bütün cevabı denetliyor),
+  sohbet listesinde arama.
+- fc03d56 push edildi: GA4 Sobi olayları (sobi_tab_open, sobi_message_tab/lesson, sobi_example_free/
+  credit, sobi_limit_tab/lesson, sobi_btn_<tür>), parametresiz. GA4 olay boyutu 46/50 (4 öğretmen/
+  sıra boyutu arşivlendi). TTL ilkeleri ACTIVE (02.11.2026 doğrulandı). GA4'te "Sobi kullanımı"
+  keşfi kuruldu (Etkinlik adı "sobi_" ile başlar). Sobi sekmesi işi BİTTİ.
 
 ## PLAN: "Sobi'ye sor" sohbet eden yardımcı (28.10.2026 — Faz 1 canlıda (fcad0fb); Faz 2 kodu `functions/sobi/` altında, testler geçiyor, ANTHROPIC_API_KEY secret'ı kuruldu, sobiChat canlıda; Faz 4 ilk sürüm (öğreticide sohbet paneli) yazıldı ve derlendi, telefonda denenmedi)
 
@@ -410,6 +469,185 @@ toplayabilirsin.", 2 "On basamaklı bir sayıyı bile, sadece küçük boncuk ha
 ustalaştığında, boncukları hayal ederek bu işlemleri zihninde yaparsın.", 4 "İşte bu şekilde on basamaklı
 sayıları toplayabilirsin.", 5 "Ücretsiz denemek için yorumlara bilgi yazın."
 **Sonuç (27.10.2026):** Reels'te patladı, tek videoda ~150 takipçi.
+
+## Reklam 11 İngilizce (03.11.2026 — ~64,9 sn, Jessica; sırada Endonezce, sonra Arapça)
+
+- `Reklam11.jsx` artık dile göre kuruluyor: `DILLER.tr/en` (yazılar, kelime anahtarları, sayı biçimi, "canlandırma"
+  / "reenactment") + `yap(dil)`. Kompozisyon `Reklam11EN`, `render:r11en` → `reklam11\Sorobit_reklam11_EN.mp4`.
+  Türkçe süreler aynı kaldı (R11 1696, R12/R13 1931 kare).
+- `SobiTanitim.jsx` de dile göre: `TANITIM.tr/en` (klipler, başlıklar, rozet "Sobi · AI", kapanış yazıları, yorum
+  kelimesi "INFO"); `ozellikSahneleri(dil)`, `ozellikBilesenleri(dil)`, `Kapanis` `dil` alıyor. `YorumKutusu`
+  (Reklam10) `yorum`/`yer` alıyor.
+- Sesler `node araclar/tr_sesler.mjs r11en --uret` (METINLER.r11en, k1–k12; hamlar `reklam11\ses_en`), kapanışta
+  "Learn the math trick!" "learn" kelimesinde gelir.
+- **İngilizce arayüz kayıtları** (ham `Videos\Sorobit_tanitim\r11en_*_1.mp4`, 1080 genişlik → crop 1080:2175 @ y 95):
+  egitim 25,2–34,0 (264 kare) · anlamadim 35,0–38,9 + 47,8–52,4 (255; "I didn't get this") · ornek 34,0–35,6 +
+  38,8–41,5 + 44,8–47,0 + 49,0–51,6 (273; "Can you give me an example?" → Step 1/2, 2/2 → Example done; bu kayıt
+  Türkçede yoktu) · veli 39,6–41,3 + 44,8–47,8 (141; kullanıcı: "Mixed friends addition" seçiminden sonrası, Rule
+  mastery) · test 62,4–63,6 + 66,6–68,0 + 73,0–75,0 + 157,9–159,2 + 160,4–162,75 + 0,8 sn son kare dondurma (272;
+  162,8'den sonra AdMob test reklamı araya giriyor).
+- Bu oturumdaki ham kayıtlar 1080 genişlikte (önceki Türkçe oz kayıtları 1072'ydi): kırpmadan önce genişliğe bak.
+- **Endonezce (03.11.2026, ~71 sn):** `Reklam11ID`, `render:r11id` → `reklam11\Sorobit_reklam11_ID.mp4`; sesler
+  `tr_sesler.mjs r11id --uret` (hamlar `reklam11\ses_id`), `DILLER.id` / `TANITIM.id`. Kayıtlar (Endonezce arayüz):
+  egitim 15,6–24,6 (270) · anlamadim 20,4–23,6 + 32,9–37,4 (231; "Aku belum paham ini") · ornek 0–3,8 + 24,0–28,4
+  (246; kayıt örneğin ortasında başladı: Langkah 5/5 → Hasil → yeni örnek Langkah 1/4) · veli 30,1–31,8 + 34,8–39,6
+  (195; "Gabungan" seçimi → Penguasaan rumus) · test iki parça (`_1` 90,8–92,2 + 95,8–97,2 + 103,0–104,6 + 111,0–113,0;
+  `_2` 9,3–10,5 + 10,7–12,2 + 14,0–16,3 + 0,6 sn dondurma; 360). screenrecord 178 sn'de parça açıyor.
+- Sırada Arapça (uygulamada values-ar var; Arapça arayüzle çekilecek).
+
+## Reklam 7 rekor Endonezce ve Arapça (03.11.2026 — ID ~52,7 sn, AR ~56,3 sn)
+
+- `Reklam7RekorEN.jsx` artık dile göre kuruluyor: `DILLER.en/id/ar` (kanca, 9 altyazı, basamak etiketleri, üst notlar,
+  imza, telefon altyazısı, olay anahtar kelimeleri: id "satu/lima/tiga", ar "واحد/خمسة/ثلاثة") ve `yap(dil)` her dil
+  için zamanları kendi `r7{dil}_zaman.json`'undan hesaplıyor. Kompozisyonlar `Reklam7RekorEN/ID/AR`,
+  `render:r7en/r7id/r7ar` → `reklam7\Sorobit_reklam7_rekor_{EN,ID,AR}.mp4`. EN süresi değişmedi (1458 kare).
+- Sesler `node araclar/r7en_sesler.mjs id|ar --uret` (aynı Liam sesi, Eleven v4, language_code id/ar); hamlar
+  `reklam7\id`, `reklam7\ar`.
+- Arapça: altyazı/kanca/kapanış kartı `dir="rtl"`; sayı, işlem ve alt alta toplama ekranları `dir="ltr"`, batı
+  rakamı. Inter'de Arapça harf yok → sistem yazı tipi. `Son.jsx` METIN'e id ve ar eklendi (ar kartı rtl).
+- Yorum kelimesi her dilde "INFO"; telefon kaydı Türkçe arayüzlü (kullanıcı böyle kalsın dedi).
+
+## Reklam 12 ve 13: ara anlatım denemeleri (03.11.2026 — ~64,5 sn, ElevenLabs "Jessica")
+
+Kullanıcı: Reklam 11/10 mantığıyla (kanca → ara anlatım → Sobi tanıtımı) iki video; tanıtım Reklam 11'dekiyle aynı.
+- **Ortak tanıtım `src/modern/SobiTanitim.jsx`:** G (`Gecis`), O1–O5 (`OZELLIK`, `OZ_SAHNE`, `OZ_BILESEN`; ses hep
+  `r11s_k7–k11`), K (`Kapanis`, `ust` = videonun ilk satırı) ve `MiniAbakus`/`MOR`/`varMi`/`SES_ONCE`. Reklam 11 de
+  artık bunu kullanıyor (süre aynı kaldı, 1696 kare). Özellik kaydı değişirse tek yerden.
+- **Reklam 12 "Okulda neden öğretilmiyor?"** (`Reklam12.jsx`, `render:r12` → `reklam12\`): Japon sınıfı klibi
+  (r10_japon, perdede sayılar) "Japonya'da bu yöntem ilkokulda öğretiliyor. Peki bizde neden yok?" → "Adı soroban"
+  + Fuji/kimonolu çocuk (Pexels) → çocuk klibi → kıyas kartı (Japonya ✓ / Türkiye ✗) → anket kartı EVET/HAYIR
+  "yorumlara yaz" → G "Okulda yoksa evde öğren" → K "Okulda öğretilmeyen yöntem artık cebinde". Doğruluk: soroban
+  Japon ilkokul müfredatında (3–4. sınıf); flash anzan daha çok kurslarda — metin klibin okul dersi olduğunu söylemiyor.
+- **Reklam 13 "Bu dahilik değil"** (`Reklam13.jsx`, `render:r13` → `reklam13\`): çocuk klibi + "DAHİ DEĞİL" damgası →
+  "742" ve "yedi yüz kırk iki" balonu (kelime yolu) → 742 abaküste (görsel yol) → hayal + eller havada → araştırma
+  kartları Sözel ✗ / Görsel ✓, kaynak Frank & Barner (2012), J. Exp. Psychol.: General → "YETENEK" üstü çizili,
+  "BECERİ ✓" → G "Bu beceriyi yapay zekâ ile öğrenebilirsin" → K "Bu beceri artık cebinde".
+- Sesler `araclar/tr_sesler.mjs r12|r13 [--uret [s1,g]]`: /with-timestamps ile ölçülmüş kelime kareleri
+  (`r12_zaman.json`, `r13_zaman.json`), 1,15 kat, -14 LUFS; hamlar `reklam12\ses`, `reklam13\ses`.
+- `Reklam10.jsx`'ten `Kayan` da dışa aktarılıyor.
+
+## Reklam 7 rekor İngilizce (03.11.2026 — kullanıcının Instagram hesabı için, ~48,7 sn)
+
+- `src/modern/Reklam7RekorEN.jsx`, `npm run render:r7en` → `reklam7\Sorobit_reklam7_rekor_EN.mp4`. Görüntü Reklam 7
+  rekorla aynı; zamanlar sabit kare değil, `r7en_zaman.json`'daki ölçülmüş kelime karelerinden (ders cümleleri
+  arka arkaya 8 kare arayla; boncuklar "one"/"five", "Here's 123", "three, five, one"e oturur).
+- Sesler `araclar/r7en_sesler.mjs --uret [h0,d3]`: ElevenLabs `/with-timestamps` (karakter zamanları → kelime
+  karesi ölçüm), premade "Liam - Energetic, Social Media Creator" (`TX3LPaxmHKxFdv7VOQHJ`), Eleven v4, en; işlem baştaki
+  sessizlik kırpma + 1,08 kat + -14 LUFS (cümle içi duraklamalara dokunulmaz). Hamlar `reklam7\en\*.mp3/.json`.
+  Cümleler: h0 kanca · d1–d5 ders · r1–r4 · p8 telefon · r5 "Comment INFO to try it for free."
+- `Son.jsx` artık `dil` alıyor (`METIN.tr/en`: slogan, etiket, çağrı, yorum kutusu yazısı, telefon altyazısı);
+  `Sablon.Imza` `alt` alıyor. Türkçe videolar değişmedi (varsayılan tr).
+- Eksik: telefon bölümündeki `oyun.mp4` Türkçe arayüz ("Aferin!", "Kontrol Et"); İngilizce arayüz kaydı alınırsa
+  değiştirilmeli. Kanca Guinness klibi (telif riski, öne çıkarmada kullanma).
+
+## Reklam 11: "Makineyi yenen alet" — 1946 abaküs - hesap makinesi yarışması (02.11.2026 — tanıtıma kadar, geçici sesle)
+
+Kalıp reklam7/10: kanca (zor işlem yapan çocuk) → ara anlatım → yapay zekâ (Sobi) ile uygulama tanıtımı. Ara anlatım
+1946 Tokyo yarışması (Kojima, "The Japanese Abacus" 1954'ten doğrulandı): 12 Kasım 1946, Ernie Pyle Tiyatrosu,
+Kiyoshi Matsuzaki (posta tasarruf bürosu memuru, soroban) 4 – 1 Er Thomas Nathan Wood (MacArthur karargâhı, Japonya'nın
+en iyi elektrikli hesap makinesi operatörü seçilmiş). Turlar: toplama (50 sayı, 3–6 basamak; 1:15 – 2:00) A, çıkarma A,
+çarpma M, bölme A, karışık A.
+- `src/modern/Reklam11.jsx`, `npm run render:r11` → `reklam11\Sorobit_reklam11.mp4` (~19,6 sn, 584 kare).
+  Sahneler A kanca (k1) · B yıl sayacı 2026→1946 + TOKYO + "soroban"da soroban, "elektrikli"de makine + VS (k2) ·
+  D toplama: 6 basamaklı sayılar 2 karede bir akar (sayaç 50'ye), iki şeritte kronometre, soroban 1:15'te ("saniyede"),
+  makine 2:00'de ("dakikada") durur (k3) · E sonuç kartı "SOROBAN BİLEN İNSAN MAKİNEYİ YENDİ · 4 – 1" + "İNSAN
+  KAZANDI" damgası (k4) · F sepya kalkar, mor zeminde soroban 1946→2026, "Peki nedir bu soroban?" (k5).
+  **Kullanıcı kararları (02.11.2026):** oyuncu kartları sahnesi kesildi; turlar tek tek anlatılmıyor, yalnızca toplama
+  örneği; ekranda yalnızca 6 basamaklı sayılar (gerçekte 3–6 basamak; canlandırma); "abaküs kazandı" değil "soroban
+  bilen insan kazandı" (övgü alete değil öğrenilen beceriye; YZ tanıtımına zıtlık: "o gün insan makineyi yendi, bugün
+  makine bunu öğretiyor"). Sırada: "nedir bu soroban?" sonrası 5–8 sn mini ders (1'lik / 5'lik boncuk), sonra uygulama.
+  Bütün 1946 sahneleri kodla çizilmiş (`EskiFilm`: sepya, tane, titreme, çizik; köşede "canlandırma"); dönem fotoğrafı yok.
+- k1 (03.11.2026, kullanıcı: girişte toplama yapıldığı anlaşılmıyordu): "Bu çocuğun sayıları bu kadar hızlı toplamasını
+  sağlayan yöntem, bir zamanlar bir makineyi yendi." Yazı y 1030'da (geçici klipte monitörle yüz arası). Video ~21,1 sn.
+- **Tanıtım eklendi (03.11.2026, ~43,5 sn, 1300 kare):** G k6 "Soroban, Japonların abaküsü. Bugün bu yöntemi yapay
+  zekâ ile öğrenebilirsin." · O1–O6 k7–k12 kullanıcının verdiği altı Sobi özelliği (ne çalışacağını söyler · nerede
+  yanıldığını bulur · abaküsünde gösterir · zorluğu ayarlar · anlamadığını sor · eksiğe göre test + sandık), her biri
+  tek cümle, en az 66 kare, üstte başlık + "Sobi · yapay zekâ n/6" rozeti · K k13 kapanış kartı, yorumlara "bilgi",
+  "Kurulum linkini ben göndereyim". Mini ders kullanıcı istemedi, yok. Kayıtlar `public/r11_oz1–6.mp4` (946×1920; ham
+  1072×2400 kayıttan Reklam 9 gibi crop 1072×2175 @ y 95 → scale 946×1920, 30 fps); yoksa sahnede ne çekileceğini
+  yazan yer tutucu çıkar.
+- **Ekran kayıtları alındı (03.11.2026, kayit.ps1/bitir.ps1):** hamları `Videos\Sorobit_tanitim\r11_oz1–6_1.mp4`,
+  kesilmişleri `public\r11_oz1–6.mp4`. Kesim kare hızı SABİTLENDİKTEN sonra yapılmalı (`fps=30` önce, sonra `trim`):
+  screenrecord VFR, durgun ekranda kare yok; `-ss`+`fps` ile okunan zamanlar kayıyordu, zamanları 30 fps vekil kopyada
+  kare numarasıyla ölç. Kesimler (sn): oz1 27,2–28,6 + 39,4–41,9 + 45,4–45,95 + 59,9–62,0 (kullanıcı: "Derse git"ten
+  doğrudan "10 − 1" tahtasına, geçiş kesildi; Sobi'nin 9 sn "düşünüyor"u da çıkarıldı) · oz2 36,3–43,2 (Yanlış → "Sobi
+  ile analiz et" → "1 yerde şaştın… 409 yaptın, 408 olmalıydı", sütun parlıyor) · oz3 42,0–47,6 ("Abaküste göster",
+  boncuklar oynuyor; parlayan sütun bu kayıtta görünmüyor) · oz4 47,8–50,6 + 57,9–60,33 ("Daha zor bir örnek" → "Zorluk
+  4/5"; zorluk otomatik değil düğmeyle arttı) · oz5 19,2–20,9 + 25,2–29,6 ("Bunu anlamadım" → basit anlatım, sütun
+  parlıyor) · oz6 17,2–19,2 + 103,3–105,0 + 107,3–111,9 (Sobi'nin bugünkü testi → 10/10 → sandık ENDER → 575 altın).
+  Kare sayıları `OZ_KARE`; sahne en fazla 1,6 kat hız (`EN_HIZ`). Kayıt sahnede 760 px genişliğinde, y 420'de telefon
+  ekranı gibi (başlık Sobi balonlarını kapatmasın). Video ~52,7 sn (tanıtım ~28 sn).
+- **Tanıtım metni değişti (03.11.2026, kullanıcının metni), 5 özellik + kapanış, video ~51,9 sn:** k7 "Sobi sana bu
+  eğitimi kusursuz öğretir" → `r11_egitim.mp4` (oz5 hamının 3,9–11,0 sn'si, ders eğitimi "10 yazmak için…") · k8
+  "Anlamadığın yerde Sobi'ye sor" → oz5 · k9 "Açıklama yetmediyse örnek iste, adım adım anlatır" → `r11_ornek.mp4`
+  (HENÜZ ÇEKİLMEDİ; yokken oz4 "Daha zor bir örnek" oynar, `OZELLIK` tablosunda gelince `kare` yaz) · k10 "Her kuralda
+  ilerlemeni ve eksiğini gör" → `r11_veli.mp4` (`guncel2_veli_1.mp4` 32,6–37,6, Veli paneli → Ödev başarısı → Kural
+  ustalığı; 17.10 kaydı, 1080 genişlik) · k11 "Eksiğini görür, test hazırlar" → oz6 · k12 kapanış: "Makineyi yenen yöntem
+  artık cebinde. Sorobit ile matematiğin hilesini öğren! Denemek için yorumlara bilgi yaz." (ekranda önce iki iddialı
+  satır, "denemek"te Sorobit kartı). oz1–oz3 kayıtları artık kullanılmıyor.
+- **Yeni kanca (03.11.2026, kullanıcı):** k1 "Sence hesap makinesi mi daha hızlıdır, yoksa sıradan bir Japon çocuk
+  mu?" — "hesap"ta üstte kodla çizilmiş bugünün hesap makinesi (4.582.913 + 7.306.245 = 11.889.158 yazılır),
+  "yoksa"da altta çocuk sağdan kayar, VS. Çocuk `Downloads\japanese_kid.mp4` (kopyası `reklam11\kaynak\`) →
+  `public/r11_cocuk.mp4` (crop 720×484 @ y 598: üstteki "DID YOU KNOW" yazısı ve alttaki "@HistoryRootsX" dışarıda).
+  **Uyarı kullanıcıya iletildi:** videonun kendi yazısı "Chinese children" diyor (Çin'de yarışma), "Japon çocuk"
+  yanlış olur; klip "History Roots" hesabının paylaşımı (telif/özgünlük riski, öne çıkarmada dikkat). Eski
+  `rekor_kanca.mp4` artık kullanılmıyor.
+- **Kıyas "Japon abaküsü - hesap makinesi" (03.11.2026, kullanıcı):** k2 "…Japon abaküs tekniği bilen bir memur,
+  elektrikli hesap makinesiyle yarıştı." · k3 "Önlerine altı basamaklı elli sayı kondu…" · k4 "Günün sonunda Japon
+  abaküs tekniği bilen insan, makineyi dört bir yendi." · k5 "Peki nedir bu Japon abaküsü?" · k6 "Adı soroban. Bugün bu
+  yöntemi yapay zekâ ile öğrenebilirsin." (k5/k6'yı tutarlılık için ben değiştirdim: "soroban" adı ilk kez k6'da).
+  Ekran: "50 SAYI · 6 BASAMAK", şeritte "Japon abaküsü", kartta "ABAKÜS BİLEN İNSAN MAKİNEYİ YENDİ · ABAKÜS 4 – 1".
+  Video ~52,4 sn.
+- **ElevenLabs sesleri (03.11.2026, kullanıcı: kadın sesi):** `node araclar/r11_sesler.mjs --uret [k3,k7]` cümleleri
+  API'den doğrudan üretir (anahtar `ELEVENLABS_API_KEY` kullanıcı ortam değişkeninde; PowerShell'de
+  `[Environment]::GetEnvironmentVariable('ELEVENLABS_API_KEY','User')` ile alınıp verilmeli), ses premade "Jessica -
+  Playful, Bright, Warm" (`cgSgspJ2msm6clMCkdW9`), model "Eleven v4", `language_code: tr`. Diğer premade kadın
+  sesleri: Sarah, Laura, Alice, Matilda, Bella, Lily (kütüphane sesleri 402). k7 artık "…eğitimi eksiksiz öğretir".
+  12 cümle üretildi → `public/r11s_k*.wav` (geçicilerin önüne geçer). Video ~57,3 sn, -14,3 LUFS.
+  Düzeltmeler (03.11.2026, kullanıcı): k1 "Hesap makinesi mi daha hızlıdır? Yoksa sıradan bir Japon çocuk mu?" ·
+  k2 "…bir memur, hesap makinesiyle yarıştı." ("elektrikli" çıktı; makine sahnesi "hesap"ta gelir) · k3 "…on beş
+  saniyede topladı…" · k6 metni "adı soroban…" (küçük harfle, telaffuz için) · k10 metni "heer kuralda…" (telaffuz
+  için, kullanıcının yazımı) · 1. özellik başlığı "Sobi sana eksiksiz öğretir". Video ~56,6 sn.
+- **Eski kanca notu (geçersiz):** `public/r11_kanca.mp4` yoksa `rekor_kanca.mp4` (Guinness klibi) 1,5 kat hızla oynuyor. Kullanıcının
+  kendi çekimi gelince `public/r11_kanca.mp4` olarak koy, `KLIP_SURE`'yi kare sayısına göre güncelle.
+- Sesler: `araclar/r11_sesler.mjs` (k1–k12, SATIRLAR). Şimdilik `gecici_r11s_k*.wav` (Windows OneCore "Tolga",
+  scratchpad'deki tts.ps1, WinRT). ElevenLabs kayıtları gelince `node araclar/r11_sesler.mjs --indir` (en yeni 12 mp3) →
+  `r11s_k*.wav` geçicilerin önüne geçer, zamanlar `r11_zaman.json`'dan kendiliğinden kayar.
+- `Reklam10.jsx`'ten `Yazi` ve `Efekt` artık dışa aktarılıyor (Reklam 11 kullanıyor).
+- Sırada: tanıtım (Sobi sahnesi, gerçek soru-cevap kaydı) + kapanış kartı (yorumlara "bilgi").
+
+## Reklam 10: kurucunun vizyonu (29.10.2026 — kullanıcının 12 kaydıyla render edildi, ses ElevenLabs "Hasan Yasin", ~48 sn)
+
+Kullanıcı (Başar) kendini ve vizyonunu anlatmak istedi: Japonların sorobanını Türkiye'de yaygınlaştırmak, matematiği
+sevdirmek. Fotoğrafı yok, "Merhaba ben Başar" cümlesi çıkarıldı. Giriş kelime kelime resimler (kullanıcının isteği).
+- `src/modern/Reklam10.jsx` (~45 sn), `npm run render:r10` → `reklam10\`. Sahneler A–L dosyanın başında.
+- Kaynaklar: `Downloads\japan_soroban_class.mp4` (filigran yok; perdede 3-2-1, sonra 1,4 sn'de 10 sayı: 890, 271,
+  564, 325, 876, 130, 946, 259, 470, 315 = **5.046**; kaynak kareleri `AKIS`) → r10_japon.mp4/.wav; perdeyi beyazla
+  klip olduğu gibi (kullanıcı: perdeye ek sayı/cevap koyma). Filigran kontrolü: videolarda ve resimlerde yok. `babaji_meme.mp4` 2,5–7,7 (animasyon filmi meme'i, telif riski: öne çıkarmada
+  kullanma) → r10_babaji. `珠算練習１級-2.mp4` 7,5–13,5 (yalnızca eller) → r10_shuzan. Pexels (ücretsiz, atıf
+  gerekmez): r10_fuji.jpg (30091614, Fuji + torii), r10_japon_cocuk.jpg (31366051, kimonolu çocuk; baş ekranda
+  ~432,668). `Downloads\turk_class.jpg` → r10_turk_sinif.jpg (645×360, büyük ihtimalle haber fotoğrafı, telifi
+  belirsiz; bulanık zemin + kart olarak). Eğitim ekranı ogr2b_egitim 20–25,5 → r10_egitim.mp4.
+- Cümleler `araclar/r10_sesler.mjs` (j1–j12; kullanıcının metni, öneri 1 "bizim çocuklarımız neden matematikten
+  korkuyor?" ve 4 "Bu yüzden Sorobit'i geliştirdim: …" uygulandı). Kelime kareleri r10_zaman.json; kayıtlar gelince
+  `node araclar/r10_sesler.mjs --indir` (en yeni 12 ElevenLabs mp3) ya da kendi sesi `reklam10\ses\j1–j12.mp3`.
+- Kapanış kartında "Test sürümü · Ücretsiz", yorumlara "bilgi", "Kurulum linkini ben göndereyim".
+
+## Reklam 9: oyunlaştırma (29.10.2026 — kullanıcının 7 kaydıyla render edildi, ses ElevenLabs "Lauren", ~24 sn)
+
+Neden: Reklam 7 ~137 bin izlenme ama %92 erkek; huni 688 profil → 316 takip → 207 WhatsApp dokunuşu → ~40 mesaj.
+Reklam 8 (filigranlı Douyin kancası) tutmadı, bırakıldı. Bu video dönüşüm için: oyun yanı, veliye konuşan kısa
+cümleler, yorum kelimesi "oyun" (hangi videodan geldiği ayrılsın), "test" yerine "ücretsiz erken erişim", Android.
+- `src/modern/Reklam9.jsx` (~21 sn), `npm run render:r9` / `render:r9m` (müziksiz) → `reklam9\`.
+- Kesitler öğrenci rehberinin ham kayıtlarından (1072×2400, değişken fps), 9:16 kırpıp 30 fps `public/r9_*.mp4`:
+  sandik ogr3 30,6–35,4 (y 150, sesi `r9_sandik.wav`), kupayolu ogr4 23,8–27,6 (y 120), konfeti ogr3 50,8–54,6
+  (y 150; konfeti 78. karede) [29.10 akşam: hepsi durum/gezinme çubukları hariç TAM ekran: crop 1072×2175 @ y 95 → 946×1920, kenarlar #141E23; yazı üstte (y 230), tek seferde, karartmasız, kalın kontur; yalnızca müzikli sürüm (kullanıcı isteği)], magaza1–3 ogr5 28–30,6 / 31–39,2 / 40–41,8, maraton ogr2 42,2–43,4 (y 300),
+  liderlik ogr2 45,3–49,8 (y 100), rozet ogr7 86,6–90,6. Rehber videosunda değil hamda: yazısız, tam ekran.
+- Cümleler (`araclar/r9_sesler.mjs` SATIRLAR): v1 "Matematik öğrenmenin en eğlenceli yolu." (kullanıcının kancası)
+  … v6 "Ücretsiz erken erişim için yorumlara oyun yazın.", v7 "İlk yüz kullanıcıya bir ay Sorobit Pro hediye!"
+  (kullanıcı "Android" ve "aile" kelimelerini çıkardı; karttaki etiket de "Ücretsiz erken erişim").
+  Sahne = cümle + 14 kare (sandık en az 100, mağaza en az 90), kesitler orantılı hızlanır. Kayıtlar gelince
+  `node araclar/r9_sesler.mjs --indir` (en yeni 7 ElevenLabs mp3) ve yeniden render.
 
 ## Reklam 8: Reklam 7 rekorun 2D'si (28.10.2026 — kullanıcı kayıtlarıyla ikinci çıktı, petrol zemin)
 
@@ -3795,6 +4033,31 @@ bitecek, sıranı gözden geçir". Susturma şartı zaten altyapıda (`UNOPENED_
 Yazılırken çözülmesi gereken: sezon bitişi sabit bir UTC anı (`SEASON_ANCHOR_UTC_MS`), yani
 "4 saat kala" bazı saat dilimlerinde gecenin bir yarısı — ertelemek işe yaramaz (sezon
 bitiyor), öne almak gerekir.
+
+## ÜRÜN YÖNÜ (kullanıcı kararı 01.11.2026)
+
+- Eğitmen / sınıf / ödev yapısı **büyük ihtimalle kullanılmayacak**. Kod ve ekranlar açık bir pencere olarak
+  kalıyor (silinmiyor, bozulmasın), ama yeni iş ona yatırılmıyor; talep gelirse kullanıcı yeniden açar.
+- Odak: uygulama çocuğun eksiklerini görüyor (kural başarısı: `SobiRuleStats` → `homeworkRuleStats/{uid}`) ve
+  **Sobi eksiğe göre ödev / test veriyor**. Yeni özellikler bu yönde tasarlanır.
+
+## Sobi'ye sor ve Sobi ekranı (28.10–01.11.2026 — telefona kuruldu, kullanıcı kısmen denedi)
+
+Ayrıntı ve kararlar: `docs/ANLAMADIM_YARDIM_PLANI.md` (Faz 1–4, A/B aşaması ve sonrası). Kısaca:
+- Sohbet sunucuda: `functions/sobi/` (Haiku 5.5, araçlar, guard, hazır açıklamalar, oy/bildir). Talimat
+  `prompt_tr.md`; deneme `node scripts/sobi-dene.js --senaryo adim|ornek`; test `node scripts/test-sobi.js`.
+- Uygulamada tek Sobi ekranı: `MistakeReviewDialog` (adı tarihsel; "Sobi ile analiz et" ve öğreticide "Sobi'ye
+  sor" ikisi de bunu açar). Kural motoru: `abacus/StepExplainer`, `MistakeAnalyzer` (flaş dizisi dahil),
+  `SubStepExplainer` (parça balonları), `ExamplePicker` (4 zorluk düzeyi). Sesli okuma `SobiSpeaker`.
+- Kural hafızası `SobiRuleStats` → `recordRuleTally` → `homeworkRuleStats/{uid}`; veli panelinde kartın adı
+  artık "Kural başarısı" (dersler + ödevler + Sobi tek toplamda).
+- Sobi'nin testi (haritadaki Sobi düğmesi, `SobiTestSheet` → `SobiDailyTest` → `SobiTestPlanner`): 20 seviye.
+- Sobi ekonomisi (01.11.2026): Free günde 2 / Lite 10 / Pro 20 ücretsiz yapay zekâ mesajı, sonrası Sobi kredisi
+  (`sobi_credits_20/50/120`, 12,99 / 24,99 / 49,99 TL, süresiz), ek test 3 anahtar (Pro ücretsiz). Kod
+  `functions/sobi/wallet.js`; ayrıntı ANLAMADIM_YARDIM_PLANI "Sobi ekonomisi". **Play Console'da 3 ürün açılmalı.**
+- Açık kalanlar: arka plandan dönüşte gri boncuk hatası (iki düzeltme yapıldı, kullanıcı doğrulamadı);
+  Haiku "3 basamaklı örnek"te bazen yalnızca ilk sayıyı 3 basamaklı seçiyor; kural başarısında
+  "Hepsi / Ödevler / Dersler" ayrımı önerildi, yapılmadı.
 
 ## Teşhis logları
 
