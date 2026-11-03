@@ -1,0 +1,948 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Arapça arayüz metinleri; terimler docs/CEVIRI_SOZLUGU_AR.md -->
+<resources>
+    <!-- layout/activity_email_verification.xml -->
+    <string name="activity_email_verification_text">تأكيد البريد الإلكتروني</string>
+    <string name="activity_email_verification_text_2">أرسلنا رمز تأكيد إلى بريدك الإلكتروني</string>
+    <string name="activity_email_verification_text_3">أدخل رمز التأكيد المكوّن من 6 أرقام المُرسَل إلى بريدك الإلكتروني</string>
+    <string name="activity_email_verification_et_verification_code_hint">رمز التأكيد</string>
+    <string name="activity_email_verification_btn_check_verification">تأكيد الرمز</string>
+    <string name="activity_email_verification_btn_resend_email">إعادة إرسال البريد</string>
+    <string name="activity_email_verification_btn_back_to_login">العودة لتسجيل الدخول</string>
+    <string name="activity_email_verification_text_4">لم يصلك البريد؟ تحقّق من مجلد الرسائل غير المرغوب فيها</string>
+
+    <!-- layout/activity_login.xml -->
+    <string name="activity_login_btn_back_desc">رجوع</string>
+    <string name="activity_login_text">المتابعة بالبريد الإلكتروني</string>
+    <string name="activity_login_et_email_hint">البريد الإلكتروني</string>
+    <string name="activity_login_btn_continue">متابعة</string>
+    <string name="activity_login_btn_google_sign_in">الدخول عبر Google</string>
+
+    <!-- layout/activity_main.xml -->
+    <string name="activity_main_streak_icon_desc">السلسلة اليومية</string>
+    <string name="activity_main_diamond_id_desc">العملات</string>
+    <string name="activity_main_energy_icon_desc">القلوب</string>
+    <string name="activity_main_key_icon_desc">المفاتيح</string>
+    <string name="activity_main_credit_icon_desc">رصيد الاستشارة</string>
+
+    <!-- layout/activity_register.xml -->
+    <string name="activity_register_btn_back_desc">رجوع</string>
+    <string name="activity_register_tv_title">إنشاء حساب</string>
+    <string name="activity_register_tv_subtitle">ابدأ رحلة التعلّم</string>
+    <string name="activity_register_et_email_hint">البريد الإلكتروني</string>
+    <string name="activity_register_btn_continue">متابعة</string>
+    <string name="activity_register_et_name_hint">اسم المستخدم</string>
+    <string name="activity_register_et_teacher_email_hint">البريد الإلكتروني</string>
+    <string name="activity_register_et_password_hint">كلمة المرور</string>
+    <string name="activity_register_et_approval_code_hint">أعِد إدخال كلمة المرور</string>
+    <string name="activity_register_btn_register">متابعة</string>
+    <string name="activity_register_btn_google_sign_in">التسجيل عبر Google</string>
+
+    <!-- layout/activity_splash.xml -->
+    <string name="activity_splash_text_2">هل أنت مستعد للتعلّم؟</string>
+
+    <!-- layout/activity_teacher_login.xml -->
+    <string name="activity_teacher_login_btn_back_desc">رجوع</string>
+    <string name="activity_teacher_login_text">تطبيق تعليمي</string>
+    <string name="activity_teacher_login_text_2">دخول المعلّم</string>
+    <string name="activity_teacher_login_et_email_hint">البريد الإلكتروني</string>
+    <string name="activity_teacher_login_et_password_hint">كلمة المرور</string>
+    <string name="activity_teacher_login_tv_forgot_password">نسيت كلمة المرور</string>
+    <string name="activity_teacher_login_btn_login">تسجيل الدخول</string>
+    <string name="activity_teacher_login_btn_student_login">دخول الطالب</string>
+    <string name="activity_teacher_login_btn_register">ليس لديك حساب؟ سجّل الآن</string>
+
+    <!-- layout/bottom_sheet_operator_picker.xml -->
+    <string name="bottom_sheet_operator_picker_title">اختر العملية</string>
+    <string name="bottom_sheet_operator_picker_cancel_button">إلغاء</string>
+    <string name="bottom_sheet_operator_picker_ok_button">موافق</string>
+
+    <!-- layout/dialog_abacus_sound_picker.xml -->
+    <string name="dialog_abacus_sound_picker_abacus_sound_picker_title">اختر صوت المِعداد</string>
+    <string name="dialog_abacus_sound_picker_text">الصوت 1</string>
+    <string name="dialog_abacus_sound_picker_text_2">الصوت 2</string>
+    <string name="dialog_abacus_sound_picker_text_3">الصوت 3</string>
+    <string name="dialog_abacus_sound_picker_text_4">الصوت 4</string>
+    <string name="dialog_abacus_sound_picker_text_5">الصوت 5</string>
+
+    <!-- layout/dialog_avatar_customization.xml -->
+    <string name="dialog_avatar_customization_text">معاينة الصورة الرمزية</string>
+    <string name="dialog_avatar_customization_text_2">تسريحة الشعر</string>
+    <string name="dialog_avatar_customization_text_3">شكل العينين</string>
+    <string name="dialog_avatar_customization_text_4">لون البشرة</string>
+    <string name="dialog_avatar_customization_text_5">لون الملابس</string>
+    <string name="dialog_avatar_customization_btn_cancel">إلغاء</string>
+    <string name="dialog_avatar_customization_btn_save">حفظ</string>
+
+    <!-- layout/dialog_delete_message.xml -->
+    <string name="dialog_delete_message_text_desc">حذف</string>
+    <string name="dialog_delete_message_text">حذف الرسالة؟</string>
+    <string name="dialog_delete_message_text_2">لا يمكن التراجع عن هذا</string>
+    <string name="dialog_delete_message_delete_message_close_desc">إغلاق</string>
+    <string name="dialog_delete_message_text_desc_2">حذف لدى الجميع</string>
+    <string name="dialog_delete_message_text_3">حذف لدى الجميع</string>
+    <string name="dialog_delete_message_text_desc_3">حذف لديّ</string>
+    <string name="dialog_delete_message_text_4">حذف لديّ</string>
+    <string name="dialog_delete_message_text_desc_4">إبلاغ</string>
+    <string name="dialog_delete_message_text_5">إبلاغ</string>
+    <string name="dialog_delete_message_delete_cancel">إلغاء</string>
+
+    <!-- layout/dialog_image.xml -->
+    <string name="dialog_image_dialog_image_close_desc">إغلاق</string>
+
+    <!-- layout/dialog_image_annotate.xml -->
+    <string name="dialog_image_annotate_annotate_image_desc">صورة</string>
+    <string name="dialog_image_annotate_annotate_done_button_desc">حفظ وإغلاق</string>
+
+    <!-- layout/dialog_question_media_picker.xml -->
+    <string name="dialog_question_media_picker_btn_camera_desc">اسأل بصورة</string>
+    <string name="dialog_question_media_picker_btn_video_desc">اسأل بفيديو</string>
+
+    <!-- layout/dialog_rating.xml -->
+    <string name="dialog_rating_tv_title">هل أعجبك Sorobit؟</string>
+    <string name="dialog_rating_tv_subtitle">يمكنك دعمنا بتقييم تجربتك.</string>
+    <string name="dialog_rating_et_feedback_hint">كيف نجعل تجربتك أفضل؟</string>
+    <string name="dialog_rating_btn_submit_feedback">إرسال</string>
+    <string name="dialog_rating_tv_close">لاحقًا</string>
+    <string name="dialog_rating_tv_no_thanks">لا، شكرًا</string>
+
+    <!-- layout/dialog_report_action.xml -->
+    <string name="dialog_report_action_text_desc">بلاغ</string>
+    <string name="dialog_report_action_text">مراجعة البلاغ</string>
+    <string name="dialog_report_action_text_2">اختر إجراءً لهذا المستخدم</string>
+    <string name="dialog_report_action_report_dialog_close_desc">إغلاق</string>
+    <string name="dialog_report_action_report_dialog_media_thumb_desc">الوسائط المُبلَّغ عنها</string>
+    <string name="dialog_report_action_report_dialog_play_overlay_desc">تشغيل الفيديو</string>
+    <string name="dialog_report_action_report_dialog_audio_play_pause_desc">تشغيل الصوت</string>
+    <string name="dialog_report_action_report_dialog_audio_time">شغّل للاستماع إلى التسجيل</string>
+    <string name="dialog_report_action_text_desc_2">المدة</string>
+    <string name="dialog_report_action_text_3">مدة التقييد</string>
+    <string name="dialog_report_action_report_restrict1_day">يوم واحد</string>
+    <string name="dialog_report_action_report_restrict3_days">3 أيام</string>
+    <string name="dialog_report_action_report_restrict7_days">7 أيام</string>
+    <string name="dialog_report_action_text_desc_3">حظر</string>
+    <string name="dialog_report_action_text_4">حظر نهائي</string>
+    <string name="dialog_report_action_text_desc_4">تجاهل</string>
+    <string name="dialog_report_action_text_5">تجاهل (رفض)</string>
+    <string name="dialog_report_action_report_cancel">إلغاء</string>
+
+    <!-- layout/dialog_report_reason.xml -->
+    <string name="dialog_report_reason_text_desc">إبلاغ</string>
+    <string name="dialog_report_reason_text">الإبلاغ عن الرسالة</string>
+    <string name="dialog_report_reason_text_2">لماذا تُبلغ عن هذه الرسالة؟</string>
+    <string name="dialog_report_reason_report_reason_close_desc">إغلاق</string>
+    <string name="dialog_report_reason_text_desc_2">مضايقة أو تنمّر</string>
+    <string name="dialog_report_reason_text_3">مضايقة أو تنمّر</string>
+    <string name="dialog_report_reason_text_desc_3">رسائل مزعجة</string>
+    <string name="dialog_report_reason_text_4">رسائل مزعجة</string>
+    <string name="dialog_report_reason_text_desc_4">محتوى غير لائق</string>
+    <string name="dialog_report_reason_text_5">محتوى غير لائق</string>
+    <string name="dialog_report_reason_text_desc_5">غير ذلك</string>
+    <string name="dialog_report_reason_text_6">غير ذلك</string>
+    <string name="dialog_report_reason_report_reason_cancel">إلغاء</string>
+
+    <!-- layout/dialog_restriction_detail.xml -->
+    <string name="dialog_restriction_detail_text_desc">تقييد</string>
+    <string name="dialog_restriction_detail_text">تفاصيل التقييد</string>
+    <string name="dialog_restriction_detail_text_2">سبب التقييد ومحتواه</string>
+    <string name="dialog_restriction_detail_restriction_dialog_close_desc">إغلاق</string>
+    <string name="dialog_restriction_detail_report_dialog_media_thumb_desc">الوسائط المُبلَّغ عنها</string>
+    <string name="dialog_restriction_detail_report_dialog_play_overlay_desc">تشغيل الفيديو</string>
+    <string name="dialog_restriction_detail_report_dialog_audio_play_pause_desc">تشغيل الصوت</string>
+    <string name="dialog_restriction_detail_report_dialog_audio_time">شغّل للاستماع إلى التسجيل</string>
+    <string name="dialog_restriction_detail_text_desc_2">إزالة</string>
+    <string name="dialog_restriction_detail_text_3">إزالة التقييد</string>
+    <string name="dialog_restriction_detail_restriction_dialog_close_text">إغلاق</string>
+
+    <!-- layout/dialog_video_fullscreen.xml -->
+    <string name="dialog_video_fullscreen_fullscreen_close_button_desc">إغلاق</string>
+
+    <!-- layout/dialog_video_player.xml -->
+    <string name="dialog_video_player_dialog_video_close_desc">إغلاق</string>
+
+    <!-- layout/fragment_abacus.xml -->
+    <string name="fragment_abacus_btn_back_desc">رجوع</string>
+    <string name="fragment_abacus_btn_forward_desc">التالي</string>
+    <string name="fragment_abacus_five_text">العدد المُضاف</string>
+    <string name="fragment_abacus_text">صديقه</string>
+    <string name="fragment_abacus_five_rule_description_text">أضِف 5 واطرح صديقه</string>
+    <string name="fragment_abacus_ten_text">العدد المُضاف</string>
+    <string name="fragment_abacus_text_2">صديقه الكبير</string>
+    <string name="fragment_abacus_ten_rule_five_description_text">أضِف 10 واطرح صديقه.</string>
+    <string name="fragment_abacus_text_3">العدد المُضاف</string>
+    <string name="fragment_abacus_text_4">صديقه</string>
+    <string name="fragment_abacus_ten_rule_description_text">أضِف 10 واطرح صديقه.</string>
+    <string name="fragment_abacus_text_5">العدد المُضاف</string>
+    <string name="fragment_abacus_text_6">الخطوات</string>
+    <string name="fragment_abacus_text_7">+1</string>
+    <string name="fragment_abacus_text_8">−5</string>
+    <string name="fragment_abacus_text_9">+10</string>
+    <string name="fragment_abacus_text_10">+2</string>
+    <string name="fragment_abacus_text_11">−5</string>
+    <string name="fragment_abacus_text_12">+10</string>
+    <string name="fragment_abacus_text_13">+3</string>
+    <string name="fragment_abacus_text_14">−5</string>
+    <string name="fragment_abacus_text_15">+10</string>
+    <string name="fragment_abacus_text_16">+4</string>
+    <string name="fragment_abacus_text_17">−5</string>
+    <string name="fragment_abacus_text_18">+10</string>
+    <string name="fragment_abacus_text_19">العدد المطروح</string>
+    <string name="fragment_abacus_text_20">الخطوات</string>
+    <string name="fragment_abacus_text_21">−1</string>
+    <string name="fragment_abacus_text_22">+5</string>
+    <string name="fragment_abacus_text_23">−10</string>
+    <string name="fragment_abacus_text_24">−2</string>
+    <string name="fragment_abacus_text_25">+5</string>
+    <string name="fragment_abacus_text_26">−10</string>
+    <string name="fragment_abacus_text_27">−3</string>
+    <string name="fragment_abacus_text_28">+5</string>
+    <string name="fragment_abacus_text_29">−10</string>
+    <string name="fragment_abacus_text_30">−4</string>
+    <string name="fragment_abacus_text_31">+5</string>
+    <string name="fragment_abacus_text_32">−10</string>
+    <string name="fragment_abacus_text_33">العدد المطروح</string>
+    <string name="fragment_abacus_text_34">صديقه</string>
+    <string name="fragment_abacus_extraction_ten_rule_description_text">اطرح 10 وأضِف صديقه</string>
+    <string name="fragment_abacus_start_button">ابدأ</string>
+    <string name="fragment_abacus_kontrol_button">تحقّق</string>
+    <string name="fragment_abacus_incorrect_text">خطأ</string>
+    <string name="fragment_abacus_correct_answer_label">نفّذ الخطوة المطلوبة</string>
+    <string name="fragment_abacus_okay_button">حاول مجددًا</string>
+    <string name="fragment_abacus_correct_text">أحسنت!</string>
+    <string name="fragment_abacus_continue_button">متابعة</string>
+
+    <!-- layout/fragment_abacus_customization.xml -->
+    <string name="fragment_abacus_customization_text_desc">المفاتيح</string>
+    <string name="fragment_abacus_customization_diamond_id_desc">العملات</string>
+
+    <!-- layout/fragment_abacus_practice.xml -->
+    <string name="fragment_abacus_practice_kontrol_button">تحقّق</string>
+    <string name="fragment_abacus_practice_incorrect_text">خطأ</string>
+    <string name="fragment_abacus_practice_correct_answer_label">نفّذ الخطوة المطلوبة</string>
+    <string name="fragment_abacus_practice_okay_button">حاول مجددًا</string>
+    <string name="fragment_abacus_practice_correct_text">أحسنت!</string>
+    <string name="fragment_abacus_practice_continue_button">متابعة</string>
+
+    <!-- layout/fragment_account_settings.xml -->
+    <string name="fragment_account_settings_account_settings_header_title">الإعدادات</string>
+    <string name="fragment_account_settings_text">الحساب</string>
+    <string name="fragment_account_settings_text_2">الملف الشخصي</string>
+    <string name="fragment_account_settings_text_3">الصوت والإشعارات</string>
+    <string name="fragment_account_settings_text_4">لأولياء الأمور</string>
+    <string name="fragment_account_settings_text_5">لوحة وليّ الأمر</string>
+    <string name="fragment_account_settings_tv_payments_header">المدفوعات والاشتراكات</string>
+    <string name="fragment_account_settings_text_6">إلغاء الاشتراك</string>
+    <string name="fragment_account_settings_text_7">الدعم</string>
+    <string name="fragment_account_settings_text_8">الملاحظات</string>
+    <string name="fragment_account_settings_btn_account_settings_logout">تسجيل الخروج</string>
+
+    <!-- layout/fragment_ad_skip.xml -->
+    <string name="fragment_ad_skip_title_text1">جرّب PRO مجانًا 7 أيام</string>
+    <string name="fragment_ad_skip_title_text2">وتخطَّ كل الإعلانات!</string>
+    <string name="fragment_ad_skip_reminder_text">سيصلك إشعار قبل انتهاء الفترة التجريبية.</string>
+    <string name="fragment_ad_skip_btn_try_free_text">جرّبه مجانًا</string>
+    <string name="fragment_ad_skip_btn_no_thanks">لا، شكرًا</string>
+
+    <!-- layout/fragment_add_friend.xml -->
+    <string name="fragment_add_friend_btn_back_desc">رجوع</string>
+    <string name="fragment_add_friend_text">ابحث عن أصدقاء</string>
+    <string name="fragment_add_friend_text_desc">بحث</string>
+    <string name="fragment_add_friend_et_search_hint">ابحث بالاسم...</string>
+    <string name="fragment_add_friend_btn_clear_search_desc">مسح</string>
+    <string name="fragment_add_friend_btn_load_more">تحميل المزيد</string>
+    <string name="fragment_add_friend_text_2">لم يُعثر على مستخدمين</string>
+
+    <!-- layout/fragment_ask_question_open.xml -->
+    <string name="fragment_ask_question_open_title_text1">هل توقّفت عند شيء؟</string>
+    <string name="fragment_ask_question_open_title_text2">اطلب المساعدة من معلّمك!</string>
+    <string name="fragment_ask_question_open_info_text">أرسل إلى معلّمك بسهولة صورة أو فيديو للمكان الذي توقّفت عنده، وسيجيبك المعلّم بفيديو!</string>
+    <string name="fragment_ask_question_open_btn_buy_credits">اشترِ رصيدًا بدلًا من ذلك</string>
+    <string name="fragment_ask_question_open_btn_no_thanks">لا، شكرًا</string>
+
+    <!-- layout/fragment_avatar_custom.xml -->
+    <string name="fragment_avatar_custom_btn_close">إغلاق</string>
+    <string name="fragment_avatar_custom_tv_title">أنشئ صورتك الرمزية</string>
+    <string name="fragment_avatar_custom_btn_save">حفظ</string>
+    <string name="fragment_avatar_custom_btn_random">عشوائي</string>
+
+    <!-- layout/fragment_badge.xml -->
+    <string name="fragment_badge_tv_badge_piece_header_unit_medal">الوحدة</string>
+    <string name="fragment_badge_tv_badge_piece_header_season_medal">الموسم</string>
+    <string name="fragment_badge_tv_badge_piece_header_unit_cup">الوحدة</string>
+    <string name="fragment_badge_tv_badge_piece_header_season_cup">الموسم</string>
+
+    <!-- layout/fragment_badge_detail.xml -->
+    <string name="fragment_badge_detail_btn_badge_detail_back_desc">رجوع</string>
+    <string name="fragment_badge_detail_tv_badge_detail_title">الإنجازات</string>
+    <string name="fragment_badge_detail_tv_personal_records_title">الأرقام القياسية الشخصية</string>
+    <string name="fragment_badge_detail_tv_awards_title">الشارات</string>
+
+    <!-- layout/fragment_blinding_lesson.xml -->
+    <string name="fragment_blinding_lesson_five_text">العدد المُضاف</string>
+    <string name="fragment_blinding_lesson_text">صديقه</string>
+    <string name="fragment_blinding_lesson_five_rule_description_text">أضِف 5 واطرح صديقه</string>
+    <string name="fragment_blinding_lesson_ten_text">العدد المُضاف</string>
+    <string name="fragment_blinding_lesson_text_2">صديقه الكبير</string>
+    <string name="fragment_blinding_lesson_ten_rule_five_description_text">أضِف 10 واطرح صديقه.</string>
+    <string name="fragment_blinding_lesson_text_3">العدد المُضاف</string>
+    <string name="fragment_blinding_lesson_text_4">صديقه</string>
+    <string name="fragment_blinding_lesson_ten_rule_description_text">أضِف 10 واطرح صديقه.</string>
+    <string name="fragment_blinding_lesson_text_5">العدد المُضاف</string>
+    <string name="fragment_blinding_lesson_text_6">الخطوات</string>
+    <string name="fragment_blinding_lesson_text_7">+1</string>
+    <string name="fragment_blinding_lesson_text_8">−5</string>
+    <string name="fragment_blinding_lesson_text_9">+10</string>
+    <string name="fragment_blinding_lesson_text_10">+2</string>
+    <string name="fragment_blinding_lesson_text_11">−5</string>
+    <string name="fragment_blinding_lesson_text_12">+10</string>
+    <string name="fragment_blinding_lesson_text_13">+3</string>
+    <string name="fragment_blinding_lesson_text_14">−5</string>
+    <string name="fragment_blinding_lesson_text_15">+10</string>
+    <string name="fragment_blinding_lesson_text_16">+4</string>
+    <string name="fragment_blinding_lesson_text_17">−5</string>
+    <string name="fragment_blinding_lesson_text_18">+10</string>
+    <string name="fragment_blinding_lesson_text_19">العدد المطروح</string>
+    <string name="fragment_blinding_lesson_text_20">الخطوات</string>
+    <string name="fragment_blinding_lesson_text_21">−1</string>
+    <string name="fragment_blinding_lesson_text_22">+5</string>
+    <string name="fragment_blinding_lesson_text_23">−10</string>
+    <string name="fragment_blinding_lesson_text_24">−2</string>
+    <string name="fragment_blinding_lesson_text_25">+5</string>
+    <string name="fragment_blinding_lesson_text_26">−10</string>
+    <string name="fragment_blinding_lesson_text_27">−3</string>
+    <string name="fragment_blinding_lesson_text_28">+5</string>
+    <string name="fragment_blinding_lesson_text_29">−10</string>
+    <string name="fragment_blinding_lesson_text_30">−4</string>
+    <string name="fragment_blinding_lesson_text_31">+5</string>
+    <string name="fragment_blinding_lesson_text_32">−10</string>
+    <string name="fragment_blinding_lesson_text_33">العدد المطروح</string>
+    <string name="fragment_blinding_lesson_text_34">صديقه</string>
+    <string name="fragment_blinding_lesson_extraction_ten_rule_description_text">اطرح 10 وأضِف صديقه</string>
+    <string name="fragment_blinding_lesson_kontrol_button">تحقّق</string>
+    <string name="fragment_blinding_lesson_incorrect_text">خطأ</string>
+    <string name="fragment_blinding_lesson_okay_button">متابعة</string>
+    <string name="fragment_blinding_lesson_correct_text">أحسنت!</string>
+    <string name="fragment_blinding_lesson_continue_button">متابعة</string>
+    <string name="fragment_blinding_lesson_start_button">ابدأ</string>
+
+    <!-- layout/fragment_chest.xml -->
+    <string name="fragment_chest_chest_image_desc">صندوق</string>
+    <string name="fragment_chest_gold_text">150 عملة</string>
+    <string name="fragment_chest_claim_reward_button">احصل على الجائزة</string>
+
+    <!-- layout/fragment_chest_result.xml -->
+    <string name="fragment_chest_result_result_title">انتهى الدرس!</string>
+    <string name="fragment_chest_result_text">الوقت</string>
+    <string name="fragment_chest_result_text_2">النجاح</string>
+    <string name="fragment_chest_result_claim_button">متابعة</string>
+
+    <!-- layout/fragment_create_question.xml -->
+    <string name="fragment_create_question_title_text">أرسل سؤالك</string>
+    <string name="fragment_create_question_screenshot_image_desc">لقطة شاشة</string>
+    <string name="fragment_create_question_video_fullscreen_button_desc">ملء الشاشة</string>
+    <string name="fragment_create_question_screenshot_annotate_button_desc">ارسم</string>
+    <string name="fragment_create_question_header_label">اكتب عنوانًا لسؤالك</string>
+    <string name="fragment_create_question_header_input_hint">فكرة قاعدة الأصدقاء الصغار</string>
+    <string name="fragment_create_question_description_label">اشرح سؤالك باختصار</string>
+    <string name="fragment_create_question_description_input_hint">مثال: لم أفهم هذا السؤال في هذه الصفحة...</string>
+    <string name="fragment_create_question_send_button">إرسال</string>
+
+    <!-- layout/fragment_cup.xml -->
+    <string name="fragment_cup_cup_name_text_view">كأس رائعة</string>
+    <string name="fragment_cup_cup_image_view_desc">كأس</string>
+    <string name="fragment_cup_motivation_text_view">عمل رائع! نحن فخورون بك!</string>
+    <string name="fragment_cup_claim_button">متابعة</string>
+
+    <!-- layout/fragment_cup_history.xml -->
+    <string name="fragment_cup_history_btn_cup_history_back_desc">رجوع</string>
+    <string name="fragment_cup_history_tv_cup_history_title">سجلّ الكؤوس</string>
+    <string name="fragment_cup_history_text">الكؤوس الحالية</string>
+    <string name="fragment_cup_history_tv_cup_history_single_hint">توجد نقطة بيانات واحدة فقط — عُد بعد أيام قليلة للمقارنة</string>
+    <string name="fragment_cup_history_tv_cup_history_empty">لا يوجد سجلّ بعد</string>
+
+    <!-- layout/fragment_cup_path_road.xml -->
+    <string name="fragment_cup_path_road_btn_cup_path_road_back_desc">رجوع</string>
+    <string name="fragment_cup_path_road_tv_cup_path_road_title">طريق الكأس</string>
+
+    <!-- layout/fragment_edit_profile.xml -->
+    <string name="fragment_edit_profile_text">تعديل الملف الشخصي</string>
+    <string name="fragment_edit_profile_text_2">الاسم</string>
+    <string name="fragment_edit_profile_et_name_hint">الاسم</string>
+    <string name="fragment_edit_profile_tv_name_error">لا يمكن ترك الاسم فارغًا.</string>
+    <string name="fragment_edit_profile_text_3">معرّف المستخدم</string>
+    <string name="fragment_edit_profile_et_username_hint">معرّف المستخدم</string>
+    <string name="fragment_edit_profile_text_4">عنوان البريد الإلكتروني</string>
+    <string name="fragment_edit_profile_text_5">كلمة مرور جديدة</string>
+    <string name="fragment_edit_profile_et_password_hint">أدخل كلمة مرور جديدة</string>
+    <string name="fragment_edit_profile_text_6">املأ هذا الحقل فقط لتغيير كلمة المرور. اتركه فارغًا إن لم تُرِد تغييرها.</string>
+    <string name="fragment_edit_profile_btn_save">حفظ التغييرات</string>
+    <string name="fragment_edit_profile_btn_delete_account">حذف الحساب نهائيًا</string>
+
+    <!-- layout/fragment_feedback.xml -->
+    <string name="fragment_feedback_text">تواصل معنا</string>
+    <string name="fragment_feedback_text_2">هل واجهتك مشكلة أو لديك فكرة رائعة؟ ساعدنا على تحسين التطبيق.</string>
+    <string name="fragment_feedback_text_3">رسالتك</string>
+    <string name="fragment_feedback_feedback_input_hint">اكتب هنا...</string>
+    <string name="fragment_feedback_text_4">سنردّ عليك على بريدك الإلكتروني.</string>
+    <string name="fragment_feedback_close_button">إلغاء</string>
+    <string name="fragment_feedback_send_feedback_button">إرسال</string>
+
+    <!-- layout/fragment_followers_following.xml -->
+    <string name="fragment_followers_following_btn_back_desc">رجوع</string>
+    <string name="fragment_followers_following_text">الأصدقاء</string>
+    <string name="fragment_followers_following_tv_empty">لا أحد هنا بعد</string>
+
+    <!-- layout/fragment_lesson_result.xml -->
+    <string name="fragment_lesson_result_result_title">انتهى الدرس!</string>
+    <string name="fragment_lesson_result_text">مجموع النقاط</string>
+    <string name="fragment_lesson_result_text_2">النجاح</string>
+    <string name="fragment_lesson_result_claim_button">متابعة</string>
+
+    <!-- layout/fragment_lesson_result_false.xml -->
+    <string name="fragment_lesson_result_false_result_title">لم تجتز الدرس!</string>
+    <string name="fragment_lesson_result_false_result_title_comment">نسبة النجاح أقل من 75%!</string>
+    <string name="fragment_lesson_result_false_text">مجموع النقاط</string>
+    <string name="fragment_lesson_result_false_text_2">النجاح</string>
+    <string name="fragment_lesson_result_false_claim_button">خروج</string>
+
+    <!-- layout/fragment_mascot_playground.xml -->
+    <string name="fragment_mascot_playground_btn_close">إغلاق</string>
+    <string name="fragment_mascot_playground_tv_title">حركة الشخصية</string>
+    <string name="fragment_mascot_playground_tv_current">انتظار</string>
+
+    <!-- layout/fragment_new_chest.xml -->
+    <string name="fragment_new_chest_chest_rarity_label">عادي</string>
+    <string name="fragment_new_chest_chest_hint_text">انقر لفرصة الحصول على ما هو أفضل!</string>
+
+    <!-- layout/fragment_new_streak.xml -->
+    <string name="fragment_new_streak_new_streak_continue">متابعة</string>
+
+    <!-- layout/fragment_notification.xml -->
+    <string name="fragment_notification_notification_title">الأسئلة</string>
+    <string name="fragment_notification_tab_pool">بنك الأسئلة</string>
+    <string name="fragment_notification_tab_chats">المحادثات</string>
+    <string name="fragment_notification_tab_reports">البلاغات</string>
+    <string name="fragment_notification_sub_tab_reports_list">الرسائل المُبلَّغ عنها</string>
+    <string name="fragment_notification_sub_tab_restricted_users">المستخدمون المقيَّدون</string>
+    <string name="fragment_notification_tab_bekleyen">قيد الانتظار</string>
+    <string name="fragment_notification_tab_cozulen">المحلولة</string>
+    <string name="fragment_notification_empty_text">لا توجد أسئلة بعد</string>
+    <string name="fragment_notification_teacher_approval_pending_message">يجب الموافقة على حساب المعلّم قبل أن تتمكن من استخدام المراسلة.</string>
+    <string name="fragment_notification_teacher_approval_support_button">تواصل مع الدعم</string>
+
+    <!-- layout/fragment_otp_verification.xml -->
+    <string name="fragment_otp_verification_tv_title">أكّد بريدك الإلكتروني</string>
+    <string name="fragment_otp_verification_text">أدخل الرمز المكوّن من 6 أرقام المُرسَل إلى بريدك الإلكتروني.</string>
+    <string name="fragment_otp_verification_et_code_hint">رمز من 6 أرقام</string>
+    <string name="fragment_otp_verification_btn_verify">تأكيد</string>
+    <string name="fragment_otp_verification_btn_resend">إعادة إرسال الرمز</string>
+
+    <!-- layout/fragment_parent_consent.xml -->
+    <string name="fragment_parent_consent_title">مطلوب موافقة وليّ الأمر</string>
+    <string name="fragment_parent_consent_message">إذا كان عمرك أقل من 13 سنة، فيجب أن يوافق أبوك أو أمك أو وليّ أمرك قبل إنشاء الحساب. اكتب البريد الإلكتروني لوليّ أمرك وسنرسل إليه رمزًا. خذ الرمز من وليّ أمرك وأدخله في الشاشة التالية. إذا كنت تنشئ الحساب ببريد وليّ أمرك، يمكنك كتابة العنوان نفسه.</string>
+    <string name="fragment_parent_consent_collected_title">سيرى وليّ أمرك ما يلي في البريد:</string>
+    <string name="fragment_parent_consent_collected_list">• بريدك الإلكتروني واسمك وسنة ميلادك\n• كيف عرفت بنا ومدى معرفتك بالمِعداد\n• تقدّمك في الدروس ونقاطك وسلسلتك وكؤوسك\n• اسمك وصورتك الرمزية يظهران للمستخدمين الآخرين (الملف الشخصي، الترتيب، المتابعة)\n• الرسائل والصور والفيديوهات وتسجيلات الشاشة الصوتية التي ترسلها إلى المعلّم\n• إذا انضممت إلى صف في دورة، يرى المعلّم اسمك وتقدّمك في الدروس\n• معرّف الجهاز وإحصاءات الاستخدام لأجل الإشعارات</string>
+    <string name="fragment_parent_consent_et_hint">البريد الإلكتروني لوليّ الأمر</string>
+    <string name="fragment_parent_consent_btn_send">أرسل الرمز لوليّ الأمر</string>
+    <string name="fragment_parent_consent_note">إذا لم يوافق وليّ أمرك فلن يُنشأ الحساب، وسيُحذف طلب التسجيل تلقائيًا.</string>
+
+    <!-- layout/fragment_parent_panel.xml -->
+    <string name="fragment_parent_panel_parent_panel_header_title">لوحة وليّ الأمر</string>
+    <string name="fragment_parent_panel_btn_back_desc">رجوع</string>
+
+    <!-- layout/fragment_part_selection.xml -->
+    <string name="fragment_part_selection_category_title_addition">الجمع</string>
+    <string name="fragment_part_selection_category_title_subtraction">الطرح</string>
+    <string name="fragment_part_selection_category_title_multiplication">الضرب</string>
+
+    <!-- layout/fragment_plan.xml -->
+    <string name="fragment_plan_tv_bireysel_price_right">₺99 شهريًا</string>
+    <string name="fragment_plan_tv_bireysel_price_sub">₺1188/سنة</string>
+    <string name="fragment_plan_text">طاقة غير محدودة</string>
+    <string name="fragment_plan_text_2">تعلّم بلا إعلانات</string>
+    <string name="fragment_plan_text_3">طريق الإتقان</string>
+    <string name="fragment_plan_text_4">20 رسالة يوميًا إلى Sobi</string>
+    <string name="fragment_plan_text_8">اختبارات Sobi بلا حدود</string>
+    <string name="fragment_plan_text_5">هدية ترحيب: 20 رصيدًا لـ Sobi</string>
+    <string name="fragment_plan_tv_lite_title">Lite (مع إعلانات)</string>
+    <string name="fragment_plan_tv_lite_price_right">₺49 شهريًا</string>
+    <string name="fragment_plan_tv_lite_price_sub">₺588/سنة</string>
+    <string name="fragment_plan_text_6">ضاعف حدّ القلوب</string>
+    <string name="fragment_plan_text_7">تتجدّد القلوب كل 7 دقائق</string>
+    <string name="fragment_plan_text_9">5 رسائل يوميًا إلى Sobi</string>
+    <string name="fragment_plan_tv_footer_text2">"يتجدّد اشتراكك تلقائيًا،\n ويمكنك إلغاؤه في أي وقت."</string>
+    <string name="fragment_plan_btn_try_free_text">جرّبه مجانًا</string>
+
+    <!-- layout/fragment_pro_diffirent.xml -->
+    <string name="fragment_pro_diffirent_tv_header_free">مجاني</string>
+    <string name="fragment_pro_diffirent_row1_text">محتوى الدروس</string>
+    <string name="fragment_pro_diffirent_row2_text">قلوب بلا حدود</string>
+    <string name="fragment_pro_diffirent_row3_text">تعلّم بلا إعلانات</string>
+    <string name="fragment_pro_diffirent_row4_text">طريق الإتقان</string>
+    <string name="fragment_pro_diffirent_row5_text">رسائل إلى Sobi</string>
+    <string name="fragment_pro_diffirent_row5_free">2/يوم</string>
+    <string name="fragment_pro_diffirent_row5_pro">20/يوم</string>
+    <string name="fragment_pro_diffirent_row7_text">اختبارات Sobi بلا حدود</string>
+    <string name="fragment_pro_diffirent_row7_free">1/يوم</string>
+    <string name="fragment_pro_diffirent_row6_text">هدية ترحيب: 20 رصيدًا لـ Sobi</string>
+    <string name="fragment_pro_diffirent_btn_try_free_text">جرّبه مجانًا</string>
+
+    <!-- layout/fragment_profile.xml -->
+    <string name="fragment_profile_btn_other_user_profile_back_desc">رجوع</string>
+    <string name="fragment_profile_tv_top_left_name">اسم المستخدم</string>
+    <string name="fragment_profile_btn_account_settings_desc">الإعدادات</string>
+    <string name="fragment_profile_img_profile_photo_desc">صورة الملف الشخصي</string>
+    <string name="fragment_profile_tv_username_and_date">\@BAAR461745 • عضو منذ 2022</string>
+    <string name="fragment_profile_text">المتابَعون</string>
+    <string name="fragment_profile_text_2">المتابِعون</string>
+    <string name="fragment_profile_btn_add_friend">إضافة صديق</string>
+    <string name="fragment_profile_tv_user_progress_title">تقدّم المستخدم</string>
+    <string name="fragment_profile_text_3">معداد المستخدم</string>
+    <string name="fragment_profile_text_4">طريق الكأس</string>
+    <string name="fragment_profile_tv_profile_badges_title">الشارات</string>
+    <string name="fragment_profile_btn_profile_badges_arrow_desc">الشارات</string>
+
+    <!-- layout/fragment_question_chat.xml -->
+    <string name="fragment_question_chat_back_button_desc">رجوع</string>
+    <string name="fragment_question_chat_restriction_message_text">تم تقييد حسابك. لا يمكنك إرسال الرسائل.</string>
+    <string name="fragment_question_chat_restriction_appeal_button">اعتراض</string>
+    <string name="fragment_question_chat_teacher_claim_button">تولَّ السؤال</string>
+    <string name="fragment_question_chat_text_input_hint">اكتب رسالة</string>
+    <string name="fragment_question_chat_gallery_button_desc">المعرض</string>
+    <string name="fragment_question_chat_record_audio_button_desc">تسجيل صوتي</string>
+    <string name="fragment_question_chat_send_text_button_desc">إرسال</string>
+    <string name="fragment_question_chat_audio_bar_play_pause_desc">تشغيل / إيقاف مؤقت</string>
+    <string name="fragment_question_chat_audio_bar_stop_desc">إيقاف</string>
+    <string name="fragment_question_chat_audio_bar_close_desc">إغلاق</string>
+    <string name="fragment_question_chat_audio_bar_send_desc">إرسال</string>
+    <string name="fragment_question_chat_caption_bar_thumb_desc">الوسائط المحدَّدة</string>
+    <string name="fragment_question_chat_caption_bar_thumb_close_desc">إزالة التحديد</string>
+    <string name="fragment_question_chat_caption_input_hint">اكتب رسالة...</string>
+    <string name="fragment_question_chat_caption_send_button_desc">إرسال</string>
+
+    <!-- layout/fragment_question_panel.xml -->
+    <string name="fragment_question_panel_question_panel_title">الملاحظات</string>
+    <string name="fragment_question_panel_question_panel_subtitle">ملاحظاتك تساعدنا على تحسين الدروس.</string>
+    <string name="fragment_question_panel_question1_title">1) هل ترى أن أسئلة الاختبار تساعدك على التعلّم؟</string>
+    <string name="fragment_question_panel_q1_option1_text">غير كافية إطلاقًا</string>
+    <string name="fragment_question_panel_q1_option2_text">غير كافية</string>
+    <string name="fragment_question_panel_q1_option3_text">محايد</string>
+    <string name="fragment_question_panel_q1_option4_text">كافية</string>
+    <string name="fragment_question_panel_q1_option5_text">كافية تمامًا</string>
+    <string name="fragment_question_panel_q1_text_input_hint">هل تريد إضافة شيء آخر؟</string>
+    <string name="fragment_question_panel_question2_title">2) ما مدى صعوبة أسئلة الاختبار؟</string>
+    <string name="fragment_question_panel_q2_option1_text">سهلة جدًا</string>
+    <string name="fragment_question_panel_q2_option2_text">سهلة</string>
+    <string name="fragment_question_panel_q2_option3_text">متوسطة</string>
+    <string name="fragment_question_panel_q2_option4_text">صعبة</string>
+    <string name="fragment_question_panel_q2_option5_text">صعبة جدًا</string>
+    <string name="fragment_question_panel_q2_text_input_hint">هل هناك ما تريد شرحه؟</string>
+    <string name="fragment_question_panel_question3_title">3) إن توقّفت عند شيء أو أردت أن نصلح شيئًا، فاكتبه هنا من فضلك.</string>
+    <string name="fragment_question_panel_q3_text_input_hint">اكتب هنا…</string>
+    <string name="fragment_question_panel_skip_button">تخطَّ</string>
+    <string name="fragment_question_panel_send_button">إرسال</string>
+
+    <!-- layout/fragment_rules.xml -->
+    <string name="fragment_rules_text">قاعدة الأصدقاء الصغار</string>
+    <string name="fragment_rules_five_text">العدد المُضاف</string>
+    <string name="fragment_rules_text_2">صديقه</string>
+    <string name="fragment_rules_five_rule_description_text">أضِف 5 واطرح صديقه</string>
+    <string name="fragment_rules_text_3">قاعدة الأصدقاء الكبار 1-2-3-4-5</string>
+    <string name="fragment_rules_ten_text">العدد المُضاف</string>
+    <string name="fragment_rules_text_4">صديقه الكبير</string>
+    <string name="fragment_rules_ten_rule_five_description_text">أضِف 10 واطرح صديقه.</string>
+    <string name="fragment_rules_text_5">قاعدة الأصدقاء الكبار 6-7-8-9</string>
+    <string name="fragment_rules_ten_text_second">العدد المُضاف</string>
+    <string name="fragment_rules_text_6">صديقه</string>
+    <string name="fragment_rules_ten_rule_description_text">أضِف 10 واطرح صديقه.</string>
+    <string name="fragment_rules_text_7">القاعدة المركّبة</string>
+    <string name="fragment_rules_bead_text">العدد المُضاف</string>
+    <string name="fragment_rules_text_8">الخطوات</string>
+    <string name="fragment_rules_text_9">+1</string>
+    <string name="fragment_rules_text_10">−5</string>
+    <string name="fragment_rules_text_11">+10</string>
+    <string name="fragment_rules_text_12">+2</string>
+    <string name="fragment_rules_text_13">−5</string>
+    <string name="fragment_rules_text_14">+10</string>
+    <string name="fragment_rules_text_15">+3</string>
+    <string name="fragment_rules_text_16">−5</string>
+    <string name="fragment_rules_text_17">+10</string>
+    <string name="fragment_rules_text_18">+4</string>
+    <string name="fragment_rules_text_19">−5</string>
+    <string name="fragment_rules_text_20">+10</string>
+    <string name="fragment_rules_text_21">قاعدة الأصدقاء الصغار</string>
+    <string name="fragment_rules_extraction_five_text">العدد المطروح</string>
+    <string name="fragment_rules_text_22">صديقه</string>
+    <string name="fragment_rules_extraction_five_rule_description_text">اطرح 5 وأضِف صديقه</string>
+    <string name="fragment_rules_text_23">قاعدة الأصدقاء الكبار</string>
+    <string name="fragment_rules_text_24">العدد المطروح</string>
+    <string name="fragment_rules_text_25">صديقه</string>
+    <string name="fragment_rules_extraction_ten_rule_description_text">اطرح 10 وأضِف صديقه</string>
+    <string name="fragment_rules_text_26">الطرح بالقاعدة المركّبة</string>
+    <string name="fragment_rules_bead_extraction_text">العدد المطروح</string>
+    <string name="fragment_rules_text_27">الخطوات</string>
+    <string name="fragment_rules_text_28">−1</string>
+    <string name="fragment_rules_text_29">+5</string>
+    <string name="fragment_rules_text_30">−10</string>
+    <string name="fragment_rules_text_31">−2</string>
+    <string name="fragment_rules_text_32">+5</string>
+    <string name="fragment_rules_text_33">−10</string>
+    <string name="fragment_rules_text_34">−3</string>
+    <string name="fragment_rules_text_35">+5</string>
+    <string name="fragment_rules_text_36">−10</string>
+    <string name="fragment_rules_text_37">−4</string>
+    <string name="fragment_rules_text_38">+5</string>
+    <string name="fragment_rules_text_39">−10</string>
+
+    <!-- layout/fragment_shop.xml -->
+    <string name="fragment_shop_shop_energy_icon_desc">القلوب</string>
+    <string name="fragment_shop_text_desc">العملات</string>
+    <string name="fragment_shop_text_desc_2">المفاتيح</string>
+    <string name="fragment_shop_text_desc_3">رصيد الاستشارة</string>
+    <string name="fragment_shop_super_title">"مزايا\n تُسرّع \n التعلّم"</string>
+    <string name="fragment_shop_super_subtitle">"طاقة غير محدودة وتجربة\n بلا إعلانات"</string>
+    <string name="fragment_shop_super_button">جرّب أسبوعًا مجانًا</string>
+    <string name="fragment_shop_text">عروض خاصة</string>
+    <string name="fragment_shop_text_desc_4">كريستال</string>
+    <string name="fragment_shop_text_2">صندوق مجاني</string>
+    <string name="fragment_shop_text_3">شاهد إعلانًا واربح صندوقًا.</string>
+    <string name="fragment_shop_text_4">اربح صندوقًا</string>
+    <string name="fragment_shop_text_5">قلب مجاني</string>
+    <string name="fragment_shop_text_6">شاهد إعلانًا واربح قلبًا.</string>
+    <string name="fragment_shop_text_7">اربح قلبًا</string>
+    <string name="fragment_shop_text_desc_5">تجميد السلسلة</string>
+    <string name="fragment_shop_text_8">تجميد السلسلة</string>
+    <string name="fragment_shop_shop_streak_freeze_desc">يحمي سلسلتك ليوم واحد. تابع التقدّم حتى لو انقطعت سلسلتك!</string>
+    <string name="fragment_shop_text_9">القلوب</string>
+    <string name="fragment_shop_text_desc_6">قلوب بلا حدود</string>
+    <string name="fragment_shop_text_10">بلا حدود</string>
+    <string name="fragment_shop_text_11">مع Pro لن تنفد قلوبك أبدًا</string>
+    <string name="fragment_shop_shop_pro_price_text">₺99.00 شهريًا</string>
+    <string name="fragment_shop_text_12">قلب إضافي</string>
+    <string name="fragment_shop_text_13">احصل على قلب لتخوض دروسًا أكثر.</string>
+    <string name="fragment_shop_shop_life_timer_text">ممتلئ</string>
+    <string name="fragment_shop_text_14">اسأل معلّمًا</string>
+    <string name="fragment_shop_shop_credit_balance_text">كل رصيد يتيح لك سؤالًا واحدًا للمعلّم.</string>
+    <string name="fragment_shop_text_desc_7">رصيد الاستشارة</string>
+    <string name="fragment_shop_text_desc_8">رصيد الاستشارة</string>
+    <string name="fragment_shop_text_desc_9">رصيد الاستشارة</string>
+    <string name="fragment_shop_text_15">العملات</string>
+    <string name="fragment_shop_text_desc_10">العملات</string>
+    <string name="fragment_shop_text_desc_11">العملات</string>
+    <string name="fragment_shop_text_desc_12">العملات</string>
+    <string name="fragment_shop_text_16">المفاتيح</string>
+    <string name="fragment_shop_text_desc_13">المفاتيح</string>
+    <string name="fragment_shop_text_desc_14">المفاتيح</string>
+    <string name="fragment_shop_text_desc_15">المفاتيح</string>
+
+    <!-- layout/fragment_sound_settings.xml -->
+    <string name="fragment_sound_settings_text">الصوت والإشعارات</string>
+    <string name="fragment_sound_settings_btn_close_desc">رجوع</string>
+    <string name="fragment_sound_settings_text_2">المؤثرات الصوتية</string>
+    <string name="fragment_sound_settings_text_3">أصوات المِعداد</string>
+    <string name="fragment_sound_settings_text_abacus_sound_current">الصوت 1</string>
+    <string name="fragment_sound_settings_text_4">التعليق الصوتي للدروس</string>
+    <string name="fragment_sound_settings_text_5">الاهتزاز</string>
+    <string name="fragment_sound_settings_text_6">الإشعارات</string>
+
+    <!-- layout/fragment_streak.xml -->
+    <string name="fragment_streak_btn_streak_back_desc">رجوع</string>
+    <string name="fragment_streak_text">السلسلة اليومية</string>
+    <string name="fragment_streak_text_2">اليوم</string>
+    <string name="fragment_streak_streak_challenge_claim">اجمع الجائزة</string>
+    <string name="fragment_streak_streak_rewards_title">جوائز السلسلة</string>
+    <string name="fragment_streak_text_3">أطول سلسلة لك</string>
+    <string name="fragment_streak_text_4">تجميد السلسلة</string>
+    <string name="fragment_streak_streak_change_goal">غيّر الهدف اليومي</string>
+    <string name="fragment_streak_streak_change_reminder">غيّر وقت التذكير</string>
+
+    <!-- layout/fragment_student_email_verification.xml -->
+    <string name="fragment_student_email_verification_tv_title">أكّد بريدك الإلكتروني</string>
+    <string name="fragment_student_email_verification_et_code_hint">رمز من 6 أرقام</string>
+    <string name="fragment_student_email_verification_et_name_hint">الاسم الكامل</string>
+    <string name="fragment_student_email_verification_et_password_hint">كلمة المرور (6 أحرف على الأقل)</string>
+    <string name="fragment_student_email_verification_btn_verify">تأكيد وتسجيل الدخول</string>
+    <string name="fragment_student_email_verification_btn_resend">إعادة إرسال الرمز</string>
+
+    <!-- layout/fragment_teacher_forgot_password_email.xml -->
+    <string name="fragment_teacher_forgot_password_email_tv_title">نسيت كلمة المرور</string>
+    <string name="fragment_teacher_forgot_password_email_text">أدخل بريدك الإلكتروني وسنرسل إليك رمز تأكيد.</string>
+    <string name="fragment_teacher_forgot_password_email_et_email_hint">البريد الإلكتروني</string>
+    <string name="fragment_teacher_forgot_password_email_btn_continue">متابعة</string>
+
+    <!-- layout/fragment_teacher_new_password.xml -->
+    <string name="fragment_teacher_new_password_tv_title">كلمة مرور جديدة</string>
+    <string name="fragment_teacher_new_password_text">أدخل كلمة المرور الجديدة.</string>
+    <string name="fragment_teacher_new_password_et_new_password_hint">كلمة مرور جديدة</string>
+    <string name="fragment_teacher_new_password_et_new_password_confirm_hint">أعِد كلمة المرور</string>
+    <string name="fragment_teacher_new_password_btn_update_password">تحديث كلمة المرور</string>
+
+    <!-- layout/fragment_tutorial.xml -->
+    <string name="fragment_tutorial_five_text">العدد المُضاف</string>
+    <string name="fragment_tutorial_text">صديقه</string>
+    <string name="fragment_tutorial_five_rule_description_text">أضِف 5 واطرح صديقه</string>
+    <string name="fragment_tutorial_extraction_five_text">العدد المطروح</string>
+    <string name="fragment_tutorial_text_2">صديقه</string>
+    <string name="fragment_tutorial_extraction_five_rule_description_text">اطرح 5 وأضِف صديقه</string>
+    <string name="fragment_tutorial_ten_text">العدد المُضاف</string>
+    <string name="fragment_tutorial_text_3">صديقه الكبير</string>
+    <string name="fragment_tutorial_ten_rule_five_description_text">أضِف 10 واطرح صديقه.</string>
+    <string name="fragment_tutorial_rules_step_text">+10 -&gt; −6</string>
+    <string name="fragment_tutorial_ten_text_second">العدد المُضاف</string>
+    <string name="fragment_tutorial_text_4">صديقه</string>
+    <string name="fragment_tutorial_ten_rule_description_text">أضِف 10 واطرح صديقه.</string>
+    <string name="fragment_tutorial_text_5">العدد المُضاف</string>
+    <string name="fragment_tutorial_text_6">الخطوات</string>
+    <string name="fragment_tutorial_text_7">+1</string>
+    <string name="fragment_tutorial_text_8">−5</string>
+    <string name="fragment_tutorial_text_9">+10</string>
+    <string name="fragment_tutorial_text_10">+2</string>
+    <string name="fragment_tutorial_text_11">−5</string>
+    <string name="fragment_tutorial_text_12">+10</string>
+    <string name="fragment_tutorial_text_13">+3</string>
+    <string name="fragment_tutorial_text_14">−5</string>
+    <string name="fragment_tutorial_text_15">+10</string>
+    <string name="fragment_tutorial_text_16">+4</string>
+    <string name="fragment_tutorial_text_17">−5</string>
+    <string name="fragment_tutorial_text_18">+10</string>
+    <string name="fragment_tutorial_text_19">العدد المطروح</string>
+    <string name="fragment_tutorial_text_20">صديقه</string>
+    <string name="fragment_tutorial_extraction_ten_rule_description_text">اطرح 10 وأضِف صديقه</string>
+    <string name="fragment_tutorial_text_21">العدد المطروح</string>
+    <string name="fragment_tutorial_text_22">الخطوات</string>
+    <string name="fragment_tutorial_text_23">−1</string>
+    <string name="fragment_tutorial_text_24">+5</string>
+    <string name="fragment_tutorial_text_25">−10</string>
+    <string name="fragment_tutorial_text_26">−2</string>
+    <string name="fragment_tutorial_text_27">+5</string>
+    <string name="fragment_tutorial_text_28">−10</string>
+    <string name="fragment_tutorial_text_29">−3</string>
+    <string name="fragment_tutorial_text_30">+5</string>
+    <string name="fragment_tutorial_text_31">−10</string>
+    <string name="fragment_tutorial_text_32">−4</string>
+    <string name="fragment_tutorial_text_33">+5</string>
+    <string name="fragment_tutorial_text_34">−10</string>
+    <string name="fragment_tutorial_tutorial_text">تجربة</string>
+    <string name="fragment_tutorial_question_text">تجربة</string>
+    <string name="fragment_tutorial_kontrol_button">تحقّق</string>
+    <string name="fragment_tutorial_text_35">تخطَّ الشرح</string>
+    <string name="fragment_tutorial_options_check_button">تحقّق</string>
+    <string name="fragment_tutorial_devam_button">متابعة</string>
+    <string name="fragment_tutorial_incorrect_text">خطأ</string>
+    <string name="fragment_tutorial_correct_answer_label">نفّذ الخطوة المطلوبة</string>
+    <string name="fragment_tutorial_okay_button">حاول مجددًا</string>
+    <string name="fragment_tutorial_correct_text">أحسنت!</string>
+    <string name="fragment_tutorial_continue_button">متابعة</string>
+
+    <!-- layout/fragment_tutorial_question_panel.xml -->
+    <string name="fragment_tutorial_question_panel_question_panel_title">ملاحظات على الشرح</string>
+    <string name="fragment_tutorial_question_panel_question_panel_subtitle">ملاحظاتك تساعدنا على تحسين الشروح.</string>
+    <string name="fragment_tutorial_question_panel_question1_title">1) هل كان هذا الشرح كافيًا لتتعلّم الموضوع؟</string>
+    <string name="fragment_tutorial_question_panel_q1_option1_text">غير كافٍ إطلاقًا</string>
+    <string name="fragment_tutorial_question_panel_q1_option2_text">غير كافٍ</string>
+    <string name="fragment_tutorial_question_panel_q1_option3_text">محايد</string>
+    <string name="fragment_tutorial_question_panel_q1_option4_text">كافٍ</string>
+    <string name="fragment_tutorial_question_panel_q1_option5_text">كافٍ تمامًا</string>
+    <string name="fragment_tutorial_question_panel_q1_text_input_hint">هل تريد إضافة شيء آخر؟</string>
+    <string name="fragment_tutorial_question_panel_question2_title">2) هل كانت الأمثلة المحلولة في الشرح مفهومة؟</string>
+    <string name="fragment_tutorial_question_panel_q2_option1_text">غير مفهومة إطلاقًا</string>
+    <string name="fragment_tutorial_question_panel_q2_option2_text">غير مفهومة كثيرًا</string>
+    <string name="fragment_tutorial_question_panel_q2_option3_text">مفهومة جزئيًا</string>
+    <string name="fragment_tutorial_question_panel_q2_option4_text">مفهومة</string>
+    <string name="fragment_tutorial_question_panel_q2_option5_text">مفهومة جدًا</string>
+    <string name="fragment_tutorial_question_panel_q2_text_input_hint">هل هناك ما تريد شرحه؟</string>
+    <string name="fragment_tutorial_question_panel_question3_title">3) إن كان هناك جزء توقّفت عنده أو ترى أنه يحتاج إلى تحسين، فاكتبه هنا من فضلك.</string>
+    <string name="fragment_tutorial_question_panel_q3_text_input_hint">اكتب هنا…</string>
+    <string name="fragment_tutorial_question_panel_skip_button">تخطَّ</string>
+    <string name="fragment_tutorial_question_panel_send_button">إرسال</string>
+
+    <!-- layout/fragment_user_info.xml -->
+    <string name="fragment_user_info_et_age_hint">العمر</string>
+    <string name="fragment_user_info_challenge_intro_text">والآن لنساعدك على بناء عادة التعلّم.</string>
+    <string name="fragment_user_info_btn_continue">متابعة</string>
+    <string name="fragment_user_info_btn_later">ليس الآن</string>
+
+    <!-- layout/item_back_part.xml -->
+    <string name="item_back_part_section_title">الجزء 1</string>
+    <string name="item_back_part_fast_forward_button">ارجع!</string>
+
+    <!-- layout/item_badge_detail_award.xml -->
+    <string name="item_badge_detail_award_award_badge_title">عنوان الجائزة</string>
+
+    <!-- layout/item_badge_detail_record.xml -->
+    <string name="item_badge_detail_record_record_badge_title">عنوان الشارة</string>
+    <string name="item_badge_detail_record_record_badge_subtext">افتراضي</string>
+
+    <!-- layout/item_bulletin_card.xml -->
+    <string name="item_bulletin_card_bulletin_card_title">المِعداد</string>
+    <string name="item_bulletin_card_bulletin_card_subtitle">طوّر نفسك بالتدرّب على المِعداد.</string>
+    <string name="item_bulletin_card_bulletin_card_chevron_desc">فتح</string>
+
+    <!-- layout/item_follow_user.xml -->
+    <string name="item_follow_user_btn_follow_back_desc">متابعة</string>
+    <string name="item_follow_user_btn_unfollow_desc">إلغاء المتابعة</string>
+
+    <!-- layout/item_friend_result.xml -->
+    <string name="item_friend_result_btn_add_friend_desc">إضافة صديق</string>
+
+    <!-- layout/item_header.xml -->
+    <string name="item_header_header_text">مدخل إلى الجمع بالأصدقاء الصغار</string>
+
+    <!-- layout/item_message.xml -->
+    <string name="item_message_audio_label">تسجيل صوتي</string>
+
+    <!-- layout/item_parent_lesson.xml -->
+    <string name="item_parent_lesson_lesson_chevron_desc">إظهار الخطوات</string>
+
+    <!-- layout/item_parent_part.xml -->
+    <string name="item_parent_part_part_chevron_desc">إظهار الوحدات</string>
+
+    <!-- layout/item_parent_section.xml -->
+    <string name="item_parent_section_section_chevron_desc">إظهار الدروس</string>
+
+    <!-- layout/item_parent_summary.xml -->
+    <string name="item_parent_summary_text">الدروس المكتملة</string>
+    <string name="item_parent_summary_text_2">اليوم</string>
+    <string name="item_parent_summary_text_3">السلسلة اليومية</string>
+    <string name="item_parent_summary_text_4">آخر 7 أيام</string>
+
+    <!-- layout/item_part.xml -->
+    <string name="item_part_section_title">الجزء 2</string>
+    <string name="item_part_section_description">تعلّم كلمات وعبارات وقواعد لغوية لمحادثات بسيطة</string>
+    <string name="item_part_fast_forward_button">تقدَّم سريعًا!</string>
+
+    <!-- layout/item_part_open.xml -->
+    <string name="item_part_open_section_title">الجزء 2</string>
+    <string name="item_part_open_section_description">تعلّم كلمات وعبارات وقواعد لغوية لمحادثات بسيطة</string>
+    <string name="item_part_open_fast_forward_button">متابعة</string>
+
+    <!-- layout/item_question.xml -->
+    <string name="item_question_question_thumbnail_desc">معاينة</string>
+    <string name="item_question_question_status_icon_desc">رمز الحالة</string>
+
+    <!-- layout/item_race_list.xml -->
+    <string name="item_race_list_race_status">ابدأ</string>
+
+    <!-- layout/item_restricted_user.xml -->
+    <string name="item_restricted_user_text_desc">عرض التفاصيل</string>
+
+    <!-- layout/layout_tab1_bead_options.xml -->
+    <string name="layout_tab1_bead_options_text">اختر نوع الخرزات</string>
+    <string name="layout_tab1_bead_options_text_2">سوروبان</string>
+    <string name="layout_tab1_bead_options_text_3">قوس قزح</string>
+    <string name="layout_tab1_bead_options_text_4">سحابة</string>
+    <string name="layout_tab1_bead_options_text_5">بولينغ</string>
+    <string name="layout_tab1_bead_options_text_6">تنس</string>
+    <string name="layout_tab1_bead_options_text_7">بلياردو</string>
+    <string name="layout_tab1_bead_options_text_8">كرة السلة</string>
+    <string name="layout_tab1_bead_options_text_9">كرة القدم</string>
+    <string name="layout_tab1_bead_options_text_10">Birto</string>
+    <string name="layout_tab1_bead_options_text_11">غولف</string>
+    <string name="layout_tab1_bead_options_text_12">كرة القدم</string>
+    <string name="layout_tab1_bead_options_text_13">كرة الشاطئ</string>
+    <string name="layout_tab1_bead_options_text_14">بولينغ</string>
+    <string name="layout_tab1_bead_options_text_15">كرة السلة</string>
+    <string name="layout_tab1_bead_options_text_16">تنس</string>
+    <string name="layout_tab1_bead_options_text_17">بيسبول</string>
+    <string name="layout_tab1_bead_options_text_18">هوكي الجليد</string>
+    <string name="layout_tab1_bead_options_text_19">كلب</string>
+    <string name="layout_tab1_bead_options_text_20">قرد</string>
+    <string name="layout_tab1_bead_options_text_21">بطة</string>
+    <string name="layout_tab1_bead_options_text_22">ثعلب</string>
+    <string name="layout_tab1_bead_options_text_23">فيل</string>
+    <string name="layout_tab1_bead_options_text_24">باندا</string>
+    <string name="layout_tab1_bead_options_text_25">قطة</string>
+    <string name="layout_tab1_bead_options_text_26">فظّ</string>
+    <string name="layout_tab1_bead_options_text_27">نمر</string>
+
+    <!-- layout/layout_tab2_bead_color.xml -->
+    <string name="layout_tab2_bead_color_text">عادي</string>
+    <string name="layout_tab2_bead_color_text_2">محدَّد</string>
+
+    <!-- layout/layout_tab3_frame_options.xml -->
+    <string name="layout_tab3_frame_options_text">اختر نوع الإطار</string>
+    <string name="layout_tab3_frame_options_text_2">خشب</string>
+    <string name="layout_tab3_frame_options_text_3">قلوب</string>
+    <string name="layout_tab3_frame_options_text_4">نجوم</string>
+    <string name="layout_tab3_frame_options_text_5">متدرّج</string>
+
+    <!-- layout/lesson_popover.xml -->
+    <string name="lesson_popover_text">الخطوات</string>
+    <string name="lesson_popover_again_tutorial">أعِد الشرح</string>
+
+    <!-- layout/multiplication_table_1.xml -->
+    <string name="multiplication_table_1_text">جدول الضرب 1×</string>
+
+    <!-- layout/multiplication_table_2.xml -->
+    <string name="multiplication_table_2_text">جدول الضرب 2×</string>
+
+    <!-- layout/multiplication_table_3.xml -->
+    <string name="multiplication_table_3_text">جدول الضرب 3×</string>
+
+    <!-- layout/multiplication_table_4.xml -->
+    <string name="multiplication_table_4_text">جدول الضرب 4×</string>
+
+    <!-- layout/multiplication_table_5.xml -->
+    <string name="multiplication_table_5_text">جدول الضرب 5×</string>
+
+    <!-- layout/multiplication_table_6.xml -->
+    <string name="multiplication_table_6_text">جدول الضرب 6×</string>
+
+    <!-- layout/multiplication_table_7.xml -->
+    <string name="multiplication_table_7_text">جدول الضرب 7×</string>
+
+    <!-- layout/multiplication_table_8.xml -->
+    <string name="multiplication_table_8_text">جدول الضرب 8×</string>
+
+    <!-- layout/multiplication_table_9.xml -->
+    <string name="multiplication_table_9_text">جدول الضرب 9×</string>
+
+    <!-- layout/panel_bead_skin_select.xml -->
+    <string name="panel_bead_skin_select_bead_slot_select_title">أيّ خرزة تريد أن تستبدل؟</string>
+
+    <!-- layout/panel_cup_difficulty.xml -->
+    <string name="panel_cup_difficulty_cup_difficulty_title">مستوى الصعوبة</string>
+    <string name="panel_cup_difficulty_cup_difficulty_message">اضبط المستوى</string>
+    <string name="panel_cup_difficulty_text">عدد الخانات:</string>
+    <string name="panel_cup_difficulty_cup_difficulty_start_button">ابدأ</string>
+
+    <!-- layout/panel_cup_path.xml -->
+    <string name="panel_cup_path_text">طريق الكأس</string>
+    <string name="panel_cup_path_panel_cup_path_energy_icon_desc">القلوب</string>
+    <string name="panel_cup_path_card1_title">طريق كأس الجمع</string>
+    <string name="panel_cup_path_card2_title">طريق كأس الطرح</string>
+    <string name="panel_cup_path_card3_title">طريق كأس الضرب</string>
+    <string name="panel_cup_path_card4_title">طريق كأس الجمع - بلا معداد</string>
+    <string name="panel_cup_path_card5_title">طريق كأس الطرح - بلا معداد</string>
+    <string name="panel_cup_path_card6_title">طريق كأس الضرب - بلا معداد</string>
+
+    <!-- layout/panel_profile_abacus.xml -->
+    <string name="panel_profile_abacus_text">غيّر رمز الملف الشخصي</string>
+
+    <!-- layout/race_bottom_sheet.xml -->
+    <string name="race_bottom_sheet_race_title">طريق الإتقان</string>
+
+    <!-- layout/result_panel_correct.xml -->
+    <string name="result_panel_correct_correct_text">أحسنت!</string>
+    <string name="result_panel_correct_continue_button">متابعة</string>
+
+    <!-- layout/result_panel_incorrect.xml -->
+    <string name="result_panel_incorrect_incorrect_text">خطأ</string>
+    <string name="result_panel_incorrect_correct_answer_label">الإجابة الصحيحة:</string>
+    <string name="result_panel_incorrect_correct_answer_text">ستظهر الإجابة الصحيحة هنا</string>
+    <string name="result_panel_incorrect_okay_button">متابعة</string>
+
+    <!-- layout/view_drawing_controls_overlay.xml -->
+    <string name="view_drawing_controls_overlay_pencil_button_desc">قلم</string>
+    <string name="view_drawing_controls_overlay_undo_button_desc">تراجع</string>
+    <string name="view_drawing_controls_overlay_drawer_button_desc">فتح/إغلاق لوحة الرسم</string>
+
+    <!-- layout/view_guide_panel.xml -->
+    <string name="view_guide_panel_btn_back_desc">رجوع</string>
+    <string name="view_guide_panel_btn_forward_desc">التالي</string>
+
+    <!-- layout/view_recording_overlay.xml -->
+    <string name="view_recording_overlay_recording_btn_pause_resume_desc">إيقاف مؤقت</string>
+    <string name="view_recording_overlay_recording_btn_cancel_desc">إلغاء</string>
+    <string name="view_recording_overlay_recording_btn_save_desc">حفظ</string>
+</resources>
