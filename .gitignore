@@ -36,3 +36,7 @@ tools/rules-test/package-lock.json
 # Çeviri aracının ürettiği tablolar (tools/ceviri/ceviri.js)
 /ceviri_*.csv
 /ses_listesi_*.csv
+
+# Öğretici seslendirmesi (tools/seslendirme): üretilen mp3'ler depoya girmez, Storage'da durur
+/tools/seslendirme/cikti/
+/tools/seslendirme/ornekler/
