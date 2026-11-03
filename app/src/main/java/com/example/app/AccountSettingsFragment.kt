@@ -91,10 +91,11 @@ class AccountSettingsFragment : Fragment() {
             }
     }
 
-    /** Dil adları kendi dillerinde ("Türkçe", "English"); yalnızca "telefonun dili" çevriliyor. */
+    /** Dil adları kendi dillerinde ("Türkçe", "English", "Bahasa Indonesia"); yalnızca "telefonun dili" çevriliyor. */
     private fun languageLabel(choice: String): String = when (choice) {
         AppLanguage.TURKISH -> getString(R.string.settings_language_tr)
         AppLanguage.ENGLISH -> getString(R.string.settings_language_en)
+        AppLanguage.INDONESIAN -> getString(R.string.settings_language_id)
         else -> getString(R.string.settings_language_system)
     }
 

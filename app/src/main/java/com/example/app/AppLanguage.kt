@@ -18,40 +18,64 @@ import kotlin.system.exitProcess
  * attachBaseContext'inde ([FontScaleLimiter.wrap]) aynı yapılandırmayla veriliyor.
  *
  * ## "Telefonun dili"
- * Telefon Türkçe ise Türkçe, değilse İngilizce: varsayılan `values/` Türkçe olduğu için
- * Endonezce bir telefonda olduğu gibi bırakmak Türkçe gösterirdi.
+ * Telefon Türkçe ise Türkçe, Endonezce ise Endonezce, değilse İngilizce: varsayılan `values/`
+ * Türkçe olduğu için desteklenmeyen bir dili olduğu gibi bırakmak Türkçe gösterirdi.
+ *
+ * ## Endonezce: "id" ve "in"
+ * Endonezcenin ISO kodu "id", ama Java'nın Locale'i eski kodu "in"i kullanıyor: `Locale("id")`,
+ * `Locale.forLanguageTag("id")` ve telefonun yapılandırması `language` olarak "in" verir (sürüme
+ * göre "id" de olabilir). Kaynaklar `values-in`'de; Resources dil etiketini kaynak aramadan önce
+ * "in"e çeviriyor, yani hangisi verilirse verilsin `values-in` seçilir. Bu yüzden dil
+ * karşılaştırmaları [normalize] ile yapılıyor; sunucuya ve `users/{uid}.lang`'a ise hep "id"
+ * ([current]) gidiyor, sunucu "in" bilmiyor.
  */
 object AppLanguage {
     const val SYSTEM = "system"
     const val TURKISH = "tr"
     const val ENGLISH = "en"
+    const val INDONESIAN = "id"
 
     /** Seçim ekranındaki sıra. */
-    val CHOICES = listOf(SYSTEM, TURKISH, ENGLISH)
+    val CHOICES = listOf(SYSTEM, TURKISH, ENGLISH, INDONESIAN)
 
     private const val PREFS = "app_language"
     private const val KEY_CHOICE = "choice"
 
-    /** Kullanıcının seçimi: [SYSTEM], [TURKISH] ya da [ENGLISH]. */
+    /** Kullanıcının seçimi: [SYSTEM], [TURKISH], [ENGLISH] ya da [INDONESIAN]. */
     fun choice(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_CHOICE, SYSTEM) ?: SYSTEM
 
-    /** Şu an kullanılan dil kodu ("tr" / "en"); [SYSTEM] telefonun diline göre çözülür. */
+    /** Şu an kullanılan dil kodu ("tr" / "en" / "id"); [SYSTEM] telefonun diline göre çözülür. */
     fun current(context: Context): String = resolve(choice(context))
 
     fun isTurkish(): Boolean = Locale.getDefault().language == TURKISH
 
+    /**
+     * Cümleyi kodda kuran yerlerin ([com.example.app.abacus.MistakeAnalyzer] gibi) dili: [TURKISH],
+     * [ENGLISH] ya da [INDONESIAN]. [wrap] varsayılan dili ayarladığı için ona bakıyor.
+     */
+    fun textLanguage(): String = supported(Locale.getDefault().language)
+
+    /** Java'nın eski Endonezce kodu "in" → "id"; öbür diller olduğu gibi. */
+    private fun normalize(language: String): String = if (language == "in") INDONESIAN else language
+
+    /** Desteklenen dillerden biri; tanınmayan dil İngilizce. */
+    private fun supported(language: String): String = when (val l = normalize(language)) {
+        TURKISH, INDONESIAN -> l
+        else -> ENGLISH
+    }
+
     private fun resolve(choice: String): String = when (choice) {
-        TURKISH, ENGLISH -> choice
-        else -> if (Resources.getSystem().configuration.locales[0].language == TURKISH) TURKISH else ENGLISH
+        TURKISH, ENGLISH, INDONESIAN -> choice
+        else -> supported(Resources.getSystem().configuration.locales[0].language)
     }
 
     /** [base]'i seçili dille yeniden yapılandırır; dil zaten aynıysa olduğu gibi döner. */
     fun wrap(base: Context): Context {
-        val locale = Locale(current(base))
+        val locale = Locale.forLanguageTag(current(base))
         Locale.setDefault(locale)
         val config = base.resources.configuration
-        if (config.locales[0].language == locale.language) return base
+        if (normalize(config.locales[0].language) == normalize(locale.language)) return base
         val localized = Configuration(config)
         localized.setLocale(locale)
         return base.createConfigurationContext(localized)
