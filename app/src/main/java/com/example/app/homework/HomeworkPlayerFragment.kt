@@ -543,7 +543,7 @@ class HomeworkPlayerFragment : Fragment() {
         b.resultTitle.setTextColor(color)
         // Yanlışta işlemin tamamı: çocuk hangi sayıda kaydığını görebilsin.
         b.resultMessage.visibility = if (correct) View.GONE else View.VISIBLE
-        b.resultMessage.text = HomeworkText.questionLine(q) + " = " + q.answer
+        b.resultMessage.text = com.example.app.RtlSupport.ltr(HomeworkText.questionLine(q) + " = " + q.answer)
         // Göçen düğme (dersteki doğru/yanlış panelleriyle aynı arka planlar).
         b.resultButton.setBackgroundResource(if (correct) R.drawable.bg_depth_tutorial_continue else R.drawable.bg_depth_tutorial_okay)
         bindSobiReview(q, given, correct)

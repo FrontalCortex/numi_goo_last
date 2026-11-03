@@ -6,10 +6,10 @@ import java.util.Locale
 
 /**
  * Sobi'nin mesajlarını sesli okur (kullanıcı kararı 01.11.2026): 7 yaşındaki bir çocuk 3 cümlelik
- * mesajı okumakta zorlanabilir. Telefonun kendi Türkçe ses motoru: internet ve kredi gerekmez.
+ * mesajı okumakta zorlanabilir. Telefonun kendi ses motoru (uygulamanın dilinde): internet ve kredi gerekmez.
  *
  * Otomatik okuma çocuğun tercihi ([autoRead], cihazda saklanır, varsayılan açık); uygulamanın sesi
- * kapalıysa ("sound_enabled") otomatik okuma da yapılmaz, 🔊 düğmesi yine okur. Türkçe ses yoksa
+ * kapalıysa ("sound_enabled") otomatik okuma da yapılmaz, 🔊 düğmesi yine okur. O dilin sesi yoksa
  * ([available] false) düğmeler gizlenir.
  */
 class SobiSpeaker(context: Context, private val onReady: () -> Unit) {
@@ -27,6 +27,8 @@ class SobiSpeaker(context: Context, private val onReady: () -> Unit) {
                     AppLanguage.TURKISH -> Locale("tr", "TR")
                     // id-ID: ses motorları "in" ve "id"yi aynı dil sayıyor; etiketten kurmak ikisinde de çalışıyor.
                     AppLanguage.INDONESIAN -> Locale.forLanguageTag("id-ID")
+                    // Arapça ses motorda yoksa ready false kalır: düğmeler gizlenir, Sobi sessiz.
+                    AppLanguage.ARABIC -> Locale.forLanguageTag("ar")
                     else -> Locale.US
                 }
                 val r = tts.setLanguage(voice)
@@ -79,6 +81,7 @@ class SobiSpeaker(context: Context, private val onReady: () -> Unit) {
             val (minus, plus) = when (AppLanguage.textLanguage()) {
                 AppLanguage.TURKISH -> "eksi" to "artı"
                 AppLanguage.INDONESIAN -> "kurang" to "tambah"
+                AppLanguage.ARABIC -> "ناقص" to "زائد"
                 else -> "minus" to "plus"
             }
             return text
@@ -86,6 +89,7 @@ class SobiSpeaker(context: Context, private val onReady: () -> Unit) {
             .replace(Regex("""(\d)\s*\+\s*(\d)"""), "$1 $plus $2")
             .replace(Regex("""[«»“”"]"""), "")
             .replace("‹", "")
+            .replace(Regex("[\u2066-\u2069]"), "") // RtlSupport.ltr yalıtım işaretleri
         }
     }
 }

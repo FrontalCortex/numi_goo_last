@@ -96,6 +96,7 @@ class AccountSettingsFragment : Fragment() {
         AppLanguage.TURKISH -> getString(R.string.settings_language_tr)
         AppLanguage.ENGLISH -> getString(R.string.settings_language_en)
         AppLanguage.INDONESIAN -> getString(R.string.settings_language_id)
+        AppLanguage.ARABIC -> getString(R.string.settings_language_ar)
         else -> getString(R.string.settings_language_system)
     }
 

@@ -1010,7 +1010,7 @@ class BlindingLessonFragment : Fragment() {
         binding.quitButton.isEnabled = false
         rootView.animate().cancel()
         rootView.animate()
-            .translationX(-resources.displayMetrics.widthPixels.toFloat())
+            .translationX(-resources.displayMetrics.widthPixels.toFloat() * RtlSupport.endSign(rootView))
             .setDuration(blindingDismissSlideMs)
             .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
             .withEndAction { if (isAdded) performBlindingDismiss() }
@@ -2862,7 +2862,7 @@ class BlindingLessonFragment : Fragment() {
             val widthToUse = if (panelWidth > 0) panelWidth else panelContent.rootView.width
             
             // Panel'i ekranın soluna taşı (genişliği kadar sola)
-            panelContent.translationX = -widthToUse.toFloat()
+            panelContent.translationX = -widthToUse.toFloat() * RtlSupport.endSign(panelContent)
             
             // Şimdi panel'i görünür yap
             panelContent.visibility = View.VISIBLE
@@ -2893,7 +2893,7 @@ class BlindingLessonFragment : Fragment() {
         
         // Sola kayarak gizle
         panelContent.animate()
-            .translationX(-panelWidth.toFloat())
+            .translationX(-panelWidth.toFloat() * RtlSupport.endSign(panelContent))
             .setDuration(300)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .withEndAction {

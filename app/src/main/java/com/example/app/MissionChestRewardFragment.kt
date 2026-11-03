@@ -152,7 +152,7 @@ class MissionChestRewardFragment : Fragment() {
             val rootView = binding.root
             rootView.animate()
                 // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
-                .translationX(-rootView.width.toFloat())
+                .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
                 .setDuration(400L)
                 .withEndAction { completeMapReturn() }
                 .start()
@@ -353,11 +353,11 @@ class MissionChestRewardFragment : Fragment() {
                 progressText.setTextColor(labelDone)
             } else {
                 title.setTextColor(titleNormal)
-                progressText.text = ctx.getString(
+                progressText.text = RtlSupport.ltr(ctx.getString(
                     R.string.mission_progress_format,
                     curEst.coerceAtMost(target),
                     target,
-                )
+                ))
                 progressText.setTextColor(labelPending)
             }
         }

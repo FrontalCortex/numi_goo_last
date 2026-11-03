@@ -87,7 +87,7 @@ class LessonResultFalse : Fragment() {
         }
         main?.raisePostLessonBackdropForHandoff(caller)
         rootView.animate()
-            .translationX(-rootView.width.toFloat())
+            .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
             .setDuration(EXIT_ANIM_DURATION_MS)
             .withEndAction { completeMapReturn() }
             .start()

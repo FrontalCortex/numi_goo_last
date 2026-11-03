@@ -37,7 +37,7 @@ object HomeworkText {
         val joined = when (labels.size) {
             0 -> ""
             1 -> labels[0]
-            else -> labels.dropLast(1).joinToString(", ") + " " + appString(R.string.hw_and) + " " + labels.last()
+            else -> labels.dropLast(1).joinToString(com.example.app.AppLanguage.listSeparator()) + " " + appString(R.string.hw_and) + " " + labels.last()
         }
         val op = appString(if (cfg.op == HomeworkOp.ADD) R.string.hw_op_add_lower else R.string.hw_op_sub_lower)
         return appString(R.string.hw_title, joined, op)
@@ -80,7 +80,7 @@ object HomeworkText {
         com.example.app.AppStrings.context().resources.getStringArray(R.array.hw_place_names)
             .getOrElse(position) { (position + 1).toString() }
 
-    private fun digitList(digits: Set<Int>): String = digits.sorted().joinToString(", ")
+    private fun digitList(digits: Set<Int>): String = digits.sorted().joinToString(com.example.app.AppLanguage.listSeparator())
 
     /**
      * Kartlar için kısa özet: tür, basamak, soru ("Abaküslü · 2 basamak · 20 soru"). Sayı adedi ve
@@ -105,9 +105,11 @@ object HomeworkText {
         (view.background?.mutate() as? android.graphics.drawable.GradientDrawable)?.setColor(color)
     }
 
-    /** 1500 → "1,5"; 100 → "0,1". Türkçede ondalık ayırıcı virgül. */
-    fun formatSeconds(ms: Long): String =
-        DecimalFormat("0.##", DecimalFormatSymbols(Locale("tr"))).format(ms / 1000.0)
+    /** 1500 → "1,5"; 100 → "0,1". Türkçede ondalık ayırıcı virgül; Arapçada nokta ("1.5", sözlük kararı). */
+    fun formatSeconds(ms: Long): String {
+        val symbols = if (com.example.app.AppLanguage.isArabic()) DecimalFormatSymbols(Locale.ROOT) else DecimalFormatSymbols(Locale("tr"))
+        return DecimalFormat("0.##", symbols).format(ms / 1000.0)
+    }
 
     /** "1,5" / "1.5" → 1500; çözülemezse null. */
     fun parseSeconds(text: String): Long? {

@@ -722,7 +722,7 @@ class NewChestFragment : Fragment() {
                 // SOLA çıkıyor: zincirdeki her ekran sağdan girip sola çıkıyor ve böylece
                 // sandık → rozet → yeni seri tek bir ileri hareket gibi okunuyor. Eskiden
                 // sağa kayıyordu, yani bir sonraki ekranla aynı yönden çakışıyordu.
-                .translationX(-rootView.width.toFloat())
+                .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
                 .setDuration(400L)
                 .withEndAction { finishClose() }
                 .start()

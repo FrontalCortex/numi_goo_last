@@ -198,7 +198,7 @@ class GuidePanelView @JvmOverloads constructor(
      */
     fun prepareShow() {
         visibility = View.VISIBLE
-        translationX = resources.displayMetrics.widthPixels.toFloat()
+        translationX = resources.displayMetrics.widthPixels.toFloat() * RtlSupport.endSign(this)
         translationY = 0f
 
         dimCoordinatorLayout(true)
@@ -220,7 +220,7 @@ class GuidePanelView @JvmOverloads constructor(
 
     fun slideIn() {
         val screenWidth = resources.displayMetrics.widthPixels
-        val translateX = ObjectAnimator.ofFloat(this, "translationX", screenWidth.toFloat(), 0f)
+        val translateX = ObjectAnimator.ofFloat(this, "translationX", screenWidth * RtlSupport.endSign(this), 0f)
         translateX.duration = 500
         translateX.interpolator = AccelerateDecelerateInterpolator()
 
@@ -241,7 +241,7 @@ class GuidePanelView @JvmOverloads constructor(
         setNavButtonsEnabled(false)
 
         val screenWidth = resources.displayMetrics.widthPixels
-        val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, screenWidth.toFloat())
+        val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, screenWidth * RtlSupport.endSign(this))
         translateX.duration = 500
         translateX.interpolator = AccelerateDecelerateInterpolator()
 
@@ -263,7 +263,7 @@ class GuidePanelView @JvmOverloads constructor(
         setNavButtonsEnabled(false)
 
         val screenWidth = resources.displayMetrics.widthPixels
-        val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, -screenWidth.toFloat())
+        val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, -screenWidth * RtlSupport.endSign(this))
         translateX.duration = 300
         translateX.interpolator = AccelerateDecelerateInterpolator()
 

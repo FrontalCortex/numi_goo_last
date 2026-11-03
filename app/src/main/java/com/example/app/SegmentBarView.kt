@@ -63,8 +63,10 @@ class SegmentBarView @JvmOverloads constructor(
         val n = segmentCount
         val w = (width - gapPx * (n - 1)) / n
         val r = h / 2f
+        // Sağdan sola düzende ilk dilim sağda, dolum da sağdan başlıyor.
+        val rtl = RtlSupport.isRtl(this)
         for (i in 0 until n) {
-            val left = i * (w + gapPx)
+            val left = if (rtl) width - w - i * (w + gapPx) else i * (w + gapPx)
             rect.set(left, 0f, left + w, h)
             canvas.drawRoundRect(rect, r, r, trackPaint)
             val part = (filled - i).coerceIn(0f, 1f)
@@ -74,7 +76,8 @@ class SegmentBarView @JvmOverloads constructor(
             clip.reset()
             clip.addRoundRect(rect, r, r, Path.Direction.CW)
             canvas.clipPath(clip)
-            canvas.drawRect(left, 0f, left + w * part, h, fillPaint)
+            if (rtl) canvas.drawRect(left + w * (1 - part), 0f, left + w, h, fillPaint)
+            else canvas.drawRect(left, 0f, left + w * part, h, fillPaint)
             canvas.restore()
         }
     }

@@ -55,10 +55,11 @@
     <!-- Gösterilen sayı (ya da çarpma işlemi). Uzun sayılarda yazı kodda küçültülüyor. -->
     <TextView
         android:id="@+id/flashText"
+        android:layoutDirection="ltr"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
         android:layout_marginBottom="4dp"
         android:fontFamily="@font/font_regular"
         android:gravity="center"
@@ -67,8 +68,8 @@
         android:textSize="@dimen/hw_flash_text_size"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/flashCard"
-        app:layout_constraintEnd_toEndOf="@id/flashCard"
-        app:layout_constraintStart_toStartOf="@id/flashCard"
+        app:layout_constraintRight_toRightOf="@id/flashCard"
+        app:layout_constraintLeft_toLeftOf="@id/flashCard"
         app:layout_constraintTop_toTopOf="@id/flashCard"
         tools:text="123" />
 
@@ -79,6 +80,7 @@
     -->
     <EditText
         android:id="@+id/answerInput"
+        android:layoutDirection="ltr"
         android:layout_width="220dp"
         android:layout_height="64dp"
         android:layout_marginBottom="20dp"
@@ -96,11 +98,12 @@
         android:textStyle="bold"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/kontrolButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent" />
 
     <FrameLayout
         android:id="@+id/abacusContainer"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/abacus_frame_bg"

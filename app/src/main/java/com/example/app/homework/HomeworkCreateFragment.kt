@@ -494,7 +494,7 @@ class HomeworkCreateFragment : Fragment() {
                 runCatching { HomeworkEngine.generateQuestion(cfg, Random.Default) }.getOrNull()
             }
             val b = _binding ?: return@launch
-            b.previewText.text = q?.let { "${HomeworkText.questionLine(it)} = ${it.answer}" } ?: "—"
+            b.previewText.text = q?.let { com.example.app.RtlSupport.ltr("${HomeworkText.questionLine(it)} = ${it.answer}") } ?: "—"
         }
     }
 

@@ -177,7 +177,7 @@ object CupPathRewardRepository {
             get() = when {
                 finished -> appString(R.string.ui_tamamlandi_2)
                 claimable -> appString(R.string.ui_sandik_hazir)
-                else -> "$cupScore / $nextMilestone"
+                else -> RtlSupport.ltr("$cupScore / $nextMilestone")
             }
 
         /**

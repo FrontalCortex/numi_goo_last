@@ -160,7 +160,10 @@ class AbacusSettingsPanel(
          */
         private fun hiddenOffset(view: View): Float {
             val parentWidth = (view.parent as? View)?.width ?: view.resources.displayMetrics.widthPixels
-            return (parentWidth - view.left).toFloat() + view.resources.displayMetrics.density * 16f
+            val gap = view.resources.displayMetrics.density * 16f
+            // Sağdan sola düzende panel solda: sola, ekran dışına itilir.
+            if (com.example.app.RtlSupport.isRtl(view)) return -(view.right + gap)
+            return (parentWidth - view.left).toFloat() + gap
         }
 
         /** Ayar panelini sağdan kaydırarak açar (AbacusFragment'teki kendi kopyası da kullanıyor). */

@@ -258,7 +258,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
                 if (part.name.isNullOrBlank()) appString(R.string.ui_bolum_x, part.partId)
                 else appString(R.string.ui_bolum_x_x, part.partId, part.name)
             b.partProgress.text = appString(R.string.ui_x_x_ders_bitti, part.finishedLessons, part.totalLessons)
-            b.partChevron.rotation = if (isExpanded) 90f else 0f
+            b.partChevron.rotation = if (isExpanded) 90f * RtlSupport.endSign(b.partChevron) else 0f // aynalı okta (Arapça) ters dönüş de aşağı bakar
         }
     }
 
@@ -270,7 +270,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         fun bind(section: SectionGroup, isExpanded: Boolean) {
             b.sectionTitle.text = section.title.orEmpty().uppercase(TR)
             b.sectionProgress.text = appString(R.string.ui_x_x_ders, section.finishedLessons, section.totalLessons)
-            b.sectionChevron.rotation = if (isExpanded) 90f else 0f
+            b.sectionChevron.rotation = if (isExpanded) 90f * RtlSupport.endSign(b.sectionChevron) else 0f // aynalı okta (Arapça) ters dönüş de aşağı bakar
         }
     }
 
@@ -287,7 +287,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             tintDot(b.lessonStatusDot, ContextCompat.getColor(b.root.context, dotColor))
 
             // Kapalıyken sağa, açıkken aşağı bakar: durum tek bakışta anlaşılsın.
-            b.lessonChevron.rotation = if (isExpanded) 90f else 0f
+            b.lessonChevron.rotation = if (isExpanded) 90f * RtlSupport.endSign(b.lessonChevron) else 0f // aynalı okta (Arapça) ters dönüş de aşağı bakar
         }
 
         private fun lessonSubtitle(lesson: LessonRow): String {

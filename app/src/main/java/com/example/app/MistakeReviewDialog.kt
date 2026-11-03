@@ -485,7 +485,7 @@ class MistakeReviewDialog : DialogFragment() {
         }
         // Grubun sonuna gelindi: örnek çözüldü (Sobi'ye giden sonuç).
         if (p.step == null) groups.getOrNull(p.group)?.done = true
-        stepLabel.text = p.title
+        stepLabel.text = RtlSupport.isolateEquations(p.title)
         checkButton.text = appString(if (p.step == null) R.string.review_back else R.string.review_check)
         tracker.startStep(i)
         tracker.captureBase(p.value)
@@ -929,7 +929,7 @@ class MistakeReviewDialog : DialogFragment() {
         }
         for ((label, action) in items) {
             val chip = TextView(ctx).apply {
-                text = label
+                text = RtlSupport.isolateEquations(label)
                 styleChip(ctx, this, label in paid)
                 setOnClickListener { if (!abacusBusy) action() }
             }
@@ -991,7 +991,7 @@ class MistakeReviewDialog : DialogFragment() {
             }
             val free = key == KEY_WATCH || key == SobiSuggestions.KEY_SHOW || key == SobiSuggestions.KEY_SHOW_AGAIN
             val chip = TextView(ctx).apply {
-                text = label
+                text = RtlSupport.isolateEquations(label)
                 styleChip(ctx, this, paid = !free)
                 setOnClickListener { onSuggestion(key) }
             }
@@ -1021,7 +1021,7 @@ class MistakeReviewDialog : DialogFragment() {
         text = appString(R.string.sobi_thinking)
         setTextColor(ContextCompat.getColor(ctx, R.color.dark_text_secondary))
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-        setPadding(dp(ctx, 4), dp(ctx, 6), 0, dp(ctx, 6))
+        setPaddingRelative(dp(ctx, 4), dp(ctx, 6), 0, dp(ctx, 6))
     }
 
     /** O anki sayfanın bağlamı: adım sayfasında soru adımı; öğreticinin bilgi sayfasında dersin anlatım adımı. */

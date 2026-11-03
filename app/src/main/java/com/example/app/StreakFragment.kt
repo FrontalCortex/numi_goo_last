@@ -247,7 +247,7 @@ class StreakFragment : Fragment() {
         // 3 günlük bir meydan okumada birinci ile ikinci günün doluluğu gözle ayırt
         // edilemiyordu. Tamamlanınca sayı yerine durum yazıyor: "3 / 3" teknik olarak doğru
         // ama kutlama değil.
-        b.streakChallengeProgressText.text = if (complete) appString(R.string.ui_tamamlandi_2) else "$done / $days"
+        b.streakChallengeProgressText.text = if (complete) appString(R.string.ui_tamamlandi_2) else RtlSupport.ltr("$done / $days")
 
         val fraction = (done.toFloat() / days).coerceIn(0f, 1f)
         val zone = b.streakChallengeZone

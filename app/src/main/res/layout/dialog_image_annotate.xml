@@ -27,12 +27,12 @@
 
     </FrameLayout>
 
-    <!-- Soldan gelen çizim kontrolleri (mevcut overlay + çekmece) -->
+    <!-- Soldan gelen çizim kontrolleri (mevcut overlay + çekmece). Arapçada da solda: kayma eksi translationX. -->
     <include
         layout="@layout/view_drawing_controls_overlay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="start|center_vertical" />
+        android:layout_gravity="left|center_vertical" />
 
     <!-- Sağ üst: X (kaydet + çık) -->
     <ImageButton

@@ -90,6 +90,28 @@ yerelleştirilmesi, ödev saklama süresi.
   seslendirmeleri (`res/raw/*.mp3`) Türkçe — şimdilik İngilizcede susturuldu (`TutorialFragment.playSound`); (4) Play Store sayfası; (5) TR kaynaktaki iki yazım hatası:
   `tutorial_ipucu_114` "10 x 1 = 1", `tutorial_ipucu_134` "8'i" (56 olmalı) — EN'de doğru yazıldı.
 
+## Dil seçeneği: Arapça — uygulama altyapısı (03.11.2026 — claude/ar-altyapi dalında commit; push yok; telefonda Arapça seçilip bakıldı, çeviriler henüz yoktu)
+- **Seçenek:** `AppLanguage.ARABIC = "ar"` (Ayarlar → Dil → العربية); telefon Arapçaysa "Telefonun dili" de
+  Arapça. Sunucuya ve `users/{uid}.lang`'a "ar". Yerel `ar-u-nu-latn`: `String.format`/`getString(id, sayı)`
+  Batı rakamı (0–9) ve ondalık nokta üretiyor (`ArabicSupportTest`). Telefon ar-EG gibi ٠–٩'lu bir Arapçaysa
+  yapılandırma yine yeniden kuruluyor (`wrap` artık `nu` uzantısına da bakıyor).
+- **Yazı tipi:** `res/font-ar/font_regular.ttf` = Baloo Bhaijaan 2 (değişken, 285 KB; Latin harfleri Baloo 2
+  ile aynı). Temalar değişmedi; Android Arapçada `@font/font_regular`'ı oradan alıyor. Lisans
+  `design/font/` (OFL, uygulama içi atıf şartı yok).
+- **Sağdan sola:** menüler/kartlar/oklar dönüyor (yön okları `autoMirrored`); abaküs kapları, denklem
+  satırları (`firstNumberText/operator/secondNumberText`), flaş metni ve sayı girişleri `layoutDirection="ltr"`
+  + left/right kısıtlarla sabit. Öğreticinin odak çerçevesi (`focusView`) abaküse göre left/right. Metne gömülü
+  denklemler `RtlSupport.isolateEquations` (Sobi balonları, analiz ekranı, öğretici metni) ve `RtlSupport.ltr`
+  ile U+2066…U+2069 arasında. Kayma animasyonları `RtlSupport.endSign` ile. Türkçe/İngilizce görünüm aynı.
+- **Koddaki metinler:** `MistakeAnalyzer` Arapça dalı, `SubStepExplainerAr` (sözlük + öğretici oturumunun
+  terimleri: خرزة الخمسة / خرزات الواحد), sayı+ad uyumu için `mistakesAr`/`beadsAr`; `SobiSpeaker` Arapça ses
+  (yoksa sessiz); kayıt ekranı `privacy-policy-ar.html` (sayfa claude/ar-sunucu dalında).
+- **Telefonda görülüp düzeltilenler:** görev ilerlemesi "2 / 10" ters diziliyordu (yalıtıldı), ders paneli
+  açılınca seçili kartın kopyası sağa kayıyordu (`lesson_popover` left|top), öğreticinin denklem kutusu
+  (`questionText`) "3 + 5"i "5 + 3" gösteriyordu (LTR), bölmeli çubuk (`SegmentBarView`) artık sağdan doluyor.
+  Ölçülen: APK +136 KB (yazı tipi sıkıştırılmış). Kalan: Latin harfli kullanıcı adları/Türkçe metinler kendi
+  yönüne hizalanıyor (çeviri gelince çoğu düzelir; liderlik satırı ve ders paneli viewStart'a alındı).
+
 ## Dil seçeneği: Endonezce — sunucu (03.11.2026 — claude/id-sunucu dalında commit; push/deploy kullanıcı onayı bekliyor)
 - **Sobi:** `lang: 'id'` → talimatın sonuna `sobi/prompt_lang_id.md` (sözlük: `docs/CEVIRI_SOZLUGU_ID.md`;
   düğme adları "Tunjukkan"/"Periksa" sözlükten seçildi, `values-in/strings_sobi.xml` gelince karşılaştır).

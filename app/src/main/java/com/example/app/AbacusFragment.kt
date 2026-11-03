@@ -1182,7 +1182,7 @@ class AbacusFragment : Fragment() {
             val widthToUse = if (panelWidth > 0) panelWidth else panelContent.rootView.width
             
             // Panel'i ekranın soluna taşı (genişliği kadar sola)
-            panelContent.translationX = -widthToUse.toFloat()
+            panelContent.translationX = -widthToUse.toFloat() * RtlSupport.endSign(panelContent)
             
             // Şimdi panel'i görünür yap
             panelContent.visibility = View.VISIBLE
@@ -1213,7 +1213,7 @@ class AbacusFragment : Fragment() {
         
         // Sola kayarak gizle
         panelContent.animate()
-            .translationX(-panelWidth.toFloat())
+            .translationX(-panelWidth.toFloat() * RtlSupport.endSign(panelContent))
             .setDuration(300)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .withEndAction {
@@ -1916,7 +1916,7 @@ class AbacusFragment : Fragment() {
         binding.quitButton.isEnabled = false
         // Sola: ders akışındaki bütün ekranlar gibi. Sağa kayıyordu, yani altından
         // çıkan haritayla ters yönde.
-        val slideDistance = -resources.displayMetrics.widthPixels.toFloat()
+        val slideDistance = -resources.displayMetrics.widthPixels.toFloat() * RtlSupport.endSign(rootView)
         rootView.animate().cancel()
         rootView.animate()
             .translationX(slideDistance)

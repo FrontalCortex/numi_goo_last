@@ -144,12 +144,13 @@ class MissionsSection(
             progressText.setTextColor(progressLabelDone)
         } else {
             title.setTextColor(titleNormal)
-            progressText.text = String.format(
+            // "2 / 10" sağdan sola paragrafta "10 / 2" dizilirdi: yalıt.
+            progressText.text = RtlSupport.ltr(String.format(
                 Locale.getDefault(),
                 "%d / %d",
                 q.progress.coerceAtMost(q.target),
                 q.target,
-            )
+            ))
             progressText.setTextColor(progressLabelPending)
         }
 

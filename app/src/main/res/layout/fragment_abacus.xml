@@ -93,7 +93,7 @@
         android:layout_gravity="start|bottom"
         android:visibility="gone"
         android:src="@drawable/back_circle_button"
-        android:paddingLeft="@dimen/abacus_fragment_back_btn_padding"
+        android:paddingStart="@dimen/abacus_fragment_back_btn_padding"
         android:elevation="10dp"
         android:paddingBottom="@dimen/abacus_fragment_back_btn_padding"
         android:background="@drawable/guide_panel_background"
@@ -110,7 +110,7 @@
         android:elevation="10dp"
         android:minWidth="@dimen/abacus_fragment_back_btn_min"
         android:minHeight="@dimen/abacus_fragment_back_btn_min"
-        android:paddingLeft="@dimen/abacus_fragment_back_btn_padding"
+        android:paddingStart="@dimen/abacus_fragment_back_btn_padding"
         android:paddingBottom="@dimen/abacus_fragment_back_btn_padding"
         android:rotationY="180"
         android:scaleType="fitCenter"
@@ -217,6 +217,7 @@
     <!-- İlk sayı widget'ı -->
     <TextView
         android:id="@+id/firstNumberText"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="@dimen/abacus_fragment_equation_text_size"
@@ -226,10 +227,11 @@
         android:layout_marginBottom="@dimen/abacus_fragment_equation_margin_bottom"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
-        app:layout_constraintStart_toStartOf="@id/blackboardImage"
-        app:layout_constraintEnd_toStartOf="@id/secondNumberText"/>
+        app:layout_constraintLeft_toLeftOf="@id/blackboardImage"
+        app:layout_constraintRight_toLeftOf="@id/secondNumberText"/>
     <TextView
         android:id="@+id/operator"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/font_regular"
@@ -237,8 +239,8 @@
         android:textSize="@dimen/abacus_fragment_equation_text_size"
         android:textColor="@color/white"
         android:layout_marginBottom="@dimen/abacus_fragment_equation_margin_bottom"
-        app:layout_constraintStart_toStartOf="@id/firstNumberText"
-        app:layout_constraintEnd_toEndOf="@id/secondNumberText"
+        app:layout_constraintLeft_toLeftOf="@id/firstNumberText"
+        app:layout_constraintRight_toRightOf="@id/secondNumberText"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
         app:layout_constraintTop_toTopOf="@id/blackboardImage">
 
@@ -246,6 +248,7 @@
     <!-- İkinci sayı widget'ı -->
     <TextView
         android:id="@+id/secondNumberText"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="@dimen/abacus_fragment_equation_text_size"
@@ -255,13 +258,14 @@
         android:layout_marginBottom="@dimen/abacus_fragment_equation_margin_bottom"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
-        app:layout_constraintStart_toEndOf="@id/firstNumberText"
-        app:layout_constraintEnd_toEndOf="@id/blackboardImage"/>
+        app:layout_constraintLeft_toRightOf="@id/firstNumberText"
+        app:layout_constraintRight_toRightOf="@id/blackboardImage"/>
 
 
 
     <FrameLayout
         android:id="@+id/abacusContainer"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/abacus_frame_bg"

@@ -188,7 +188,7 @@ class LessonResult : Fragment() {
                 val rootView = binding.root
                 rootView.animate()
                     // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
-                    .translationX(-rootView.width.toFloat())
+                    .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
                     .setDuration(EXIT_ANIM_DURATION_MS)
                     .withEndAction { completeMapReturn() }
                     .start()

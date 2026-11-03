@@ -41,7 +41,7 @@ class SobiMessageViews(
 
     fun bubble(ctx: Context, m: SobiStepTracker.Message): View {
         val tv = TextView(ctx).apply {
-            text = m.text
+            text = RtlSupport.isolateEquations(m.text)
             setTextColor(ContextCompat.getColor(ctx, R.color.dark_text))
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 16f)
             setLineSpacing(0f, 1.15f)
@@ -61,7 +61,7 @@ class SobiMessageViews(
         val rating = LinearLayout(ctx).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setPadding(dp(ctx, 6), 0, 0, 0)
+            setPaddingRelative(dp(ctx, 6), 0, 0, 0)
             if (speak != null) addView(speakButton(ctx, m, speak))
             if (canRate(m)) {
                 addView(rateButton(ctx, m, 1, "👍", R.string.sobi_rate_up))
@@ -126,7 +126,7 @@ class SobiMessageViews(
             setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
             if (!m.commented) paintFlags = paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
             alpha = 0.8f
-            setPadding(dp(ctx, 6), dp(ctx, 2), dp(ctx, 4), dp(ctx, 2))
+            setPaddingRelative(dp(ctx, 6), dp(ctx, 2), dp(ctx, 4), dp(ctx, 2))
             if (!m.commented) setOnClickListener { askComment(m) }
         }
 

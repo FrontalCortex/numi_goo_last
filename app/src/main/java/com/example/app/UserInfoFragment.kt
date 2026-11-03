@@ -684,7 +684,7 @@ class UserInfoFragment : Fragment() {
             to.visibility = View.VISIBLE
             return
         }
-        val dir = if (forward) -1f else 1f
+        val dir = (if (forward) -1f else 1f) * RtlSupport.endSign(binding.root)
         animating = true
         from.animate()
             .translationX(dir * width)

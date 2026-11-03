@@ -42,18 +42,24 @@ object MistakeAnalyzer {
     private val COLUMN_NAMES = listOf("birler", "onlar", "yüzler", "binler", "on binler")
     private val COLUMN_NAMES_EN = listOf("ones", "tens", "hundreds", "thousands", "ten thousands")
     private val COLUMN_NAMES_ID = listOf("satuan", "puluhan", "ratusan", "ribuan", "puluh ribuan")
+    private val COLUMN_NAMES_AR = listOf("الآحاد", "العشرات", "المئات", "الآلاف", "عشرات الآلاف")
 
     /**
      * Metinlerin dili ([AppLanguage.textLanguage]); kurallar ve sıralama her dilde aynı. Endonezce
-     * sözler docs/CEVIRI_SOZLUGU_ID.md'deki sempoa kursu terimleri ("tambah 5, kurangi temannya").
+     * sözler docs/CEVIRI_SOZLUGU_ID.md'deki sempoa kursu terimleri ("tambah 5, kurangi temannya"),
+     * Arapçalar docs/CEVIRI_SOZLUGU_AR.md'deki الحساب الذهني kursu terimleri ("أضِف 5 واطرح صديقه").
+     * Arapçada sayıdan sonra gelen ad sayıya göre değişiyor (1 / 2 / 3–10 / 11+): boncuk ve hata
+     * sayıları [beadsAr] ve [mistakesAr] ile yazılıyor.
      */
     private fun lang() = AppLanguage.textLanguage()
     private const val EN = AppLanguage.ENGLISH
     private const val ID = AppLanguage.INDONESIAN
+    private const val AR = AppLanguage.ARABIC
 
     fun columnName(col: Int): String = when (lang()) {
         EN -> COLUMN_NAMES_EN.getOrElse(col) { "column ${col + 1}" }
         ID -> COLUMN_NAMES_ID.getOrElse(col) { "kolom ${col + 1}" }
+        AR -> COLUMN_NAMES_AR.getOrElse(col) { "العمود ${col + 1}" }
         else -> COLUMN_NAMES.getOrElse(col) { "${col + 1}. sütun" }
     }
 
@@ -69,6 +75,12 @@ object MistakeAnalyzer {
             AbacusRule.FIVE -> "rumus teman kecil"
             AbacusRule.TEN -> "rumus teman besar"
             AbacusRule.BEAD -> "rumus gabungan"
+        }
+        AR -> when (rule) {
+            AbacusRule.DIRECT -> "الطريقة المباشرة"
+            AbacusRule.FIVE -> "قاعدة الأصدقاء الصغار"
+            AbacusRule.TEN -> "قاعدة الأصدقاء الكبار"
+            AbacusRule.BEAD -> "القاعدة المركّبة"
         }
         else -> turkishRuleName(rule)
     }
@@ -100,6 +112,14 @@ object MistakeAnalyzer {
                 StepExplainer.Role.BIG_FRIEND -> if (add) "kurangi teman besarnya $amount" else "tambah temannya $amount"
                 StepExplainer.Role.BEADS -> "tambah ${s.lower} manik"
                 StepExplainer.Role.TEN -> if (add) "tambah 10" else "kurangi 10"
+            }
+            AR -> return when (s.role) {
+                StepExplainer.Role.DIRECT -> "${if (s.upper + s.lower > 0) "أضِف" else "اطرح"} $amount"
+                StepExplainer.Role.FIVE -> if (s.upper > 0) "أضِف 5" else "اطرح 5"
+                StepExplainer.Role.FRIEND -> "${if (s.lower > 0) "أضِف" else "اطرح"} صديقه ${Math.abs(s.lower)}"
+                StepExplainer.Role.BIG_FRIEND -> if (add) "اطرح صديقه الكبير $amount" else "أضِف صديقه $amount"
+                StepExplainer.Role.BEADS -> "أضِف ${beadsAr(s.lower)}"
+                StepExplainer.Role.TEN -> if (add) "أضِف 10" else "اطرح 10"
             }
         }
         return when (s.role) {
@@ -161,6 +181,7 @@ object MistakeAnalyzer {
         when (lang()) {
             EN -> return "The ${columnName(col)} place should be ${digit(target, col)}, but you have ${digit(value, col)}."
             ID -> return "Kolom ${columnName(col)} seharusnya ${digit(target, col)}, tetapi punyamu ${digit(value, col)}."
+            AR -> return "يجب أن تكون خانة ${columnName(col)} ${digit(target, col)}، لكن عندك ${digit(value, col)}."
         }
         return "${capital(columnName(col))} basamağına ${digit(target, col)} yazılmalı, sende ${digit(value, col)} var."
     }
@@ -236,15 +257,41 @@ object MistakeAnalyzer {
                     EN -> "${list.size} ${if (list.size == 1) "mistake" else "mistakes"} ${ruleLocativeEn(rule)}"
                     // Endonezcede ad çoğul eki almıyor: "2 kesalahan".
                     ID -> "${list.size} kesalahan ${ruleLocativeId(rule)}"
+                    AR -> "${mistakesAr(list.size)} ${ruleLocativeAr(rule)}"
                     else -> "${ruleLocative(rule)} ${list.size} hata"
                 }
             }
-        val and = when (lang()) { EN -> " and "; ID -> " dan "; else -> " ve " }
+        val and = when (lang()) { EN -> " and "; ID -> " dan "; AR -> " و"; else -> " ve " }
+        val comma = if (lang() == AR) "، " else ", "
         return when (parts.size) {
             0 -> ""
             1 -> parts[0]
-            else -> parts.dropLast(1).joinToString(", ") + and + parts.last()
+            else -> parts.dropLast(1).joinToString(comma) + and + parts.last()
         }
+    }
+
+    private fun ruleLocativeAr(rule: AbacusRule?): String = when (rule) {
+        null -> "عند كتابة العدد الأول"
+        AbacusRule.DIRECT -> "في الخطوات المباشرة"
+        AbacusRule.FIVE -> "في قاعدة الأصدقاء الصغار"
+        AbacusRule.TEN -> "في قاعدة الأصدقاء الكبار"
+        AbacusRule.BEAD -> "في القاعدة المركّبة"
+    }
+
+    /** Arapça "N hata": خطأ واحد / خطآن / 3–10 أخطاء / 11+ خطأ (cümlede özne, yalın hâl). */
+    internal fun mistakesAr(n: Int): String = when {
+        n == 1 -> "خطأ واحد"
+        n == 2 -> "خطآن"
+        n % 100 in 3..10 -> "$n أخطاء"
+        else -> "$n خطأ"
+    }
+
+    /** Arapça "N boncuk", "أضِف"in nesnesi (mansup): خرزة واحدة / خرزتين / 3–10 خرزات / 11+ خرزة. */
+    internal fun beadsAr(n: Int): String = when {
+        n == 1 -> "خرزة واحدة"
+        n == 2 -> "خرزتين"
+        n % 100 in 3..10 -> "$n خرزات"
+        else -> "$n خرزة"
     }
 
     private fun ruleLocativeId(rule: AbacusRule?): String = when (rule) {
@@ -323,6 +370,8 @@ object MistakeAnalyzer {
                 "needed ${ruleName(m.rule)}: ${m.steps.joinToString(", ") { stepPhrase(it, m) }}."
             ID -> "Di kolom ${columnName(m.col)}, untuk ${if (m.op == HomeworkOp.ADD) "menambah" else "mengurangi"} ${m.x} " +
                 "dipakai ${ruleName(m.rule)}: ${m.steps.joinToString(", ") { stepPhrase(it, m) }}."
+            AR -> "في خانة ${columnName(m.col)}، ${if (m.op == HomeworkOp.ADD) "لإضافة" else "لطرح"} ${m.x} " +
+                "نحتاج إلى ${ruleName(m.rule)}: ${m.steps.joinToString("، ") { stepPhrase(it, m) }}."
             else -> "${capital(columnName(m.col))} basamağında ${m.x} ${if (m.op == HomeworkOp.ADD) "eklerken" else "çıkarırken"} " +
                 "${ruleName(m.rule)} gerekiyordu: ${m.steps.joinToString(", ") { stepPhrase(it, m) }}."
         }
@@ -337,6 +386,14 @@ object MistakeAnalyzer {
                 // yanlış yapmış: aşağıdaki "yanlış sütun değeri" anlatır.
                 val movedOn = missingAt != -1 && after.drop(missingAt + 1).any { differsOnlyIn(it, target, m.col) }
                 if (missing != m.valueBefore.toInt() && missingAt != -1 && !movedOn) {
+                    if (language == AR) {
+                        val tailAr = when {
+                            s.carry != null && m.op == HomeworkOp.ADD -> " كان يجب أن تُضاف خرزة واحدة إلى عمود ${columnName(s.col)}."
+                            s.carry != null -> " كان يجب أن تُطرح خرزة واحدة من عمود ${columnName(s.col)}."
+                            else -> ""
+                        }
+                        return Diagnosis(Kind.MISSING_STEP, "$head لقد تخطّيت خطوة «${stepPhrase(s, m)}».$tailAr", m)
+                    }
                     if (language == ID) {
                         val tailId = when {
                             s.carry != null && m.op == HomeworkOp.ADD -> " Seharusnya 1 manik masuk ke kolom ${columnName(s.col)}."
@@ -373,12 +430,13 @@ object MistakeAnalyzer {
                 when (language) {
                     EN -> "$head The ${columnName(m.col)} column should be ${digit(target, m.col)}, but you got ${digit(wrong, m.col)}."
                     ID -> "$head Kolom ${columnName(m.col)} seharusnya ${digit(target, m.col)}, tetapi punyamu jadi ${digit(wrong, m.col)}."
+                    AR -> "$head كان يجب أن يكون عمود ${columnName(m.col)} ${digit(target, m.col)}، لكنه صار عندك ${digit(wrong, m.col)}."
                     else -> "$head ${capital(columnName(m.col))} sütununda ${digit(target, m.col)} olmalıydı, sende ${digit(wrong, m.col)} oldu."
                 },
                 m,
             )
         }
-        val atMove = when (language) { EN -> "Here's the mistake: $head"; ID -> "Kesalahannya di sini: $head"; else -> "Hata burada: $head" }
+        val atMove = when (language) { EN -> "Here's the mistake: $head"; ID -> "Kesalahannya di sini: $head"; AR -> "الخطأ هنا: $head"; else -> "Hata burada: $head" }
         return Diagnosis(Kind.AT_MOVE, atMove, m)
     }
 
@@ -393,6 +451,8 @@ object MistakeAnalyzer {
                     "but you got ${digit(wrote, col)}. You did the second number right!"
                 ID -> "Saat menulis angka pertama, kolom ${columnName(col)} seharusnya ${digit(first, col)}, " +
                     "tetapi punyamu jadi ${digit(wrote, col)}. Angka kedua sudah kamu kerjakan dengan benar!"
+                AR -> "عند كتابة العدد الأول، كان يجب أن تكون خانة ${columnName(col)} ${digit(first, col)}، " +
+                    "لكنها صارت عندك ${digit(wrote, col)}. أما العدد الثاني فقد أنجزته بشكل صحيح!"
                 else -> "İlk sayıyı yazarken ${columnName(col)} basamağına ${digit(first, col)} yazılmalıydı, sende ${digit(wrote, col)} oldu. " +
                     "İkinci sayıyı doğru işlemişsin!"
             },

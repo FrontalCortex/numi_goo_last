@@ -74,6 +74,7 @@
     <string name="settings_language_tr" translatable="false">Türkçe</string>
     <string name="settings_language_en" translatable="false">English</string>
     <string name="settings_language_id" translatable="false">Bahasa Indonesia</string>
+    <string name="settings_language_ar" translatable="false">العربية</string>
 
     <!-- Soru medya indirme bildirimi (ayrı kanal yerine upload kanalı kullanılıyor) -->
     <string name="notification_download_cancel">İptal et</string>

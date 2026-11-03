@@ -219,10 +219,11 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         val privacyText = appString(R.string.ui_gizlilik_politikasini)
         // Tek sayfada birleşik: privacy-policy.html hem Gizlilik Politikası (Part I) hem
         // Kullanım Şartları (Part II) içeriyor, çapa (#pp-1 / #tos-1) doğru bölüme atlıyor.
-        // Sayfa uygulamanın dilinde (privacy-policy-tr / -id; İngilizce asıl metin); çapalar üçünde aynı.
+        // Sayfa uygulamanın dilinde (privacy-policy-tr / -id / -ar; İngilizce asıl metin); çapalar hepsinde aynı.
         val page = when (AppLanguage.current(this)) {
             AppLanguage.TURKISH -> "privacy-policy-tr.html"
             AppLanguage.INDONESIAN -> "privacy-policy-id.html"
+            AppLanguage.ARABIC -> "privacy-policy-ar.html"
             else -> "privacy-policy.html"
         }
         val termsUrl = "https://numigo-new.web.app/$page#tos-1"

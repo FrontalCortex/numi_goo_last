@@ -18,8 +18,8 @@ import kotlin.system.exitProcess
  * attachBaseContext'inde ([FontScaleLimiter.wrap]) aynı yapılandırmayla veriliyor.
  *
  * ## "Telefonun dili"
- * Telefon Türkçe ise Türkçe, Endonezce ise Endonezce, değilse İngilizce: varsayılan `values/`
- * Türkçe olduğu için desteklenmeyen bir dili olduğu gibi bırakmak Türkçe gösterirdi.
+ * Telefon Türkçe ise Türkçe, Endonezce ise Endonezce, Arapça ise Arapça, değilse İngilizce:
+ * varsayılan `values/` Türkçe olduğu için desteklenmeyen bir dili olduğu gibi bırakmak Türkçe gösterirdi.
  *
  * ## Endonezce: "id" ve "in"
  * Endonezcenin ISO kodu "id", ama Java'nın Locale'i eski kodu "in"i kullanıyor: `Locale("id")`,
@@ -28,31 +28,47 @@ import kotlin.system.exitProcess
  * "in"e çeviriyor, yani hangisi verilirse verilsin `values-in` seçilir. Bu yüzden dil
  * karşılaştırmaları [normalize] ile yapılıyor; sunucuya ve `users/{uid}.lang`'a ise hep "id"
  * ([current]) gidiyor, sunucu "in" bilmiyor.
+ *
+ * ## Arapça: Batı rakamları
+ * Kullanıcı kararı (03.11.2026, docs/CEVIRI_SOZLUGU_AR.md): Arapçada da 0–9. Düz "ar" yereli
+ * `String.format`, `getString(id, sayı)` ve NumberFormat'ta ٠–٩ üretir; bu yüzden yerel
+ * `ar-u-nu-latn` ([ARABIC_LOCALE_TAG]). Ondalık ayırıcı nokta, binlik virgül. Telefon zaten Arapçaysa
+ * da (ör. ar-EG, rakamları ٠–٩) yapılandırma yeniden kuruluyor: `Resources.getString(id, sayı)`
+ * varsayılan yereli değil yapılandırmanın yerelini kullanıyor.
  */
 object AppLanguage {
     const val SYSTEM = "system"
     const val TURKISH = "tr"
     const val ENGLISH = "en"
     const val INDONESIAN = "id"
+    const val ARABIC = "ar"
+
+    /** Arapça, Batı rakamlarıyla (bkz. sınıf açıklaması). */
+    const val ARABIC_LOCALE_TAG = "ar-u-nu-latn"
 
     /** Seçim ekranındaki sıra. */
-    val CHOICES = listOf(SYSTEM, TURKISH, ENGLISH, INDONESIAN)
+    val CHOICES = listOf(SYSTEM, TURKISH, ENGLISH, INDONESIAN, ARABIC)
 
     private const val PREFS = "app_language"
     private const val KEY_CHOICE = "choice"
 
-    /** Kullanıcının seçimi: [SYSTEM], [TURKISH], [ENGLISH] ya da [INDONESIAN]. */
+    /** Kullanıcının seçimi: [SYSTEM], [TURKISH], [ENGLISH], [INDONESIAN] ya da [ARABIC]. */
     fun choice(context: Context): String =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_CHOICE, SYSTEM) ?: SYSTEM
 
-    /** Şu an kullanılan dil kodu ("tr" / "en" / "id"); [SYSTEM] telefonun diline göre çözülür. */
+    /** Şu an kullanılan dil kodu ("tr" / "en" / "id" / "ar"); [SYSTEM] telefonun diline göre çözülür. */
     fun current(context: Context): String = resolve(choice(context))
 
     fun isTurkish(): Boolean = Locale.getDefault().language == TURKISH
 
+    fun isArabic(): Boolean = Locale.getDefault().language == ARABIC
+
+    /** Kodda birleştirilen listelerin ayırıcısı: Arapçada "، ", öbür dillerde ", ". */
+    fun listSeparator(): String = if (isArabic()) "، " else ", "
+
     /**
      * Cümleyi kodda kuran yerlerin ([com.example.app.abacus.MistakeAnalyzer] gibi) dili: [TURKISH],
-     * [ENGLISH] ya da [INDONESIAN]. [wrap] varsayılan dili ayarladığı için ona bakıyor.
+     * [ENGLISH], [INDONESIAN] ya da [ARABIC]. [wrap] varsayılan dili ayarladığı için ona bakıyor.
      */
     fun textLanguage(): String = supported(Locale.getDefault().language)
 
@@ -61,25 +77,32 @@ object AppLanguage {
 
     /** Desteklenen dillerden biri; tanınmayan dil İngilizce. */
     private fun supported(language: String): String = when (val l = normalize(language)) {
-        TURKISH, INDONESIAN -> l
+        TURKISH, INDONESIAN, ARABIC -> l
         else -> ENGLISH
     }
 
     private fun resolve(choice: String): String = when (choice) {
-        TURKISH, ENGLISH, INDONESIAN -> choice
+        TURKISH, ENGLISH, INDONESIAN, ARABIC -> choice
         else -> supported(Resources.getSystem().configuration.locales[0].language)
     }
 
     /** [base]'i seçili dille yeniden yapılandırır; dil zaten aynıysa olduğu gibi döner. */
     fun wrap(base: Context): Context {
-        val locale = Locale.forLanguageTag(current(base))
+        val locale = locale(current(base))
         Locale.setDefault(locale)
         val config = base.resources.configuration
-        if (normalize(config.locales[0].language) == normalize(locale.language)) return base
+        val now = config.locales[0]
+        if (normalize(now.language) == normalize(locale.language) &&
+            now.getUnicodeLocaleType("nu") == locale.getUnicodeLocaleType("nu")
+        ) return base
         val localized = Configuration(config)
         localized.setLocale(locale)
         return base.createConfigurationContext(localized)
     }
+
+    /** Dil kodunun Java yereli; Arapça Batı rakamlı. */
+    fun locale(code: String): Locale =
+        Locale.forLanguageTag(if (code == ARABIC) ARABIC_LOCALE_TAG else code)
 
     /**
      * Seçimi kaydeder ve uygulamayı baştan açar: sınıf açılışında okunmuş metinler (enum etiketleri,

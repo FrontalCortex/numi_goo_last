@@ -163,7 +163,7 @@ class NewStreakFragment : DialogFragment() {
         val density = resources.displayMetrics.density
         listOf(binding.newStreakTitle, binding.newStreakSubtitle, binding.newStreakOptions)
             .forEach { v ->
-                v.translationX = 220f * density
+                v.translationX = 220f * density * RtlSupport.endSign(v)
                 v.alpha = 0f
                 v.animate().translationX(0f).alpha(1f).setDuration(220).start()
             }

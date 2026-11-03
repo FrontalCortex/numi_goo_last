@@ -16,9 +16,11 @@
     android:clipChildren="false"
     android:elevation="20dp">
 
-    <!-- Tıklanan kartın görüntüsü: karartmanın üstünde, panelin hangi karta ait olduğu belli olsun -->
+    <!-- Tıklanan kartın görüntüsü: karartmanın üstünde, panelin hangi karta ait olduğu belli olsun.
+         Görüntü ve ok kodda mutlak x ile konuyor: sağdan sola düzende de sol üstten ölçülsün (left|top). -->
     <ImageView
         android:id="@+id/lessonPanelCardSnapshot"
+        android:layout_gravity="left|top"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:contentDescription="@null"
@@ -26,6 +28,7 @@
 
     <com.example.app.PanelPointerView
         android:id="@+id/lessonPanelArrow"
+        android:layout_gravity="left|top"
         android:layout_width="22dp"
         android:layout_height="11dp"
         android:visibility="invisible" />
@@ -51,6 +54,7 @@
 
             <TextView
                 android:id="@+id/lessonKindText"
+                android:textAlignment="viewStart"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -68,6 +72,7 @@
 
         <TextView
             android:id="@+id/lessonTitle"
+            android:textAlignment="viewStart"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
@@ -93,6 +98,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="@string/lesson_popover_text"
+                    android:textAlignment="viewStart"
                     android:textColor="@color/lesson_card_locked_text"
                     android:textSize="13sp" />
 

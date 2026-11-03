@@ -200,6 +200,7 @@
 
     <FrameLayout
         android:id="@+id/abacusContainer"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/abacus_frame_bg"

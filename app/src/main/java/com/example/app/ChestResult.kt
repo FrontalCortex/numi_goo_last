@@ -222,7 +222,7 @@ class ChestResult : Fragment() {
                         val rootView = binding.root
                         rootView.animate()
                             // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
-                            .translationX(-rootView.width.toFloat())
+                            .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
                             .setDuration(400L)
                             .withEndAction { completeMapReturn() }
                             .start()

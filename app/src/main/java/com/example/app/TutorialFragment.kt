@@ -557,7 +557,7 @@ class TutorialFragment : Fragment() {
             typewriterSetupRunnable?.let { binding.tutorialText.removeCallbacks(it) }
             typewriterSetupRunnable = null
             val step = getCurrentStep()
-            binding.tutorialText.text = step.text
+            binding.tutorialText.text = RtlSupport.isolateEquations(step.text)
             binding.tutorialText.textAlignment = View.TEXT_ALIGNMENT_CENTER
             return
         }
@@ -622,10 +622,10 @@ class TutorialFragment : Fragment() {
         if (step.useTypewriterEffect) {
             showTextWithTypewriter(step.text, binding.tutorialText, step.typewriterSpeed)
         } else {
-            binding.tutorialText.text = step.text
+            binding.tutorialText.text = RtlSupport.isolateEquations(step.text)
         }
         
-        binding.questionText.text = step.questionText
+        binding.questionText.text = step.questionText?.let(RtlSupport::isolateEquations)
         binding.questionText.visibility = step.questionTextVisibility
         
         // Ses dosyasını çal
@@ -1218,7 +1218,7 @@ class TutorialFragment : Fragment() {
             }
             if(binding.skipTutorialButton.visibility == View.INVISIBLE && lessonItem?.tutorialNumber != 1){
                 val screenWidth = resources.displayMetrics.widthPixels
-                binding.skipTutorialButton.translationX = screenWidth.toFloat()
+                binding.skipTutorialButton.translationX = screenWidth.toFloat() * RtlSupport.endSign(binding.skipTutorialButton)
                 binding.skipTutorialButton.visibility = View.VISIBLE
                 binding.skipTutorialButton.animate()
                     .translationX(0f)
@@ -1503,7 +1503,7 @@ class TutorialFragment : Fragment() {
         binding.quitButton.isEnabled = false
         // Sola: ders akışındaki bütün ekranlar gibi. Sağa kayıyordu, yani geldiği yöne
         // geri dönüyor gibi duruyordu.
-        val slideDistance = -resources.displayMetrics.widthPixels.toFloat()
+        val slideDistance = -resources.displayMetrics.widthPixels.toFloat() * RtlSupport.endSign(rootView)
         rootView.animate().cancel()
         rootView.animate()
             .translationX(slideDistance)
@@ -1562,7 +1562,7 @@ class TutorialFragment : Fragment() {
         // skipTutorialButton'ı sağa kaydırarak gizle (invisible yerine animasyon)
         val screenWidth = resources.displayMetrics.widthPixels
         binding.skipTutorialButton.animate()
-            .translationX(screenWidth.toFloat())
+            .translationX(screenWidth.toFloat() * RtlSupport.endSign(binding.skipTutorialButton))
             .setDuration(600)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .withEndAction {
@@ -19806,13 +19806,13 @@ class TutorialFragment : Fragment() {
         // adım geçişlerinde önceki çağrıdan kalan hiçbir şey çalışmaya devam etmesin.
         typewriterRunnable?.let { textView.removeCallbacks(it) }
         typewriterSetupRunnable?.let { textView.removeCallbacks(it) }
-        typewriterText = text
+        typewriterText = RtlSupport.isolateEquations(text)
         typewriterCurrentIndex = 0
         typewriterSpeed = speed
         typewriterPausedByLifecycle = false
 
         textView.visibility = View.INVISIBLE
-        setTypewriterProgress(textView, text, 0)
+        setTypewriterProgress(textView, typewriterText!!, 0)
         typewriterSetupRunnable = Runnable {
             typewriterSetupRunnable = null
             typewriterRunnable = object : Runnable {

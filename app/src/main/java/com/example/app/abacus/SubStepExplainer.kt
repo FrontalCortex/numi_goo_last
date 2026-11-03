@@ -24,6 +24,7 @@ object SubStepExplainer {
     fun question(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String = when (AppLanguage.textLanguage()) {
         AppLanguage.ENGLISH -> "What does “${MistakeAnalyzer.stepPhrase(s, m)}” mean?"
         AppLanguage.INDONESIAN -> "Apa arti “${MistakeAnalyzer.stepPhrase(s, m)}”?"
+        AppLanguage.ARABIC -> "ماذا تعني «${MistakeAnalyzer.stepPhrase(s, m)}»؟"
         else -> "“${MistakeAnalyzer.stepPhrase(s, m)}” ne demek?"
     }
 
@@ -34,6 +35,7 @@ object SubStepExplainer {
         when (AppLanguage.textLanguage()) {
             AppLanguage.ENGLISH -> return SubStepExplainerEn.explain(s, m)
             AppLanguage.INDONESIAN -> return SubStepExplainerId.explain(s, m)
+            AppLanguage.ARABIC -> return SubStepExplainerAr.explain(s, m)
         }
         val phrase = "“${MistakeAnalyzer.stepPhrase(s, m)}”"
         val col = MistakeAnalyzer.columnName(m.col)
@@ -76,6 +78,7 @@ object SubStepExplainer {
         when (AppLanguage.textLanguage()) {
             AppLanguage.ENGLISH -> return SubStepExplainerEn.whyRule(m)
             AppLanguage.INDONESIAN -> return SubStepExplainerId.whyRule(m)
+            AppLanguage.ARABIC -> return SubStepExplainerAr.whyRule(m)
         }
         val d = m.digitBefore
         val x = m.x

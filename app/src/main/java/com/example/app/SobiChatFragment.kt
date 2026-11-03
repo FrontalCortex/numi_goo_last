@@ -383,12 +383,12 @@ class SobiChatFragment : Fragment() {
     private fun buttonRow(ctx: Context, buttons: List<ServerSobi.Action>): View {
         val row = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(dp(ctx, 4), dp(ctx, 2), 0, dp(ctx, 6))
+            setPaddingRelative(dp(ctx, 4), dp(ctx, 2), 0, dp(ctx, 6))
         }
         for (a in buttons) {
             val label = buttonLabel(a) ?: continue
             val chip = TextView(ctx).apply {
-                text = label
+                text = RtlSupport.isolateEquations(label)
                 setTextColor(ContextCompat.getColor(ctx, R.color.white))
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 15f)
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
@@ -548,7 +548,7 @@ class SobiChatFragment : Fragment() {
         text = appString(R.string.sobi_thinking)
         setTextColor(ContextCompat.getColor(ctx, R.color.dark_text_secondary))
         setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f)
-        setPadding(dp(ctx, 4), dp(ctx, 6), 0, dp(ctx, 6))
+        setPaddingRelative(dp(ctx, 4), dp(ctx, 6), 0, dp(ctx, 6))
     }
 
     private fun hideKeyboard() {

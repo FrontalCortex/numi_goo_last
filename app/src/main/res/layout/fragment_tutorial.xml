@@ -22,7 +22,7 @@
         android:minHeight="0dp"
         android:padding="0dp"
         android:scaleType="centerInside"
-        android:layout_marginLeft="15dp"
+        android:layout_marginStart="15dp"
         android:layout_marginTop="10dp"
         android:background="@color/background_color"
         android:src="@mipmap/quit_ic"
@@ -1707,6 +1707,7 @@
 
     <TextView
         android:id="@+id/questionText"
+        android:layoutDirection="ltr"
         android:layout_width="@dimen/tutorial_question_width"
         android:layout_height="wrap_content"
         android:layout_marginBottom="@dimen/tutorial_question_margin_bottom"
@@ -1717,8 +1718,8 @@
         android:textColor="@color/white"
         android:textSize="@dimen/tutorial_text_size"
         app:layout_constraintBottom_toTopOf="@id/abacusContainer"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent" />
 
 
 
@@ -1772,6 +1773,7 @@
 
     <FrameLayout
         android:id="@+id/abacusContainer"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/abacus_frame_bg"
@@ -2118,27 +2120,30 @@
 
     <View
         android:id="@+id/guideline"
+        android:layoutDirection="ltr"
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:layout_marginBottom="10dp"
         android:importantForAccessibility="no"
         android:visibility="invisible"
-        app:layout_constraintEnd_toEndOf="@id/abacusContainer"
-        app:layout_constraintStart_toStartOf="@id/abacusContainer"
+        app:layout_constraintRight_toRightOf="@id/abacusContainer"
+        app:layout_constraintLeft_toLeftOf="@id/abacusContainer"
         app:layout_constraintTop_toTopOf="@id/abacusContainer" />
     <View
         android:id="@+id/guideline2"
+        android:layoutDirection="ltr"
         android:layout_width="0dp"
         android:layout_height="1dp"
         android:importantForAccessibility="no"
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="@id/abacusContainer"
-        app:layout_constraintEnd_toEndOf="@id/abacusContainer"
-        app:layout_constraintStart_toStartOf="@id/abacusContainer"
+        app:layout_constraintRight_toRightOf="@id/abacusContainer"
+        app:layout_constraintLeft_toLeftOf="@id/abacusContainer"
         app:layout_constraintTop_toTopOf="@id/abacusContainer"
         app:layout_constraintVertical_bias="0.3" />
     <View
         android:id="@+id/focusView"
+        android:layoutDirection="ltr"
         android:layout_width="@dimen/tutorial_focus_width"
         android:layout_height="@dimen/tutorial_focus_height"
         android:layout_marginLeft="0dp"
@@ -2147,7 +2152,7 @@
         android:translationZ="5dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="@id/abacusContainer"
-        app:layout_constraintEnd_toEndOf="@id/abacusContainer"
+        app:layout_constraintRight_toRightOf="@id/abacusContainer"
         app:layout_constraintTop_toTopOf="@id/abacusContainer">
 
     </View>
@@ -2155,6 +2160,7 @@
     <!-- abacusClickable=false iken boncukları kaplar; tıklanınca ekran tıklaması gibi sonraki adım. -->
     <View
         android:id="@+id/abacusTapBlocker"
+        android:layoutDirection="ltr"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@android:color/transparent"
@@ -2163,8 +2169,8 @@
         android:visibility="gone"
         android:elevation="12dp"
         app:layout_constraintBottom_toBottomOf="@id/abacusContainer"
-        app:layout_constraintEnd_toEndOf="@id/abacusContainer"
-        app:layout_constraintStart_toStartOf="@id/abacusContainer"
+        app:layout_constraintRight_toRightOf="@id/abacusContainer"
+        app:layout_constraintLeft_toLeftOf="@id/abacusContainer"
         app:layout_constraintTop_toTopOf="@id/abacusContainer" />
 
     <LinearLayout
@@ -2183,7 +2189,7 @@
             android:layout_width="@dimen/tutorial_back_icon_button_size"
             android:layout_height="@dimen/tutorial_back_icon_button_size"
             android:layout_gravity="center"
-            android:layout_marginLeft="10dp"
+            android:layout_marginStart="10dp"
             android:background="@drawable/bg_depth_tutorial_control"
             android:paddingStart="12dp"
             android:paddingTop="12dp"

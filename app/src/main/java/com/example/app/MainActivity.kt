@@ -1557,7 +1557,8 @@ class MainActivity : AppCompatActivity() {
             val controlsParams = android.widget.FrameLayout.LayoutParams(
                 android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
                 android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }
+            // Çekmece soldan kayıyor (translationX eksi): Arapçada da solda, içi soldan sağa (overlay layout'u).
+            ).apply { gravity = Gravity.LEFT or Gravity.CENTER_VERTICAL }
             binding.recordingOverlayContainer.addView(drawingControlsView, controlsParams)
 
             binding.recordingOverlayContainer.isClickable = false
@@ -1865,7 +1866,7 @@ class MainActivity : AppCompatActivity() {
         val maxM = maxRecordingSecForSession / 60
         val maxS = maxRecordingSecForSession % 60
         recordingOverlayView?.findViewById<TextView>(R.id.recordingTimerText)?.text =
-            "${String.format("%d:%02d", elapsedSec / 60, elapsedSec % 60)} / $maxM:${String.format("%02d", maxS)}"
+            RtlSupport.ltr("${String.format("%d:%02d", elapsedSec / 60, elapsedSec % 60)} / $maxM:${String.format("%02d", maxS)}")
     }
 
     private fun hideRecordingOverlay() {
