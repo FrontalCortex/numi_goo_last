@@ -18,6 +18,7 @@
  *   node scripts/sobi-dene.js --senaryo ornek           Sobi ekranında örnek isteyen çocuk (alistirma_ver)
  *   node scripts/sobi-dene.js --dil en                 İngilizce uygulama: dil bloğu eklenir, İngilizce senaryolar
  *   node scripts/sobi-dene.js --dil id                 Endonezce uygulama: dil bloğu eklenir, Endonezce senaryolar
+ *   node scripts/sobi-dene.js --dil ar                 Arapça uygulama: dil bloğu eklenir, Arapça senaryolar
  *   node scripts/sobi-dene.js --senaryo adim            analiz ekranında adımın bir parçasını soran çocuk (değerlendirme setinin adim_sorusu vakaları)
  *
  * Her turda çocuğun mesajı, Sobi'nin cevabı, çağrılan araçlar, ekran işleri, denetim sonucu ve
@@ -31,10 +32,11 @@ const Anthropic = require('@anthropic-ai/sdk').default;
 const chat = require('../sobi/chat');
 
 const SYSTEM = fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_tr.md'), 'utf8');
-/** --dil en|id: sunucudaki gibi Türkçe talimat + sondaki dil bloğu (sobi/callable.js LANG_PROMPTS). */
+/** --dil en|id|ar: sunucudaki gibi Türkçe talimat + sondaki dil bloğu (sobi/callable.js LANG_PROMPTS). */
 const LANG_PROMPTS = {
   en: fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_lang_en.md'), 'utf8'),
   id: fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_lang_id.md'), 'utf8'),
+  ar: fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_lang_ar.md'), 'utf8'),
 };
 
 const SCENARIOS = [
@@ -151,6 +153,28 @@ const ID_SCENARIOS = [
   },
 ];
 
+/**
+ * Arapça uygulamanın gönderdiği bağlam. values-ar/strings_tutorial.xml henüz yokken adım metinleri
+ * sözlükten (docs/CEVIRI_SOZLUGU_AR.md) elle yazıldı; çeviri gelince oradaki metinlerle değiştir.
+ */
+const AR_SCENARIOS = [
+  {
+    ad: 'AR — القاعدة المركّبة: 8 + 6, 5 neden gidiyor',
+    context: { stepId: 't8_8_arti_6', stepText: 'أضِف 6 إلى 8 بالقاعدة المركّبة.', questionText: '8 + 6', base: 8, target: 14, current: 9, attempts: 2, valueLog: [8, 9] },
+    mesajlar: ['نحن نضيف 6، لماذا نطرح 5؟', 'ما زلت لا أفهم'],
+  },
+  {
+    ad: 'AR — çıkarma: 23 − 6, kafası karışık',
+    context: { stepId: 't14_23_eksi_6', stepText: 'اطرح 6 من 23 بالقاعدة المركّبة.', questionText: '23 - 6', base: 23, target: 17, current: 23, attempts: 1, valueLog: [23] },
+    mesajlar: ['لم أفهم', 'أرِني'],
+  },
+  {
+    ad: 'AR — anlatım adımı: الصديق الكبير ne',
+    context: { lessonTitle: 'الجمع بقاعدة الأصدقاء الكبار - القاعدة', taughtRules: ['add_direct', 'add_five', 'add_ten'], stepText: 'الصديق الكبير لـ 1 هو 9.', base: 9, target: null, current: 9, attempts: 0, valueLog: [] },
+    mesajlar: ['ما هو الصديق الكبير؟', 'اسمي سارة، ما لونك المفضل؟'],
+  },
+];
+
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? null : process.argv[i + 1];
@@ -224,6 +248,7 @@ async function main() {
     }]
     : arg('dil') === 'en' ? EN_SCENARIOS
     : arg('dil') === 'id' ? ID_SCENARIOS
+    : arg('dil') === 'ar' ? AR_SCENARIOS
     : arg('senaryo') === 'adim' ? adimScenarios()
       : arg('senaryo') === 'ornek' ? ORNEK_SCENARIOS
       : arg('senaryo') === 'kavram' ? KAVRAM_SCENARIOS

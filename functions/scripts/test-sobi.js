@@ -920,6 +920,50 @@ async function main() {
     assert.strictEqual(guard.cleanChildText('Nama saya adalah Siti, umurku 8').text, 'Nama saya adalah [ad], umurku 8');
     assert.strictEqual(guard.cleanChildText('namaku Rina').text, 'namaku [ad]');
   });
+  await test('Arapça (lang: ar): dil bloğu en sonda, Türkçe istek aynen; yedek ve hazır metin Arapça', async () => {
+    const env = fakeEnv();
+    const responses = [];
+    const client = fakeClient(responses);
+    const fn = createSobiChat({ ...env, createClient: () => client });
+    const ctx = { auth: { uid: 'u1' } };
+    env.store.set('users/u1', { plan: 'Pro' });
+
+    responses.push(say('هيا ننظر معًا!'));
+    const r1 = await fn({ message: 'لم أفهم', context: CTX, lang: 'ar' }, ctx);
+    assert.strictEqual(r1.reply, 'هيا ننظر معًا!');
+    const sent = client.calls[0];
+    assert.strictEqual(sent.system.length, 2);
+    assert.ok(sent.system[1].text.startsWith('## Language: Arabic'));
+    assert.ok(sent.system[1].text.includes('أضِف 5 واطرح صديقه'));
+    const s1 = env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`);
+    assert.strictEqual(s1.lang, 'ar');
+    assert.strictEqual(s1.promptVersion, `${createSobiChat.PROMPT_VERSION}+ar`);
+
+    // Genel sohbet: ders + genel + dil = üç blok; boş ilk mesajın başlığı Arapça.
+    responses.push(say('بالتأكيد!'));
+    await fn({ mode: 'genel', message: 'مرحبا', lang: 'ar' }, ctx);
+    assert.strictEqual(client.calls[1].system.length, 3);
+    assert.ok(client.calls[1].system[2].text.startsWith('## Language: Arabic'));
+    assert.strictEqual(createSobiChat.titleOf('', 'ar'), 'محادثة');
+
+    // Kredi açıklaması Arapça, sayılar wallet'tan (Batı rakamı).
+    assert.ok(chat.directReplyFor({ mode: 'genel' }, 'krediler', 'ar').text.startsWith('لديك رسائل مجانية كل يوم: 2 في خطة Free'));
+    const trStep = chat.sanitizeContext({ tutorialNumber: 3, stepIndex: 0, stepText: "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin." });
+    assert.strictEqual(chat.directReplyFor({ ...trStep, lang: 'ar' }, 'bunu_anlamadim', 'ar'), null);
+    // Yedek metin Arapça: Türkçe harf, Latin kelime ve Doğu Arap rakamı yok; düğme "أرِني".
+    for (const c of [{ mode: 'genel' }, { ...CTX, target: null, stepText: 'أضِف 5.' }, CTX]) {
+      const t = guard.fallbackReply(c, require('../sobi/tools'), 'ar');
+      assert.ok(!/[A-Za-zçğıöşüÇĞİÖŞÜ٠-٩]/.test(t), t);
+    }
+    assert.ok(guard.fallbackReply(CTX, require('../sobi/tools'), 'ar').includes('"أرِني"'));
+    // Ad maskesi: "اسمي سارة", "انا اسمي ..." ve "أنا أحمد"; "أنا لا أفهم" maskelenmez.
+    assert.strictEqual(guard.cleanChildText('اسمي سارة').text, 'اسمي [ad]');
+    assert.strictEqual(guard.cleanChildText('انا اسمي يوسف وعمري 8').text, 'انا اسمي [ad] وعمري 8');
+    assert.strictEqual(guard.cleanChildText('مرحبا أنا أحمد').text, 'مرحبا أنا [ad]');
+    for (const t of ['أنا لا أفهم', 'انا لم أفهم الصديق الكبير', 'أنا أريد مثالًا', 'أنا الطالب', 'هنا 5']) {
+      assert.strictEqual(guard.cleanChildText(t).text, t);
+    }
+  });
   await test('konu dışı: model cevabı rehberde olmayan sayı uydurursa yedek metin, bedel yok', async () => {
     const env = fakeEnv();
     const fn = createSobiChat({ ...env, createClient: () => fakeClient([say('Türkiye\'nin başkenti Ankara, nüfusu 5800000.')]) });

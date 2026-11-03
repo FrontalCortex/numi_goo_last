@@ -2,17 +2,17 @@
  * Çeviri hazır açıklamaları sunucunun okuyacağı dosyaya yazar: functions/sobi/aciklamalar_<dil>.json.
  *
  * Metinler bu klasördeki aciklamalar_<dil>.json'da (onaylı Türkçe açıklamaların çevirisi;
- * docs/CEVIRI_SOZLUGU.md, docs/CEVIRI_SOZLUGU_ID.md). Adımlar Türkçe yayından
+ * docs/CEVIRI_SOZLUGU.md, _ID.md, _AR.md). Adımlar Türkçe yayından
  * (functions/sobi/aciklamalar_tr.json) geliyor; parmak izi ise o dildeki uygulamanın gönderdiği adım
  * metninden: Türkçe adım metni values/strings_tutorial.xml'de aranır, aynı anahtarın o dildeki
- * karşılığı (values-en, values-in) alınır. Karşılığı bulunamayan adım dosyaya girmez (o adımda Sobi
+ * karşılığı (values-en, values-in, values-ar) alınır. Karşılığı bulunamayan adım dosyaya girmez (o adımda Sobi
  * bugünkü gibi ders metnine dayanır) ve listelenir.
  *
  * Dilin strings_tutorial.xml'i yoksa hiçbir şey yazmaz: parmak izi olmadan bütün adımlar
  * eşleşmezdi ve yayındaki dosya boşalırdı.
  *
  * Türkçe yayın (yayinla.mjs) ya da o dilin öğretici çevirisi değişince bunu da çalıştır.
- * Kullanım: node tools/sobi-eval/aciklamalar/yayinla_dil.mjs <en|id>
+ * Kullanım: node tools/sobi-eval/aciklamalar/yayinla_dil.mjs <en|id|ar>
  */
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -20,7 +20,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** Sunucunun dil kodu → Android kaynak klasörü (Endonezce eski kodla: values-in). */
-const RES_DIRS = { en: 'values-en', id: 'values-in' };
+const RES_DIRS = { en: 'values-en', id: 'values-in', ar: 'values-ar' };
 
 const lang = process.argv[2];
 if (!RES_DIRS[lang]) {

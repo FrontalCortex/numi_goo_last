@@ -112,6 +112,12 @@ check('Endonezce metin de karar içinde', alive.textId.body.includes('streak 12 
 check('Endonezce dondurma metni', withFreeze.textId.body.includes('pembeku streak'), true);
 check('Endonezce "başla" metni', fresh.textId.title, 'Bagaimana kalau mulai hari ini?');
 check('Endonezce hedef dakikası', fresh.textId.body.includes('20 menit'), true);
+check('Arapça metin de karar içinde', alive.textAr.body.includes('سلسلتك من 12 يومًا'), true);
+check('Arapça dondurma metni', withFreeze.textAr.body.includes('تجميد السلسلة'), true);
+check('Arapça "başla" metni', fresh.textAr.title, 'ما رأيك أن نبدأ اليوم؟');
+check('Arapça hedef dakikası (20 → tekil)', fresh.textAr.body.includes('20 دقيقة'), true);
+check('Arapça 1 gün', streakReminderText(1, 5, 0, 'ar').body.includes('يوم واحد'), true);
+check('Arapça 2 dakika ikil', streakReminderText(0, 2, 0, 'ar').body.includes('دقيقتان'), true);
 check('İngilizce değişmedi', fresh.textEn.title, 'How about starting today?');
 
 console.log('\n=== KIRILMIŞ SERİ (sunucuda `current` bayat) ===');
@@ -199,6 +205,9 @@ check(
 check('Endonezce ikinci şans', second.textId.title, 'Streak 5 harimu bisa putus hari ini');
 check('Endonezce ikinci şans dakikası', second.textId.body.includes('5 menit'), true);
 check('Endonezce ikinci şans birinciden farklı', second.textId.title === streakReminderText(5, 5, 0, 'id').title, false);
+check('Arapça ikinci şans', second.textAr.title, 'قد تنقطع سلسلتك من 5 أيام اليوم');
+check('Arapça ikinci şans dakikası', second.textAr.body.includes('5 دقائق'), true);
+check('Arapça ikinci şans birinciden farklı', second.textAr.title === streakReminderText(5, 5, 0, 'ar').title, false);
 
 console.log(`\n${pass} geçti, ${fail} kaldı`);
 process.exit(fail > 0 ? 1 : 0);

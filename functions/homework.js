@@ -22,6 +22,8 @@
  *   classes.js / bugReports.js ile aynı desen: saf karar burada, Firestore işi index.js'te.
  */
 
+const { ltr } = require('./arabic');
+
 const OPS = ['add', 'sub', 'mul'];
 const RULES = ['direct', 'five', 'ten', 'bead'];
 
@@ -161,6 +163,8 @@ const RULE_LABELS = {
 const RULE_LABELS_EN = { direct: 'direct', five: 'small friends', ten: 'big friends', bead: 'mixed friends' };
 /** Endonezcesi sempoa kurslarının sözleriyle (docs/CEVIRI_SOZLUGU_ID.md); işlem adı önde. */
 const RULE_LABELS_ID = { direct: 'langsung', five: 'teman kecil', ten: 'teman besar', bead: 'gabungan' };
+/** Arapçası kurs sözleriyle (docs/CEVIRI_SOZLUGU_AR.md): "الجمع: الأصدقاء الصغار، الأصدقاء الكبار". */
+const RULE_LABELS_AR = { direct: 'مباشر', five: 'الأصدقاء الصغار', ten: 'الأصدقاء الكبار', bead: 'القاعدة المركّبة' };
 
 function homeworkSummary(config, lang = 'tr') {
   if (lang === 'en') {
@@ -172,6 +176,11 @@ function homeworkSummary(config, lang = 'tr') {
     if (config.op === 'mul') return `perkalian ${config.digits} × ${config.digits2} digit`;
     const labels = config.rules.map((r) => RULE_LABELS_ID[r]).join(', ');
     return `${config.op === 'add' ? 'penjumlahan' : 'pengurangan'} ${labels}`;
+  }
+  if (lang === 'ar') {
+    if (config.op === 'mul') return `ضرب ${ltr(`${config.digits} × ${config.digits2}`)}`;
+    const labels = config.rules.map((r) => RULE_LABELS_AR[r]).join('، ');
+    return `${config.op === 'add' ? 'الجمع' : 'الطرح'}: ${labels}`;
   }
   if (config.op === 'mul') return `${config.digits} × ${config.digits2} basamak çarpma`;
   const labels = config.rules.map((r) => RULE_LABELS[config.op][r]).join(', ');
@@ -200,6 +209,13 @@ function doneNoticeText({ studentName, summary, correct, answered, doneCount, ta
     if (answered > 0) id.push(`${correct}/${answered} benar`);
     if (targetCount > 0) id.push(`${doneCount}/${targetCount} murid selesai`);
     return { title: `PR selesai: ${summary}`, body: id.join(' · ') };
+  }
+  if (lang === 'ar') {
+    // Öğrencinin cinsiyeti bilinmiyor (أنهى / أنهت): fiil yerine "ad: تم الإنجاز"; kesirler soldan sağa.
+    const ar = [`${studentName}: تم الإنجاز`];
+    if (answered > 0) ar.push(`الإجابات الصحيحة: ${ltr(`${correct}/${answered}`)}`);
+    if (targetCount > 0) ar.push(`الطلاب المنتهون: ${ltr(`${doneCount}/${targetCount}`)}`);
+    return { title: `اكتمل الواجب: ${summary}`, body: ar.join(' · ') };
   }
   const title = `Ödev tamamlandı: ${summary}`;
   const parts = [`${studentName} bitirdi`];

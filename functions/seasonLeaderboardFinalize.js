@@ -331,6 +331,7 @@ async function finalizeSeason(db, season, deadlineMs, notify) {
             body: 'Kazandığın ödüllere bakmak için dokun.',
             en: { title: 'The season is over, your medal is ready', body: 'Tap to see the rewards you won.' },
             id: { title: 'Musim sudah berakhir, medalimu siap', body: 'Ketuk untuk melihat hadiah yang kamu menangkan.' },
+            ar: { title: 'انتهى الموسم، ميداليتك جاهزة', body: 'مكافآت الموسم بانتظارك هنا.' },
           });
         }
       } catch (e) {

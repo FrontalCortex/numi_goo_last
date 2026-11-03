@@ -30,6 +30,7 @@ const {
 // test-streak-freeze.js'te.
 const fs = require('fs');
 const path = require('path');
+const { arCount } = require('../arabic');
 const indexSrc = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf8');
 
 function grabFunction(name) {
@@ -95,7 +96,7 @@ function evalFromIndex(name, extraFns = [], consts = []) {
     grabFunction(name),
     `return ${name};`,
   ].join('\n\n');
-  return new Function('normalizeOffset', 'localHourOf', body)(normalizeOffset, localHourOf);
+  return new Function('normalizeOffset', 'localHourOf', 'arCount', body)(normalizeOffset, localHourOf, arCount);
 }
 
 let pass = 0;
@@ -677,17 +678,46 @@ check('Endonezce havuz toplamı', teacherPoolText(2, 7, 'id').body, '7 pertanyaa
 check('İngilizce metin değişmedi', chestNoticeText(3, 'en').title, '3 chests are waiting for you');
 check('İngilizce sezon değişmedi', seasonOf({ msLeft: 4 * HOUR }).textEn.title, 'The season ends in 4 hours');
 
+console.log('\n=== ARAPÇA METİNLER (kullanıcının lang: ar) ===');
+// Latin harf ve Doğu Arap rakamı (٠–٩) olmamalı: sözlük Batı rakamı diyor.
+const NOT_AR = /[A-Za-z٠-٩çğıöşüÇĞİÖŞÜ]/;
+const arTexts = [
+  chestNoticeText(1, 'ar'), chestNoticeText(3, 'ar'), chestNoticeText(11, 'ar'),
+  teacherPoolText(1, 1, 'ar'), teacherPoolText(2, 7, 'ar'),
+  seasonOf({ msLeft: 4 * HOUR }).textAr,
+  trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textAr,
+  questionStatusNotice({ status: 'pending' }, { status: 'claimed' }, NOON).ar,
+  questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).ar,
+];
+arTexts.forEach((t, i) => check(`Arapça metin ${i + 1} dolu, Latin harfsiz, Doğu rakamsız`, Boolean(t && t.title && t.body && !NOT_AR.test(t.title + t.body)), true));
+check('Arapça tekil', chestNoticeText(1, 'ar').title, 'هناك صندوق ينتظرك');
+check('Arapça ikil', chestNoticeText(2, 'ar').title, 'هناك صندوقان ينتظرانك');
+check('Arapça 3–10 çoğul', chestNoticeText(3, 'ar').title, 'هناك 3 صناديق تنتظرك');
+check('Arapça 11–99 tekil', chestNoticeText(11, 'ar').title, 'هناك 11 صندوقًا ينتظرك');
+check('Arapça 100', chestNoticeText(100, 'ar').title, 'هناك 100 صندوق ينتظرك');
+check('Arapça 103 çoğul', chestNoticeText(103, 'ar').title, 'هناك 103 صناديق تنتظرك');
+check('Arapça sezon saati', seasonOf({ msLeft: 4 * HOUR }).textAr.title, 'ينتهي الموسم بعد 4 ساعات');
+check('Arapça sezon tek saat', evalFromIndex('seasonNoticeText', [], [])(1, 'ar').title, 'ينتهي الموسم بعد ساعة واحدة');
+check('Arapça deneme yarın', trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textAr.title, 'تنتهي فترتك التجريبية المجانية غدًا');
+check('Arapça havuz toplamı', teacherPoolText(2, 7, 'ar').body, 'الأسئلة التي تنتظر الإجابة في بنك الأسئلة: 7');
+check('Endonezce metin değişmedi', chestNoticeText(3, 'id').title, 'Ada 3 peti yang menunggumu');
+check('Türkçe metin Arapçadan sonra da aynı', chestNoticeText(3).title, 'Seni bekleyen 3 sandık var');
+
 console.log('\n=== DİL SEÇİMİ (sendUserNotification) ===');
 // Gövde Firestore istiyor; seçim satırı kaynaktan çekilip aynı ifadeyle sınanıyor.
 const pickLine = indexSrc.match(/const translated = (.+);\n/);
 check('sendUserNotification dil seçimi kaynakta', Boolean(pickLine), true);
 // eslint-disable-next-line no-new-func
-const pick = new Function('user', 'en', 'id', `return ${pickLine[1]};`);
+const pick = new Function('user', 'en', 'id', 'ar', `return ${pickLine[1]};`);
 const EN = { title: 'en' };
 const ID = { title: 'id' };
+const AR = { title: 'ar' };
 check('lang: en → en', pick({ lang: 'en' }, EN, ID), EN);
 check('lang: id → id', pick({ lang: 'id' }, EN, ID), ID);
 check('lang: id ama karşılık yok → Türkçe', pick({ lang: 'id' }, EN, null), null);
+check('lang: ar → ar', pick({ lang: 'ar' }, EN, ID, AR), AR);
+check('lang: ar ama karşılık yok → Türkçe', pick({ lang: 'ar' }, EN, ID, null), null);
+check('lang: en, ar verilmiş → en', pick({ lang: 'en' }, EN, ID, AR), EN);
 check('lang yok (eski sürüm) → Türkçe', pick({}, EN, ID), null);
 check('lang: tr → Türkçe', pick({ lang: 'tr' }, EN, ID), null);
 check('lang: constructor → Türkçe', pick({ lang: 'constructor' }, EN, ID), null);
@@ -716,8 +746,11 @@ const calls = [
 ].filter((b) => /\n\s+en: /.test(b));
 check('İngilizceli bildirim çağrısı bulundu', calls.length >= 13, true);
 calls.forEach((b) => check(`Endonezcesi de var: ${b.match(/topic: ([^,\n]+)/)?.[1] || b.slice(0, 40)}`, /\n\s+id: /.test(b), true));
+// Arapçası da: yalnızca `en:` / `id:` eklenip `ar:` unutulursa Arapça kullanıcıya Türkçe giderdi.
+calls.forEach((b) => check(`Arapçası da var: ${b.match(/topic: ([^,\n]+)/)?.[1] || b.slice(0, 40)}`, /\n\s+ar: /.test(b), true));
 // Soru durumu bildirimlerinin üçü de Endonezceli (çağrı notice.id'yi geçiriyor).
 check('soru durumu: üç Endonezce karşılık', (grabFunction('questionStatusNotice').match(/\n\s+id: \{/g) || []).length, 3);
+check('soru durumu: üç Arapça karşılık', (grabFunction('questionStatusNotice').match(/\n\s+ar: \{/g) || []).length, 3);
 
 console.log(`\n${fail === 0 ? 'TÜMÜ GEÇTİ' : 'BAŞARISIZ'} — ${pass} geçti, ${fail} hata`);
 process.exit(fail === 0 ? 0 : 1);

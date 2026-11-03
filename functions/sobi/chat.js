@@ -356,6 +356,12 @@ function creditsText(lang = 'tr') {
       + 'Kredit dibeli di toko dan tidak pernah kedaluwarsa; pembeliannya disetujui ayah atau ibumu. '
       + 'Jawaban siap dan pesan yang tidak bisa kujawab tidak memakai apa-apa.';
   }
+  if (lang === 'ar') {
+    return `لديك رسائل مجانية كل يوم: ${f.Free} في خطة Free، و${f.Lite} في Lite، و${f.Pro} في Pro. `
+      + 'عندما تنتهي، تستهلك كل رسالة 1 من رصيد Sobi. وكل مثال جديد نحلّه معًا على المِعداد يُحسب رسالة واحدة أيضًا. '
+      + 'يُشترى الرصيد من المتجر ولا تنتهي صلاحيته أبدًا، ويوافق وليّ الأمر على الشراء. '
+      + 'الإجابات الجاهزة والرسائل التي لم أستطع الإجابة عنها لا تستهلك شيئًا.';
+  }
   return `Her gün ücretsiz mesaj hakkın var: Free planda ${f.Free}, Lite'ta ${f.Lite}, Pro'da ${f.Pro}. `
     + 'Hakkın bitince her mesaj 1 Sobi kredisi harcar. Benimle abaküste çözdüğün her yeni örnek de 1 mesaj sayılır. '
     + 'Krediler mağazadan alınır, süresizdir; satın almayı annen ya da baban onaylar. '
