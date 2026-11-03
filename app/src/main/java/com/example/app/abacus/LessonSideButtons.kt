@@ -2,6 +2,7 @@ package com.example.app.abacus
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.view.View
 import com.airbnb.lottie.LottieAnimationView
 
 /**
@@ -36,6 +37,9 @@ object LessonSideButtons {
     /** Animasyonu ekran oynatıyor (atlanacak bir şey yoksa oynamasın diye). */
     fun setupSkip(button: LottieAnimationView, onSkip: () -> Unit) {
         button.setMinFrame(SKIP_START_FRAME)
+        // Lottie oku kendiliğinden aynalanmıyor; sağdan sola dilde "ileri" sola baksın. Görünüm henüz
+        // pencereye bağlı olmayabilir, yön yapılandırmadan okunuyor (arka plan daire, aynalanması fark etmez).
+        if (button.resources.configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) button.scaleX = -1f
         button.setOnClickListener { onSkip() }
     }
 }

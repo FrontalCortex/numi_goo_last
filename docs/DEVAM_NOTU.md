@@ -98,8 +98,8 @@ yerelleştirilmesi, ödev saklama süresi.
 - Push ve hosting deploy'u yapıldı (03.11.2026). **Seslendirme:** Rawi `F2jHHIMyJTh1pdwoLzNQ` (fasih, erkek), 752 cümle
   + 100 eşleme = 852 dosya Storage'da (`tutorial_audio/ar_*`); bütün sayılar yazıyla (ayrıntı
   `tools/seslendirme/README.md`), yazıya çevirme denetiminde şüpheli 0. ~22.600 kredi.
-- **Bekleyenler:** Play Store Arapça listesi. Flaş ekranındaki
-  "adımı atla" Lottie oku aynalanmıyor. `AbacusPracticeFragment` hiçbir yerden açılmıyor (kontrol edilemedi).
+- **Bekleyenler:** Play Store Arapça listesi. Körleme/ödev ekranındaki
+  "adımı atla" Lottie oku sağdan sola dilde `scaleX = -1` (`LessonSideButtons.setupSkip`). `AbacusPracticeFragment` hiçbir yerden açılmıyor (kontrol edilemedi).
 
 ## Dil seçeneği: Arapça — uygulama altyapısı (03.11.2026 — claude/ar-altyapi dalında commit; push yok; telefonda Arapça seçilip bakıldı, çeviriler henüz yoktu)
 - **Seçenek:** `AppLanguage.ARABIC = "ar"` (Ayarlar → Dil → العربية); telefon Arapçaysa "Telefonun dili" de
