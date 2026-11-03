@@ -105,7 +105,7 @@
   <p class="langs"><a href="privacy-policy.html">English</a> &middot; <strong>Türkçe</strong> &middot; <a href="privacy-policy-id.html">Bahasa Indonesia</a> &middot; <a href="privacy-policy-ar.html" lang="ar" dir="rtl">العربية</a></p>
 
   <h1>Sorobit — Gizlilik Politikası ve Kullanım Şartları</h1>
-  <p class="updated">Yürürlük tarihi: 23 Ekim 2026</p>
+  <p class="updated">Yürürlük tarihi: 3 Kasım 2026</p>
 
   <p>
     Sorobit ("Uygulama"), abaküs (soroban) ile zihinden aritmetik eğitimi üzerine kurulu, öğrenci
@@ -155,7 +155,8 @@
   <ul>
     <li><strong>Hesap bilgileri:</strong> elle ya da Google ile kayıt olduğunuzda görünen adınızı, kullanıcı adınızı, e-posta adresinizi ve hesap türünüzü (öğrenci ya da öğretmen) topluyoruz.</li>
     <li><strong>Öğrenme ve ilerleme verileri:</strong> abaküs dersi puanları, tamamlanan dersler, sanal bakiyeler (altın, anahtar, can), rozetler, görev ilerlemesi ve liderlik tablosu sıralamaları.</li>
-    <li><strong>Kullanıcı içeriği:</strong> öğretmenlerle iletişim kurmak ya da soru göndermek için Uygulamanın özelliklerini kullanırsanız, göndermeyi seçtiğiniz sohbet mesajlarını, soruları, ses kayıtlarını, ekran kayıtlarını ya da görselleri işliyoruz.</li>
+    <li><strong>Kullanıcı içeriği:</strong> öğretmenlerle iletişim kurmak ya da soru göndermek için Uygulamanın özelliklerini kullanırsanız, göndermeyi seçtiğiniz sohbet mesajlarını, soruları, ses kayıtlarını, ekran kayıtlarını ya da görselleri işliyoruz. Öğretmene soru sorma şu an Uygulamada kapalıdır; bu madde açık olduğu dönemde gönderilen içerik için geçerlidir.</li>
+    <li><strong>Sobi'ye yazılan mesajlar:</strong> Uygulamanın yapay zekâ destekli öğrenme yardımcısı Sobi'ye yazdığınız mesajlar ve Sobi'nin cevapları (bkz. Bölüm 2.4).</li>
     <li><strong>Yaş ya da doğum yılı:</strong> yaşa uygun reklam ayarlarını uygulamak ve yürürlükteki çocuk gizliliği mevzuatına (COPPA ve GDPR gibi) uymak için toplanır. Derslerin hangi yaş gruplarında işe yaradığını görebilmek için Firebase Analytics'e de geniş bir yaş grubu olarak (ör. "7-8") gönderilir; doğum yılının kendisi asla gönderilmez.</li>
     <li><strong>Kayıt cevapları:</strong> Sorobit'i nereden duyduğunuz ve abaküsü ne kadar bildiğiniz ("hiç", "biraz" ya da "iyi"). İkisi de hesapla birlikte saklanır ve derslerin hangi kullanıcılara uyduğunu anlamak için Firebase Analytics'e gönderilir.</li>
     <li><strong>Veli e-postası:</strong> 13 yaşından küçük olabilecek kullanıcılar için onay veren velinin e-posta adresi, onay kaydında tutulur (bkz. Bölüm 5.1).</li>
@@ -187,7 +188,8 @@
     e-posta adresini görmez. Öğrenci sınıftan dilediği zaman Ayarlar &rarr; Sınıf bölümünden
     ayrılabilir, öğretmen de öğrenciyi sınıftan çıkarabilir; bundan sonra öğretmen öğrencinin
     ilerlemesini görmez ve yeni sorular genel öğretmen havuzumuza gider. Cevaplanmakta olan
-    sorular kapanana kadar onları alan öğretmende kalır.
+    sorular kapanana kadar onları alan öğretmende kalır. Öğretmene soru sorma şu an Uygulamada
+    kapalı olduğundan öğretmenlere şimdilik yeni soru gelmez.
   </p>
 
   <h3>2.2 Otomatik olarak toplanan bilgiler</h3>
@@ -197,6 +199,38 @@
     <li><strong>Bildirim kimliği:</strong> bildirim iletmek için kullanılır (Firebase Cloud Messaging).</li>
     <li><strong>Cihaz ve oturum verileri:</strong> cihaz modeli, işletim sistemi sürümü ve etkin oturum sayısı; aynı anda tek/sınırlı cihazdan giriş kuralını uygulamak için kullanılır.</li>
     <li><strong>Cihaz kimliği (kötüye kullanımı önleme):</strong> Pro aboneliği başlattığınızda tek seferlik hoş geldin danışma kredisinin her cihaza en fazla bir kez verilebilmesi için cihazınızın Android ID'si bir kez iletilir. Ham kimliği <strong>saklamıyor</strong> ve kaydetmiyoruz: sunucu onu geri döndürülemez, tuzlanmış bir özete (HMAC-SHA256) çevirir ve yalnızca bu özeti, kredinin verildiği tarihle birlikte tutar. Özet yalnızca aynı tek seferlik hakkın tekrar tekrar alınmasını önlemek için kullanılır; reklam kimliğinizle ilişkilendirilmez, reklam, profil oluşturma ya da analiz için kullanılmaz.</li>
+  </ul>
+
+  <h3 id="pp-2-4">2.4 Yapay zekâ destekli öğrenme yardımcısı Sobi</h3>
+  <p>
+    Sobi, Uygulamada abaküs adımlarını açıklayan ve derslerle ilgili soruları cevaplayan bir
+    yardımcıdır. Sobi'nin cevaplarını bir yapay zekâ modeli (Anthropic'in sunduğu Claude) üretir.
+    Ders içinde gösterilen hazır açıklamalar önceden yazılmıştır ve modele gönderilmez.
+  </p>
+  <ul>
+    <li><strong>Yapay zekâ modeline gönderilenler:</strong> kullanıcının Sobi'ye yazdığı mesaj,
+      aynı sohbetin önceki mesajları ve cevabın gerektirdiği öğrenme bağlamı: üzerinde çalışılan
+      ders adımı ya da alıştırma sorusu, o soruda yapılan hatalar ve ders ilerlemesi, ödevler,
+      abonelik planı ve Sobi bakiyesinin özeti. Kullanıcının adı, kullanıcı adı, e-posta adresi,
+      doğum yılı ve reklam kimliği <strong>gönderilmez</strong>.</li>
+    <li><strong>Otomatik maskeleme:</strong> mesaj modele ulaşmadan önce sunucumuz e-posta
+      adreslerini, telefon numarasına benzeyen sayıları, bağlantıları ve "benim adım &hellip;"
+      gibi ifadeleri maskeler. Diğer kişisel bilgiler güvenilir biçimde yakalanamadığı için
+      lütfen bunları Sobi'yle paylaşmayın; Sobi'ye bunları tekrar etmemesi söylenmiştir.</li>
+    <li><strong>Sakladıklarımız:</strong> her sohbet (kullanıcının maskelenmiş mesajları ve
+      Sobi'nin cevapları), sohbetin başlığı ve ücretsiz soru ile Sobi kredisi sayaçları
+      sunucularımızda (Firebase) tutulur. Bu verileri yalnızca sunucumuz okur ve yazar. Bir sohbet
+      son mesajından 30 gün sonra kendiliğinden silinir; Sobi sekmesindeki sohbetleri kullanıcı
+      dilediği zaman kendisi de silebilir.</li>
+    <li><strong>Beğeniler ve bildirimler:</strong> kullanıcı bir Sobi cevabını değerlendirir ya da
+      bildirirse, bildirilen cevapları inceleyip Sobi'yi geliştirebilmek için o cevabı, ondan
+      önceki mesajı ve varsa yorumu saklarız. Beğeniler 30 gün, bildirimler 90 gün sonra
+      silinir.</li>
+    <li><strong>Anthropic</strong> bu mesajları hizmet sağlayıcımız olarak, yalnızca Sobi'nin
+      cevaplarını üretmek için işler. Anthropic'in ticari şartlarına göre API'si üzerinden
+      gönderilen veriler modellerini eğitmek için kullanılmaz.</li>
+    <li>Sobi'nin cevapları otomatik üretilir ve hata içerebilir; öğretmenin yerini tutmaz. Yanlış
+      ya da uygunsuz görünen bir cevap Uygulamadan bildirilebilir.</li>
   </ul>
 
   <h2 id="pp-3">3. Üçüncü Taraf Hizmetler</h2>
@@ -209,6 +243,8 @@
         <td>Ödüllü ve geçiş reklamlarının gösterilmesi; reklam ödüllerinin sunucuda doğrulanması</td></tr>
     <tr><td>Google Play Faturalandırma</td>
         <td>Uygulama içi satın almaların ve aboneliklerin işlenmesi</td></tr>
+    <tr><td>Anthropic (Claude API)</td>
+        <td>Kullanıcının mesajlarına Sobi'nin cevaplarını üretmek (bkz. Bölüm 2.4)</td></tr>
   </table>
   <p>Kişisel bilgilerinizi pazarlama amacıyla üçüncü taraflara satmıyoruz.</p>
 
@@ -261,12 +297,16 @@
     <li>Çocuğun adı ve avatarı <strong>diğer kullanıcılara görünür</strong> (profil, liderlik
       tabloları ve takip listeleri). E-posta adresi ve doğum yılı diğer kullanıcılara asla
       gösterilmez.</li>
-    <li>Öğretmene danışma: çocuğun öğretmene göndermeyi seçtiği mesajlar, fotoğraflar, videolar ve
-      ekran kayıtları (mikrofon sesi içerebilir). Öğretmenler bu içeriği görür; danışma
-      kapandıktan 30 gün sonra silinir (bkz. Bölüm 6).</li>
+    <li>Sobi'ye yazılan mesajlar: çocuğun yapay zekâ destekli öğrenme yardımcısı Sobi'ye
+      yazdıkları, e-posta adresleri, telefon numaraları, bağlantılar ve söylenen adlar
+      maskelendikten sonra cevabın üretilmesi için Anthropic'e gönderilir; çocuğun adı ve e-posta
+      adresi gönderilmez. Sohbetler son mesajdan 30 gün sonra silinir (bkz. Bölüm 2.4).</li>
+    <li>Öğretmene danışma (şu an Uygulamada kapalı): çocuğun öğretmene göndermeyi seçtiği
+      mesajlar, fotoğraflar, videolar ve ekran kayıtları (mikrofon sesi içerebilir). Öğretmenler
+      bu içeriği görür; danışma kapandıktan 30 gün sonra silinir (bkz. Bölüm 6).</li>
     <li>Kurs sınıfları: çocuk bir sınıf kodu girerek ya da bir daveti kabul ederek öğretmenin
       sınıfına katılırsa, o öğretmen çocuğun adını, kullanıcı adını, avatarını ve ders ilerlemesini
-      görebilir ve çocuğun sorularını cevaplar (bkz. Bölüm 2.3). Çocuk sınıftan dilediği zaman
+      görebilir (bkz. Bölüm 2.3). Çocuk sınıftan dilediği zaman
       ayrılabilir; veli de çocuğun sınıftan çıkarılmasını bizden isteyebilir.</li>
     <li>Bildirim kimliği ile kullanım ve çökme istatistikleri (Firebase Analytics); ad ya da
       e-posta olmadan, yaş grubu (doğum yılı değil) ve abaküs cevabı dahil.</li>
@@ -303,6 +343,10 @@
     iade edildikten) 30 gün sonra, hesabınız etkin olsa bile kendiliğinden silinir. Açık bir
     moderasyon incelemesindeki danışma, inceleme kapanana kadar saklanır.
   </p>
+  <p>
+    Sobi sohbetleri son mesajlarından 30 gün sonra, Sobi cevaplarına verilen beğeniler 30 gün,
+    bildirimler 90 gün sonra, hesabınız etkin olsa bile kendiliğinden silinir (bkz. Bölüm 2.4).
+  </p>
 
   <h2 id="pp-7">7. Hesabın Silinmesi</h2>
   <p>Hesabınızın ve ilişkili kişisel verilerinizin silinmesini dilediğiniz zaman isteyebilirsiniz:</p>
@@ -316,8 +360,9 @@
   </ul>
   <p><strong>Neler silinir.</strong> Profiliniz ve hesap bilgileriniz, öğrenme ilerlemeniz, cüzdan
     bakiyeleriniz, rozetleriniz ve liderlik tablosu kayıtlarınız, takip ilişkileriniz, sınıf
-    üyeliğiniz ve sınıf davetleriniz ile öğretmene danışma geçmişiniz — mesajlar ve bir soruyla
-    yüklediğiniz görseller ya da videolar dahil.</p>
+    üyeliğiniz ve sınıf davetleriniz, öğretmene danışma geçmişiniz — mesajlar ve bir soruyla
+    yüklediğiniz görseller ya da videolar dahil — ve Sobi sohbetleriniz, beğenileriniz ve
+    bildirimleriniz.</p>
 
   <p><strong>Neler, ne kadar süre saklanır.</strong> Hesap silindikten sonra az miktarda veri
     kalır. Hiçbiri size ulaşmak ya da hakkınızda profil oluşturmak için kullanılmaz:</p>
@@ -448,7 +493,7 @@
   </div>
 
   <footer>
-    Sorobit &middot; Gizlilik Politikası ve Kullanım Şartları &middot; Yürürlük tarihi: 23 Ekim 2026
+    Sorobit &middot; Gizlilik Politikası ve Kullanım Şartları &middot; Yürürlük tarihi: 3 Kasım 2026
   </footer>
 
 </div>

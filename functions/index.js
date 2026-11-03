@@ -865,7 +865,9 @@ const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
 // onayladığını bu alanla taşıyor.
 // 2026-11-03.1: metin üç dilde (mailTexts.js, kayıtta consentLang), Türkçesi privacy-policy-tr.html'e bağlanıyor.
 // 2026-11-03.2: Arapça metin eklendi (privacy-policy-ar.html); diğer üç dilin metni aynı.
-const PARENTAL_CONSENT_VERSION = '2026-11-03.2';
+// 2026-11-03.3: öğretmene danışma maddesi yerine Sobi (Anthropic'e giden mesajlar) maddesi; danışma
+//   kapalı (TeacherQuestionsFeature.ENABLED = false). Danışma açılırsa madde geri gelmeli.
+const PARENTAL_CONSENT_VERSION = '2026-11-03.3';
 // Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 10 dakikası
 // burada yetmiyor.
 const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;

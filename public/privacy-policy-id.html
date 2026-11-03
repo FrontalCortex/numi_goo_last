@@ -105,7 +105,7 @@
   <p class="langs"><a href="privacy-policy.html">English</a> &middot; <a href="privacy-policy-tr.html">Türkçe</a> &middot; <strong>Bahasa Indonesia</strong> &middot; <a href="privacy-policy-ar.html" lang="ar" dir="rtl">العربية</a></p>
 
   <h1>Sorobit — Kebijakan Privasi &amp; Ketentuan Layanan</h1>
-  <p class="updated">Tanggal berlaku: 23 Oktober 2026</p>
+  <p class="updated">Tanggal berlaku: 3 November 2026</p>
 
   <p>
     Sorobit ("Aplikasi") adalah aplikasi pendidikan untuk latihan aritmetika mental dengan sempoa
@@ -154,7 +154,8 @@
   <ul>
     <li><strong>Informasi akun:</strong> saat Anda mendaftar, secara manual atau melalui Google, kami mengumpulkan nama tampilan, nama pengguna, alamat email, dan peran akun Anda (murid atau guru).</li>
     <li><strong>Data belajar &amp; kemajuan:</strong> skor pelajaran sempoa, pelajaran yang diselesaikan, saldo virtual (koin, kunci, nyawa), lencana, kemajuan misi, dan peringkat di papan peringkat.</li>
-    <li><strong>Konten pengguna:</strong> jika Anda menggunakan fitur Aplikasi untuk berkomunikasi dengan guru atau mengirim pertanyaan, kami memproses pesan obrolan, pertanyaan, rekaman suara, rekaman layar, atau lampiran gambar yang Anda pilih untuk dikirim.</li>
+    <li><strong>Konten pengguna:</strong> jika Anda menggunakan fitur Aplikasi untuk berkomunikasi dengan guru atau mengirim pertanyaan, kami memproses pesan obrolan, pertanyaan, rekaman suara, rekaman layar, atau lampiran gambar yang Anda pilih untuk dikirim. Fitur bertanya kepada guru saat ini dinonaktifkan di Aplikasi; poin ini berlaku untuk konten yang dikirim saat fitur tersebut masih tersedia.</li>
+    <li><strong>Pesan kepada Sobi:</strong> pesan yang Anda tulis kepada Sobi, asisten belajar berbasis AI di Aplikasi, dan balasan Sobi (lihat Bagian 2.4).</li>
     <li><strong>Usia atau tahun lahir:</strong> dikumpulkan untuk menerapkan pengaturan iklan yang sesuai usia dan mematuhi hukum privasi anak yang berlaku (seperti COPPA dan GDPR). Data ini juga dikirim ke Firebase Analytics sebagai kelompok usia yang luas (misalnya "7-8"), tidak pernah sebagai tahun lahir yang tepat, agar kami dapat melihat untuk kelompok usia mana pelajaran bekerja dengan baik.</li>
     <li><strong>Jawaban saat pendaftaran:</strong> dari mana Anda mengetahui Sorobit, dan seberapa paham Anda tentang sempoa ("belum sama sekali", "sedikit", atau "paham"). Keduanya disimpan bersama akun dan dikirim ke Firebase Analytics untuk memahami pengguna mana yang cocok dengan pelajaran.</li>
     <li><strong>Email orang tua atau wali:</strong> untuk pengguna yang mungkin berusia di bawah 13 tahun, alamat email orang tua atau wali yang memberikan persetujuan, disimpan dalam catatan persetujuan (lihat Bagian 5.1).</li>
@@ -188,7 +189,8 @@
     melalui Aplikasi. Murid dapat keluar dari kelas kapan saja di Pengaturan &rarr; Kelas, dan guru
     dapat mengeluarkan murid dari kelas; sejak saat itu guru tidak lagi melihat kemajuan murid dan
     pertanyaan baru dikirim ke kumpulan guru umum kami. Pertanyaan yang sedang dijawab tetap pada
-    guru yang mengambilnya sampai ditutup.
+    guru yang mengambilnya sampai ditutup. Fitur bertanya kepada guru saat ini dinonaktifkan di
+    Aplikasi, sehingga untuk sementara guru tidak menerima pertanyaan baru.
   </p>
 
   <h3>2.2 Informasi yang dikumpulkan secara otomatis</h3>
@@ -198,6 +200,40 @@
     <li><strong>Token notifikasi:</strong> digunakan untuk mengirim notifikasi (Firebase Cloud Messaging).</li>
     <li><strong>Data perangkat dan sesi:</strong> model perangkat, versi sistem operasi, dan jumlah sesi aktif, digunakan untuk menerapkan aturan masuk dari satu/terbatas perangkat secara bersamaan.</li>
     <li><strong>ID perangkat (pencegahan penipuan):</strong> saat Anda mengaktifkan langganan Pro, Android ID perangkat Anda dikirim satu kali agar kredit konsultasi sambutan satu kali hanya dapat diberikan paling banyak sekali per perangkat. Kami <strong>tidak</strong> menyimpan atau mencatat ID mentahnya: server mengubahnya menjadi hash bergaram yang tidak dapat dibalik (HMAC-SHA256) dan hanya menyimpan hash tersebut, bersama tanggal kredit diberikan. Hash ini hanya digunakan untuk mencegah klaim berulang atas manfaat satu kali yang sama; hash ini tidak dikaitkan dengan ID iklan Anda dan tidak digunakan untuk iklan, pembuatan profil, atau analitik.</li>
+  </ul>
+
+  <h3 id="pp-2-4">2.4 Sobi, asisten belajar berbasis AI</h3>
+  <p>
+    Sobi adalah asisten di Aplikasi yang menjelaskan langkah-langkah sempoa dan menjawab pertanyaan
+    tentang pelajaran. Balasan Sobi dibuat oleh model AI (Claude, disediakan oleh Anthropic).
+    Penjelasan siap pakai yang ditampilkan di dalam pelajaran ditulis sebelumnya dan tidak dikirim
+    ke model.
+  </p>
+  <ul>
+    <li><strong>Yang dikirim ke model AI:</strong> pesan yang ditulis pengguna kepada Sobi,
+      pesan-pesan sebelumnya dalam obrolan yang sama, dan konteks belajar yang dibutuhkan balasan:
+      langkah pelajaran atau soal latihan yang sedang dikerjakan, kesalahan pada soal itu, serta
+      ringkasan kemajuan pelajaran, PR, paket langganan, dan saldo Sobi. Nama, nama pengguna,
+      alamat email, tahun lahir, dan ID iklan pengguna <strong>tidak</strong> dikirim.</li>
+    <li><strong>Penyamaran otomatis:</strong> sebelum pesan sampai ke model, server kami
+      menyamarkan alamat email, angka yang menyerupai nomor telepon, tautan, dan frasa seperti
+      "nama saya &hellip;". Informasi pribadi lain tidak dapat dideteksi dengan andal, jadi mohon
+      jangan membagikannya kepada Sobi; Sobi diinstruksikan untuk tidak mengulanginya.</li>
+    <li><strong>Yang kami simpan:</strong> setiap obrolan (pesan pengguna yang sudah disamarkan dan
+      balasan Sobi), judulnya, serta penghitung pertanyaan gratis dan kredit Sobi, di server kami
+      (Firebase). Hanya server kami yang membaca dan menulis data ini. Obrolan dihapus otomatis 30
+      hari setelah pesan terakhirnya; obrolan di tab Sobi juga dapat dihapus sendiri oleh pengguna
+      kapan saja.</li>
+    <li><strong>Penilaian dan laporan:</strong> jika pengguna menilai atau melaporkan balasan Sobi,
+      kami menyimpan balasan tersebut, pesan sebelumnya, dan komentar jika ada, agar kami dapat
+      meninjau balasan yang dilaporkan dan meningkatkan Sobi. Penilaian dihapus setelah 30 hari,
+      laporan setelah 90 hari.</li>
+    <li><strong>Anthropic</strong> memproses pesan-pesan ini sebagai penyedia layanan kami, hanya
+      untuk membuat balasan Sobi. Berdasarkan ketentuan komersial Anthropic, data yang dikirim
+      melalui API-nya tidak digunakan untuk melatih modelnya.</li>
+    <li>Balasan Sobi dibuat secara otomatis dan dapat mengandung kesalahan; balasan ini tidak
+      menggantikan guru. Balasan yang tampak salah atau tidak pantas dapat dilaporkan di
+      Aplikasi.</li>
   </ul>
 
   <h2 id="pp-3">3. Layanan Pihak Ketiga</h2>
@@ -210,6 +246,8 @@
         <td>Menampilkan iklan berhadiah dan iklan interstisial; verifikasi hadiah iklan di sisi server</td></tr>
     <tr><td>Google Play Billing</td>
         <td>Memproses pembelian dalam aplikasi dan langganan</td></tr>
+    <tr><td>Anthropic (Claude API)</td>
+        <td>Membuat balasan Sobi atas pesan pengguna (lihat Bagian 2.4)</td></tr>
   </table>
   <p>Kami tidak menjual informasi pribadi Anda kepada pihak ketiga untuk tujuan pemasaran.</p>
 
@@ -263,12 +301,16 @@
     <li>Nama dan avatar anak <strong>terlihat oleh pengguna lain</strong> (profil, papan peringkat,
       dan daftar pengikut). Alamat email dan tahun lahir tidak pernah ditampilkan kepada pengguna
       lain.</li>
-    <li>Konsultasi guru: pesan, foto, video, dan rekaman layar (yang dapat berisi suara mikrofon)
-      yang dipilih anak untuk dikirim ke guru. Guru dapat melihat konten ini; konten dihapus 30 hari
-      setelah konsultasi ditutup (lihat Bagian 6).</li>
+    <li>Pesan kepada Sobi: apa yang ditulis anak kepada Sobi, asisten belajar berbasis AI, dikirim
+      ke Anthropic untuk membuat balasan setelah alamat email, nomor telepon, tautan, dan nama yang
+      disebutkan disamarkan; nama dan alamat email anak tidak dikirim. Obrolan dihapus 30 hari
+      setelah pesan terakhirnya (lihat Bagian 2.4).</li>
+    <li>Konsultasi guru (saat ini dinonaktifkan di Aplikasi): pesan, foto, video, dan rekaman layar
+      (yang dapat berisi suara mikrofon) yang dipilih anak untuk dikirim ke guru. Guru dapat melihat
+      konten ini; konten dihapus 30 hari setelah konsultasi ditutup (lihat Bagian 6).</li>
     <li>Kelas kursus: jika anak bergabung dengan kelas seorang guru dengan memasukkan kode kelas atau
       menerima undangan, guru tersebut dapat melihat nama, nama pengguna, avatar, dan kemajuan
-      pelajaran anak, serta menjawab pertanyaan anak (lihat Bagian 2.3). Anak dapat keluar dari kelas
+      pelajaran anak (lihat Bagian 2.3). Anak dapat keluar dari kelas
       kapan saja, dan orang tua dapat meminta kami mengeluarkan anak dari kelas.</li>
     <li>Token notifikasi, serta statistik penggunaan dan crash (Firebase Analytics), termasuk
       kelompok usia (bukan tahun lahir) dan jawaban tentang sempoa, tanpa nama atau alamat email.</li>
@@ -306,6 +348,11 @@
     jawaban dan dikembalikan kreditnya), meskipun akun Anda masih aktif. Konsultasi yang sedang dalam
     peninjauan moderasi disimpan sampai peninjauan selesai.
   </p>
+  <p>
+    Obrolan Sobi dihapus otomatis 30 hari setelah pesan terakhirnya, penilaian balasan Sobi setelah
+    30 hari, dan laporan balasan Sobi setelah 90 hari, meskipun akun Anda masih aktif (lihat
+    Bagian 2.4).
+  </p>
 
   <h2 id="pp-7">7. Penghapusan Akun</h2>
   <p>Anda dapat meminta penghapusan akun dan data pribadi terkait kapan saja:</p>
@@ -320,7 +367,7 @@
   <p><strong>Apa yang dihapus.</strong> Profil dan detail akun Anda, kemajuan belajar, saldo dompet,
     lencana dan entri papan peringkat, hubungan pengikut, keanggotaan kelas dan undangan kelas, serta
     riwayat konsultasi guru Anda — termasuk pesan dan gambar atau video yang Anda unggah bersama
-    pertanyaan.</p>
+    pertanyaan — serta obrolan, penilaian, dan laporan Sobi Anda.</p>
 
   <p><strong>Apa yang disimpan, dan berapa lama.</strong> Sejumlah kecil data tetap ada setelah akun
     dihapus. Tidak satu pun digunakan untuk menghubungi Anda atau membuat profil tentang Anda:</p>
@@ -448,7 +495,7 @@
   </div>
 
   <footer>
-    Sorobit &middot; Kebijakan Privasi &amp; Ketentuan Layanan &middot; Tanggal berlaku: 23 Oktober 2026
+    Sorobit &middot; Kebijakan Privasi &amp; Ketentuan Layanan &middot; Tanggal berlaku: 3 November 2026
   </footer>
 
 </div>
