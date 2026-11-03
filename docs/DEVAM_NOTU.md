@@ -47,6 +47,13 @@ Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
   `purchase_started` (gelir), `key_spent` (`spend_item = lesson_unlock`), kullanıcı özelliği
   `key_unlocker = true` (öğrenme: atlayanların `lesson_step_fail` oranı). Yeni olay boyutu YOK.
   GA4'te `key_unlocker` kullanıcı kapsamlı özel boyut olarak TANIMLANMALI (henüz yapılmadı).
+- Can duvarı verisi (GA4, 7 Eki–3 Kas, FİLTRESİZ: test/debug dahil): `energy_spent` 29 kullanıcı,
+  `energy_blocked` 38 kez / 12 kullanıcı (36'sı ders, 2'si kupa; 30'u oturumda 5+ dersten sonra;
+  çoğu 1. bölüm). `energy_refill` 107 / 12 kullanıcı: **105'i anahtarla**, 2'si reklamla.
+  `purchase` 28 / 9 kullanıcı ($85,61): pro_monthly 9 (4 kişi), credits_medium 6, anahtar paketleri
+  8, lite_monthly 1. Satın almaların çoğu büyük olasılıkla kendi denemelerimiz; `Build type`
+  filtresiyle yeniden bakılmalı. Not: anahtarla can alma `key_spent`'e düşmüyor (ServerEnergy yolu),
+  yalnızca `energy_refill(keys)`'e.
 
 ## SONRA YAPILACAK: kurs testinden önce güvenlik (kullanıcı kararı 23.10.2026, "sonra yapacağız")
 
