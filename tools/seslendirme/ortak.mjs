@@ -53,13 +53,55 @@ function androidMetni(ham) {
   return s;
 }
 
-// Ekranda görsel olan işaretleri okutma: [mavi kısım] → parantezsiz, "a -> b" → "a, b".
-export function okunacakMetin(metin) {
-  return metin
+const BIRLER = {
+  en: ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve',
+    'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'],
+  id: ['nol', 'satu', 'dua', 'tiga', 'empat', 'lima', 'enam', 'tujuh', 'delapan', 'sembilan', 'sepuluh', 'sebelas'],
+};
+const ONLAR_EN = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+/** 0–99999 arası sayının yazıyla okunuşu ("64260" → "sixty-four thousand two hundred sixty"). */
+export function sayiYaziyla(n, dil) {
+  if (dil === 'en') {
+    if (n < 20) return BIRLER.en[n];
+    if (n < 100) return ONLAR_EN[Math.floor(n / 10)] + (n % 10 ? `-${BIRLER.en[n % 10]}` : '');
+    if (n < 1000) return `${BIRLER.en[Math.floor(n / 100)]} hundred${n % 100 ? ` ${sayiYaziyla(n % 100, dil)}` : ''}`;
+    return `${sayiYaziyla(Math.floor(n / 1000), dil)} thousand${n % 1000 ? ` ${sayiYaziyla(n % 1000, dil)}` : ''}`;
+  }
+  if (n < 12) return BIRLER.id[n];
+  if (n < 20) return `${BIRLER.id[n % 10]} belas`;
+  if (n < 100) return `${BIRLER.id[Math.floor(n / 10)]} puluh${n % 10 ? ` ${BIRLER.id[n % 10]}` : ''}`;
+  if (n < 1000) return `${n < 200 ? 'seratus' : `${BIRLER.id[Math.floor(n / 100)]} ratus`}${n % 100 ? ` ${sayiYaziyla(n % 100, dil)}` : ''}`;
+  return `${n < 2000 ? 'seribu' : `${sayiYaziyla(Math.floor(n / 1000), dil)} ribu`}${n % 1000 ? ` ${sayiYaziyla(n % 1000, dil)}` : ''}`;
+}
+
+/**
+ * Ekranda görsel olan işaretleri okutma: [mavi kısım] → parantezsiz, "a -> b" → "a, b".
+ *
+ * Sayılar ve çarpma (ilk üretimde yazıyla doğrulandı, 03.11.2026): ses modeli "64260"ı "six four two
+ * six two", "1136"yı "eleven thirty-six" diye okuyor — basamak değeri öğreten derste yanlış; "7x8 =
+ * 56"yı da anlamsız sözlere çeviriyordu. 100 ve üstü sayılar yazıyla, "a x b = c" sözle veriliyor;
+ * yalnızca sayıdan oluşan kısa cümleler de ("5", "88") yazıyla (tek sözcükte model kararsız).
+ */
+export function okunacakMetin(metin, dil = 'en') {
+  const kez = dil === 'id' ? 'kali' : 'times';
+  const esit = dil === 'id' ? 'sama dengan' : 'equals';
+  let s = metin
     .replace(/[[\]]/g, '')
     .replace(/\s*(->|→|=>)\s*/g, ', ')
+    .replace(/(\d)\s*[x×*]\s*(\d)/g, `$1 ${kez} $2`)
+    .replace(/\s*=\s*/g, ` ${esit} `)
     .replace(/\s+/g, ' ')
     .trim();
+  if (/^-?\d+$/.test(s)) {
+    const n = Math.abs(Number(s));
+    return `${s.startsWith('-') ? 'minus ' : ''}${n <= 99999 ? sayiYaziyla(n, dil) : n}`;
+  }
+  // Endonezce ses iki basamaklıyı da rakam rakam okuyordu ("53" → "lima tiga"); orada bütün sayılar yazıyla.
+  // Sıra sayısı "ke-2" → "kedua" ("ke-1" → "pertama").
+  if (dil === 'id') s = s.replace(/\bke-(\d{1,2})\b/g, (_, n) => (n === '1' ? 'pertama' : `ke${sayiYaziyla(Number(n), dil)}`));
+  const yaziylaOkunacak = dil === 'id' ? /\b\d{1,5}\b/g : /\b\d{3,5}\b/g;
+  return s.replace(yaziylaOkunacak, (m) => sayiYaziyla(Number(m), dil));
 }
 
 // Dil dosyasındaki, Türkçe sesi (res/raw/<anahtar>.mp3) olan cümleler; Türkçe dosyadaki sırayla.
@@ -84,9 +126,9 @@ export function cumleler(dil) {
       // Yalnızca sayı olan cümleler ("100", "-12") çevrilmiyor; ses dili sayıyı kendi okur.
       const tr = androidMetni(turkce.get(anahtar));
       if (!/^-?\d+$/.test(tr)) { eksik.push(anahtar); continue; }
-      ham = tr.replace(/^-/, 'minus ');
+      ham = tr;
     }
-    const metin = okunacakMetin(androidMetni(ham));
+    const metin = okunacakMetin(androidMetni(ham), dil);
     if (metin) sonuc.push({ anahtar, metin });
   }
   return { cumleler: sonuc, eksik };
