@@ -1,0 +1,948 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Endonezce arayüz metinleri; terimler docs/CEVIRI_SOZLUGU_ID.md -->
+<resources>
+    <!-- layout/activity_email_verification.xml -->
+    <string name="activity_email_verification_text">Verifikasi Email</string>
+    <string name="activity_email_verification_text_2">Kode verifikasi telah dikirim ke alamat emailmu</string>
+    <string name="activity_email_verification_text_3">Masukkan kode verifikasi 6 digit yang dikirim ke alamat emailmu</string>
+    <string name="activity_email_verification_et_verification_code_hint">Kode Verifikasi</string>
+    <string name="activity_email_verification_btn_check_verification">Verifikasi Kode</string>
+    <string name="activity_email_verification_btn_resend_email">Kirim Ulang Email</string>
+    <string name="activity_email_verification_btn_back_to_login">Kembali ke Halaman Masuk</string>
+    <string name="activity_email_verification_text_4">Email belum masuk? Periksa folder spam</string>
+
+    <!-- layout/activity_login.xml -->
+    <string name="activity_login_btn_back_desc">Kembali</string>
+    <string name="activity_login_text">Lanjutkan dengan email</string>
+    <string name="activity_login_et_email_hint">Email</string>
+    <string name="activity_login_btn_continue">Lanjut</string>
+    <string name="activity_login_btn_google_sign_in">Masuk dengan Google</string>
+
+    <!-- layout/activity_main.xml -->
+    <string name="activity_main_streak_icon_desc">Streak harian</string>
+    <string name="activity_main_diamond_id_desc">Koin</string>
+    <string name="activity_main_energy_icon_desc">Nyawa</string>
+    <string name="activity_main_key_icon_desc">Kunci</string>
+    <string name="activity_main_credit_icon_desc">Kredit tutor</string>
+
+    <!-- layout/activity_register.xml -->
+    <string name="activity_register_btn_back_desc">Kembali</string>
+    <string name="activity_register_tv_title">Buat Akun</string>
+    <string name="activity_register_tv_subtitle">Mulai perjalanan belajarmu</string>
+    <string name="activity_register_et_email_hint">Email</string>
+    <string name="activity_register_btn_continue">Lanjut</string>
+    <string name="activity_register_et_name_hint">Nama pengguna</string>
+    <string name="activity_register_et_teacher_email_hint">Email</string>
+    <string name="activity_register_et_password_hint">Kata sandi</string>
+    <string name="activity_register_et_approval_code_hint">Masukkan ulang kata sandi</string>
+    <string name="activity_register_btn_register">Lanjut</string>
+    <string name="activity_register_btn_google_sign_in">Daftar dengan Google</string>
+
+    <!-- layout/activity_splash.xml -->
+    <string name="activity_splash_text_2">Siap belajar?</string>
+
+    <!-- layout/activity_teacher_login.xml -->
+    <string name="activity_teacher_login_btn_back_desc">Kembali</string>
+    <string name="activity_teacher_login_text">Aplikasi Edukasi</string>
+    <string name="activity_teacher_login_text_2">Masuk Guru</string>
+    <string name="activity_teacher_login_et_email_hint">Email</string>
+    <string name="activity_teacher_login_et_password_hint">Kata sandi</string>
+    <string name="activity_teacher_login_tv_forgot_password">Lupa kata sandi</string>
+    <string name="activity_teacher_login_btn_login">Masuk</string>
+    <string name="activity_teacher_login_btn_student_login">Masuk Murid</string>
+    <string name="activity_teacher_login_btn_register">Belum punya akun? Daftar</string>
+
+    <!-- layout/bottom_sheet_operator_picker.xml -->
+    <string name="bottom_sheet_operator_picker_title">Pilih Operator</string>
+    <string name="bottom_sheet_operator_picker_cancel_button">Batal</string>
+    <string name="bottom_sheet_operator_picker_ok_button">OK</string>
+
+    <!-- layout/dialog_abacus_sound_picker.xml -->
+    <string name="dialog_abacus_sound_picker_abacus_sound_picker_title">Pilih Suara Sempoa</string>
+    <string name="dialog_abacus_sound_picker_text">Suara 1</string>
+    <string name="dialog_abacus_sound_picker_text_2">Suara 2</string>
+    <string name="dialog_abacus_sound_picker_text_3">Suara 3</string>
+    <string name="dialog_abacus_sound_picker_text_4">Suara 4</string>
+    <string name="dialog_abacus_sound_picker_text_5">Suara 5</string>
+
+    <!-- layout/dialog_avatar_customization.xml -->
+    <string name="dialog_avatar_customization_text">Pratinjau Avatar</string>
+    <string name="dialog_avatar_customization_text_2">Gaya Rambut</string>
+    <string name="dialog_avatar_customization_text_3">Gaya Mata</string>
+    <string name="dialog_avatar_customization_text_4">Warna Kulit</string>
+    <string name="dialog_avatar_customization_text_5">Warna Baju</string>
+    <string name="dialog_avatar_customization_btn_cancel">BATAL</string>
+    <string name="dialog_avatar_customization_btn_save">SIMPAN</string>
+
+    <!-- layout/dialog_delete_message.xml -->
+    <string name="dialog_delete_message_text_desc">Hapus</string>
+    <string name="dialog_delete_message_text">Hapus pesan?</string>
+    <string name="dialog_delete_message_text_2">Tindakan ini tidak bisa dibatalkan</string>
+    <string name="dialog_delete_message_delete_message_close_desc">Tutup</string>
+    <string name="dialog_delete_message_text_desc_2">Hapus untuk semua</string>
+    <string name="dialog_delete_message_text_3">Hapus untuk semua</string>
+    <string name="dialog_delete_message_text_desc_3">Hapus untuk saya</string>
+    <string name="dialog_delete_message_text_4">Hapus untuk saya</string>
+    <string name="dialog_delete_message_text_desc_4">Laporkan</string>
+    <string name="dialog_delete_message_text_5">Laporkan</string>
+    <string name="dialog_delete_message_delete_cancel">Batal</string>
+
+    <!-- layout/dialog_image.xml -->
+    <string name="dialog_image_dialog_image_close_desc">Tutup</string>
+
+    <!-- layout/dialog_image_annotate.xml -->
+    <string name="dialog_image_annotate_annotate_image_desc">Gambar</string>
+    <string name="dialog_image_annotate_annotate_done_button_desc">Simpan dan tutup</string>
+
+    <!-- layout/dialog_question_media_picker.xml -->
+    <string name="dialog_question_media_picker_btn_camera_desc">Tanya dengan gambar</string>
+    <string name="dialog_question_media_picker_btn_video_desc">Tanya dengan video</string>
+
+    <!-- layout/dialog_rating.xml -->
+    <string name="dialog_rating_tv_title">Suka Sorobit?</string>
+    <string name="dialog_rating_tv_subtitle">Kamu bisa mendukung kami dengan menilai pengalamanmu.</string>
+    <string name="dialog_rating_et_feedback_hint">Bagaimana kami bisa memberimu pengalaman yang lebih baik?</string>
+    <string name="dialog_rating_btn_submit_feedback">Kirim</string>
+    <string name="dialog_rating_tv_close">Nanti Saja</string>
+    <string name="dialog_rating_tv_no_thanks">Tidak, terima kasih</string>
+
+    <!-- layout/dialog_report_action.xml -->
+    <string name="dialog_report_action_text_desc">Laporan</string>
+    <string name="dialog_report_action_text">Tinjau Laporan</string>
+    <string name="dialog_report_action_text_2">Pilih tindakan untuk pengguna ini</string>
+    <string name="dialog_report_action_report_dialog_close_desc">Tutup</string>
+    <string name="dialog_report_action_report_dialog_media_thumb_desc">Media yang dilaporkan</string>
+    <string name="dialog_report_action_report_dialog_play_overlay_desc">Putar video</string>
+    <string name="dialog_report_action_report_dialog_audio_play_pause_desc">Putar audio</string>
+    <string name="dialog_report_action_report_dialog_audio_time">Putar untuk mendengarkan rekaman suara</string>
+    <string name="dialog_report_action_text_desc_2">Durasi</string>
+    <string name="dialog_report_action_text_3">DURASI PEMBATASAN</string>
+    <string name="dialog_report_action_report_restrict1_day">1 hari</string>
+    <string name="dialog_report_action_report_restrict3_days">3 hari</string>
+    <string name="dialog_report_action_report_restrict7_days">7 hari</string>
+    <string name="dialog_report_action_text_desc_3">Blokir</string>
+    <string name="dialog_report_action_text_4">Blokir permanen</string>
+    <string name="dialog_report_action_text_desc_4">Abaikan</string>
+    <string name="dialog_report_action_text_5">Abaikan (tolak)</string>
+    <string name="dialog_report_action_report_cancel">Batal</string>
+
+    <!-- layout/dialog_report_reason.xml -->
+    <string name="dialog_report_reason_text_desc">Laporkan</string>
+    <string name="dialog_report_reason_text">Laporkan pesan</string>
+    <string name="dialog_report_reason_text_2">Kenapa kamu melaporkan pesan ini?</string>
+    <string name="dialog_report_reason_report_reason_close_desc">Tutup</string>
+    <string name="dialog_report_reason_text_desc_2">Pelecehan atau perundungan</string>
+    <string name="dialog_report_reason_text_3">Pelecehan atau perundungan</string>
+    <string name="dialog_report_reason_text_desc_3">Spam</string>
+    <string name="dialog_report_reason_text_4">Spam</string>
+    <string name="dialog_report_reason_text_desc_4">Konten tidak pantas</string>
+    <string name="dialog_report_reason_text_5">Konten tidak pantas</string>
+    <string name="dialog_report_reason_text_desc_5">Lainnya</string>
+    <string name="dialog_report_reason_text_6">Lainnya</string>
+    <string name="dialog_report_reason_report_reason_cancel">Batal</string>
+
+    <!-- layout/dialog_restriction_detail.xml -->
+    <string name="dialog_restriction_detail_text_desc">Pembatasan</string>
+    <string name="dialog_restriction_detail_text">Detail Pembatasan</string>
+    <string name="dialog_restriction_detail_text_2">Alasan dan isi pembatasan</string>
+    <string name="dialog_restriction_detail_restriction_dialog_close_desc">Tutup</string>
+    <string name="dialog_restriction_detail_report_dialog_media_thumb_desc">Media yang dilaporkan</string>
+    <string name="dialog_restriction_detail_report_dialog_play_overlay_desc">Putar video</string>
+    <string name="dialog_restriction_detail_report_dialog_audio_play_pause_desc">Putar audio</string>
+    <string name="dialog_restriction_detail_report_dialog_audio_time">Putar untuk mendengarkan rekaman suara</string>
+    <string name="dialog_restriction_detail_text_desc_2">Cabut</string>
+    <string name="dialog_restriction_detail_text_3">Cabut Pembatasan</string>
+    <string name="dialog_restriction_detail_restriction_dialog_close_text">Tutup</string>
+
+    <!-- layout/dialog_video_fullscreen.xml -->
+    <string name="dialog_video_fullscreen_fullscreen_close_button_desc">Tutup</string>
+
+    <!-- layout/dialog_video_player.xml -->
+    <string name="dialog_video_player_dialog_video_close_desc">Tutup</string>
+
+    <!-- layout/fragment_abacus.xml -->
+    <string name="fragment_abacus_btn_back_desc">Kembali</string>
+    <string name="fragment_abacus_btn_forward_desc">Maju</string>
+    <string name="fragment_abacus_five_text">Angka yang ditambah</string>
+    <string name="fragment_abacus_text">Teman</string>
+    <string name="fragment_abacus_five_rule_description_text">Tambah 5. Kurangi temannya</string>
+    <string name="fragment_abacus_ten_text">Angka yang ditambah</string>
+    <string name="fragment_abacus_text_2">Teman Besar</string>
+    <string name="fragment_abacus_ten_rule_five_description_text">Tambah 10. Kurangi temannya.</string>
+    <string name="fragment_abacus_text_3">Angka yang ditambah</string>
+    <string name="fragment_abacus_text_4">Teman</string>
+    <string name="fragment_abacus_ten_rule_description_text">Tambah 10. Kurangi temannya.</string>
+    <string name="fragment_abacus_text_5">Angka yang ditambah</string>
+    <string name="fragment_abacus_text_6">Langkah</string>
+    <string name="fragment_abacus_text_7">+1</string>
+    <string name="fragment_abacus_text_8">−5</string>
+    <string name="fragment_abacus_text_9">+10</string>
+    <string name="fragment_abacus_text_10">+2</string>
+    <string name="fragment_abacus_text_11">−5</string>
+    <string name="fragment_abacus_text_12">+10</string>
+    <string name="fragment_abacus_text_13">+3</string>
+    <string name="fragment_abacus_text_14">−5</string>
+    <string name="fragment_abacus_text_15">+10</string>
+    <string name="fragment_abacus_text_16">+4</string>
+    <string name="fragment_abacus_text_17">−5</string>
+    <string name="fragment_abacus_text_18">+10</string>
+    <string name="fragment_abacus_text_19">Angka yang dikurangi</string>
+    <string name="fragment_abacus_text_20">Langkah</string>
+    <string name="fragment_abacus_text_21">−1</string>
+    <string name="fragment_abacus_text_22">+5</string>
+    <string name="fragment_abacus_text_23">−10</string>
+    <string name="fragment_abacus_text_24">−2</string>
+    <string name="fragment_abacus_text_25">+5</string>
+    <string name="fragment_abacus_text_26">−10</string>
+    <string name="fragment_abacus_text_27">−3</string>
+    <string name="fragment_abacus_text_28">+5</string>
+    <string name="fragment_abacus_text_29">−10</string>
+    <string name="fragment_abacus_text_30">−4</string>
+    <string name="fragment_abacus_text_31">+5</string>
+    <string name="fragment_abacus_text_32">−10</string>
+    <string name="fragment_abacus_text_33">Angka yang dikurangi</string>
+    <string name="fragment_abacus_text_34">Teman</string>
+    <string name="fragment_abacus_extraction_ten_rule_description_text">Kurangi 10. Tambah temannya</string>
+    <string name="fragment_abacus_start_button">Mulai</string>
+    <string name="fragment_abacus_kontrol_button">Periksa</string>
+    <string name="fragment_abacus_incorrect_text">Salah</string>
+    <string name="fragment_abacus_correct_answer_label">Ikuti instruksinya</string>
+    <string name="fragment_abacus_okay_button">Coba Lagi</string>
+    <string name="fragment_abacus_correct_text">Hebat!</string>
+    <string name="fragment_abacus_continue_button">Lanjut</string>
+
+    <!-- layout/fragment_abacus_customization.xml -->
+    <string name="fragment_abacus_customization_text_desc">Kunci</string>
+    <string name="fragment_abacus_customization_diamond_id_desc">Koin</string>
+
+    <!-- layout/fragment_abacus_practice.xml -->
+    <string name="fragment_abacus_practice_kontrol_button">Periksa</string>
+    <string name="fragment_abacus_practice_incorrect_text">Salah</string>
+    <string name="fragment_abacus_practice_correct_answer_label">Ikuti instruksinya</string>
+    <string name="fragment_abacus_practice_okay_button">Coba Lagi</string>
+    <string name="fragment_abacus_practice_correct_text">Hebat!</string>
+    <string name="fragment_abacus_practice_continue_button">Lanjut</string>
+
+    <!-- layout/fragment_account_settings.xml -->
+    <string name="fragment_account_settings_account_settings_header_title">Pengaturan</string>
+    <string name="fragment_account_settings_text">Akun</string>
+    <string name="fragment_account_settings_text_2">Profil</string>
+    <string name="fragment_account_settings_text_3">Suara dan Notifikasi</string>
+    <string name="fragment_account_settings_text_4">Untuk Orang Tua</string>
+    <string name="fragment_account_settings_text_5">Panel Orang Tua</string>
+    <string name="fragment_account_settings_tv_payments_header">Pembayaran dan langganan</string>
+    <string name="fragment_account_settings_text_6">Batalkan Langganan</string>
+    <string name="fragment_account_settings_text_7">Bantuan</string>
+    <string name="fragment_account_settings_text_8">Masukan</string>
+    <string name="fragment_account_settings_btn_account_settings_logout">KELUAR</string>
+
+    <!-- layout/fragment_ad_skip.xml -->
+    <string name="fragment_ad_skip_title_text1">Coba PRO gratis 7 hari</string>
+    <string name="fragment_ad_skip_title_text2">dan lewati semua iklan!</string>
+    <string name="fragment_ad_skip_reminder_text">Kamu akan dapat notifikasi sebelum masa uji coba gratismu berakhir.</string>
+    <string name="fragment_ad_skip_btn_try_free_text">COBA GRATIS</string>
+    <string name="fragment_ad_skip_btn_no_thanks">TIDAK, TERIMA KASIH</string>
+
+    <!-- layout/fragment_add_friend.xml -->
+    <string name="fragment_add_friend_btn_back_desc">Kembali</string>
+    <string name="fragment_add_friend_text">Cari teman</string>
+    <string name="fragment_add_friend_text_desc">Cari</string>
+    <string name="fragment_add_friend_et_search_hint">Cari nama...</string>
+    <string name="fragment_add_friend_btn_clear_search_desc">Bersihkan</string>
+    <string name="fragment_add_friend_btn_load_more">MUAT LEBIH BANYAK</string>
+    <string name="fragment_add_friend_text_2">Pengguna tidak ditemukan</string>
+
+    <!-- layout/fragment_ask_question_open.xml -->
+    <string name="fragment_ask_question_open_title_text1">Ada yang belum kamu pahami?</string>
+    <string name="fragment_ask_question_open_title_text2">Minta bantuan gurumu!</string>
+    <string name="fragment_ask_question_open_info_text">Kirim gambar atau video bagian yang membuatmu bingung ke gurumu dengan mudah, dan gurumu akan menjawab dengan video!</string>
+    <string name="fragment_ask_question_open_btn_buy_credits">BELI KREDIT SAJA</string>
+    <string name="fragment_ask_question_open_btn_no_thanks">TIDAK, TERIMA KASIH</string>
+
+    <!-- layout/fragment_avatar_custom.xml -->
+    <string name="fragment_avatar_custom_btn_close">Tutup</string>
+    <string name="fragment_avatar_custom_tv_title">Buat Avatarmu</string>
+    <string name="fragment_avatar_custom_btn_save">Simpan</string>
+    <string name="fragment_avatar_custom_btn_random">Acak</string>
+
+    <!-- layout/fragment_badge.xml -->
+    <string name="fragment_badge_tv_badge_piece_header_unit_medal">Unit</string>
+    <string name="fragment_badge_tv_badge_piece_header_season_medal">Musim</string>
+    <string name="fragment_badge_tv_badge_piece_header_unit_cup">Unit</string>
+    <string name="fragment_badge_tv_badge_piece_header_season_cup">Musim</string>
+
+    <!-- layout/fragment_badge_detail.xml -->
+    <string name="fragment_badge_detail_btn_badge_detail_back_desc">Kembali</string>
+    <string name="fragment_badge_detail_tv_badge_detail_title">Pencapaian</string>
+    <string name="fragment_badge_detail_tv_personal_records_title">Rekor Pribadi</string>
+    <string name="fragment_badge_detail_tv_awards_title">Lencana</string>
+
+    <!-- layout/fragment_blinding_lesson.xml -->
+    <string name="fragment_blinding_lesson_five_text">Angka yang ditambah</string>
+    <string name="fragment_blinding_lesson_text">Teman</string>
+    <string name="fragment_blinding_lesson_five_rule_description_text">Tambah 5. Kurangi temannya</string>
+    <string name="fragment_blinding_lesson_ten_text">Angka yang ditambah</string>
+    <string name="fragment_blinding_lesson_text_2">Teman Besar</string>
+    <string name="fragment_blinding_lesson_ten_rule_five_description_text">Tambah 10. Kurangi temannya.</string>
+    <string name="fragment_blinding_lesson_text_3">Angka yang ditambah</string>
+    <string name="fragment_blinding_lesson_text_4">Teman</string>
+    <string name="fragment_blinding_lesson_ten_rule_description_text">Tambah 10. Kurangi temannya.</string>
+    <string name="fragment_blinding_lesson_text_5">Angka yang ditambah</string>
+    <string name="fragment_blinding_lesson_text_6">Langkah</string>
+    <string name="fragment_blinding_lesson_text_7">+1</string>
+    <string name="fragment_blinding_lesson_text_8">−5</string>
+    <string name="fragment_blinding_lesson_text_9">+10</string>
+    <string name="fragment_blinding_lesson_text_10">+2</string>
+    <string name="fragment_blinding_lesson_text_11">−5</string>
+    <string name="fragment_blinding_lesson_text_12">+10</string>
+    <string name="fragment_blinding_lesson_text_13">+3</string>
+    <string name="fragment_blinding_lesson_text_14">−5</string>
+    <string name="fragment_blinding_lesson_text_15">+10</string>
+    <string name="fragment_blinding_lesson_text_16">+4</string>
+    <string name="fragment_blinding_lesson_text_17">−5</string>
+    <string name="fragment_blinding_lesson_text_18">+10</string>
+    <string name="fragment_blinding_lesson_text_19">Angka yang dikurangi</string>
+    <string name="fragment_blinding_lesson_text_20">Langkah</string>
+    <string name="fragment_blinding_lesson_text_21">−1</string>
+    <string name="fragment_blinding_lesson_text_22">+5</string>
+    <string name="fragment_blinding_lesson_text_23">−10</string>
+    <string name="fragment_blinding_lesson_text_24">−2</string>
+    <string name="fragment_blinding_lesson_text_25">+5</string>
+    <string name="fragment_blinding_lesson_text_26">−10</string>
+    <string name="fragment_blinding_lesson_text_27">−3</string>
+    <string name="fragment_blinding_lesson_text_28">+5</string>
+    <string name="fragment_blinding_lesson_text_29">−10</string>
+    <string name="fragment_blinding_lesson_text_30">−4</string>
+    <string name="fragment_blinding_lesson_text_31">+5</string>
+    <string name="fragment_blinding_lesson_text_32">−10</string>
+    <string name="fragment_blinding_lesson_text_33">Angka yang Dikurangi</string>
+    <string name="fragment_blinding_lesson_text_34">Teman</string>
+    <string name="fragment_blinding_lesson_extraction_ten_rule_description_text">Kurangi 10. Tambah temannya</string>
+    <string name="fragment_blinding_lesson_kontrol_button">Periksa</string>
+    <string name="fragment_blinding_lesson_incorrect_text">Salah</string>
+    <string name="fragment_blinding_lesson_okay_button">Lanjut</string>
+    <string name="fragment_blinding_lesson_correct_text">Hebat!</string>
+    <string name="fragment_blinding_lesson_continue_button">Lanjut</string>
+    <string name="fragment_blinding_lesson_start_button">Mulai</string>
+
+    <!-- layout/fragment_chest.xml -->
+    <string name="fragment_chest_chest_image_desc">Peti</string>
+    <string name="fragment_chest_gold_text">150 koin</string>
+    <string name="fragment_chest_claim_reward_button">Ambil Hadiah</string>
+
+    <!-- layout/fragment_chest_result.xml -->
+    <string name="fragment_chest_result_result_title">Pelajaran Selesai!</string>
+    <string name="fragment_chest_result_text">Waktu</string>
+    <string name="fragment_chest_result_text_2">KEBERHASILAN</string>
+    <string name="fragment_chest_result_claim_button">Lanjut</string>
+
+    <!-- layout/fragment_create_question.xml -->
+    <string name="fragment_create_question_title_text">Kirim pertanyaanmu</string>
+    <string name="fragment_create_question_screenshot_image_desc">Tangkapan layar</string>
+    <string name="fragment_create_question_video_fullscreen_button_desc">Layar penuh</string>
+    <string name="fragment_create_question_screenshot_annotate_button_desc">Menggambar</string>
+    <string name="fragment_create_question_header_label">Beri judul pertanyaanmu</string>
+    <string name="fragment_create_question_header_input_hint">Cara kerja rumus teman kecil</string>
+    <string name="fragment_create_question_description_label">Jelaskan pertanyaanmu secara singkat</string>
+    <string name="fragment_create_question_description_input_hint">Contoh: Aku belum paham soal ini di halaman ini...</string>
+    <string name="fragment_create_question_send_button">Kirim</string>
+
+    <!-- layout/fragment_cup.xml -->
+    <string name="fragment_cup_cup_name_text_view">Piala Hebat</string>
+    <string name="fragment_cup_cup_image_view_desc">Piala</string>
+    <string name="fragment_cup_motivation_text_view">Kerja bagus! Kami bangga padamu!</string>
+    <string name="fragment_cup_claim_button">Lanjut</string>
+
+    <!-- layout/fragment_cup_history.xml -->
+    <string name="fragment_cup_history_btn_cup_history_back_desc">Kembali</string>
+    <string name="fragment_cup_history_tv_cup_history_title">Riwayat Piala</string>
+    <string name="fragment_cup_history_text">Piala Saat Ini</string>
+    <string name="fragment_cup_history_tv_cup_history_single_hint">Baru ada satu data — lihat lagi beberapa hari kemudian untuk membandingkan</string>
+    <string name="fragment_cup_history_tv_cup_history_empty">Belum ada riwayat data</string>
+
+    <!-- layout/fragment_cup_path_road.xml -->
+    <string name="fragment_cup_path_road_btn_cup_path_road_back_desc">Kembali</string>
+    <string name="fragment_cup_path_road_tv_cup_path_road_title">Jalur Piala</string>
+
+    <!-- layout/fragment_edit_profile.xml -->
+    <string name="fragment_edit_profile_text">Edit Profil</string>
+    <string name="fragment_edit_profile_text_2">Nama</string>
+    <string name="fragment_edit_profile_et_name_hint">Nama</string>
+    <string name="fragment_edit_profile_tv_name_error">Nama tidak boleh kosong.</string>
+    <string name="fragment_edit_profile_text_3">ID Pengguna</string>
+    <string name="fragment_edit_profile_et_username_hint">ID Pengguna</string>
+    <string name="fragment_edit_profile_text_4">Alamat Email</string>
+    <string name="fragment_edit_profile_text_5">Kata Sandi Baru</string>
+    <string name="fragment_edit_profile_et_password_hint">Masukkan kata sandi baru</string>
+    <string name="fragment_edit_profile_text_6">Isi kolom ini hanya jika ingin mengganti kata sandi. Kosongkan jika tidak ingin menggantinya.</string>
+    <string name="fragment_edit_profile_btn_save">SIMPAN PERUBAHAN</string>
+    <string name="fragment_edit_profile_btn_delete_account">HAPUS AKUN PERMANEN</string>
+
+    <!-- layout/fragment_feedback.xml -->
+    <string name="fragment_feedback_text">Hubungi Kami</string>
+    <string name="fragment_feedback_text_2">Ada masalah atau punya ide keren? Bantu kami membuat aplikasi ini jadi lebih baik.</string>
+    <string name="fragment_feedback_text_3">Pesanmu</string>
+    <string name="fragment_feedback_feedback_input_hint">Tulis di sini...</string>
+    <string name="fragment_feedback_text_4">Kami akan membalas ke alamat emailmu.</string>
+    <string name="fragment_feedback_close_button">Batal</string>
+    <string name="fragment_feedback_send_feedback_button">Kirim</string>
+
+    <!-- layout/fragment_followers_following.xml -->
+    <string name="fragment_followers_following_btn_back_desc">Kembali</string>
+    <string name="fragment_followers_following_text">Teman</string>
+    <string name="fragment_followers_following_tv_empty">Belum ada siapa pun</string>
+
+    <!-- layout/fragment_lesson_result.xml -->
+    <string name="fragment_lesson_result_result_title">Pelajaran Selesai!</string>
+    <string name="fragment_lesson_result_text">TOTAL SKOR</string>
+    <string name="fragment_lesson_result_text_2">KEBERHASILAN</string>
+    <string name="fragment_lesson_result_claim_button">Lanjut</string>
+
+    <!-- layout/fragment_lesson_result_false.xml -->
+    <string name="fragment_lesson_result_false_result_title">Pelajaran Belum Lulus!</string>
+    <string name="fragment_lesson_result_false_result_title_comment">Tingkat keberhasilan di bawah 75%!</string>
+    <string name="fragment_lesson_result_false_text">TOTAL SKOR</string>
+    <string name="fragment_lesson_result_false_text_2">KEBERHASILAN</string>
+    <string name="fragment_lesson_result_false_claim_button">Keluar</string>
+
+    <!-- layout/fragment_mascot_playground.xml -->
+    <string name="fragment_mascot_playground_btn_close">Tutup</string>
+    <string name="fragment_mascot_playground_tv_title">Animasi Karakter</string>
+    <string name="fragment_mascot_playground_tv_current">Diam</string>
+
+    <!-- layout/fragment_new_chest.xml -->
+    <string name="fragment_new_chest_chest_rarity_label">BIASA</string>
+    <string name="fragment_new_chest_chest_hint_text">Ketuk untuk peluang dapat yang lebih bagus!</string>
+
+    <!-- layout/fragment_new_streak.xml -->
+    <string name="fragment_new_streak_new_streak_continue">Lanjut</string>
+
+    <!-- layout/fragment_notification.xml -->
+    <string name="fragment_notification_notification_title">Pertanyaan</string>
+    <string name="fragment_notification_tab_pool">Kumpulan soal</string>
+    <string name="fragment_notification_tab_chats">Obrolan</string>
+    <string name="fragment_notification_tab_reports">Laporan</string>
+    <string name="fragment_notification_sub_tab_reports_list">Pesan yang Dilaporkan</string>
+    <string name="fragment_notification_sub_tab_restricted_users">Pengguna Dibatasi</string>
+    <string name="fragment_notification_tab_bekleyen">Menunggu</string>
+    <string name="fragment_notification_tab_cozulen">Terjawab</string>
+    <string name="fragment_notification_empty_text">Belum ada pertanyaan</string>
+    <string name="fragment_notification_teacher_approval_pending_message">Akun guru Anda harus disetujui terlebih dahulu agar dapat menggunakan fitur pesan.</string>
+    <string name="fragment_notification_teacher_approval_support_button">Hubungi Bantuan</string>
+
+    <!-- layout/fragment_otp_verification.xml -->
+    <string name="fragment_otp_verification_tv_title">Verifikasi emailmu</string>
+    <string name="fragment_otp_verification_text">Masukkan kode 6 digit yang dikirim ke emailmu.</string>
+    <string name="fragment_otp_verification_et_code_hint">Kode 6 digit</string>
+    <string name="fragment_otp_verification_btn_verify">Verifikasi</string>
+    <string name="fragment_otp_verification_btn_resend">Kirim ulang kode</string>
+
+    <!-- layout/fragment_parent_consent.xml -->
+    <string name="fragment_parent_consent_title">Perlu persetujuan orang tua</string>
+    <string name="fragment_parent_consent_message">Untuk anak di bawah 13 tahun, persetujuan ibu, ayah, atau walimu diperlukan sebelum akun dibuat. Tulis alamat email orang tuamu; kami akan mengirimkan kode kepadanya. Minta kode itu dari orang tuamu, lalu masukkan di layar berikutnya. Jika kamu membuat akun dengan email orang tuamu, kamu bisa menulis alamat yang sama.</string>
+    <string name="fragment_parent_consent_collected_title">Orang tuamu akan melihat hal-hal berikut di email:</string>
+    <string name="fragment_parent_consent_collected_list">• Alamat email, nama, dan tahun lahirmu\n• Dari mana kamu tahu tentang kami dan seberapa jauh kamu mengenal sempoa\n• Kemajuan pelajaran, skor, streak, dan pialamu\n• Nama dan avatarmu terlihat oleh pengguna lain (profil, peringkat, mengikuti)\n• Pesan, foto, video, dan rekaman layar bersuara yang kamu kirim ke guru\n• Jika kamu bergabung dengan kelas kursus, gurunya dapat melihat nama dan kemajuan pelajaranmu\n• ID perangkat untuk notifikasi dan statistik penggunaan</string>
+    <string name="fragment_parent_consent_et_hint">Alamat email orang tuamu</string>
+    <string name="fragment_parent_consent_btn_send">Kirim kode ke orang tua</string>
+    <string name="fragment_parent_consent_note">Jika orang tuamu tidak menyetujui, akun tidak akan dibuat dan permintaan pendaftaranmu akan dihapus secara otomatis.</string>
+
+    <!-- layout/fragment_parent_panel.xml -->
+    <string name="fragment_parent_panel_parent_panel_header_title">Panel Orang Tua</string>
+    <string name="fragment_parent_panel_btn_back_desc">Kembali</string>
+
+    <!-- layout/fragment_part_selection.xml -->
+    <string name="fragment_part_selection_category_title_addition">Penjumlahan</string>
+    <string name="fragment_part_selection_category_title_subtraction">Pengurangan</string>
+    <string name="fragment_part_selection_category_title_multiplication">Perkalian</string>
+
+    <!-- layout/fragment_plan.xml -->
+    <string name="fragment_plan_tv_bireysel_price_right">₺99 per bulan</string>
+    <string name="fragment_plan_tv_bireysel_price_sub">₺1.188/tahun</string>
+    <string name="fragment_plan_text">Energi tanpa batas</string>
+    <string name="fragment_plan_text_2">Belajar tanpa iklan</string>
+    <string name="fragment_plan_text_3">Jalur Penguasaan</string>
+    <string name="fragment_plan_text_4">20 pesan ke Sobi per hari</string>
+    <string name="fragment_plan_text_8">Kuis Sobi tanpa batas</string>
+    <string name="fragment_plan_text_5">Hadiah sambutan: 20 kredit Sobi</string>
+    <string name="fragment_plan_tv_lite_title">Lite (dengan iklan)</string>
+    <string name="fragment_plan_tv_lite_price_right">₺49 per bulan</string>
+    <string name="fragment_plan_tv_lite_price_sub">₺588/tahun</string>
+    <string name="fragment_plan_text_6">Batas nyawa jadi dua kali lipat</string>
+    <string name="fragment_plan_text_7">Nyawa terisi lagi setiap 7 menit</string>
+    <string name="fragment_plan_text_9">5 pesan ke Sobi per hari</string>
+    <string name="fragment_plan_tv_footer_text2">"Langgananmu diperpanjang otomatis,\n dan bisa kamu batalkan kapan saja."</string>
+    <string name="fragment_plan_btn_try_free_text">COBA GRATIS</string>
+
+    <!-- layout/fragment_pro_diffirent.xml -->
+    <string name="fragment_pro_diffirent_tv_header_free">GRATIS</string>
+    <string name="fragment_pro_diffirent_row1_text">Materi pelajaran</string>
+    <string name="fragment_pro_diffirent_row2_text">Nyawa tanpa batas</string>
+    <string name="fragment_pro_diffirent_row3_text">Belajar tanpa iklan</string>
+    <string name="fragment_pro_diffirent_row4_text">Jalur Penguasaan</string>
+    <string name="fragment_pro_diffirent_row5_text">Pesan ke Sobi</string>
+    <string name="fragment_pro_diffirent_row5_free">2/hari</string>
+    <string name="fragment_pro_diffirent_row5_pro">20/hari</string>
+    <string name="fragment_pro_diffirent_row7_text">Kuis Sobi tanpa batas</string>
+    <string name="fragment_pro_diffirent_row7_free">1/hari</string>
+    <string name="fragment_pro_diffirent_row6_text">Hadiah sambutan: 20 kredit Sobi</string>
+    <string name="fragment_pro_diffirent_btn_try_free_text">COBA GRATIS</string>
+
+    <!-- layout/fragment_profile.xml -->
+    <string name="fragment_profile_btn_other_user_profile_back_desc">Kembali</string>
+    <string name="fragment_profile_tv_top_left_name">Nama Pengguna</string>
+    <string name="fragment_profile_btn_account_settings_desc">Pengaturan</string>
+    <string name="fragment_profile_img_profile_photo_desc">Foto Profil</string>
+    <string name="fragment_profile_tv_username_and_date">\@BAAR461745 • BERGABUNG TAHUN 2022</string>
+    <string name="fragment_profile_text">Mengikuti</string>
+    <string name="fragment_profile_text_2">Pengikut</string>
+    <string name="fragment_profile_btn_add_friend">TAMBAH TEMAN</string>
+    <string name="fragment_profile_tv_user_progress_title">Kemajuan Pengguna</string>
+    <string name="fragment_profile_text_3">Sempoa Pengguna</string>
+    <string name="fragment_profile_text_4">Jalur Piala</string>
+    <string name="fragment_profile_tv_profile_badges_title">Lencana</string>
+    <string name="fragment_profile_btn_profile_badges_arrow_desc">Lencana</string>
+
+    <!-- layout/fragment_question_chat.xml -->
+    <string name="fragment_question_chat_back_button_desc">Kembali</string>
+    <string name="fragment_question_chat_restriction_message_text">Akunmu dibatasi. Kamu tidak bisa mengirim pesan.</string>
+    <string name="fragment_question_chat_restriction_appeal_button">Ajukan Banding</string>
+    <string name="fragment_question_chat_teacher_claim_button">Ambil Pertanyaan</string>
+    <string name="fragment_question_chat_text_input_hint">Tulis pesan</string>
+    <string name="fragment_question_chat_gallery_button_desc">Galeri</string>
+    <string name="fragment_question_chat_record_audio_button_desc">Rekam suara</string>
+    <string name="fragment_question_chat_send_text_button_desc">Kirim</string>
+    <string name="fragment_question_chat_audio_bar_play_pause_desc">Putar / Jeda</string>
+    <string name="fragment_question_chat_audio_bar_stop_desc">Hentikan</string>
+    <string name="fragment_question_chat_audio_bar_close_desc">Tutup</string>
+    <string name="fragment_question_chat_audio_bar_send_desc">Kirim</string>
+    <string name="fragment_question_chat_caption_bar_thumb_desc">Media terpilih</string>
+    <string name="fragment_question_chat_caption_bar_thumb_close_desc">Batalkan pilihan</string>
+    <string name="fragment_question_chat_caption_input_hint">Tulis pesan...</string>
+    <string name="fragment_question_chat_caption_send_button_desc">Kirim</string>
+
+    <!-- layout/fragment_question_panel.xml -->
+    <string name="fragment_question_panel_question_panel_title">Masukan</string>
+    <string name="fragment_question_panel_question_panel_subtitle">Pendapatmu membantu kami menyempurnakan pelajaran.</string>
+    <string name="fragment_question_panel_question1_title">1) Apakah menurutmu soal-soalnya membantumu belajar?</string>
+    <string name="fragment_question_panel_q1_option1_text">Sangat kurang</string>
+    <string name="fragment_question_panel_q1_option2_text">Kurang</string>
+    <string name="fragment_question_panel_q1_option3_text">Biasa saja</string>
+    <string name="fragment_question_panel_q1_option4_text">Cukup</string>
+    <string name="fragment_question_panel_q1_option5_text">Sangat cukup</string>
+    <string name="fragment_question_panel_q1_text_input_hint">Ada hal lain yang ingin kamu tambahkan?</string>
+    <string name="fragment_question_panel_question2_title">2) Seberapa sulit soal-soalnya?</string>
+    <string name="fragment_question_panel_q2_option1_text">Sangat mudah</string>
+    <string name="fragment_question_panel_q2_option2_text">Mudah</string>
+    <string name="fragment_question_panel_q2_option3_text">Sedang</string>
+    <string name="fragment_question_panel_q2_option4_text">Sulit</string>
+    <string name="fragment_question_panel_q2_option5_text">Sangat sulit</string>
+    <string name="fragment_question_panel_q2_text_input_hint">Ada yang ingin kamu jelaskan?</string>
+    <string name="fragment_question_panel_question3_title">3) Kalau ada bagian yang membuatmu bingung atau perlu diperbaiki, tolong tulis di sini.</string>
+    <string name="fragment_question_panel_q3_text_input_hint">Tulis di sini…</string>
+    <string name="fragment_question_panel_skip_button">Lewati</string>
+    <string name="fragment_question_panel_send_button">Kirim</string>
+
+    <!-- layout/fragment_rules.xml -->
+    <string name="fragment_rules_text">Rumus Teman Kecil</string>
+    <string name="fragment_rules_five_text">Angka yang ditambah</string>
+    <string name="fragment_rules_text_2">Teman</string>
+    <string name="fragment_rules_five_rule_description_text">Tambah 5. Kurangi temannya</string>
+    <string name="fragment_rules_text_3">Rumus Teman Besar 1-2-3-4-5</string>
+    <string name="fragment_rules_ten_text">Angka yang ditambah</string>
+    <string name="fragment_rules_text_4">Teman Besar</string>
+    <string name="fragment_rules_ten_rule_five_description_text">Tambah 10. Kurangi temannya.</string>
+    <string name="fragment_rules_text_5">Rumus Teman Besar 6-7-8-9</string>
+    <string name="fragment_rules_ten_text_second">Angka yang ditambah</string>
+    <string name="fragment_rules_text_6">Teman</string>
+    <string name="fragment_rules_ten_rule_description_text">Tambah 10. Kurangi temannya.</string>
+    <string name="fragment_rules_text_7">Rumus Gabungan</string>
+    <string name="fragment_rules_bead_text">Angka yang ditambah</string>
+    <string name="fragment_rules_text_8">Langkah</string>
+    <string name="fragment_rules_text_9">+1</string>
+    <string name="fragment_rules_text_10">−5</string>
+    <string name="fragment_rules_text_11">+10</string>
+    <string name="fragment_rules_text_12">+2</string>
+    <string name="fragment_rules_text_13">−5</string>
+    <string name="fragment_rules_text_14">+10</string>
+    <string name="fragment_rules_text_15">+3</string>
+    <string name="fragment_rules_text_16">−5</string>
+    <string name="fragment_rules_text_17">+10</string>
+    <string name="fragment_rules_text_18">+4</string>
+    <string name="fragment_rules_text_19">−5</string>
+    <string name="fragment_rules_text_20">+10</string>
+    <string name="fragment_rules_text_21">Rumus Teman Kecil</string>
+    <string name="fragment_rules_extraction_five_text">Angka yang dikurangi</string>
+    <string name="fragment_rules_text_22">Teman</string>
+    <string name="fragment_rules_extraction_five_rule_description_text">Kurangi 5. Tambah temannya</string>
+    <string name="fragment_rules_text_23">Rumus Teman Besar</string>
+    <string name="fragment_rules_text_24">Angka yang dikurangi</string>
+    <string name="fragment_rules_text_25">Teman</string>
+    <string name="fragment_rules_extraction_ten_rule_description_text">Kurangi 10. Tambah temannya</string>
+    <string name="fragment_rules_text_26">Pengurangan Gabungan</string>
+    <string name="fragment_rules_bead_extraction_text">Angka yang dikurangi</string>
+    <string name="fragment_rules_text_27">Langkah</string>
+    <string name="fragment_rules_text_28">−1</string>
+    <string name="fragment_rules_text_29">+5</string>
+    <string name="fragment_rules_text_30">−10</string>
+    <string name="fragment_rules_text_31">−2</string>
+    <string name="fragment_rules_text_32">+5</string>
+    <string name="fragment_rules_text_33">−10</string>
+    <string name="fragment_rules_text_34">−3</string>
+    <string name="fragment_rules_text_35">+5</string>
+    <string name="fragment_rules_text_36">−10</string>
+    <string name="fragment_rules_text_37">−4</string>
+    <string name="fragment_rules_text_38">+5</string>
+    <string name="fragment_rules_text_39">−10</string>
+
+    <!-- layout/fragment_shop.xml -->
+    <string name="fragment_shop_shop_energy_icon_desc">Nyawa</string>
+    <string name="fragment_shop_text_desc">Koin</string>
+    <string name="fragment_shop_text_desc_2">Kunci</string>
+    <string name="fragment_shop_text_desc_3">Kredit tutor</string>
+    <string name="fragment_shop_super_title">"Fitur yang\n mempercepat \n belajar"</string>
+    <string name="fragment_shop_super_subtitle">"Energi tanpa batas dan\n pengalaman tanpa iklan"</string>
+    <string name="fragment_shop_super_button">COBA GRATIS 1 MINGGU</string>
+    <string name="fragment_shop_text">Penawaran Spesial</string>
+    <string name="fragment_shop_text_desc_4">Kristal</string>
+    <string name="fragment_shop_text_2">Peti Gratis</string>
+    <string name="fragment_shop_text_3">Tonton iklan untuk dapat peti.</string>
+    <string name="fragment_shop_text_4">DAPATKAN PETI</string>
+    <string name="fragment_shop_text_5">Nyawa Gratis</string>
+    <string name="fragment_shop_text_6">Tonton iklan untuk dapat nyawa.</string>
+    <string name="fragment_shop_text_7">DAPATKAN NYAWA</string>
+    <string name="fragment_shop_text_desc_5">Pembeku streak</string>
+    <string name="fragment_shop_text_8">Pembeku Streak</string>
+    <string name="fragment_shop_shop_streak_freeze_desc">Melindungi streak-mu selama 1 hari. Walau kamu terlewat sehari, kemajuanmu tetap aman!</string>
+    <string name="fragment_shop_text_9">Nyawa</string>
+    <string name="fragment_shop_text_desc_6">Nyawa tanpa batas</string>
+    <string name="fragment_shop_text_10">Tanpa Batas</string>
+    <string name="fragment_shop_text_11">Dengan Pro, nyawamu tak pernah habis</string>
+    <string name="fragment_shop_shop_pro_price_text">₺99,00 per bulan</string>
+    <string name="fragment_shop_text_12">Nyawa Ekstra</string>
+    <string name="fragment_shop_text_13">Ambil 1 nyawa untuk menyelesaikan lebih banyak pelajaran.</string>
+    <string name="fragment_shop_shop_life_timer_text">PENUH</string>
+    <string name="fragment_shop_text_14">Tanya Guru</string>
+    <string name="fragment_shop_shop_credit_balance_text">Setiap kredit bisa dipakai untuk menanyakan satu pertanyaan ke guru.</string>
+    <string name="fragment_shop_text_desc_7">Kredit tutor</string>
+    <string name="fragment_shop_text_desc_8">Kredit tutor</string>
+    <string name="fragment_shop_text_desc_9">Kredit tutor</string>
+    <string name="fragment_shop_text_15">Koin</string>
+    <string name="fragment_shop_text_desc_10">Koin</string>
+    <string name="fragment_shop_text_desc_11">Koin</string>
+    <string name="fragment_shop_text_desc_12">Koin</string>
+    <string name="fragment_shop_text_16">Kunci</string>
+    <string name="fragment_shop_text_desc_13">Kunci</string>
+    <string name="fragment_shop_text_desc_14">Kunci</string>
+    <string name="fragment_shop_text_desc_15">Kunci</string>
+
+    <!-- layout/fragment_sound_settings.xml -->
+    <string name="fragment_sound_settings_text">Suara dan Notifikasi</string>
+    <string name="fragment_sound_settings_btn_close_desc">Kembali</string>
+    <string name="fragment_sound_settings_text_2">Efek suara</string>
+    <string name="fragment_sound_settings_text_3">Pilihan suara sempoa</string>
+    <string name="fragment_sound_settings_text_abacus_sound_current">Suara 1</string>
+    <string name="fragment_sound_settings_text_4">Narasi tutorial</string>
+    <string name="fragment_sound_settings_text_5">Getar</string>
+    <string name="fragment_sound_settings_text_6">Notifikasi</string>
+
+    <!-- layout/fragment_streak.xml -->
+    <string name="fragment_streak_btn_streak_back_desc">Kembali</string>
+    <string name="fragment_streak_text">Streak Harian</string>
+    <string name="fragment_streak_text_2">Hari Ini</string>
+    <string name="fragment_streak_streak_challenge_claim">Ambil hadiah</string>
+    <string name="fragment_streak_streak_rewards_title">Hadiah Streak</string>
+    <string name="fragment_streak_text_3">Streak terpanjangmu</string>
+    <string name="fragment_streak_text_4">Pembeku streak</string>
+    <string name="fragment_streak_streak_change_goal">Ubah target harian</string>
+    <string name="fragment_streak_streak_change_reminder">Ubah jam notifikasi</string>
+
+    <!-- layout/fragment_student_email_verification.xml -->
+    <string name="fragment_student_email_verification_tv_title">Verifikasi emailmu</string>
+    <string name="fragment_student_email_verification_et_code_hint">Kode 6 digit</string>
+    <string name="fragment_student_email_verification_et_name_hint">Nama Lengkap</string>
+    <string name="fragment_student_email_verification_et_password_hint">Kata sandi (min. 6 karakter)</string>
+    <string name="fragment_student_email_verification_btn_verify">Verifikasi dan Masuk</string>
+    <string name="fragment_student_email_verification_btn_resend">Kirim ulang kode</string>
+
+    <!-- layout/fragment_teacher_forgot_password_email.xml -->
+    <string name="fragment_teacher_forgot_password_email_tv_title">Lupa kata sandi</string>
+    <string name="fragment_teacher_forgot_password_email_text">Masukkan alamat email Anda. Kami akan mengirimkan kode verifikasi.</string>
+    <string name="fragment_teacher_forgot_password_email_et_email_hint">Email</string>
+    <string name="fragment_teacher_forgot_password_email_btn_continue">Lanjut</string>
+
+    <!-- layout/fragment_teacher_new_password.xml -->
+    <string name="fragment_teacher_new_password_tv_title">Kata sandi baru</string>
+    <string name="fragment_teacher_new_password_text">Masukkan kata sandi baru Anda.</string>
+    <string name="fragment_teacher_new_password_et_new_password_hint">Kata sandi baru</string>
+    <string name="fragment_teacher_new_password_et_new_password_confirm_hint">Ulangi kata sandi</string>
+    <string name="fragment_teacher_new_password_btn_update_password">Perbarui kata sandi</string>
+
+    <!-- layout/fragment_tutorial.xml -->
+    <string name="fragment_tutorial_five_text">Angka yang ditambah</string>
+    <string name="fragment_tutorial_text">Teman</string>
+    <string name="fragment_tutorial_five_rule_description_text">Tambah 5. Kurangi temannya</string>
+    <string name="fragment_tutorial_extraction_five_text">Angka yang dikurangi</string>
+    <string name="fragment_tutorial_text_2">Teman</string>
+    <string name="fragment_tutorial_extraction_five_rule_description_text">Kurangi 5. Tambah temannya</string>
+    <string name="fragment_tutorial_ten_text">Angka yang ditambah</string>
+    <string name="fragment_tutorial_text_3">Teman Besar</string>
+    <string name="fragment_tutorial_ten_rule_five_description_text">Tambah 10. Kurangi temannya.</string>
+    <string name="fragment_tutorial_rules_step_text">+10 -&gt; −6</string>
+    <string name="fragment_tutorial_ten_text_second">Angka yang ditambah</string>
+    <string name="fragment_tutorial_text_4">Teman</string>
+    <string name="fragment_tutorial_ten_rule_description_text">Tambah 10. Kurangi temannya.</string>
+    <string name="fragment_tutorial_text_5">Angka yang ditambah</string>
+    <string name="fragment_tutorial_text_6">Langkah</string>
+    <string name="fragment_tutorial_text_7">+1</string>
+    <string name="fragment_tutorial_text_8">−5</string>
+    <string name="fragment_tutorial_text_9">+10</string>
+    <string name="fragment_tutorial_text_10">+2</string>
+    <string name="fragment_tutorial_text_11">−5</string>
+    <string name="fragment_tutorial_text_12">+10</string>
+    <string name="fragment_tutorial_text_13">+3</string>
+    <string name="fragment_tutorial_text_14">−5</string>
+    <string name="fragment_tutorial_text_15">+10</string>
+    <string name="fragment_tutorial_text_16">+4</string>
+    <string name="fragment_tutorial_text_17">−5</string>
+    <string name="fragment_tutorial_text_18">+10</string>
+    <string name="fragment_tutorial_text_19">Angka yang dikurangi</string>
+    <string name="fragment_tutorial_text_20">Teman</string>
+    <string name="fragment_tutorial_extraction_ten_rule_description_text">Kurangi 10. Tambah temannya</string>
+    <string name="fragment_tutorial_text_21">Angka yang dikurangi</string>
+    <string name="fragment_tutorial_text_22">Langkah</string>
+    <string name="fragment_tutorial_text_23">−1</string>
+    <string name="fragment_tutorial_text_24">+5</string>
+    <string name="fragment_tutorial_text_25">−10</string>
+    <string name="fragment_tutorial_text_26">−2</string>
+    <string name="fragment_tutorial_text_27">+5</string>
+    <string name="fragment_tutorial_text_28">−10</string>
+    <string name="fragment_tutorial_text_29">−3</string>
+    <string name="fragment_tutorial_text_30">+5</string>
+    <string name="fragment_tutorial_text_31">−10</string>
+    <string name="fragment_tutorial_text_32">−4</string>
+    <string name="fragment_tutorial_text_33">+5</string>
+    <string name="fragment_tutorial_text_34">−10</string>
+    <string name="fragment_tutorial_tutorial_text">Coba</string>
+    <string name="fragment_tutorial_question_text">Coba</string>
+    <string name="fragment_tutorial_kontrol_button">Periksa</string>
+    <string name="fragment_tutorial_text_35">Lewati tutorial</string>
+    <string name="fragment_tutorial_options_check_button">Periksa</string>
+    <string name="fragment_tutorial_devam_button">Lanjut</string>
+    <string name="fragment_tutorial_incorrect_text">Salah</string>
+    <string name="fragment_tutorial_correct_answer_label">Ikuti instruksinya</string>
+    <string name="fragment_tutorial_okay_button">Coba Lagi</string>
+    <string name="fragment_tutorial_correct_text">Hebat!</string>
+    <string name="fragment_tutorial_continue_button">Lanjut</string>
+
+    <!-- layout/fragment_tutorial_question_panel.xml -->
+    <string name="fragment_tutorial_question_panel_question_panel_title">Masukan tutorial</string>
+    <string name="fragment_tutorial_question_panel_question_panel_subtitle">Pendapatmu membantu kami menyempurnakan tutorial.</string>
+    <string name="fragment_tutorial_question_panel_question1_title">1) Apakah tutorial ini cukup untuk memahami topiknya?</string>
+    <string name="fragment_tutorial_question_panel_q1_option1_text">Sangat kurang</string>
+    <string name="fragment_tutorial_question_panel_q1_option2_text">Kurang</string>
+    <string name="fragment_tutorial_question_panel_q1_option3_text">Biasa saja</string>
+    <string name="fragment_tutorial_question_panel_q1_option4_text">Cukup</string>
+    <string name="fragment_tutorial_question_panel_q1_option5_text">Sangat cukup</string>
+    <string name="fragment_tutorial_question_panel_q1_text_input_hint">Ada hal lain yang ingin kamu tambahkan?</string>
+    <string name="fragment_tutorial_question_panel_question2_title">2) Apakah contoh soal di tutorial mudah dipahami?</string>
+    <string name="fragment_tutorial_question_panel_q2_option1_text">Sama sekali tidak jelas</string>
+    <string name="fragment_tutorial_question_panel_q2_option2_text">Kurang jelas</string>
+    <string name="fragment_tutorial_question_panel_q2_option3_text">Cukup jelas</string>
+    <string name="fragment_tutorial_question_panel_q2_option4_text">Jelas</string>
+    <string name="fragment_tutorial_question_panel_q2_option5_text">Sangat jelas</string>
+    <string name="fragment_tutorial_question_panel_q2_text_input_hint">Ada yang ingin kamu jelaskan?</string>
+    <string name="fragment_tutorial_question_panel_question3_title">3) Kalau ada bagian yang membuatmu bingung atau perlu diperbaiki, tolong tulis di sini.</string>
+    <string name="fragment_tutorial_question_panel_q3_text_input_hint">Tulis di sini…</string>
+    <string name="fragment_tutorial_question_panel_skip_button">Lewati</string>
+    <string name="fragment_tutorial_question_panel_send_button">Kirim</string>
+
+    <!-- layout/fragment_user_info.xml -->
+    <string name="fragment_user_info_et_age_hint">Usia</string>
+    <string name="fragment_user_info_challenge_intro_text">Sekarang, ayo kita bangun kebiasaan belajarmu.</string>
+    <string name="fragment_user_info_btn_continue">Lanjut</string>
+    <string name="fragment_user_info_btn_later">Nanti saja</string>
+
+    <!-- layout/item_back_part.xml -->
+    <string name="item_back_part_section_title">Bagian 1</string>
+    <string name="item_back_part_fast_forward_button">KEMBALI!</string>
+
+    <!-- layout/item_badge_detail_award.xml -->
+    <string name="item_badge_detail_award_award_badge_title">Judul Hadiah</string>
+
+    <!-- layout/item_badge_detail_record.xml -->
+    <string name="item_badge_detail_record_record_badge_title">Judul Lencana</string>
+    <string name="item_badge_detail_record_record_badge_subtext">Default</string>
+
+    <!-- layout/item_bulletin_card.xml -->
+    <string name="item_bulletin_card_bulletin_card_title">Sempoa</string>
+    <string name="item_bulletin_card_bulletin_card_subtitle">Asah kemampuanmu dengan berlatih di sempoa.</string>
+    <string name="item_bulletin_card_bulletin_card_chevron_desc">Buka</string>
+
+    <!-- layout/item_follow_user.xml -->
+    <string name="item_follow_user_btn_follow_back_desc">Ikuti</string>
+    <string name="item_follow_user_btn_unfollow_desc">Berhenti Mengikuti</string>
+
+    <!-- layout/item_friend_result.xml -->
+    <string name="item_friend_result_btn_add_friend_desc">Tambah Teman</string>
+
+    <!-- layout/item_header.xml -->
+    <string name="item_header_header_text">Pengenalan penjumlahan teman kecil</string>
+
+    <!-- layout/item_message.xml -->
+    <string name="item_message_audio_label">Rekaman suara</string>
+
+    <!-- layout/item_parent_lesson.xml -->
+    <string name="item_parent_lesson_lesson_chevron_desc">Tampilkan langkah</string>
+
+    <!-- layout/item_parent_part.xml -->
+    <string name="item_parent_part_part_chevron_desc">Tampilkan unit</string>
+
+    <!-- layout/item_parent_section.xml -->
+    <string name="item_parent_section_section_chevron_desc">Tampilkan pelajaran</string>
+
+    <!-- layout/item_parent_summary.xml -->
+    <string name="item_parent_summary_text">Pelajaran selesai</string>
+    <string name="item_parent_summary_text_2">Hari Ini</string>
+    <string name="item_parent_summary_text_3">Streak harian</string>
+    <string name="item_parent_summary_text_4">7 hari terakhir</string>
+
+    <!-- layout/item_part.xml -->
+    <string name="item_part_section_title">Bagian 2</string>
+    <string name="item_part_section_description">Pelajari kosakata, ungkapan, dan konsep tata bahasa untuk percakapan sederhana</string>
+    <string name="item_part_fast_forward_button">MAJU CEPAT!</string>
+
+    <!-- layout/item_part_open.xml -->
+    <string name="item_part_open_section_title">Bagian 2</string>
+    <string name="item_part_open_section_description">Pelajari kosakata, ungkapan, dan konsep tata bahasa untuk percakapan sederhana</string>
+    <string name="item_part_open_fast_forward_button">LANJUT</string>
+
+    <!-- layout/item_question.xml -->
+    <string name="item_question_question_thumbnail_desc">Pratinjau</string>
+    <string name="item_question_question_status_icon_desc">Ikon status</string>
+
+    <!-- layout/item_race_list.xml -->
+    <string name="item_race_list_race_status">MULAI</string>
+
+    <!-- layout/item_restricted_user.xml -->
+    <string name="item_restricted_user_text_desc">Lihat detail</string>
+
+    <!-- layout/layout_tab1_bead_options.xml -->
+    <string name="layout_tab1_bead_options_text">Pilih Jenis Manik</string>
+    <string name="layout_tab1_bead_options_text_2">Soroban</string>
+    <string name="layout_tab1_bead_options_text_3">Pelangi</string>
+    <string name="layout_tab1_bead_options_text_4">Awan</string>
+    <string name="layout_tab1_bead_options_text_5">Boling</string>
+    <string name="layout_tab1_bead_options_text_6">Tenis</string>
+    <string name="layout_tab1_bead_options_text_7">Biliar</string>
+    <string name="layout_tab1_bead_options_text_8">Basket</string>
+    <string name="layout_tab1_bead_options_text_9">Sepak Bola</string>
+    <string name="layout_tab1_bead_options_text_10">Birto</string>
+    <string name="layout_tab1_bead_options_text_11">Golf</string>
+    <string name="layout_tab1_bead_options_text_12">Sepak Bola</string>
+    <string name="layout_tab1_bead_options_text_13">Bola Pantai</string>
+    <string name="layout_tab1_bead_options_text_14">Boling</string>
+    <string name="layout_tab1_bead_options_text_15">Basket</string>
+    <string name="layout_tab1_bead_options_text_16">Tenis</string>
+    <string name="layout_tab1_bead_options_text_17">Bisbol</string>
+    <string name="layout_tab1_bead_options_text_18">Hoki Es</string>
+    <string name="layout_tab1_bead_options_text_19">Anjing</string>
+    <string name="layout_tab1_bead_options_text_20">Monyet</string>
+    <string name="layout_tab1_bead_options_text_21">Bebek</string>
+    <string name="layout_tab1_bead_options_text_22">Rubah</string>
+    <string name="layout_tab1_bead_options_text_23">Gajah</string>
+    <string name="layout_tab1_bead_options_text_24">Panda</string>
+    <string name="layout_tab1_bead_options_text_25">Kucing</string>
+    <string name="layout_tab1_bead_options_text_26">Walrus</string>
+    <string name="layout_tab1_bead_options_text_27">Harimau</string>
+
+    <!-- layout/layout_tab2_bead_color.xml -->
+    <string name="layout_tab2_bead_color_text">Normal</string>
+    <string name="layout_tab2_bead_color_text_2">Terpilih</string>
+
+    <!-- layout/layout_tab3_frame_options.xml -->
+    <string name="layout_tab3_frame_options_text">Pilih Jenis Bingkai</string>
+    <string name="layout_tab3_frame_options_text_2">Kayu</string>
+    <string name="layout_tab3_frame_options_text_3">Hati</string>
+    <string name="layout_tab3_frame_options_text_4">Bintang</string>
+    <string name="layout_tab3_frame_options_text_5">Gradasi</string>
+
+    <!-- layout/lesson_popover.xml -->
+    <string name="lesson_popover_text">Langkah</string>
+    <string name="lesson_popover_again_tutorial">Ulangi tutorial</string>
+
+    <!-- layout/multiplication_table_1.xml -->
+    <string name="multiplication_table_1_text">Tabel Perkalian 1x</string>
+
+    <!-- layout/multiplication_table_2.xml -->
+    <string name="multiplication_table_2_text">Tabel Perkalian 2x</string>
+
+    <!-- layout/multiplication_table_3.xml -->
+    <string name="multiplication_table_3_text">Tabel Perkalian 3x</string>
+
+    <!-- layout/multiplication_table_4.xml -->
+    <string name="multiplication_table_4_text">Tabel Perkalian 4x</string>
+
+    <!-- layout/multiplication_table_5.xml -->
+    <string name="multiplication_table_5_text">Tabel Perkalian 5x</string>
+
+    <!-- layout/multiplication_table_6.xml -->
+    <string name="multiplication_table_6_text">Tabel Perkalian 6x</string>
+
+    <!-- layout/multiplication_table_7.xml -->
+    <string name="multiplication_table_7_text">Tabel Perkalian 7x</string>
+
+    <!-- layout/multiplication_table_8.xml -->
+    <string name="multiplication_table_8_text">Tabel Perkalian 8x</string>
+
+    <!-- layout/multiplication_table_9.xml -->
+    <string name="multiplication_table_9_text">Tabel Perkalian 9x</string>
+
+    <!-- layout/panel_bead_skin_select.xml -->
+    <string name="panel_bead_skin_select_bead_slot_select_title">Mau dipakai untuk mengganti manik yang mana?</string>
+
+    <!-- layout/panel_cup_difficulty.xml -->
+    <string name="panel_cup_difficulty_cup_difficulty_title">Tingkat Kesulitan</string>
+    <string name="panel_cup_difficulty_cup_difficulty_message">Atur Level</string>
+    <string name="panel_cup_difficulty_text">Jumlah Digit:</string>
+    <string name="panel_cup_difficulty_cup_difficulty_start_button">MULAI</string>
+
+    <!-- layout/panel_cup_path.xml -->
+    <string name="panel_cup_path_text">Jalur Piala</string>
+    <string name="panel_cup_path_panel_cup_path_energy_icon_desc">Nyawa</string>
+    <string name="panel_cup_path_card1_title">Jalur Piala Penjumlahan</string>
+    <string name="panel_cup_path_card2_title">Jalur Piala Pengurangan</string>
+    <string name="panel_cup_path_card3_title">Jalur Piala Perkalian</string>
+    <string name="panel_cup_path_card4_title">Jalur Piala Penjumlahan - Tanpa Sempoa</string>
+    <string name="panel_cup_path_card5_title">Jalur Piala Pengurangan - Tanpa Sempoa</string>
+    <string name="panel_cup_path_card6_title">Jalur Piala Perkalian - Tanpa Sempoa</string>
+
+    <!-- layout/panel_profile_abacus.xml -->
+    <string name="panel_profile_abacus_text">Ganti ikon profil</string>
+
+    <!-- layout/race_bottom_sheet.xml -->
+    <string name="race_bottom_sheet_race_title">Jalur Penguasaan</string>
+
+    <!-- layout/result_panel_correct.xml -->
+    <string name="result_panel_correct_correct_text">Hebat!</string>
+    <string name="result_panel_correct_continue_button">Lanjut</string>
+
+    <!-- layout/result_panel_incorrect.xml -->
+    <string name="result_panel_incorrect_incorrect_text">Salah</string>
+    <string name="result_panel_incorrect_correct_answer_label">Jawaban benar:</string>
+    <string name="result_panel_incorrect_correct_answer_text">Jawaban benar akan muncul di sini</string>
+    <string name="result_panel_incorrect_okay_button">LANJUT</string>
+
+    <!-- layout/view_drawing_controls_overlay.xml -->
+    <string name="view_drawing_controls_overlay_pencil_button_desc">Pena</string>
+    <string name="view_drawing_controls_overlay_undo_button_desc">Urungkan</string>
+    <string name="view_drawing_controls_overlay_drawer_button_desc">Buka/tutup panel gambar</string>
+
+    <!-- layout/view_guide_panel.xml -->
+    <string name="view_guide_panel_btn_back_desc">Kembali</string>
+    <string name="view_guide_panel_btn_forward_desc">Maju</string>
+
+    <!-- layout/view_recording_overlay.xml -->
+    <string name="view_recording_overlay_recording_btn_pause_resume_desc">Jeda</string>
+    <string name="view_recording_overlay_recording_btn_cancel_desc">Batal</string>
+    <string name="view_recording_overlay_recording_btn_save_desc">Simpan</string>
+</resources>
