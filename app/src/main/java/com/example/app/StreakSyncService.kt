@@ -373,10 +373,10 @@ object StreakSyncService {
             // Fonksiyon sunucuda yok (henüz deploy edilmemiş): mesajı İngilizce "NOT_FOUND".
             FirebaseFunctionsException.Code.NOT_FOUND,
             FirebaseFunctionsException.Code.UNIMPLEMENTED,
-            -> "$failed Birazdan tekrar dene."
-            // Geri kalanı sunucunun kendi Türkçe açıklaması (HttpsError mesajı).
-            else -> e.message?.takeIf { it.isNotBlank() }
-                ?: "$failed Birazdan tekrar dene."
+            -> appString(R.string.ui_x_birazdan_tekrar_dene, failed)
+            // Geri kalanı sunucunun kendi Türkçe açıklaması (HttpsError mesajı); başka dilde genel metin.
+            else -> e.message?.takeIf { it.isNotBlank() && AppLanguage.isTurkish() }
+                ?: appString(R.string.ui_x_birazdan_tekrar_dene, failed)
         }
     }
 

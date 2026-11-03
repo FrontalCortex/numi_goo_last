@@ -821,4 +821,5 @@
     <string name="ui_selamlar_benim_adim_x">Selamlar! Benim adım %1$s!</string>
     <!-- serverErrorText: sunucu hatası, Türkçe dışındaki dillerde kodundan -->
     <string name="ui_server_too_many">Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin.</string>
+    <string name="ui_x_birazdan_tekrar_dene">%1$s Birazdan tekrar dene.</string>
 </resources>

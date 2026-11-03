@@ -12,6 +12,20 @@ import com.google.firebase.functions.FirebaseFunctionsException.Code
  * çağıranın [fallback]'i. Sunucu mesajlarını dillere çevirmek her callable'a dil göndermeyi
  * gerektiriyordu; giriş akışı için kod yeterli.
  */
+/**
+ * Ekranın kendi metniyle birleşen sunucu açıklaması ("Gönderilemedi: <açıklama>"). Türkçede sunucunun
+ * mesajı; başka dilde açıklama Türkçe olacağı için yalnızca [failed] (ör. "Couldn't send."), kod bir
+ * şey söylüyorsa onun metni.
+ */
+fun serverDetailText(e: Exception, failed: String, @StringRes withDetail: Int): String {
+    if (AppLanguage.isTurkish()) return appString(withDetail, e.message)
+    return when ((e as? FirebaseFunctionsException)?.code) {
+        Code.RESOURCE_EXHAUSTED -> appString(R.string.ui_server_too_many)
+        Code.UNAVAILABLE, Code.DEADLINE_EXCEEDED -> appString(R.string.ui_sunucuya_su_an_ulasilamiyor_birazdan_tekrar)
+        else -> failed
+    }
+}
+
 fun serverErrorText(e: Exception, @StringRes fallback: Int): String {
     val fe = e as? FirebaseFunctionsException
     if (AppLanguage.isTurkish()) return fe?.message ?: e.localizedMessage ?: appString(fallback)

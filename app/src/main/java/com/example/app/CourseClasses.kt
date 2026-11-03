@@ -349,7 +349,9 @@ object CourseClasses {
             // Süresi dolan davet (respondClassInvite). İstemci zaman aşımı da bu kodla gelebilir;
             // o zaman SDK'nın mesajı "DEADLINE_EXCEEDED" oluyor, kullanıcıya genel metin gidiyor.
             FirebaseFunctionsException.Code.DEADLINE_EXCEEDED ->
-                fe.message?.takeUnless { it.equals("DEADLINE_EXCEEDED", ignoreCase = true) }
+                // Sunucunun mesajı Türkçe; başka dilde kodundan genel metin (serverErrorText).
+                if (!AppLanguage.isTurkish()) serverErrorText(e, R.string.class_generic_error)
+                else fe.message?.takeUnless { it.equals("DEADLINE_EXCEEDED", ignoreCase = true) }
                     ?: appString(R.string.class_generic_error)
             else -> appString(R.string.class_generic_error)
         }

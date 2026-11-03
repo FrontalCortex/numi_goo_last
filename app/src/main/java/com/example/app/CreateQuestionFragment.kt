@@ -322,7 +322,7 @@ class CreateQuestionFragment : Fragment() {
         val text = if (ServerQuestions.isInsufficientCredits(e)) {
             appString(R.string.ui_danisma_kredin_kalmadi_magazadan_kredi_alabi)
         } else {
-            appString(R.string.ui_gonderilemedi_x, e.message)
+            serverDetailText(e, appString(R.string.ui_islem_tamamlanamadi_tekrar_deneyin), R.string.ui_gonderilemedi_x)
         }
         Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show()
     }

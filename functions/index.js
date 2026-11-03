@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
+const mailTexts = require('./mailTexts');
 
 // Load environment variables from .env file (for local testing)
 // In production, use Firebase Secret Manager or environment variables
@@ -383,20 +384,11 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
     auth: { user, pass }
   });
 
+  // Uygulamanın dili (AuthManager `lang` gönderiyor); eski sürümler Türkçe alır.
   const mailOptions = {
     from: `Sorobit <${user}>`,
     to: email,
-    subject: 'Sorobit - E-posta Doğrulama Kodu',
-    html: `
-      <h2>Sorobit E-posta Doğrulama</h2>
-      <p>Merhaba,</p>
-      <p>Sorobit hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
-      <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${code}</h1>
-        <p>Bu kod 10 dakika içinde geçerlidir.</p>
-      <p>Eğer bu işlemi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
-      <p>İyi çalışmalar,<br>Sorobit Ekibi</p>
-    `,
-      text: `Sorobit E-posta Doğrulama\n\nDoğrulama kodunuz: ${code}\nBu kod 10 dakika içinde geçerlidir.`
+    ...mailTexts.verificationEmail(code, mailTexts.mailLang(data && data.lang)),
   };
 
     console.log('Attempting to send email to:', email);
@@ -870,7 +862,8 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
 // E-postadaki onay metni değişince bu sürüm de değişmeli; her onay kaydı hangi metni
 // onayladığını bu alanla taşıyor.
-const PARENTAL_CONSENT_VERSION = '2026-10-23.1';
+// 2026-11-03.1: metin üç dilde (mailTexts.js, kayıtta consentLang), Türkçesi privacy-policy-tr.html'e bağlanıyor.
+const PARENTAL_CONSENT_VERSION = '2026-11-03.1';
 // Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 10 dakikası
 // burada yetmiyor.
 const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;
@@ -903,69 +896,16 @@ function escapeHtml(s) {
     .replace(/"/g, '&quot;');
 }
 
-/**
- * Veliye giden onay e-postası. Metin değişirse PARENTAL_CONSENT_VERSION da değişmeli.
- * Liste gizlilik politikasıyla aynı kalmalı (public/privacy-policy.html, Children bölümü).
- */
-function parentalConsentEmail(code, childEmail, parentEmail) {
-  const child = escapeHtml(childEmail);
-  // Hesap velinin kendi adresiyle açılıyorsa "çocuğunuz sizin e-postanızı verdi" demek yanlış olur.
-  const sameAddress = childEmail === parentEmail;
-  const introHtml = sameAddress
-    ? `Bu e-posta adresiyle (<b>${child}</b>) çocuğunuz için bir Sorobit hesabı açılmak isteniyor.`
-    : `<b>${child}</b> adresiyle Sorobit'e kayıt olmak isteyen çocuğunuz, velisi olarak sizin e-postanızı verdi.`;
-  const introText = sameAddress
-    ? `Bu e-posta adresiyle (${childEmail}) çocuğunuz için bir Sorobit hesabı açılmak isteniyor. `
-    : `${childEmail} adresiyle kayıt olmak isteyen çocuğunuz velisi olarak sizin e-postanızı verdi. `;
-  const collected = [
-    'Çocuğunuzun e-posta adresi, uygulamada görünen adı ve doğum yılı',
-    'Kayıtta verdiği iki cevap: Sorobit\'i nereden duyduğu ve abaküs bilgisi (hiç / biraz / iyi)',
-    'Ders ilerlemesi, puanlar, seri ve kupa bilgileri',
-    'Adı ve avatarı diğer kullanıcılara görünür (profil, sıralama tabloları, takip listeleri)',
-    'Öğretmene soru sohbetinde gönderdiği mesajlar, fotoğraflar, videolar ve mikrofon sesi içeren ekran kayıtları (öğretmen bunları görür)',
-    'Öğretmeninin verdiği kodu girerek ya da davetini kabul ederek bir kurs sınıfına katılırsa, o sınıfın öğretmeni adını, kullanıcı adını ve ders ilerlemesini görür, sorularını da o öğretmen cevaplar. Çocuğunuz sınıftan dilediği an ayrılabilir',
-    'Bildirim göndermek için cihaz bildirim kimliği',
-    'Uygulama kullanım istatistikleri (yaş grubu ve abaküs bilgisiyle birlikte, adı ve e-postası olmadan); reklamlar çocuk ayarıyla, kişiselleştirilmeden gösterilir',
-  ];
-  const listHtml = collected.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
-  const listText = collected.map((item) => `- ${item}`).join('\n');
-  const policyUrl = 'https://numigo-new.web.app/privacy-policy.html#pp-5';
-  return {
-    subject: 'Sorobit - Çocuğunuzun hesabı için veli onayı',
-    html: `
-      <h2>Sorobit veli onayı</h2>
-      <p>Merhaba,</p>
-      <p>${introHtml}
-      Sorobit, çocuklara soroban (abaküs) ile zihinden aritmetik öğreten bir uygulamadır.
-      13 yaşından küçük çocukların hesabı velinin onayı olmadan açılmaz.</p>
-      <p>Hesap açılırsa şu bilgiler toplanır ve saklanır:</p>
-      <ul>${listHtml}</ul>
-      <p>Ayrıntılar: <a href="${policyUrl}">Gizlilik Politikası</a>. Dilediğiniz zaman çocuğunuzdan toplanan
-      bilgileri görmeyi, silinmesini ya da onayınızı geri almayı (hesabın silinmesi) isteyebilirsiniz:
-      bu e-posta adresinden <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a> adresine yazın. Hesap uygulamadaki
-      Hesap Ayarları'ndan da silinebilir; silinince bu bilgiler de silinir.</p>
-      <p><b>Onaylıyorsanız</b> aşağıdaki kodu uygulamadaki veli onayı ekranına girin. Kodu girmek, yukarıdaki bilgilerin
-      toplanmasına veli olarak onay verdiğiniz anlamına gelir.</p>
-      <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${code}</h1>
-      <p>Bu kod 30 dakika geçerlidir. Onaylamıyorsanız hiçbir şey yapmayın: hesap açılmaz, kayıt isteği kendiliğinden silinir.</p>
-      <p>Sorobit Ekibi</p>
-    `,
-    text:
-      `Sorobit veli onayı\n\n${introText}` +
-      `13 yaşından küçük çocukların hesabı velinin onayı olmadan açılmaz.\n\n` +
-      `Hesap açılırsa toplanacak bilgiler:\n${listText}\n\nAyrıntılar: ${policyUrl}\n` +
-      `Bilgileri görmek, sildirmek ya da onayı geri almak için: ${SUPPORT_EMAIL}\n\n` +
-      `Onaylıyorsanız şu kodu uygulamaya girin: ${code}\n` +
-      `Kodu girmek bu bilgilerin toplanmasına onay verdiğiniz anlamına gelir. Kod 30 dakika geçerlidir. ` +
-      `Onaylamıyorsanız hiçbir şey yapmayın; hesap açılmaz.`,
-  };
+/** Veliye giden onay e-postası: metinler üç dilde mailTexts.js'te (Türkçesi eskisiyle aynı). */
+function parentalConsentEmail(code, childEmail, parentEmail, lang = 'tr') {
+  return mailTexts.parentalConsentEmail(code, childEmail, parentEmail, SUPPORT_EMAIL, lang);
 }
 
 /**
  * Veli onay kodunu üretip veliye gönderir. [uid] e-posta yolunda `pending_…`, Google
  * yolunda çocuğun gerçek Auth uid'idir.
  */
-async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYear, acquisitionSource, ip, appVerified }) {
+async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYear, acquisitionSource, ip, appVerified, lang = 'tr' }) {
   // Sınır hem çocuğun hem velinin e-postasına işler: biri başkasının adresini sınırsız
   // e-postayla dolduramasın. Kod veliye gittiği için gönderim arası bekleme veli adresinde;
   // adresler aynıysa bir kez sayılır.
@@ -986,11 +926,13 @@ async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYea
     birthYear,
     acquisitionSource: acquisitionSource || '',
     consentVersion: PARENTAL_CONSENT_VERSION,
+    // Veli onayı metni hangi dilde gönderildi (aynı sürümün üç dili aynı maddeleri söylüyor).
+    consentLang: lang,
   }, PARENTAL_CODE_TTL_MS);
 
   try {
     const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: mailUser, pass: mailPass } });
-    const mail = parentalConsentEmail(code, childEmail, parentEmail);
+    const mail = parentalConsentEmail(code, childEmail, parentEmail, lang);
     await transporter.sendMail({ from: `Sorobit <${mailUser}>`, to: parentEmail, ...mail });
   } catch (error) {
     console.error('Error sending parental consent email:', { message: error.message, code: error.code });
@@ -1048,6 +990,7 @@ async function sendParentalRegistrationCode(childEmail, data, context) {
     birthYear,
     acquisitionSource,
     ip: getClientIp(context),
+    lang: mailTexts.mailLang(data && data.lang),
     appVerified: Boolean(context.app),
   });
 }
@@ -1071,6 +1014,8 @@ function writeParentalConsent(batch, uid, codeData, userData) {
     parentEmail: codeData.parentEmail || '',
     birthYear: codeData.birthYear,
     consentVersion: userData.parentalConsentVersion,
+    // Velinin okuduğu onay metninin dili (mailTexts.js); eski kodlarda yok → Türkçe.
+    consentLang: codeData.consentLang || 'tr',
     method: 'email_code',
     requestedAt: codeData.createdAt || now,
     grantedAt: now,
@@ -1106,6 +1051,7 @@ async function sendGoogleParentalCode(data, context) {
     birthYear,
     acquisitionSource,
     ip: getClientIp(context),
+    lang: mailTexts.mailLang(data && data.lang),
     appVerified: Boolean(context.app),
   });
 }

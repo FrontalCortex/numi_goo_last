@@ -742,4 +742,5 @@
     <string name="ui_tamamlandi_buyuk">COMPLETED ✓</string>
     <string name="ui_selamlar_benim_adim_x">Hi there! My name is %1$s!</string>
     <string name="ui_server_too_many">Too many attempts. Please try again later.</string>
+    <string name="ui_x_birazdan_tekrar_dene">%1$s Try again in a moment.</string>
 </resources>

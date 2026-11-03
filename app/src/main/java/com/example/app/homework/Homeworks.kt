@@ -284,7 +284,7 @@ object Homeworks {
             FirebaseFunctionsException.Code.FAILED_PRECONDITION,
             FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED,
             FirebaseFunctionsException.Code.PERMISSION_DENIED,
-            FirebaseFunctionsException.Code.NOT_FOUND -> fe.message ?: appString(R.string.class_generic_error)
+            FirebaseFunctionsException.Code.NOT_FOUND -> com.example.app.serverErrorText(e, R.string.class_generic_error)
             else -> appString(R.string.class_generic_error)
         }
     }

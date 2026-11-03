@@ -822,4 +822,5 @@
     <string name="ui_selamlar_benim_adim_x">Halo! Namaku %1$s!</string>
     <!-- serverErrorText: sunucu hatası -->
     <string name="ui_server_too_many">Terlalu banyak percobaan. Coba lagi sebentar lagi.</string>
+    <string name="ui_x_birazdan_tekrar_dene">%1$s Coba lagi sebentar lagi.</string>
 </resources>

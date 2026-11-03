@@ -59,6 +59,13 @@ yerelleştirilmesi, ödev saklama süresi.
   iziyle; Türkçe yayın değişince bunu da çalıştır). Kredi açıklaması ve yedek metinler İngilizce.
   Gerçek modelde denendi (`node scripts/sobi-dene.js --dil en`): cevaplar İngilizce, terimler doğru;
   bir cevapta numaralı liste kullandı (Türkçe talimat yasaklıyor, İngilizcede de izlenmeli).
+- **E-postalar, yasal sayfa, sunucu hataları (03.11.2026):** doğrulama kodu ve veli onayı e-postası
+  `functions/mailTexts.js`'te üç dilde (istemci `sendStudentVerificationCode`'a `lang` gönderiyor; onay
+  kaydında `consentLang`; `PARENTAL_CONSENT_VERSION` 2026-11-03.1). `public/privacy-policy-tr.html` ve
+  `-id.html` (İngilizce asıl metnin çevirisi, aynı çapalar); kayıt ekranı ve onay e-postası dilin sayfasını
+  açıyor. **Hosting push'la deploy olmuyor**: `firebase deploy --only hosting` elle. Sunucu hata mesajı
+  gösteren yerler (sınıf, ödev, hata bildirimi, soru gönderme, seri ödülü) Türkçe dışında koddan genel metin
+  (`serverErrorText` / `serverDetailText`). Yasal metinlerin hukukçu kontrolü önerildi.
 - **Öğretici seslendirmesi EN/ID (03.11.2026, Storage'da):** ElevenLabs Creator (kullanıcının aboneliği,
   ticari lisans); İngilizce Nichalia `XfNU2rGpBa01ckF309OY`, Endonezce Bee Ard `1k39YpzqXZn52BgyLyGO`.
   `tutorial_audio/<en|id>_<kayıt>.mp3`, dilde 852 dosya; uygulama `TutorialFragment` ile indiriyor. Betikler

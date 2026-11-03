@@ -341,7 +341,7 @@ object BugReports {
             FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED,
             FirebaseFunctionsException.Code.ALREADY_EXISTS,
             FirebaseFunctionsException.Code.PERMISSION_DENIED,
-            FirebaseFunctionsException.Code.NOT_FOUND -> fe.message ?: appString(R.string.bug_report_generic_error)
+            FirebaseFunctionsException.Code.NOT_FOUND -> serverErrorText(e, R.string.bug_report_generic_error)
             else -> appString(R.string.bug_report_generic_error)
         }
     }

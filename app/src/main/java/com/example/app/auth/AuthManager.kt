@@ -2,6 +2,8 @@ package com.example.app.auth
 
 import com.example.app.appString
 import com.example.app.serverErrorText
+import com.example.app.AppLanguage
+import com.example.app.AppStrings
 import com.example.app.R
 import android.content.Context
 import android.content.Intent
@@ -979,7 +981,9 @@ class AuthManager {
     ) {
         val payload = hashMapOf<String, Any>(
             "email" to email,
-            "purpose" to purpose
+            "purpose" to purpose,
+            // Doğrulama ve veli onayı e-postasının dili (functions/mailTexts.js).
+            "lang" to AppLanguage.current(AppStrings.context())
         )
         payload.putAll(extras)
 
