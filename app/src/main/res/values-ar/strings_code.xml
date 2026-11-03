@@ -1,0 +1,870 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Koddan arayüze giden metinler; appString(R.string.x, …) / appPlural(R.plurals.x, sayı, …) ile okunur.
+  %1$s, %2$s… yer tutucuları korunmalı (sıraları cümleye göre değişebilir). Aynı metin tek anahtar:
+  bazı metinler kodda karşılaştırılıyor (ör. AuthManager mesajları), ayrı çevrilmemeli.
+-->
+<resources>
+
+    <!-- AbacusPreferences.kt -->
+    <string name="ui_dis_cerceve">الإطار الخارجي</string>
+    <string name="ui_ic_zemin">الخلفية الداخلية</string>
+    <string name="ui_sag_yansima">الانعكاس الأيمن</string>
+    <string name="ui_kulak_dis">الأذن (الخارج)</string>
+    <string name="ui_kulak_ic">الأذن (الداخل)</string>
+    <string name="ui_govde">الجسم</string>
+    <string name="ui_beyaz_alanlar">المناطق البيضاء</string>
+    <string name="ui_burun">الأنف</string>
+    <string name="ui_agiz">الفم</string>
+    <string name="ui_gozler">العينان</string>
+    <string name="ui_kafa">الرأس</string>
+    <string name="ui_goz_cevresi">حول العينين</string>
+    <string name="ui_kulak_dudak">الأذن/الشفة</string>
+    <string name="ui_goz_agiz">العين/الفم</string>
+    <string name="ui_yuz">الوجه</string>
+    <string name="ui_goz_burun">العين/الأنف</string>
+    <string name="ui_ic_kulak">الأذن الداخلية</string>
+    <string name="ui_agiz_cevresi">حول الفم</string>
+    <string name="ui_cizgiler">الخطوط</string>
+    <string name="ui_govde_kafa">الجسم/الرأس</string>
+    <string name="ui_gozler_burun">العينان/الأنف</string>
+    <string name="ui_yuz_agiz">الوجه/الفم</string>
+    <string name="ui_kulak_ici_detay">داخل الأذن/التفاصيل</string>
+    <string name="ui_goz">العين</string>
+    <string name="ui_kulak_ici">داخل الأذن</string>
+    <string name="ui_kulak_disi">خارج الأذن</string>
+    <string name="ui_dis">السن</string>
+    <string name="ui_kulak_agiz">الأذن/الفم</string>
+    <string name="ui_kulak">الأذن</string>
+    <string name="ui_biyik">الشوارب</string>
+    <string name="ui_cene">الذقن</string>
+    <string name="ui_ana_renk">اللون الأساسي</string>
+    <string name="ui_golgeler">الظلال</string>
+    <string name="ui_parlaklik">اللمعان</string>
+    <string name="ui_delik_ici">داخل الفتحة</string>
+    <string name="ui_isik">الضوء</string>
+    <string name="ui_golge">الظل</string>
+
+    <!-- AbacusCustomizationFragment.kt -->
+    <string name="ui_yetersiz_anahtar">المفاتيح غير كافية</string>
+    <string name="ui_yetersiz_altin">العملات غير كافية</string>
+    <string name="ui_kayit_hatasi_tekrar_deneyin">خطأ في الحفظ. حاول مجددًا.</string>
+    <string name="ui_islem_basarisiz_tekrar_deneyin">حدث خطأ ما. حاول مجددًا.</string>
+    <string name="ui_hata_olustu">حدث خطأ</string>
+    <string name="ui_stokta_kalmadi">نفدت الكمية</string>
+    <string name="ui_kayit_hatasi">خطأ في الحفظ</string>
+    <string name="ui_islem_basarisiz">فشلت العملية</string>
+    <string name="ui_bu_boncuktan_kalmadi">نفدت هذه الخرزة!</string>
+    <string name="ui_renk">اللون</string>
+    <string name="ui_odeme_hatasi">خطأ في الدفع</string>
+    <string name="ui_ahsap_rengi">لون الخشب</string>
+    <string name="ui_yildiz_rengi">لون النجمة</string>
+
+    <!-- AbacusFragment.kt -->
+    <string name="ui_cikarilacak_sayi">العدد المطروح</string>
+    <string name="ui_5_gider_kardes_gelir">اطرح 5 وأضِف صديقه.</string>
+    <string name="ui_eklenecek_sayi">العدد المضاف</string>
+    <string name="ui_5_gelir_kardes_gider">أضِف 5 واطرح صديقه.</string>
+    <string name="ui_internet_baglantiniz_yok">لا يوجد اتصال بالإنترنت.</string>
+    <string name="ui_senin_cevabin_x">إجابتك %1$s</string>
+    <string name="ui_dogru_cevap_x">الإجابة الصحيحة %1$s</string>
+
+    <!-- AbacusPracticeFragment.kt -->
+    <string name="ui_dogru_cevap_x_2">الإجابة الصحيحة: %1$s</string>
+    <string name="ui_senin_cevabin_x_2">إجابتك: %1$s</string>
+
+    <!-- AccountSettingsFragment.kt -->
+    <string name="ui_play_store_acilamadi">تعذّر فتح Play Store</string>
+
+    <!-- AddFriendFragment.kt -->
+    <string name="ui_yukleniyor">جارٍ التحميل...</string>
+    <string name="ui_daha_fazla_yukle">تحميل المزيد</string>
+    <plurals name="ui_x_sonuc_gosteriliyor">
+        <item quantity="zero">عرض %1$s نتيجة</item>
+        <item quantity="one">عرض %1$s نتيجة</item>
+        <item quantity="two">عرض %1$s نتيجتين</item>
+        <item quantity="few">عرض %1$s نتائج</item>
+        <item quantity="many">عرض %1$s نتيجة</item>
+        <item quantity="other">عرض %1$s نتيجة</item>
+    </plurals>
+    <string name="ui_oturum_bilgisi_alinamadi">تعذّر الحصول على معلومات الجلسة.</string>
+    <string name="ui_zaten_takip_ediyorsunuz">أنت تتابعه بالفعل.</string>
+    <string name="ui_x_takip_edildi">أنت الآن تتابع %1$s.</string>
+    <string name="ui_takip_edilemedi_x">تعذّرت المتابعة: %1$s</string>
+    <string name="ui_hata_x">خطأ: %1$s</string>
+
+    <!-- AdManager.kt -->
+    <string name="ui_odul_icin_giris_yapmalisiniz">يجب تسجيل الدخول للحصول على المكافأة.</string>
+    <string name="ui_reklam_henuz_yuklenmedi_lutfen_bekleyin">لم يُحمَّل الإعلان بعد، يُرجى الانتظار.</string>
+
+    <!-- AdSkipFragment.kt: iki satır alt alta ("titleText1" + "titleText2") -->
+    <string name="ui_x_gunluk_ucretsiz_pro">تجربة PRO مجانية · الأيام: %1$s</string>
+    <string name="ui_denemesiyle_reklamlari_atla">وتخطَّ الإعلانات!</string>
+    <string name="ui_deneme_suren_sona_ermeden_once_bildirim">سيصلك إشعار قبل انتهاء الفترة التجريبية.</string>
+    <string name="ui_pro_ile_reklamsiz">مع PRO تعلَّم بلا إعلانات</string>
+    <string name="ui_kesintisiz_ogren">ودون انقطاع!</string>
+    <string name="ui_aboneligini_istedigin_zaman_iptal_edebilirsi">يمكنك إلغاء اشتراكك في أي وقت.</string>
+
+    <!-- AppRatingManager.kt -->
+    <string name="ui_uzgunuz">نأسف 😔</string>
+    <string name="ui_deneyimini_gelistirmek_icin_geri_bildirimine">نحتاج إلى رأيك لنحسّن تجربتك.</string>
+    <string name="ui_geri_bildiriminiz_icin_tesekkurler">شكرًا على ملاحظاتك!</string>
+    <string name="ui_lutfen_bir_seyler_yazin">يُرجى كتابة شيء ما.</string>
+
+    <!-- AskQuestionButtonBinder.kt -->
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar">تم تقييد حسابك نهائيًا بسبب مخالفة القواعد.</string>
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine">تم تقييد حسابك حتى %1$s بسبب مخالفة القواعد.</string>
+    <string name="ui_itiraz_et">اعتراض</string>
+    <string name="ui_hesap_kisitlamasi_itirazi">اعتراض على تقييد الحساب</string>
+    <string name="ui_merhaba_hesabimin_kisitlanmasina_itiraz_etme">"مرحبًا،\n\nأودّ الاعتراض على تقييد حسابي.\n\nمعرّف المستخدم: %1$s\n\n"</string>
+
+    <!-- AuthManager.kt -->
+    <string name="ui_e_posta_adresi_girin">أدخل عنوان البريد الإلكتروني</string>
+    <string name="ui_e_posta_gonderilemedi">تعذّر إرسال البريد الإلكتروني</string>
+    <string name="ui_kod_dogrulanamadi">تعذّر التحقق من الرمز</string>
+    <string name="ui_sifre_guncellenemedi">تعذّر تحديث كلمة المرور</string>
+    <string name="ui_gecersiz_bilgiler">معلومات غير صالحة</string>
+    <string name="ui_token_alinamadi">تعذّر الحصول على الرمز المميز</string>
+    <string name="ui_oturum_acilamadi">تعذّر تسجيل الدخول</string>
+    <string name="ui_bu_hesap_ogretmen_hesabi_ogrenci_giris">هذا حساب معلّم. لا يمكن استخدامه في شاشة دخول الطلاب.</string>
+    <string name="ui_google_hesap_bilgisi_alinamadi_lutfen_tekrar">تعذّر الحصول على معلومات حساب Google. يُرجى المحاولة مجددًا.</string>
+    <string name="ui_ag_baglanti_hatasi_internet_baglantinizi_kon">خطأ في الشبكة. تحقّق من اتصالك بالإنترنت.</string>
+    <string name="ui_gecersiz_kimlik_bilgisi_web_client_id">بيانات اعتماد غير صالحة. تحقّق من صحة Web Client ID.</string>
+    <string name="ui_yapilandirma_hatasi_1_web_client_id">"خطأ في الإعداد:\n\n1. هل Web Client ID صحيح؟ (strings.xml)\n2. هل أُضيفت بصمة SHA-1 في Firebase Console؟\n3. هل تسجيل الدخول عبر Google مفعّل في Firebase Console؟\n\nالخطأ: %1$s"</string>
+    <string name="ui_giris_basarisiz_code_x_x_logcat">"فشل تسجيل الدخول (Code: %1$s)\n\n%2$s\n\nراجع الوسم «AuthManager» في Logcat لمعرفة التفاصيل."</string>
+    <string name="ui_kullanici_bulunamadi">المستخدم غير موجود</string>
+    <string name="ui_giris_bilgileri_dogrulanamadi">تعذّر التحقق من بيانات الدخول.</string>
+    <string name="ui_google_hesabi_secilemedi">تعذّر اختيار حساب Google</string>
+    <string name="ui_kullanici_girisi_iptal_edildi">أُلغي تسجيل الدخول</string>
+    <string name="ui_yapilandirma_hatasi_web_client_id_eksik">خطأ في الإعداد: Web Client ID مفقود أو غير صحيح. احصل على Web Client ID من Firebase Console وأضِفه إلى strings.xml.</string>
+    <string name="ui_istek_limiti_asildi_lutfen_daha_sonra">طلبات كثيرة جدًا. يُرجى المحاولة لاحقًا.</string>
+    <string name="ui_google_girisi_basarisiz_hata_x_x">فشل تسجيل الدخول عبر Google (الخطأ: %1$s): %2$s</string>
+    <string name="ui_bu_hesap_ogrenci_degil">هذا ليس حساب طالب</string>
+    <string name="ui_e_posta_dogrulamasi_gerekli_lutfen_e">يجب التحقق من البريد الإلكتروني. يُرجى تأكيد بريدك الإلكتروني.</string>
+    <string name="ui_kullanici_bilgileri_alinamadi">تعذّر الحصول على معلومات المستخدم</string>
+    <string name="ui_sifre_veya_e_posta_hatali">كلمة المرور أو البريد الإلكتروني غير صحيح</string>
+    <string name="ui_bu_hesap_ogretmen_degil">هذا ليس حساب معلّم</string>
+    <string name="ui_bu_e_posta_adresi_zaten_kayitli">عنوان البريد الإلكتروني هذا مسجّل بالفعل. يُرجى تسجيل الدخول.</string>
+    <string name="ui_sifre_cok_zayif_daha_guclu_bir">كلمة المرور ضعيفة جدًا. اختر كلمة مرور أقوى.</string>
+    <string name="ui_gecersiz_e_posta_adresi">عنوان بريد إلكتروني غير صالح.</string>
+    <string name="ui_kayit_basarisiz_lutfen_tekrar_deneyin">فشل إنشاء الحساب. يُرجى المحاولة مجددًا.</string>
+    <string name="ui_kullanici_olusturulamadi">تعذّر إنشاء المستخدم</string>
+    <string name="ui_kayit_basarisiz_x">فشل إنشاء الحساب: %1$s</string>
+    <string name="ui_gecersiz_veya_suresi_dolmus_kod">رمز غير صالح أو منتهي الصلاحية</string>
+    <string name="ui_kod_gonderilemedi">تعذّر إرسال الرمز</string>
+
+    <!-- AvatarArt.kt -->
+    <string name="ui_sac">الشعر</string>
+    <string name="ui_sac_rengi">لون الشعر</string>
+    <string name="ui_kiyafet">الملابس</string>
+
+    <!-- AvatarCustomFragment.kt -->
+    <string name="ui_avatarin_kaydedildi">تم حفظ صورتك الرمزية</string>
+
+    <!-- BadgeFragment.kt -->
+    <string name="ui_x_dersi_hatasiz_tamamlayarak_kusursuz_odak">ربحت شارة «تركيز مثالي» بإكمال %1$s من الدروس دون أخطاء.</string>
+    <string name="ui_x_dersi_1_gunde_tamamlayarak_sinir">ربحت شارة «بلا حدود» بإكمال %1$s من الدروس في يوم واحد.</string>
+    <string name="ui_x_gunluk_gorev_tamamlayarak_strike_ustasi">ربحت شارة «سيّد السلسلة» بإكمال %1$s من المهام اليومية.</string>
+    <string name="ui_x_kere_egitmene_danisarak_nokta_atisi">ربحت شارة «إصابة الهدف» باستشارة المدرّب (عدد المرات: %1$s).</string>
+    <string name="ui_x_gun_ust_uste_gunluk_soru">ربحت شارة «الصياد الماهر» بإكمال تحدّي «سؤال اليوم» أيامًا متتالية (عدد الأيام: %1$s).</string>
+    <string name="ui_toplama_kupa_yolunda_x_kupa_kazanarak">ربحت شارة Dino بجمع %1$s من الكؤوس في طريق كأس الجمع.</string>
+    <string name="ui_x_toplama_ustalik_yolu_adimini_tamamlayarak">ربحت شارة «الإعصار» بإكمال %1$s من خطوات طريق إتقان الجمع.</string>
+    <string name="ui_x_cikarma_ustalik_yolu_adimini_tamamlayarak">ربحت شارة «الإعصار» بإكمال %1$s من خطوات طريق إتقان الطرح.</string>
+    <string name="ui_cikarma_kupa_yolunda_x_kupa_kazanarak">ربحت شارة Timo بجمع %1$s من الكؤوس في طريق كأس الطرح.</string>
+    <string name="ui_carpma_kupa_yolunda_x_kupa_kazanarak">ربحت شارة Keço بجمع %1$s من الكؤوس في طريق كأس الضرب.</string>
+    <string name="ui_toplama_kupa_yolu_korleme_de_x">ربحت شارة Karti بجمع %1$s من الكؤوس في طريق كأس الجمع - بلا معداد.</string>
+    <string name="ui_cikarma_kupa_yolu_korleme_de_x">ربحت شارة Sino بجمع %1$s من الكؤوس في طريق كأس الطرح - بلا معداد.</string>
+    <string name="ui_carpma_kupa_yolu_korleme_de_x">ربحت شارة Kapi بجمع %1$s من الكؤوس في طريق كأس الضرب - بلا معداد.</string>
+    <string name="ui_unite_maratonunda_x_olarak_elit_seviye">ربحت كأس مستوى النخبة بحلولك في المركز %1$s في ماراثون الوحدة.</string>
+    <string name="ui_x_unite_maratonunu_3_yildiz_ile">ربحت شارة «الحزام الأسود» بإكمال %1$s من ماراثونات الوحدات بـ 3 نجوم.</string>
+    <string name="ui_unite_maratonunda_1_olarak_altin_madalya">ربحت الميدالية الذهبية بحلولك في المركز الأول في ماراثون الوحدة.</string>
+    <string name="ui_unite_maratonunda_2_olarak_gumus_madalya">ربحت الميدالية الفضية بحلولك في المركز الثاني في ماراثون الوحدة.</string>
+    <string name="ui_unite_maratonunda_3_olarak_bronz_madalya">ربحت الميدالية البرونزية بحلولك في المركز الثالث في ماراثون الوحدة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_dersi">أكمل 3 دروس دون أخطاء لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_dersi_2">أكمل 3 دروس في يوم واحد لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_5_gunluk">أكمل 5 مهام يومية لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_kere">استشر المعلّم 3 مرات لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_3_gun">حُلّ تحدّي «سؤال اليوم» 3 أيام متتالية لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_kupa">اجمع 500 كأس في طريق كأس الجمع لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_ustalik">أكمل خطوة واحدة في طريق إتقان الجمع لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_ustalik">أكمل خطوة واحدة في طريق إتقان الطرح لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_kupa">اجمع 500 كأس في طريق كأس الطرح لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_carpma_kupa">اجمع 500 كأس في طريق كأس الضرب لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_toplama_kupa_2">اجمع 500 كأس في طريق كأس الجمع - بلا معداد لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_cikarma_kupa_2">اجمع 500 كأس في طريق كأس الطرح - بلا معداد لتربح هذه الشارة.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_carpma_kupa_2">اجمع 500 كأس في طريق كأس الضرب - بلا معداد لتربح هذه الشارة.</string>
+    <string name="ui_bu_kupayi_kazanmak_icin_unite_maratonunda">ادخل قائمة أفضل 100 في ماراثون وحدة لتربح هذه الكأس.</string>
+    <string name="ui_bu_rozeti_kazanmak_icin_unite_maratonunu">أكمل ماراثون وحدة بـ 3 نجوم لتربح هذه الشارة.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite">احتلّ المركز الأول في لوحة متصدّري ماراثون وحدة لتربح هذه الميدالية.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite_2">احتلّ المركز الثاني في لوحة متصدّري ماراثون وحدة لتربح هذه الميدالية.</string>
+    <string name="ui_bu_madalyayi_kazanmak_icin_bir_unite_3">احتلّ المركز الثالث في لوحة متصدّري ماراثون وحدة لتربح هذه الميدالية.</string>
+    <string name="ui_tamamlandi">اكتمل!</string>
+
+    <!-- BadgeProgressEngine.kt -->
+    <string name="ui_elit_seviye_kupasi">كأس مستوى النخبة</string>
+    <string name="ui_sampiyonluk_madalyasi">ميدالية البطولة</string>
+    <string name="ui_gumus_madalya">الميدالية الفضية</string>
+    <string name="ui_siyah_kusak">الحزام الأسود</string>
+    <string name="ui_strike_ustasi">سيّد السلسلة</string>
+    <string name="ui_derin_avci">الصياد الماهر</string>
+    <string name="ui_nokta_atisi">إصابة الهدف</string>
+    <string name="ui_sinir_tanimaz">بلا حدود</string>
+    <string name="ui_kasirga">الإعصار</string>
+    <string name="ui_yanardag">البركان</string>
+    <string name="ui_keci">الماعز</string>
+
+    <!-- BillingManager.kt: iki parça art arda eklenir -->
+    <string name="ui_urun_su_anda_alinamiyor_daha_sonra">لا يمكن شراء هذا المنتج الآن. حاول لاحقًا.</string>
+    <string name="ui_abonelik_teklifi_bulunamadi">لم يُعثر على عرض اشتراك.</string>
+    <string name="ui_satin_alma_baslatilamadi">تعذّر بدء عملية الشراء.</string>
+    <string name="ui_satin_alma_tamamlanamadi">تعذّر إتمام عملية الشراء.</string>
+    <string name="ui_bu_abonelik_bu_cihazdaki_google_play">"هذا الاشتراك في حساب Google Play على هذا الجهاز مرتبط بحساب Sorobit "</string>
+    <string name="ui_hesabina_tanimli_aboneligi_o_hesapla_kullana">آخر. يمكنك استخدام الاشتراك بذلك الحساب.</string>
+    <string name="ui_satin_alma_dogrulanamadi_uygulamayi_tekrar_a">تعذّر التحقق من الشراء. سنحاول مجددًا عند إعادة فتح التطبيق.</string>
+
+    <!-- BlindingLessonFragment.kt -->
+    <string name="ui_gunluk_soru">سؤال اليوم</string>
+    <string name="ui_kupa_modu">وضع الكأس</string>
+    <string name="ui_kupa_zorlugu">صعوبة الكأس</string>
+
+    <!-- BunnyMascotView.kt -->
+    <string name="ui_atla">تخطَّ</string>
+    <plurals name="ui_x_gun">
+        <item quantity="zero">%1$s يوم</item>
+        <item quantity="one">%1$s يوم</item>
+        <item quantity="two">%1$s يومان</item>
+        <item quantity="few">%1$s أيام</item>
+        <item quantity="many">%1$s يومًا</item>
+        <item quantity="other">%1$s يوم</item>
+    </plurals>
+    <string name="ui_gun">\? يوم</string>
+    <string name="ui_hiyaa">هِيااا!</string>
+
+    <!-- ChestCrystalPolicy.kt -->
+    <string name="ui_x_altin">العملات: %1$s</string>
+
+    <!-- CreateQuestionFragment.kt -->
+    <string name="ui_video_bulunamadi">لم يُعثر على الفيديو.</string>
+    <string name="ui_ekran_goruntusu_alinamadi">تعذّر التقاط لقطة الشاشة.</string>
+    <string name="ui_ekran_goruntusu_bulunamadi">لم يُعثر على لقطة الشاشة.</string>
+    <string name="ui_lutfen_baslik_yazin">يُرجى كتابة عنوان.</string>
+    <string name="ui_lutfen_aciklama_yazin">يُرجى كتابة وصف.</string>
+    <string name="ui_oturum_acik_degil">لم تسجّل الدخول.</string>
+    <string name="ui_soru_gonderildi">تم إرسال السؤال.</string>
+    <string name="ui_yukleme_hatasi_x">خطأ في الرفع: %1$s</string>
+    <string name="ui_video_yukleme_hatasi">خطأ في رفع الفيديو.</string>
+    <string name="ui_video_yukleme_hatasi_x">خطأ في رفع الفيديو: %1$s</string>
+    <string name="ui_danisma_kredin_kalmadi_magazadan_kredi_alabi">نفد رصيد الاستشارة. يمكنك شراء رصيد من المتجر.</string>
+    <string name="ui_gonderilemedi_x">تعذّر الإرسال: %1$s</string>
+
+    <!-- CupFragment.kt -->
+    <string name="ui_bilgelik_kupasi">كأس الحكمة</string>
+    <string name="ui_tum_sorular_senin_zekanla_boy_olcustu">حاولت كل الأسئلة أن تتحدّى ذكاءك، لكنك أنت الفائز</string>
+    <string name="ui_zirve_senin_bu_basari_tesaduf_degil">القمة لك، وهذا النجاح ليس صدفة!</string>
+    <string name="ui_mukemmel_bir_is_cikardin">عمل رائع!</string>
+    <string name="ui_bu_seviye_sadece_cok_calisanlarin_ulasabildi">لا يصل إلى هذا المستوى إلا من يجتهد كثيرًا.</string>
+    <string name="ui_sen_artik_bu_konunun_ustasisin_neyi">أصبحت الآن متقنًا لهذا الموضوع – فما الذي لا تستطيع فعله؟</string>
+    <string name="ui_usta_kupasi">كأس الإتقان</string>
+    <string name="ui_gercek_ustalik_bilgi_sabir_ve_kararlilikla">الإتقان الحقيقي يأتي بالمعرفة والصبر والعزيمة. تهانينا!</string>
+    <string name="ui_gayet_iyi">جيد جدًا!</string>
+    <string name="ui_biraz_daha_pratikle_zirveye_ulasman_an">بقليل من التدريب الإضافي ستصل إلى القمة قريبًا.</string>
+    <string name="ui_azmin_gucuyle_her_adim_seni_daha">بقوة عزيمتك، كل خطوة تأخذك إلى الأمام أكثر!</string>
+    <string name="ui_cok_iyi_gidiyorsun_birkac_adim_sonra">أداؤك رائع! بضع خطوات وتصل إلى القمة.</string>
+    <string name="ui_gelisimin_fark_ediliyor_pes_etme_devam">تقدّمك واضح. لا تستسلم، واصل!</string>
+    <string name="ui_deneyim_kupasi">كأس الخبرة</string>
+    <string name="ui_her_usta_bir_zamanlar_amatordu_sen">كل محترف كان يومًا مبتدئًا. وأنت على الطريق أيضًا!</string>
+    <string name="ui_cesaret_ettin_basladin_bu_en_onemli">تحلّيت بالشجاعة وبدأت. وهذه كانت أهم خطوة.</string>
+    <string name="ui_unutma_basari_tekrar_tekrar_denemekten_gecer">تذكّر، النجاح يأتي من المحاولة مرة بعد مرة!</string>
+    <string name="ui_bugun_attigin_adim_yarinin_basarisini_baslat">الخطوة التي تخطوها اليوم تصنع نجاح الغد.</string>
+    <string name="ui_ayip_olmasin_diye_bu_kupayi_verdik">أعطيناك هذه الكأس من باب المجاملة فقط.</string>
+    <string name="ui_biraz_fazla_mi_yavas_oldu_ne">ألم يكن ذلك بطيئًا بعض الشيء؟</string>
+    <string name="ui_yanii_hic_yapmamis_olmaktan_iyi">حسنًا... أفضل من ألّا تفعل شيئًا.</string>
+    <string name="ui_en_azindan_ekrani_actin_bu_da">على الأقل فتحت الشاشة، وهذا شيء.</string>
+    <string name="ui_kupayi_biz_de_pek_vermek_istemedik">لم نكن نرغب كثيرًا في إعطائك الكأس، لكن...</string>
+    <string name="ui_kupa_geldi_ama_vicdanimiz_biraz_sizladi">ها هي كأسك، مع أن ضميرنا يؤلمنا قليلًا.</string>
+
+    <!-- CupHistoryFragment.kt -->
+    <string name="ui_haftalik">أسبوعي</string>
+    <string name="ui_aylik">شهري</string>
+    <string name="ui_yillik">سنوي</string>
+    <string name="ui_tum_zamanlar">كل الأوقات</string>
+
+    <!-- CupPathRewardRepository.kt -->
+    <string name="ui_tamamlandi_2">اكتمل</string>
+    <string name="ui_sandik_hazir">الصندوق جاهز!</string>
+    <string name="ui_cikarma_kupa_yolu">طريق كأس الطرح</string>
+    <string name="ui_carpma_kupa_yolu">طريق كأس الضرب</string>
+    <string name="ui_toplama_kupa_yolu_korleme">طريق كأس الجمع - بلا معداد</string>
+    <string name="ui_cikarma_kupa_yolu_korleme">طريق كأس الطرح - بلا معداد</string>
+    <string name="ui_carpma_kupa_yolu_korleme">طريق كأس الضرب - بلا معداد</string>
+
+    <!-- CupPathRoadFragment.kt -->
+    <string name="ui_bu_sandigi_zaten_aldin">حصلت على هذا الصندوق بالفعل</string>
+    <string name="ui_x_kupaya_ulasinca_acilir">الكؤوس المطلوبة للفتح: %1$s</string>
+
+    <!-- EditProfileFragment.kt -->
+    <string name="ui_ad_bos_birakilamaz">لا يمكن ترك الاسم فارغًا.</string>
+    <string name="ui_kaydediliyor">جارٍ الحفظ...</string>
+    <string name="ui_firestore_guncellenemedi">تعذّر تحديث Firestore.</string>
+    <string name="ui_auth_profil_guncellenemedi">تعذّر تحديث ملف المصادقة.</string>
+    <string name="ui_parola_en_az_6_karakter_olmalidir">يجب أن تتكوّن كلمة المرور من 6 أحرف على الأقل.</string>
+    <string name="ui_parola_basariyla_guncellendi">تم تحديث كلمة المرور.</string>
+    <string name="ui_guvenlik_nedeniyle_parolayi_degistirmek_icin">لأسباب أمنية، يُرجى تسجيل الدخول مجددًا لتغيير كلمة المرور.</string>
+    <string name="ui_parola_guncellenemedi_x">تعذّر تحديث كلمة المرور: %1$s</string>
+    <string name="ui_degisiklikler_kaydedildi">تم حفظ التغييرات.</string>
+    <string name="ui_degisiklikleri_kaydet">حفظ التغييرات</string>
+    <string name="ui_hesabi_sil">حذف الحساب</string>
+    <string name="ui_hesabinizi_kalici_olarak_silmek_istediginize">هل أنت متأكد أنك تريد حذف حسابك نهائيًا؟ لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="ui_sil">حذف</string>
+    <string name="ui_iptal">إلغاء</string>
+    <string name="ui_hesabiniz_ve_iliskili_verileriniz_siliniyor">جارٍ حذف حسابك والبيانات المرتبطة به...</string>
+    <string name="ui_hesabiniz_basariyla_silindi">تم حذف حسابك.</string>
+    <string name="ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen">لأسباب أمنية، يُرجى تسجيل الدخول مجددًا ثم حذف الحساب فورًا.</string>
+
+    <!-- EmailVerificationActivity.kt -->
+    <string name="ui_gonderiliyor">جارٍ الإرسال...</string>
+    <string name="ui_e_postayi_tekrar_gonder">إعادة إرسال البريد الإلكتروني</string>
+    <string name="ui_dogrulama_kodu_tekrar_gonderildi">أُعيد إرسال رمز التحقق</string>
+    <string name="ui_lutfen_dogrulama_kodunu_girin">يُرجى إدخال رمز التحقق</string>
+    <string name="ui_kod_6_haneli_olmalidir">يجب أن يتكوّن الرمز من 6 أرقام</string>
+    <string name="ui_dogrulaniyor">جارٍ التحقق...</string>
+    <string name="ui_kodu_dogrula">تحقّق من الرمز</string>
+    <string name="ui_kayit_basarili_giris_yapabilirsiniz">تم إنشاء الحساب! يمكنك تسجيل الدخول الآن.</string>
+    <string name="ui_kod_dogrulanamadi_lutfen_tekrar_deneyin">تعذّر التحقق من الرمز. يُرجى المحاولة مجددًا.</string>
+
+    <!-- FeedbackFragment.kt -->
+    <string name="ui_son_1_saat_icinde_cok_fazla">أرسلت بلاغات كثيرة جدًا خلال الساعة الأخيرة. يُرجى المحاولة لاحقًا.</string>
+    <string name="ui_gorusleriniz_basariyla_iletildi_tesekkurler">تم إرسال ملاحظاتك. شكرًا لك!</string>
+
+    <!-- FollowersFollowingFragment.kt -->
+    <string name="ui_takip_edilen">المتابَعون</string>
+    <string name="ui_takipci">المتابِعون</string>
+    <string name="ui_henuz_kimseyi_takip_etmiyorsun">لا تتابع أحدًا بعد</string>
+    <string name="ui_henuz_takipcin_yok">لا يوجد لديك متابِعون بعد</string>
+    <string name="ui_avatar_yuklenemedi_x">تعذّر تحميل الصورة الرمزية: %1$s</string>
+    <string name="ui_yuklenemedi_x">تعذّر التحميل: %1$s</string>
+    <string name="ui_x_takip_edildi_2">أنت الآن تتابع %1$s</string>
+    <string name="ui_x_adli_kullaniciyi_takip_etmeyi_birakmak">هل تريد إلغاء متابعة %1$s؟</string>
+    <string name="ui_takibi_birak">إلغاء المتابعة</string>
+    <string name="ui_iptal_2">إلغاء</string>
+    <string name="ui_x_takipten_cikarildi">ألغيت متابعة %1$s</string>
+
+    <!-- GuideHelper.kt -->
+    <string name="ui_bu_testte_toplama_islemini_abakuste_yapacaks">في هذا الاختبار ستُجري عملية الجمع على المِعداد.</string>
+    <string name="ui_once_abakuse_ilk_sayiyi_yazip">اكتب أولًا العدد الأول على المِعداد...</string>
+    <string name="ui_sonrasinda_ikinci_sayiyi_ekle">ثم أضِف العدد الثاني.</string>
+    <string name="ui_ve_islem_bitince_kontrol_et_butonuna">وعندما تنتهي، اضغط زر «تحقّق».</string>
+    <string name="ui_sakin_aklindan_toplayip_o_sayiyi_abakuse">لا تجمع في ذهنك ثم تكتب الناتج على المِعداد. بهذه الطريقة لن تتعلّم.</string>
+    <string name="ui_kurallari_unutursan_sagdaki_sihirli_degneye">إذا نسيت القواعد، فاضغط العصا السحرية على اليمين لفتح جدول القواعد.</string>
+    <string name="ui_burada_derste_ogrendigin_sayilar_ve_kardesle">هنا تظهر الأعداد التي تعلّمتها في الدرس وأصدقاؤها.</string>
+    <string name="ui_kurallari_unutursan_sag_ustteki_kitaba_tikla">إذا نسيت القواعد، فاضغط الكتاب في أعلى اليمين للانتقال إلى كتاب القواعد.</string>
+    <string name="ui_burada_ogrendigin_kurallar_yer_alir">هنا القواعد التي تعلّمتها.</string>
+    <string name="ui_kurallar_kitabina_tikladiginda_ekrana_gelen">عندما تضغط كتاب القواعد، اضغط أي قاعدة تظهر لتضع جدولها فوق المِعداد.</string>
+    <string name="ui_kurallar_kitabina_tikla">اضغط كتاب القواعد.</string>
+    <string name="ui_ekrana_gelen_kurallardan_herhangi_birisini_s">اختر أي قاعدة من القواعد الظاهرة.</string>
+    <string name="ui_eger_tahtada_gosterilen_sayiyi_hemen_gecmek">إذا أردت تخطي العدد الظاهر على اللوح فورًا، فاضغط زر السهم في أسفل اليمين.</string>
+    <string name="ui_bu_butona_tahtada_bir_sayi_varken">إذا ضغطت هذا الزر والعدد ظاهر على اللوح، تنتقل مباشرةً إلى العدد التالي.</string>
+    <string name="ui_abakusun_boyutunu_sag_alttaki_olcekleme_buto">يمكنك تغيير حجم المِعداد بزر تغيير الحجم في أسفل اليمين.</string>
+
+    <!-- ImageAnnotateDialogFragment.kt -->
+    <string name="ui_resim_bulunamadi">لم يُعثر على الصورة.</string>
+    <string name="ui_kaydedilemedi">تعذّر الحفظ.</string>
+
+    <!-- LearningPathPlan.kt -->
+    <string name="ui_bugun">اليوم</string>
+
+    <!-- LessonAdapter.kt -->
+    <string name="ui_unite_maratonu">ماراثون الوحدة</string>
+    <string name="ui_ders">الدرس</string>
+    <string name="ui_rekor_x">الرقم القياسي: %1$s</string>
+    <string name="ui_tekrar_dene">حاول مجددًا</string>
+    <string name="ui_gozden_gecir">مراجعة</string>
+    <string name="ui_devam_et">متابعة</string>
+    <string name="ui_basla">ابدأ</string>
+    <string name="ui_kilidi_acmak_icin_onceki_dersleri_tamamla">أكمل الدروس السابقة لفتح هذا الدرس.</string>
+    <string name="ui_kilitli">مقفل</string>
+    <string name="ui_sayi_gosterilme_periyodu_x_saniye">عدد كل %1$s ث</string>
+    <string name="ui_baslat">ابدأ</string>
+
+    <!-- LessonResultFalse.kt -->
+    <string name="ui_puan_500_den_dusuk">النقاط أقل من 500!</string>
+    <string name="ui_basari_orani_75_ten_dusuk" formatted="false">نسبة النجاح أقل من 75%!</string>
+
+    <!-- LoginActivity.kt -->
+    <string name="ui_lutfen_e_posta_girin">يُرجى إدخال البريد الإلكتروني</string>
+    <string name="ui_gecerli_bir_e_posta_adresi_girin">أدخل عنوان بريد إلكتروني صالحًا</string>
+    <string name="ui_devam_et_2">متابعة</string>
+    <string name="ui_google_girisi_baslatilamadi">تعذّر بدء تسجيل الدخول عبر Google</string>
+    <string name="ui_google_girisi_baslatilamadi_x">تعذّر بدء تسجيل الدخول عبر Google: %1$s</string>
+    <string name="ui_google_girisi_basarisiz_x">فشل تسجيل الدخول عبر Google: %1$s</string>
+    <string name="ui_google_girisi_basarisiz">فشل تسجيل الدخول عبر Google</string>
+
+    <!-- MainActivity.kt -->
+    <string name="ui_ses_kaydi_icin_izin_gerekli">يلزم إذن لتسجيل الصوت.</string>
+    <string name="ui_ekran_kaydi_baslatilamadi">تعذّر بدء تسجيل الشاشة.</string>
+    <string name="ui_cikmak_icin_tekrar_bas">اضغط مرة أخرى للخروج</string>
+    <string name="ui_goruntu_alinamadi">تعذّر التقاط الصورة.</string>
+    <string name="ui_lutfen_bir_soru_secin">يُرجى اختيار سؤال.</string>
+    <string name="ui_sohbete_gonderildi">أُرسل إلى المحادثة.</string>
+    <string name="ui_durdur">إيقاف</string>
+    <string name="ui_kayit_basarisiz">فشل التسجيل.</string>
+    <string name="ui_ekran_kaydi_bu_cihazda_baslatilamadi">تعذّر بدء تسجيل الشاشة على هذا الجهاز.</string>
+    <string name="ui_dun_calisamadin_ama_seri_dondurman_serini">فاتك يوم أمس، لكن تجميد السلسلة حمى سلسلتك!</string>
+    <string name="ui_seri_dondurman_bir_gunu_kapatti_ama">غطّى تجميد السلسلة يومًا واحدًا، لكن سلسلتك انقطعت لأنك فوّتّ يومين متتاليين.</string>
+    <string name="ui_bugunku_hedefini_tamamladin">حققت هدف اليوم!</string>
+    <string name="ui_serin_basladi">بدأت سلسلتك</string>
+    <string name="ui_x_gunluk_seri">أيام السلسلة: %1$s</string>
+
+    <!-- MapFragment.kt -->
+    <string name="ui_unite_maratonunda_hatasiz_en_hizli_cozumler">تُسجَّل في ماراثون الوحدة أسرع المحاولات الخالية من الأخطاء.</string>
+    <string name="ui_unite_maratonu_panelindeki_rekor_a_tiklayara">اضغط «الرقم القياسي» في لوحة ماراثون الوحدة لترى لوحة المتصدّرين وترتيبك.</string>
+
+    <!-- MissionRewardRevealDialogFragment.kt -->
+    <string name="ui_0_altin">العملات: 0</string>
+    <string name="ui_odul_alinamadi_tekrar_deneyin">تعذّر استلام المكافأة. حاول مجددًا.</string>
+
+    <!-- MessageReport.kt -->
+    <string name="ui_taciz_veya_zorbalik">تحرّش أو تنمّر</string>
+    <string name="ui_uygunsuz_icerik">محتوى غير لائق</string>
+    <string name="ui_diger">أخرى</string>
+
+    <!-- RulesFragment.kt -->
+    <string name="ui_eklenecek_sayi_2">العدد المضاف</string>
+
+    <!-- NewChestFragment.kt -->
+    <string name="ui_efsanevi">أسطوري</string>
+    <string name="ui_sandik_acilamadi_tekrar_deneyin">تعذّر فتح الصندوق. حاول مجددًا.</string>
+    <string name="ui_sandigi_acmak_icin_dokun">المس لفتح الصندوق!</string>
+
+    <!-- NewStreakFragment.kt -->
+    <string name="ui_simdi_bir_ogrenme_aliskanligi_kazanmana_yard">والآن لنساعدك على بناء عادة التعلّم.</string>
+    <string name="ui_kac_gun_ust_uste_ogreneceksin">كم يومًا متتاليًا ستتعلّم؟</string>
+    <string name="ui_gunde_x_dakika_bu_secim_seri">%1$s د يوميًا. هذا الاختيار لا يتغيّر طوال السلسلة.</string>
+    <string name="ui_x_altin_2">العملات: +%1$s</string>
+
+    <!-- NotificationFragment.kt -->
+    <string name="ui_sorularim">أسئلتي</string>
+    <string name="ui_giris_yapin">يُرجى تسجيل الدخول.</string>
+    <string name="ui_henuz_soru_yok">لا توجد أسئلة بعد</string>
+    <string name="ui_henuz_sohbet_yok">لا توجد محادثات بعد.</string>
+    <string name="ui_bekleyen_rapor_yok">لا توجد بلاغات معلّقة.</string>
+    <string name="ui_ses_kaydini_dinlemek_icin_oynat">شغّل للاستماع إلى التسجيل</string>
+    <string name="ui_ses_oynatilamadi">تعذّر تشغيل الصوت.</string>
+    <string name="ui_rapor_reddedildi">رُفض البلاغ.</string>
+    <string name="ui_islem_basarisiz_2">فشلت العملية.</string>
+    <string name="ui_kullanici_kisitlandi">تم تقييد المستخدم.</string>
+    <string name="ui_islem_basarisiz_x">فشلت العملية: %1$s</string>
+    <string name="ui_kisitli_kullanici_yok">لا يوجد مستخدمون مقيّدون.</string>
+    <string name="ui_kisitlamayi_kaldir">رفع التقييد</string>
+    <string name="ui_x_kullanicisinin_kisitlamasi_kaldirilsin_mi">هل تريد رفع التقييد عن %1$s؟</string>
+    <string name="ui_kaldir">إزالة</string>
+    <string name="ui_kisitlama_kaldirildi">تم رفع التقييد.</string>
+    <string name="ui_kalici_ban">حظر دائم</string>
+    <string name="ui_bu_kisitlamanin_kaynagi_hakkinda_bilgi_yok">لا توجد معلومات عن مصدر هذا التقييد.</string>
+    <string name="ui_x_tarihinde_kisitlandi">قُيّد في %1$s</string>
+    <string name="ui_x_tarihinde_x_tarafindan_kisitlandi">قُيّد في %1$s بواسطة %2$s</string>
+    <string name="ui_kisitli">مقيّد</string>
+    <string name="ui_suresi_doldu">انتهت المدة</string>
+    <plurals name="ui_x_gun_kaldi">
+        <item quantity="zero">بقي %1$s يوم</item>
+        <item quantity="one">بقي %1$s يوم</item>
+        <item quantity="two">بقي %1$s يومان</item>
+        <item quantity="few">بقيت %1$s أيام</item>
+        <item quantity="many">بقي %1$s يومًا</item>
+        <item quantity="other">بقي %1$s يوم</item>
+    </plurals>
+    <plurals name="ui_x_saat_kaldi">
+        <item quantity="zero">بقيت %1$s ساعة</item>
+        <item quantity="one">بقيت %1$s ساعة</item>
+        <item quantity="two">بقيت %1$s ساعتان</item>
+        <item quantity="few">بقيت %1$s ساعات</item>
+        <item quantity="many">بقيت %1$s ساعة</item>
+        <item quantity="other">بقيت %1$s ساعة</item>
+    </plurals>
+    <string name="ui_1_saatten_az_kaldi">بقي أقل من ساعة</string>
+    <string name="ui_bekleyen_soru_yok">لا توجد أسئلة معلّقة.</string>
+    <string name="ui_cozulen_soru_yok">لا توجد أسئلة محلولة.</string>
+    <string name="ui_cozuldu_olarak_isaretlenen_sorulari_silebili">يمكنك حذف الأسئلة المعلَّمة بأنها محلولة.</string>
+    <string name="ui_soruyu_silmek_istedigine_emin_misin">هل أنت متأكد أنك تريد حذف السؤال</string>
+    <string name="ui_bu_islem_geri_alinamaz">لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="ui_listeden_kaldirildi">أُزيل من القائمة.</string>
+    <string name="ui_kaldirilamadi">تعذّرت الإزالة.</string>
+    <string name="ui_soruyu_silmek_istedigine_emin_misin_2">هل أنت متأكد أنك تريد حذف السؤال؟</string>
+    <string name="ui_bu_islem_geri_alinamaz_soruyu_sildiginde">لا يمكن التراجع عن هذا الإجراء. بعد حذف السؤال لن تتمكّن من الوصول إليه مجددًا.</string>
+    <string name="ui_sil_2">حذف</string>
+    <string name="ui_soru_silindi">تم حذف السؤال.</string>
+    <string name="ui_silinemedi">تعذّر الحذف.</string>
+    <string name="ui_soru_cevaplanmadi">لم تتم الإجابة عن السؤال</string>
+    <string name="ui_bu_soru_48_saat_icinde_cevaplanmadi">لم تتم الإجابة عن هذا السؤال خلال 48 ساعة، فأُعيد إليك رصيدك. السؤال مجددًا يكلّف رصيدًا واحدًا.</string>
+    <string name="ui_vazgec">إلغاء</string>
+    <string name="ui_tekrar_sor">اسأل مجددًا</string>
+    <string name="ui_soru_tekrar_gonderildi">أُعيد إرسال السؤال.</string>
+    <string name="ui_cozulen_sorulara_mesaj_gonderemezsin">لا يمكنك إرسال رسائل إلى الأسئلة المحلولة.</string>
+
+    <!-- OfflineFragment.kt -->
+    <string name="ui_hala_cevrimdisisiniz_lutfen_baglantinizi_kon">ما زلت غير متصل. يُرجى التحقق من اتصالك.</string>
+
+    <!-- OtpVerificationFragment.kt -->
+    <string name="ui_sifre_sifirlama">إعادة تعيين كلمة المرور</string>
+    <string name="ui_hesap_olustur">إنشاء حساب</string>
+    <string name="ui_e_postani_dogrula">أكّد بريدك الإلكتروني</string>
+    <string name="ui_dogrula">تحقّق</string>
+    <string name="ui_kod_tekrar_gonderildi">أُعيد إرسال الرمز</string>
+
+    <!-- ParentPanelFragment.kt -->
+    <string name="ui_ilerleme_bilgisi_alinamadi_internet_baglanti">تعذّر الحصول على معلومات التقدّم. تحقّق من اتصالك بالإنترنت وحاول مجددًا.</string>
+    <string name="ui_ilerleme_bilgisi_alinamadi">تعذّر الحصول على معلومات التقدّم.</string>
+    <string name="ui_henuz_baslanmis_bir_ders_yok_cocugunuz">لم يبدأ أي درس بعد. سيظهر تقدّم طفلك هنا عندما يفتح الدرس الأول.</string>
+
+    <!-- ParentReportAdapter.kt: üç cümle art arda eklenir (baştaki boşluklar bu yüzden) -->
+    <string name="ui_mufredattaki_x_dersten_x_tanesi_tamamlandi">الدروس المكتملة في المنهج: %2$s من %1$s.</string>
+    <string name="ui_toplam_calisma_suresi_x">" إجمالي وقت الدراسة: %1$s."</string>
+    <string name="ui_en_cok_denemeyi_gerektiren_ders_x">" الدرس الذي احتاج إلى أكثر المحاولات: %1$s (المحاولات: %2$s)."</string>
+    <string name="ui_bolum_x">الجزء %1$s</string>
+    <string name="ui_bolum_x_x">الجزء %1$s - %2$s</string>
+    <string name="ui_x_x_ders_bitti">الدروس المكتملة: %1$s/%2$s</string>
+    <string name="ui_x_x_ders">الدروس: %1$s/%2$s</string>
+    <plurals name="ui_x_adim">
+        <item quantity="zero">%1$s خطوة</item>
+        <item quantity="one">%1$s خطوة</item>
+        <item quantity="two">%1$s خطوتان</item>
+        <item quantity="few">%1$s خطوات</item>
+        <item quantity="many">%1$s خطوة</item>
+        <item quantity="other">%1$s خطوة</item>
+    </plurals>
+    <string name="ui_devam_ediyor_x_x_adim_gecildi">قيد التقدّم · الخطوات المجتازة: %1$s/%2$s</string>
+    <string name="ui_adim_x">الخطوة %1$s</string>
+    <string name="ui_ilk_denemede_gecti">نجح من المحاولة الأولى</string>
+    <string name="ui_x_denemede_gecti">نجح في المحاولة رقم %1$s</string>
+    <string name="ui_baslandi">بدأ</string>
+    <plurals name="ui_deniyor_x_basarisiz_deneme">
+        <item quantity="zero">قيد المحاولة · %1$s محاولة فاشلة</item>
+        <item quantity="one">قيد المحاولة · %1$s محاولة فاشلة</item>
+        <item quantity="two">قيد المحاولة · %1$s محاولتان فاشلتان</item>
+        <item quantity="few">قيد المحاولة · %1$s محاولات فاشلة</item>
+        <item quantity="many">قيد المحاولة · %1$s محاولة فاشلة</item>
+        <item quantity="other">قيد المحاولة · %1$s محاولة فاشلة</item>
+    </plurals>
+    <string name="ui_sirasi_gelmedi">لم يحن دوره</string>
+
+    <!-- ParentReportRepository.kt -->
+    <string name="ui_abakusun_temeli_ve_toplama">أساسيات المِعداد والجمع</string>
+    <string name="ui_abakuste_cikarma">الطرح على المِعداد</string>
+    <string name="ui_abakuste_carpma">الضرب على المِعداد</string>
+    <string name="ui_korleme_toplama">الجمع بلا معداد</string>
+    <string name="ui_korleme_cikarma">الطرح بلا معداد</string>
+    <string name="ui_korleme_carpma">الضرب بلا معداد</string>
+    <string name="ui_paz">الأحد</string>
+    <string name="ui_pzt">الإثنين</string>
+    <string name="ui_sal">الثلاثاء</string>
+    <string name="ui_car">الأربعاء</string>
+    <string name="ui_per">الخميس</string>
+    <string name="ui_cum">الجمعة</string>
+    <string name="ui_cmt">السبت</string>
+
+    <!-- PartCardAdapter.kt -->
+    <string name="ui_ustalik_yolu_toplama">طريق الإتقان - الجمع</string>
+    <string name="ui_ustalik_yolu_cikarma">طريق الإتقان - الطرح</string>
+
+    <!-- PartSelectionFragment.kt -->
+    <string name="ui_abakusun_temeli_ve_toplama_kismini_bitir">أنهِ جزء «أساسيات المِعداد والجمع».</string>
+    <string name="ui_abakuste_cikarma_kismini_bitir">أنهِ جزء «الطرح على المِعداد».</string>
+    <string name="ui_abakuste_carpma_kismini_bitir">أنهِ جزء «الضرب على المِعداد».</string>
+    <string name="ui_bu_kismi_acmak_icin_plani_pro">رقِّ خطتك إلى Pro لفتح هذا الجزء.</string>
+    <string name="ui_abakuste_toplama_kismini_bitir">أنهِ جزء «الجمع على المِعداد».</string>
+    <string name="ui_toplama_ustaligi">إتقان الجمع</string>
+    <string name="ui_cikarma_ustaligi">إتقان الطرح</string>
+
+    <!-- ProDiffirentFragment.kt -->
+    <string name="ui_pro_ile_daha_hizli_ogren_daha">تعلّم أسرع وتدرّب أكثر مع Pro!</string>
+
+    <!-- ProfileFragment.kt -->
+    <string name="ui_google_ile_kimlik_dogrulama_basarisiz_x">فشلت المصادقة عبر Google: %1$s</string>
+    <string name="ui_kullanici">المستخدم</string>
+    <string name="ui_x_x_yilinda_katildi">\@%1$s • انضمّ عام %2$s</string>
+    <string name="ui_x_yilinda_katildi">انضمّ عام %1$s</string>
+    <string name="ui_hesaplaniyor">جارٍ الحساب...</string>
+    <string name="ui_x_tamamlandi">اكتمل %1$s%%</string>
+    <plurals name="ui_en_uzun_seri_x_gun">
+        <item quantity="zero">أطول سلسلة: %1$s يوم</item>
+        <item quantity="one">أطول سلسلة: %1$s يوم</item>
+        <item quantity="two">أطول سلسلة: %1$s يومان</item>
+        <item quantity="few">أطول سلسلة: %1$s أيام</item>
+        <item quantity="many">أطول سلسلة: %1$s يومًا</item>
+        <item quantity="other">أطول سلسلة: %1$s يوم</item>
+    </plurals>
+    <string name="ui_en_uzun_seri_0_gun">أطول سلسلة: 0 يوم</string>
+    <string name="ui_takip_ediliyor">تتابعه</string>
+    <string name="ui_takip_et">متابعة</string>
+    <string name="ui_takip_birakildi">أُلغيت المتابعة.</string>
+    <string name="ui_takip_edildi">تمت المتابعة!</string>
+    <string name="ui_sadece_1_adet_boncugun_var">لديك خرزة واحدة فقط</string>
+    <string name="ui_x_gun_x_saat_x_dakika">%1$s ي %2$s س %3$s د</string>
+    <string name="ui_x_saat_x_dakika">%1$s س %2$s د</string>
+    <plurals name="ui_x_dakika">
+        <item quantity="zero">%1$s دقيقة</item>
+        <item quantity="one">%1$s دقيقة</item>
+        <item quantity="two">%1$s دقيقتان</item>
+        <item quantity="few">%1$s دقائق</item>
+        <item quantity="many">%1$s دقيقة</item>
+        <item quantity="other">%1$s دقيقة</item>
+    </plurals>
+    <string name="ui_dogrulama_e_postasi_gonderildi_e_postanizi">أُرسل بريد التحقق. ارجع إلى هذه الشاشة بعد تأكيد بريدك الإلكتروني.</string>
+    <string name="ui_e_posta_gonderilemedi_x">تعذّر إرسال البريد الإلكتروني: %1$s</string>
+    <string name="ui_e_posta_basariyla_dogrulandi">تم تأكيد البريد الإلكتروني!</string>
+    <string name="ui_kullanici_adi">اسم المستخدم</string>
+    <string name="ui_profili_duzenle">تعديل الملف الشخصي</string>
+    <string name="ui_kaydet">حفظ</string>
+    <string name="ui_kullanici_adi_bos_olamaz">لا يمكن ترك اسم المستخدم فارغًا</string>
+    <string name="ui_kullanici_adi_guncellendi">تم تحديث اسم المستخدم</string>
+    <string name="ui_kullanici_adi_guncellenemedi_x">تعذّر تحديث اسم المستخدم: %1$s</string>
+    <string name="ui_yeni_sifre">كلمة المرور الجديدة</string>
+    <string name="ui_sifre_degistir">تغيير كلمة المرور</string>
+    <string name="ui_yeni_sifrenizi_girin_en_az_6">أدخل كلمة المرور الجديدة (6 أحرف على الأقل)</string>
+    <string name="ui_degistir">تغيير</string>
+    <string name="ui_sifre_en_az_6_karakter_olmali">يجب أن تتكوّن كلمة المرور من 6 أحرف على الأقل</string>
+    <string name="ui_google_hesabi_ile_giris_yaptiniz_sifre">سجّلت الدخول بحساب Google. لا يمكن تغيير كلمة المرور.</string>
+    <string name="ui_sifre_basariyla_degistirildi">تم تغيير كلمة المرور</string>
+    <string name="ui_sifre_degistirilemedi_x">تعذّر تغيير كلمة المرور: %1$s</string>
+    <string name="ui_cikis_yap">تسجيل الخروج</string>
+    <string name="ui_cikis_yapmak_istediginize_emin_misiniz">هل أنت متأكد أنك تريد تسجيل الخروج؟</string>
+    <string name="ui_evet">نعم</string>
+    <string name="ui_hayir">لا</string>
+    <string name="ui_hesabinizi_silmek_istediginize_emin_misiniz">هل أنت متأكد أنك تريد حذف حسابك؟ لا يمكن التراجع عن هذا الإجراء!</string>
+    <string name="ui_evet_sil">نعم، احذف</string>
+    <string name="ui_sifrenizi_girin">أدخل كلمة المرور</string>
+    <string name="ui_hesabinizi_silmek_icin_sifrenizi_girin">أدخل كلمة المرور لحذف حسابك</string>
+    <string name="ui_onayla">تأكيد</string>
+    <string name="ui_sifre_bos_olamaz">لا يمكن ترك كلمة المرور فارغة</string>
+    <string name="ui_kimlik_dogrulama_basarisiz_x">فشلت المصادقة: %1$s</string>
+    <string name="ui_hesap_basariyla_silindi">تم حذف الحساب</string>
+    <string name="ui_toplama">الجمع</string>
+    <string name="ui_cikarma">الطرح</string>
+    <string name="ui_carpma">الضرب</string>
+
+    <!-- QuestionChatFragment.kt -->
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_kalici_olar_2">تم تقييد حسابك نهائيًا بسبب مخالفة القواعد. لا يمكنك إرسال رسائل.</string>
+    <string name="ui_hesabiniz_kural_ihlali_nedeniyle_x_tarihine_2">تم تقييد حسابك حتى %1$s بسبب مخالفة القواعد. لا يمكنك إرسال رسائل.</string>
+    <string name="ui_hesabiniz_kisitlanmistir_mesaj_gonderemezsin">تم تقييد حسابك. لا يمكنك إرسال رسائل.</string>
+    <string name="ui_tekrar_gonderilemedi">تعذّرت إعادة الإرسال.</string>
+    <string name="ui_gonderim_iptal_edildi">أُلغي الإرسال.</string>
+    <string name="ui_mesaj_herkesten_silindi">حُذفت الرسالة لدى الجميع.</string>
+    <string name="ui_silinemedi_x">تعذّر الحذف: %1$s</string>
+    <string name="ui_mesaj_sizden_silindi">حُذفت الرسالة لديك.</string>
+    <string name="ui_fotograf">صورة</string>
+    <string name="ui_bildiriminiz_alindi">تم استلام بلاغك.</string>
+    <string name="ui_bu_mesaji_zaten_bildirdiniz">أبلغت عن هذه الرسالة من قبل.</string>
+    <string name="ui_bildirim_gonderilemedi_x">تعذّر إرسال البلاغ: %1$s</string>
+    <string name="ui_video_adresi_bulunamadi">لم يُعثر على عنوان الفيديو.</string>
+    <string name="ui_video_oynatilamadi">تعذّر تشغيل الفيديو.</string>
+    <string name="ui_ses_kopyalanamadi">تعذّر نسخ الصوت.</string>
+    <string name="ui_video_acilamadi">تعذّر فتح الفيديو.</string>
+    <string name="ui_resim_acilamadi">تعذّر فتح الصورة.</string>
+    <string name="ui_bu_soruyu_cozuldu_olarak_isaretlemek_istiyor">هل تريد تعليم هذا السؤال بأنه محلول؟ إذا فعلت، فلن يتمكّن الطالب من إرسال رسائل.</string>
+    <string name="ui_isaretle">تعليم</string>
+    <string name="ui_bu_soru_cozuldu_olarak_isaretli_tekrar">هذا السؤال معلَّم بأنه محلول. هل تريد إعادة تفعيله؟</string>
+    <string name="ui_aktiflestir">إعادة التفعيل</string>
+    <string name="ui_soru_cozuldu_olarak_isaretlendi">عُلِّم السؤال بأنه محلول.</string>
+    <string name="ui_soru_tekrar_aktiflestirildi">أُعيد تفعيل السؤال.</string>
+    <string name="ui_bu_soru_baska_bir_ogretmen_tarafindan">تولّى معلّم آخر هذا السؤال بالفعل.</string>
+    <string name="ui_soruyu_sahiplendiniz">توليت هذا السؤال.</string>
+
+    <!-- QuestionDownloadForegroundService.kt -->
+    <string name="ui_indiriliyor">جارٍ التنزيل</string>
+
+    <!-- QuestionListAdapter.kt -->
+    <string name="ui_cevaplanmadi">لم تتم الإجابة</string>
+    <string name="ui_cevaplaniyor">قيد الإجابة</string>
+    <string name="ui_cozuldu">محلول</string>
+    <string name="ui_az_once">منذ قليل</string>
+    <plurals name="ui_x_dakika_once">
+        <item quantity="zero">قبل %1$s دقيقة</item>
+        <item quantity="one">قبل %1$s دقيقة</item>
+        <item quantity="two">قبل %1$s دقيقتين</item>
+        <item quantity="few">قبل %1$s دقائق</item>
+        <item quantity="many">قبل %1$s دقيقة</item>
+        <item quantity="other">قبل %1$s دقيقة</item>
+    </plurals>
+    <plurals name="ui_x_saat_once">
+        <item quantity="zero">قبل %1$s ساعة</item>
+        <item quantity="one">قبل %1$s ساعة</item>
+        <item quantity="two">قبل %1$s ساعتين</item>
+        <item quantity="few">قبل %1$s ساعات</item>
+        <item quantity="many">قبل %1$s ساعة</item>
+        <item quantity="other">قبل %1$s ساعة</item>
+    </plurals>
+    <plurals name="ui_x_gun_once">
+        <item quantity="zero">قبل %1$s يوم</item>
+        <item quantity="one">قبل %1$s يوم</item>
+        <item quantity="two">قبل %1$s يومين</item>
+        <item quantity="few">قبل %1$s أيام</item>
+        <item quantity="many">قبل %1$s يومًا</item>
+        <item quantity="other">قبل %1$s يوم</item>
+    </plurals>
+
+    <!-- RaceAdapter.kt -->
+    <string name="ui_kilitli_2">مقفل</string>
+    <string name="ui_basla_2">ابدأ</string>
+
+    <!-- RegisterActivity.kt: iki bağlantı metni tam cümlenin içinde aynen geçmeli -->
+    <string name="ui_gecerli_bir_e_posta_adresi_giriniz">أدخل عنوان بريد إلكتروني صالحًا.</string>
+    <string name="ui_hesap_olusturarak_kullanim_sartlarini_ve_giz">بإنشاء حساب، فإنك توافق على شروط الاستخدام وسياسة الخصوصية.</string>
+    <string name="ui_kullanim_sartlarini">شروط الاستخدام</string>
+    <string name="ui_gizlilik_politikasini">سياسة الخصوصية</string>
+    <string name="ui_bu_e_posta_ile_ogrenci_hesabi">لا يمكن إنشاء حساب طالب بهذا البريد الإلكتروني.</string>
+    <string name="ui_google_kaydi_baslatilamadi">تعذّر بدء إنشاء الحساب عبر Google</string>
+    <string name="ui_google_kaydi_baslatilamadi_x">تعذّر بدء إنشاء الحساب عبر Google: %1$s</string>
+    <string name="ui_google_kaydi_basarisiz_x">فشل إنشاء الحساب عبر Google: %1$s</string>
+    <string name="ui_google_kaydi_basarisiz">فشل إنشاء الحساب عبر Google</string>
+    <string name="ui_lutfen_tum_alanlari_doldurun">يُرجى ملء جميع الحقول</string>
+    <string name="ui_sifreler_eslesmiyor">كلمتا المرور غير متطابقتين</string>
+    <string name="ui_bu_e_posta_zaten_bir_ogretmen">هذا البريد الإلكتروني مسجّل بحساب معلّم. يُرجى استخدام شاشة دخول المعلّمين.</string>
+    <string name="ui_bu_e_posta_baska_bir_hesapta">هذا البريد الإلكتروني مستخدم في حساب آخر.</string>
+
+    <!-- ScreenRecordingService.kt -->
+    <string name="ui_ekran_kaydi_yapiliyor">جارٍ تسجيل الشاشة...</string>
+
+    <!-- SessionDeviceManager.kt -->
+    <string name="ui_bir_kac_dakika_sonra_tekrar_dene">حاول مجددًا بعد بضع دقائق.</string>
+
+    <!-- ShopFragment.kt -->
+    <string name="ui_can_alinamadi_tekrar_deneyin">تعذّر الحصول على قلب. حاول مجددًا.</string>
+    <string name="ui_aylik_x">%1$s شهريًا</string>
+    <string name="ui_yetersiz_anahtar_2">المفاتيح غير كافية!</string>
+    <string name="ui_gunluk_sinira_ulasildi_yarin_tekrar_deneyin">بلغت الحد اليومي. حاول مجددًا غدًا.</string>
+    <string name="ui_islem_tamamlanamadi_tekrar_deneyin">تعذّر إتمام العملية. حاول مجددًا.</string>
+    <string name="ui_serin_korunuyor_kullaninca_yenisini_alabilir">سلسلتك محمية. يمكنك الحصول على تجميد جديد بعد استخدامه.</string>
+    <string name="ui_hazir">"✓  جاهز"</string>
+    <string name="ui_serini_1_gun_boyunca_korur_serin">يحمي سلسلتك ليوم واحد. واصل التقدّم حتى لو انقطعت سلسلتك!</string>
+    <string name="ui_yetersiz_altin_2">العملات غير كافية!</string>
+    <string name="ui_seri_dondurma">تجميد السلسلة</string>
+    <string name="ui_bir_gun_calisamazsan_serin_bozulmaz_x">إذا فاتك يوم، فلن تنقطع سلسلتك. التكلفة بالعملات: %1$s.</string>
+    <string name="ui_satin_al">شراء</string>
+    <string name="ui_bonus_dahil">شاملًا المكافأة</string>
+    <string name="ui_pro_da_x">+%1$s مع Pro</string>
+
+    <!-- SoundSettingsFragment.kt -->
+    <string name="ui_ses_x">الصوت %1$s</string>
+
+    <!-- StreakFragment.kt: "Ubah jam notifikasi · 19.00" -->
+    <string name="ui_bildirim_saatini_degistir">"تغيير وقت التذكير · "</string>
+    <string name="ui_gun_ust_uste">أيام متتالية</string>
+    <string name="ui_serin_su_anda_kirik">سلسلتك منقطعة الآن</string>
+    <string name="ui_bugunku_hedefini_tamamladin_yarin_da_bekleri">حققت هدف اليوم. نراك غدًا!</string>
+    <string name="ui_bugun_x_dakika_daha_calis_serin">تدرّب اليوم %1$s د إضافية لتستمر سلسلتك.</string>
+    <string name="ui_bugun_x_dakika_calis_yeni_serini">تدرّب اليوم %1$s د لتبدأ سلسلة جديدة.</string>
+    <string name="ui_hedef_tamamlandi">تحقق الهدف ✓</string>
+    <string name="ui_x_x_dakika">%1$s / %2$s د</string>
+    <string name="ui_hazir_2">جاهز</string>
+    <string name="ui_yok">لا يوجد</string>
+    <string name="ui_x_gunluk_meydan_okuma">تحدّي الأيام الـ%1$s</string>
+    <string name="ui_tamamlandi_odulunu_topla">اكتمل — اجمع مكافأتك</string>
+    <string name="ui_tamamlandi_odulun_hazirlaniyor">اكتمل — جارٍ تجهيز مكافأتك</string>
+    <string name="ui_bugun_basliyor">يبدأ اليوم</string>
+    <string name="ui_x_gunun_x_gunu">اليوم %2$s من %1$s</string>
+    <string name="ui_gunluk_hedefin">هدفك اليومي</string>
+    <string name="ui_her_gun_ne_kadar_ogrenmek_istersin">كم تريد أن تتعلّم كل يوم؟</string>
+    <string name="ui_rahat">مريح</string>
+    <string name="ui_duzenli">منتظم</string>
+    <string name="ui_ciddi">جادّ</string>
+    <string name="ui_bildirim_saatin">وقت التذكير</string>
+    <string name="ui_sobi_sana_her_gun_ne_zaman">متى يذكّرك Sobi كل يوم؟</string>
+
+    <!-- StreakSyncService.kt -->
+    <string name="ui_seri_dondurma_almak_icin_giris_yapman">يجب تسجيل الدخول للحصول على تجميد السلسلة.</string>
+    <string name="ui_satin_alinamadi_birazdan_tekrar_dene">تعذّر الشراء. حاول مجددًا بعد قليل.</string>
+    <string name="ui_satin_alinamadi">تعذّر الشراء.</string>
+    <string name="ui_odul_alinamadi">تعذّر استلام المكافأة.</string>
+    <string name="ui_x_internetini_kontrol_edip_tekrar_dene">%1$s تحقّق من اتصالك بالإنترنت وحاول مجددًا.</string>
+    <string name="ui_sunucuya_su_an_ulasilamiyor_birazdan_tekrar">تعذّر الوصول إلى الخادم الآن. حاول مجددًا بعد قليل.</string>
+    <string name="ui_odulu_almak_icin_giris_yapman_gerekiyor">يجب تسجيل الدخول لاستلام المكافأة.</string>
+    <string name="ui_x_kazandin">ربحت %1$s!</string>
+
+    <!-- StreakViews.kt: Senin'den başlayan 7 harf (Sen Sel Rab Kam Jum Sab Min) -->
+    <string name="ui_week_initials_monday_first">ن ث ر خ ج س ح</string>
+    <string name="ui_aksamustu">العصر</string>
+    <string name="ui_aksam">المساء</string>
+    <string name="ui_baska_bir_saat">وقت آخر</string>
+    <string name="ui_sec">اختر ›</string>
+    <string name="ui_saat_sec">اختر الوقت</string>
+    <string name="ui_sobi_sana_her_gun_bu_saatte">سيذكّرك Sobi في هذا الوقت كل يوم</string>
+    <string name="ui_topla">اجمع</string>
+    <string name="ui_seri_dondurma_kullanildi">استُخدم تجميد السلسلة</string>
+
+    <!-- StudentEmailVerificationFragment.kt -->
+    <string name="ui_kod_tekrar_gonderildi_2">أُعيد إرسال الرمز</string>
+    <string name="ui_kod_gonderilemedi_2">تعذّر إرسال الرمز</string>
+    <string name="ui_kod_6_haneli_olmalidir_2">يجب أن يتكوّن الرمز من 6 أرقام</string>
+    <string name="ui_lutfen_ad_soyad_girin">يُرجى إدخال الاسم الكامل</string>
+    <string name="ui_sifre_en_az_6_karakter_olmali_2">يجب أن تتكوّن كلمة المرور من 6 أحرف على الأقل</string>
+    <string name="ui_dogrulaniyor_2">جارٍ التحقق...</string>
+    <string name="ui_dogrula_ve_giris_yap">تحقّق وسجّل الدخول</string>
+    <string name="ui_kod_dogrulanamadi_2">تعذّر التحقق من الرمز</string>
+    <string name="ui_giris_basarisiz">فشل تسجيل الدخول</string>
+
+    <!-- SupportContactHelper.kt -->
+    <string name="ui_e_posta_veya_tarayici_acilamadi">تعذّر فتح البريد الإلكتروني أو المتصفح.</string>
+
+    <!-- TasksFragment.kt -->
+    <string name="ui_basari_x">" - النجاح: %1$s%%"</string>
+    <string name="ui_abakus">المِعداد</string>
+    <string name="ui_abakuste_pratik_yaparak_kendini_gelistir">طوّر مهاراتك بالتدرّب على المِعداد.</string>
+    <string name="ui_karakter_animasyonu">حركات الشخصية</string>
+    <string name="ui_maskotun_butun_hareketlerini_dene">جرّب كل حركات الشخصية.</string>
+    <string name="ui_kupa_yolu">طريق الكأس</string>
+    <string name="ui_basarilarini_kupalarla_olc_seviyeni_yukselt">قِس نجاحك بالكؤوس، وارفع مستواك، وانتقل إلى تحدّيات جديدة.</string>
+    <string name="ui_burayi_acmak_icin_x_yi_bitir">أنهِ «%1$s» لفتح هذا القسم.</string>
+
+    <!-- TeacherApprovalGate.kt -->
+    <string name="ui_merhaba_kullanici_id_x">"مرحبًا،\n\n\n\nمعرّف المستخدم: %1$s\n"</string>
+
+    <!-- TeacherNewPasswordFragment.kt -->
+    <string name="ui_sifre_en_az_x_karakter_olmalidir">الحد الأدنى لعدد أحرف كلمة المرور: %1$s</string>
+    <string name="ui_guncelleniyor">جارٍ التحديث...</string>
+    <string name="ui_sifreyi_guncelle">تحديث كلمة المرور</string>
+    <string name="ui_sifre_guncellendi_giris_yapabilirsiniz">تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.</string>
+
+    <!-- UserInfoFragment.kt -->
+    <string name="ui_google_aramasi">بحث Google</string>
+    <string name="ui_arkadas_aile">صديق/عائلة</string>
+    <string name="ui_okul_ogretmen">المدرسة/المعلّم</string>
+    <string name="ui_uygulama_magazasi">متجر التطبيقات</string>
+    <string name="ui_bu_e_posta_adresi_kayitli_degil">عنوان البريد الإلكتروني هذا غير مسجّل. نقلناك إلى صفحة إنشاء الحساب.</string>
+    <string name="ui_lutfen_gecerli_bir_yas_girin">يُرجى إدخال عمر صحيح</string>
+    <string name="ui_evet_hatirlat">نعم، ذكّرني</string>
+    <string name="ui_sobi_sana_her_gun_hatirlatsin_mi">هل تريد أن يذكّرك Sobi كل يوم؟</string>
+    <string name="ui_saati_istedigin_zaman_degistirebilirsin">يمكنك تغيير الوقت متى شئت</string>
+    <string name="ui_kac_yasindasin">كم عمرك؟</string>
+    <string name="ui_abakus_kullanmayi_biliyor_musun">هل تعرف كيف تستخدم المِعداد؟</string>
+    <string name="ui_abakus_hic_bilmiyorum">لا أعرفه أبدًا</string>
+    <string name="ui_abakus_biraz_biliyorum">أعرفه قليلًا</string>
+    <string name="ui_abakus_iyi_biliyorum">أعرفه جيدًا</string>
+    <!-- "Hanya " + "10 menit" + " sehari, kamu akan sampai di sini!" -->
+    <string name="ui_her_gun">"ستصل إلى هنا بـ "</string>
+    <string name="ui_buraya_varacaksin">" يوميًا!"</string>
+    <!-- "Sebelum pelajaran pertamamu, aku hanya punya " + "4 pertanyaan singkat" + " untuk mengenalmu!" -->
+    <string name="ui_ilk_dersinden_once_seni_tanimak_icin">"لأتعرّف إليك قبل درسك الأول، لديّ "</string>
+    <string name="ui_x_kisa_sorum">%1$s من الأسئلة القصيرة</string>
+    <string name="ui_var">" فقط!"</string>
+    <string name="ui_x_dakikayla">%1$s د</string>
+    <string name="ui_abakusu_tani">تعرّف على المِعداد</string>
+    <string name="ui_buyuk_sayilar_ile_islem_yap">احسب بالأعداد الكبيرة</string>
+    <string name="ui_kafadan_hesap_ustasi_ol">كن بطلًا في الحساب الذهني</string>
+    <string name="ui_bu_hedefi_istedigin_zaman_degistirebilirsin">يمكنك تغيير هذا الهدف متى شئت</string>
+    <string name="ui_gunde_x_dakika_bu_secim_sonradan">%1$s د يوميًا. لا يمكن تغيير هذا الاختيار لاحقًا، ففكّر جيدًا.</string>
+    <string name="ui_veli_onayi">موافقة وليّ الأمر</string>
+    <string name="ui_veli_e_postasi_x">البريد الإلكتروني لوليّ الأمر: %1$s</string>
+    <string name="ui_once_kendi_e_postana_gelen_kodu_gir">أدخل أولًا الرمز المكوّن من 6 أرقام الذي وصل إلى بريدك الإلكتروني. بعدها سنرسل رمز موافقة إلى البريد الإلكتروني لوليّ أمرك.</string>
+    <string name="ui_veli_e_postasina_gelen_kodu_gir">أدخل الرمز المكوّن من 6 أرقام الذي وصل إلى البريد الإلكتروني لوليّ أمرك. الرمز صالح لمدة 30 دقيقة. إدخال الرمز يعني أن وليّ أمرك يوافق.</string>
+    <!-- Zorunlu güncelleme penceresi (ForceUpdateManager) -->
+    <string name="ui_guncelleme_gerekli">يلزم التحديث</string>
+    <string name="ui_bu_surum_artik_kullanilamiyor">لم يعد بالإمكان استخدام هذا الإصدار من Sorobit. حدّث التطبيق للمتابعة.</string>
+    <string name="ui_guncelle">تحديث</string>
+    <string name="ui_cik">خروج</string>
+    <!-- Kodda sabit duran metinler (dil seçimiyle buraya taşındı) -->
+    <string name="ui_tamamlandi_buyuk">اكتمل ✓</string>
+    <string name="ui_selamlar_benim_adim_x">مرحبًا! اسمي %1$s!</string>
+    <!-- serverErrorText: sunucu hatası -->
+    <string name="ui_server_too_many">محاولات كثيرة جدًا. يُرجى المحاولة بعد قليل.</string>
+    <string name="ui_x_birazdan_tekrar_dene">%1$s حاول مجددًا بعد قليل.</string>
+</resources>
