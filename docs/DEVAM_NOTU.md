@@ -331,6 +331,9 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
 - **versionCode 18 AAB (26.10.2026 22:41, ed3cb6e push edildi):** 17 + ödev başarısında 1 ay 3 günlük grafik ve
   ustalık satırında "Usta olmaya … kaldı". Veli onayı taslağı yine derleme sırasında geri alındı, AAB'de YOK;
   yerel taslak geri kondu. `app/build/outputs/bundle/release/app-release.aab` (69 MB), kapalı teste kullanıcı yükleyecek.
+- **versionCode 19 AAB (03.11.2026 18:52):** 18 + dil seçeneği (Türkçe / English / Bahasa Indonesia / العربية),
+  sağdan sola düzen, Baloo Bhaijaan 2, öğretici seslendirmesi (en/id/ar, Storage'dan). Test anahtarları kapalı;
+  imzalı (NUMIGO). `app/build/outputs/bundle/release/app-release.aab` (67 MB), kapalı teste kullanıcı yükleyecek.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 
