@@ -90,6 +90,15 @@ yerelleştirilmesi, ödev saklama süresi.
   seslendirmeleri (`res/raw/*.mp3`) Türkçe — şimdilik İngilizcede susturuldu (`TutorialFragment.playSound`); (4) Play Store sayfası; (5) TR kaynaktaki iki yazım hatası:
   `tutorial_ipucu_114` "10 x 1 = 1", `tutorial_ipucu_134` "8'i" (56 olmalı) — EN'de doğru yazıldı.
 
+## Dil seçeneği: Arapça — durum (03.11.2026)
+- Altı alt oturum dalı (altyapı, sunucu, dört çeviri) bu dala birleştirildi (b4ad55d); sözlük
+  `docs/CEVIRI_SOZLUGU_AR.md` (rakam 0–9, cinsiyetsiz/eril hitap, Baloo Bhaijaan 2 onaylı). `values-ar`: ~3.270 metin.
+  Hazır açıklamalar yayınlandı (`functions/sobi/aciklamalar_ar.json`). Derleme, birim ve sunucu testleri geçti;
+  telefona kuruldu. Arapça bilen biri metinleri okumadı.
+- **Bekleyenler:** push (fonksiyon + kural deploy) ve hosting deploy'u (`privacy-policy-ar.html`) kullanıcı
+  onayı bekliyor; Arapça seslendirme (ElevenLabs Arapça ses seçimi); Play Store Arapça listesi. Flaş ekranındaki
+  "adımı atla" Lottie oku aynalanmıyor. `AbacusPracticeFragment` hiçbir yerden açılmıyor (kontrol edilemedi).
+
 ## Dil seçeneği: Arapça — uygulama altyapısı (03.11.2026 — claude/ar-altyapi dalında commit; push yok; telefonda Arapça seçilip bakıldı, çeviriler henüz yoktu)
 - **Seçenek:** `AppLanguage.ARABIC = "ar"` (Ayarlar → Dil → العربية); telefon Arapçaysa "Telefonun dili" de
   Arapça. Sunucuya ve `users/{uid}.lang`'a "ar". Yerel `ar-u-nu-latn`: `String.format`/`getString(id, sayı)`
