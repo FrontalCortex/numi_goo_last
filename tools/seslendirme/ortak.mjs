@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 export const BURASI = path.dirname(fileURLToPath(import.meta.url));
 export const KOK = path.resolve(BURASI, '..', '..');
 export const RES = path.join(KOK, 'app', 'src', 'main', 'res');
-export const DILLER = { en: 'values-en', id: 'values-in' };
+export const DILLER = { en: 'values-en', id: 'values-in', ar: 'values-ar' };
 
 export function argumanlar(argv = process.argv.slice(2)) {
   const a = {};
@@ -60,8 +60,35 @@ const BIRLER = {
 };
 const ONLAR_EN = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 
+// Arapça: sayının tek başına (sayılan ad olmadan) fasih okunuşu.
+const BIRLER_AR = ['صفر', 'واحد', 'اثنان', 'ثلاثة', 'أربعة', 'خمسة', 'ستة', 'سبعة', 'ثمانية', 'تسعة', 'عشرة'];
+const ONLAR_AR = ['', '', 'عشرون', 'ثلاثون', 'أربعون', 'خمسون', 'ستون', 'سبعون', 'ثمانون', 'تسعون'];
+// Dişil sayılan adın önünde 3–10 (ters cinsiyet kuralı).
+const DISIL_AD_ICIN_AR = { 3: 'ثلاث', 4: 'أربع', 5: 'خمس', 6: 'ست', 7: 'سبع', 8: 'ثماني', 9: 'تسع', 10: 'عشر' };
+const YUZLER_AR = ['', 'مئة', 'مئتان', 'ثلاثمئة', 'أربعمئة', 'خمسمئة', 'ستمئة', 'سبعمئة', 'ثمانمئة', 'تسعمئة'];
+
+function sayiYaziylaAr(n) {
+  const ve = (bas, kalan) => (kalan ? `${bas} و${sayiYaziylaAr(kalan)}` : bas);
+  if (n <= 10) return BIRLER_AR[n];
+  if (n === 11) return 'أحد عشر';
+  if (n === 12) return 'اثنا عشر';
+  if (n < 20) return `${BIRLER_AR[n % 10]} عشر`;
+  if (n < 100) return n % 10 ? `${BIRLER_AR[n % 10]} و${ONLAR_AR[Math.floor(n / 10)]}` : ONLAR_AR[n / 10];
+  if (n < 1000) return ve(YUZLER_AR[Math.floor(n / 100)], n % 100);
+  const bin = Math.floor(n / 1000);
+  // 1000 ألف, 2000 ألفان, 3000–10000 "ثلاثة آلاف", 11000 ve üstü "أحد عشر ألفًا".
+  const binler = bin === 1 ? 'ألف' : bin === 2 ? 'ألفان' : bin <= 10 ? `${BIRLER_AR[bin]} آلاف` : `${sayiYaziylaAr(bin)} ألفًا`;
+  return ve(binler, n % 1000);
+}
+
+// Nesne ve edat sonrası (أضِف 2، إلى 20، لـ 12) sayının nasb/cer biçimi: اثنين، اثني عشر، عشرين، مئتين، ألفين.
+const EGIK_AR = { اثنان: 'اثنين', اثنا: 'اثني', مئتان: 'مئتين', ألفان: 'ألفين' };
+const egikHalAr = (yazi) => yazi.replace(/(^|\s)(و?)([؀-ۿ]+)/g, (_, b, ve, k) => b + ve + (EGIK_AR[k]
+  || (ONLAR_AR.includes(k) ? `${k.slice(0, -2)}ين` : k)));
+
 /** 0–99999 arası sayının yazıyla okunuşu ("64260" → "sixty-four thousand two hundred sixty"). */
 export function sayiYaziyla(n, dil) {
+  if (dil === 'ar') return sayiYaziylaAr(n);
   if (dil === 'en') {
     if (n < 20) return BIRLER.en[n];
     if (n < 100) return ONLAR_EN[Math.floor(n / 10)] + (n % 10 ? `-${BIRLER.en[n % 10]}` : '');
@@ -84,8 +111,8 @@ export function sayiYaziyla(n, dil) {
  * yalnızca sayıdan oluşan kısa cümleler de ("5", "88") yazıyla (tek sözcükte model kararsız).
  */
 export function okunacakMetin(metin, dil = 'en') {
-  const kez = dil === 'id' ? 'kali' : 'times';
-  const esit = dil === 'id' ? 'sama dengan' : 'equals';
+  const kez = { id: 'kali', ar: 'في' }[dil] || 'times';
+  const esit = { id: 'sama dengan', ar: 'يساوي' }[dil] || 'equals';
   let s = metin
     .replace(/[[\]]/g, '')
     .replace(/\s*(->|→|=>)\s*/g, ', ')
@@ -93,6 +120,22 @@ export function okunacakMetin(metin, dil = 'en') {
     .replace(/\s*=\s*/g, ` ${esit} `)
     .replace(/\s+/g, ' ')
     .trim();
+  // Arapça (Rawi, 03.11.2026): rakamla yazılan sayıyı güvenilmez okuyor — 3+ basamağı bozuyor ("898" →
+  // "8892"), tek başına sayıyı İngilizce okuyor ("6" → "six"), iki basamaklıyı da yer yer karıştırıyor
+  // ("42" → "28"). Bütün sayılar yazıyla. Sayılan ad dişil çoğulsa (خرزات، خانات، ثوانٍ) 3–10 eril biçim
+  // alır ("3 خرزات" → "ثلاث خرزات"); "3 و4 و5 خانات" zincirinin hepsi.
+  if (dil === 'ar') {
+    const sayi = s.match(/^(-?)(\d+)$/);
+    if (sayi && Number(sayi[2]) <= 99999) return `${sayi[1] ? 'سالب ' : ''}${sayiYaziyla(Number(sayi[2]), dil)}`;
+    s = s.replace(/((?:\d+ و)*\d+)(\s+)(خرزات|خانات|ثوانٍ)/g, (_, zincir, bosluk, ad) =>
+      zincir.replace(/\d+/g, (m) => DISIL_AD_ICIN_AR[Number(m)] || m) + bosluk + ad);
+    // Özne/haber yerinde (الجواب 22، هو 12، يساوي 20) ref'î biçim, başka her yerde eğik biçim.
+    return s.replace(/\d+/g, (m, yer, tum) => {
+      if (Number(m) > 99999) return m;
+      const yazi = sayiYaziyla(Number(m), dil);
+      return /(الجواب|الناتج|هو|يساوي)\s*:?\s*$/.test(tum.slice(0, yer)) ? yazi : egikHalAr(yazi);
+    });
+  }
   if (/^-?\d+$/.test(s)) {
     const n = Math.abs(Number(s));
     return `${s.startsWith('-') ? 'minus ' : ''}${n <= 99999 ? sayiYaziyla(n, dil) : n}`;
@@ -107,7 +150,7 @@ export function okunacakMetin(metin, dil = 'en') {
 // Dil dosyasındaki, Türkçe sesi (res/raw/<anahtar>.mp3) olan cümleler; Türkçe dosyadaki sırayla.
 export function cumleler(dil) {
   const klasor = DILLER[dil];
-  if (!klasor) throw new Error(`--dil en ya da id olmalı (verilen: ${dil})`);
+  if (!klasor) throw new Error(`--dil en, id ya da ar olmalı (verilen: ${dil})`);
   const oku = (k) => {
     const xml = fs.readFileSync(path.join(RES, k, 'strings_tutorial.xml'), 'utf8');
     const harita = new Map();

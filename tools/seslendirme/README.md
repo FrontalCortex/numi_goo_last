@@ -54,6 +54,19 @@ Endonezce (standart aksan, Cava aksanlılar elendi):
 - **Honeypie – Warm, Youthful and Friendly** `3AwU3nHsI4YWeBJbz6yn` (genç kadın, sıcak, eğitim/animasyon)
 - **Bian – Neutral, Calm and Clear** `1k39YpzqXZn52BgyLyGO` (orta yaş erkek, sakin, eğitici etiketli)
 
+Arapça (fasih; Mısır/Fas lehçeli ve korku/reklam anlatıcıları elendi). Seçilen: **Rawi**.
+- **Rawi – Calm & Clear Fusha Narrator** `F2jHHIMyJTh1pdwoLzNQ` (orta yaş erkek, fasih, e-öğrenme) — seçildi
+- **Asmaa – Calm, Encouraging and Clear** `qi4PkV9c01kb869Vh7Su` (orta yaş kadın, eğitici)
+- **Habibah – Expressive, Clear and Warm** `w4LX7bK479eHGM1k15Em` (genç kadın, çocuk hikâyesi/eğitim)
+- **Sara – Friendly, Professional and Clear** `gMB389pj77Qe5nErWNjd` (orta yaş kadın, eğitici)
+
+Arapçada sayı: Rawi rakamı güvenilmez okuyor (3+ basamağı bozuyor "898" → "8892", tek başına sayıyı
+İngilizce "six", iki basamaklıyı yer yer karıştırıyor "42" → "28"). Bu yüzden BÜTÜN sayılar
+`sayiYaziyla(n, 'ar')` ile yazıyla: الجواب/الناتج/هو/يساوي sonrasında ref'î (اثنان وعشرون), başka
+yerde eğik biçim (أضِف اثنين، إلى عشرين); dişil çoğul sayılan addan (خرزات، خانات، ثوانٍ) önce 3–10
+eril biçim (ثلاث خرزات). "×" → "في", "=" → "يساوي", "-12" → "سالب اثنا عشر". `yaziya.mjs` Arapçada
+hareke ve elif/te-merbuta farklarını yok sayıyor.
+
 Kütüphane sesleri ilk kullanımda hesaba kendiliğinden ekleniyor (ses yuvası harcar; Creator'da 30).
 
 ## Telaffuz riskleri

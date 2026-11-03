@@ -92,7 +92,7 @@ async function kalanKredi() {
 }
 
 // language_code'u desteklemeyen model 400 dönerse bir kez uyarıp onsuz devam edilir.
-let dilKodu = dil === 'id' ? 'id' : 'en';
+let dilKodu = ['id', 'ar'].includes(dil) ? dil : 'en';
 const bekle = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function uret(c) {

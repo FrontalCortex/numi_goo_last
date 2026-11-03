@@ -95,8 +95,10 @@ yerelleştirilmesi, ödev saklama süresi.
   `docs/CEVIRI_SOZLUGU_AR.md` (rakam 0–9, cinsiyetsiz/eril hitap, Baloo Bhaijaan 2 onaylı). `values-ar`: ~3.270 metin.
   Hazır açıklamalar yayınlandı (`functions/sobi/aciklamalar_ar.json`). Derleme, birim ve sunucu testleri geçti;
   telefona kuruldu. Arapça bilen biri metinleri okumadı.
-- **Bekleyenler:** push (fonksiyon + kural deploy) ve hosting deploy'u (`privacy-policy-ar.html`) kullanıcı
-  onayı bekliyor; Arapça seslendirme (ElevenLabs Arapça ses seçimi); Play Store Arapça listesi. Flaş ekranındaki
+- Push ve hosting deploy'u yapıldı (03.11.2026). **Seslendirme:** Rawi `F2jHHIMyJTh1pdwoLzNQ` (fasih, erkek), 752 cümle
+  + 100 eşleme = 852 dosya Storage'da (`tutorial_audio/ar_*`); bütün sayılar yazıyla (ayrıntı
+  `tools/seslendirme/README.md`), yazıya çevirme denetiminde şüpheli 0. ~22.600 kredi.
+- **Bekleyenler:** Play Store Arapça listesi. Flaş ekranındaki
   "adımı atla" Lottie oku aynalanmıyor. `AbacusPracticeFragment` hiçbir yerden açılmıyor (kontrol edilemedi).
 
 ## Dil seçeneği: Arapça — uygulama altyapısı (03.11.2026 — claude/ar-altyapi dalında commit; push yok; telefonda Arapça seçilip bakıldı, çeviriler henüz yoktu)

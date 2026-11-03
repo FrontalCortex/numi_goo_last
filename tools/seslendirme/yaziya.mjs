@@ -7,7 +7,7 @@
 // API anahtarında "Speech to Text" izni gerekiyor.
 import fs from 'node:fs';
 import path from 'node:path';
-import { argumanlar, cumleler, ciktiKlasoru, ortamDegeri } from './ortak.mjs';
+import { argumanlar, cumleler, ciktiKlasoru, ortamDegeri, sayiYaziyla } from './ortak.mjs';
 
 const { dil = 'en', esik = '0.85' } = argumanlar();
 const ESIK = Number(esik);
@@ -20,7 +20,7 @@ async function yaziya(dosya) {
   for (let deneme = 0; deneme < 5; deneme++) {
     const form = new FormData();
     form.append('model_id', 'scribe_v1');
-    form.append('language_code', dil === 'id' ? 'ind' : 'eng');
+    form.append('language_code', { id: 'ind', ar: 'ara' }[dil] || 'eng');
     form.append('file', new Blob([fs.readFileSync(dosya)], { type: 'audio/mpeg' }), path.basename(dosya));
     const r = await fetch('https://api.elevenlabs.io/v1/speech-to-text', { method: 'POST', headers: { 'xi-api-key': anahtar }, body: form });
     if (r.status === 429 || r.status >= 500) { await new Promise((ok) => setTimeout(ok, 2000 * (deneme + 1))); continue; }
@@ -41,6 +41,7 @@ const BIRLER = {
 };
 const ONLAR_EN = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
 function yaziyla(n) {
+  if (dil === 'ar') return sayiYaziyla(n, dil);
   if (dil === 'en') {
     if (n < 20) return BIRLER.en[n];
     if (n < 100) return ONLAR_EN[Math.floor(n / 10)] + (n % 10 ? ' ' + BIRLER.en[n % 10] : '');
@@ -54,7 +55,11 @@ function yaziyla(n) {
   return (n < 2000 ? 'seribu' : yaziyla(Math.floor(n / 1000)) + ' ribu') + (n % 1000 ? ' ' + yaziyla(n % 1000) : '');
 }
 const sayiyiYaz = (t) => t.replace(/\d+/g, (m) => (Number(m) <= 99999 ? yaziyla(Number(m)) : m));
-const harfler = (t) => sayiyiYaz(t).toLowerCase().replace(/[^\p{L}]/gu, '');
+// Arapça: hareke ve tatvil atılır, elif / te-merbuta / elif-maksura biçimleri birleştirilir (servis farklı yazabiliyor).
+const arapcaSade = (t) => (dil === 'ar'
+  ? t.replace(/[ً-ْٰـ]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+  : t);
+const harfler = (t) => arapcaSade(sayiyiYaz(t)).toLowerCase().replace(/[^\p{L}]/gu, '');
 function ortakUzunluk(a, b) {
   const d = Array(b.length + 1).fill(0);
   for (const x of a) {
