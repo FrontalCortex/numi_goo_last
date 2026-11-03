@@ -138,7 +138,7 @@ function fallbackReplyEn(ctx) {
   return 'Let\'s look at it together on the abacus! You can tap "Show me".';
 }
 
-/** Endonezce yedek metin: İngilizcedeki gibi hamleyi söylemiyor, "Tunjukkan"a yönlendiriyor. */
+/** Endonezce yedek metin: İngilizcedeki gibi hamleyi söylemiyor, "Tunjukkan"a yönlendiriyor (uygulamadaki düğme: sobi_suggest_show). */
 function fallbackReplyId(ctx) {
   if (ctx && ctx.mode === 'genel') {
     return 'Aku belum bisa menjawab itu sekarang. Mau tanya hal lain tentang sempoa atau aplikasinya?';
@@ -148,7 +148,7 @@ function fallbackReplyId(ctx) {
       ? `Ayo kita lihat bersama! Di pelajaran kita bilang: "${ctx.stepText}" Bagian mana yang sulit?`
       : 'Ayo kita pikirkan bersama! Bagian mana yang sulit? Bisa ceritakan sedikit lagi?';
   }
-  return 'Ayo kita lihat bersama di sempoa! Kamu bisa ketuk "Tunjukkan".';
+  return 'Ayo kita lihat bersama di sempoa! Kamu bisa ketuk "Tunjukkan padaku".';
 }
 
 module.exports = {

@@ -16,7 +16,7 @@ The context, tool results and the instructions above are in Turkish; never quote
 - gelir → tambah; gider → kurangi (for beads: masuk / keluar)
 - beşlik boncuk → manik lima; birlik boncuk → manik satu; üst / alt boncuk → manik atas / manik bawah
 - birler, onlar, yüzler, binler, on binler (basamağı) → kolom satuan, puluhan, ratusan, ribuan, puluh ribuan
-- "Bana göster" button → "Tunjukkan"; "Kontrol Et" button → "Periksa"
+- "Bana göster" button → "Tunjukkan padaku"; "Kontrol Et" button → "Periksa"
 - kredi → kredit; Sobi testi → kuis Sobi; ödev → PR; ders → pelajaran; kupa → piala; seri → streak; ipucu → petunjuk
 
 Don't say "meminjam" (borrow) or "menyimpan" (carry); use the lesson words above. Write numbers as digits.

@@ -852,6 +852,11 @@ async function main() {
     const enStep = chat.sanitizeContext({ tutorialNumber: 3, stepIndex: 0, stepText: "In this lesson you'll learn small friends addition, the first lesson on adding with rules." });
     const enDirect = chat.directReplyFor({ ...enStep, lang: 'en' }, 'bunu_anlamadim', 'en');
     assert.strictEqual(enDirect.key, 't3_p1');
+    // Endonezce: aynı adım, values-in metniyle aciklamalar_id.json'dan.
+    const idStep = chat.sanitizeContext({ tutorialNumber: 3, stepIndex: 0, stepText: 'Di pelajaran ini kamu akan belajar penjumlahan teman kecil, pelajaran pertama penjumlahan dengan rumus.' });
+    const idDirect = chat.directReplyFor({ ...idStep, lang: 'id' }, 'bunu_anlamadim', 'id');
+    assert.strictEqual(idDirect && idDirect.key, 't3_p1');
+    assert.ok(!/[çğıöşüÇĞİÖŞÜ]/.test(idDirect.text), idDirect.text);
     assert.ok(enDirect.text.includes('small friends addition'), enDirect.text);
     // Türkçe adım metni İngilizce dosyada eşleşmez; Türkçe bağlam Türkçe dosyayı kullanır.
     const trStep = chat.sanitizeContext({ tutorialNumber: 3, stepIndex: 0, stepText: "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin." });
@@ -904,12 +909,12 @@ async function main() {
     // Türkçe adım metni Endonezce bağlamda eşleşmez: model çalışır (Türkçe metin dönmez).
     const trStep = chat.sanitizeContext({ tutorialNumber: 3, stepIndex: 0, stepText: "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin." });
     assert.strictEqual(chat.directReplyFor({ ...trStep, lang: 'id' }, 'bunu_anlamadim', 'id'), null);
-    // Yedek metin Endonezce: Türkçe harf ve İngilizce düğme adı yok, "Tunjukkan" var.
+    // Yedek metin Endonezce: Türkçe harf ve İngilizce düğme adı yok, "Tunjukkan padaku" (uygulamadaki düğme) var.
     for (const c of [{ mode: 'genel' }, { ...CTX, target: null, stepText: 'Tambah 5.' }, CTX]) {
       const t = guard.fallbackReply(c, require('../sobi/tools'), 'id');
       assert.ok(!/[çğıöşüÇĞİÖŞÜ]/.test(t) && !/Show me/.test(t), t);
     }
-    assert.ok(guard.fallbackReply(CTX, require('../sobi/tools'), 'id').includes('"Tunjukkan"'));
+    assert.ok(guard.fallbackReply(CTX, require('../sobi/tools'), 'id').includes('"Tunjukkan padaku"'));
     // Ad maskesi: "adalah" kalıba dahil, ad maskeleniyor.
     assert.strictEqual(guard.cleanChildText('nama saya Budi').text, 'nama saya [ad]');
     assert.strictEqual(guard.cleanChildText('Nama saya adalah Siti, umurku 8').text, 'Nama saya adalah [ad], umurku 8');
