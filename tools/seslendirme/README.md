@@ -16,6 +16,8 @@ Anahtar: `ELEVENLABS_API_KEY` ortam değişkeni ya da `functions/.env.local`'dek
 | `... --onay` | Hepsini üretir → `cikti/<dil>/<anahtar>.mp3`; var olanı atlar (kaldığı yerden devam) |
 | `... --ornek 5` / `--sadece a,b` | İlk 5 / yalnızca verilen anahtarlar |
 | `... --yeniden tutorial3_2` | Beğenilmeyen cümleyi silip yeniden üretir |
+| `node tools/seslendirme/yaziya.mjs --dil en` | Sesleri yazıya çevirip metinle karşılaştırır (Speech to Text izni gerekir) |
+| `node tools/seslendirme/esle.mjs --dil en` | Metni başka anahtardan gelen kayıtları (öğreticide `R.raw.Y` ≠ `R.string.X`) kopyalar; yüklemeden önce şart |
 | `node tools/seslendirme/yukle.mjs --dil en --kuru` | Storage'a ne yükleneceğini listeler (yalnızca okur) |
 | `node tools/seslendirme/yukle.mjs --dil en` | Yükler: `audio/mpeg`, `Cache-Control: public, max-age=2592000`; aynı boyutta olanı atlar |
 | `node tools/seslendirme/sesler.mjs --dil id [--ara guru]` | Hesaptaki ve kütüphanedeki sesleri listeler |
