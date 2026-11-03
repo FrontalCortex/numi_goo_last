@@ -202,6 +202,12 @@ function decisionNoticeText(status, lang = 'tr') {
       ? { title: 'Laporan bug-mu disetujui! 🎉', body: 'Terima kasih! Hadiahmu sudah menunggu, ambil di Misi.' }
       : { title: 'Laporan bug-mu sudah ditinjau', body: 'Terima kasih atas laporanmu. Kamu bisa melihat detailnya di Misi.' };
   }
+  if (lang === 'ar') {
+    // Görevler sekmesi "المهام" varsayıldı (values-ar gelince karşılaştır).
+    return status === 'approved'
+      ? { title: 'تمت الموافقة على بلاغ الخطأ! 🎉', body: 'شكرًا! مكافأتك بانتظارك في المهام.' }
+      : { title: 'تمت مراجعة بلاغ الخطأ', body: 'شكرًا على البلاغ. التفاصيل موجودة في المهام.' };
+  }
   if (status === 'approved') {
     return {
       title: 'Hata bildirimin onaylandı! 🎉',

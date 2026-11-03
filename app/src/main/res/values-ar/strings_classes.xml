@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="class_pool_tab_mine">صفّي</string>
+    <string name="class_pool_tab_general">البنك العام</string>
+    <string name="class_classes_button">صفوفي</string>
+    <string name="class_pool_empty_mine">لا توجد أسئلة منتظرة من صفوفك.</string>
+
+    <string name="class_list_title">صفوفي</string>
+    <string name="class_back_desc">رجوع</string>
+    <string name="class_help_general_title">ساعد في البنك العام أيضًا</string>
+    <string name="class_help_general_desc">إذا فعّلت هذا، فستظهر أيضًا أسئلة الطلاب غير المرتبطين بدورة في تبويب «البنك العام» داخل بنك الأسئلة.</string>
+    <string name="class_list_empty">ليس لديك صف بعد. أنشئ صفًا وأعطِ رمز الانضمام لطلابك.</string>
+    <string name="class_new_button">+ صف جديد</string>
+    <string name="class_new_title">صف جديد</string>
+    <string name="class_new_hint">اسم الصف (مثلًا: السبت 10:00)</string>
+    <string name="class_new_create">أنشئ الصف</string>
+    <string name="class_cancel">إلغاء</string>
+    <string name="class_created">تم إنشاء الصف. الرمز: %1$s</string>
+    <plurals name="class_student_count">
+        <item quantity="zero">%d طالب</item>
+        <item quantity="one">%d طالب</item>
+        <item quantity="two">%d طالبان</item>
+        <item quantity="few">%d طلاب</item>
+        <item quantity="many">%d طالبًا</item>
+        <item quantity="other">%d طالب</item>
+    </plurals>
+    <string name="class_student_members_title">في الصف</string>
+    <string name="class_card_no_students">لا يوجد طلاب بعد</string>
+    <string name="class_code_label">الرمز: %1$s</string>
+
+    <string name="class_join_code_title">رمز الانضمام</string>
+    <string name="class_join_code_hint">يكتب الطالب هذا الرمز في التطبيق في الإعدادات ← الانضمام إلى صف.</string>
+    <string name="class_copy">نسخ</string>
+    <string name="class_share">مشاركة</string>
+    <string name="class_regenerate">تجديد الرمز</string>
+    <string name="class_copied">تم نسخ الرمز</string>
+    <string name="class_share_text">انضم إلى صفّي «%1$s» في Sorobit: اكتب الرمز %2$s في التطبيق في الإعدادات ← الانضمام إلى صف.</string>
+    <string name="class_regenerate_title">تجديد الرمز؟</string>
+    <string name="class_regenerate_message">سيتوقف الرمز القديم عن العمل فورًا. يبقى الطلاب الحاليون في الصف، ويستخدم المنضمّون الجدد الرمز الجديد.</string>
+    <string name="class_regenerate_confirm">تجديد</string>
+    <string name="class_regenerated">الرمز الجديد: %1$s</string>
+    <string name="class_students_title">الطلاب</string>
+    <string name="class_students_empty">لا يوجد طلاب في الصف بعد. أعطِ الرمز لطلابك أو ادعُهم باسم المستخدم.</string>
+    <string name="class_invite_button">إضافة طالب</string>
+    <string name="class_invite_short">إضافة</string>
+    <string name="class_settings_title">إعدادات الصف</string>
+    <string name="class_students_empty_settings">لا يوجد طلاب في الصف بعد. شارك رمز الانضمام من الإعدادات في الأعلى، أو ادعُ طالبًا باسم المستخدم عبر «إضافة».</string>
+    <string name="class_homeworks_none">لا توجد واجبات بعد · أعطِ الواجب الأول</string>
+    <plurals name="class_homeworks_count">
+        <item quantity="zero">%d واجب</item>
+        <item quantity="one">%d واجب</item>
+        <item quantity="two">%d واجبان</item>
+        <item quantity="few">%d واجبات</item>
+        <item quantity="many">%d واجبًا</item>
+        <item quantity="other">%d واجب</item>
+    </plurals>
+    <string name="class_invite_title">إضافة طالب</string>
+    <string name="class_invite_message">اكتب اسم المستخدم للطالب (الظاهر بعد @ في ملفه). ستصل إليه دعوة، وعندما يقبلها يظهر في القائمة.</string>
+    <string name="class_invite_hint">اسم المستخدم (مثلًا: 835398VV)</string>
+    <string name="class_invite_send">إرسال الدعوة</string>
+    <string name="class_invite_sent">تم إرسال الدعوة إلى الطالب %1$s.</string>
+    <string name="class_invite_already_member">%1$s موجود في هذا الصف بالفعل.</string>
+    <string name="class_pending_invites">بانتظار قبول الدعوة: %1$s</string>
+    <string name="class_remove_title">إخراج من الصف؟</string>
+    <string name="class_remove_message">سيخرج %1$s من الصف. ستنتقل أسئلته المنتظرة إلى البنك العام، ولن تتمكن من رؤية تقدّمه بعد الآن.</string>
+    <string name="class_remove_confirm">إخراج</string>
+    <string name="class_removed">تم إخراج %1$s من الصف.</string>
+    <string name="class_generic_error">حدثت مشكلة. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.</string>
+
+    <string name="class_settings_header">الصف</string>
+    <string name="class_settings_join">الانضمام إلى صف</string>
+    <string name="class_settings_my_class">صفّي</string>
+    <string name="class_settings_invites">لديك دعوة إلى صف بانتظارك</string>
+    <string name="class_student_title">صفّي</string>
+    <string name="class_student_current">صفّك</string>
+    <string name="class_student_teacher">معلّمك: %1$s</string>
+    <string name="class_student_info">تذهب أسئلتك مباشرة إلى معلّمك. ويمكن لمعلّمك أن يرى تقدّمك في الدروس.</string>
+    <string name="class_student_leave">مغادرة الصف</string>
+    <string name="class_student_leave_title">هل تريد مغادرة الصف؟</string>
+    <string name="class_student_leave_message">بعد ذلك ستذهب أسئلتك إلى المعلّمين في البنك العام، ولن يتمكن معلّمك من رؤية تقدّمك. للانضمام مرة أخرى يجب أن تُدخل الرمز من جديد.</string>
+    <string name="class_student_left">غادرتَ الصف.</string>
+    <string name="class_student_join_title">أدخل رمز الصف</string>
+    <string name="class_student_join_desc">اكتب الرمز المكوّن من 6 خانات الذي أخذته من معلّمك. بعد الانضمام تذهب أسئلتك إلى معلّمك، ويمكنه أن يرى تقدّمك في الدروس.</string>
+    <string name="class_student_join_hint">ABC 234</string>
+    <string name="class_student_join_button">انضمام</string>
+    <string name="class_student_code_length">يجب أن يتكوّن الرمز من 6 خانات.</string>
+    <string name="class_student_joined">انضممتَ إلى الصف «%1$s»!</string>
+    <string name="class_student_invites_title">الدعوات</string>
+    <string name="class_student_invite_text">دعاك %1$s إلى الصف «%2$s».</string>
+    <string name="class_student_invite_accept">انضمام</string>
+    <string name="class_student_invite_decline">رفض</string>
+    <string name="class_student_switch_title">تغيير الصف؟</string>
+    <string name="class_student_switch_message">ستخرج من صفّك الحالي (%1$s) وتنتقل إلى الصف «%2$s».</string>
+    <string name="class_student_switch_confirm">انتقال</string>
+
+    <string name="class_student_progress_desc">تقدّم الطالب</string>
+    <string name="class_student_progress_title">%1$s — التقدّم</string>
+    <string name="class_student_progress_empty">لم يبدأ الطالب أي درس بعد. عندما يفتح الدرس الأول سيظهر تقدّمه هنا.</string>
+</resources>

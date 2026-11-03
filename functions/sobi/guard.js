@@ -34,13 +34,25 @@ const LONG_DIGITS = /(?:\+?\d[\s.-]?){9,}/g;
 // yazılı: /i bayrağı Türkçe "İ"yi "i" ile eşleştirmiyor. Endonezce "nama saya (adalah) Budi",
 // "namaku Budi": "adalah" kalıba dahil, yoksa ad yerine o maskelenirdi.
 const NAME = /([Bb]enim\s+[Aa]d[ıi]m|[Bb]enim\s+[İi]smim|[İi]smim|[Mm]y\s+name\s+is|[Mm]y\s+name's|[Nn]ama\s+saya(?:\s+adalah)?|[Nn]amaku(?:\s+adalah)?)\s+\p{L}+/gu;
+// Arapça "اسمي سارة" ("adım Sara"; çocuklar hemzesiz de yazıyor) ve "أنا أحمد" ("ben Ahmet"). "أنا"
+// ardından çoğunlukla ad değil fiil ya da sıfat geliyor ("أنا لا أفهم" = anlamadım): sık sözler ve
+// "ال" ile başlayanlar maskelenmiyor. Harekeler (\p{M}) kelimenin parçası.
+const NAME_AR = /(?<![\p{L}\p{M}])([اإ]سمي)\s+[\p{L}\p{M}]+/gu;
+const ANA_STOP = [
+  'لا', 'لم', 'لن', 'ما', 'لست', 'في', 'من', 'مع', 'هنا', 'الآن', 'أيضا', 'أيضًا', 'اسمي', 'إسمي', 'جاهز', 'جاهزة',
+  'بخير', 'متعب', 'متعبة', 'حزين', 'حزينة', 'سعيد', 'سعيدة', 'ولد', 'بنت', 'طالب', 'طالبة', 'كنت', 'عندي',
+  'أريد', 'اريد', 'أفهم', 'افهم', 'أعرف', 'اعرف', 'أحب', 'احب', 'أحاول', 'احاول', 'أستطيع', 'استطيع',
+  'أظن', 'اظن', 'أعتقد', 'اعتقد', 'فهمت', 'عرفت', 'نسيت', 'حاولت',
+].join('|');
+const ANA_AR = new RegExp(`(?<![\\p{L}\\p{M}])([أا]نا)\\s+(?!(?:${ANA_STOP})(?![\\p{L}\\p{M}])|ال)[\\p{L}\\p{M}]+`, 'gu');
 
 /** Çocuğun metni: kırpılmış, kısaltılmış, kişisel kalıplar maskelenmiş. */
 function cleanChildText(text) {
   if (typeof text !== 'string') return { text: '', masked: false };
   let t = text.replace(/\s+/g, ' ').trim().slice(0, MAX_CHILD_TEXT);
   const before = t;
-  t = t.replace(EMAIL, '[e-posta]').replace(URL, '[bağlantı]').replace(LONG_DIGITS, '[numara] ').replace(NAME, '$1 [ad]');
+  t = t.replace(EMAIL, '[e-posta]').replace(URL, '[bağlantı]').replace(LONG_DIGITS, '[numara] ').replace(NAME, '$1 [ad]')
+    .replace(NAME_AR, '$1 [ad]').replace(ANA_AR, '$1 [ad]');
   return { text: t.trim(), masked: t !== before };
 }
 
@@ -96,6 +108,7 @@ function checkReply(reply, sources, { explanation = false } = {}) {
 function fallbackReply(ctx, tools, lang = 'tr') {
   if (lang === 'en') return fallbackReplyEn(ctx);
   if (lang === 'id') return fallbackReplyId(ctx);
+  if (lang === 'ar') return fallbackReplyAr(ctx);
   // Genel sohbette (Sobi sekmesi) adım yok; kural motorunun söyleyeceği bir hamle de yok.
   if (ctx && ctx.mode === 'genel') {
     return 'Bunu şu an cevaplayamadım. Abaküs ya da uygulama hakkında başka bir şey sormak ister misin?';
@@ -149,6 +162,19 @@ function fallbackReplyId(ctx) {
       : 'Ayo kita pikirkan bersama! Bagian mana yang sulit? Bisa ceritakan sedikit lagi?';
   }
   return 'Ayo kita lihat bersama di sempoa! Kamu bisa ketuk "Tunjukkan padaku".';
+}
+
+/** Arapça yedek metin: hamleyi söylemiyor, "أرِني"ye yönlendiriyor; hitap cinsiyetsiz (docs/CEVIRI_SOZLUGU_AR.md). */
+function fallbackReplyAr(ctx) {
+  if (ctx && ctx.mode === 'genel') {
+    return 'لم أستطع الإجابة عن هذا الآن. هل هناك سؤال آخر عن المِعداد أو التطبيق؟';
+  }
+  if (!ctx || !Number.isInteger(ctx.target)) {
+    return ctx && ctx.stepText
+      ? `هيا ننظر معًا! في الدرس نقول: "${ctx.stepText}" ما الجزء الصعب؟`
+      : 'هيا نفكّر معًا! ما الجزء الصعب؟ هل يمكن أن توضّح أكثر قليلًا؟';
+  }
+  return 'هيا ننظر معًا على المِعداد! يمكن الضغط على "أرِني".';
 }
 
 module.exports = {

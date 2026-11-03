@@ -8,6 +8,13 @@
  * kurmadan, saniyeler içinde çalıştırılabiliyor (bkz. scripts/test-streak-reminder.js).
  */
 
+const { arCount } = require('./arabic');
+
+/** Arapça dakika ve gün: tamlamada (تدريب 5 دقائق, من 3 أيام) ve yalın ("هدف صغير: دقيقتان"). */
+const AR_MINUTES = { one: 'دقيقة واحدة', two: 'دقيقتين', few: '%d دقائق', many: '%d دقيقة', other: '%d دقيقة' };
+const AR_MINUTES_NOM = { ...AR_MINUTES, two: 'دقيقتان' };
+const AR_DAYS = { one: 'يوم واحد', two: 'يومين', few: '%d أيام', many: '%d يومًا', other: '%d يوم' };
+
 /**
  * Kullanıcının yerel saatiyle hatırlatmanın gönderileceği saat — kullanıcı kendi saatini
  * seçmediyse. Seçim kayıtta ve seri ekranında yapılıyor (`reminderLocalHour`).
@@ -112,6 +119,16 @@ function streakReminderText(current, goalMinutes, freezes = 0, lang = 'tr') {
     }
     return { title: 'Bagaimana kalau mulai hari ini?', body: `Mulai streak baru dengan target kecil ${dk} menit.` };
   }
+  if (lang === 'ar') {
+    // Emir kipi cinsiyetli: ad cümlesi ("تدريب X اليوم ...") ve birinci çoğul ("لنبدأ").
+    if (current > 0 && freezes > 0) {
+      return { title: 'سلسلتك بانتظارك 🔥', body: `تدريب ${arCount(dk, AR_MINUTES)} اليوم يُبقي تجميد السلسلة محفوظًا لوقت لاحق.` };
+    }
+    if (current > 0) {
+      return { title: 'سلسلتك بانتظارك 🔥', body: `تدريب ${arCount(dk, AR_MINUTES)} اليوم يُبقي سلسلتك من ${arCount(current, AR_DAYS)} مستمرة.` };
+    }
+    return { title: 'ما رأيك أن نبدأ اليوم؟', body: `لنبدأ سلسلة جديدة بهدف صغير: ${arCount(dk, AR_MINUTES_NOM)}.` };
+  }
   if (current > 0) {
     // Dondurması olan kullanıcının serisi bugün kırılmıyor, ama dondurma 4000 altın ve
     // yarın harcanacak. Bilgi aynı, ton davet: "harcanacak" demek yerine "sakla".
@@ -166,6 +183,9 @@ function secondChanceText(current, goalMinutes, lang = 'tr') {
   if (lang === 'id') {
     return { title: `Streak ${current} harimu bisa putus hari ini`, body: `Punya ${dk} menit? Itu cukup untuk menyelesaikan hari ini.` };
   }
+  if (lang === 'ar') {
+    return { title: `قد تنقطع سلسلتك من ${arCount(current, AR_DAYS)} اليوم`, body: `يكفي تدريب ${arCount(dk, AR_MINUTES)} لإتمام اليوم. هل لديك وقت؟` };
+  }
   return {
     title: `${current} günlük serin bugün kırılabilir`,
     body: `${dk} dakikan var mı? Günü kapatmak için yeter.`,
@@ -213,6 +233,7 @@ function secondChanceDecision(state, nowMs) {
     text: secondChanceText(live.current, state.goalMinutes),
     textEn: secondChanceText(live.current, state.goalMinutes, 'en'),
     textId: secondChanceText(live.current, state.goalMinutes, 'id'),
+    textAr: secondChanceText(live.current, state.goalMinutes, 'ar'),
   };
 }
 
@@ -249,6 +270,7 @@ function streakReminderDecision(state, nowMs) {
     text: streakReminderText(live.current, state.goalMinutes, live.freezes),
     textEn: streakReminderText(live.current, state.goalMinutes, live.freezes, 'en'),
     textId: streakReminderText(live.current, state.goalMinutes, live.freezes, 'id'),
+    textAr: streakReminderText(live.current, state.goalMinutes, live.freezes, 'ar'),
   };
 }
 

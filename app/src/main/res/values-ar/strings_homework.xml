@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hw_op_add">الجمع</string>
+    <string name="hw_op_sub">الطرح</string>
+    <string name="hw_op_mul">الضرب</string>
+    <!-- hw_title icinde: "الجمع: الأصدقاء الصغار" -->
+    <string name="hw_op_add_lower">الجمع</string>
+    <string name="hw_op_sub_lower">الطرح</string>
+    <string name="hw_rule_direct">مباشر</string>
+    <string name="hw_rule_five">الأصدقاء الصغار</string>
+    <string name="hw_rule_ten">الأصدقاء الكبار</string>
+    <string name="hw_rule_bead">القاعدة المركّبة</string>
+    <string name="hw_and">و</string>
+    <string name="hw_with_abacus">بالمِعداد</string>
+    <string name="hw_without_abacus">بدون معداد</string>
+    <string name="hw_digits">الخانات: %1$d</string>
+    <string name="hw_mul_digits">الخانات: %1$d × %2$d</string>
+    <string name="hw_mul_title">الضرب (الخانات: %1$d × %2$d)</string>
+    <string name="hw_title">%2$s: %1$s</string>
+    <plurals name="hw_numbers">
+        <item quantity="zero">%d عدد</item>
+        <item quantity="one">%d عدد</item>
+        <item quantity="two">%d عددان</item>
+        <item quantity="few">%d أعداد</item>
+        <item quantity="many">%d عددًا</item>
+        <item quantity="other">%d عدد</item>
+    </plurals>
+    <plurals name="hw_sub_numbers">
+        <item quantity="zero">%d عدد للطرح</item>
+        <item quantity="one">%d عدد للطرح</item>
+        <item quantity="two">%d عددان للطرح</item>
+        <item quantity="few">%d أعداد للطرح</item>
+        <item quantity="many">%d عددًا للطرح</item>
+        <item quantity="other">%d عدد للطرح</item>
+    </plurals>
+    <plurals name="hw_questions">
+        <item quantity="zero">%d سؤال</item>
+        <item quantity="one">%d سؤال</item>
+        <item quantity="two">%d سؤالان</item>
+        <item quantity="few">%d أسئلة</item>
+        <item quantity="many">%d سؤالًا</item>
+        <item quantity="other">%d سؤال</item>
+    </plurals>
+    <string name="hw_seconds">%1$s ث</string>
+
+    <string name="hw_class_button">الواجبات</string>
+    <string name="hw_list_title">الواجبات · %1$s</string>
+    <string name="hw_list_empty">لم يُعطَ هذا الصف أي واجب بعد.</string>
+    <string name="hw_new_button">+ واجب جديد</string>
+    <string name="hw_new_short">واجب جديد</string>
+    <string name="hw_list_done_bar">أنهى %1$d/%2$d</string>
+    <string name="hw_target_whole_class">الصف كله</string>
+    <plurals name="hw_target_students">
+        <item quantity="zero">%d طالب</item>
+        <item quantity="one">%d طالب</item>
+        <item quantity="two">%d طالبان</item>
+        <item quantity="few">%d طلاب</item>
+        <item quantity="many">%d طالبًا</item>
+        <item quantity="other">%d طالب</item>
+    </plurals>
+
+    <string name="hw_list_done_summary">أنهى %2$s من الطلاب (العدد الكلي: %1$d)</string>
+    <string name="hw_list_done_none">لم يُنهِه أحد بعد · الطلاب: %1$d</string>
+    <string name="hw_list_done_all">أنهاه الجميع ✓ · الطلاب: %1$d</string>
+
+    <string name="hw_detail_title">الواجب</string>
+    <string name="hw_detail_students">الطلاب</string>
+    <string name="hw_detail_not_started">لم يبدأ</string>
+    <string name="hw_detail_progress">الخطوة %1$d/%2$d · صحيحة %3$d/%4$d</string>
+    <string name="hw_detail_done">انتهى · صحيحة %1$d/%2$d</string>
+    <string name="hw_delete">حذف الواجب</string>
+    <string name="hw_delete_title">حذف الواجب؟</string>
+    <string name="hw_delete_message">سيُزال الواجب من قائمة الطلاب ويُحذف تقدّمهم.</string>
+    <string name="hw_deleted">تم حذف الواجب.</string>
+    <string name="hw_left_class">غادر الصف</string>
+
+    <string name="hw_create_title">واجب جديد</string>
+    <string name="hw_field_op">العملية</string>
+    <string name="hw_field_rules">الموضوع</string>
+    <string name="hw_field_rules_hint">يمكنك اختيار أكثر من واحد؛ لن تظهر في الأسئلة إلا القواعد التي تختارها.</string>
+    <string name="hw_field_type">النوع</string>
+    <string name="hw_section_settings">الإعدادات</string>
+    <string name="hw_field_digits">عدد الخانات</string>
+    <string name="hw_field_digits1">خانات العدد الأول</string>
+    <string name="hw_field_digits2">خانات العدد الثاني</string>
+    <string name="hw_field_count_add">عدد الأعداد</string>
+    <string name="hw_field_count_sub">عدد الأعداد التي ستُطرح</string>
+    <string name="hw_field_count_sub_hint">دون احتساب عدد البداية. يُختار عدد البداية بحيث لا تصبح النتيجة سالبة ويمكن التدرّب على القواعد التي اخترتها.</string>
+    <string name="hw_field_interval">سرعة العرض (ث)</string>
+    <string name="hw_field_interval_hint">تُعرض الأعداد واحدًا تلو الآخر بهذا الفاصل (0.1 – 30 ث).</string>
+    <string name="hw_field_questions">عدد الأسئلة</string>
+    <string name="hw_field_questions_hint">تُقسَّم إلى خطوات من 10 أسئلة. الخطوات: %1$d.</string>
+    <string name="hw_field_target">إلى مَن</string>
+    <string name="hw_target_select">اختر طلابًا</string>
+    <string name="hw_target_none_selected">اختر طالبًا واحدًا على الأقل.</string>
+    <string name="hw_target_no_students">لا يوجد طلاب في الصف بعد؛ سيظهر الواجب لكل من ينضم إلى الصف.</string>
+    <string name="hw_count_max">الحد الأقصى %1$d</string>
+    <string name="hw_count_max_recommended">الحد الأقصى %1$d · المقترح %2$d</string>
+    <string name="hw_count_impossible">لا يمكن إنشاء أسئلة بهذه القواعد عندما تكون الخانات %1$d. غيّر عدد الخانات أو الموضوع أو الإعدادات المتقدمة.</string>
+    <string name="hw_count_forced">بهذه القواعد، إذا كان عدد الأعداد %1$d فستصبح كل خانات كل الأعداد %2$s (مثلًا %3$s). القيمة المناسبة هي %4$d.</string>
+    <string name="hw_mul_capacity">يمكن أن يكون مجموع خانات العددين %1$d على الأكثر.</string>
+    <string name="hw_preview_title">سؤال نموذجي</string>
+    <string name="hw_preview_pick_rule">اختر موضوعًا</string>
+    <string name="hw_preview_refresh">مثال آخر</string>
+    <string name="hw_send">أرسل الواجب</string>
+    <string name="hw_sent">تم إرسال الواجب. الطلاب: %1$d.</string>
+    <string name="hw_invalid">تحقّق من الإعدادات.</string>
+    <string name="hw_count_measuring">جارٍ حساب الحد الأقصى…</string>
+    <string name="hw_wait_measuring">جارٍ حساب حد الأعداد؛ انتظر بضع ثوانٍ.</string>
+
+    <string name="hw_advanced">متقدّم</string>
+    <string name="hw_advanced_all_digits">كل الأعداد</string>
+    <string name="hw_advanced_title_add">ما الأعداد التي تُضاف؟</string>
+    <string name="hw_advanced_title_sub">ما الأعداد التي تُطرح؟</string>
+    <string name="hw_advanced_title_mul">ما الأرقام التي تظهر في الخانات؟</string>
+    <string name="hw_advanced_desc_add">في كل موضوع، الأعداد التي يمكن إضافتها بتلك القاعدة. العدد الذي تُغلقه لن يُضاف بتلك القاعدة؛ مثلًا إذا كان 4 وحده مفتوحًا في الأصدقاء الصغار، فستُمارس القاعدة دائمًا بـ +4 (+5 −1).</string>
+    <string name="hw_advanced_desc_sub">في كل موضوع، الأعداد التي يمكن طرحها بتلك القاعدة. العدد الذي تُغلقه لن يُطرح بتلك القاعدة؛ مثلًا إذا كان 4 وحده مفتوحًا في الأصدقاء الصغار، فستُمارس القاعدة دائمًا بـ −4 (−5 +1).</string>
+    <string name="hw_advanced_desc_mul">تُختار كل خانة من الأرقام المفتوحة فقط.</string>
+    <string name="hw_advanced_select_all">الكل</string>
+    <string name="hw_advanced_done">تم</string>
+    <string name="hw_advanced_min_one">يجب أن يبقى عدد واحد على الأقل مفتوحًا.</string>
+    <string name="hw_advanced_pick_rule">اختر موضوعًا أولًا.</string>
+    <string name="hw_advanced_mul_group">العدد %1$d · خانة %2$s</string>
+    <string name="hw_advanced_mul_digits">العدد %1$d، %2$s: %3$s</string>
+    <string-array name="hw_place_names">
+        <item>الآحاد</item>
+        <item>العشرات</item>
+        <item>المئات</item>
+        <item>الآلاف</item>
+        <item>عشرات الآلاف</item>
+        <item>مئات الآلاف</item>
+        <item>الملايين</item>
+    </string-array>
+
+    <string name="notification_channel_account_quiet_name">الواجبات والحساب (صامتة)</string>
+    <string name="notification_channel_account_quiet_desc">إشعارات الواجبات التي تصل ليلًا، تظهر بصمت</string>
+
+    <string name="hw_card_title">واجباتي</string>
+    <plurals name="hw_student_card_pending">
+        <item quantity="zero">%d واجب بانتظارك</item>
+        <item quantity="one">%d واجب بانتظارك</item>
+        <item quantity="two">%d واجبان بانتظارك</item>
+        <item quantity="few">%d واجبات بانتظارك</item>
+        <item quantity="many">%d واجبًا بانتظارك</item>
+        <item quantity="other">%d واجب بانتظارك</item>
+    </plurals>
+    <string name="hw_student_card_all_done">أنهيتها كلها</string>
+    <string name="hw_student_card_none">لا توجد واجبات بعد</string>
+    <string name="hw_tab_homework">واجباتي</string>
+    <string name="hw_student_empty">لم يُعطِك معلّمك أي واجب بعد.</string>
+    <string name="hw_classmates_empty">لا يوجد طلاب آخرون في صفّك بعد.</string>
+    <string name="hw_classmate_teacher">المعلّم</string>
+    <string name="hw_classmate_me">%1$s (أنت)</string>
+    <string name="hw_card_from">من %1$s</string>
+    <string name="hw_card_progress">الخطوات: %1$d/%2$d</string>
+    <string name="hw_card_done">مكتمل ✓</string>
+
+    <string name="hw_player_quit_desc">إغلاق</string>
+    <string name="hw_player_step">الخطوة %1$d/%2$d · السؤال %3$d/%4$d</string>
+    <string name="hw_player_start">ابدأ</string>
+    <string name="hw_player_check">تحقّق</string>
+    <string name="hw_player_answer_hint">إجابتك</string>
+    <string name="hw_player_correct">صحيح!</string>
+    <string name="hw_player_wrong">الإجابة الصحيحة: %1$s</string>
+    <string name="hw_player_next">متابعة</string>
+    <string name="hw_player_block_done">انتهت الخطوة!</string>
+    <string name="hw_player_block_score">صحيحة %1$d/%2$d</string>
+    <string name="hw_player_next_block">الخطوة التالية</string>
+    <string name="hw_player_finish">إنهاء</string>
+    <string name="hw_player_all_done">اكتمل واجبك! 🎉</string>
+    <string name="hw_player_save_failed">تعذّر حفظ التقدّم. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.</string>
+    <string name="hw_player_retry_save">احفظ مرة أخرى</string>
+    <string name="hw_player_unavailable">لا يمكن فتح هذا الواجب. أخبر معلّمك.</string>
+    <string name="hw_player_quit_title">الخروج من الواجب؟</string>
+    <string name="hw_player_quit_message">لن تُحفظ إجاباتك في هذه الخطوة؛ ستبدأ الخطوة من جديد.</string>
+    <string name="hw_player_quit_confirm">خروج</string>
+
+    <string name="progress_hub_lessons">الدروس</string>
+    <string name="progress_hub_lessons_desc">التقدّم في الدروس ووقت التدرّب</string>
+    <string name="progress_hub_rules">النجاح في القواعد</string>
+    <string name="progress_hub_rules_desc">نسبة الإجابات الصحيحة لكل قاعدة في الدروس والواجبات ومع Sobi</string>
+    <string name="rule_stats_title">%1$s — النجاح في القواعد</string>
+    <string name="rule_stats_add">الجمع</string>
+    <string name="rule_stats_sub">الطرح</string>
+    <string name="rule_stats_mul_abacus">الضرب بالمِعداد</string>
+    <string name="rule_stats_mul_mental">الضرب بدون معداد</string>
+    <string name="rule_stats_mul_digits">الخانات: %1$d × %2$d</string>
+    <string name="rule_stats_percent">%1$d%%</string>
+    <string name="rule_stats_count">صحيحة %1$d/%2$d</string>
+    <string name="rule_stats_empty">لا توجد بيانات بعد. كلما حُلّت الدروس والواجبات وتمارين Sobi، ستظهر هنا نسبة الإجابات الصحيحة لكل قاعدة.</string>
+    <string name="rule_stats_sobi_level">مستوى اختبار Sobi %1$d/%2$d</string>
+    <string name="rule_stats_sobi_level_estimated">مستوى اختبار Sobi %1$d/%2$d (تقديري)</string>
+    <string name="rule_stats_note">في الجمع والطرح تُحتسب كل عملية على خانة ضمن القاعدة التي تحتاجها: الدروس والواجبات والتدرّب مع Sobi معًا. وفي الضرب كل سؤال واجب محاولة واحدة.</string>
+
+    <!-- Birim, "%2$s: %1$d" bicimiyle kullaniliyor (sayi-ad uyumu yok) -->
+    <string name="rule_progress_unit_question">الأسئلة</string>
+    <string name="rule_progress_unit_op">العمليات</string>
+    <string name="rule_progress_week_title">هذا الأسبوع</string>
+    <string name="rule_progress_week_sub">%2$s: %1$d · الأسبوع الماضي %3$d%%</string>
+    <string name="rule_progress_week_sub_no_last">%2$s: %1$d · لم يكن هناك تدرّب الأسبوع الماضي</string>
+    <string name="rule_progress_week_none">لم تُحلّ أسئلة هذا الأسبوع بعد</string>
+    <string name="rule_progress_week_none_sub">الأسبوع الماضي %1$d%% · %3$s: %2$d</string>
+    <string name="rule_progress_delta_up">+%1$d نقطة</string>
+    <string name="rule_progress_delta_down">−%1$d نقطة</string>
+    <string name="rule_progress_delta_same">مثل الأسبوع الماضي</string>
+    <string name="rule_progress_total">%2$s حتى الآن: %1$d</string>
+    <string name="rule_progress_chart_title">رسم النجاح</string>
+    <string name="rule_progress_all_rules">الكل</string>
+    <string name="rule_progress_chip_mul_abacus">الضرب %1$d×%2$d بالمِعداد</string>
+    <string name="rule_progress_chip_mul_mental">الضرب %1$d×%2$d بدون معداد</string>
+    <string name="rule_progress_range_week">أسبوع</string>
+    <string name="rule_progress_range_month">شهر</string>
+    <string name="rule_progress_range_quarter">3 أشهر</string>
+    <string name="rule_progress_range_all">الكل</string>
+    <string name="rule_progress_chart_hint">كل نقطة هي نسبة الإجابات الصحيحة في تلك الفترة؛ والرقم فوقها هو مجموع %1$s المحلولة حتى تلك اللحظة. المس النقطة لمعرفة التفاصيل.</string>
+    <string name="rule_progress_chart_empty">لم تُحلّ أسئلة في هذه الفترة</string>
+    <string name="rule_progress_chart_empty_last">آخر تدرّب: %1$s · %2$d%% صحيحة. يظهر عند الانتقال إلى «الكل».</string>
+    <string name="rule_progress_base">البداية</string>
+    <string name="rule_progress_point_detail">%1$s · %3$s: %2$d · %4$d%% صحيحة · المجموع %5$d</string>
+    <string name="rule_progress_base_detail">البداية: %2$s قبل الرسم: %1$d · %3$d%% صحيحة</string>
+    <string name="rule_stats_mastery_title">إتقان القواعد</string>
+    <string name="rule_stats_mastery_desc">تُتقن القاعدة عندما تُصيب في 90% من آخر 50 عملية فيها. المرحلة التي تصل إليها لا تتراجع.</string>
+    <string name="rule_stats_stage_started">بدأ</string>
+    <string name="rule_stats_stage_improving">يتحسّن</string>
+    <string name="rule_stats_stage_master">متقن ⭐</string>
+    <string name="rule_stats_recent">آخر %1$d من %2$s · %3$d%% صحيحة</string>
+    <string name="rule_stats_ops">%2$s: %1$d · %3$d%% صحيحة</string>
+    <string name="rule_stats_to_master_pct">المتبقي للإتقان: %1$d%%</string>
+    <string name="rule_stats_to_master_ops">%2$s المتبقية للإتقان: %1$d</string>
+    <string-array name="rule_progress_months">
+        <item>يناير</item>
+        <item>فبراير</item>
+        <item>مارس</item>
+        <item>أبريل</item>
+        <item>مايو</item>
+        <item>يونيو</item>
+        <item>يوليو</item>
+        <item>أغسطس</item>
+        <item>سبتمبر</item>
+        <item>أكتوبر</item>
+        <item>نوفمبر</item>
+        <item>ديسمبر</item>
+    </string-array>
+</resources>

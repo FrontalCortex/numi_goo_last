@@ -125,6 +125,24 @@ yerelleştirilmesi, ödev saklama süresi.
   `textId` döndürüyor. İngilizcesi olan 13 bildirimin hepsine Endonezce eklendi; `test:notifications`
   yeni bir çağrıda `en:` olup `id:` yoksa kırılıyor. Hata bildiriminde sekme adı "Misi" varsayıldı.
 
+## Dil seçeneği: Arapça — sunucu (03.11.2026 — claude/ar-sunucu dalında commit; push/deploy kullanıcı onayı bekliyor)
+- **Sobi:** `lang: 'ar'` → talimatın sonuna `sobi/prompt_lang_ar.md` (sözlük `docs/CEVIRI_SOZLUGU_AR.md`; fasih,
+  Batı rakamı, cinsiyetsiz hitap). Düğme adları sözlükten seçildi: "Bana göster" → **"أرِني"**, "Kontrol Et" →
+  **"تحقّق"** (`prompt_lang_ar.md` ve `guard.js` yedek metni); `values-ar/strings_sobi.xml` gelince karşılaştır.
+  Kredi açıklaması, yedek metinler, boş başlık ("محادثة") Arapça; ad maskesi "اسمي/إسمي …" ve "أنا/انا …"
+  ("أنا لا أفهم" gibi sık sözler ve "ال" ile başlayanlar maskelenmez). Gerçek modelde denendi
+  (`sobi-dene.js --dil ar`, 3 senaryo): cevaplar Arapça, terimler sözlükteki gibi, ad maskelendi.
+- **Hazır açıklamalar:** `tools/sobi-eval/aciklamalar/aciklamalar_ar.json` (t3, 12 parça) hazır; YAYINLANMADI:
+  `values-ar/strings_tutorial.xml` gelince `node tools/sobi-eval/aciklamalar/yayinla_dil.mjs ar`.
+- **Bildirimler:** `sendUserNotification` `ar: { title, body }` da alıyor; karar fonksiyonları `textAr`. 13 çağrının
+  hepsinde Arapça; sayı-ad uyumu `functions/arabic.js` `arCount` (1/2/3–10/11–99/100+), kesir ve "2 × 1"
+  U+2066…U+2069 ile yalıtılı. Görevler sekmesi "المهام" varsayıldı (`bugReports.js`).
+- **E-postalar:** `mailTexts.js` `ar` (doğrulama + veli onayı), HTML `dir="rtl"` sarmal, adresler `<bdi dir="ltr">`.
+  `PARENTAL_CONSENT_VERSION` 2026-11-03.2. **Yasal sayfa:** `public/privacy-policy-ar.html` (23 çapa, RTL),
+  diğer üç sayfada "العربية" bağlantısı. DEPLOY EDİLMEDİ (hosting deploy'u gerekli).
+- **Sunucu hata mesajları:** sunucuda değişecek bir şey yok; Türkçe dışındaki dillerde metin istemcide
+  (`ServerErrors.kt`, `values-ar/strings_code.xml` → `ui_server_too_many`, `ui_x_birazdan_tekrar_dene`).
+
 ## Reklam yükleme hataları (02.11.2026 — derlendi, commit + push edildi (yalnızca uygulama, deploy yok); telefonda denenmedi; GA4 "Reklamlar" filtresi güncellenmedi)
 - **Asıl sebep AdMob'da:** Sorobit (com.numigo.app) "Onaylanacak uygulamalar"da, durumu
   "Kurulum tamamlanmadı" (son 7 günde 186 istek). Uygulama AdMob listesine eklenip mağaza

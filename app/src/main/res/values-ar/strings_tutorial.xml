@@ -1,0 +1,1039 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Öğretici metinlerinin Arapça çevirisi (values/strings_tutorial.xml). Terimler
+  docs/CEVIRI_SOZLUGU_AR.md ile aynı. Yalnızca sayıdan ya da denklemden oluşan metinler
+  çevrilmedi (Türkçesi kullanılır). Seslendirileceği için cümleler kısa tutuldu.
+  Kural metinlerinde [köşeli parantez] içi mavi gösterilir; parantezler korunmalı.
+  Düğme adları: «تحقّق» (Kontrol Et), «تخطّي الشرح» (Eğitimi atla), «كتاب القواعد».
+-->
+<resources>
+
+    <!-- Tutorial 1 -->
+    <string name="tutorial1_1">مرحبًا بك في Sorobit. اضغط على الشاشة لتنتقل بين خطوات الشرح.</string>
+    <string name="tutorial1_2">اضغط زر الرجوع في الأسفل لتعود إلى الخطوات السابقة.</string>
+    <string name="tutorial1_4">لنبدأ الآن.</string>
+    <string name="tutorial1_5">المِعداد أداة حساب تستخدم الخرزات لتمثيل الأعداد.</string>
+    <string name="tutorial1_6">كل عمود يمثّل خانة. وتكبر الخانات من اليمين إلى اليسار.</string>
+    <string name="tutorial1_7">الآحاد</string>
+    <string name="tutorial1_8">العشرات</string>
+    <string name="tutorial1_9">المئات</string>
+    <string name="tutorial1_10">الآلاف</string>
+    <string name="tutorial1_11">وعشرات الآلاف.</string>
+    <string name="tutorial1_12">في كل عمود 5 خرزات.</string>
+    <string name="tutorial1_13">الخرزة العلوية قيمتها 5،</string>
+    <string name="tutorial1_14">والخرزات السفلية قيمة كلٍّ منها 1.</string>
+    <string name="tutorial1_15">مثلًا، هكذا نمثّل العدد 1 على المِعداد.</string>
+    <string name="tutorial1_100">لكتابة 2 نستخدم خرزتين من خرزات الواحد في خانة الآحاد.</string>
+    <string name="tutorial1_101">ولكتابة 3 نستخدم 3 خرزات،</string>
+    <string name="tutorial1_102">ولكتابة 4 نستخدم 4 من خرزات الواحد.</string>
+    <string name="tutorial1_103">الخرزة العلوية قيمتها 5. أي أنها تضيف 5 إلى عددنا عندما نستخدمها.</string>
+    <string name="tutorial1_104">هكذا نمثّل العدد 5.</string>
+    <string name="tutorial1_17">للعدد 6 نستخدم الخرزة العلوية وخرزة سفلية واحدة.</string>
+    <string name="tutorial1_105">هكذا نمثّل 7.</string>
+    <string name="tutorial1_106">وهكذا 8،</string>
+    <string name="tutorial1_107">وهكذا نمثّل 9.</string>
+    <string name="tutorial1_108">لنتدرّب معًا على مثال.</string>
+    <string name="tutorial1_109">اكتب العدد التالي على المِعداد، ثم اضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_001">استخدم خرزة الواحد في أقصى اليمين.</string>
+    <string name="tutorial1_110">والآن اكتب هذا العدد، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_002">استخدم خرزتين من خرزات الواحد في أقصى اليمين.</string>
+    <string name="tutorial1_111">اكتب هذا العدد.</string>
+    <string name="tutorial_ipucu_003">استخدم خرزة الخمسة العلوية في أقصى اليمين.</string>
+    <string name="tutorial_ipucu_004">استخدم خرزة الخمسة وخرزة واحدة من خرزات الواحد.</string>
+    <string name="tutorial1_113">وأخيرًا، اكتب هذا العدد.</string>
+    <string name="tutorial_ipucu_005">استخدم خرزة الخمسة و3 من خرزات الواحد.</string>
+    <string name="tutorial1_21">والآن حاول أن تمثّل على المِعداد الأعداد التي سأكتبها على السبّورة.</string>
+
+    <!-- Tutorial 100 -->
+    <string name="tutorial3_100">في هذا الدرس سنتعرّف على الأعداد المكوّنة من خانتين.</string>
+    <string name="tutorial1_3">إذا كنت تعرف الموضوع، فاضغط زر «تخطّي الشرح» في الأسفل لتنتقل مباشرةً إلى الاختبار.</string>
+    <string name="tutorial3_101">على المِعداد، تكبر الخانات نحو اليسار كما في الأعداد العادية.</string>
+    <string name="tutorial3_102">لكتابة 10 نستخدم خرزة واحدة من خرزات الواحد في خانة العشرات.</string>
+    <string name="tutorial3_103">ولكتابة 20 نستخدم خرزتين من خرزات الواحد.</string>
+    <string name="tutorial3_104">هكذا نمثّل 30.</string>
+    <string name="tutorial3_105">وهكذا 40،</string>
+    <string name="tutorial3_106">أما لكتابة 50 فنستخدم خرزة الخمسة في الأعلى.</string>
+    <string name="tutorial3_107">هكذا نمثّل 60.</string>
+    <string name="tutorial3_108">وهكذا 70،</string>
+    <string name="tutorial3_109">وهكذا 80،</string>
+    <string name="tutorial3_110">أما 90 فنمثّله هكذا.</string>
+    <string name="tutorial_ipucu_006">استخدم خرزات العمود الثاني من اليمين. أضِف خرزة الخمسة وخرزتين من خرزات الواحد.</string>
+    <string name="tutorial3_111">اكتب هذا العدد، واضغط زر «تحقّق».</string>
+    <string name="tutorial3_112">عند كتابة عدد من أكثر من خانة، نبدأ دائمًا من الخانة الكبرى.</string>
+    <string name="tutorial3_113">أي أننا عند كتابة 12 نكتب أولًا 10 في خانة العشرات.</string>
+    <string name="tutorial3_114">ثم نكتب 2، وهكذا نمثّل 12.</string>
+    <string name="tutorial3_115">لنكتب العدد 24.</string>
+    <string name="tutorial3_116">أولًا أكتب 20 في خانة العشرات.</string>
+    <string name="tutorial3_117">ثم أكتب 4 في خانة الآحاد، وتنتهي العملية.</string>
+    <string name="tutorial3_118">لنكتب هذا العدد معًا.</string>
+    <string name="tutorial3_119">أولًا اكتب 30 في خانة العشرات، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_007">استخدم خرزات العمود الثاني من اليمين. أضِف 3 من خرزات الواحد.</string>
+    <string name="tutorial3_120">ثم اكتب 2 في خانة الآحاد، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_008">استخدم خرزات العمود الأيمن. أضِف خرزتين من خرزات الواحد.</string>
+    <string name="tutorial3_121">وعند كتابة 78 نبدأ كذلك من الخانة الكبرى.</string>
+    <string name="tutorial3_122">أولًا أكتب 70.</string>
+    <string name="tutorial3_123">ثم أكتب 8.</string>
+    <string name="tutorial3_124">وأخيرًا، لنكتب هذا العدد معًا، ثم ننتقل إلى الاختبار.</string>
+    <string name="tutorial3_125">أولًا اكتب رقم العشرات، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_009">استخدم خرزات العمود الثاني من اليمين. أضِف خرزة الخمسة و4 من خرزات الواحد.</string>
+    <string name="tutorial3_126">ثم اكتب 4 في خانة الآحاد، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_010">استخدم خرزات العمود الأيمن. أضِف 4 من خرزات الواحد.</string>
+    <string name="tutorial3_127">تعلّمت بسرعة كبيرة. حان الآن وقت الاختبار.</string>
+
+    <!-- Tutorial 101 -->
+    <string name="tutorial4_100">في هذا الدرس سنتعرّف على الأعداد المكوّنة من 3 و4 و5 خانات.</string>
+    <string name="tutorial4_101">عند كتابة الأعداد من 3 خانات، نبدأ من الخانة الكبرى، كما في الأعداد من خانتين.</string>
+    <string name="tutorial4_102">مثلًا، عند كتابة هذا العدد...</string>
+    <string name="tutorial4_103">أكتب أولًا رقم المئات في خانة المئات على المِعداد.</string>
+    <string name="tutorial4_104">ثم رقم العشرات،</string>
+    <string name="tutorial4_105">وأخيرًا أكتب رقم الآحاد.</string>
+    <string name="tutorial4_107">اكتب رقم المئات في العمود الثالث من اليمين، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_011">استخدم خرزة واحدة من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial4_108">ثم اكتب رقم العشرات في العمود الثاني، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_012">استخدم 3 من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial4_109">وأخيرًا اكتب رقم الآحاد في العمود الأيمن، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_013">استخدم خرزتين من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial4_3000">أما عند كتابة هذا العدد...</string>
+    <string name="tutorial4_3001">أكتب أولًا رقم الآلاف في خانة الآلاف على المِعداد.</string>
+    <string name="tutorial4_3002">ثم رقم المئات،</string>
+    <string name="tutorial4_2008">ورقم العشرات،</string>
+    <string name="tutorial4_3003">اكتب رقم الآلاف في العمود الرابع من اليمين، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_014">استخدم 4 من خرزات الواحد.</string>
+    <string name="tutorial4_3004">ثم اكتب رقم المئات في العمود الثالث من اليمين، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_015">استخدم خرزة واحدة من خرزات الواحد.</string>
+    <string name="tutorial_ipucu_016">استخدم 3 من خرزات الواحد.</string>
+    <string name="tutorial101_0">من أيّ خانة نبدأ عند كتابة الأعداد على المِعداد؟</string>
+    <string name="tutorial_ipucu_017">نبدأ من الخانة الكبرى، لكي نطبّق القواعد بشكل صحيح لاحقًا.</string>
+    <string name="tutorial_sik_001">من الخانة الصغرى.</string>
+    <string name="tutorial_sik_002">الخانة لا تهمّ. نبدأ من أيّ خانة نريد.</string>
+    <string name="tutorial_sik_003">من الخانة الكبرى.</string>
+    <string name="tutorial4_3005">أكتب أولًا رقم عشرات الآلاف في خانة عشرات الآلاف على المِعداد.</string>
+    <string name="tutorial4_2006">ثم رقم الآلاف،</string>
+    <string name="tutorial4_2007">ورقم المئات،</string>
+    <string name="tutorial4_2009">اكتب رقم عشرات الآلاف في العمود الخامس من اليمين، واضغط زر «تحقّق».</string>
+    <string name="tutorial4_2010">اكتب رقم العشرات في العمود الثاني، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_018">استخدم 4 من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial_ipucu_019">استخدم خرزتين من خرزات الواحد.</string>
+    <string name="tutorial4_110">الأمر بهذه البساطة.</string>
+    <string name="tutorial15_27">انتقل إلى الاختبار.</string>
+
+    <!-- Tutorial 2 -->
+    <string name="tutorial2_1">في هذه الوحدة ستتعلّم كيف تجمع حتى الأعداد الكبيرة جدًّا بسهولة.</string>
+    <string name="tutorial2_3">لنبدأ بهذه المسألة.</string>
+    <string name="tutorial2_4">أولًا نكتب 3 على المِعداد.</string>
+    <string name="tutorial2_5">ثم نضيف 5 لنجمع.</string>
+    <string name="tutorial2_6">الجواب 8.</string>
+    <string name="tutorial12_9">أما في هذه المسألة...</string>
+    <string name="tutorial2_101">أولًا أكتب العدد الأول على المِعداد.</string>
+    <string name="tutorial2_102">ثم أضيف خرزات بقيمة العدد الذي سأجمعه.</string>
+    <string name="tutorial2_7">والآن لنحلّ هذا المثال معًا.</string>
+    <string name="tutorial2_8">أولًا اكتب 2 على المِعداد، واضغط «تحقّق».</string>
+    <string name="tutorial_ipucu_020">استخدم خرزتين من خرزات الواحد في العمود الأيمن.</string>
+    <string name="tutorial2_9">والآن أضِف 6، واضغط «تحقّق».</string>
+    <string name="tutorial_ipucu_021">أضِف إلى العمود الأيمن خرزة الخمسة وخرزة واحدة من خرزات الواحد.</string>
+    <string name="tutorial2_103">وأخيرًا، لنحلّ هذا المثال معًا.</string>
+    <string name="tutorial2_104">أولًا اكتب 1 على المِعداد، واضغط «تحقّق».</string>
+    <string name="tutorial_ipucu_022">استخدم خرزة واحدة من خرزات الواحد في العمود الأيمن.</string>
+    <string name="tutorial2_105">والآن أضِف 8، واضغط «تحقّق».</string>
+    <string name="tutorial_ipucu_023">استخدم خرزة الخمسة و3 من خرزات الواحد في العمود الأيمن.</string>
+
+    <!-- Tutorial 102 -->
+    <string name="tutorial2_11">عند جمع الأعداد من خانتين، نجمع بدءًا من الخانة الكبرى.</string>
+    <string name="tutorial2_12">لننظر مثلًا إلى هذه المسألة.</string>
+    <string name="tutorial2_13">أولًا نكتب 21.</string>
+    <string name="tutorial2_14">ثم لنضيف 13، نضيف أولًا 10 إلى خانة العشرات، ثم 3 إلى خانة الآحاد.</string>
+    <string name="tutorial2_15">الجواب 34.</string>
+    <string name="tutorial2_17">لنتناول هذه المسألة.</string>
+    <string name="tutorial2_18">أولًا اكتب 16، واضغط «تحقّق».</string>
+    <string name="tutorial_ipucu_024">استخدم خرزة واحدة من خرزات الواحد في خانة العشرات، وفي خانة الآحاد خرزة الخمسة وخرزة واحدة من خرزات الواحد.</string>
+    <string name="tutorial2_19">ثم لتضيف 21، أضِف أولًا 20 إلى خانة العشرات.</string>
+    <string name="tutorial_ipucu_025">أضِف خرزتين من خرزات الواحد إلى خانة العشرات.</string>
+    <string name="tutorial2_20">وأخيرًا أضِف 1 إلى خانة الآحاد.</string>
+    <string name="tutorial_ipucu_026">أضِف خرزة واحدة من خرزات الواحد إلى خانة الآحاد.</string>
+    <string name="tutorial10_6">لننظر إلى هذه المسألة.</string>
+    <string name="tutorial102_0">أولًا أكتب 36.</string>
+    <string name="tutorial102_1">ثم لأضيف 63، أضيف أولًا 60 إلى خانة العشرات، ثم 3 إلى خانة الآحاد.</string>
+    <string name="tutorial102_2">الجواب 99.</string>
+    <string name="tutorial102_3">أولًا اكتب العدد الأول، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_027">استخدم خرزتين من خرزات الواحد في خانة العشرات، و3 من خرزات الواحد في خانة الآحاد.</string>
+    <string name="tutorial102_4">ثم لتضيف 71، أضِف أولًا 70 إلى خانة العشرات.</string>
+    <string name="tutorial_ipucu_028">أضِف إلى خانة العشرات خرزة الخمسة وخرزتين من خرزات الواحد.</string>
+    <string name="tutorial102_5">ثم أضِف 1 إلى خانة الآحاد.</string>
+
+    <!-- Tutorial 103 -->
+    <string name="tutorial103_0">وعند جمع الأعداد من ثلاث خانات أيضًا، سنبدأ الجمع من الخانة الكبرى.</string>
+    <string name="tutorial103_1">في كل عمليات الجمع، نبدأ دائمًا من الخانة الكبرى.</string>
+    <string name="tutorial103_2">أولًا نكتب 241.</string>
+    <string name="tutorial103_3">ثم نضيف 153 بدءًا من خانته الكبرى.</string>
+    <string name="tutorial103_7">الجواب 394.</string>
+    <string name="tutorial103_8">أولًا اكتب 222، واضغط «تحقّق».</string>
+    <string name="tutorial_ipucu_029">أضِف خرزتين من خرزات الواحد إلى كلٍّ من خانة المئات والعشرات والآحاد.</string>
+    <string name="tutorial103_9">ثم أضِف 126 بدءًا من خانته الكبرى.</string>
+    <string name="tutorial_ipucu_030">أضِف خرزة واحدة من خرزات الواحد إلى خانة المئات.</string>
+    <string name="tutorial_ipucu_031">أضِف إلى خانة الآحاد خرزة واحدة من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial103_348">الجواب 348.</string>
+    <string name="tutorial103_12">أولًا نكتب 582.</string>
+    <string name="tutorial103_13">ثم نضيف 316 بدءًا من خانته الكبرى.</string>
+    <string name="tutorial103_17">الجواب 898.</string>
+    <string name="tutorial103_18">أولًا اكتب 723، واضغط «تحقّق».</string>
+    <string name="tutorial_ipucu_032">أضِف إلى خانة المئات خرزة الخمسة وخرزتين من خرزات الواحد، وإلى خانة العشرات خرزتين من خرزات الواحد، وإلى خانة الآحاد 3 من خرزات الواحد.</string>
+    <string name="tutorial103_19">ثم أضِف 266 بدءًا من خانته الكبرى.</string>
+    <string name="tutorial_ipucu_033">أضِف خرزتين من خرزات الواحد إلى خانة المئات.</string>
+    <string name="tutorial_ipucu_034">أضِف إلى خانة العشرات خرزة واحدة من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial103_22">الجواب 989.</string>
+
+    <!-- Tutorial 3 -->
+    <string name="tutorial3_1">في هذا الدرس ستتعلّم الجمع بقاعدة الأصدقاء الصغار، وهو أول درس في الجمع بالقواعد.</string>
+    <string name="tutorial3000_1">نستخدم قاعدة الأصدقاء الصغار عندما لا نستطيع إضافة العدد مباشرةً.</string>
+    <string name="tutorial3000_2">مثلًا، في هذه المسألة أكتب 4 على المِعداد.</string>
+    <string name="tutorial3000_3">عندما أريد إضافة 1، لا أستطيع إضافته مباشرةً. لا توجد خرزة سفلية لأضيفها.</string>
+    <string name="tutorial3000_4">في مثل هذه الحالات سنطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial3_2">في قاعدة الأصدقاء الصغار، لكل عدد نضيفه صديق يكمّله إلى 5.</string>
+    <string name="tutorial3_3">صديق 1 هو 4.</string>
+    <string name="tutorial3_4">صديق 2 هو 3</string>
+    <string name="tutorial3_5">صديق 3 هو 2</string>
+    <string name="tutorial3_6">صديق 4 هو 1.</string>
+    <string name="tutorial3000_5">"عندما لا نستطيع إضافة العدد، نطبّق هذه القاعدة هكذا: «أضِف 5 واطرح صديقه»."</string>
+    <string name="tutorial3_7">لنحاول مثلًا حلّ هذه المسألة.</string>
+    <string name="tutorial3_8">أولًا نكتب العدد الأول على المِعداد.</string>
+    <string name="tutorial3_9">ثم سنضيف العدد الثاني.</string>
+    <string name="tutorial3_10">لكننا لا نستطيع إضافة 1 مباشرةً.</string>
+    <string name="tutorial3_11">لذلك سنطبّق هنا قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial3_13">أضِف 5.</string>
+    <string name="tutorial3_14">اطرح صديقه 4.</string>
+    <string name="tutorial3_15">الجواب 5.</string>
+    <string name="tutorial3_17">أولًا نكتب 4 على المِعداد.</string>
+    <string name="tutorial3_18">ثم سنضيف 2. لكننا لا نستطيع إضافة 2 مباشرةً.</string>
+    <string name="tutorial3_19">لذلك سنطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial3_20">صديق 2 هو 3.</string>
+    <string name="tutorial3_22">اطرح صديقه 3.</string>
+    <string name="tutorial3_23">الجواب 6.</string>
+    <string name="tutorial3_25">"أولًا نكتب 3 على المِعداد."</string>
+    <string name="tutorial3_26">ثم سنضيف 3. لكننا لا نستطيع إضافة 3 مباشرةً.</string>
+    <string name="tutorial3_28">صديق 3 هو 2.</string>
+    <string name="tutorial3_30">اطرح صديقه 2.</string>
+    <string name="tutorial_ipucu_035">أضِف 5. اطرح صديقه.</string>
+    <string name="tutorial_soru_001">ما خطوات تطبيق قاعدة الأصدقاء الصغار؟</string>
+    <string name="tutorial_sik_004">اطرح 5. أضِف صديقه.</string>
+    <string name="tutorial_sik_005">أضِف 5. أضِف صديقه.</string>
+    <string name="tutorial3_32">وأخيرًا، لنتناول هذه المسألة.</string>
+    <string name="tutorial3_33">أولًا نكتب 2 على المِعداد.</string>
+    <string name="tutorial3_34">ثم سنضيف 4. لكننا لا نستطيع إضافة 4 مباشرةً.</string>
+    <string name="tutorial3_37">اطرح صديقه 1.</string>
+    <string name="tutorial_ipucu_036">ننظر إلى صديق العدد الثاني، الذي لا نستطيع إضافته مباشرةً إلى العدد الذي على المِعداد.</string>
+    <string name="tutorial_soru_002">إلى صديق أيّ عدد ننظر عند تطبيق قاعدة الأصدقاء الصغار؟</string>
+    <string name="tutorial_sik_006">إلى صديق العدد الأول الذي كتبناه على المِعداد.</string>
+    <string name="tutorial_sik_007">إلى صديق العدد الذي لا نستطيع إضافته مباشرةً.</string>
+    <string name="tutorial_sik_008">العدد لا يهمّ. نختاره عشوائيًّا.</string>
+    <string name="tutorial3_39">هذه القاعدة هي نفسها في كل خانة.</string>
+    <string name="tutorial3_40">وفي هذه المسألة نطبّق القاعدة نفسها.</string>
+    <string name="tutorial3_41">نكتب 30 على المِعداد.</string>
+    <string name="tutorial3_42">لا نستطيع إضافة 40 مباشرةً.</string>
+    <string name="tutorial3_44">الجواب 70.</string>
+    <string name="tutorial3_46">أولًا اكتب العدد الأول على المِعداد.</string>
+    <string name="tutorial_ipucu_037">أضِف 4 من خرزات الواحد إلى خانة الآحاد.</string>
+    <string name="tutorial3_47">ثم سنضيف 4.</string>
+    <string name="tutorial3_48">لأننا لا نستطيع إضافته مباشرةً، سنطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial_ipucu_038">أضِف خرزة الخمسة في خانة الآحاد.</string>
+    <string name="tutorial_ipucu_039">أزِل خرزة واحدة من خرزات الواحد من خانة الآحاد.</string>
+    <string name="tutorial3_49">والجواب 8.</string>
+    <string name="tutorial3000_6">وأخيرًا، لنحلّ هذا السؤال.</string>
+    <string name="tutorial_ipucu_040">أضِف 3 من خرزات الواحد إلى خانة الآحاد.</string>
+    <string name="tutorial3000_7">ثم سنضيف 2.</string>
+    <string name="tutorial_ipucu_041">أزِل 3 من خرزات الواحد من خانة الآحاد.</string>
+    <string name="tutorial3_50">حان الآن وقت تطبيق ما تعلّمته.</string>
+
+    <!-- Tutorial 4 -->
+    <string name="tutorial4_1000">الجمع بقاعدة الأصدقاء الصغار في الأعداد من ثلاث خانات.</string>
+    <string name="tutorial4_2">لننظر إلى هذا المثال.</string>
+    <string name="tutorial4_3">نكتب العدد الأول على المِعداد.</string>
+    <string name="tutorial4_1001">ثم نضيف العدد 346 بدءًا من خانته الكبرى.</string>
+    <string name="tutorial4_1010">لا نستطيع إضافة 300 مباشرةً. لذلك سنطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial4_1002">اطرح 2، صديق 3.</string>
+    <string name="tutorial4_1003">والآن جاء دور خانة العشرات.</string>
+    <string name="tutorial4_2000">لا نستطيع إضافة 40 مباشرةً. لذلك سنطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial4_2001">وأخيرًا نضيف 6 إلى خانة الآحاد، وننهي المسألة.</string>
+    <string name="tutorial4_2002">الجواب 589.</string>
+    <string name="tutorial_ipucu_042">إذا استطعنا إضافة العدد مباشرةً، فالأولوية للجمع المباشر. وإذا لم نستطع، نلجأ إلى قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial_soru_003">متى نطبّق قاعدة الأصدقاء الصغار في الجمع؟</string>
+    <string name="tutorial_sik_009">عندما لا نستطيع الجمع المباشر.</string>
+    <string name="tutorial_sik_010">عندما نستطيع الجمع المباشر.</string>
+    <string name="tutorial_ipucu_043">أضِف 4 من خرزات الواحد إلى خانة المئات، وخرزتين إلى خانة العشرات، و3 خرزات إلى خانة الآحاد.</string>
+    <string name="tutorial4_1005">نبدأ الجمع من خانة المئات.</string>
+    <string name="tutorial4_1006">أضِف 300، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_044">أضِف خرزة الخمسة إلى خانة المئات. وأزِل خرزتين من خرزات الواحد.</string>
+    <string name="tutorial4_2003">أضِف 20، واضغط زر «تحقّق».</string>
+    <string name="tutorial4_2004">أضِف 2، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_045">أضِف خرزة الخمسة إلى خانة الآحاد. وأزِل 3 من خرزات الواحد.</string>
+    <string name="tutorial4_2005">الجواب 745.</string>
+
+    <!-- Tutorial 5 -->
+    <string name="tutorial5_1">في هذا الدرس سنتعلّم الجمع بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial5_2">نستخدم قاعدة الأصدقاء الكبار عندما لا نستطيع تنفيذ خطوة «أضِف 5» في قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial5_3">مثلًا، في هذه المسألة.</string>
+    <string name="tutorial5_4">نريد إضافة 1 إلى العدد 9، لكن لا توجد في الأسفل خرزة إضافية لأضيفها.</string>
+    <string name="tutorial5_5">ولا توجد خرزة خمسة لأضيفها، لكي أطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial5_6">فلو حاولنا تطبيق قاعدة الأصدقاء الصغار، لكان علينا أن نقول: «أضِف 5، واطرح 4، صديق 1».</string>
+    <string name="tutorial5_7">لكن خرزة الخمسة في الأعلى مستخدمة أصلًا، فلا أستطيع تنفيذ خطوة «أضِف 5».</string>
+    <string name="tutorial5000_2">في هذه الحالة، علينا تطبيق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial5_8">في قاعدة الأصدقاء الكبار، لكل عدد صديق كبير.</string>
+    <string name="tutorial5_9">أضِف 10 واطرح صديقه الكبير.</string>
+    <string name="tutorial5_10">الصديق الكبير لـ 1 هو 9.</string>
+    <string name="tutorial5_11">الصديق الكبير لـ 2 هو 8.</string>
+    <string name="tutorial5_12">الصديق الكبير لـ 3 هو 7.</string>
+    <string name="tutorial5_13">الصديق الكبير لـ 4 هو 6.</string>
+    <string name="tutorial5_14">الصديق الكبير لـ 5 هو 5.</string>
+    <string name="tutorial5_15">لننظر إلى هذه المسألة مرة أخرى.</string>
+    <string name="tutorial5_16">الآن أريد إضافة 1.</string>
+    <string name="tutorial5_17">أولًا أنظر: هل أستطيع إضافته مباشرةً؟ لكن لا توجد خرزة إضافية في الأسفل.</string>
+    <string name="tutorial5_18">أنظر إلى الأعلى لأطبّق قاعدة الأصدقاء الصغار، لكن لا توجد هناك أيضًا خرزة أستطيع إضافتها.</string>
+    <string name="tutorial5_19">إذن أنتقل إلى الخيار الأخير: قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial5_20">أضِف 10.</string>
+    <string name="tutorial5_21">اطرح 9، الصديق الكبير لـ 1.</string>
+    <string name="tutorial5_22">الجواب 10.</string>
+    <string name="tutorial5000_1">إذن عند إضافة عدد، نجرّب أولًا الإضافة المباشرة. فإن لم تنجح، فقاعدة الأصدقاء الصغار. فإن لم تنجح، فقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial5_23">ولو أردنا فعل الشيء نفسه في هذه المسألة...</string>
+    <string name="tutorial5_24">نكتب 8 على المِعداد.</string>
+    <string name="tutorial5_25">ونتحقّق: هل نستطيع إضافة 2 مباشرةً أو بقاعدة الأصدقاء الصغار؟</string>
+    <string name="tutorial5_26">لا نستطيع أيًّا منهما، فنطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial5_27">اطرح 8، الصديق الكبير لـ 2.</string>
+    <string name="tutorial5_28">وفي هذه المسألة...</string>
+    <string name="tutorial5_29">نكتب 9 على المِعداد.</string>
+    <string name="tutorial5_30">اطرح 7، الصديق الكبير لـ 3.</string>
+    <string name="tutorial5_31">الجواب 12.</string>
+    <string name="tutorial5_33">نكتب 7 على المِعداد.</string>
+    <string name="tutorial5_34">اطرح 6، الصديق الكبير لـ 4.</string>
+    <string name="tutorial5_35">الجواب 11.</string>
+    <string name="tutorial5_36">نكتب 6 على المِعداد.</string>
+    <string name="tutorial5_37">اطرح 5، الصديق الكبير لـ 5.</string>
+    <string name="tutorial5_38">والجواب 11.</string>
+    <string name="tutorial5_46">نستخدم قاعدة الأصدقاء الكبار عندما لا نستطيع تطبيق أيّ قاعدة أو قواعد؟</string>
+    <string name="tutorial_ipucu_046">نطبّق قاعدة الأصدقاء الكبار عندما لا نستطيع الجمع المباشر، ولا الجمع بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial_sik_011">الجمع المباشر</string>
+    <string name="tutorial_sik_012">قاعدة الأصدقاء الصغار</string>
+    <string name="tutorial_sik_013">قاعدة الأصدقاء الكبار</string>
+    <string name="tutorial5_39">لنحلّ هذا المثال معًا.</string>
+    <string name="tutorial5_40">اكتب العدد الأول على المِعداد، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_047">أضِف خرزة واحدة من خرزات الواحد إلى خانة العشرات، وإلى خانة الآحاد 3 من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial5_41">والآن قرّر: هل ستضيف 4 مباشرةً، أم بقاعدة الأصدقاء الصغار، أم بقاعدة الأصدقاء الكبار؟</string>
+    <string name="tutorial5_42">ثم أضِف العدد.</string>
+    <string name="tutorial_ipucu_048">أضِف 10، واطرح 6، الصديق الكبير لـ 4.</string>
+    <string name="tutorial5_43">الفرق الوحيد عن قاعدة الأصدقاء الصغار: لا نقول «أضِف 5 واطرح صديقه»، بل نقول «أضِف 10 واطرح صديقه الكبير».</string>
+    <string name="tutorial_txt_001">اكتب العدد الأول على المِعداد.</string>
+    <string name="tutorial_ipucu_049">أضِف خرزة واحدة من خرزات الواحد إلى خانة العشرات، وإلى خانة الآحاد خرزتين من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial5000_3">والآن قرّر: هل ستضيف 3 مباشرةً، أم بقاعدة الأصدقاء الصغار، أم بقاعدة الأصدقاء الكبار؟</string>
+    <string name="tutorial_ipucu_050">أضِف 10، واطرح 7، الصديق الكبير لـ 3.</string>
+    <string name="tutorial5_45">كيف نطبّق قاعدة الأصدقاء الكبار؟</string>
+    <string name="tutorial_ipucu_051">أضِف 10. اطرح صديق العدد الذي نضيفه.</string>
+    <string name="tutorial_sik_014">أضِف 10. اطرح صديق العدد المكتوب على المِعداد.</string>
+    <string name="tutorial_sik_015">اطرح 10. أضِف صديق العدد الذي نضيفه.</string>
+    <string name="tutorial5_44">حان الآن وقت إثبات نفسك.</string>
+
+    <!-- Tutorial 6 -->
+    <string name="tutorial6_1">في الجمع بقاعدة الأصدقاء الكبار، قد نحتاج إلى قاعدة الأصدقاء الصغار أو الكبار عند تنفيذ خطوة «أضِف 10».</string>
+    <string name="tutorial6_2">مثلًا، في هذه المسألة.</string>
+    <string name="tutorial6000_0">أولًا أنظر: بأيّ قاعدة أستطيع إضافة 4؟</string>
+    <string name="tutorial6000_1">لا أستطيع إضافته مباشرةً. لا توجد في الأسفل خرزة إضافية أضيفها.</string>
+    <string name="tutorial6000_2">ولا أستطيع إضافته بقاعدة الأصدقاء الصغار. خرزة الخمسة في الأعلى مستخدمة أصلًا.</string>
+    <string name="tutorial6000_3">إذن سأطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6000_4">خطواتي هي: أضِف 10، اطرح 6.</string>
+    <string name="tutorial_kural_001">أضِف 10 -&gt; اطرح 6</string>
+    <string name="tutorial6000_5">لأنفّذ خطوة «أضِف 10»، عليّ أن أضيف 1 إلى خانة العشرات.</string>
+    <string name="tutorial_kural_002">[أضِف 10] -&gt; اطرح 6</string>
+    <string name="tutorial6000_6">لكني لا أستطيع إضافة 1 مباشرةً.</string>
+    <string name="tutorial6000_7">أتحقّق: هل أستطيع إضافته بقاعدة الأصدقاء الصغار؟</string>
+    <string name="tutorial6000_8">لديّ في الأعلى خرزة خمسة أستطيع استخدامها، لذلك أطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial6_9">أضِف 5. اطرح 4، صديق 1.</string>
+    <string name="tutorial6000_9">أنهيت خطوة «أضِف 10». وأخيرًا أنفّذ خطوة «اطرح 6»، وأنهي المسألة.</string>
+    <string name="tutorial_kural_003">أضِف 10 -&gt; [اطرح 6]</string>
+    <string name="tutorial6000_10">والجواب 53.</string>
+    <string name="tutorial6_13">لنكرّر ما فعلناه.</string>
+    <string name="tutorial6_14">أكتب 49 على المِعداد.</string>
+    <string name="tutorial6000_11">لا أستطيع إضافة 4 مباشرةً. لذلك سأطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6000_12">أضِف 10، واطرح 6، الصديق الكبير لـ 4.</string>
+    <string name="tutorial6000_13">ثم اطرح الصديق الكبير 6.</string>
+    <string name="tutorial6000_14">الجواب 53.</string>
+    <string name="tutorial_ipucu_052">أضِف 4 من خرزات الواحد إلى خانة العشرات، وإلى خانة الآحاد 3 من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial6000_16">سنضيف 2 بقاعدة الأصدقاء الكبار. أولًا نفّذ خطوة «أضِف 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_053">أضِف 1 إلى خانة العشرات: أضِف 5، واطرح 4، صديق 1.</string>
+    <string name="tutorial_kural_004">[أضِف 10] -&gt; اطرح 8</string>
+    <string name="tutorial6000_17">ثم نفّذ خطوة «اطرح 8، الصديق الكبير لـ 2»، وأنهِ المسألة.</string>
+    <string name="tutorial_ipucu_054">اطرح 8 من خانة الآحاد.</string>
+    <string name="tutorial_kural_005">أضِف 10 -&gt; [اطرح 8]</string>
+    <string name="tutorial6_20">لننظر أيضًا إلى هذا المثال.</string>
+    <string name="tutorial6000_18">أولًا أنظر: بأيّ قاعدة أستطيع إضافة 3؟</string>
+    <string name="tutorial_txt_002">ولا أستطيع إضافته بقاعدة الأصدقاء الصغار. خرزة الخمسة في الأعلى مستخدمة أصلًا.</string>
+    <string name="tutorial6000_19">خطواتي هي: أضِف 10، اطرح 7.</string>
+    <string name="tutorial_kural_006">أضِف 10 -&gt; اطرح 7</string>
+    <string name="tutorial_kural_007">[أضِف 10] -&gt; اطرح 7</string>
+    <string name="tutorial6000_20">لا توجد في الأعلى خرزة خمسة أستطيع استخدامها، لذلك سأطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6000_21">أضِف 10. اطرح 9، الصديق الكبير لـ 1.</string>
+    <string name="tutorial6000_22">اطرح صديقه 9.</string>
+    <string name="tutorial6000_23">أنهيت خطوة «أضِف 10». وأخيرًا أنفّذ خطوة «اطرح 7»، وأنهي المسألة.</string>
+    <string name="tutorial_kural_008">أضِف 10 -&gt; [اطرح 7]</string>
+    <string name="tutorial6000_24">والجواب 101.</string>
+    <string name="tutorial6_31">أكتب 98 على المِعداد.</string>
+    <string name="tutorial6000_25">سأضيف العدد 3 بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6000_26">أضِف 10. اطرح 7، الصديق الكبير لـ 3.</string>
+    <string name="tutorial6000_27">اطرح 7، الصديق الكبير لـ 3.</string>
+    <string name="tutorial6000_28">الجواب 101.</string>
+    <string name="tutorial_ipucu_055">أضِف إلى خانة العشرات 4 من خرزات الواحد وخرزة الخمسة، وإلى خانة الآحاد خرزة واحدة من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial6000_29">سنضيف 5 بقاعدة الأصدقاء الكبار. أولًا نفّذ خطوة «أضِف 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_056">أضِف 1 إلى خانة العشرات: أضِف 10، واطرح 9، الصديق الكبير لـ 1.</string>
+    <string name="tutorial_kural_009">[أضِف 10] -&gt; اطرح 5</string>
+    <string name="tutorial6000_30">ثم لننفّذ خطوة «اطرح 5، الصديق الكبير لـ 5»، وننهي المسألة.</string>
+    <string name="tutorial_ipucu_057">اطرح 5 من خانة الآحاد.</string>
+    <string name="tutorial_kural_010">أضِف 10 -&gt; [اطرح 5]</string>
+
+    <!-- Tutorial 104 -->
+    <string name="tutorial_txt_003">لننظر إلى هذه المسألة</string>
+    <string name="tutorial_txt_004">ثم أجري عمليات الجمع بدءًا من الخانة الكبرى.</string>
+    <string name="tutorial6_4">لا أستطيع إضافة العدد 5 مباشرةً. إذن سأطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6_5">خطوتي هي: «أضِف 10، واطرح 5، الصديق الكبير لـ 5».</string>
+    <string name="tutorial6_6">لكني عند إضافة 10 إلى خانة العشرات، لا أستطيع إضافته مباشرةً.</string>
+    <string name="tutorial6_7">في هذه الحالة، سنستعين بقاعدة الأصدقاء الصغار أو الكبار.</string>
+    <string name="tutorial6_8">هنا أستطيع تطبيق قاعدة الأصدقاء الصغار لإضافة 10. لأن خرزة الخمسة في الأعلى غير مستخدمة.</string>
+    <string name="tutorial6_10">وهكذا أكون قد نفّذت خطوة «أضِف 10» في قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6_11">والآن سننفّذ خطوة «اطرح 5»، وننهي المسألة.</string>
+    <string name="tutorial6_12">والجواب 54.</string>
+    <string name="tutorial6_15">لا أستطيع إضافة 5 مباشرةً. لذلك سأطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6_16">أضِف 10، واطرح 5، الصديق الكبير لـ 5.</string>
+    <string name="tutorial6_18">ثم اطرح الصديق الكبير 5.</string>
+    <string name="tutorial6_19">الجواب 54.</string>
+    <string name="tutorial5_1001">ثم اطرح الصديق الكبير لـ 2، وأنهِ المسألة.</string>
+    <string name="tutorial6_21">أكتب العدد الأول على المِعداد.</string>
+    <string name="tutorial6_22">والآن سأضيف العدد 4 بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6_23">أضِف 10. اطرح 6، الصديق الكبير لـ 4.</string>
+    <string name="tutorial6_24">لكي نضيف 10 إلى خانة العشرات، علينا هذه المرة تطبيق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6_25">أضِف 10. اطرح 9، الصديق الكبير لـ 1.</string>
+    <string name="tutorial6_27">اطرح 9، الصديق الكبير لـ 1.</string>
+    <string name="tutorial6_28">والآن سنطرح 6، الصديق الكبير لـ 4.</string>
+    <string name="tutorial6_29">والجواب 102.</string>
+    <string name="tutorial6_32">سأضيف العدد 4 بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial6_35">اطرح 6، الصديق الكبير لـ 4.</string>
+    <string name="tutorial6_36">الجواب 102.</string>
+    <string name="tutorial5_1002">سنضيف 5 بقاعدة الأصدقاء الكبار. أولًا نفّذ خطوة «أضِف 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial5_1003">ثم اطرح الصديق الكبير لـ 5، وأنهِ المسألة.</string>
+
+    <!-- Tutorial 7 -->
+    <string name="tutorial7_1">في هذا الدرس سنكمل قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial7_2">في الحقيقة، سنستخدم عكس الأصدقاء الذين رأيناهم في الدرس السابق.</string>
+    <string name="tutorial7_3">صديق 6 هو 4.</string>
+    <string name="tutorial7_4">صديق 7 هو 3</string>
+    <string name="tutorial7_5">صديق 8 هو 2</string>
+    <string name="tutorial7_6">صديق 9 هو 1.</string>
+    <string name="tutorial7_7">سنطبّق هذه القاعدة عندما لا نستطيع أن نضيف إلى المِعداد مباشرةً أيًّا من الأعداد 6 أو 7 أو 8 أو 9.</string>
+    <string name="tutorial7_8">أي ليس عند حلّ هذه المسألة؛ لأننا هنا نستطيع إضافة 7 دون الحاجة إلى صديقه.</string>
+    <string name="tutorial7_9">لكن لو نظرنا إلى هذه المسألة: ليس لدينا 7 خرزات في خانة الآحاد، لذلك سنطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial7_11">اطرح 3، صديق 7.</string>
+    <string name="tutorial7_13">لننظر إلى هذه المسألة.</string>
+    <string name="tutorial7_14">لا نستطيع إضافة 6 مباشرةً.</string>
+    <string name="tutorial7_15">لذلك سنطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial7_17">اطرح 4، صديق 6.</string>
+    <string name="tutorial7_20">لا نستطيع إضافة 8 مباشرةً.</string>
+    <string name="tutorial7_30">متى نطبّق قاعدة الأصدقاء الكبار التي نستخدمها لإضافة الأعداد 6 و7 و8 و9؟</string>
+    <string name="tutorial_ipucu_058">نطبّق قاعدة الأصدقاء الكبار عندما لا نستطيع إضافة الأعداد 6 و7 و8 و9 مباشرةً.</string>
+    <string name="tutorial_sik_016">عندما لا نستطيع الإضافة بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial_sik_017">عندما لا نستطيع الإضافة بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_sik_018">عندما لا نستطيع الإضافة مباشرةً.</string>
+    <string name="tutorial7_24">لنحلّ هذه المسألة معًا.</string>
+    <string name="tutorial7_26">والآن سنضيف 9. قرّر: هل ستضيف 9 مباشرةً، أم بقاعدة الأصدقاء الكبار؟</string>
+    <string name="tutorial7_27">سنضيفه بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_ipucu_059">أضِف خرزة واحدة من خرزات الواحد إلى خانة العشرات.</string>
+    <string name="tutorial7_29">اطرح 1، صديق 9.</string>
+
+    <!-- Tutorial 105 -->
+    <string name="tutorial_txt_005">مثلًا، في هذه المسألة</string>
+    <string name="tutorial105_0">أريد إضافة 7 إلى العدد 48.</string>
+    <string name="tutorial105_1">لا أستطيع إضافة 7 مباشرةً. لذلك سأطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial105_2">خطوتي هي: «أضِف 10، واطرح 3، صديق 7».</string>
+    <string name="tutorial_kural_011">[أضِف 10] -&gt; اطرح 3</string>
+    <string name="tutorial105_3">والآن سننفّذ خطوة «اطرح 3»، وننهي المسألة.</string>
+    <string name="tutorial_kural_012">أضِف 10 -&gt; [اطرح 3]</string>
+    <string name="tutorial105_7">الجواب 55.</string>
+    <string name="tutorial105_50">أكتب 48 على المِعداد.</string>
+    <string name="tutorial_txt_006">لا أستطيع إضافة 7 مباشرةً. لذلك سأطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial105_5">أضِف 10، واطرح 3، صديق 7.</string>
+    <string name="tutorial105_6">ثم اطرح صديقه 3.</string>
+    <string name="tutorial_ipucu_060">أضِف 4 من خرزات الواحد إلى خانة العشرات، وإلى خانة الآحاد 4 من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial1050_0">سنضيف 6 بقاعدة الأصدقاء الكبار. أولًا نفّذ خطوة «أضِف 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_kural_013">[أضِف 10] -&gt; اطرح 4</string>
+    <string name="tutorial1050_1">ثم نفّذ خطوة «اطرح 4، صديق 6»، وأنهِ المسألة.</string>
+    <string name="tutorial_ipucu_061">اطرح 4 من خانة الآحاد.</string>
+    <string name="tutorial_kural_014">أضِف 10 -&gt; [اطرح 4]</string>
+    <string name="tutorial1050_2">أولًا أنظر: بأيّ قاعدة أستطيع إضافة 9؟</string>
+    <string name="tutorial1050_11">لا أستطيع إضافته مباشرةً. لا توجد خرزة إضافية أضيفها.</string>
+    <string name="tutorial1050_3">خطواتي هي: أضِف 10، اطرح 1.</string>
+    <string name="tutorial_kural_015">أضِف 10 -&gt; اطرح 1</string>
+    <string name="tutorial_kural_016">[أضِف 10] -&gt; اطرح 1</string>
+    <string name="tutorial1050_4">أنهيت خطوة «أضِف 10». وأخيرًا أنفّذ خطوة «اطرح 1»، وأنهي المسألة.</string>
+    <string name="tutorial_kural_017">أضِف 10 -&gt; [اطرح 1]</string>
+    <string name="tutorial1050_5">والجواب 108.</string>
+    <string name="tutorial1050_6">أكتب 99 على المِعداد.</string>
+    <string name="tutorial1050_7">سأضيف العدد 9 بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_ipucu_062">أضِف إلى خانة العشرات 4 من خرزات الواحد وخرزة الخمسة، وإلى خانة الآحاد خرزتين من خرزات الواحد وخرزة الخمسة.</string>
+    <string name="tutorial1050_8">سنضيف 8 بقاعدة الأصدقاء الكبار. أولًا نفّذ خطوة «أضِف 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_kural_018">[أضِف 10] -&gt; اطرح 2</string>
+    <string name="tutorial1050_9">ثم نفّذ خطوة «اطرح 2، صديق 8»، وأنهِ المسألة.</string>
+    <string name="tutorial_ipucu_063">اطرح 2 من خانة الآحاد.</string>
+    <string name="tutorial_kural_019">أضِف 10 -&gt; [اطرح 2]</string>
+
+    <!-- Tutorial 8 -->
+    <string name="tutorial8_1">في هذا الدرس سنتعرّف على القاعدة المركّبة، وهي آخر قاعدة للجمع على المِعداد.</string>
+    <string name="tutorial8_2">تُستخدم هذه القاعدة عند الجمع مع الأعداد 6 أو 7 أو 8 أو 9.</string>
+    <string name="tutorial8_3">تعلّمنا من قبل طريقتين للجمع مع العدد 6.</string>
+    <string name="tutorial8_4">الطريقة الأولى: الإضافة المباشرة.</string>
+    <string name="tutorial8_5">مثلًا، في هذه المسألة نضيف مباشرةً. أي نضيف دون تطبيق أيّ قاعدة.</string>
+    <string name="tutorial8_6">الطريقة الثانية: الإضافة بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial8_7">في هذه المسألة كنّا نطبّق قاعدة الأصدقاء الكبار، لأننا لا نستطيع إضافة 6 مباشرةً. أضِف 10. اطرح صديقه 4.</string>
+    <string name="tutorial8_11">عندما لا نستطيع تطبيق هاتين الطريقتين، نطبّق القاعدة المركّبة.</string>
+    <string name="tutorial_ipucu_064">نطبّق القاعدة المركّبة عندما لا نستطيع الجمع المباشر، ولا الجمع بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_soru_004">نستخدم القاعدة المركّبة عندما لا نستطيع تطبيق أيّ قواعد؟</string>
+    <string name="tutorial8_12">مثلًا، في هذه المسألة لا نستطيع إضافة 6 مباشرةً.</string>
+    <string name="tutorial8_13">ولو أردنا تطبيق قاعدة الأصدقاء الكبار، فنستطيع إضافة 10، لكن لا نستطيع طرح صديقه 4.</string>
+    <string name="tutorial8_14">أي عند إضافة أيٍّ من الأعداد 6 أو 7 أو 8 أو 9، إذا لم نستطع طرح صديق العدد، فسنطبّق القاعدة المركّبة.</string>
+    <string name="tutorial8_16">مثلًا، في هذه المسألة أستطيع تطبيق قاعدة الأصدقاء الكبار؛ لأنني أستطيع أن أقول: «اطرح 4، صديق 6».</string>
+    <string name="tutorial8_17">في هذه المسألة لا أستطيع تطبيق قاعدة الأصدقاء الكبار؛ لأنني لا أستطيع أن أقول: «اطرح 4، صديق 6».</string>
+    <string name="tutorial8_1000">لكن لا نستطيع طرح صديقه 4.</string>
+    <string name="tutorial8_18">في هذه المسألة أستطيع تطبيق قاعدة الأصدقاء الكبار؛ لأنني أستطيع أن أقول: «اطرح 3، صديق 7».</string>
+    <string name="tutorial8_19">في هذه المسألة لا أستطيع تطبيق قاعدة الأصدقاء الكبار؛ لأنني لا أستطيع أن أقول: «اطرح 3، صديق 7».</string>
+    <string name="tutorial8_1001">لكن لا نستطيع طرح صديقه 3.</string>
+    <string name="tutorial8_1010">لماذا احتجنا إلى القاعدة المركّبة في هذه المسألة؟</string>
+    <string name="tutorial_ipucu_065">نطبّق القاعدة المركّبة فقط عندما لا نستطيع الجمع المباشر، ولا الجمع بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_sik_019">لأننا لا نستطيع إضافة 7 مباشرةً، ولا بقاعدة الأصدقاء الكبار</string>
+    <string name="tutorial_sik_020">لأن القاعدة المركّبة أسهل</string>
+    <string name="tutorial_sik_021">لأننا لا نستطيع استخدام قاعدة الأصدقاء الصغار</string>
+    <string name="tutorial8_100">في هذه المسألة أستطيع تطبيق قاعدة الأصدقاء الكبار؛ لأنني أستطيع أن أقول: «اطرح 2، صديق 8».</string>
+    <string name="tutorial8_20">في هذه المسألة لا أستطيع تطبيق قاعدة الأصدقاء الكبار؛ لأنني لا أستطيع أن أقول: «اطرح 2، صديق 8».</string>
+    <string name="tutorial8_1002">لكن لا نستطيع طرح صديقه 2.</string>
+    <string name="tutorial8_21">في هذه المسألة أستطيع تطبيق قاعدة الأصدقاء الكبار؛ لأنني أستطيع أن أقول: «اطرح 1، صديق 9».</string>
+    <string name="tutorial8_22">في هذه المسألة لا أستطيع تطبيق قاعدة الأصدقاء الكبار؛ لأنني لا أستطيع أن أقول: «اطرح 1، صديق 9».</string>
+    <string name="tutorial8_1003">لكن لا نستطيع طرح صديقه 1.</string>
+    <string name="tutorial8_23">نطبّق القاعدة المركّبة عندما لا نستطيع أن نقول ذلك.</string>
+    <string name="tutorial8_24">القاعدة كالتالي.</string>
+    <string name="tutorial8_25">للعدد 6: أضِف خرزة واحدة، اطرح 5، أضِف 10.</string>
+    <string name="tutorial8_26">للعدد 7: أضِف خرزتين، اطرح 5، أضِف 10.</string>
+    <string name="tutorial8_27">للعدد 8: أضِف 3 خرزات، اطرح 5، أضِف 10.</string>
+    <string name="tutorial8_28">للعدد 9: أضِف 4 خرزات، اطرح 5، أضِف 10.</string>
+    <string name="tutorial8_29">لنحلّ هذه المسألة حسب هذه القاعدة.</string>
+    <string name="tutorial8_30">أضِف خرزة واحدة.</string>
+    <string name="tutorial8_31">اطرح 5.</string>
+    <string name="tutorial8_35">أضِف خرزتين.</string>
+    <string name="tutorial8_40">أضِف 3 خرزات.</string>
+    <string name="tutorial8_43">الجواب 14.</string>
+    <string name="tutorial8_45">أضِف 4 خرزات.</string>
+    <string name="tutorial8_48">لنطبّق الآن ما تعلّمناه.</string>
+
+    <!-- Tutorial 9 -->
+    <string name="tutorial9_1">لنرَ بمثال كيف نستخدم القاعدة المركّبة مع الأعداد من خانتين.</string>
+    <string name="tutorial9_2">مثلًا، في هذا السؤال...</string>
+    <string name="tutorial9_3">أولًا نكتب العدد 68 على المِعداد.</string>
+    <string name="tutorial9_4">ثم نجمع بدءًا من الخانة الكبرى للعدد الذي سنضيفه.</string>
+    <string name="tutorial9_5">في خانة العشرات، أنظر: بأيّ قاعدة أستطيع إضافة 7 إلى 6؟</string>
+    <string name="tutorial9_6">لا أستطيع إضافته مباشرةً. ليس لديّ 7 خرزات لأضيفها.</string>
+    <string name="tutorial9_7">ولا أستطيع إضافته بقاعدة الأصدقاء الكبار؛ لأنني عندما أقول «أضِف 10، واطرح 3، صديق 7»، لا أستطيع طرح 3.</string>
+    <string name="tutorial9_8">إذن سأطبّق القاعدة المركّبة.</string>
+    <string name="tutorial9_9">أضِف 2.</string>
+    <string name="tutorial9_12">أضفت خانة العشرات. والآن سأضيف خانة الآحاد.</string>
+    <string name="tutorial9_13">في خانة الآحاد، أنظر: بأيّ قاعدة سأضيف 6 إلى 8؟</string>
+    <string name="tutorial9_14">لا أستطيع إضافته مباشرةً. ليس لديّ 6 خرزات لأضيفها.</string>
+    <string name="tutorial9_15">ولا أستطيع إضافته بقاعدة الأصدقاء الكبار؛ لأنني عندما أقول «أضِف 10، واطرح 4، صديق 6»، لا أستطيع طرح 4.</string>
+    <string name="tutorial9_17">أضِف 1.</string>
+    <string name="tutorial9_20">الجواب 144.</string>
+    <string name="tutorial9_21">لنحلّ مثالًا معًا.</string>
+    <string name="tutorial9_1000">أولًا اكتب العدد الأول على المِعداد.</string>
+    <string name="tutorial_ipucu_066">أضِف خرزة الخمسة إلى خانة العشرات، وإلى خانة الآحاد خرزة الخمسة و3 من خرزات الواحد.</string>
+    <string name="tutorial9_1001">والآن قرّر: بأيّ قاعدة ستضيف رقم العشرات من العدد الثاني إلى العدد الذي على المِعداد؟</string>
+    <string name="tutorial9_1020">بأيّ قاعدة ستضيف؟</string>
+    <string name="tutorial_ipucu_067">سنطبّق القاعدة المركّبة، لأننا لا نستطيع الجمع المباشر، ولا الجمع بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_soru_005">بأيّ قاعدة ستضيف 8 إلى خانة العشرات؟</string>
+    <string name="tutorial_sik_022">قاعدة الأصدقاء الكبار</string>
+    <string name="tutorial_sik_023">القاعدة المركّبة</string>
+    <string name="tutorial9_1003">أضِف 8 إلى خانة العشرات حسب القاعدة المركّبة.</string>
+    <string name="tutorial_ipucu_068">في خانة العشرات نفّذ الخطوات: أضِف 4، اطرح 5، أضِف 10.</string>
+    <string name="tutorial9_27">والآن جاء دور خانة الآحاد.</string>
+    <string name="tutorial9_1004">قرّر: بأيّ قاعدة ستضيف 9 إلى 8؟</string>
+    <string name="tutorial_ipucu_069">نستخدم قاعدة الأصدقاء الكبار، لأننا نستطيع تطبيقها.</string>
+    <string name="tutorial_soru_006">بأيّ قاعدة ستضيف 9 إلى خانة الآحاد؟</string>
+    <string name="tutorial9_1005">أضِف 9 إلى خانة الآحاد حسب قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_ipucu_070">أضِف خرزة واحدة من خرزات الواحد إلى خانة العشرات. وأزِل خرزة واحدة من خرزات الواحد من خانة الآحاد.</string>
+
+    <!-- Tutorial 10 -->
+    <string name="tutorial10_1">الطرح المباشر هو عمليات طرح بسيطة نجريها على المِعداد دون تطبيق أيّ قاعدة.</string>
+    <string name="tutorial10_3">أولًا نكتب العدد 8 على المِعداد.</string>
+    <string name="tutorial10_4">ثم نزيل خرزات قيمتها 6.</string>
+    <string name="tutorial10_5">الجواب 2.</string>
+    <string name="tutorial10_7">نكتب العدد 78 على المِعداد.</string>
+    <string name="tutorial10_8">ثم نجري العمليات بدءًا من الخانة الكبرى للعدد الذي سنطرحه.</string>
+    <string name="tutorial10_9">أولًا نطرح 60.</string>
+    <string name="tutorial10_10">ثم نطرح 3، وننهي المسألة.</string>
+    <string name="tutorial10_11">الجواب 15.</string>
+    <string name="tutorial10_13">أولًا اكتب 94 على المِعداد.</string>
+    <string name="tutorial_ipucu_071">أضِف إلى خانة العشرات خرزة الخمسة و4 من خرزات الواحد، وإلى خانة الآحاد 4 من خرزات الواحد.</string>
+    <string name="tutorial10_14">والآن اطرح بدءًا من الخانة الكبرى للعدد الثاني.</string>
+    <string name="tutorial10_15">أولًا، اطرح العدد 50.</string>
+    <string name="tutorial_ipucu_072">أزِل خرزة الخمسة من خانة العشرات.</string>
+    <string name="tutorial10_16">والآن اطرح العدد 2، وأنهِ المسألة.</string>
+    <string name="tutorial_ipucu_073">أزِل خرزتين من خرزات الواحد من خانة الآحاد.</string>
+    <string name="tutorial10_17">والجواب 42.</string>
+
+    <!-- Tutorial 11 -->
+    <string name="tutorial11_1">يمكننا القول إن الطرح بقاعدة الأصدقاء الصغار هو عكس الجمع بها.</string>
+    <string name="tutorial11_2">الأعداد وأصدقاؤها هي نفسها.</string>
+    <string name="tutorial11_3">الفرق الوحيد: في الجمع كنّا نقول «أضِف 5 واطرح صديقه».</string>
+    <string name="tutorial11_4">أما في الطرح، فنطبّق قاعدة «اطرح 5 وأضِف صديقه».</string>
+    <string name="tutorial11_5">سنستخدم هذه القاعدة عندما لا نستطيع الطرح المباشر.</string>
+    <string name="tutorial11_6">لنحلّ مثلًا هذه المسألة.</string>
+    <string name="tutorial11_7">أولًا نكتب العدد الأول على المِعداد.</string>
+    <string name="tutorial11_8">لا نستطيع طرح 1 مباشرةً، لذلك سنطبّق قاعدة الأصدقاء الصغار في الطرح.</string>
+    <string name="tutorial11_9">صديق 1 هو 4.</string>
+    <string name="tutorial11_11">أضِف صديقه 4.</string>
+    <string name="tutorial11_12">الجواب 4.</string>
+    <string name="tutorial11_15">لا نستطيع طرح 3 مباشرةً.</string>
+    <string name="tutorial11_16">لذلك سنطبّق قاعدة الأصدقاء الصغار في الطرح.</string>
+    <string name="tutorial11_18">أضِف صديقه 2.</string>
+    <string name="tutorial11_19">الجواب 3.</string>
+    <string name="tutorial11_22">لا أستطيع طرح 4 مباشرةً. لذلك سأطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial11_24">أضِف صديقه 1.</string>
+    <string name="tutorial1100_0">أولًا اكتب 6 على المِعداد.</string>
+    <string name="tutorial1100_1">والآن ستطرح العدد 2 بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial_ipucu_074">أزِل خرزة الخمسة من خانة الآحاد.</string>
+    <string name="tutorial1100_2">أضِف 3، صديق 2.</string>
+    <string name="tutorial_ipucu_075">أضِف 3 من خرزات الواحد إلى خانة الآحاد.</string>
+    <string name="tutorial1100_4">متى نطبّق قاعدة الأصدقاء الصغار؟</string>
+    <string name="tutorial_ipucu_076">نطبّقها عندما لا نستطيع طرح الأعداد 1 و2 و3 و4 طرحًا مباشرًا.</string>
+    <string name="tutorial_sik_024">عندما لا نستطيع طرح الأعداد 1 و2 و3 و4 طرحًا مباشرًا.</string>
+    <string name="tutorial_sik_025">نستطيع تطبيقها متى شئنا.</string>
+
+    <!-- Tutorial 1100 -->
+    <string name="tutorial11000_0">لنرَ معًا بمثال قاعدة الأصدقاء الصغار والطرح المباشر.</string>
+    <string name="tutorial11000_1">أولًا نكتب العدد 875 على المِعداد.</string>
+    <string name="tutorial11000_2">ثم نطرح بدءًا من الخانة الكبرى للعدد الذي سنطرحه.</string>
+    <string name="tutorial11000_3">لا أستطيع طرح 4 من خانة المئات مباشرةً. إذن سأطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial11000_7">أضِف 1، صديق 4.</string>
+    <string name="tutorial11000_4">والآن أنتقل إلى خانة العشرات.</string>
+    <string name="tutorial1100_5">أستطيع طرح 2 من خانة العشرات مباشرةً.</string>
+    <string name="tutorial1100_6">وأخيرًا أصل إلى خانة الآحاد.</string>
+    <string name="tutorial1100_7">لا أستطيع طرح 2 من خانة الآحاد مباشرةً، لذلك أطرحه بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial1100_8">الجواب 453.</string>
+    <string name="tutorial1100_9">والآن قرّر: بأيّ قاعدة ستطرح رقم المئات من العدد الثاني؟</string>
+    <string name="tutorial1100_10">بأيّ قاعدة ستطرح؟</string>
+    <string name="tutorial_ipucu_077">علينا أن نطرح بقاعدة الأصدقاء الصغار، لأننا لا نستطيع الطرح مباشرةً.</string>
+    <string name="tutorial_soru_007">بأيّ قاعدة ستطرح 3 من 7؟</string>
+    <string name="tutorial_sik_026">الطرح المباشر</string>
+    <string name="tutorial_sik_027">الطرح بقاعدة الأصدقاء الصغار</string>
+    <string name="tutorial_sik_028">الطرح بقاعدة الأصدقاء الكبار</string>
+    <string name="tutorial1100_11">اطرح 3 من خانة المئات حسب قاعدة الأصدقاء الصغار في الطرح.</string>
+    <string name="tutorial_ipucu_078">أزِل خرزة الخمسة من خانة المئات. وأضِف خرزتين من خرزات الواحد.</string>
+    <string name="tutorial1100_12">قرّر: بأيّ قاعدة ستطرح رقم العشرات من العدد الثاني؟</string>
+    <string name="tutorial_soru_008">بأيّ قاعدة ستطرح 2 من 6؟</string>
+    <string name="tutorial1100_13">اطرح 2 من خانة العشرات حسب قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial_ipucu_079">أزِل خرزة الخمسة من خانة العشرات. وأضِف 3 من خرزات الواحد.</string>
+    <string name="tutorial1100_14">قرّر: بأيّ قاعدة ستطرح رقم الآحاد من العدد الثاني؟</string>
+    <string name="tutorial_ipucu_080">نطرح طرحًا مباشرًا، لأننا نستطيع الطرح مباشرةً.</string>
+    <string name="tutorial_soru_009">بأيّ قاعدة ستطرح 3 من 8؟</string>
+    <string name="tutorial1100_15">اطرح 3 من خانة الآحاد.</string>
+    <string name="tutorial1100_16">الجواب 445.</string>
+
+    <!-- Tutorial 12 -->
+    <string name="tutorial12_1">يمكننا القول إن الطرح بقاعدة الأصدقاء الكبار هو عكس الجمع بها.</string>
+    <string name="tutorial12_2">الأعداد وأصدقاؤها هي نفسها كما في الجمع بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial12_3">الفرق الوحيد: في الجمع كنّا نقول «أضِف 10 واطرح صديقه».</string>
+    <string name="tutorial12_4">أما في الطرح، فسنطبّق قاعدة «اطرح 10 وأضِف صديقه».</string>
+    <string name="tutorial12_5">سنطبّق هذه القاعدة عندما لا نستطيع الطرح المباشر، أو الطرح بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial12_6">مثلًا، في هذه المسألة لا حاجة إلى تطبيق هذه القاعدة.</string>
+    <string name="tutorial12_7">لأننا نستطيع طرح 6 مباشرةً.</string>
+    <string name="tutorial12_10">نستطيع تطبيق قاعدة الأصدقاء الصغار. لأن هناك خرزة خمسة يمكن طرحها.</string>
+    <string name="tutorial12_12">أضِف 2، صديق 3.</string>
+    <string name="tutorial12_14">لكن في هذه المسألة...</string>
+    <string name="tutorial12_15">لا توجد خرزة خمسة يمكن طرحها، لذلك سنطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial12_16">صديق 1 هو 9.</string>
+    <string name="tutorial12_17">اطرح 10.</string>
+    <string name="tutorial12_18">أضِف صديقه 9.</string>
+    <string name="tutorial12_30">الجواب 9.</string>
+    <string name="tutorial12_21">أضِف صديقه 8.</string>
+    <string name="tutorial1200_0">أضِف 1، صديق 4.</string>
+    <string name="tutorial1200_1">نطبّق قاعدة الأصدقاء الكبار في الطرح عندما لا نستطيع تطبيق أيّ قاعدة أو قواعد؟</string>
+    <string name="tutorial_ipucu_081">سنستخدمها عندما لا نستطيع الطرح المباشر، ولا الطرح بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial12_24">أضِف صديقه 7.</string>
+    <string name="tutorial12_31">أضِف صديقه 3.</string>
+
+    <!-- Tutorial 13 -->
+    <string name="tutorial13_1">لنأخذ مثالًا على الطرح بقاعدة الأصدقاء الكبار مع الأعداد من خانتين.</string>
+    <string name="tutorial13_2">مثلًا، في هذه المسألة...</string>
+    <string name="tutorial13_3">أولًا نكتب العدد 128 على المِعداد.</string>
+    <string name="tutorial13_4">ثم نطبّق القواعد بدءًا من الخانة الكبرى للعدد الذي سنطرحه.</string>
+    <string name="tutorial13_5">أريد أن أطرح 3 من خانة العشرات.</string>
+    <string name="tutorial13_6">لا نستطيع طرح 3 مباشرةً. علينا أن نلجأ إلى القواعد.</string>
+    <string name="tutorial13_7">لتطبيق قاعدة الأصدقاء الصغار، نحتاج إلى خرزة الخمسة.</string>
+    <string name="tutorial13_8">لكن لا توجد خرزة خمسة أستطيع استخدامها.</string>
+    <string name="tutorial13_9">لذلك سنطبّق قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial13_11">أضِف 7، صديق 3.</string>
+    <string name="tutorial13_12">طرحنا خانة العشرات. والآن جاء دور خانة الآحاد.</string>
+    <string name="tutorial13_13">لا أستطيع طرح 9 مباشرةً. لذلك سأطرحه بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial13_14">أضِف 1، صديق 9.</string>
+    <string name="tutorial13_15">الجواب 89.</string>
+    <string name="tutorial_ipucu_082">أضِف خرزة واحدة من خرزات الواحد إلى خانة المئات، وإلى خانة العشرات خرزة واحدة من خرزات الواحد وخرزة الخمسة، وإلى خانة الآحاد خرزة الخمسة.</string>
+    <string name="tutorial13_18">ثم اطرح بدءًا من الخانة الكبرى للعدد الثاني.</string>
+    <string name="tutorial13_19">أولًا اطرح 9 من خانة العشرات.</string>
+    <string name="tutorial_ipucu_083">أزِل خرزة الواحد من خانة المئات. وأضِف خرزة واحدة من خرزات الواحد إلى خانة العشرات.</string>
+    <string name="tutorial13_20">والآن اطرح 6 من خانة الآحاد.</string>
+    <string name="tutorial_ipucu_084">أزِل خرزة واحدة من خرزات الواحد من خانة العشرات. وأضِف 4 من خرزات الواحد إلى خانة الآحاد.</string>
+    <string name="tutorial13_21">والجواب 69.</string>
+    <string name="tutorial13_22">حان الآن وقت الاختبار.</string>
+
+    <!-- Tutorial 14 -->
+    <string name="tutorial14_1">عند الطرح بقاعدة الأصدقاء الكبار، قد نحتاج إلى الطرح بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial14_3">الآن سأطرح 5 بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial14_4">اطرح 10. أضِف صديقه 5.</string>
+    <string name="tutorial_kural_020">[اطرح 10] -&gt; أضِف 5</string>
+    <string name="tutorial14_5">عند تنفيذ خطوة «اطرح 10»، لا أستطيع طرح 1 من خانة العشرات مباشرةً.</string>
+    <string name="tutorial14_6">في مثل هذه الحالات، سنستعين بالطرح بقاعدة الأصدقاء الصغار أو الكبار.</string>
+    <string name="tutorial14_7">في هذه المسألة سنستعين بالطرح بقاعدة الأصدقاء الصغار. لأن لديّ خرزة خمسة في الأعلى.</string>
+    <string name="tutorial14_8">صديق 1 هو 4.</string>
+    <string name="tutorial14_11">وهكذا أكون قد نفّذت خطوة «اطرح 10» في قاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial14_12">والآن سأنفّذ خطوة «أضِف 5»، وأنهي المسألة.</string>
+    <string name="tutorial_kural_021">اطرح 10 -&gt; [أضِف 5]</string>
+    <string name="tutorial14_13">الجواب 45.</string>
+    <string name="tutorial14_15">أكتب 50 على المِعداد.</string>
+    <string name="tutorial14_16">لا أستطيع طرح 5 مباشرةً. لذلك سأطرحه بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial14_17">اطرح 10. أضِف 5، صديق 5.</string>
+    <string name="tutorial14_19">ثم أضِف صديقه 5.</string>
+    <string name="tutorial14_20">عند تنفيذ خطوة «اطرح 10»، قد نحتاج أيضًا إلى الطرح بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial14_23">الآن سأطرح 3 بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial14_24">اطرح 10. أضِف صديقه 7.</string>
+    <string name="tutorial_kural_022">[اطرح 10] -&gt; أضِف 7</string>
+    <string name="tutorial14_26">ولا توجد في الأعلى خرزة خمسة إضافية أستطيع استخدامها لقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial14_27">لذلك سأطرح بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial14_29">اطرح 10، وأضِف 9.</string>
+    <string name="tutorial14_31">أضِف 9.</string>
+    <string name="tutorial14_32">وهكذا أنهيت خطوة «اطرح 10» التي نفّذتها لطرح 3.</string>
+    <string name="tutorial14_33">وأخيرًا أضِف 7، صديق 3، وتنتهي المسألة.</string>
+    <string name="tutorial_kural_023">اطرح 10 -&gt; [أضِف 7]</string>
+    <string name="tutorial14_34">الجواب 97.</string>
+    <string name="tutorial14_35">لنكرّر ما فعلناه.</string>
+    <string name="tutorial14_36">أكتب 100 على المِعداد.</string>
+    <string name="tutorial14_37">لا أستطيع طرح 3 مباشرةً، ولا بقاعدة الأصدقاء الصغار. سأطرحه بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial14_38">اطرح 10. أضِف 7، صديق 3.</string>
+    <string name="tutorial_ipucu_085">أضِف خرزة واحدة من خرزات الواحد إلى خانة المئات.</string>
+    <string name="tutorial1400_0">سنطرح 9 بقاعدة الأصدقاء الكبار. أولًا نفّذ خطوة «اطرح 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_086">في خطوة «اطرح 10» سنستخدم الطرح بقاعدة الأصدقاء الكبار. أزِل خرزة الواحد من خانة المئات. وأضِف 9 إلى خانة العشرات.</string>
+    <string name="tutorial_kural_024">[اطرح 10] -&gt; أضِف 1</string>
+    <string name="tutorial1400_1">ثم نفّذ خطوة «أضِف 1، صديق 9»، وأنهِ المسألة.</string>
+    <string name="tutorial_ipucu_087">أضِف 1 إلى خانة الآحاد.</string>
+    <string name="tutorial_kural_025">اطرح 10 -&gt; [أضِف 1]</string>
+    <string name="tutorial14_45">الجواب 91.</string>
+    <string name="tutorial14_46">لننظر أيضًا إلى هذه المسألة.</string>
+    <string name="tutorial_ipucu_088">أضِف خرزة الخمسة إلى خانة المئات، و3 من خرزات الواحد إلى خانة العشرات.</string>
+    <string name="tutorial1400_2">سنطرح 40 بقاعدة الأصدقاء الكبار. أولًا نفّذ خطوة «اطرح 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_089">في خطوة «اطرح 10» سنستخدم الطرح بقاعدة الأصدقاء الصغار. أزِل خرزة الخمسة من خانة المئات، وأضِف 4 من خرزات الواحد.</string>
+    <string name="tutorial_kural_026">[اطرح 10] -&gt; أضِف 6</string>
+    <string name="tutorial1400_3">ثم نفّذ خطوة «أضِف 6، صديق 4»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_090">أضِف 6 إلى خانة العشرات.</string>
+    <string name="tutorial_kural_027">اطرح 10 -&gt; [أضِف 6]</string>
+    <string name="tutorial1400_4">طرحنا خانة العشرات. جاء دور خانة الآحاد.</string>
+    <string name="tutorial1400_5">سنطرح 1 بقاعدة الأصدقاء الكبار. أولًا نفّذ خطوة «اطرح 10» لخانة الآحاد، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_091">أزِل خرزة واحدة من خرزات الواحد من خانة العشرات.</string>
+    <string name="tutorial_kural_028">[اطرح 10] -&gt; أضِف 9</string>
+    <string name="tutorial1400_6">ثم نفّذ خطوة «أضِف 9، صديق 1»، وأنهِ المسألة.</string>
+    <string name="tutorial_ipucu_092">أضِف 9 إلى خانة الآحاد.</string>
+    <string name="tutorial_kural_029">اطرح 10 -&gt; [أضِف 9]</string>
+    <string name="tutorial14_53">الجواب 489.</string>
+    <string name="tutorial1400_7">في الطرح بقاعدة الأصدقاء الكبار، إذا لم نستطع طرح 10 مباشرةً في خطوة «اطرح 10»، فأيّ القواعد نجرّب بالترتيب؟</string>
+    <string name="tutorial_ipucu_093">نجرّب أولًا الطرح بقاعدة الأصدقاء الصغار. وإذا لم تكن هناك خرزة خمسة نستطيع استخدامها، نطرح بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_sik_029">الطرح المباشر. وإن لم ينجح، فقاعدة الأصدقاء الصغار</string>
+    <string name="tutorial_sik_030">قاعدة الأصدقاء الصغار. وإن لم تنجح، فقاعدة الأصدقاء الكبار</string>
+    <string name="tutorial_sik_031">قاعدة الأصدقاء الكبار. وإن لم تنجح، فالطرح المباشر</string>
+
+    <!-- Tutorial 15 -->
+    <string name="tutorial15_2">لا أستطيع طرح 4 مباشرةً، ولا بقاعدة الأصدقاء الصغار. إذن سأطرحه بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial15_3">اطرح 10. أضِف صديقه 6.</string>
+    <string name="tutorial15_4">سأنفّذ خطوة «اطرح 10».</string>
+    <string name="tutorial15_5">سأطرح 1 من خانة العشرات.</string>
+    <string name="tutorial15_6">لكني لا أستطيع طرح 1 مباشرةً، ولا بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial15_7">إذن سأطرحه بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial15_8">اطرح 10. أضِف صديقه 9.</string>
+    <string name="tutorial15_9">سأطرح 1 من خانة المئات.</string>
+    <string name="tutorial15_10">لا أستطيع طرحه مباشرةً. لديّ خرزة خمسة في الأعلى. سأطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial15_11">اطرح 5. أضِف صديقه 4.</string>
+    <string name="tutorial15_14">والآن أضِف 9 من الخطوة السابقة.</string>
+    <string name="tutorial15_15">وهكذا أنهينا خطوة «اطرح 10». أنفّذ خطوة «أضِف 6، صديق 4»، وأنهي المسألة.</string>
+    <string name="tutorial15_16">الجواب 496.</string>
+    <string name="tutorial15_18">أطرح 4 بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial15_19">اطرح 10. أضِف 6، صديق 4.</string>
+    <string name="tutorial15_20">سأنفّذ خطوة «اطرح 10» بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial15_25">أنهينا خطوة «اطرح 10». وأخيرًا أضِف صديقه 6، وتنتهي المسألة.</string>
+
+    <!-- Tutorial 16 -->
+    <string name="tutorial16_1">الفرق الوحيد بين الطرح بالقاعدة المركّبة والطرح بقاعدة الأصدقاء الكبار هو أننا نستخدم الجمع بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial16_2">إذا لم تتذكّر الجمع بقاعدة الأصدقاء الصغار، يمكنك الرجوع إليه ومراجعته.</string>
+    <string name="tutorial16_7">سنطرح 6 بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial16_8">لا نستطيع إضافة صديقه 4 مباشرةً.</string>
+    <string name="tutorial16_9">هنا نطبّق قاعدة الأصدقاء الصغار في الجمع.</string>
+    <string name="tutorial16_10">لإضافة 4 إلى خانة الآحاد: أضِف 5، واطرح صديقه 1.</string>
+    <string name="tutorial_txt_007">أضِف 5</string>
+    <string name="tutorial16_11">اطرح 1.</string>
+    <string name="tutorial16_13">سأطرح بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial16_14">أضِف 3، صديق 7.</string>
+    <string name="tutorial16_15">لإضافة 3 نطبّق قاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial_txt_008">في هذه المسألة،</string>
+    <string name="tutorial16_16">أضِف 2، صديق 8.</string>
+    <string name="tutorial16_17">أضِف 1، صديق 9.</string>
+    <string name="tutorial15_29">ما الفرق بين الطرح بالقاعدة المركّبة والطرح بقاعدة الأصدقاء الكبار؟</string>
+    <string name="tutorial_ipucu_094">في خطوة «أضِف صديقه» نضيف الصديق بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial_sik_032">لا نستطيع تنفيذ خطوة «اطرح 10» مباشرةً.</string>
+    <string name="tutorial_sik_033">لا فرق بين الطرح بالقاعدة المركّبة والطرح بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial_ipucu_095">أضِف خرزتين من خرزات الواحد إلى خانة العشرات، و3 من خرزات الواحد إلى خانة الآحاد.</string>
+    <string name="tutorial1400_10">سنطرح 6 بالقاعدة المركّبة.</string>
+    <string name="tutorial1400_11">خطواتنا هي: «اطرح 10. أضِف 4، صديق 6».</string>
+    <string name="tutorial_kural_030">اطرح 10 -&gt; أضِف 4</string>
+    <string name="tutorial1400_12">أولًا نفّذ خطوة «اطرح 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_096">أزِل خرزة واحدة من خرزات الواحد من خانة العشرات.</string>
+    <string name="tutorial_kural_031">[اطرح 10] -&gt; أضِف 4</string>
+    <string name="tutorial1400_13">لا نستطيع تنفيذ خطوة «أضِف صديقه 4» مباشرةً. لذلك سنطبّق قاعدة الأصدقاء الصغار في الجمع.</string>
+    <string name="tutorial_kural_032">اطرح 10 -&gt; [أضِف 4]</string>
+    <string name="tutorial1400_14">أضِف 5. اطرح 1، صديق 4.</string>
+    <string name="tutorial_ipucu_097">أضِف خرزة الخمسة إلى خانة الآحاد، وأزِل خرزة واحدة من خرزات الواحد.</string>
+    <string name="tutorial14_455">الجواب 17.</string>
+    <string name="tutorial16_1000">يمكنك أن تعتبر جدول الطرح بالقاعدة المركّبة مزيجًا من هاتين القاعدتين.</string>
+    <string name="tutorial16_1003">جدول القاعدة كالتالي.</string>
+    <string name="tutorial16_1001">عند طرح 6 سننفّذ الخطوات: اطرح 1، أضِف 5، اطرح 10.</string>
+    <string name="tutorial16_1005">الجواب 7.</string>
+    <string name="tutorial_ipucu_098">أضِف 3 من خرزات الواحد إلى خانة العشرات، و3 إلى خانة الآحاد.</string>
+    <string name="tutorial16_1002">اطرح 8 حسب جدول القاعدة المركّبة.</string>
+    <string name="tutorial16_1006">اطرح 3.</string>
+    <string name="tutorial_ipucu_099">أضِف خرزة الخمسة إلى خانة الآحاد.</string>
+    <string name="tutorial16_1004">الجواب 25.</string>
+
+    <!-- Tutorial 17 -->
+    <string name="tutorial17_1">ثم أبدأ العمليات من الخانة الكبرى للعدد الذي سأطرحه.</string>
+    <string name="tutorial17_2">سأطرح 8 من خانة العشرات بالقاعدة المركّبة.</string>
+    <string name="tutorial17_3">والآن سأطرح خانة الآحاد بالقاعدة المركّبة بالطريقة نفسها.</string>
+    <string name="tutorial17_5">لنحلّ هذه المسألة معًا خطوة بخطوة.</string>
+    <string name="tutorial_ipucu_100">أضِف خرزة الخمسة إلى خانة المئات، و4 من خرزات الواحد إلى كلٍّ من خانة العشرات والآحاد.</string>
+    <string name="tutorial17_6">والآن لنطرح 8 من خانة العشرات خطوة بخطوة.</string>
+    <string name="tutorial17_7">أولًا نفّذ خطوة «اطرح 10»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_101">سنطرح 1 من خانة المئات: اطرح 5، أضِف 4.</string>
+    <string name="tutorial_kural_033">[اطرح 10] -&gt; أضِف 2</string>
+    <string name="tutorial17_8">والآن نفّذ خطوة «أضِف 2، صديق 8»، واضغط زر «تحقّق».</string>
+    <string name="tutorial_ipucu_102">سنضيف 2 إلى خانة العشرات: أضِف 5، واطرح 3، صديق 2.</string>
+    <string name="tutorial_kural_034">اطرح 10 -&gt; [أضِف 2]</string>
+    <string name="tutorial17_10">والآن لنطرح 7 من خانة الآحاد خطوة بخطوة.</string>
+    <string name="tutorial17_11">أولًا نفّذ خطوة «اطرح 10».</string>
+    <string name="tutorial_ipucu_103">سنزيل خرزة واحدة من خرزات الواحد من خانة العشرات.</string>
+    <string name="tutorial_kural_035">[اطرح 10] -&gt; أضِف 3</string>
+    <string name="tutorial17_12">والآن طبّق خطوة «أضِف 3، صديق 7».</string>
+    <string name="tutorial_ipucu_104">سنضيف 3 إلى خانة الآحاد: أضِف 5، واطرح صديقه 2.</string>
+    <string name="tutorial_kural_036">اطرح 10 -&gt; [أضِف 3]</string>
+    <string name="tutorial17_13">الجواب 457.</string>
+
+    <!-- Tutorial 18 -->
+    <string name="tutorial18_1">لكي تضرب على المِعداد بسهولة، عليك أن تحفظ جدول الضرب.</string>
+    <string name="tutorial18_3">أثناء حلّ الاختبار، يمكنك الضغط على «كتاب القواعد» في الأعلى لترى جدول الضرب.</string>
+    <string name="tutorial18_4">لنبدأ الدرس الآن.</string>
+    <string name="tutorial18_5">الضرب على المِعداد يتمّ خانةً خانة، كالضرب العادي، ثم نجمع النتائج.</string>
+    <string name="tutorial18_6">ما سنفعله هو أن نضرب 6 في كل خانة بالترتيب، بدءًا من الخانة الصغرى، ثم نجمع النتائج.</string>
+    <string name="tutorial18_7">نضرب 6 في 4، ونكتب الناتج في خانة الآحاد.</string>
+    <string name="tutorial18_8">ثم سنضرب 6 في 2.</string>
+    <string name="tutorial18_9">العدد 6 في خانة الآحاد. أما 2 ففي خانة العشرات.</string>
+    <string name="tutorial18_10">إذا ضربنا خانة الآحاد في خانة العشرات، نضيف الناتج إلى خانة العشرات على المِعداد.</string>
+    <string name="tutorial18_11">نضرب 3 في 2، ونكتب الناتج في خانة الآحاد.</string>
+    <string name="tutorial18_12">ثم سنضرب 1 في 3.</string>
+    <string name="tutorial18_13">العدد 1 في خانة العشرات، و3 في خانة الآحاد.</string>
+    <string name="tutorial18_14">إذا ضربنا خانة العشرات في خانة الآحاد، يُضاف الناتج إلى خانة العشرات.</string>
+    <string name="tutorial18_15">الجواب 36.</string>
+    <string name="tutorial18_16">وأخيرًا، لننظر إلى هذا المثال.</string>
+    <string name="tutorial18_17">نضرب 8 في 3، ونكتب الناتج في خانة الآحاد.</string>
+    <string name="tutorial18_18">والآن نضرب 5 في 3، ونكتب الناتج في خانة العشرات.</string>
+    <string name="tutorial18_19">الجواب 174.</string>
+    <string name="tutorial18_20">اضرب 3 في 6، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_105">اكتب 18 على المِعداد.</string>
+    <string name="tutorial18_21">والآن سنضرب 3 في 4 الموجود في خانة العشرات، ونكتب الناتج على المِعداد.</string>
+    <string name="tutorial18_22">إذا ضربنا خانة الآحاد في خانة العشرات، فأين نكتب الناتج على المِعداد؟</string>
+    <string name="tutorial_ipucu_106">تخيّل أنك تضرب 10 في 1. 10 x 1 = 10. إذن نكتبه في خانة العشرات.</string>
+    <string name="tutorial_sik_034">في خانة الآحاد.</string>
+    <string name="tutorial_sik_035">في خانة العشرات</string>
+    <string name="tutorial_sik_036">في خانة المئات.</string>
+    <string name="tutorial18_23">اضرب 4 الموجود في خانة العشرات في 3، واكتب الناتج في خانة العشرات على المِعداد.</string>
+    <string name="tutorial_ipucu_107">أضِف 12 إلى خانة العشرات. أي أضِف 120 إلى المِعداد.</string>
+    <string name="tutorial18_24">الجواب 138.</string>
+
+    <!-- Tutorial 19 -->
+    <string name="tutorial19_1">أثناء الضرب، قد نحتاج إلى الاستعانة بقواعد الجمع.</string>
+    <string name="tutorial19_2">أولًا أضرب 6 في 7، وأكتب الناتج في خانة الآحاد.</string>
+    <string name="tutorial19_3">ثم سأضرب 6 في 9، وأكتب الناتج في خانة العشرات.</string>
+    <string name="tutorial19_4">عند كتابة 54 في خانة العشرات، أستطيع إضافة 50 مباشرةً.</string>
+    <string name="tutorial19_5">لكني لا أستطيع إضافة 4 مباشرةً.</string>
+    <string name="tutorial19_6">لذلك سألجأ إلى القواعد.</string>
+    <string name="tutorial19_7">أضيفه بقاعدة الأصدقاء الصغار.</string>
+    <string name="tutorial19_8">الجواب 582.</string>
+    <string name="tutorial19_9">أضرب 6 في 4، وأكتب الناتج في خانة الآحاد.</string>
+    <string name="tutorial19_10">ثم سأضرب 6 في 8، وأكتب الناتج في خانة العشرات.</string>
+    <string name="tutorial19_11">عند كتابة 48 في خانة العشرات، أستطيع إضافة 40 مباشرةً.</string>
+    <string name="tutorial19_12">لكني لا أستطيع إضافة 8 مباشرةً.</string>
+    <string name="tutorial19_13">سأضيفه بقاعدة الأصدقاء الكبار.</string>
+    <string name="tutorial19_14">أضِف 10. اطرح صديقه 2.</string>
+    <string name="tutorial19_15">الجواب 504.</string>
+    <string name="tutorial19_22">إذا نسيت كيف نجمع، فارجع إلى قسم الجمع وراجعه.</string>
+    <string name="tutorial19_16">اضرب 9 في 8، واكتب الناتج في خانة الآحاد.</string>
+    <string name="tutorial_ipucu_108">اكتب العدد 72 على المِعداد.</string>
+    <string name="tutorial19_17">والآن سنضرب 9 في 4، ونضيف الناتج إلى خانة العشرات.</string>
+    <string name="tutorial19_18">9 x 4 = 36. أضِف 30 أولًا.</string>
+    <string name="tutorial_ipucu_109">أضِف 30 إلى خانة العشرات. أي أضِف 300 إلى المِعداد.</string>
+    <string name="tutorial19_19">والآن قرّر: بأيّ قاعدة ستضيف 6؟</string>
+    <string name="tutorial19_23">بأيّ قاعدة جمع ستضيف؟</string>
+    <string name="tutorial_ipucu_110">في خطوة قاعدة الأصدقاء الكبار «أضِف 10. اطرح 4، صديق 6»، لا نستطيع طرح 4. لذلك سنضيف بالقاعدة المركّبة.</string>
+    <string name="tutorial9_1002">أضِف 6 إلى خانة العشرات بالقاعدة المركّبة.</string>
+    <string name="tutorial_ipucu_111">في خانة العشرات نفّذ الخطوات: أضِف 1، اطرح 5، أضِف 10. أي أضِف 10 إلى المِعداد، واطرح 50، وأضِف 100.</string>
+    <string name="tutorial_kural_048">أضِف 1. اطرح 5. أضِف 10.</string>
+    <string name="tutorial19_21">والجواب 432.</string>
+
+    <!-- Tutorial 20 -->
+    <string name="tutorial20_1">في هذا الدرس سنتعرّف على ضرب الأعداد من خانتين في الأعداد من خانتين.</string>
+    <string name="tutorial20_2">ما يجب الانتباه إليه:</string>
+    <string name="tutorial20_3">إذا ضربنا خانة الآحاد في خانة الآحاد، يُكتب الناتج في خانة الآحاد على المِعداد.</string>
+    <string name="tutorial20_4">حاصل ضرب 5 في 3 يساوي 15.</string>
+    <string name="tutorial20_5">نكتبه بحيث يقع رقم آحاد الناتج في خانة الآحاد على المِعداد.</string>
+    <string name="tutorial20_6">إذا ضربنا خانة الآحاد في خانة العشرات، يُكتب الناتج في خانة العشرات.</string>
+    <string name="tutorial20_8">نضرب 4 في 3، ونكتب الناتج بحيث يقع رقم آحاده في خانة العشرات على المِعداد.</string>
+    <string name="tutorial20_9">إذا ضربنا خانة العشرات في خانة العشرات، يُكتب الناتج في خانة المئات.</string>
+    <string name="tutorial20_10">حاصل ضرب 3 في 6 يساوي 18.</string>
+    <string name="tutorial20_11">نكتبه بحيث يقع رقم آحاد الناتج في خانة المئات.</string>
+    <string name="tutorial20_12">نبدأ الضرب من خانة الآحاد في العدد الثاني.</string>
+    <string name="tutorial20_13">أولًا نضرب 1 في 3، ونضيف الناتج إلى خانة الآحاد.</string>
+    <string name="tutorial20_14">والآن نضرب 1 في 4، ونضيف الناتج إلى خانة العشرات.</string>
+    <string name="tutorial20_15">ونضيف خانة العشرات من العدد الثاني بالطريقة نفسها.</string>
+    <string name="tutorial20_16">نضرب 2 في 3، ونضيف الناتج إلى خانة العشرات.</string>
+    <string name="tutorial20_17">نضرب 2 في 4، ونضيف الناتج إلى خانة المئات.</string>
+    <string name="tutorial20_18">الجواب 903.</string>
+    <string name="tutorial20_20">أولًا نضرب 3 في 8، ونضيف الناتج إلى خانة الآحاد.</string>
+    <string name="tutorial20_21">والآن نضرب 3 في 7، ونضيف الناتج إلى خانة العشرات.</string>
+    <string name="tutorial20_22">نضرب 4 في 8، ونضيف الناتج إلى خانة العشرات.</string>
+    <string name="tutorial20_23">نضرب 4 في 7، ونضيف الناتج إلى خانة المئات.</string>
+    <string name="tutorial20_100">الجواب 3354.</string>
+    <string name="tutorial20_24">سنبدأ العمليات من خانة الآحاد في العدد الثاني.</string>
+    <string name="tutorial20_30">اضرب 4 في 9، وقرّر: إلى أيّ خانة على المِعداد ستضيف الناتج؟</string>
+    <string name="tutorial20_31">إلى أيّ خانة ستضيف؟</string>
+    <string name="tutorial_ipucu_112">تخيّل أنك تضرب 1 في 1. 1 x 1 = 1. إذن نكتبه في خانة الآحاد.</string>
+    <string name="tutorial20_25">اضرب 4 في 9، وأضِف الناتج إلى خانة الآحاد على المِعداد.</string>
+    <string name="tutorial_ipucu_113">4 x 9 = 36. اكتب العدد 36 على المِعداد.</string>
+    <string name="tutorial20_32">اضرب 4 في 6، وقرّر: إلى أيّ خانة على المِعداد ستضيف الناتج؟</string>
+    <string name="tutorial_ipucu_114">تخيّل أنك تضرب 10 في 1. 10 x 1 = 10. إذن نكتبه في خانة العشرات.</string>
+    <string name="tutorial20_33">اضرب 4 في 6، وأضِف الناتج إلى خانة العشرات على المِعداد.</string>
+    <string name="tutorial_ipucu_115">4 x 6 = 24. أضِف 24 إلى خانة العشرات. أي أضِف 240 إلى المِعداد.</string>
+    <string name="tutorial20_34">اضرب 5 في 9، وقرّر: إلى أيّ خانة على المِعداد ستضيف الناتج؟</string>
+    <string name="tutorial20_35">اضرب 5 في 9، وأضِف الناتج إلى خانة العشرات على المِعداد.</string>
+    <string name="tutorial_ipucu_116">5 x 9 = 45. أضِف 45 إلى خانة العشرات. أي أضِف 450 إلى المِعداد.</string>
+    <string name="tutorial20_36">اضرب 5 في 6، وقرّر: إلى أيّ خانة على المِعداد ستضيف الناتج؟</string>
+    <string name="tutorial_ipucu_117">تخيّل أنك تضرب 10 في 10. 10 x 10 = 100. إذن نكتبه في خانة المئات.</string>
+    <string name="tutorial20_37">اضرب 5 في 6، وأضِف الناتج إلى خانة المئات على المِعداد.</string>
+    <string name="tutorial_ipucu_118">5 x 6 = 30. أضِف 30 إلى خانة المئات. أي أضِف 3000 إلى المِعداد.</string>
+    <string name="tutorial20_29">الجواب 3726.</string>
+
+    <!-- Tutorial 21 -->
+    <string name="tutorial21_1">في هذا الدرس سنتعرّف على ضرب الأعداد من 3 خانات في الأعداد من خانة واحدة.</string>
+    <string name="tutorial21_2">بالإضافة إلى ما تعلّمناه سابقًا،</string>
+    <string name="tutorial21_3">إذا ضربنا خانة المئات في خانة الآحاد، يُكتب الناتج في خانة المئات.</string>
+    <string name="tutorial21_5">نكتبه بحيث يقع رقم آحاد الناتج في خانة المئات على المِعداد.</string>
+    <string name="tutorial21_6">إذا لم تعرف في أيّ خانة تكتب، يمكنك أن تعرف ذلك بوضع 1 و0 مكان الخانات.</string>
+    <string name="tutorial21_7">مثلًا، 100 x 1 = 100. أي إذا ضربنا المئات في الآحاد، يُكتب الناتج في خانة المئات.</string>
+    <string name="tutorial21_8">10 x 10 = 100. إذا ضربنا العشرات في العشرات، يُكتب الناتج في المئات.</string>
+    <string name="tutorial21_9">لنحلّ مثالًا.</string>
+    <string name="tutorial21_10">أضرب بالترتيب، بدءًا من الخانة الصغرى.</string>
+    <string name="tutorial21_11">4x4 = 16. أكتبه في خانة الآحاد.</string>
+    <string name="tutorial21_12">4x8 = 32. أكتبه في خانة العشرات.</string>
+    <string name="tutorial21_13">2x4 = 8. أضيفه إلى خانة المئات.</string>
+    <string name="tutorial21_14">الجواب 1136.</string>
+    <string name="tutorial21_15">اضرب 6 في 3، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_119">6x3=18. اكتب 18 على المِعداد.</string>
+    <string name="tutorial21_16">اضرب 6 في 2 الموجود في خانة العشرات، وأضِف الناتج إلى المِعداد.</string>
+    <string name="tutorial_ipucu_120">6x2=12. لأننا ضربنا العشرات في الآحاد، أضِف 12 إلى خانة العشرات على المِعداد. أي أضِف 120 إلى المِعداد.</string>
+    <string name="tutorial21_17">اضرب 6 في 7 الموجود في خانة المئات، وأضِف الناتج إلى المِعداد.</string>
+    <string name="tutorial_ipucu_121">6x7=42. لأننا ضربنا المئات في الآحاد، أضِف 42 إلى خانة المئات على المِعداد. أي أضِف 4200 إلى المِعداد.</string>
+    <string name="tutorial21_18">الجواب 4338.</string>
+
+    <!-- Tutorial 22 -->
+    <string name="tutorial22_1">في هذا الدرس سنتعرّف على ضرب الأعداد من 3 خانات في الأعداد من خانتين.</string>
+    <string name="tutorial22_2">بالإضافة إلى ما تعلّمناه سابقًا:</string>
+    <string name="tutorial22_3">إذا ضربنا خانة المئات في خانة العشرات، يُكتب الناتج في خانة الآلاف.</string>
+    <string name="tutorial22_4">ناتج 6x2 هو 12.</string>
+    <string name="tutorial22_5">يُكتب بحيث يقع رقم آحاد الناتج في خانة الآلاف على المِعداد.</string>
+    <string name="tutorial22_25">الجواب 12000.</string>
+    <string name="tutorial22_6">لنحلّ هذا المثال.</string>
+    <string name="tutorial22_7">سأضرب بالترتيب، بدءًا من الخانة الصغرى في العدد الثاني.</string>
+    <string name="tutorial22_8">3x1 = 3. أكتبه في خانة الآحاد.</string>
+    <string name="tutorial22_100">3x2 = 6. أكتبه في خانة العشرات.</string>
+    <string name="tutorial22_10">3x3 = 9. أكتبه في خانة المئات.</string>
+    <string name="tutorial22_11">أنتقل إلى الخانة التالية.</string>
+    <string name="tutorial22_12">2x1 = 2. أكتبه في خانة العشرات.</string>
+    <string name="tutorial22_13">2x2 = 4. أكتبه في خانة المئات.</string>
+    <string name="tutorial22_14">2x3 = 6. أكتبه في خانة الآلاف.</string>
+    <string name="tutorial22_15">والجواب 7383.</string>
+    <string name="tutorial22_16">سنضرب بدءًا من الخانة الصغرى في العدد الثاني، ونضيف النتائج إلى المِعداد بالترتيب.</string>
+    <string name="tutorial22_17">اضرب 2 في 2، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_122">2x2=4. نضرب الآحاد في الآحاد. اكتب 4 في خانة الآحاد على المِعداد.</string>
+    <string name="tutorial22_18">اضرب 2 في 1، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_123">2x1=2. نضرب الآحاد في العشرات. اكتب 2 في خانة العشرات على المِعداد. أي أضِف 20 إلى المِعداد.</string>
+    <string name="tutorial22_19">اضرب 2 في 3، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_124">2x3=6. نضرب الآحاد في المئات. اكتب 6 في خانة المئات على المِعداد. أي أضِف 600 إلى المِعداد.</string>
+    <string name="tutorial22_20">ننتقل إلى الخانة التالية.</string>
+    <string name="tutorial22_21">اضرب 4 في 2، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_125">4x2=8. نضرب الآحاد في العشرات. اكتب 8 في خانة العشرات على المِعداد. أي أضِف 80 إلى المِعداد.</string>
+    <string name="tutorial22_22">اضرب 4 في 1، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_126">4x1=4. نضرب العشرات في العشرات. اكتب 4 في خانة المئات على المِعداد. أي أضِف 400 إلى المِعداد.</string>
+    <string name="tutorial22_23">اضرب 4 في 3، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_127">4x3=12. نضرب المئات في العشرات. اكتب 12 في خانة الآلاف على المِعداد. أي أضِف 12000 إلى المِعداد.</string>
+    <string name="tutorial22_24">الجواب 13104.</string>
+    <string name="tutorial22_26">أيّ الخيارات التالية خاطئ؟</string>
+    <string name="tutorial_ipucu_128">تخيّل أنك تضرب 10 في 1. 10 x 1 = 10. أي إذا ضربنا خانة العشرات في خانة الآحاد، يُكتب الناتج في خانة العشرات.</string>
+    <string name="tutorial_sik_037">إذا ضربنا خانة العشرات في خانة العشرات، يُكتب الناتج في المئات.</string>
+    <string name="tutorial_sik_038">إذا ضربنا خانة المئات في خانة العشرات، يُكتب الناتج في الآلاف.</string>
+    <string name="tutorial_sik_039">إذا ضربنا خانة العشرات في خانة الآحاد، يُكتب الناتج في الآحاد.</string>
+
+    <!-- Tutorial 23 -->
+    <string name="tutorial23_1">7x6 = 42. أكتبه في خانة الآحاد.</string>
+    <string name="tutorial23_2">7x8 = 56. أكتبه في خانة العشرات.</string>
+    <string name="tutorial23_3">7x5 = 35. أكتبه في خانة المئات.</string>
+    <string name="tutorial23_4">9x6 = 54. أكتبه في خانة العشرات.</string>
+    <string name="tutorial23_5">9x8 = 72. أكتبه في خانة المئات.</string>
+    <string name="tutorial23_6">9x5 = 45. أكتبه في خانة الآلاف.</string>
+    <string name="tutorial23_7">والجواب 56842.</string>
+    <string name="tutorial23_8">سنضرب بدءًا من الخانة الصغرى في العدد الثاني، ونضيف إلى المِعداد بالترتيب.</string>
+    <string name="tutorial23_9">اضرب 4 في 5، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_129">4x5=20. نضرب الآحاد في الآحاد. اكتب 20 في خانة الآحاد على المِعداد. أي أضِف 20 إلى المِعداد.</string>
+    <string name="tutorial23_10">اضرب 4 في 6، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_130">4x6=24. نضرب الآحاد في العشرات. اكتب 24 في خانة العشرات على المِعداد. أي أضِف 240 إلى المِعداد.</string>
+    <string name="tutorial23_12">اضرب 4 في 7، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_131">4x7=28. نضرب الآحاد في المئات. اكتب 28 في خانة المئات على المِعداد. أي أضِف 2800 إلى المِعداد.</string>
+    <string name="tutorial23_13">اضرب 8 في 5، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_132">8x5=40. نضرب الآحاد في العشرات. اكتب 40 في خانة العشرات على المِعداد. أي أضِف 400 إلى المِعداد.</string>
+    <string name="tutorial23_14">اضرب 8 في 6، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_133">8x6=48. نضرب العشرات في العشرات. اكتب 48 في خانة المئات على المِعداد. أي أضِف 4800 إلى المِعداد.</string>
+    <string name="tutorial23_15">اضرب 8 في 7، واكتب الناتج على المِعداد.</string>
+    <string name="tutorial_ipucu_134">8x7=56. نضرب العشرات في المئات. اكتب 56 في خانة الآلاف على المِعداد. أي أضِف 56000 إلى المِعداد.</string>
+    <string name="tutorial23_16">الجواب 64260.</string>
+
+    <!-- Tutorial 24 -->
+    <string name="tutorial24_1">في هذا الدرس سنحلّ المسائل دون استخدام المِعداد.</string>
+    <string name="tutorial24_2">عليك أن تتخيّل خرزات المِعداد في ذهنك، وتحلّ المسائل بها.</string>
+    <string name="tutorial24_3">يمكنك أن تتخيّل المِعداد أمامك، وتحاول تحريك الخرزات بأصابعك.</string>
+    <string name="tutorial24_4">لكن عليك أن تحلّ المسائل على المِعداد فقط.</string>
+    <string name="tutorial24_5">أي عند حلّ 3+1، اكتب أولًا 3 على المِعداد الذي تتخيّله، ثم أضِف إليه خرزة واحدة. لا تقل 4 من الحفظ.</string>
+    <string name="tutorial24_6">والآن سننتقل إلى الاختبار.</string>
+    <string name="tutorial24_7">في الاختبار، ستظهر الأعداد على السبّورة واحدًا تلو الآخر.</string>
+    <string name="tutorial24_8">ستجمع هذه الأعداد في ذهنك، وتكتب الناتج في المربّع في الأسفل.</string>
+    <string name="tutorial24_9">مثلًا، قد تظهر هذه الأعداد بالترتيب.</string>
+    <string name="tutorial24_14">هكذا ستظهر الأعداد كل 3 ثوانٍ. وعندما تتوقّف، اكتب الناتج في المربّع.</string>
+    <string name="tutorial24_15">إذا فاتك عدد، اضغط زر الإعادة لترى السؤال من البداية.</string>
+    <string name="tutorial24_16">بالتوفيق.</string>
+
+    <!-- Tutorial 25 -->
+    <string name="tutorial25_1">في هذا الدرس سنطرح طرحًا مباشرًا في الذهن، بتخيّل المِعداد.</string>
+    <string name="tutorial25_2">سنطرح كل الأعداد ما عدا العدد الأول.</string>
+    <string name="tutorial25_3">مثلًا، قد تظهر الأعداد هكذا.</string>
+
+    <!-- Tutorial 26 -->
+    <string name="tutorial26_3">في هذا الدرس ستضرب في ذهنك بتخيّل المِعداد.</string>
+    <string name="tutorial26_2">ستظهر على الشاشة الأعداد التي ستضربها.</string>
+    <string name="tutorial26_1">وستجري عملية الضرب بتخيّل المِعداد.</string>
+</resources>

@@ -47,16 +47,17 @@ const GENERAL_PROMPT = fs.readFileSync(path.join(__dirname, 'prompt_genel_tr.md'
 const GENERAL_PROMPT_VERSION = crypto.createHash('sha1').update(SYSTEM_PROMPT + GENERAL_PROMPT).digest('hex').slice(0, 10);
 const GENERAL_SOURCES = guard.numbersIn(GENERAL_PROMPT);
 /**
- * Uygulama İngilizce ya da Endonezceyse (istemcinin `lang`'ı) talimatların SONUNA eklenen dil bloğu:
- * Türkçe talimat ve önbelleği aynen kalıyor, Türkçe sohbetler hiç değişmiyor. Sözler
- * docs/CEVIRI_SOZLUGU.md ve docs/CEVIRI_SOZLUGU_ID.md ile aynı.
+ * Uygulama İngilizce, Endonezce ya da Arapçaysa (istemcinin `lang`'ı) talimatların SONUNA eklenen dil
+ * bloğu: Türkçe talimat ve önbelleği aynen kalıyor, Türkçe sohbetler hiç değişmiyor. Sözler
+ * docs/CEVIRI_SOZLUGU.md, docs/CEVIRI_SOZLUGU_ID.md ve docs/CEVIRI_SOZLUGU_AR.md ile aynı.
  */
 const LANG_PROMPTS = {
   en: fs.readFileSync(path.join(__dirname, 'prompt_lang_en.md'), 'utf8'),
   id: fs.readFileSync(path.join(__dirname, 'prompt_lang_id.md'), 'utf8'),
+  ar: fs.readFileSync(path.join(__dirname, 'prompt_lang_ar.md'), 'utf8'),
 };
 /** Çocuğun ilk mesajı boşsa sohbetin başlığı. */
-const EMPTY_TITLE = { tr: 'Sohbet', en: 'Chat', id: 'Obrolan' };
+const EMPTY_TITLE = { tr: 'Sohbet', en: 'Chat', id: 'Obrolan', ar: 'محادثة' };
 /** Genel sohbetin listedeki başlığı: çocuğun ilk mesajından (maskelenmiş). */
 const TITLE_MAX = 40;
 /** Sohbete düğme olarak düşen ekran işleri (genel sohbet); yeniden açılan sohbette de görünsün diye kayıtta. */
