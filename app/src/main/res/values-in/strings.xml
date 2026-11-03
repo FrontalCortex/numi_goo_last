@@ -1,0 +1,155 @@
+<resources>
+    <string name="lesson_hint_step1">Tulis angka di sempoa mulai dari digit terbesar.</string>
+    <string name="lesson_hint_step2">Tulis angka pertama. Mulai menjumlahkan dari digit terbesar angka ke-2.</string>
+    <string name="lesson_hint_step3">Selesaikan tanpa salah, secepat mungkin.</string>
+    <string name="lesson_hint_step4">Tambah 5, kurangi temannya.</string>
+    <string name="lesson_hint_step5">Saat memakai langkah tambah 10, kamu mungkin perlu memakai rumus teman kecil.</string>
+    <string name="login_start_student_title">Kuatkan Pikiranmu</string>
+    <string name="login_start_student_subtitle">Belajar berhitung di luar kepala sambil bermain sempoa, berpikir lebih cepat, dan percaya diri dalam matematika.</string>
+    <string name="login_start_teacher_title">Bimbing Muridmu</string>
+    <string name="login_start_teacher_subtitle">Jawab pertanyaan muridmu dan dukung kemajuan mereka dengan sempoa.</string>
+    <string name="login_start_start_button">Mulai</string>
+    <string name="login_start_login_button">Aku sudah punya akun</string>
+    <string name="login_start_teacher_mode_button">Masuk sebagai guru</string>
+    <string name="login_start_student_mode_button">Masuk sebagai murid</string>
+    <!-- OTP doğrulama -->
+    <string name="otp_resend_button">Kirim ulang kode</string>
+    <string name="otp_resend_cooldown">%1$d dtk</string>
+    <string name="otp_resend_limit_reached">Batas kirim ulang sudah habis</string>
+    <string name="otp_too_many_wrong">Terlalu banyak percobaan salah. Kamu bisa mencoba lagi 15 menit lagi.</string>
+    <string name="otp_wrong_cooldown">Kamu bisa mencoba lagi dalam %1$d mnt %2$d dtk</string>
+    <string name="otp_wrong_cooldown_btn">Coba lagi dalam %1$d mnt %2$d dtk</string>
+    <string name="otp_can_retry">Kamu bisa mencoba lagi.</string>
+    <string name="otp_wrong_cooldown_try_later">Terlalu banyak percobaan salah. Coba lagi %1$d menit lagi.</string>
+    <string name="otp_resend_cooldown_try_again">Coba lagi dalam %1$d dtk</string>
+    <!-- Soru medya yükleme bildirimi -->
+    <string name="notification_channel_upload">Unggahan</string>
+    <string name="notification_channel_upload_desc">Gambar, video, dan pesan yang dikirim ke obrolan pertanyaan</string>
+    <string name="notification_uploading_generic">Mengirim…</string>
+    <string name="notification_uploading">Mengirim %1$s…</string>
+    <string name="notification_uploading_with_queue">Mengirim %1$s… (%2$d menunggu)</string>
+    <string name="notification_upload_type_text">Pesan</string>
+    <string name="notification_upload_type_image">Gambar</string>
+    <string name="notification_upload_type_video">Video</string>
+    <string name="notification_upload_type_audio">Suara</string>
+    <string name="notification_eta_sec">~%1$d dtk lagi</string>
+    <string name="notification_eta_min">~%1$d mnt lagi</string>
+    <string name="notification_eta_min_sec">~%1$d mnt %2$d dtk lagi</string>
+    <string name="notification_eta_hour">~%1$d jam lagi</string>
+
+    <!-- FCM mesaj bildirimi -->
+    <string name="notification_channel_messages_name">Pesan obrolan</string>
+    <string name="notification_channel_messages_desc">Notifikasi pesan obrolan baru</string>
+    <string name="notification_channel_messages_quiet_name">Pesan obrolan (senyap)</string>
+    <string name="notification_channel_messages_quiet_desc">Pesan obrolan yang masuk di malam hari — ditampilkan tanpa suara</string>
+    <string name="notification_channel_streak_name">Pengingat streak harian</string>
+    <string name="notification_channel_streak_desc">Satu pengingat di sore hari saat kamu belum menyelesaikan target harianmu</string>
+    <string name="notification_channel_rewards_name">Hadiah dan acara</string>
+    <string name="notification_channel_rewards_desc">Peti yang menunggu, akhir musim, dan notifikasi permainan lainnya</string>
+    <string name="notification_channel_account_name">Akun dan pembayaran</string>
+    <string name="notification_channel_account_desc">Info penting seperti uji coba gratis, pengembalian kredit, dan status pertanyaanmu</string>
+    <string name="notification_channel_pool_name">Pertanyaan di kumpulan soal</string>
+    <string name="notification_channel_pool_desc">Untuk guru: memberi tahu saat ada pertanyaan baru di kumpulan soal</string>
+    <string name="notification_channel_pool_quiet_name">Pertanyaan di kumpulan soal (senyap)</string>
+    <string name="notification_channel_pool_quiet_desc">Pertanyaan yang masuk di malam hari — ditampilkan tanpa suara</string>
+
+    <!-- Ses ve Bildirimler ekranındaki tür bazlı bildirim ayarları -->
+    <string name="settings_notify_chat">Pesan dari guru</string>
+    <string name="settings_notify_chat_desc">Notifikasi ini memberi tahu saat pertanyaanmu sudah dijawab</string>
+    <string name="settings_notify_streak">Pengingat harian</string>
+    <string name="settings_notify_reward">Hadiah dan acara</string>
+
+    <!-- Ayarlar → Dil (AppLanguage) -->
+    <string name="settings_language">Bahasa</string>
+    <string name="settings_language_system">Bahasa ponsel</string>
+
+    <string name="notification_download_cancel">Batal</string>
+
+    <string name="chat_retry_upload">Coba lagi</string>
+
+    <string name="send">Kirim</string>
+
+    <!-- Offline ekranı -->
+    <string name="offline_title">Offline</string>
+    <string name="offline_message">Kamu tidak terhubung ke internet. Nyalakan Wi‑Fi atau data seluler.</string>
+    <string name="offline_retry">Coba lagi</string>
+
+    <string name="tutorial_options_pick_first">Pilih salah satu opsi dulu.</string>
+
+    <string name="record_leaderboard_title">Papan peringkat</string>
+    <string name="record_leaderboard_subtitle">Waktu terbaik</string>
+    <string name="record_leaderboard_empty">Belum ada catatan. Jadilah yang pertama.</string>
+    <string name="record_leaderboard_rank_list">Peringkat</string>
+    <string name="record_leaderboard_load_error">Daftar tidak bisa dimuat.</string>
+
+    <string name="missions_daily_title">MISI HARIAN</string>
+    <string name="daily_question_card_title">Soal harian</string>
+    <string name="daily_question_card_open">Buka</string>
+    <string name="daily_question_card_subtitle_default">Tantangan tiga soal sesuai kemajuan pelajaranmu.</string>
+    <string name="daily_question_challenge_complete">Kamu menyelesaikan tantangannya!</string>
+    <string name="daily_question_claim_requires_complete">Selesaikan tantangannya untuk mengambil hadiah.</string>
+    <string name="daily_question_focus_format">Level: %1$s</string>
+    <string name="daily_question_difficulty_easy">Mudah</string>
+    <string name="daily_question_difficulty_medium">Sedang</string>
+    <string name="daily_question_difficulty_hard">Sulit</string>
+    <string name="daily_question_progress_complete_label">Selesai</string>
+    <string name="daily_question_pool_empty">Selesaikan lebih banyak pelajaran untuk membuka bagian ini.</string>
+    <string name="daily_question_continue_title">Lanjutkan tantangan</string>
+    <string name="daily_question_continue_message">Pakai 1 kunci untuk melanjutkan tantangan.</string>
+    <string name="daily_question_continue_close">Tutup</string>
+    <string name="race_fast_forward_title">Percepat</string>
+    <string name="race_fast_forward_message">Pakai 1 kunci untuk mempercepat.</string>
+    <string name="daily_question_insufficient_diamonds">Berlianmu tidak cukup.</string>
+    <string name="daily_question_insufficient_keys">Kuncimu tidak cukup.</string>
+    <string name="missions_weekly_title">MISI MINGGUAN</string>
+    <string name="missions_hours_short">%d JAM</string>
+    <string name="missions_days_short">%d HARI</string>
+    <string name="mission_finish_one_lesson">Selesaikan 1 langkah pelajaran</string>
+    <string name="mission_finish_two_lessons">Selesaikan 2 langkah pelajaran</string>
+    <string name="mission_finish_five_lessons">Selesaikan 5 pelajaran</string>
+    <string name="mission_finish_twenty_lessons">Selesaikan 20 pelajaran</string>
+    <string name="mission_finish_five_steps">Selesaikan 5 langkah pelajaran</string>
+    <string name="race_unlock_complete_all_lessons">Selesaikan semua pelajaran untuk membuka bagian ini.</string>
+    <string name="mission_finish_two_lessons_perfect">Selesaikan 2 pelajaran tanpa salah</string>
+    <string name="mission_finish_ten_lessons_perfect">Selesaikan 10 pelajaran tanpa salah</string>
+    <string name="mission_break_chest_record">Pecahkan rekormu sendiri di maraton unit</string>
+    <string name="mission_gain_one_star_in_unit_eval">Kumpulkan 5 bintang</string>
+    <string name="mission_gain_two_stars">Kumpulkan 2 bintang</string>
+    <string name="mission_learn_for_10_minutes">Belajar selama 10 menit</string>
+    <string name="mission_completed_label">Ambil hadiah!</string>
+    <string name="mission_reward_claimed_label">Hadiah sudah diambil!</string>
+    <string name="mission_chest_toast">peti terbuka</string>
+    <string name="mission_chest_reward_title">Kemajuan misi</string>
+    <string name="mission_continue">Lanjut</string>
+
+    <string name="season_leaderboard_reward_gate_title">Kumpulkan hadiah musim ini</string>
+    <string name="season_leaderboard_reward_gate_collect">Ambil</string>
+    <string name="season_leaderboard_reward_gate_season_line">Musim %1$d</string>
+
+    <string name="record_season_countdown_days_hours">%1$d hari %2$d jam</string>
+    <string name="record_season_countdown_hours_minutes">%1$d jam %2$d mnt</string>
+
+    <string name="ask_question_teacher_not_approved">Akunmu harus disetujui dulu untuk memakai fitur ini.</string>
+    <string name="teacher_approval_pending_banner">Akunmu menunggu persetujuan</string>
+    <string name="teacher_account_banner">Akun guru</string>
+    <string name="teacher_shop_unlimited">Di akun guru, koin, kunci, dan nyawa tidak terbatas; kamu tidak perlu membeli apa pun.</string>
+    <string name="teacher_not_approved_contact_support">Hubungi Dukungan</string>
+    <string name="teacher_not_approved_support_subject">Persetujuan akun guru</string>
+    <string name="ask_question_account_restricted">Akun dibatasi karena pelanggaran aturan.</string>
+    <string name="ask_question_alert_ok">Oke</string>
+
+    <!-- Plan ekranı: fiyatlar Play'den gelir, buradaki yalnızca biçimdir. -->
+    <string name="plan_price_monthly">%1$s per bulan</string>
+    <string name="plan_price_yearly">%1$s/tahun</string>
+    <string name="sub_cta_trial_days">COBA GRATIS %1$d HARI</string>
+    <string name="sub_cta_trial_weeks">COBA GRATIS %1$d MINGGU</string>
+    <string name="sub_cta_no_trial_pro">BERALIH KE PRO</string>
+    <string name="sub_cta_no_trial_lite">BERALIH KE LITE</string>
+
+    <string name="ask_promo_cta_buy_credits">BELI KREDIT</string>
+    <string name="ask_promo_secondary_buy_credits">BELI KREDIT SAJA</string>
+    <!-- formatted="false": metindeki % aapt tarafından biçim belirteci sanılmasın. -->
+    <string name="ask_promo_secondary_pro_bonus" formatted="false">BERALIH KE PRO · BONUS 20% KREDIT</string>
+    <!-- Bonus rakamları sunucudaki PRO_CREDIT_BONUS ile birlikte güncellenmelidir. -->
+    <string name="ask_promo_info_pro_out_of_credits">Kredit konsultasimu habis. Karena kamu anggota Pro, kamu dapat 6 kredit di paket 5 dan 12 kredit di paket 10.</string>
+</resources>

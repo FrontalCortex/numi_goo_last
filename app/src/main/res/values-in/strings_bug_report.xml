@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hata bildirimi: Görevler kartı, bildirim ekranı ve admin paneli (bkz. BugReports.kt). -->
+<resources>
+    <!-- Görevler kartı -->
+    <string name="bug_report_card_title">Pemburu Bug</string>
+    <string name="bug_report_card_subtitle_default">Kalau kamu melihat kesalahan di aplikasi, laporkan ke kami. Kalau disetujui, hadiahnya untukmu!</string>
+    <string name="bug_report_card_subtitle_pending">Laporanmu sedang diperiksa. Kami akan memberi tahu hasilnya.</string>
+    <string name="bug_report_card_subtitle_pending_many">%1$d laporanmu sedang diperiksa. Kami akan memberi tahu hasilnya.</string>
+    <string name="bug_report_card_subtitle_claimable">Laporanmu disetujui! Ambil hadiahmu.</string>
+    <string name="bug_report_card_claim">Ambil hadiahmu</string>
+
+    <!-- Ödül metinleri -->
+    <string name="bug_report_reward_credits">%1$d konsultasi guru</string>
+    <string name="bug_report_reward_keys">%1$d kunci</string>
+
+    <!-- Bildirim ekranı -->
+    <string name="bug_report_title">Laporkan Bug</string>
+    <string name="bug_report_intro">Kamu melihat sesuatu yang tampak rusak, bekerja salah, atau macet di aplikasi? Ceritakan apa yang terjadi; kalau mau, tambahkan juga tangkapan layar. Kalau setelah kami periksa memang ada kesalahan, kamu mendapat hadiah ini:</string>
+    <string name="bug_report_pick_image">Tambahkan tangkapan layar (opsional)</string>
+    <string name="bug_report_change_image">Pilih gambar lain</string>
+    <string name="bug_report_annotate">Tandai letak kesalahannya</string>
+    <string name="bug_report_text_label">Apa yang terjadi? Kamu sedang di mana, apa yang kamu tekan?</string>
+    <string name="bug_report_text_hint">Contoh: Di akhir pelajaran, layar macet saat aku menekan tombol Lanjut.</string>
+    <string name="bug_report_send">Kirim</string>
+    <string name="bug_report_close">Tutup</string>
+    <string name="bug_report_need_text">Tolong ceritakan masalahnya sedikit lebih rinci.</string>
+    <string name="bug_report_image_failed">Gambar tidak bisa dibuka. Coba gambar lain.</string>
+    <string name="bug_report_upload_failed">Tangkapan layar tidak bisa diunggah. Periksa koneksi internetmu lalu coba lagi.</string>
+    <string name="bug_report_generic_error">Terjadi masalah. Coba lagi sebentar lagi.</string>
+    <string name="bug_report_sent">Terima kasih! Kami akan memeriksa laporanmu dan memberi tahu kamu.</string>
+    <string name="bug_report_rules">Pemeriksaan bisa memakan waktu beberapa hari. Yang pertama melaporkan kesalahan yang sama mendapat hadiah penuh. Kamu juga bisa melaporkan masalah selain aplikasi berhenti mendadak.</string>
+    <string name="bug_report_mine_title">Laporanku</string>
+    <string name="bug_report_status_pending">Sedang diperiksa</string>
+    <string name="bug_report_status_approved">Disetujui</string>
+    <string name="bug_report_status_claimed">Hadiah sudah diambil</string>
+    <string name="bug_report_status_rejected">Ditolak</string>
+    <string name="bug_report_reject_reason_line">Alasan: %1$s</string>
+    <string name="bug_report_reject_not_a_bug">Ini bukan kesalahan, melainkan perilaku normal aplikasi.</string>
+    <string name="bug_report_reject_duplicate">Kesalahan ini sudah pernah dilaporkan.</string>
+    <string name="bug_report_reject_unclear">Kami tidak bisa memahami kesalahannya dari gambar dan penjelasan.</string>
+    <string name="bug_report_reject_other">Laporan tidak memenuhi syarat.</string>
+
+    <!-- Admin paneli -->
+    <string name="bug_report_admin_card_title">Laporan Bug (Admin)</string>
+    <string name="bug_report_admin_card_subtitle">Periksa laporan yang menunggu, setujui atau tolak.</string>
+    <string name="bug_report_admin_title">Laporan Bug</string>
+    <string name="bug_report_admin_empty">Tidak ada laporan yang menunggu.</string>
+    <string name="bug_report_admin_pending_count">%1$d laporan menunggu</string>
+    <string name="bug_report_admin_no_access">Laporan tidak bisa dibaca. Kalau izin admin baru diberikan, keluar lalu masuk lagi.</string>
+    <string name="bug_report_admin_approve_big">Setujui: Hadiah besar</string>
+    <string name="bug_report_admin_approve_small">Setujui: Hadiah kecil</string>
+    <string name="bug_report_admin_reject">Tolak</string>
+    <string name="bug_report_admin_note_hint">Catatan untuk pengguna (opsional)</string>
+    <string name="bug_report_admin_reject_title">Alasan penolakan</string>
+    <string name="bug_report_admin_confirm_approve">Berikan %1$s?</string>
+    <string name="bug_report_admin_confirm">Ya</string>
+    <string name="bug_report_admin_cancel">Batal</string>
+    <string name="bug_report_admin_done">Keputusan disimpan.</string>
+    <string name="bug_report_admin_user_line">Pengguna: %1$s</string>
+    <string name="bug_report_image_desc">Tangkapan layar kesalahan</string>
+    <string name="bug_report_admin_no_image">Tidak ada tangkapan layar.</string>
+</resources>

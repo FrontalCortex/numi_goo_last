@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ödevler: öğretmenin ödev ekranları, öğrencinin Görevler kartı ve ödev oynatıcısı (bkz. homework/). -->
+<resources>
+    <!-- İşlem ve konu adları -->
+    <string name="hw_op_add">Penjumlahan</string>
+    <string name="hw_op_sub">Pengurangan</string>
+    <string name="hw_op_mul">Perkalian</string>
+    <!-- Yalnızca hw_title içinde, başta kullanılıyor ("Penjumlahan Teman Kecil"); bu yüzden büyük harfle. -->
+    <string name="hw_op_add_lower">Penjumlahan</string>
+    <string name="hw_op_sub_lower">Pengurangan</string>
+    <string name="hw_rule_direct">Langsung</string>
+    <string name="hw_rule_five">Teman Kecil</string>
+    <string name="hw_rule_ten">Teman Besar</string>
+    <string name="hw_rule_bead">Gabungan</string>
+    <string name="hw_and">dan</string>
+    <string name="hw_with_abacus">Dengan sempoa</string>
+    <string name="hw_without_abacus">Tanpa sempoa</string>
+    <string name="hw_digits">%1$d digit</string>
+    <string name="hw_mul_digits">%1$d × %2$d digit</string>
+    <string name="hw_mul_title">Perkalian (%1$d × %2$d digit)</string>
+    <!-- Endonezcede sıra ters: işlem önce, konu sonra ("Penjumlahan Teman Kecil"). -->
+    <string name="hw_title">%2$s %1$s</string>
+    <plurals name="hw_numbers">
+        <item quantity="one">%d angka</item>
+        <item quantity="other">%d angka</item>
+    </plurals>
+    <plurals name="hw_sub_numbers">
+        <item quantity="one">%d angka dikurangkan</item>
+        <item quantity="other">%d angka dikurangkan</item>
+    </plurals>
+    <plurals name="hw_questions">
+        <item quantity="one">%d soal</item>
+        <item quantity="other">%d soal</item>
+    </plurals>
+    <string name="hw_seconds">%1$s dtk</string>
+
+    <!-- Öğretmen: ödev listesi -->
+    <string name="hw_class_button">PR</string>
+    <string name="hw_list_title">PR · %1$s</string>
+    <string name="hw_list_empty">Kelas ini belum diberi PR.</string>
+    <string name="hw_new_button">+ PR baru</string>
+    <string name="hw_new_short">PR baru</string>
+    <string name="hw_list_done_bar">%1$d/%2$d selesai</string>
+    <string name="hw_target_whole_class">Seluruh kelas</string>
+    <plurals name="hw_target_students">
+        <item quantity="one">%d murid</item>
+        <item quantity="other">%d murid</item>
+    </plurals>
+
+    <string name="hw_list_done_summary">%2$s dari %1$d murid sudah selesai</string>
+    <string name="hw_list_done_none">Belum ada yang selesai · %1$d murid</string>
+    <string name="hw_list_done_all">Semua sudah selesai ✓ · %1$d murid</string>
+
+    <!-- Öğretmen: ödev ayrıntısı -->
+    <string name="hw_detail_title">PR</string>
+    <string name="hw_detail_students">Murid</string>
+    <string name="hw_detail_not_started">Belum mulai</string>
+    <string name="hw_detail_progress">Langkah %1$d/%2$d · %3$d/%4$d benar</string>
+    <string name="hw_detail_done">Selesai · %1$d/%2$d benar</string>
+    <string name="hw_delete">Hapus PR</string>
+    <string name="hw_delete_title">Hapus PR?</string>
+    <string name="hw_delete_message">PR akan hilang dari daftar murid dan kemajuan mereka dihapus.</string>
+    <string name="hw_deleted">PR dihapus.</string>
+    <string name="hw_left_class">Sudah keluar dari kelas</string>
+
+    <!-- Öğretmen: ödev oluşturma -->
+    <string name="hw_create_title">PR baru</string>
+    <string name="hw_field_op">Operasi</string>
+    <string name="hw_field_rules">Topik</string>
+    <string name="hw_field_rules_hint">Kamu bisa memilih lebih dari satu; soal hanya memakai rumus yang kamu pilih.</string>
+    <string name="hw_field_type">Jenis</string>
+    <string name="hw_section_settings">Pengaturan</string>
+    <string name="hw_field_digits">Jumlah digit</string>
+    <string name="hw_field_digits1">Digit angka ke-1</string>
+    <string name="hw_field_digits2">Digit angka ke-2</string>
+    <string name="hw_field_count_add">Banyak angka</string>
+    <string name="hw_field_count_sub">Banyak angka yang dikurangkan</string>
+    <string name="hw_field_count_sub_hint">Tidak termasuk angka awal. Angka awal dipilih agar hasilnya tidak negatif dan rumus yang kamu pilih bisa dilatih.</string>
+    <string name="hw_field_interval">Kecepatan tampil (dtk)</string>
+    <string name="hw_field_interval_hint">Angka ditampilkan satu per satu dengan jeda ini (0,1 – 30 dtk).</string>
+    <string name="hw_field_questions">Banyak soal</string>
+    <string name="hw_field_questions_hint">Dibagi menjadi langkah berisi 10 soal: %1$d langkah.</string>
+    <string name="hw_field_target">Untuk siapa</string>
+    <string name="hw_target_select">Pilih murid</string>
+    <string name="hw_target_none_selected">Pilih minimal satu murid.</string>
+    <string name="hw_target_no_students">Belum ada murid di kelas; PR akan terlihat oleh semua yang bergabung ke kelas.</string>
+    <string name="hw_count_max">Maksimal %1$d</string>
+    <string name="hw_count_max_recommended">Maksimal %1$d · disarankan %2$d</string>
+    <string name="hw_count_impossible">Dengan rumus ini tidak bisa dibuat soal %1$d digit. Ubah jumlah digit, topik, atau pengaturan lanjutan.</string>
+    <string name="hw_count_forced">Dengan rumus ini, kalau kamu memilih %1$d angka, semua digit di semua angka menjadi %2$s (mis. %3$s). Nilai yang wajar %4$d.</string>
+    <string name="hw_mul_capacity">Jumlah digit kedua angka maksimal %1$d.</string>
+    <string name="hw_preview_title">Contoh soal</string>
+    <string name="hw_preview_pick_rule">Pilih satu topik</string>
+    <string name="hw_preview_refresh">Contoh lain</string>
+    <string name="hw_send">Kirim PR</string>
+    <string name="hw_sent">PR dikirim ke %1$d murid.</string>
+    <string name="hw_invalid">Periksa pengaturannya.</string>
+    <string name="hw_count_measuring">Menghitung nilai maksimal…</string>
+    <string name="hw_wait_measuring">Batas jumlah angka sedang dihitung; tunggu beberapa detik.</string>
+
+    <!-- Öğretmen: ödev oluşturma → Gelişmiş paneli (hangi rakamlar gelsin) -->
+    <string name="hw_advanced">Lanjutan</string>
+    <string name="hw_advanced_all_digits">Semua angka</string>
+    <string name="hw_advanced_title_add">Angka mana yang ditambahkan?</string>
+    <string name="hw_advanced_title_sub">Angka mana yang dikurangkan?</string>
+    <string name="hw_advanced_title_mul">Angka apa saja yang muncul di setiap digit?</string>
+    <string name="hw_advanced_desc_add">Di setiap topik, angka yang bisa ditambahkan dengan rumus itu. Angka yang kamu matikan tidak ditambahkan dengan rumus itu; mis. kalau di Teman Kecil hanya 4 yang aktif, rumus teman kecil selalu dilatih dengan +4 (+5 −1).</string>
+    <string name="hw_advanced_desc_sub">Di setiap topik, angka yang bisa dikurangkan dengan rumus itu. Angka yang kamu matikan tidak dikurangkan dengan rumus itu; mis. kalau di Teman Kecil hanya 4 yang aktif, rumus teman kecil selalu dilatih dengan −4 (−5 +1).</string>
+    <string name="hw_advanced_desc_mul">Setiap digit hanya dipilih dari angka yang aktif.</string>
+    <string name="hw_advanced_select_all">Semua</string>
+    <string name="hw_advanced_done">Oke</string>
+    <string name="hw_advanced_min_one">Minimal satu angka harus tetap aktif.</string>
+    <string name="hw_advanced_pick_rule">Pilih satu topik dulu.</string>
+    <!-- "Angka ke-1 · kolom puluhan" (panel kartı) ve "Angka ke-1 puluhan: 2, 3" (özet) -->
+    <string name="hw_advanced_mul_group">Angka ke-%1$d · kolom %2$s</string>
+    <string name="hw_advanced_mul_digits">Angka ke-%1$d %2$s: %3$s</string>
+    <!-- Basamak adları, birlerden başlayarak (çarpmada bir sayı en fazla 7 basamak). -->
+    <string-array name="hw_place_names">
+        <item>satuan</item>
+        <item>puluhan</item>
+        <item>ratusan</item>
+        <item>ribuan</item>
+        <item>puluh ribuan</item>
+        <item>ratus ribuan</item>
+        <item>jutaan</item>
+    </string-array>
+
+    <!-- Bildirim kanalı: gece gelen ödev (MyFirebaseMessagingService, account_quiet) -->
+    <string name="notification_channel_account_quiet_name">PR dan akun (senyap)</string>
+    <string name="notification_channel_account_quiet_desc">Notifikasi PR yang masuk di malam hari — ditampilkan tanpa suara</string>
+
+    <!-- Öğrenci: Sorularım → Ödevlerim / Sınıfım -->
+    <string name="hw_card_title">PR-ku</string>
+    <plurals name="hw_student_card_pending">
+        <item quantity="one">%d PR menunggumu</item>
+        <item quantity="other">%d PR menunggumu</item>
+    </plurals>
+    <string name="hw_student_card_all_done">Semua sudah kamu selesaikan</string>
+    <string name="hw_student_card_none">Belum ada PR</string>
+    <string name="hw_tab_homework">PR-ku</string>
+    <string name="hw_student_empty">Gurumu belum memberi PR.</string>
+    <string name="hw_classmates_empty">Belum ada murid lain di kelasmu.</string>
+    <string name="hw_classmate_teacher">Guru</string>
+    <string name="hw_classmate_me">%1$s (kamu)</string>
+    <string name="hw_card_from">Dari %1$s</string>
+    <string name="hw_card_progress">%1$d/%2$d langkah</string>
+    <string name="hw_card_done">Selesai ✓</string>
+
+    <!-- Öğrenci: ödev oynatıcısı -->
+    <string name="hw_player_quit_desc">Tutup</string>
+    <string name="hw_player_step">Langkah %1$d/%2$d · Soal %3$d/%4$d</string>
+    <string name="hw_player_start">Mulai</string>
+    <string name="hw_player_check">Periksa</string>
+    <string name="hw_player_answer_hint">Jawabanmu</string>
+    <string name="hw_player_correct">Benar!</string>
+    <string name="hw_player_wrong">Jawaban benar: %1$s</string>
+    <string name="hw_player_next">Lanjut</string>
+    <string name="hw_player_block_done">Langkah selesai!</string>
+    <string name="hw_player_block_score">%1$d/%2$d benar</string>
+    <string name="hw_player_next_block">Langkah berikutnya</string>
+    <string name="hw_player_finish">Selesai</string>
+    <string name="hw_player_all_done">PR-mu selesai! 🎉</string>
+    <string name="hw_player_save_failed">Kemajuan tidak bisa disimpan. Periksa koneksi internetmu lalu coba lagi.</string>
+    <string name="hw_player_retry_save">Simpan lagi</string>
+    <string name="hw_player_unavailable">PR ini tidak bisa dibuka. Beri tahu gurumu.</string>
+    <string name="hw_player_quit_title">Keluar dari PR?</string>
+    <string name="hw_player_quit_message">Jawabanmu di langkah ini tidak disimpan; kamu mulai langkah ini dari awal.</string>
+    <string name="hw_player_quit_confirm">Keluar</string>
+
+    <!-- İlerleme sayfası girişi (ProgressHubFragment) ve kural başarısı (HomeworkRuleStatsFragment) -->
+    <string name="progress_hub_lessons">Pelajaran</string>
+    <string name="progress_hub_lessons_desc">Kemajuan pelajaran dan waktu belajar</string>
+    <string name="progress_hub_rules">Keberhasilan rumus</string>
+    <string name="progress_hub_rules_desc">Persentase benar per rumus di pelajaran, PR, dan bersama Sobi</string>
+    <string name="rule_stats_title">%1$s — Keberhasilan rumus</string>
+    <string name="rule_stats_add">Penjumlahan</string>
+    <string name="rule_stats_sub">Pengurangan</string>
+    <string name="rule_stats_mul_abacus">Perkalian dengan sempoa</string>
+    <string name="rule_stats_mul_mental">Perkalian tanpa sempoa</string>
+    <string name="rule_stats_mul_digits">%1$d × %2$d digit</string>
+    <string name="rule_stats_percent">%1$d%%</string>
+    <string name="rule_stats_count">%1$d/%2$d benar</string>
+    <string name="rule_stats_empty">Belum ada data. Setelah pelajaran, PR, dan latihan bersama Sobi dikerjakan, persentase benar setiap rumus akan muncul di sini.</string>
+    <string name="rule_stats_sobi_level">Kuis Sobi level %1$d/%2$d</string>
+    <string name="rule_stats_sobi_level_estimated">Kuis Sobi level %1$d/%2$d (perkiraan)</string>
+    <string name="rule_stats_note">Pada penjumlahan dan pengurangan, setiap operasi di satu kolom dihitung untuk rumus yang dipakainya: pelajaran, PR, dan latihan bersama Sobi digabung. Pada perkalian, setiap soal PR dihitung satu percobaan.</string>
+
+    <!-- Kural başarısı: bu hafta kartı ve başarı grafiği (HomeworkRuleStatsFragment) -->
+    <string name="rule_progress_unit_question">soal</string>
+    <string name="rule_progress_unit_op">operasi</string>
+    <string name="rule_progress_week_title">Minggu ini</string>
+    <!-- "42 soal · minggu lalu 74%" -->
+    <string name="rule_progress_week_sub">%1$d %2$s · minggu lalu %3$d%%</string>
+    <string name="rule_progress_week_sub_no_last">%1$d %2$s · minggu lalu tidak ada latihan</string>
+    <string name="rule_progress_week_none">Minggu ini belum ada soal yang dikerjakan</string>
+    <string name="rule_progress_week_none_sub">Minggu lalu %1$d%% · %2$d %3$s</string>
+    <string name="rule_progress_delta_up">+%1$d poin</string>
+    <string name="rule_progress_delta_down">−%1$d poin</string>
+    <string name="rule_progress_delta_same">Sama dengan minggu lalu</string>
+    <string name="rule_progress_total">Sejauh ini %1$d %2$s</string>
+    <string name="rule_progress_chart_title">Grafik keberhasilan</string>
+    <string name="rule_progress_all_rules">Semua</string>
+    <string name="rule_progress_chip_mul_abacus">Perkalian %1$d×%2$d dengan sempoa</string>
+    <string name="rule_progress_chip_mul_mental">Perkalian %1$d×%2$d tanpa sempoa</string>
+    <string name="rule_progress_range_week">1 minggu</string>
+    <string name="rule_progress_range_month">1 bulan</string>
+    <string name="rule_progress_range_quarter">3 bulan</string>
+    <string name="rule_progress_range_all">Semua</string>
+    <string name="rule_progress_chart_hint">Setiap titik adalah persentase benar pada periode itu; angka di atasnya adalah total %1$s yang dikerjakan sampai saat itu. Ketuk titik untuk detailnya.</string>
+    <string name="rule_progress_chart_empty">Tidak ada soal yang dikerjakan pada periode ini</string>
+    <string name="rule_progress_chart_empty_last">Latihan terakhir: %1$s · %2$d%% benar. Terlihat kalau kamu beralih ke Semua.</string>
+    <string name="rule_progress_base">Awal</string>
+    <!-- "12–18 Okt · 42 soal · 86% benar · total 380" -->
+    <string name="rule_progress_point_detail">%1$s · %2$d %3$s · %4$d%% benar · total %5$d</string>
+    <string name="rule_progress_base_detail">Awal: %1$d %2$s sebelum grafik · %3$d%% benar</string>
+    <string name="rule_stats_mastery_title">Penguasaan rumus</string>
+    <string name="rule_stats_mastery_desc">Kamu menguasai sebuah rumus kalau 50 operasi terakhirmu benar minimal 90%. Tahap yang sudah dicapai tidak turun lagi.</string>
+    <string name="rule_stats_stage_started">Mulai</string>
+    <string name="rule_stats_stage_improving">Berkembang</string>
+    <string name="rule_stats_stage_master">Menguasai ⭐</string>
+    <!-- "52 operasi terakhir · 92% benar"; pencere yoksa toplam: "680 operasi · 67% benar" -->
+    <string name="rule_stats_recent">%1$d %2$s terakhir · %3$d%% benar</string>
+    <string name="rule_stats_ops">%1$d %2$s · %3$d%% benar</string>
+    <!-- Satırın sonuna eklenir: "… · 4% lagi untuk menguasai" ya da "… · 12 operasi lagi untuk menguasai" -->
+    <string name="rule_stats_to_master_pct">%1$d%% lagi untuk menguasai</string>
+    <string name="rule_stats_to_master_ops">%1$d %2$s lagi untuk menguasai</string>
+    <string-array name="rule_progress_months">
+        <item>Jan</item>
+        <item>Feb</item>
+        <item>Mar</item>
+        <item>Apr</item>
+        <item>Mei</item>
+        <item>Jun</item>
+        <item>Jul</item>
+        <item>Agu</item>
+        <item>Sep</item>
+        <item>Okt</item>
+        <item>Nov</item>
+        <item>Des</item>
+    </string-array>
+</resources>

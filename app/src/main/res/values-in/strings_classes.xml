@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Kurs sınıfları: öğretmenin sınıf ve öğrenci ekranları, havuz alt sekmeleri, profildeki
+     ilerleme düğmesi (bkz. CourseClasses.kt, functions/classes.js). -->
+<resources>
+    <!-- Soru havuzu alt sekmeleri (NotificationFragment) -->
+    <string name="class_pool_tab_mine">Kelasku</string>
+    <string name="class_pool_tab_general">Kumpulan umum</string>
+    <string name="class_classes_button">Kelas-kelasku</string>
+    <string name="class_pool_empty_mine">Tidak ada pertanyaan yang menunggu dari kelasmu.</string>
+
+    <!-- Sınıflarım -->
+    <string name="class_list_title">Kelas-kelasku</string>
+    <string name="class_back_desc">Kembali</string>
+    <string name="class_help_general_title">Bantu juga kumpulan umum</string>
+    <string name="class_help_general_desc">Kalau dinyalakan, pertanyaan dari murid yang tidak terhubung ke kursus mana pun juga muncul di tab \"Kumpulan umum\" di Kumpulan Soal.</string>
+    <string name="class_list_empty">Kamu belum punya kelas. Buat kelas, lalu berikan kode bergabung ke muridmu.</string>
+    <string name="class_new_button">+ Kelas baru</string>
+    <string name="class_new_title">Kelas baru</string>
+    <string name="class_new_hint">Nama kelas (mis. Sabtu 10.00)</string>
+    <string name="class_new_create">Buat kelas</string>
+    <string name="class_cancel">Batal</string>
+    <string name="class_created">Kelas dibuat. Kode: %1$s</string>
+    <plurals name="class_student_count">
+        <item quantity="one">%d murid</item>
+        <item quantity="other">%d murid</item>
+    </plurals>
+    <string name="class_student_members_title">Anggota kelas</string>
+    <string name="class_card_no_students">Belum ada murid</string>
+    <string name="class_code_label">Kode: %1$s</string>
+
+    <!-- Sınıf ayrıntısı -->
+    <string name="class_join_code_title">Kode bergabung</string>
+    <string name="class_join_code_hint">Murid menulis kode ini di aplikasi, di Pengaturan → Gabung ke kelas.</string>
+    <string name="class_copy">Salin</string>
+    <string name="class_share">Bagikan</string>
+    <string name="class_regenerate">Perbarui kode</string>
+    <string name="class_copied">Kode disalin</string>
+    <string name="class_share_text">Gabung ke kelasku \"%1$s\" di Sorobit: di aplikasi, tulis kode %2$s di Pengaturan → Gabung ke kelas.</string>
+    <string name="class_regenerate_title">Perbarui kode?</string>
+    <string name="class_regenerate_message">Kode lama langsung tidak berlaku. Murid yang sudah di kelas tetap di kelas; murid baru memakai kode baru.</string>
+    <string name="class_regenerate_confirm">Perbarui</string>
+    <string name="class_regenerated">Kode baru: %1$s</string>
+    <string name="class_students_title">Murid</string>
+    <string name="class_students_empty">Belum ada murid di kelas. Berikan kode ke muridmu atau undang dengan nama pengguna.</string>
+    <string name="class_invite_button">Tambah murid</string>
+    <string name="class_invite_short">Tambah</string>
+    <string name="class_settings_title">Pengaturan kelas</string>
+    <string name="class_students_empty_settings">Belum ada murid di kelas. Bagikan kode bergabung dari pengaturan di kanan atas, atau undang dengan nama pengguna lewat Tambah.</string>
+    <string name="class_homeworks_none">Belum ada PR · berikan PR pertama</string>
+    <plurals name="class_homeworks_count">
+        <item quantity="one">%d PR</item>
+        <item quantity="other">%d PR</item>
+    </plurals>
+    <string name="class_invite_title">Tambah murid</string>
+    <string name="class_invite_message">Tulis nama pengguna murid (yang tampil dengan @ di profilnya). Murid akan menerima undangan; setelah diterima, ia muncul di daftar.</string>
+    <string name="class_invite_hint">Nama pengguna (mis. 835398VV)</string>
+    <string name="class_invite_send">Kirim undangan</string>
+    <string name="class_invite_sent">Undangan dikirim ke %1$s.</string>
+    <string name="class_invite_already_member">%1$s sudah ada di kelas ini.</string>
+    <string name="class_pending_invites">Menunggu undangan: %1$s</string>
+    <string name="class_remove_title">Keluarkan dari kelas?</string>
+    <string name="class_remove_message">%1$s akan keluar dari kelas. Pertanyaannya yang menunggu pindah ke kumpulan umum dan kamu tidak bisa lagi melihat kemajuannya.</string>
+    <string name="class_remove_confirm">Keluarkan</string>
+    <string name="class_removed">%1$s dikeluarkan dari kelas.</string>
+    <string name="class_generic_error">Terjadi masalah. Periksa koneksi internetmu lalu coba lagi.</string>
+
+    <!-- Öğrenci: Ayarlar satırı ve Kurs ve sınıf ekranı (StudentClassFragment) -->
+    <string name="class_settings_header">Kelas</string>
+    <string name="class_settings_join">Gabung ke kelas</string>
+    <string name="class_settings_my_class">Kelasku</string>
+    <string name="class_settings_invites">Ada undangan kelas yang menunggumu</string>
+    <string name="class_student_title">Kelasku</string>
+    <string name="class_student_current">Kelasmu</string>
+    <string name="class_student_teacher">Gurumu: %1$s</string>
+    <string name="class_student_info">Pertanyaanmu langsung dikirim ke gurumu. Gurumu bisa melihat kemajuan pelajaranmu.</string>
+    <string name="class_student_leave">Keluar dari kelas</string>
+    <string name="class_student_leave_title">Kamu mau keluar dari kelas?</string>
+    <string name="class_student_leave_message">Setelah ini pertanyaanmu dikirim ke guru di kumpulan umum dan gurumu tidak bisa melihat kemajuanmu. Untuk bergabung lagi, kamu perlu memasukkan kodenya lagi.</string>
+    <string name="class_student_left">Kamu sudah keluar dari kelas.</string>
+    <string name="class_student_join_title">Masukkan kode kelas</string>
+    <string name="class_student_join_desc">Tulis kode 6 karakter yang kamu dapat dari gurumu. Setelah bergabung, pertanyaanmu dikirim ke gurumu dan gurumu bisa melihat kemajuan pelajaranmu.</string>
+    <string name="class_student_join_hint">ABC 234</string>
+    <string name="class_student_join_button">Gabung</string>
+    <string name="class_student_code_length">Kode harus 6 karakter.</string>
+    <string name="class_student_joined">Kamu bergabung ke kelas \"%1$s\"!</string>
+    <string name="class_student_invites_title">Undangan</string>
+    <string name="class_student_invite_text">%1$s mengundangmu ke kelas \"%2$s\".</string>
+    <string name="class_student_invite_accept">Gabung</string>
+    <string name="class_student_invite_decline">Tolak</string>
+    <string name="class_student_switch_title">Pindah kelas?</string>
+    <string name="class_student_switch_message">Kamu akan keluar dari kelasmu sekarang (%1$s) dan pindah ke kelas \"%2$s\".</string>
+    <string name="class_student_switch_confirm">Pindah</string>
+
+    <!-- Profil ve ilerleme raporu -->
+    <string name="class_student_progress_desc">Kemajuan murid</string>
+    <string name="class_student_progress_title">%1$s — Kemajuan</string>
+    <string name="class_student_progress_empty">Murid belum memulai pelajaran. Kemajuannya akan muncul di sini setelah ia membuka pelajaran pertama.</string>
+</resources>
