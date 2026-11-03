@@ -59,6 +59,13 @@ yerelleştirilmesi, ödev saklama süresi.
   iziyle; Türkçe yayın değişince bunu da çalıştır). Kredi açıklaması ve yedek metinler İngilizce.
   Gerçek modelde denendi (`node scripts/sobi-dene.js --dil en`): cevaplar İngilizce, terimler doğru;
   bir cevapta numaralı liste kullandı (Türkçe talimat yasaklıyor, İngilizcede de izlenmeli).
+- **Öğretici seslendirmesi EN/ID (03.11.2026, Storage'da):** ElevenLabs Creator (kullanıcının aboneliği,
+  ticari lisans); İngilizce Nichalia `XfNU2rGpBa01ckF309OY`, Endonezce Bee Ard `1k39YpzqXZn52BgyLyGO`.
+  `tutorial_audio/<en|id>_<kayıt>.mp3`, dilde 852 dosya; uygulama `TutorialFragment` ile indiriyor. Betikler
+  `tools/seslendirme/` (README): uret → yaziya (Speech to Text ile metin karşılaştırma) → esle (metni
+  başka anahtardan gelen 100 kayıt) → yukle. Sayılar/çarpma yazıyla okutuluyor (model rakam rakam
+  okuyordu). Öğretici metni değişirse o cümleyi `--yeniden` ile üretip esle + yukle. Öğretici 104 hiçbir
+  derse bağlı değil (ölü taslak; içindeki `tutorial6_3` iki adımda aynı cümleyi çalıyor).
 - **Kimlik olarak saklanan Türkçe metinler (03.11.2026):** günlük sorunun ünite adı ve zorluğu ortak
   başarı istatistiğinin anahtarı, liderlik `titleUnit`'i sezon madalya/kupa parçasının adı. Bunlar dil ne
   olursa olsun Türkçe yazılıyor (`GlobalLessonData.turkishItem`), gösterimde `localizeLessonText` /
