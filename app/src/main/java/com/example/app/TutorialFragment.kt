@@ -499,6 +499,7 @@ class TutorialFragment : Fragment() {
             26 -> tutorialSteps26
             else -> tutorialSteps
         }
+        prefetchLocalizedTutorialSounds()
         buildStepAnalyticsInfo()
         setupTutorial()
         setupBackButton()
@@ -19720,30 +19721,66 @@ class TutorialFragment : Fragment() {
         mediaPlayer?.setVolume(volume, volume)
         mediaPlayer?.start()
     }
-    // Ses çalma fonksiyonu. soundResource: gömülü (res/raw) ses. soundStoragePath doluysa ve
-    // soundResource yoksa: adımda soundStoragePath ile verilmiş, Firebase Storage'dan RemoteAudioCache
-    // tarafından indirilmiş sesi çalar. Dosya henüz inmemişse (ilk sefer/internet yok) sessizce
-    // atlanır ve indirme tekrar tetiklenir - hiçbir zaman çökme veya bekleme olmaz.
+    private fun isTutorialSoundEnabled(): Boolean =
+        requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+            .getBoolean("tutorial_sound_enabled", true)
+
+    // Türkçe dışındaki dillerde adımın sesi Storage'da `tutorial_audio/<dil>_<anahtar>.mp3`.
+    // Anahtar, gömülü Türkçe sesin kaynak adı (= strings_tutorial.xml'deki cümle anahtarı), böylece
+    // adım tanımlarına dil başına ayrı alan eklemek gerekmiyor. Gömülü sesi olmayan adımın o dilde
+    // de sesi yok: soundStoragePath tek dilli bir yol olduğu için başka dilin metninin üstüne çalınmaz.
+    private fun localizedSoundStoragePath(soundResource: Int?): String? {
+        if (soundResource == null) return null
+        val key = try {
+            resources.getResourceEntryName(soundResource)
+        } catch (e: android.content.res.Resources.NotFoundException) {
+            return null
+        }
+        return "tutorial_audio/${AppLanguage.textLanguage()}_$key.mp3"
+    }
+
+    // Öğretici açılınca bütün adımların seslerini sırayla indirmeye başlar ki kullanıcı ilerledikçe
+    // sesler hazır olsun. Sıra RemoteAudioCache'te; adım sırasıyla eklendiği için ilk adımlar önce iner.
+    private fun prefetchLocalizedTutorialSounds() {
+        if (AppLanguage.isTurkish() || !isTutorialSoundEnabled()) return
+        val paths = currentTutorialSteps.mapNotNull { localizedSoundStoragePath(it.soundResource) }.distinct()
+        RemoteAudioCache.prefetchAll(requireContext(), paths)
+    }
+
+    // Ses çalma fonksiyonu. Türkçede soundResource gömülü (res/raw) sestir; soundResource yoksa
+    // adımda soundStoragePath ile verilmiş, Firebase Storage'dan RemoteAudioCache tarafından
+    // indirilmiş ses çalınır. Diğer dillerde ses her zaman Storage'dan gelir (bkz.
+    // localizedSoundStoragePath). Dosya henüz inmemişse (ilk sefer/internet yok/henüz yüklenmemiş)
+    // sessizce atlanır ve indirme tetiklenir - hiçbir zaman çökme veya bekleme olmaz. Ses akışı
+    // ilerletmiyor (adımlar dokunmayla geçiyor, tamamlanma dinleyicisi yalnızca oynatıcıyı bırakıyor),
+    // bu yüzden sessiz kalmak akışı bozmaz.
     private fun playSound(soundResource: Int?, soundStoragePath: String? = null) {
-        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
-        if (!prefs.getBoolean("tutorial_sound_enabled", true)) return
-        // Seslendirmeler yalnızca Türkçe kayıtlı; İngilizce metnin üstüne Türkçe ses çalmasın.
-        // Ses akışı ilerletmiyor (adımlar dokunmayla geçiyor), susturmak güvenli.
-        if (!AppLanguage.isTurkish()) return
-        if (soundResource == null && soundStoragePath == null) return
+        if (!isTutorialSoundEnabled()) return
+        val embeddedResource: Int?
+        val remotePath: String?
+        if (AppLanguage.isTurkish()) {
+            embeddedResource = soundResource
+            remotePath = if (soundResource == null) soundStoragePath else null
+        } else {
+            // Türkçe ses başka dilin metninin üstüne çalınmasın: gömülü ses hiç kullanılmaz.
+            embeddedResource = null
+            remotePath = localizedSoundStoragePath(soundResource)
+        }
+        if (embeddedResource == null && remotePath == null) return
         try {
             // Önceki ses varsa durdur
             mediaPlayer?.release()
+            mediaPlayer = null
 
-            if (soundResource != null) {
+            if (embeddedResource != null) {
                 // MediaPlayer.create() zaten hazırlanmış (prepared) döner.
-                mediaPlayer = MediaPlayer.create(requireContext(), soundResource)
+                mediaPlayer = MediaPlayer.create(requireContext(), embeddedResource)
             } else {
-                val localFile = RemoteAudioCache.localFile(requireContext(), soundStoragePath!!)
+                val localFile = RemoteAudioCache.localFile(requireContext(), remotePath!!)
                 if (!localFile.exists()) {
-                    Log.w("TutorialFragment", "Uzak ses henüz inmedi, atlanıyor: $soundStoragePath")
-                    RemoteAudioCache.prefetch(requireContext(), soundStoragePath)
-                    mediaPlayer = null
+                    // Önceki adımın sesi yukarıda susturuldu; bu adım sessiz geçer.
+                    Log.d("TutorialFragment", "Uzak ses henüz inmedi, atlanıyor: $remotePath")
+                    RemoteAudioCache.prefetch(requireContext(), remotePath)
                 } else {
                     // Yerel dosyadan manuel oluşturma senkron prepare() ister.
                     mediaPlayer = MediaPlayer().apply {
