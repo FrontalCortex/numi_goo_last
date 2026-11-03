@@ -1,0 +1,146 @@
+<resources>
+    <string name="lesson_hint_step1">اكتب الأعداد على المِعداد بدءًا من أكبر خانة.</string>
+    <string name="lesson_hint_step2">اكتب العدد الأول. ابدأ الجمع من أكبر خانة في العدد الثاني.</string>
+    <string name="lesson_hint_step3">أنهِ بلا أخطاء وفي أقصر وقت.</string>
+    <string name="lesson_hint_step4">أضِف 5 واطرح صديقه.</string>
+    <string name="lesson_hint_step5">عند تطبيق خطوة «أضِف 10» قد تحتاج إلى قاعدة الأصدقاء الصغار.</string>
+    <string name="login_start_student_title">قوِّ ذهنك</string>
+    <string name="login_start_student_subtitle">تعلّم الحساب الذهني باللعب بالمِعداد، وفكّر أسرع، وثِق بنفسك في الرياضيات.</string>
+    <string name="login_start_teacher_title">أرشِد طلابك</string>
+    <string name="login_start_teacher_subtitle">أجب عن أسئلة طلابك وادعم تقدّمهم على المِعداد.</string>
+    <string name="login_start_start_button">ابدأ</string>
+    <string name="login_start_login_button">لديّ حساب بالفعل</string>
+    <string name="login_start_teacher_mode_button">دخول المعلّم</string>
+    <string name="login_start_student_mode_button">دخول الطالب</string>
+    <string name="otp_resend_button">أعِد إرسال الرمز</string>
+    <string name="otp_resend_cooldown">%1$d ث</string>
+    <string name="otp_resend_limit_reached">بلغتَ الحد الأقصى لإعادة الإرسال</string>
+    <string name="otp_too_many_wrong">محاولات خاطئة كثيرة جدًا. يمكنك المحاولة مرة أخرى بعد 15 دقيقة.</string>
+    <string name="otp_wrong_cooldown">يمكنك المحاولة مرة أخرى بعد %1$d د %2$d ث</string>
+    <string name="otp_wrong_cooldown_btn">حاول مجددًا بعد %1$d د %2$d ث</string>
+    <string name="otp_can_retry">يمكنك المحاولة مرة أخرى.</string>
+    <string name="otp_wrong_cooldown_try_later">محاولات خاطئة كثيرة جدًا. حاول مرة أخرى بعد %1$d د.</string>
+    <string name="otp_resend_cooldown_try_again">مجددًا بعد %1$d ث</string>
+    <string name="notification_channel_upload">الرفع</string>
+    <string name="notification_channel_upload_desc">الصور والفيديوهات والرسائل المرسلة إلى محادثة السؤال</string>
+    <string name="notification_uploading_generic">جارٍ الإرسال…</string>
+    <string name="notification_uploading">جارٍ إرسال %1$s…</string>
+    <string name="notification_uploading_with_queue">جارٍ إرسال %1$s… (في الانتظار: %2$d)</string>
+    <string name="notification_upload_type_text">رسالة</string>
+    <string name="notification_upload_type_image">صورة</string>
+    <string name="notification_upload_type_video">فيديو</string>
+    <string name="notification_upload_type_audio">صوت</string>
+    <string name="notification_eta_sec">المتبقي ~%1$d ث</string>
+    <string name="notification_eta_min">المتبقي ~%1$d د</string>
+    <string name="notification_eta_min_sec">المتبقي ~%1$d د %2$d ث</string>
+    <string name="notification_eta_hour">المتبقي ~%1$d س</string>
+
+    <string name="notification_channel_messages_name">رسائل المحادثة</string>
+    <string name="notification_channel_messages_desc">إشعارات رسائل المحادثة الجديدة</string>
+    <string name="notification_channel_messages_quiet_name">رسائل المحادثة (صامتة)</string>
+    <string name="notification_channel_messages_quiet_desc">رسائل المحادثة التي تصل ليلًا، تظهر بصمت</string>
+    <string name="notification_channel_streak_name">تذكير السلسلة اليومية</string>
+    <string name="notification_channel_streak_desc">تذكير واحد في الأمسيات التي لم تُكمل فيها هدفك اليومي بعد</string>
+    <string name="notification_channel_rewards_name">المكافآت والفعاليات</string>
+    <string name="notification_channel_rewards_desc">الصناديق المنتظرة ونهاية الموسم وإشعارات لعب مشابهة</string>
+    <string name="notification_channel_account_name">الحساب والدفع</string>
+    <string name="notification_channel_account_desc">معلومات مهمة مثل الفترة التجريبية المجانية واسترداد الرصيد وحالة سؤالك</string>
+    <string name="notification_channel_pool_name">أسئلة البنك</string>
+    <string name="notification_channel_pool_desc">للمعلّمين: يُعلمك عند وصول سؤال جديد إلى بنك الأسئلة</string>
+    <string name="notification_channel_pool_quiet_name">أسئلة البنك (صامتة)</string>
+    <string name="notification_channel_pool_quiet_desc">الأسئلة التي تصل إلى البنك ليلًا، تظهر بصمت</string>
+
+    <string name="settings_notify_chat">رسائل المعلّم</string>
+    <string name="settings_notify_chat_desc">يُعلمك هذا الإشعار عندما تتم الإجابة عن سؤالك</string>
+    <string name="settings_notify_streak">التذكير اليومي</string>
+    <string name="settings_notify_reward">المكافآت والفعاليات</string>
+
+    <string name="settings_language">اللغة</string>
+    <string name="settings_language_system">لغة الهاتف</string>
+
+    <string name="notification_download_cancel">إلغاء</string>
+
+    <string name="chat_retry_upload">حاول مجددًا</string>
+
+    <string name="send">إرسال</string>
+
+    <string name="offline_title">غير متصل</string>
+    <string name="offline_message">لا يوجد اتصال بالإنترنت. يُرجى تشغيل Wi‑Fi أو بيانات الجوال.</string>
+    <string name="offline_retry">حاول مجددًا</string>
+
+    <string name="tutorial_options_pick_first">اختر خيارًا أولًا.</string>
+
+    <string name="record_leaderboard_title">لوحة المتصدّرين</string>
+    <string name="record_leaderboard_subtitle">أفضل الأوقات</string>
+    <string name="record_leaderboard_empty">لا توجد أرقام قياسية بعد. كن الأول!</string>
+    <string name="record_leaderboard_rank_list">الترتيب</string>
+    <string name="record_leaderboard_load_error">تعذّر تحميل القائمة.</string>
+
+    <string name="missions_daily_title">المهام اليومية</string>
+    <string name="daily_question_card_title">سؤال اليوم</string>
+    <string name="daily_question_card_open">افتح</string>
+    <string name="daily_question_card_subtitle_default">تحدٍّ من ثلاثة أسئلة حسب تقدّمك في الدروس.</string>
+    <string name="daily_question_challenge_complete">أكملتَ التحدي!</string>
+    <string name="daily_question_claim_requires_complete">أكمل التحدي لتحصل على المكافأة.</string>
+    <string name="daily_question_focus_format">المستوى: %1$s</string>
+    <string name="daily_question_difficulty_easy">سهل</string>
+    <string name="daily_question_difficulty_medium">متوسط</string>
+    <string name="daily_question_difficulty_hard">صعب</string>
+    <string name="daily_question_progress_complete_label">مكتمل</string>
+    <string name="daily_question_pool_empty">أكمل مزيدًا من الدروس لفتح هذا.</string>
+    <string name="daily_question_continue_title">تابع التحدي</string>
+    <string name="daily_question_continue_message">استخدم مفتاحًا واحدًا لمتابعة التحدي.</string>
+    <string name="daily_question_continue_close">إغلاق</string>
+    <string name="race_fast_forward_title">تقديم سريع</string>
+    <string name="race_fast_forward_message">استخدم مفتاحًا واحدًا للتقديم السريع.</string>
+    <string name="daily_question_insufficient_diamonds">ليس لديك ما يكفي من الألماس.</string>
+    <string name="daily_question_insufficient_keys">ليس لديك ما يكفي من المفاتيح.</string>
+    <string name="missions_weekly_title">المهام الأسبوعية</string>
+    <string name="missions_hours_short">%d س</string>
+    <string name="missions_days_short">الأيام: %d</string>
+    <string name="mission_finish_one_lesson">أنهِ خطوة درس واحدة</string>
+    <string name="mission_finish_two_lessons">أنهِ خطوتَي درس</string>
+    <string name="mission_finish_five_lessons">أنهِ 5 دروس</string>
+    <string name="mission_finish_twenty_lessons">أنهِ 20 درسًا</string>
+    <string name="mission_finish_five_steps">أنهِ 5 خطوات دروس</string>
+    <string name="race_unlock_complete_all_lessons">أكمل جميع الدروس لفتح هذا.</string>
+    <string name="mission_finish_two_lessons_perfect">أكمل درسين بلا أخطاء</string>
+    <string name="mission_finish_ten_lessons_perfect">أكمل 10 دروس بلا أخطاء</string>
+    <string name="mission_break_chest_record">حطّم رقمك القياسي في ماراثون الوحدة</string>
+    <string name="mission_gain_one_star_in_unit_eval">اربح 5 نجمات</string>
+    <string name="mission_gain_two_stars">اربح نجمتين</string>
+    <string name="mission_learn_for_10_minutes">تعلّم لمدة 10 دقائق</string>
+    <string name="mission_completed_label">خذ المكافأة!</string>
+    <string name="mission_reward_claimed_label">تم أخذ المكافأة!</string>
+    <string name="mission_chest_toast">تم فتح الصندوق</string>
+    <string name="mission_chest_reward_title">تقدّم المهام</string>
+    <string name="mission_continue">متابعة</string>
+
+    <string name="season_leaderboard_reward_gate_title">اجمع مكافآت هذا الموسم</string>
+    <string name="season_leaderboard_reward_gate_collect">اجمع</string>
+    <string name="season_leaderboard_reward_gate_season_line">الموسم %1$d</string>
+
+    <string name="record_season_countdown_days_hours">%1$d ي %2$d س</string>
+    <string name="record_season_countdown_hours_minutes">%1$d س %2$d د</string>
+
+    <string name="ask_question_teacher_not_approved">يجب أن تتم الموافقة على حسابك قبل أن تستخدم هذه الميزة.</string>
+    <string name="teacher_approval_pending_banner">حسابك بانتظار الموافقة</string>
+    <string name="teacher_account_banner">حساب معلّم</string>
+    <string name="teacher_shop_unlimited">في حساب المعلّم، العملات والمفاتيح والقلوب غير محدودة؛ لا تحتاج إلى شراء أي شيء.</string>
+    <string name="teacher_not_approved_contact_support">تواصل مع الدعم</string>
+    <string name="teacher_not_approved_support_subject">الموافقة على حساب المعلّم</string>
+    <string name="ask_question_account_restricted">تم تقييد الحساب بسبب مخالفة القواعد.</string>
+    <string name="ask_question_alert_ok">حسنًا</string>
+
+    <string name="plan_price_monthly">%1$s شهريًا</string>
+    <string name="plan_price_yearly">%1$s/سنة</string>
+    <string name="sub_cta_trial_days">جرّب مجانًا · الأيام: %1$d</string>
+    <string name="sub_cta_trial_weeks">جرّب مجانًا · الأسابيع: %1$d</string>
+    <string name="sub_cta_no_trial_pro">انتقل إلى PRO</string>
+    <string name="sub_cta_no_trial_lite">انتقل إلى LITE</string>
+
+    <string name="ask_promo_cta_buy_credits">اشترِ رصيدًا</string>
+    <string name="ask_promo_secondary_buy_credits">اشترِ رصيدًا بدلًا من ذلك</string>
+    <string name="ask_promo_secondary_pro_bonus" formatted="false">انتقل إلى PRO · مكافأة 20% على الرصيد</string>
+    <string name="ask_promo_info_pro_out_of_credits">لم يتبقَّ لك رصيد للاستشارة. لأنك عضو في Pro، تحصل على 6 في باقة الـ 5 و12 في باقة الـ 10.</string>
+</resources>

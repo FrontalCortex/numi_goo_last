@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="bug_report_card_title">صائد الأخطاء</string>
+    <string name="bug_report_card_subtitle_default">إذا رأيت خطأً في التطبيق فأخبرنا. إذا تمت الموافقة عليه فالمكافأة لك!</string>
+    <string name="bug_report_card_subtitle_pending">بلاغك قيد المراجعة. سنخبرك عندما تظهر النتيجة.</string>
+    <string name="bug_report_card_subtitle_pending_many">بلاغاتك قيد المراجعة: %1$d. سنخبرك عندما تظهر النتيجة.</string>
+    <string name="bug_report_card_subtitle_claimable">تمت الموافقة على بلاغك! اجمع مكافأتك.</string>
+    <string name="bug_report_card_claim">اجمع مكافأتك</string>
+
+    <string name="bug_report_reward_credits">استشارات المعلّم: %1$d</string>
+    <string name="bug_report_reward_keys">المفاتيح: %1$d</string>
+
+    <string name="bug_report_title">الإبلاغ عن خطأ</string>
+    <string name="bug_report_intro">هل رأيت في التطبيق شيئًا يبدو معطّلًا أو يعمل بشكل خاطئ أو يتوقف؟ أخبرنا بما حدث، ويمكنك إضافة لقطة شاشة إن أردت. إذا وجدنا بعد المراجعة أنه خطأ فعلًا فستربح هذه المكافأة:</string>
+    <string name="bug_report_pick_image">إضافة لقطة شاشة (اختياري)</string>
+    <string name="bug_report_change_image">اختر صورة أخرى</string>
+    <string name="bug_report_annotate">حدّد مكان الخطأ</string>
+    <string name="bug_report_text_label">ماذا حدث؟ أين كنت، وعلى ماذا ضغطت؟</string>
+    <string name="bug_report_text_hint">مثلًا: في نهاية الدرس تتجمّد الشاشة عند الضغط على زر «متابعة».</string>
+    <string name="bug_report_send">إرسال</string>
+    <string name="bug_report_close">إغلاق</string>
+    <string name="bug_report_need_text">يُرجى شرح المشكلة بتفصيل أكثر قليلًا.</string>
+    <string name="bug_report_image_failed">تعذّر فتح الصورة. جرّب صورة أخرى.</string>
+    <string name="bug_report_upload_failed">تعذّر رفع لقطة الشاشة. تحقّق من اتصالك بالإنترنت وحاول مرة أخرى.</string>
+    <string name="bug_report_generic_error">حدثت مشكلة. حاول مرة أخرى بعد قليل.</string>
+    <string name="bug_report_sent">شكرًا! سنراجع بلاغك ونخبرك بالنتيجة.</string>
+    <string name="bug_report_rules">قد تستغرق المراجعة بضعة أيام. أول من يبلّغ عن الخطأ نفسه يربح المكافأة كاملة. ويمكنك الإبلاغ أيضًا عن مشكلات غير التعطّل.</string>
+    <string name="bug_report_mine_title">بلاغاتي</string>
+    <string name="bug_report_status_pending">قيد المراجعة</string>
+    <string name="bug_report_status_approved">تمت الموافقة</string>
+    <string name="bug_report_status_claimed">تم أخذ المكافأة</string>
+    <string name="bug_report_status_rejected">مرفوض</string>
+    <string name="bug_report_reject_reason_line">السبب: %1$s</string>
+    <string name="bug_report_reject_not_a_bug">هذا ليس خطأً، بل هو السلوك الطبيعي للتطبيق.</string>
+    <string name="bug_report_reject_duplicate">تم الإبلاغ عن هذا الخطأ من قبل.</string>
+    <string name="bug_report_reject_unclear">لم نتمكن من فهم الخطأ من الصورة والوصف.</string>
+    <string name="bug_report_reject_other">لم يُقبل البلاغ.</string>
+
+    <string name="bug_report_admin_card_title">بلاغات الأخطاء (المشرف)</string>
+    <string name="bug_report_admin_card_subtitle">راجع البلاغات المنتظرة، ووافق عليها أو ارفضها.</string>
+    <string name="bug_report_admin_title">بلاغات الأخطاء</string>
+    <string name="bug_report_admin_empty">لا توجد بلاغات منتظرة.</string>
+    <string name="bug_report_admin_pending_count">البلاغات المنتظرة: %1$d</string>
+    <string name="bug_report_admin_no_access">تعذّرت قراءة البلاغات. إذا مُنحت صلاحية المشرف للتو فسجّل الخروج ثم ادخل من جديد.</string>
+    <string name="bug_report_admin_approve_big">موافقة: مكافأة كبيرة</string>
+    <string name="bug_report_admin_approve_small">موافقة: مكافأة صغيرة</string>
+    <string name="bug_report_admin_reject">رفض</string>
+    <string name="bug_report_admin_note_hint">ملاحظة للمستخدم (اختياري)</string>
+    <string name="bug_report_admin_reject_title">سبب الرفض</string>
+    <string name="bug_report_admin_confirm_approve">منح %1$s؟</string>
+    <string name="bug_report_admin_confirm">نعم</string>
+    <string name="bug_report_admin_cancel">إلغاء</string>
+    <string name="bug_report_admin_done">تم حفظ القرار.</string>
+    <string name="bug_report_admin_user_line">المستخدم: %1$s</string>
+    <string name="bug_report_image_desc">لقطة شاشة للخطأ</string>
+    <string name="bug_report_admin_no_image">لم تُضف لقطة شاشة.</string>
+</resources>
