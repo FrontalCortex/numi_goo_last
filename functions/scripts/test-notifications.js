@@ -656,5 +656,68 @@ check('İngilizce çoğul', chestNoticeText(3, 'en').title, '3 chests are waitin
 check('İngilizce sezon saati', seasonOf({ msLeft: 4 * HOUR }).textEn.title, 'The season ends in 4 hours');
 check('Türkçe metin değişmedi', chestNoticeText(3).title, 'Seni bekleyen 3 sandık var');
 
+console.log('\n=== ENDONEZCE METİNLER (kullanıcının lang: id) ===');
+// İngilizce sözler Endonezce metne sızmasın diye birkaç belirgin kelime de aranıyor.
+const EN_WORDS = /\b(the|your|you|is|are|waiting)\b/i;
+const idTexts = [
+  chestNoticeText(1, 'id'), chestNoticeText(3, 'id'),
+  teacherPoolText(1, 1, 'id'), teacherPoolText(2, 7, 'id'),
+  seasonOf({ msLeft: 4 * HOUR }).textId,
+  trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textId,
+  questionStatusNotice({ status: 'pending' }, { status: 'claimed' }, NOON).id,
+  questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).id,
+];
+idTexts.forEach((t, i) => check(`Endonezce metin ${i + 1} dolu, Türkçe harfsiz, İngilizcesiz`, Boolean(t && t.title && t.body && !TR_LETTERS.test(t.title + t.body) && !EN_WORDS.test(t.title + t.body)), true));
+check('Endonezce tekil', chestNoticeText(1, 'id').title, 'Ada peti yang menunggumu');
+check('Endonezce sayılı', chestNoticeText(3, 'id').title, 'Ada 3 peti yang menunggumu');
+check('Endonezce sezon saati', seasonOf({ msLeft: 4 * HOUR }).textId.title, 'Musim berakhir 4 jam lagi');
+check('Endonezce sezon tek saat', evalFromIndex('seasonNoticeText', [], [])(1, 'id').title, 'Musim berakhir satu jam lagi');
+check('Endonezce deneme yarın', trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textId.title, 'Uji coba gratismu berakhir besok');
+check('Endonezce havuz toplamı', teacherPoolText(2, 7, 'id').body, '7 pertanyaan di kumpulan soal menunggu jawaban.');
+check('İngilizce metin değişmedi', chestNoticeText(3, 'en').title, '3 chests are waiting for you');
+check('İngilizce sezon değişmedi', seasonOf({ msLeft: 4 * HOUR }).textEn.title, 'The season ends in 4 hours');
+
+console.log('\n=== DİL SEÇİMİ (sendUserNotification) ===');
+// Gövde Firestore istiyor; seçim satırı kaynaktan çekilip aynı ifadeyle sınanıyor.
+const pickLine = indexSrc.match(/const translated = (.+);\n/);
+check('sendUserNotification dil seçimi kaynakta', Boolean(pickLine), true);
+// eslint-disable-next-line no-new-func
+const pick = new Function('user', 'en', 'id', `return ${pickLine[1]};`);
+const EN = { title: 'en' };
+const ID = { title: 'id' };
+check('lang: en → en', pick({ lang: 'en' }, EN, ID), EN);
+check('lang: id → id', pick({ lang: 'id' }, EN, ID), ID);
+check('lang: id ama karşılık yok → Türkçe', pick({ lang: 'id' }, EN, null), null);
+check('lang yok (eski sürüm) → Türkçe', pick({}, EN, ID), null);
+check('lang: tr → Türkçe', pick({ lang: 'tr' }, EN, ID), null);
+check('lang: constructor → Türkçe', pick({ lang: 'constructor' }, EN, ID), null);
+
+// İngilizcesi verilen her bildirim çağrısında Endonezcesi de olmalı: yeni bir bildirime yalnızca
+// `en:` eklenip `id:` unutulursa Endonezce kullanıcıya Türkçe giderdi.
+function callBlocks(src, marker) {
+  const out = [];
+  let at = src.indexOf(marker);
+  while (at >= 0) {
+    let depth = 0;
+    let j = src.indexOf('(', at);
+    for (; j < src.length; j++) {
+      if (src[j] === '(') depth++;
+      else if (src[j] === ')') { depth--; if (depth === 0) break; }
+    }
+    out.push(src.slice(at, j + 1));
+    at = src.indexOf(marker, j);
+  }
+  return out;
+}
+const finalizeSrc = fs.readFileSync(path.join(__dirname, '..', 'seasonLeaderboardFinalize.js'), 'utf8');
+const calls = [
+  ...callBlocks(indexSrc, 'await sendUserNotification(').concat(callBlocks(indexSrc, '    sendUserNotification(')),
+  ...callBlocks(finalizeSrc, 'await notify('),
+].filter((b) => /\n\s+en: /.test(b));
+check('İngilizceli bildirim çağrısı bulundu', calls.length >= 13, true);
+calls.forEach((b) => check(`Endonezcesi de var: ${b.match(/topic: ([^,\n]+)/)?.[1] || b.slice(0, 40)}`, /\n\s+id: /.test(b), true));
+// Soru durumu bildirimlerinin üçü de Endonezceli (çağrı notice.id'yi geçiriyor).
+check('soru durumu: üç Endonezce karşılık', (grabFunction('questionStatusNotice').match(/\n\s+id: \{/g) || []).length, 3);
+
 console.log(`\n${fail === 0 ? 'TÜMÜ GEÇTİ' : 'BAŞARISIZ'} — ${pass} geçti, ${fail} hata`);
 process.exit(fail === 0 ? 0 : 1);

@@ -17,6 +17,7 @@
  *   node scripts/sobi-dene.js --senaryo kavram          yalnızca anlatım adımı (kavram) soruları; 'soru' yalnızca soru adımları
  *   node scripts/sobi-dene.js --senaryo ornek           Sobi ekranında örnek isteyen çocuk (alistirma_ver)
  *   node scripts/sobi-dene.js --dil en                 İngilizce uygulama: dil bloğu eklenir, İngilizce senaryolar
+ *   node scripts/sobi-dene.js --dil id                 Endonezce uygulama: dil bloğu eklenir, Endonezce senaryolar
  *   node scripts/sobi-dene.js --senaryo adim            analiz ekranında adımın bir parçasını soran çocuk (değerlendirme setinin adim_sorusu vakaları)
  *
  * Her turda çocuğun mesajı, Sobi'nin cevabı, çağrılan araçlar, ekran işleri, denetim sonucu ve
@@ -30,8 +31,11 @@ const Anthropic = require('@anthropic-ai/sdk').default;
 const chat = require('../sobi/chat');
 
 const SYSTEM = fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_tr.md'), 'utf8');
-/** --dil en: sunucudaki gibi Türkçe talimat + sondaki dil bloğu (sobi/callable.js LANG_PROMPTS). */
-const LANG_EN = fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_lang_en.md'), 'utf8');
+/** --dil en|id: sunucudaki gibi Türkçe talimat + sondaki dil bloğu (sobi/callable.js LANG_PROMPTS). */
+const LANG_PROMPTS = {
+  en: fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_lang_en.md'), 'utf8'),
+  id: fs.readFileSync(path.join(__dirname, '..', 'sobi', 'prompt_lang_id.md'), 'utf8'),
+};
 
 const SCENARIOS = [
   {
@@ -125,6 +129,28 @@ const EN_SCENARIOS = [
   },
 ];
 
+/**
+ * Endonezce uygulamanın gönderdiği bağlam. values-in/strings_tutorial.xml henüz yokken adım metinleri
+ * sözlükten (docs/CEVIRI_SOZLUGU_ID.md) elle yazıldı; çeviri gelince oradaki metinlerle değiştir.
+ */
+const ID_SCENARIOS = [
+  {
+    ad: 'ID — rumus gabungan: 8 + 6, kenapa 5 keluar',
+    context: { stepId: 't8_8_arti_6', stepText: 'Tambahkan 6 ke 8 dengan rumus gabungan.', questionText: '8 + 6', base: 8, target: 14, current: 9, attempts: 2, valueLog: [8, 9] },
+    mesajlar: ['kita kan tambah 6, kenapa 5 nya keluar', 'aku masih belum ngerti'],
+  },
+  {
+    ad: 'ID — pengurangan: 23 − 6, bingung',
+    context: { stepId: 't14_23_eksi_6', stepText: 'Kurangi 23 dengan 6 memakai rumus gabungan.', questionText: '23 - 6', base: 23, target: 17, current: 23, attempts: 1, valueLog: [23] },
+    mesajlar: ['aku tidak mengerti', 'tunjukkan'],
+  },
+  {
+    ad: 'ID — langkah penjelasan: apa itu teman besar',
+    context: { lessonTitle: 'Penjumlahan Teman Besar - Rumus', taughtRules: ['add_direct', 'add_five', 'add_ten'], stepText: 'Teman besar 1 adalah 9.', base: 9, target: null, current: 9, attempts: 0, valueLog: [] },
+    mesajlar: ['teman besar itu apa', 'nama saya Budi, warna kesukaanmu apa'],
+  },
+];
+
 function arg(name) {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? null : process.argv[i + 1];
@@ -137,7 +163,7 @@ async function run(client, model, effort, sc) {
   let note = null;
   const total = {};
   for (const m of sc.mesajlar) {
-    const system = arg('dil') === 'en' ? [SYSTEM, LANG_EN] : SYSTEM;
+    const system = LANG_PROMPTS[arg('dil')] ? [SYSTEM, LANG_PROMPTS[arg('dil')]] : SYSTEM;
     const r = await chat.runTurn({ client, model, effort, system, history, context, childText: m, note });
     const used = r.history.slice(history.length)
       .filter((x) => x.role === 'assistant')
@@ -197,6 +223,7 @@ async function main() {
       mesajlar: [soru],
     }]
     : arg('dil') === 'en' ? EN_SCENARIOS
+    : arg('dil') === 'id' ? ID_SCENARIOS
     : arg('senaryo') === 'adim' ? adimScenarios()
       : arg('senaryo') === 'ornek' ? ORNEK_SCENARIOS
       : arg('senaryo') === 'kavram' ? KAVRAM_SCENARIOS

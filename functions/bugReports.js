@@ -197,6 +197,11 @@ function decisionNoticeText(status, lang = 'tr') {
       ? { title: 'Your bug report was approved! 🎉', body: 'Thanks! Your reward is waiting, collect it in Missions.' }
       : { title: 'Your bug report was reviewed', body: 'Thanks for your report. You can see the details in Missions.' };
   }
+  if (lang === 'id') {
+    return status === 'approved'
+      ? { title: 'Laporan bug-mu disetujui! 🎉', body: 'Terima kasih! Hadiahmu sudah menunggu, ambil di Misi.' }
+      : { title: 'Laporan bug-mu sudah ditinjau', body: 'Terima kasih atas laporanmu. Kamu bisa melihat detailnya di Misi.' };
+  }
   if (status === 'approved') {
     return {
       title: 'Hata bildirimin onaylandı! 🎉',

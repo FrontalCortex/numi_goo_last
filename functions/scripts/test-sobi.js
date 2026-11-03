@@ -870,6 +870,51 @@ async function main() {
     }
     assert.strictEqual(guard.cleanChildText('my name is Emma').text, 'my name is [ad]');
   });
+  await test('Endonezce (lang: id): dil bloğu en sonda, Türkçe istek aynen; yedek ve hazır metin Endonezce', async () => {
+    const env = fakeEnv();
+    const responses = [];
+    const client = fakeClient(responses);
+    const fn = createSobiChat({ ...env, createClient: () => client });
+    const ctx = { auth: { uid: 'u1' } };
+    env.store.set('users/u1', { plan: 'Pro' });
+
+    responses.push(say('Ayo kita lihat bersama!'));
+    const r1 = await fn({ message: 'aku tidak mengerti', context: CTX, lang: 'id' }, ctx);
+    assert.strictEqual(r1.reply, 'Ayo kita lihat bersama!');
+    const sent = client.calls[0];
+    assert.strictEqual(sent.system.length, 2);
+    assert.ok(sent.system[1].text.startsWith('## Language: Indonesian'));
+    // Türkçe talimat bloğu İngilizce/Türkçe istektekiyle aynı (önbellek paylaşılıyor).
+    assert.ok(sent.system[1].text.includes('tambah 5, kurangi temannya'));
+    const s1 = env.store.get(`sobiChats/u1/sessions/${r1.sessionId}`);
+    assert.strictEqual(s1.lang, 'id');
+    assert.strictEqual(s1.promptVersion, `${createSobiChat.PROMPT_VERSION}+id`);
+
+    // Genel sohbet: ders + genel + dil = üç blok; boş ilk mesajın başlığı Endonezce.
+    responses.push(say('Tentu!'));
+    await fn({ mode: 'genel', message: 'halo', lang: 'id' }, ctx);
+    assert.strictEqual(client.calls[1].system.length, 3);
+    assert.ok(client.calls[1].system[2].text.startsWith('## Language: Indonesian'));
+    assert.strictEqual(createSobiChat.titleOf('', 'id'), 'Obrolan');
+    assert.strictEqual(createSobiChat.titleOf('', 'en'), 'Chat');
+    assert.strictEqual(createSobiChat.titleOf(''), 'Sohbet');
+
+    // Kredi açıklaması Endonezce, sayılar wallet'tan.
+    assert.ok(chat.directReplyFor({ mode: 'genel' }, 'krediler', 'id').text.startsWith('Kamu dapat pesan gratis setiap hari: 2 di paket Free'));
+    // Türkçe adım metni Endonezce bağlamda eşleşmez: model çalışır (Türkçe metin dönmez).
+    const trStep = chat.sanitizeContext({ tutorialNumber: 3, stepIndex: 0, stepText: "Bu derste kurallı toplamanın ilk dersi olan 5'lik toplamayı öğreneceksin." });
+    assert.strictEqual(chat.directReplyFor({ ...trStep, lang: 'id' }, 'bunu_anlamadim', 'id'), null);
+    // Yedek metin Endonezce: Türkçe harf ve İngilizce düğme adı yok, "Tunjukkan" var.
+    for (const c of [{ mode: 'genel' }, { ...CTX, target: null, stepText: 'Tambah 5.' }, CTX]) {
+      const t = guard.fallbackReply(c, require('../sobi/tools'), 'id');
+      assert.ok(!/[çğıöşüÇĞİÖŞÜ]/.test(t) && !/Show me/.test(t), t);
+    }
+    assert.ok(guard.fallbackReply(CTX, require('../sobi/tools'), 'id').includes('"Tunjukkan"'));
+    // Ad maskesi: "adalah" kalıba dahil, ad maskeleniyor.
+    assert.strictEqual(guard.cleanChildText('nama saya Budi').text, 'nama saya [ad]');
+    assert.strictEqual(guard.cleanChildText('Nama saya adalah Siti, umurku 8').text, 'Nama saya adalah [ad], umurku 8');
+    assert.strictEqual(guard.cleanChildText('namaku Rina').text, 'namaku [ad]');
+  });
   await test('konu dışı: model cevabı rehberde olmayan sayı uydurursa yedek metin, bedel yok', async () => {
     const env = fakeEnv();
     const fn = createSobiChat({ ...env, createClient: () => fakeClient([say('Türkiye\'nin başkenti Ankara, nüfusu 5800000.')]) });
