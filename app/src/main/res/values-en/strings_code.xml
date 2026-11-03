@@ -379,6 +379,13 @@
     <string name="ui_eklenecek_sayi_2">Number to Add</string>
 
     <string name="ui_efsanevi">LEGENDARY</string>
+    <string name="ui_siradan">COMMON</string>
+    <string name="ui_ender">RARE</string>
+    <string name="ui_destansi">EPIC</string>
+    <string name="ui_alindi_caps">CLAIMED</string>
+    <string name="ui_hazir_caps">READY</string>
+    <string name="ui_tamamlandi_caps">COMPLETED</string>
+    <string name="ui_reklam_tv">AD</string>
     <string name="ui_sandik_acilamadi_tekrar_deneyin">Couldn\'t open the chest. Try again.</string>
     <string name="ui_sandigi_acmak_icin_dokun">Tap to open the chest!</string>
 

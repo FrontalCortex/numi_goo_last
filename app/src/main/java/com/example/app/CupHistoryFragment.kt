@@ -268,8 +268,8 @@ class CupHistoryFragment : Fragment() {
     private fun formatLabel(tab: RangeTab, dateStr: String): String {
         val date = DATE_FORMAT.parse(dateStr) ?: return dateStr
         val formatter = when (tab) {
-            RangeTab.WEEKLY, RangeTab.MONTHLY -> SimpleDateFormat("d MMM", Locale("tr"))
-            RangeTab.YEARLY, RangeTab.ALL -> SimpleDateFormat("MMM yy", Locale("tr"))
+            RangeTab.WEEKLY, RangeTab.MONTHLY -> SimpleDateFormat("d MMM", Locale.getDefault())
+            RangeTab.YEARLY, RangeTab.ALL -> SimpleDateFormat("MMM yy", Locale.getDefault())
         }
         return formatter.format(date)
     }

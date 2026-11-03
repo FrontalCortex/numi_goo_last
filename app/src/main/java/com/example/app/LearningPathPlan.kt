@@ -34,7 +34,8 @@ object LearningPathPlan {
     /** Seri adımının etiketi: ilk haftanın sonu. */
     private const val STREAK_STEP_DAYS = 7
 
-    private val TR = Locale("tr", "TR")
+    // Ay adları ve büyük harf uygulamanın dilinde (AppLanguage varsayılan yereli ayarlıyor).
+    private val LOCALE: Locale get() = Locale.getDefault()
 
     /** Eşiğe kadarki ders adımları (sandık dersleri dahil). */
     private fun stepsToMentalMath(): Int =
@@ -58,9 +59,9 @@ object LearningPathPlan {
         }
         return listOf(
             appString(R.string.ui_bugun),
-            SimpleDateFormat("d MMMM", TR).format(week.time).uppercase(TR),
+            SimpleDateFormat("d MMMM", LOCALE).format(week.time).uppercase(LOCALE),
             // LLLL: ayın tek başına kullanılan adı (bazı dillerde "d MMMM"deki hâlinden farklı).
-            SimpleDateFormat("LLLL yyyy", TR).format(target.time).uppercase(TR),
+            SimpleDateFormat("LLLL yyyy", LOCALE).format(target.time).uppercase(LOCALE),
         )
     }
 }

@@ -17,6 +17,7 @@ import android.widget.ImageView
 import android.os.Handler
 import android.os.Looper
 import androidx.activity.addCallback
+import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentNewChestBinding
 import kotlin.random.Random
@@ -55,20 +56,20 @@ class NewChestFragment : Fragment() {
     enum class ChestRarity(
         val drawableRes: Int, 
         val openDrawableRes: Int, 
-        val label: String, 
+        @StringRes val labelRes: Int,
         val labelColor: Int,
         val theme: RarityTheme
     ) {
-        COMMON(R.drawable.new_chest_close_ic1, R.drawable.new_chest_open_ic1, "SIRADAN",  0xFFFFB300.toInt(),
+        COMMON(R.drawable.new_chest_close_ic1, R.drawable.new_chest_open_ic1, R.string.ui_siradan, 0xFFFFB300.toInt(),
             RarityTheme(0xFF141F23.toInt(), 0xFF263238.toInt(), 0xFFFFD54F.toInt(), 0xFFFFB300.toInt(), 0xFF3A3010.toInt())
         ),
-        RARE(R.drawable.new_chest_close_ic2, R.drawable.new_chest_open_ic2, "ENDER",     0xFFFFFFFF.toInt(),
+        RARE(R.drawable.new_chest_close_ic2, R.drawable.new_chest_open_ic2, R.string.ui_ender, 0xFFFFFFFF.toInt(),
             RarityTheme(0xFF4AC3F6.toInt(), 0xFF2A9FE5.toInt(), 0xFFBCE5FB.toInt(), 0xFFBCE5FB.toInt(), 0xFF2A9FE5.toInt())
         ),
-        EPIC(R.drawable.new_chest_close_ic3, R.drawable.new_chest_open_ic3, "DESTANSI",  0xFFFFFFFF.toInt(),
+        EPIC(R.drawable.new_chest_close_ic3, R.drawable.new_chest_open_ic3, R.string.ui_destansi, 0xFFFFFFFF.toInt(),
             RarityTheme(0xFFAB47BC.toInt(), 0xFF8E24AA.toInt(), 0xFFE1BEE7.toInt(), 0xFFE1BEE7.toInt(), 0xFF8E24AA.toInt())
         ),
-        LEGENDARY(R.drawable.new_chest_close_ic4, R.drawable.new_chest_open_ic4, appString(R.string.ui_efsanevi), 0xFFFFFFFF.toInt(),
+        LEGENDARY(R.drawable.new_chest_close_ic4, R.drawable.new_chest_open_ic4, R.string.ui_efsanevi, 0xFFFFFFFF.toInt(),
             RarityTheme(0xFFFF9800.toInt(), 0xFFF57C00.toInt(), 0xFFFFE0B2.toInt(), 0xFFFFE0B2.toInt(), 0xFFF57C00.toInt())
         ),
     }
@@ -376,7 +377,7 @@ class NewChestFragment : Fragment() {
         }
         barStrips?.color = rarity.theme.bgColor
 
-        binding.chestRarityLabel.text = rarity.label
+        binding.chestRarityLabel.text = appString(rarity.labelRes)
         binding.chestRarityLabel.setTextColor(rarity.labelColor)
 
         // Eski yıldızların rengini yeni temanın rengine güncelle

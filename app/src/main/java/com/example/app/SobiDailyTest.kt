@@ -234,7 +234,7 @@ object SobiDailyTest {
     /** "2 basamaklı 3 sayı, 2,4 sn" */
     fun specText(level: Int): String {
         val s = SobiTestLevels.spec(level)
-        val sec = String.format(Locale("tr", "TR"), "%.1f", s.intervalMs / 1000.0).removeSuffix(",0")
+        val sec = String.format(Locale.getDefault(), "%.1f", s.intervalMs / 1000.0).removeSuffix(",0").removeSuffix(".0")
         return appString(R.string.sobi_test_spec, s.digits, s.count, sec)
     }
 

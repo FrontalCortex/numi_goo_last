@@ -572,7 +572,7 @@ class ShopFragment : Fragment() {
         buyText.text = LIFE_KEY_COST.toString()
 
         if (isInfinite || currentEnergy >= maxEnergy) {
-            timerText.text = "DOLU"
+            timerText.text = appString(R.string.fragment_shop_shop_life_timer_text)
             timerText.setTextColor(Color.parseColor("#78909C")) // Gri
             
             // Butonu gri yap

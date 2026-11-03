@@ -433,6 +433,13 @@
 
     <!-- NewChestFragment.kt -->
     <string name="ui_efsanevi">أسطوري</string>
+    <string name="ui_siradan">عادي</string>
+    <string name="ui_ender">نادر</string>
+    <string name="ui_destansi">ملحمي</string>
+    <string name="ui_alindi_caps">تم الاستلام</string>
+    <string name="ui_hazir_caps">جاهز</string>
+    <string name="ui_tamamlandi_caps">مكتمل</string>
+    <string name="ui_reklam_tv">إعلان</string>
     <string name="ui_sandik_acilamadi_tekrar_deneyin">تعذّر فتح الصندوق. حاول مجددًا.</string>
     <string name="ui_sandigi_acmak_icin_dokun">المس لفتح الصندوق!</string>
 

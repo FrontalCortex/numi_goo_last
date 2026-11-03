@@ -54,7 +54,7 @@ class RaceAdapter(
             // Apply state per raceBusyLevel (set everything explicitly)
             when (item.raceBusyLevel) {
                 0 -> {
-                    raceStatus.text = "TAMAMLANDI"
+                    raceStatus.text = appString(R.string.ui_tamamlandi_caps)
                     raceCard.setCardBackgroundColor(ContextCompat.getColor(context, R.color.lesson_completed))
                     lock.visibility = View.GONE
                 }

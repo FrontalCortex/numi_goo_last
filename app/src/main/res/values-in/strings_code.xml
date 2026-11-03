@@ -425,6 +425,13 @@
 
     <!-- NewChestFragment.kt -->
     <string name="ui_efsanevi">LEGENDARIS</string>
+    <string name="ui_siradan">BIASA</string>
+    <string name="ui_ender">LANGKA</string>
+    <string name="ui_destansi">EPIK</string>
+    <string name="ui_alindi_caps">DIAMBIL</string>
+    <string name="ui_hazir_caps">SIAP</string>
+    <string name="ui_tamamlandi_caps">SELESAI</string>
+    <string name="ui_reklam_tv">IKLAN</string>
     <string name="ui_sandik_acilamadi_tekrar_deneyin">Peti tidak bisa dibuka. Coba lagi.</string>
     <string name="ui_sandigi_acmak_icin_dokun">Ketuk untuk membuka peti!</string>
 

@@ -2453,7 +2453,7 @@ class BunnyMascotView @JvmOverloads constructor(
         paint.color = LIGHT
         rect.set(cx - AD_TV_W / 2f + 3f, AD_TV_TOP + 3f, cx + AD_TV_W / 2f - 3f, AD_TV_TOP + 18f)
         canvas.drawRoundRect(rect, 2f, 2f, paint)
-        drawText(canvas, "REKLAM", cx, AD_TV_TOP + 14.2f, 9.5f, AD_RED, 1f)
+        drawText(canvas, appString(R.string.ui_reklam_tv), cx, AD_TV_TOP + 14.2f, 9.5f, AD_RED, 1f)
     }
 
     /**
@@ -2525,7 +2525,7 @@ class BunnyMascotView @JvmOverloads constructor(
         paint.strokeWidth = 2.4f
         paint.color = AD_RED
         canvas.drawRoundRect(rect, 4f, 4f, paint)
-        drawText(canvas, "REKLAM", cx + 4f, 233f, 10f, AD_RED, 1f)   // pati sol kenara yaslanıyor
+        drawText(canvas, appString(R.string.ui_reklam_tv), cx + 4f, 233f, 10f, AD_RED, 1f)   // pati sol kenara yaslanıyor
         canvas.restore()
     }
 

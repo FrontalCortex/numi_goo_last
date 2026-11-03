@@ -477,8 +477,8 @@ class SobiChatFragment : Fragment() {
     private var query = ""
 
     private fun applyFilter() {
-        val q = query.trim().lowercase(TR)
-        adapter.items = if (q.isEmpty()) allSessions else allSessions.filter { it.title.lowercase(TR).contains(q) }
+        val q = query.trim().lowercase(LOCALE)
+        adapter.items = if (q.isEmpty()) allSessions else allSessions.filter { it.title.lowercase(LOCALE).contains(q) }
         adapter.notifyDataSetChanged()
         if (view != null) listEmpty.visibility = if (adapter.items.isEmpty()) View.VISIBLE else View.GONE
     }
@@ -564,7 +564,7 @@ class SobiChatFragment : Fragment() {
     }
 
     companion object {
-        private val TR = java.util.Locale("tr", "TR")
+        private val LOCALE: java.util.Locale get() = java.util.Locale.getDefault()
         private const val TYPING_TICK_MS = 30L
         /** Yazının bölündüğü adım sayısı: her cevap ~1 saniyede (30 ms × ~40) açılır. */
         private const val TYPING_STEPS = 40

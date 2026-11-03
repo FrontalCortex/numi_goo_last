@@ -294,7 +294,7 @@ class CupPathRoadFragment : Fragment() {
                     chest.translationY = 0f
                     chest.alpha = 0.6f
                     done.visibility = View.VISIBLE
-                    status.text = "ALINDI"
+                    status.text = appString(R.string.ui_alindi_caps)
                     status.setTextColor(COLOR_TEXT_DIM)
                 }
                 CupPathRewardRepository.MilestoneStatus.CLAIMABLE -> {
@@ -303,7 +303,7 @@ class CupPathRoadFragment : Fragment() {
                     chest.translationY = -closedChestLiftPx
                     chest.alpha = 1f
                     done.visibility = View.GONE
-                    status.text = "HAZIR"
+                    status.text = appString(R.string.ui_hazir_caps)
                     status.setTextColor(COLOR_READY)
                 }
                 CupPathRewardRepository.MilestoneStatus.LOCKED -> {

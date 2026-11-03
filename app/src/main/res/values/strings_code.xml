@@ -426,6 +426,13 @@
 
     <!-- NewChestFragment.kt -->
     <string name="ui_efsanevi">EFSANEVİ</string>
+    <string name="ui_siradan">SIRADAN</string>
+    <string name="ui_ender">ENDER</string>
+    <string name="ui_destansi">DESTANSI</string>
+    <string name="ui_alindi_caps">ALINDI</string>
+    <string name="ui_hazir_caps">HAZIR</string>
+    <string name="ui_tamamlandi_caps">TAMAMLANDI</string>
+    <string name="ui_reklam_tv">REKLAM</string>
     <string name="ui_sandik_acilamadi_tekrar_deneyin">Sandık açılamadı. Tekrar deneyin.</string>
     <string name="ui_sandigi_acmak_icin_dokun">Sandığı açmak için dokun!</string>
 

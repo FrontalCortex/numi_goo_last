@@ -268,7 +268,7 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
         }
 
         fun bind(section: SectionGroup, isExpanded: Boolean) {
-            b.sectionTitle.text = section.title.orEmpty().uppercase(TR)
+            b.sectionTitle.text = section.title.orEmpty().uppercase(LOCALE)
             b.sectionProgress.text = appString(R.string.ui_x_x_ders, section.finishedLessons, section.totalLessons)
             b.sectionChevron.rotation = if (isExpanded) 90f * RtlSupport.endSign(b.sectionChevron) else 0f // aynalı okta (Arapça) ters dönüş de aşağı bakar
         }
@@ -349,8 +349,8 @@ private const val TRACK_HEIGHT_DP = 52
 /** Sıfır dakikalık gün de görünsün diye taban yükseklik. */
 private const val MIN_BAR_HEIGHT_DP = 4
 
-/** Türkçe büyük harf dönüşümü için locale (I/İ sorunu). */
-private val TR = java.util.Locale("tr", "TR")
+/** Büyük harf dönüşümü uygulamanın dilinde (Türkçede I/İ; İngilizcede "i" → "I"). */
+private val LOCALE: java.util.Locale get() = java.util.Locale.getDefault()
 
 /**
  * Ortak durum noktasını renklendirir. Drawable [android.graphics.drawable.Drawable.mutate] ile
