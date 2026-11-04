@@ -579,6 +579,7 @@
     <string name="ui_abakusun_temeli_ve_toplama_kismini_bitir">أنهِ جزء «أساسيات المِعداد والجمع».</string>
     <string name="ui_abakuste_cikarma_kismini_bitir">أنهِ جزء «الطرح على المِعداد».</string>
     <string name="ui_abakuste_carpma_kismini_bitir">أنهِ جزء «الضرب على المِعداد».</string>
+    <string name="ui_x_bolumunun_son_dersini_bitir">أكمل الدرس الأخير من \"%1$s\" لفتح هذا القسم.</string>
     <string name="ui_bu_kismi_acmak_icin_plani_pro">رقِّ خطتك إلى Pro لفتح هذا الجزء.</string>
     <string name="ui_abakuste_toplama_kismini_bitir">أنهِ جزء «الجمع على المِعداد».</string>
     <string name="ui_toplama_ustaligi">إتقان الجمع</string>

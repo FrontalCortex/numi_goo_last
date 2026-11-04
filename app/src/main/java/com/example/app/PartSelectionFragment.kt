@@ -55,11 +55,13 @@ class PartSelectionFragment : Fragment() {
             GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
                 val part2ChestComplete = items2.filter { it.type == LessonItem.TYPE_CHEST }.lastOrNull()?.stepIsFinish == true
                 GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
-                    val part3ChestComplete = items3.filter { it.type == LessonItem.TYPE_CHEST }.lastOrNull()?.stepIsFinish == true
+                    // 2–6. kartların kapısı: önceki bölümün SON DERSİ (maraton değil). Son ders anahtarla da
+                    // açılabildiği için bölümler anahtar yoluyla da açılabiliyor.
+                    val lastLessonDone = mapOf(1 to lastLessonFinished(items1), 2 to lastLessonFinished(items2), 3 to lastLessonFinished(items3))
                     
                     val currentUser = auth.currentUser
                     if (currentUser == null) {
-                        finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                        finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, lastLessonDone)
                     } else {
                         firestore.collection("users").document(currentUser.uid)
                             .get()
@@ -68,10 +70,10 @@ class PartSelectionFragment : Fragment() {
                                 // biten kullanıcı Pro derslerine erişmeye devam ederdi.
                                 val plan = if (doc.exists()) PlanStatus.effectivePlan(doc) else "Free"
                                 val teacherApproved = doc.getBoolean("teacherApproved") == true
-                                finalizeSetup(view, plan, teacherApproved, part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                                finalizeSetup(view, plan, teacherApproved, part1ChestComplete, part2ChestComplete, lastLessonDone)
                             }
                             .addOnFailureListener {
-                                finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                                finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, lastLessonDone)
                             }
                     }
                 }
@@ -79,7 +81,27 @@ class PartSelectionFragment : Fragment() {
         }
     }
     
-    private fun finalizeSetup(view: View, plan: String, teacherApproved: Boolean, part1ChestComplete: Boolean, part2ChestComplete: Boolean, part3ChestComplete: Boolean) {
+    /** Bölümün son DERS item'ı (maraton/başlık değil) bitmiş mi. */
+    private fun lastLessonFinished(items: List<LessonItem>): Boolean =
+        items.lastOrNull { it.type == LessonItem.TYPE_LESSON }?.stepIsFinish == true
+
+    private fun lessonGatedState(partId: Int, prerequisitePart: Int, lastLessonDone: Map<Int, Boolean>): PartState {
+        val open = lastLessonDone[prerequisitePart] == true
+        return PartState(
+            partId,
+            visualActive = open,
+            functionalActive = open,
+            inactiveMessage = appString(R.string.ui_x_bolumunun_son_dersini_bitir, partTitle(prerequisitePart)),
+        )
+    }
+
+    private fun partTitle(partId: Int): String = when (partId) {
+        1 -> appString(R.string.ui_abakusun_temeli_ve_toplama)
+        2 -> appString(R.string.ui_abakuste_cikarma)
+        else -> appString(R.string.ui_abakuste_carpma)
+    }
+
+    private fun finalizeSetup(view: View, plan: String, teacherApproved: Boolean, part1ChestComplete: Boolean, part2ChestComplete: Boolean, lastLessonDone: Map<Int, Boolean>) {
         if (!isAdded) return
 
         val hasProPlan = PlanStatus.isProPlan(plan) || teacherApproved
@@ -92,11 +114,13 @@ class PartSelectionFragment : Fragment() {
                 return@getPartState PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
             }
             when (partId) {
-                // 1–6 her zaman açık (kullanıcı kararı 04.11.2026). Eskiden 2–6 önceki bölümün ünite
-                // maratonu bitmeden kapalıydı; artık kilitli ders 1 anahtarla açılabildiği için
-                // (LessonAdapter.unlockLessonWithKey) bölüm kapısı gereksiz bir ikinci duvardı.
-                // Bölüme girince ilk ders açık, gerisi sırayla ya da anahtarla açılıyor.
-                in 1..6 -> PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
+                // Kapı önceki bölümün SON DERSİ (kullanıcı kararı 04.11.2026). Eskiden ünite
+                // maratonuydu; maraton anahtarla açılamıyor, son ders açılabiliyor
+                // (LessonAdapter.unlockLessonWithKey), yani bölüm de anahtar yoluyla açılabiliyor.
+                1 -> PartState(1, visualActive = true, functionalActive = true, inactiveMessage = "")
+                2, 3, 4 -> lessonGatedState(partId, prerequisitePart = 1, lastLessonDone)
+                5 -> lessonGatedState(5, prerequisitePart = 2, lastLessonDone)
+                6 -> lessonGatedState(6, prerequisitePart = 3, lastLessonDone)
                 7 -> {
                     val functional = hasProPlan && part1ChestComplete
                     val msg = if (!hasProPlan) appString(R.string.ui_bu_kismi_acmak_icin_plani_pro) else appString(R.string.ui_abakuste_toplama_kismini_bitir)

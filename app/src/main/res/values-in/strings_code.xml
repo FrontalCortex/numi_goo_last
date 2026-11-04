@@ -555,6 +555,7 @@
     <string name="ui_abakusun_temeli_ve_toplama_kismini_bitir">Selesaikan bagian Dasar Sempoa dan Penjumlahan.</string>
     <string name="ui_abakuste_cikarma_kismini_bitir">Selesaikan bagian Pengurangan di Sempoa.</string>
     <string name="ui_abakuste_carpma_kismini_bitir">Selesaikan bagian Perkalian di Sempoa.</string>
+    <string name="ui_x_bolumunun_son_dersini_bitir">Selesaikan pelajaran terakhir \"%1$s\" untuk membuka bagian ini.</string>
     <string name="ui_bu_kismi_acmak_icin_plani_pro">Tingkatkan paketmu ke Pro untuk membuka bagian ini.</string>
     <string name="ui_abakuste_toplama_kismini_bitir">Selesaikan bagian Penjumlahan di Sempoa.</string>
     <string name="ui_toplama_ustaligi">Penguasaan Penjumlahan</string>
