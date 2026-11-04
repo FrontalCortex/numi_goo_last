@@ -1210,7 +1210,8 @@ incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
    `QuestionChatFragment.openMediaPicker()` artık `PickVisualMedia(ImageAndVideo)` açıyor, tür MIME'den.
    `READ_MEDIA_IMAGES`/`READ_MEDIA_VIDEO`/`READ_EXTERNAL_STORAGE` manifest'te `tools:node="remove"`;
    birleşmiş manifest'te üçü de yok. Cihazda bakılacak: fotoğraf ve video seçilip gönderilebiliyor mu.
-2. **Uygulama ikonu — ERTELENDİ (kullanıcı kararı 18.10.2026):** Sobi kafası (Freepik) logo olarak
+2. **Uygulama ikonu — YENİLENDİ (04.11.2026), aşağıdaki "Uygulama ikonu: yeni mavi tavşan" başlığına bak.**
+   Eski not: **ERTELENDİ (kullanıcı kararı 18.10.2026):** Sobi kafası (Freepik) logo olarak
    kullanılamıyor (koşullar 8.1) ama kapalı testte böyle kalıyor; herkese açık yayından önce
    düzeltilecek. Özgün abaküs ikonu denendi, kullanıcı istemedi (çizilmeyecek). `abacus_svg_ic`
    (Flaticon) da logo olamaz, yedek plan olarak sayılmamalı. Bildirim ve 512 mağaza ikonu da ertelendi.
@@ -1338,6 +1339,24 @@ Daha önce: versionCode 9 (bc5d267, aynı gün) 8'den (e6df925, 07.10.2026) bu y
 4bc317a'ya kadar taşıdı: öğretici ölçümü ve adım kimlikleri, dil yapısı Aşama 1–2, Hata Avcısı +
 admin paneli, seri hatırlatması düzeltmesi, Android 14–15+ çubuk/yayın düzeltmeleri. Aşağıda
 "commit edilmedi" yazan eski başlıkların hepsi commit'li ve bu sürümlerde.
+
+## Uygulama ikonu: yeni mavi tavşan (04.11.2026 — derlendi, cihazda GÖRÜLMEDİ, commit edilmedi)
+
+Freepik kafası ikondan kalktı. Kullanıcı ChatGPT'ye saydam arka planlı mavi tavşan çizdirdi
+(`design/sobi_ikon_kaynak.png`, 1254²). Bütün ikon dosyaları bundan `tools\ikon_uret.ps1` ile
+üretiliyor (Python yok; System.Drawing + gömülü C#). İkon değişirse yalnızca kaynağı değiştirip
+betiği yeniden çalıştırmak yeterli: `powershell -ExecutionPolicy Bypass -File tools\ikon_uret.ps1`
+(`-Onizleme yol.png` ile önce maske önizlemesi).
+- Ön katman ve tek renk sürüm artık vektör değil PNG: `mipmap-*dpi/ic_launcher_foreground.png`,
+  `ic_launcher_monochrome.png`; `mipmap-anydpi-v26` XML'leri `@mipmap/...`'e bakıyor. Eski
+  `drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`, `ic_notification.xml` silindi;
+  bildirim ikonu `drawable-*dpi/ic_notification.png` (ad aynı, kod değişmedi).
+- İçerik 108dp tuvalde 33.5dp yarıçaplı daireye sığdırıldı (güvenli alan 33dp); merkez, en uzak
+  noktayı (kulak uçları) en yakın tutan noktaya göre seçiliyor. Kaynağın alfa artıkları temizleniyor.
+- Tek renk: gözler, burun, ağız ve sarı iç kulaklar delik. Zemin mor (#5B3FD9) aynı kaldı.
+- `app/src/main/ic_launcher-playstore.png` (512²) de yenilendi; Play Console'a elle yüklenmeli.
+- Uygulama İÇİNDEKİ Sobi çizimi (`BunnyMascotArt`) hâlâ Freepik; atıf/yeniden çizim konusu sürüyor.
+- MIUI eski ikonu önbellekten gösterebilir (aşağıdaki 18.10 notu); kaldırıp kurmak gerekebilir.
 
 ## Uygulama ikonu: Sobi'nin kafası, mor zemin (16.10.2026 — commit'li, emülatörde görüldü, telefonda DENENMEDİ)
 
