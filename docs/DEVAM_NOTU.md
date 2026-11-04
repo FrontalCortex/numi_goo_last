@@ -42,7 +42,9 @@ Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
 - 1–6. bölümde kilitli DERS paneli: "1 anahtarla kilidi aç" (`LessonAdapter.unlockLessonWithKey`).
   Anahtar `MainActivity.spendKeysConfirmed` ile sunucuda düşülür, ONAYDAN sonra `isCompleted = true`
   yazılır ve panel açık hâliyle yeniden gösterilir. Can harcanmaz (can "Başla"da gider). Anahtar
-  yetmezse mağaza açılır. Ünite maratonu (sandık) bilerek dışarıda: ödülü 1 anahtardan büyük.
+  yetmezse mağaza açılır. Ünite maratonu da anahtarla açılabiliyor (04.11.2026); bölüm 2–6 kartları ve
+  kupa kartları önceki/aynı bölümün SON ÜNİTE MARATONU bitince açılıyor, uyarı "X bölümünün son
+  ünite maratonunu bitir".
 - Ölçüm: `lesson_unlock_offer` → `lesson_unlock_key` (talep), `lesson_unlock_no_keys` → mağaza
   `purchase_started` (gelir), `key_spent` (`spend_item = lesson_unlock`), kullanıcı özelliği
   `key_unlocker = true` (öğrenme: atlayanların `lesson_step_fail` oranı). Yeni olay boyutu YOK.
@@ -500,7 +502,11 @@ sayıları toplayabilirsin.", 5 "Ücretsiz denemek için yorumlara bilgi yazın.
   (246; kayıt örneğin ortasında başladı: Langkah 5/5 → Hasil → yeni örnek Langkah 1/4) · veli 30,1–31,8 + 34,8–39,6
   (195; "Gabungan" seçimi → Penguasaan rumus) · test iki parça (`_1` 90,8–92,2 + 95,8–97,2 + 103,0–104,6 + 111,0–113,0;
   `_2` 9,3–10,5 + 10,7–12,2 + 14,0–16,3 + 0,6 sn dondurma; 360). screenrecord 178 sn'de parça açıyor.
-- Sırada Arapça (uygulamada values-ar var; Arapça arayüzle çekilecek).
+- **Arapça (04.11.2026, ~74 sn, tamamlandı):** 4 kayıt kesildi, `public/r11ar_*.mp4`: egitim 12,6–21,6 (270) · anlamadim
+  17,3–20,2 + 24,3–28,8 (222; "لم أفهم هذا") · ornek 21,0–25,2 + 29,8–33,4 (234; "أعطني مثالًا" → adımlar → "انتهى
+  المثال") · veli 25,5–31,9 (192; "القاعدة المركّبة" → "إتقان القواعد"). test 3,0–4,3 + 19,6–21,4 +
+  96,8–100,9 (3 parça) + 103,8–104,6 + 105,5–106,3 + 0,8 sn dondurma (279). `Reklam11AR`, `render:r11ar` → `reklam11\Sorobit_reklam11_AR.mp4`;
+  sesler `tr_sesler.mjs r11ar` (hamlar `reklam11\ses_ar`); `DILLER.ar` `rtl: true` → sayfada `div { unicode-bidi: plaintext }` (her paragraf yönünü ilk harfinden alır, düzen değişmez), rakamlar batı; `TANITIM.ar`.
 
 ## Reklam 7 rekor Endonezce ve Arapça (03.11.2026 — ID ~52,7 sn, AR ~56,3 sn)
 
