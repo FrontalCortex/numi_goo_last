@@ -3318,7 +3318,9 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
         if (card.getTag(R.id.cupCardLockedTag) != true) return false
         Toast.makeText(
             card.context,
-            appString(R.string.ui_burayi_acmak_icin_x_yi_bitir, cupCardUnlockRequirements[index]),
+            // Kart, bölümün son ünite maratonu bitince açılıyor ([cupPartActive]); uyarı da bunu
+            // söylüyor. Eskiden "X'i bitir" diyordu, hangi adımın bitmesi gerektiği belli değildi.
+            appString(R.string.ui_x_bolumunun_son_unite_maratonunu_bitir, cupCardUnlockRequirements[index]),
             Toast.LENGTH_SHORT,
         ).show()
         return true

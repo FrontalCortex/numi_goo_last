@@ -556,7 +556,7 @@
     <string name="ui_abakusun_temeli_ve_toplama_kismini_bitir">Abaküsün Temeli ve Toplama kısmını bitir.</string>
     <string name="ui_abakuste_cikarma_kismini_bitir">Abaküste Çıkarma kısmını bitir.</string>
     <string name="ui_abakuste_carpma_kismini_bitir">Abaküste Çarpma kısmını bitir.</string>
-    <string name="ui_x_bolumunun_son_dersini_bitir">Bu kısmı açmak için \"%1$s\" bölümünün son dersini bitir.</string>
+    <string name="ui_x_bolumunun_son_unite_maratonunu_bitir">Açmak için \"%1$s\" bölümünün son ünite maratonunu bitir.</string>
     <string name="ui_bu_kismi_acmak_icin_plani_pro">Bu kısmı açmak için planı Pro\'ya yükselt.</string>
     <string name="ui_abakuste_toplama_kismini_bitir">Abaküste Toplama kısmını bitir.</string>
     <string name="ui_toplama_ustaligi">Toplama Ustalığı</string>

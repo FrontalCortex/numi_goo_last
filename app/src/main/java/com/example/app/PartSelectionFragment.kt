@@ -55,13 +55,13 @@ class PartSelectionFragment : Fragment() {
             GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
                 val part2ChestComplete = items2.filter { it.type == LessonItem.TYPE_CHEST }.lastOrNull()?.stepIsFinish == true
                 GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
-                    // 2–6. kartların kapısı: önceki bölümün SON DERSİ (maraton değil). Son ders anahtarla da
-                    // açılabildiği için bölümler anahtar yoluyla da açılabiliyor.
-                    val lastLessonDone = mapOf(1 to lastLessonFinished(items1), 2 to lastLessonFinished(items2), 3 to lastLessonFinished(items3))
+                    // 2–6. kartların kapısı: önceki bölümün SON ÜNİTE MARATONU. Maraton da 1 anahtarla
+                    // açılabildiği için (LessonAdapter.isKeyUnlockable) bölüm anahtar yoluyla da açılabilir.
+                    val lastMarathonDone = mapOf(1 to lastMarathonFinished(items1), 2 to lastMarathonFinished(items2), 3 to lastMarathonFinished(items3))
                     
                     val currentUser = auth.currentUser
                     if (currentUser == null) {
-                        finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, lastLessonDone)
+                        finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, lastMarathonDone)
                     } else {
                         firestore.collection("users").document(currentUser.uid)
                             .get()
@@ -70,10 +70,10 @@ class PartSelectionFragment : Fragment() {
                                 // biten kullanıcı Pro derslerine erişmeye devam ederdi.
                                 val plan = if (doc.exists()) PlanStatus.effectivePlan(doc) else "Free"
                                 val teacherApproved = doc.getBoolean("teacherApproved") == true
-                                finalizeSetup(view, plan, teacherApproved, part1ChestComplete, part2ChestComplete, lastLessonDone)
+                                finalizeSetup(view, plan, teacherApproved, part1ChestComplete, part2ChestComplete, lastMarathonDone)
                             }
                             .addOnFailureListener {
-                                finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, lastLessonDone)
+                                finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, lastMarathonDone)
                             }
                     }
                 }
@@ -81,17 +81,17 @@ class PartSelectionFragment : Fragment() {
         }
     }
     
-    /** Bölümün son DERS item'ı (maraton/başlık değil) bitmiş mi. */
-    private fun lastLessonFinished(items: List<LessonItem>): Boolean =
-        items.lastOrNull { it.type == LessonItem.TYPE_LESSON }?.stepIsFinish == true
+    /** Bölümün son ünite maratonu (son TYPE_CHEST item) bitmiş mi. */
+    private fun lastMarathonFinished(items: List<LessonItem>): Boolean =
+        items.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
 
-    private fun lessonGatedState(partId: Int, prerequisitePart: Int, lastLessonDone: Map<Int, Boolean>): PartState {
-        val open = lastLessonDone[prerequisitePart] == true
+    private fun marathonGatedState(partId: Int, prerequisitePart: Int, lastMarathonDone: Map<Int, Boolean>): PartState {
+        val open = lastMarathonDone[prerequisitePart] == true
         return PartState(
             partId,
             visualActive = open,
             functionalActive = open,
-            inactiveMessage = appString(R.string.ui_x_bolumunun_son_dersini_bitir, partTitle(prerequisitePart)),
+            inactiveMessage = appString(R.string.ui_x_bolumunun_son_unite_maratonunu_bitir, partTitle(prerequisitePart)),
         )
     }
 
@@ -101,7 +101,7 @@ class PartSelectionFragment : Fragment() {
         else -> appString(R.string.ui_abakuste_carpma)
     }
 
-    private fun finalizeSetup(view: View, plan: String, teacherApproved: Boolean, part1ChestComplete: Boolean, part2ChestComplete: Boolean, lastLessonDone: Map<Int, Boolean>) {
+    private fun finalizeSetup(view: View, plan: String, teacherApproved: Boolean, part1ChestComplete: Boolean, part2ChestComplete: Boolean, lastMarathonDone: Map<Int, Boolean>) {
         if (!isAdded) return
 
         val hasProPlan = PlanStatus.isProPlan(plan) || teacherApproved
@@ -114,13 +114,12 @@ class PartSelectionFragment : Fragment() {
                 return@getPartState PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
             }
             when (partId) {
-                // Kapı önceki bölümün SON DERSİ (kullanıcı kararı 04.11.2026). Eskiden ünite
-                // maratonuydu; maraton anahtarla açılamıyor, son ders açılabiliyor
-                // (LessonAdapter.unlockLessonWithKey), yani bölüm de anahtar yoluyla açılabiliyor.
+                // Kapı önceki bölümün son ünite maratonu (kullanıcı kararı 04.11.2026); uyarı artık
+                // "X bölümünün son ünite maratonunu bitir" diyor, eski "X kısmını bitir" yerine.
                 1 -> PartState(1, visualActive = true, functionalActive = true, inactiveMessage = "")
-                2, 3, 4 -> lessonGatedState(partId, prerequisitePart = 1, lastLessonDone)
-                5 -> lessonGatedState(5, prerequisitePart = 2, lastLessonDone)
-                6 -> lessonGatedState(6, prerequisitePart = 3, lastLessonDone)
+                2, 3, 4 -> marathonGatedState(partId, prerequisitePart = 1, lastMarathonDone)
+                5 -> marathonGatedState(5, prerequisitePart = 2, lastMarathonDone)
+                6 -> marathonGatedState(6, prerequisitePart = 3, lastMarathonDone)
                 7 -> {
                     val functional = hasProPlan && part1ChestComplete
                     val msg = if (!hasProPlan) appString(R.string.ui_bu_kismi_acmak_icin_plani_pro) else appString(R.string.ui_abakuste_toplama_kismini_bitir)

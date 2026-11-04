@@ -500,7 +500,7 @@
     <string name="ui_abakusun_temeli_ve_toplama_kismini_bitir">Finish the Abacus Basics and Addition part.</string>
     <string name="ui_abakuste_cikarma_kismini_bitir">Finish the Subtraction on the Abacus part.</string>
     <string name="ui_abakuste_carpma_kismini_bitir">Finish the Multiplication on the Abacus part.</string>
-    <string name="ui_x_bolumunun_son_dersini_bitir">Finish the last lesson of \"%1$s\" to unlock this part.</string>
+    <string name="ui_x_bolumunun_son_unite_maratonunu_bitir">Finish the last unit marathon of \"%1$s\" to unlock.</string>
     <string name="ui_bu_kismi_acmak_icin_plani_pro">Upgrade your plan to Pro to unlock this part.</string>
     <string name="ui_abakuste_toplama_kismini_bitir">Finish the Addition on the Abacus part.</string>
     <string name="ui_toplama_ustaligi">Addition Mastery</string>

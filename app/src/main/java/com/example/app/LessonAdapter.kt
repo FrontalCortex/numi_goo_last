@@ -677,15 +677,15 @@ class LessonAdapter(
     }
 
     /**
-     * Kilitli bir item anahtarla açılabilir mi: yalnızca 1–6. bölümlerdeki DERS item'ları.
+     * Kilitli bir item anahtarla açılabilir mi: 1–6. bölümlerdeki ders ve ünite maratonu item'ları.
      *
-     * Ünite maratonu (sandık) bilerek dışarıda: bitince anahtar/altın ödülü veriyor; 1
-     * anahtarla açılabilseydi ödül maliyetini aşar ve bedava anahtar döngüsü kurulurdu. Ayrıca
-     * maraton, ünitenin derslerini gerçekten öğrenip öğrenmediğini ölçen sınav. 7–8'de kilit
-     * `raceBusyLevel` ile yönetiliyor, o bölümler bu panele gelmiyor.
+     * Maraton da açılabiliyor (kullanıcı kararı 04.11.2026): açmak yalnızca girme hakkı veriyor,
+     * bitirmek (ve bölüm kapısını, kupa kartını açmak) için maratonu yine geçmek gerekiyor.
+     * 7–8'de kilit `raceBusyLevel` ile yönetiliyor, o bölümler bu panele gelmiyor.
      */
     private fun isKeyUnlockable(item: LessonItem): Boolean =
-        !item.isCompleted && item.type == LessonItem.TYPE_LESSON && globalPartId in 1..6
+        !item.isCompleted && globalPartId in 1..6 &&
+            (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST)
 
     private var keyUnlockInProgress = false
 
