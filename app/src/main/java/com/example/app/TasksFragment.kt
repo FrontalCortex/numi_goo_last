@@ -3316,13 +3316,12 @@ private fun loadAndShowCupPathDialogAfterCupUpdate(updatedCardId: Int? = null, u
      */
     private fun showCupCardLockedToastIfLocked(card: View, index: Int): Boolean {
         if (card.getTag(R.id.cupCardLockedTag) != true) return false
-        Toast.makeText(
-            card.context,
-            // Kart, bölümün son ünite maratonu bitince açılıyor ([cupPartActive]); uyarı da bunu
-            // söylüyor. Eskiden "X'i bitir" diyordu, hangi adımın bitmesi gerektiği belli değildi.
+        // Kart, bölümün son ünite maratonu bitince açılıyor ([cupPartActive]); uyarı da bunu
+        // söylüyor. Toast iki satırda kesiyordu, bkz. [LockedHint].
+        LockedHint.show(
+            card,
             appString(R.string.ui_x_bolumunun_son_unite_maratonunu_bitir, cupCardUnlockRequirements[index]),
-            Toast.LENGTH_SHORT,
-        ).show()
+        )
         return true
     }
 

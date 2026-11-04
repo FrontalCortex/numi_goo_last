@@ -146,7 +146,7 @@ class PartSelectionFragment : Fragment() {
             val state = getPartState(openPart)
             if (state.functionalActive) openMapForPart(openPart)
             else if (state.inactiveMessage.isNotBlank()) {
-                android.widget.Toast.makeText(requireContext(), state.inactiveMessage, android.widget.Toast.LENGTH_LONG).show()
+                LockedHint.show(view, state.inactiveMessage)
             }
         }
     }

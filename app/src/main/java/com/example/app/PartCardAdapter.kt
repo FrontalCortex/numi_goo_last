@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.airbnb.lottie.LottieAnimationView
@@ -119,7 +118,7 @@ class PartCardAdapter(
                 if (state.functionalActive) {
                     onCardClick(partId)
                 } else {
-                    Toast.makeText(context, state.inactiveMessage, Toast.LENGTH_SHORT).show()
+                    LockedHint.show(itemView, state.inactiveMessage)
                 }
             }
         }
