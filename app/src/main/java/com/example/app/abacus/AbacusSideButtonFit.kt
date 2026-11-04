@@ -78,21 +78,35 @@ class AbacusSideButtonFit(
         val parentLoc = IntArray(2)
         val loc = IntArray(2)
         parent.getLocationInWindow(parentLoc)
-        var columnLeft = Int.MAX_VALUE
+        // Sütun soldan sağa dillerde sağ kenarda, Arapçada (sağdan sola, end kısıtı) sol kenarda.
+        // Eskiden hep sağda varsayılıyordu: Arapçada sütunun sol kenarı ~0 çıkınca ayrılan yer
+        // neredeyse ekranın tamamı oluyor, abaküs alt sınıra (MIN_FIT) küçülüyordu. Artık her düğme
+        // hangi yarıdaysa o kenardan kapladığı genişlik sayılıyor.
+        var reservedEdge = -1f
         for (button in sideButtons) {
             if (!button.isShown || button.width <= 0) continue
             button.getLocationInWindow(loc)
-            val left = loc[0] - parentLoc[0]
-            val top = loc[1] - parentLoc[1]
-            val bottom = top + button.height
+            // getLocationInWindow ölçeği hesaba katıyor: Arapçada yan düğmeler scaleX = -1 ile
+            // aynalanıyor (LessonSideButtons), o zaman dönen nokta düğmenin SAĞ kenarı oluyor.
+            // Düğme 0..132 yerine 132..264 sanılıyor, abaküs ~%69'a küçülüyordu. Görünen kenarları
+            // ölçeğin işaretine göre al.
+            val bw = button.width * button.scaleX
+            val bh = button.height * button.scaleY
+            val x0 = loc[0] - parentLoc[0]
+            val y0 = loc[1] - parentLoc[1]
+            val left = x0 + minOf(0f, bw)
+            val right = x0 + maxOf(0f, bw)
+            val top = y0 + minOf(0f, bh)
+            val bottom = y0 + maxOf(0f, bh)
             // Abaküsle aynı yükseklikte olmayan düğme (ör. tahtanın yanındaki) yer kaplamaz.
             if (bottom <= abacusTop || top >= abacusBottom) continue
-            columnLeft = minOf(columnLeft, left)
+            val fromEdge = if (left + right > parent.width) parent.width - left else right
+            reservedEdge = maxOf(reservedEdge, fromEdge)
         }
-        if (columnLeft == Int.MAX_VALUE) return 1f
+        if (reservedEdge < 0f) return 1f
 
-        // Abaküs ortalı: sağdaki sütun + boşluk kadar yer solda da bırakılmalı.
-        val reserved = parent.width - columnLeft + gapPx
+        // Abaküs ortalı: kenardaki sütun + boşluk kadar yer karşı kenarda da bırakılmalı.
+        val reserved = reservedEdge + gapPx
         val available = parent.width - 2f * reserved
         return (available / (w * userScaleX)).coerceIn(MIN_FIT, 1f)
     }

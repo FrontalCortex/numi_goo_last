@@ -415,6 +415,21 @@ class TutorialFragment : Fragment() {
         if (tableWidth <= 0) return
         val parentWidth = (table.parent as? View)?.width ?: return
         val gapPx = 4f * resources.displayMetrics.density
+        if (RtlSupport.isRtl(table)) {
+            // Arapçada aynalı: quitButton sağda, tablo solda (end). Sol-üst köşe sabit; sağdaki
+            // quitButton'a kadar sığdır. Soldan sağa hesabı burada negatif ölçek verip tabloyu
+            // alt sınıra (0.3) küçültüyordu.
+            val safeRight = binding.quitButton.left - gapPx
+            val visibleLeft = maxOf(table.left, 0).toFloat()
+            val pivotL = visibleLeft - table.left
+            val fitScaleL = (safeRight - visibleLeft) / (tableWidth - pivotL)
+            val scaleL = minOf(baseScale, fitScaleL).coerceAtLeast(0.3f)
+            table.pivotX = pivotL
+            table.pivotY = 0f
+            table.scaleX = scaleL
+            table.scaleY = scaleL
+            return
+        }
         val safeLeft = binding.quitButton.right + gapPx
         // Taşan tablolarda (genişlik > ekran) sağ kenar ekranın dışında kalabiliyor; görünen sağ
         // kenarı ekranla sınırla ve pivotu ona göre kaydır.
