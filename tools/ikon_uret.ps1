@@ -61,21 +61,18 @@ public static class IkonUret {
         var kirp = temiz.Clone(new Rectangle(x0, y0, x1 - x0 + 1, y1 - y0 + 1), PixelFormat.Format32bppArgb);
         temiz.Dispose();
 
-        // En küçük kapsayan daireye yakın merkez: kaba ızgarada ara.
+        // Merkez: sınır kutusunun ortası (üst ve alt boşluk eşit). Eskiden en küçük kapsayan dairenin
+        // merkezi kullanılıyordu; iki yana açık uzun kulaklar onu yukarı çekip tavşanı aşağı itiyordu
+        // (görünen 72dp'de üstte ~10dp, altta ~3dp boşluk). Yarıçap: bu merkezden en uzak opak nokta;
+        // böylece kulak uçları yine güvenli alanda kalıyor, tavşan biraz küçülüyor.
         var kd = Oku(kirp); int kw = kirp.Width, kh = kirp.Height;
-        var px = new System.Collections.Generic.List<Point>();
-        for (int y = 0; y < kh; y += 3) for (int x = 0; x < kw; x += 3)
-            if (kd[y * kw * 4 + x * 4 + 3] > 128) px.Add(new Point(x, y));
-        float enIyiR = float.MaxValue; PointF enIyi = new PointF(kw / 2f, kh / 2f);
-        for (int cy = kh / 3; cy <= kh * 2 / 3; cy += 4) for (int cx = kw * 2 / 5; cx <= kw * 3 / 5; cx += 4) {
-            float m = 0;
-            foreach (var p in px) {
-                float dx = p.X - cx, dy = p.Y - cy, dd = dx * dx + dy * dy;
-                if (dd > m) { m = dd; if (m >= enIyiR) break; }
+        float cx0 = kw / 2f, cy0 = kh / 2f, enUzak = 0;
+        for (int y = 0; y < kh; y++) for (int x = 0; x < kw; x++)
+            if (kd[y * kw * 4 + x * 4 + 3] > 128) {
+                float dx = x - cx0, dy = y - cy0, dd = dx * dx + dy * dy;
+                if (dd > enUzak) enUzak = dd;
             }
-            if (m < enIyiR) { enIyiR = m; enIyi = new PointF(cx, cy); }
-        }
-        merkez = enIyi; yaricap = (float)Math.Sqrt(enIyiR) + 2;
+        merkez = new PointF(cx0, cy0); yaricap = (float)Math.Sqrt(enUzak) + 2;
         return kirp;
     }
 

@@ -1351,8 +1351,10 @@ betiği yeniden çalıştırmak yeterli: `powershell -ExecutionPolicy Bypass -Fi
   `ic_launcher_monochrome.png`; `mipmap-anydpi-v26` XML'leri `@mipmap/...`'e bakıyor. Eski
   `drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`, `ic_notification.xml` silindi;
   bildirim ikonu `drawable-*dpi/ic_notification.png` (ad aynı, kod değişmedi).
-- İçerik 108dp tuvalde 33.5dp yarıçaplı daireye sığdırıldı (güvenli alan 33dp); merkez, en uzak
-  noktayı (kulak uçları) en yakın tutan noktaya göre seçiliyor. Kaynağın alfa artıkları temizleniyor.
+- İçerik 108dp tuvalde 33.5dp yarıçaplı daireye sığdırıldı (güvenli alan 33dp). Merkez sınır
+  kutusunun ortası (üst/alt boşluk eşit); ilk sürümde en küçük kapsayan dairenin merkeziydi ve iki
+  yana açık kulaklar yüzünden tavşan aşağıda kalıyordu (kullanıcı fark etti, yeniden çizim gerekmedi).
+  Kaynağın alfa artıkları temizleniyor.
 - Tek renk: gözler, burun, ağız ve sarı iç kulaklar delik. Zemin mor (#5B3FD9) aynı kaldı.
 - `app/src/main/ic_launcher-playstore.png` (512²) de yenilendi; Play Console'a elle yüklenmeli.
 - Uygulama İÇİNDEKİ Sobi çizimi (`BunnyMascotArt`) hâlâ Freepik; atıf/yeniden çizim konusu sürüyor.
