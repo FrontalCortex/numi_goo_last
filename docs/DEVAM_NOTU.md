@@ -402,6 +402,11 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
 - **versionCode 19 AAB (03.11.2026 18:52):** 18 + dil seçeneği (Türkçe / English / Bahasa Indonesia / العربية),
   sağdan sola düzen, Baloo Bhaijaan 2, öğretici seslendirmesi (en/id/ar, Storage'dan). Test anahtarları kapalı;
   imzalı (NUMIGO). `app/build/outputs/bundle/release/app-release.aab` (67 MB), kapalı teste kullanıcı yükleyecek.
+- **versionCode 20 AAB (04.11.2026 03:58, HEAD 1aad981, temiz ağaçtan):** 19 + kilitli ders/maraton 1 anahtarla,
+  bölüm kartları son ünite maratonuyla açılıyor, kilit uyarısı Snackbar, hata avcısı ödülü Sobi kredisi,
+  Arapçada abaküs küçülme düzeltmesi. Test anahtarları kapalı; imzalı (Numigo). 70 MB, kapalı teste kullanıcı
+  yükleyecek. Ekran kaydı izinleri ve servisi bilerek kaldı (öğretmen ekranı hâlâ ulaşıyor); Veri güvenliği
+  formunda fotoğraf/video/ses beyanı bu yüzden duruyor.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 
