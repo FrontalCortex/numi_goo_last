@@ -8044,11 +8044,14 @@ exports.claimBugReportReward = functions.https.onCall(async (data, context) => {
   }
   const reportRef = db.collection('bugReports').doc(reportId);
   const userRef = db.collection('users').doc(uid);
+  const sobiRef = db.collection('sobiChats').doc(uid);
 
   return db.runTransaction(async (transaction) => {
-    const [reportSnap, userSnap] = await Promise.all([
+    // Okumalar yazmalardan önce (transaction kuralı); sobiChats ödülde Sobi kredisi yoksa da okunuyor.
+    const [reportSnap, userSnap, sobiSnap] = await Promise.all([
       transaction.get(reportRef),
       transaction.get(userRef),
+      transaction.get(sobiRef),
     ]);
     const { reward } = throwIfFailed(
       bugReportClaimDecision(reportSnap.exists ? reportSnap.data() : null, uid)
@@ -8061,7 +8064,20 @@ exports.claimBugReportReward = functions.https.onCall(async (data, context) => {
     const currency = (Number.parseInt(user.currency, 10) || 0) + reward.gold;
     const questionCredits = (Number.parseInt(user.questionCredits, 10) || 0) + reward.credits;
 
-    transaction.update(userRef, { keys, currency, questionCredits });
+    // Sobi kredisinin asıl bakiyesi sobiChats/{uid}.credits; users.sobiCredits üst panelin
+    // gösterim kopyası (mağaza satın alımıyla aynı kalıp, bkz. ürün teslimi).
+    let sobiCredits = null;
+    if (reward.sobiCredits > 0) {
+      sobiCredits = (sobiSnap.exists ? Number(sobiSnap.get('credits')) || 0 : 0) + reward.sobiCredits;
+      transaction.set(sobiRef, { credits: sobiCredits }, { merge: true });
+    }
+
+    transaction.update(userRef, {
+      keys,
+      currency,
+      questionCredits,
+      ...(sobiCredits != null ? { sobiCredits } : {}),
+    });
     transaction.update(reportRef, {
       rewardClaimed: true,
       claimedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -8071,9 +8087,11 @@ exports.claimBugReportReward = functions.https.onCall(async (data, context) => {
       rewardGold: reward.gold,
       rewardKeys: reward.keys,
       rewardCredits: reward.credits,
+      rewardSobiCredits: reward.sobiCredits,
       keys,
       currency,
       questionCredits,
+      sobiCredits,
     };
   });
 });

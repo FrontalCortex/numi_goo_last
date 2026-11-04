@@ -11,6 +11,7 @@
 
     <!-- Ödül metinleri -->
     <string name="bug_report_reward_credits">%1$d konsultasi guru</string>
+    <string name="bug_report_reward_sobi_credits">%1$d kredit Sobi</string>
     <string name="bug_report_reward_keys">%1$d kunci</string>
 
     <!-- Bildirim ekranı -->

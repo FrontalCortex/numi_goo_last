@@ -42,9 +42,9 @@ object BugReports {
     const val TEXT_MAX = 1000
 
     /** Ödül kademeleri — sunucudaki BUG_REPORT_TIERS ile aynı olmalı (yalnızca gösterim). */
-    enum class Tier(val id: String, val gold: Int, val keys: Int, val credits: Int) {
-        BIG("big", 10_000, 200, 3),
-        SMALL("small", 1_000, 20, 0),
+    enum class Tier(val id: String, val gold: Int, val keys: Int, val credits: Int, val sobiCredits: Int) {
+        BIG("big", 10_000, 200, 0, 50),
+        SMALL("small", 1_000, 20, 0, 5),
     }
 
     /** Ret gerekçeleri — sunucudaki BUG_REPORT_REJECT_REASONS ile aynı. */
@@ -79,6 +79,7 @@ object BugReports {
         val rewardGold: Int,
         val rewardKeys: Int,
         val rewardCredits: Int,
+        val rewardSobiCredits: Int,
         val rewardClaimed: Boolean,
         val rejectReason: RejectReason?,
         val reviewNote: String,
@@ -89,8 +90,8 @@ object BugReports {
         val isRejected: Boolean get() = status == STATUS_REJECTED
         val isClaimable: Boolean get() = isApproved && !rewardClaimed
 
-        /** "3 öğretmene danış + 10.000 altın + 200 anahtar" gibi. */
-        val rewardText: String get() = rewardText(rewardCredits, rewardGold, rewardKeys)
+        /** "50 Sobi kredisi + 10.000 altın + 200 anahtar" gibi. */
+        val rewardText: String get() = rewardText(rewardCredits, rewardGold, rewardKeys, rewardSobiCredits)
 
         /** Admin için tek satır: sürüm, cihaz, Android, dil. */
         val deviceLine: String
@@ -106,7 +107,8 @@ object BugReports {
     const val STATUS_APPROVED = "approved"
     const val STATUS_REJECTED = "rejected"
 
-    fun rewardText(credits: Int, gold: Int, keys: Int): String = listOfNotNull(
+    fun rewardText(credits: Int, gold: Int, keys: Int, sobiCredits: Int = 0): String = listOfNotNull(
+        if (sobiCredits > 0) appString(R.string.bug_report_reward_sobi_credits, sobiCredits) else null,
         if (credits > 0) appString(R.string.bug_report_reward_credits, credits) else null,
         if (gold > 0) appString(R.string.ui_x_altin, formatAmount(gold)) else null,
         if (keys > 0) appString(R.string.bug_report_reward_keys, keys) else null,
@@ -132,6 +134,7 @@ object BugReports {
             rewardGold = (reward?.get("gold") as? Number)?.toInt() ?: 0,
             rewardKeys = (reward?.get("keys") as? Number)?.toInt() ?: 0,
             rewardCredits = (reward?.get("credits") as? Number)?.toInt() ?: 0,
+            rewardSobiCredits = (reward?.get("sobiCredits") as? Number)?.toInt() ?: 0,
             rewardClaimed = doc.getBoolean("rewardClaimed") == true,
             rejectReason = RejectReason.from(doc.getString("rejectReason")),
             reviewNote = doc.getString("reviewNote").orEmpty(),
@@ -280,7 +283,8 @@ object BugReports {
                 val gold = (data?.get("rewardGold") as? Number)?.toInt() ?: 0
                 val keys = (data?.get("rewardKeys") as? Number)?.toInt() ?: 0
                 val credits = (data?.get("rewardCredits") as? Number)?.toInt() ?: 0
-                onResult(true, appString(R.string.ui_x_kazandin, rewardText(credits, gold, keys)))
+                val sobiCredits = (data?.get("rewardSobiCredits") as? Number)?.toInt() ?: 0
+                onResult(true, appString(R.string.ui_x_kazandin, rewardText(credits, gold, keys, sobiCredits)))
             }
             .addOnFailureListener { e ->
                 Log.w(TAG, "claimBugReportReward başarısız", e)

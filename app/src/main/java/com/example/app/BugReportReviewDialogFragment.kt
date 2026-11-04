@@ -116,7 +116,7 @@ class BugReportReviewDialogFragment : DialogFragment() {
             .setMessage(
                 appString(
                     R.string.bug_report_admin_confirm_approve,
-                    BugReports.rewardText(tier.credits, tier.gold, tier.keys),
+                    BugReports.rewardText(tier.credits, tier.gold, tier.keys, tier.sobiCredits),
                 )
             )
             .setPositiveButton(R.string.bug_report_admin_confirm) { _, _ -> submit(tier, null) }

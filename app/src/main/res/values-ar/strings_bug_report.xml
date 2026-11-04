@@ -8,6 +8,7 @@
     <string name="bug_report_card_claim">اجمع مكافأتك</string>
 
     <string name="bug_report_reward_credits">استشارات المعلّم: %1$d</string>
+    <string name="bug_report_reward_sobi_credits">رصيد Sobi: %1$d</string>
     <string name="bug_report_reward_keys">المفاتيح: %1$d</string>
 
     <string name="bug_report_title">الإبلاغ عن خطأ</string>

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Büyük ödülün üç parçası yan yana: danışma kredisi, altın, anahtar. Kart ve bildirim ekranı ortak. -->
+<!-- Büyük ödülün üç parçası yan yana: Sobi kredisi, altın, anahtar. Kart ve bildirim ekranı ortak. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -14,11 +14,11 @@
         android:gravity="center"
         android:orientation="horizontal">
 
-        <ImageView
+        <!-- Sobi kredisi: üst para panelindeki ve "Sobi'ye sor" düğmelerindeki Sobi kafası. -->
+        <com.example.app.SobiHeadView
             android:layout_width="26dp"
             android:layout_height="26dp"
-            android:contentDescription="@null"
-            android:src="@drawable/chat_credit_ic3" />
+            android:contentDescription="@string/shop_sobi_credit_desc" />
 
         <TextView
             android:id="@+id/rewardCreditsText"

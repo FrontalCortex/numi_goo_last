@@ -11,6 +11,7 @@
 
     <!-- Ödül metinleri -->
     <string name="bug_report_reward_credits">%1$d öğretmene danış</string>
+    <string name="bug_report_reward_sobi_credits">%1$d Sobi kredisi</string>
     <string name="bug_report_reward_keys">%1$d anahtar</string>
 
     <!-- Bildirim ekranı -->

@@ -32,10 +32,15 @@
  * `big`: gerçek, yeni bir hata. `small`: küçük bir kusur ya da başkasının daha önce
  * bildirdiği bir hatayı ikinci kez bildirmek (kullanıcı kararı: ilk bildiren tam ödülü
  * alır; sonrakini admin reddeder ya da teşekkür olarak küçük ödül verir).
+ *
+ * `credits` öğretmen danışma kredisi (şimdilik kullanılmıyor), `sobiCredits` Sobi kredisi.
+ * 04.11.2026: büyük ödüldeki 3 danışma kredisi 50 Sobi kredisine çevrildi (kullanıcı kararı);
+ * küçük ödül her kalemde büyüğün onda biri olduğu için 5 Sobi kredisi aldı. Önceden onaylanmış
+ * bildirimler kendi kayıtlı ödülünü verir (onay anında bildirime kopyalanıyor).
  */
 const BUG_REPORT_TIERS = {
-  big: { gold: 10000, keys: 200, credits: 3 },
-  small: { gold: 1000, keys: 20, credits: 0 },
+  big: { gold: 10000, keys: 200, credits: 0, sobiCredits: 50 },
+  small: { gold: 1000, keys: 20, credits: 0, sobiCredits: 5 },
 };
 
 /** Ret gerekçeleri; istemci koda göre kullanıcının dilinde metin gösteriyor. */
@@ -171,7 +176,7 @@ function reviewDecision(report, input) {
 
 /**
  * Kullanıcı onaylanan bildirimin ödülünü toplayabilir mi.
- * @returns `{ ok: true, reward: { gold, keys, credits } }` ya da hata.
+ * @returns `{ ok: true, reward: { gold, keys, credits, sobiCredits } }` ya da hata.
  */
 function claimDecision(report, uid) {
   if (!report || report.uid !== uid) return fail('not-found', 'Bildirim bulunamadı.');
@@ -186,6 +191,7 @@ function claimDecision(report, uid) {
     gold: Math.max(0, Math.trunc(Number(r.gold) || 0)),
     keys: Math.max(0, Math.trunc(Number(r.keys) || 0)),
     credits: Math.max(0, Math.trunc(Number(r.credits) || 0)),
+    sobiCredits: Math.max(0, Math.trunc(Number(r.sobiCredits) || 0)),
   };
   return { ok: true, reward };
 }

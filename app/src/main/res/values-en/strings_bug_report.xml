@@ -8,6 +8,7 @@
     <string name="bug_report_card_claim">Collect your reward</string>
 
     <string name="bug_report_reward_credits">%1$d tutor questions</string>
+    <string name="bug_report_reward_sobi_credits">%1$d Sobi credits</string>
     <string name="bug_report_reward_keys">%1$d keys</string>
 
     <string name="bug_report_title">Report a Bug</string>
