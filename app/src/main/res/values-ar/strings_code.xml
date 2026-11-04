@@ -845,6 +845,7 @@
     <string name="ui_sobi_sana_her_gun_hatirlatsin_mi">هل تريد أن يذكّرك Sobi كل يوم؟</string>
     <string name="ui_saati_istedigin_zaman_degistirebilirsin">يمكنك تغيير الوقت متى شئت</string>
     <string name="ui_kac_yasindasin">كم عمرك؟</string>
+    <string name="ui_bizi_nereden_duydun">كيف عرفت بنا؟</string>
     <string name="ui_abakus_kullanmayi_biliyor_musun">هل تعرف كيف تستخدم المِعداد؟</string>
     <string name="ui_abakus_hic_bilmiyorum">لا أعرفه أبدًا</string>
     <string name="ui_abakus_biraz_biliyorum">أعرفه قليلًا</string>

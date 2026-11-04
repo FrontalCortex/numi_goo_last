@@ -726,6 +726,7 @@
     <string name="ui_sobi_sana_her_gun_hatirlatsin_mi">Should Sobi remind you every day?</string>
     <string name="ui_saati_istedigin_zaman_degistirebilirsin">You can change the time whenever you want</string>
     <string name="ui_kac_yasindasin">How old are you?</string>
+    <string name="ui_bizi_nereden_duydun">How did you hear about us?</string>
     <string name="ui_abakus_kullanmayi_biliyor_musun">Do you know how to use an abacus?</string>
     <string name="ui_abakus_hic_bilmiyorum">Not at all</string>
     <string name="ui_abakus_biraz_biliyorum">A little</string>

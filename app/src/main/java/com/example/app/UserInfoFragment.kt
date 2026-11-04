@@ -834,7 +834,7 @@ class UserInfoFragment : Fragment() {
     private fun bindQuestionHeader(step: Step) {
         val question: CharSequence? = when (step) {
             Step.AGE -> appString(R.string.ui_kac_yasindasin)
-            Step.SOURCE -> "Bizi nereden duydun?"
+            Step.SOURCE -> appString(R.string.ui_bizi_nereden_duydun)
             Step.SOROBAN -> appString(R.string.ui_abakus_kullanmayi_biliyor_musun)
             Step.GOAL -> appString(R.string.ui_her_gun_ne_kadar_ogrenmek_istersin)
             Step.ROADMAP -> withGoal(appString(R.string.ui_her_gun), appString(R.string.ui_buraya_varacaksin))
