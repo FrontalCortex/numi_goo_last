@@ -16,10 +16,15 @@ import com.google.android.material.snackbar.Snackbar
 object LockedHint {
 
     private const val MAX_LINES = 5
+    private const val SNACKBAR_ELEVATION_DP = 32f
 
     fun show(anchor: View, message: String) {
         val bar = Snackbar.make(anchor, message, Snackbar.LENGTH_LONG)
         bar.view.findViewById<TextView>(com.google.android.material.R.id.snackbar_text)?.maxLines = MAX_LINES
+        // Kupa yolu paneli bir BottomSheet: Snackbar onunla aynı CoordinatorLayout'a ekleniyor ama
+        // panelin elevation'ı (16dp) Snackbar'ınkinden (6dp) büyük olduğu için panelin ALTINDA
+        // çiziliyordu. Yükseklik panelin üstüne çekiliyor; yerleşim değişmiyor.
+        bar.view.elevation = SNACKBAR_ELEVATION_DP * anchor.resources.displayMetrics.density
         bar.show()
     }
 }
