@@ -36,6 +36,14 @@ soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `Tutoria
 Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
 Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
 
+## Başkasının profili → sahte "Sezon ödüllerini topla" (06.11.2026 — derlendi, commit yok, telefonda denenmedi)
+- Belirti: başka bir kullanıcının profiline bakınca kendi hesapta "Sezon 10 ödülleri" kapısı, iki kez.
+- Neden: `ProfileFragment.loadBadgeProgressFromFirestore` karşı tarafın rozet belgesini ortak
+  `BadgeProgressRepository`'ye yazıyordu; kapı (`MainActivity.tryShowSeasonLeaderboardRewardGateIfNeeded`,
+  back stack dinleyicileri) bekleyen sezonu oradan okuyor. Firestore'a bir şey yazılmadı.
+- Düzeltme: profil kartı kendi kopyasını (`shownBadgeProgress`) tutuyor; ortak depoya yalnızca kendi
+  profilinde ve okuma başarılıysa yazılıyor (hata durumunda artık depo boş veriyle ezilmiyor).
+
 ## Yayın hediyesi: ilk 100 öğrenciye 1 ay Pro (05.11.2026 — testler geçti; kullanıcı onayıyla commit + push edildi, deploy planı "full" (effectivePlan çoğu fonksiyonda); telefonda denenmedi)
 - Söz: Reklam 13 kapanışı (TR, EN, ID, AR) "10 Kasım'da yayında, ilk 100 kişiye 1 ay ücretsiz tam
   erişim". Play indirme sırasını vermediği için sıra = uygulamada hesap açılış sırası.
@@ -434,6 +442,11 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   Arapçada abaküs küçülme düzeltmesi. Test anahtarları kapalı; imzalı (Numigo). 70 MB, kapalı teste kullanıcı
   yükleyecek. Ekran kaydı izinleri ve servisi bilerek kaldı (öğretmen ekranı hâlâ ulaşıyor); Veri güvenliği
   formunda fotoğraf/video/ses beyanı bu yüzden duruyor.
+- **versionCode 21 AAB (04.11.2026 04:07, HEAD 7259e43, temiz ağaçtan):** 20 + kayıttaki "Bizi nereden duydun?"
+  dile göre (sabit Türkçeydi), uygulamadaki veli onayı listesinde danışma yerine Sobi maddesi. Sabit metin
+  taraması (Kotlin, layout, values-en/in/ar eksik anahtar) başka arayüz metni bulmadı; kalanlar log, deneme
+  ekranı etiketi, Sobi modeline giden bağlam ve sayı/denklem dizeleri. İmzalı (Numigo), 70 MB, kapalı teste
+  kullanıcı yükleyecek. 20 yüklenmediyse doğrudan 21 yüklenebilir.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 
@@ -511,6 +524,37 @@ ustalaştığında, boncukları hayal ederek bu işlemleri zihninde yaparsın.",
 sayıları toplayabilirsin.", 5 "Ücretsiz denemek için yorumlara bilgi yazın."
 **Sonuç (27.10.2026):** Reels'te patladı, tek videoda ~150 takipçi.
 
+## Endonezce katılım videosu ve mağaza (04.11.2026 — mağaza taslağı kaydedildi, incelemeye gönderilmedi)
+
+- Kapalı test artık bütün ülkelerde (kullanıcı ekledi). Telefonda güncel sürüm var; kapalı teste kullanıcı yükleyecek.
+- Play Console varsayılan mağaza girişine **Endonezce – id** eklendi; ad/kısa/tam açıklama girildi ve "Taslak olarak
+  kaydet"lendi. Kullanıcı kontrol edip Yayın özetinden gönderecek. Görseller yerelleştirilmedi (Türkçe ekran
+  görüntüleri kullanılıyor; Endonezce ekran görüntüleri sonra). Metinler `docs/MAGAZA_METINLERI.md`'de (TR de orada).
+- Aynı gün Türkçe tam açıklamaya "Takıldığı yerde Sobi yanında" bölümü eklendi (hata analizi, Sobi'ye sor,
+  Sobi'nin testi, "bazen yanılabilir" uyarısı; öğretmene soru zaten metinde yoktu) ve taslak kaydedildi (2015/4000).
+  Ardından aynı bölümle Endonezce güncellendi, **İngilizce (en-US) ve Arapça (ar)** eklendi; dördü de taslak olarak
+  kaydedildi ve sayfa yeniden açılınca doğrulandı (TR 2015, AR 1785, ID 2263, EN 2159 karakter). İncelemeye
+  GÖNDERİLMEDİ (kullanıcı kontrol edecek). Görseller hiçbir dilde yerelleştirilmedi (Türkçe ekran görüntüleri).
+  Kullanıcı yeni uygulama simgesini (`Downloads\Sorobit_magaza_ikonu_512.png`) Türkçeye yükledi; AR/ID/EN kendi
+  simgesi olmadığı için aynı görseli kullanıyor (dört dilde aynı görsel adresi, 04.11.2026'da doğrulandı).
+  Öne çıkan görsel dil başına: `montaj\betikler\magaza_one_cikan.ps1` → `magaza\one_cikan_gorsel_{tr,en,id,ar}_1024x500.png`
+  (sağda telefon kartında Reklam 11 "örnek" kesitinden Sobi ekranı: tr `r11_oz4` kare 60 = kullanıcının seçtiği "Sonuç",
+  en/id kare 165, ar kare 105; Arapça aynalı, Baloo Bhaijaan 2). Üretildi, kullanıcı onayı bekliyor; konsola YÜKLENMEDİ.
+  Kullanıcı öne çıkan görselleri kendisi yükleyecek (tarayıcı panelinde dosya yükleme aracı yok).
+  6. telefon ekran görüntüsü ("Gelişimini her gün görün") dil başına yenilendi: `montaj\betikler\magaza_ekran_dil.ps1`
+  → `magaza\{tr,en,id,ar}\ekran_goruntusu_6.png`, veli panelindeki Kural ustalığı (Reklam 11 veli kesitleri: tr kare 60,
+  en/id 105, ar 135). Alt yazı "Veli panelinde her kuralın ustalık durumu" oldu. Diğer 5 ekran yalnızca Türkçe.
+  Yeni 7. ekran ("Eksiklerini yapay zekâ ile kapatsın" / Close the gaps with AI / Tutup kekurangan dengan AI /
+  سُدّ الثغرات بالذكاء الاصطناعي): öne çıkan görseldeki Sobi kareleri, aynı betikte. Kullanıcı yükleyecek.
+  1–5 de EN/ID/AR için üretildi (aynı betik, Reklam 11 HAM kayıtları `r11<dil>_*_1.mp4`): 4'te Kupa Yolu kaydı olmadığı
+  için Sobi testinde doğru cevap anı; EN 2 konular ızgarası değil ders yolu listesi. **ID 2 YOK**: Endonezce konular
+  ekranı kaydı yok, uygulama Endonezceyken konular ekranının kısa kaydı gerekiyor.
+  TR 5 de diğer dillerle aynı türe çevrildi: `magaza\tr\ekran_goruntusu_5.png` (r11_oz6_1, Sobi testi "Soru 5/10").
+  AR/EN dil eklemeleri + TR/ID açıklamaları "Kaydet"lendi, Yayın özetinde 4 değişiklik gönderilmeyi bekliyor.
+  Konsol notu: "Dilleri yönetin"de Uygula'ya ilk tıklama pencere daraldığı için dışarı düşüp seçimi iptal edebiliyor.
+- Ayrı Google Grubu açılmayacak (kullanıcı kararı). Sırada: telefonu Endonezceye alıp katılım videosunu çekmek;
+  sonra `katilim_grafik.ps1` / `katilim_montaj.ps1` dile göre (başlıklar, kapak, kapanış, kesim zamanları).
+
 ## Reklam 11 İngilizce (03.11.2026 — ~64,9 sn, Jessica; sırada Endonezce, sonra Arapça)
 
 - `Reklam11.jsx` artık dile göre kuruluyor: `DILLER.tr/en` (yazılar, kelime anahtarları, sayı biçimi, "canlandırma"
@@ -552,6 +596,46 @@ sayıları toplayabilirsin.", 5 "Ücretsiz denemek için yorumlara bilgi yazın.
   rakamı. Inter'de Arapça harf yok → sistem yazı tipi. `Son.jsx` METIN'e id ve ar eklendi (ar kartı rtl).
 - Yorum kelimesi her dilde "INFO"; telefon kaydı Türkçe arayüzlü (kullanıcı böyle kalsın dedi).
 
+## Reklam 15: soroban övgüsü + "kurslar pahalı" + Sorobit (05.11.2026, ilk çıktı, ~37,3 sn, yalnızca TR, müzik yok)
+
+- `src/modern/Reklam15.jsx`, `npm run render:r15` → `reklam15\Sorobit_reklam15.mp4`. Kanca ve takip kapanışı Reklam 13
+  yeni ile aynı (s1 ve c kayıtları `reklam13\ses_yeni`'den `reklam15\ses`'e kopya); ses Jessica,
+  `tr_sesler.mjs r15 [--uret]`, `r15_zaman.json`. Müzik yok (kullanıcı isteği), efektler var.
+- Orta: P1 "Cevap: soroban. Japonya'da yüzyıllardır…" (r10_shuzan tam ekran, SOROBAN başlığı) → P2 "Ama soroban
+  kursları pahalı; her aile bu eğitimi karşılayamıyor." (₺₺₺ fiyat etiketi + PAHALI damgası) → P3 "Biz de herkes
+  öğrenebilsin diye Sorobit'i geliştirdik." (logo) → P4 "Yapay zekâ öğretmenimiz Sobi ile çocuğunuz bu tekniğe
+  ücretsiz başlayabilir." (telefonda r11_egitim, "Ücretsiz başla" rozeti) → P5 veli paneli (r11_veli) → T "Hepsi oyun
+  oynar gibi." + takip kartı.
+- Kullanıcı kararları: "ücretsiz başlayabilir" (Free plan enerjili, tam erişim Pro; "ücretsiz öğrenebilir" yanıltıcı
+  olurdu), "geliştirdik" + Jessica (kadın sesiyle "geliştirdim" kurucu sanılırdı). Kurs fiyatı rakamla verilmedi.
+- **Düzeltme (05.11.2026, ~35,8 sn):** ekranda her adımda seslendirmenin tam metni (`Akis`: cümle parçaları kendi
+  kelimelerinde değişir; kullanıcı kısaltılmış yazı istemiyor — sonraki reklamlarda da). p1/p4 kullanıcının TTS yazımıyla
+  ("Cevap, soroban. JJaponya’da…", "Yapaay zekA…"; ekranda doğru yazım), kelime anahtarı `jjaponyada`. Kullanıcının
+  kendi ElevenLabs web kaydı sesi farklı buldu → sesleri API'den biz üretiyoruz. Telefon bölümü cümle kadar
+  (`TELEFON = SES_ONCE + t + 10`, sessiz bekleme kalktı); `Son.jsx`'te "Aferin" sesi yalnızca `aferin < kart` ise.
+- **EN / ID / AR (05.11.2026):** `Reklam15.jsx` artık `DILLER` + `yap(dil)` (metin parçaları, animasyon kelimeleri `k`,
+  fiyat etiketi $$$ / Rp Rp Rp, rozetler, takip kartı); `render:r15en|r15id|r15ar` → `reklam15\Sorobit_reklam15_{EN,ID,AR}.mp4`.
+  Sesler `tr_sesler.mjs r15en|r15id|r15ar --uret` (anadil: Jessica / honeypie / Habibah; hamlar `reklam15\ses_{dil}`;
+  s1 ve c `reklam13\ses_yeni_{dil}`'den kopya). Telefondaki kayıtlar dilin kendi arayüzüyle (r11{dil}_egitim, _veli).
+  Velilere hitap ID "Anda", AR "طفلك". Arapça yazılar rtl.
+
+## Reklam 14: "En hızlı nasıl toplarız?" — abaküs sıfırdan (04.11.2026, ilk çıktı, kullanıcı bakmadı, ~52 sn)
+
+Kullanıcı isteği: 7.256.138 + 1.641.851 sorusuyla başla; abaküs sıfırdan kurulsun (her basamağa bir çubuk, yukarı
+itilen boncuk 1; 1, 2, 10, 11), 9 boncuk sığmadığı için beşlik boncuk (5, 50, 61), sonra işlem soroban mantığıyla.
+- `src/modern/Reklam14.jsx`, `npm run render:r14` → `reklam14\Sorobit_reklam14.mp4` (1562 kare). Sesler
+  `node araclar/tr_sesler.mjs r14 [--uret]` (Jessica, s1–s10 + t + c; hamlar `reklam14\ses`, `r14_zaman.json`).
+- Kendi 2D abaküsü (r5y_boncuk.png, Abakus2D ölçüleri): önce çubukta 9 tane 1'lik boncuk; s5'te üstteki 5 boncuk
+  turkuaz parlar, birleşir, kiriş gelir ve sorobana dönüşür. Sonra 7 çubuk; işlem kuralsız (elde yok), 8.897.989.
+- Kapanış Reklam 13 yeni gibi Son kisa (3B telefon + "bilgi").
+- **Düzeltme (04.11.2026, kullanıcı isteği):** s2 metni "Heer basamak…" (yeniden üretildi); s5, s7 sonrası ve s9
+  öncesi boşluklar kısaldı (PAY s5 4, s7 4, s8 0); çıktı 1,2 kat hızlı: `render:r14` sonra `hizla:r14`
+  (ffmpeg setpts + atempo) → `reklam14\Sorobit_reklam14.mp4`. `out\` içindeki 1x kalır.
+- **EN / ID / AR (04.11.2026):** `Reklam14.jsx` artık `yap(dil)` ile kuruluyor (`DILLER`: yazılar, etiketler, sayı
+  biçimi, animasyon kelimeleri `k`); kompozisyonlar `Reklam14EN/ID/AR`, `render:r14en|id|ar` + `hizla:r14en|id|ar` →
+  `reklam14\Sorobit_reklam14_{EN,ID,AR}.mp4`. Sesler `tr_sesler.mjs r14en|r14id|r14ar` (Jessica; hamlar
+  `reklam14\ses_{en,id,ar}`). Yorum kelimesi INFO; Arapça rtl (plaintext), rakamlar batı.
+
 ## Reklam 12 ve 13: ara anlatım denemeleri (03.11.2026 — ~64,5 sn, ElevenLabs "Jessica")
 
 Kullanıcı: Reklam 11/10 mantığıyla (kanca → ara anlatım → Sobi tanıtımı) iki video; tanıtım Reklam 11'dekiyle aynı.
@@ -563,6 +647,36 @@ Kullanıcı: Reklam 11/10 mantığıyla (kanca → ara anlatım → Sobi tanıt�
   + Fuji/kimonolu çocuk (Pexels) → çocuk klibi → kıyas kartı (Japonya ✓ / Türkiye ✗) → anket kartı EVET/HAYIR
   "yorumlara yaz" → G "Okulda yoksa evde öğren" → K "Okulda öğretilmeyen yöntem artık cebinde". Doğruluk: soroban
   Japon ilkokul müfredatında (3–4. sınıf); flash anzan daha çok kurslarda — metin klibin okul dersi olduğunu söylemiyor.
+- **Reklam 13 yeni (04.11.2026, kullanıcı isteği, ~36,5 sn)** — ayrı video: `Reklam13Yeni.jsx`, `render:r13y` →
+  `reklam13\Sorobit_reklam13_yeni.mp4`; sesler `tr_sesler.mjs r13y` (yalnızca s1, t, c → `r13ys_*.wav`,
+  `r13y_zaman.json`, hamlar `reklam13\ses_yeni`), s2–s6 Reklam 13'ün kayıtları. Eski Reklam 13 (`Reklam13.jsx`,
+  ~64 sn) geri kuruldu; eski s1 kaydının üstüne yazıldığı için s1 yeniden üretildi (aynı metin, yeni çekim).
+  **Akıcılık (04.11.2026, kullanıcı isteği, ~34 sn):** kelime yolu (742'yi söyleme), "hadi deneyelim", "saymadın",
+  hayal/eller ve "yetenek değil beceri" çıktı. Artık hepsi r13y sesleri, sıra A G L M F T: A kanca → G g1 "Çünkü
+  sayıları kafasında boncuk olarak görüyor" (742 kurulur) → L d1 742 + 152 = 894 → M m1 "Sadece küçük boncuk
+  hareketleriyle çok büyük sayıları bile toplayabilirsin": abaküs 10 çubuğa genişler, 1.234.056.894 + 3.215.732.105
+  = 4.449.788.999 (kuralsız, 3 karede bir çubuk) → F f1 faydalar (zihinden hesap gelişir / hesap makinesi gerekmez /
+  çok daha hızlı düşünürsün; Reels talebi "zihinden hesabı geliştirmek") + çocuk klibi → T. Sahne arası boşluklar
+  kısaldı; G-L-M aynı abaküs, aralarında whoosh yok.
+  **Dil sürümleri (04.11.2026):** `Reklam13Yeni.jsx` artık `DILLER` tablosuyla tr/en/id/ar (`yap(dil)`, Reklam 7 EN
+  gibi); `render:r13yen|r13yid|r13yar` → `reklam13\Sorobit_reklam13_yeni_{EN,ID,AR}.mp4`. Sesler `tr_sesler.mjs
+  r13yen|r13yid|r13yar --uret` (hamlar `reklam13\ses_yeni_{en,id,ar}`, `public/r13y{dil}s_*.wav`). Kullanıcı isteği:
+  her dil kendi anadil sesiyle — hesaba eklenmiş kütüphane sesleri API'den çalışıyor: id honeypie
+  (`3AwU3nHsI4YWeBJbz6yn`, genç kadın), ar Habibah (`w4LX7bK479eHGM1k15Em`, genç kadın, Modern Standart Arapça), en
+  Jessica (premade). Hesapta ayrıca id: Selma Sita, Bee Ard; ar: Aseel, Rawi, Asmaa. Yorum kelimesi yabancı dillerde
+  "INFO". Boncuk olayları her dilin kelimesinde (`anahtar`: hundreds/ratusan/المئات…); Arapça yazılar rtl.
+  **Takip kapanışı (05.11.2026, kullanıcı isteği, 4 dil):** kapalı test / "bilgi yaz" çağrısı yerine c "Sorobit 10
+  Kasım'da yayında. İlk 100 kişiye 1 ay ücretsiz tam erişim hediye. Kaçırmamak için hemen takip et!" (kullanıcı 1 ay
+  seçti). `Son.jsx`'e isteğe bağlı `takip` eklendi (`TakipKarti`: tarih, hediye rozeti, Instagram mavisi "Takip et"
+  düğmesi "takip/follow/تابعنا" kelimesinden 8 kare sonra basılır → "Takip ediliyor ✓"; `sonSure`'nin 6. parametresi
+  `takipBas`); diğer reklamlar etkilenmez. TR ~38,9 sn. **Yapılması gereken:** ilk 100 hesaba 1 ay tam erişimin
+  yayın gününden önce uygulamada (hesap açılış sırasına göre) hazır olması — söz verildi.
+  Kanca artık üstte Reklam 10'un perdesi
+  (r10_japon.mp4'ten yalnızca perde kırpılıyor: x 252–780, y 298–690; kaynak 134. kareden, 10 sayı akar; perdeye cevap
+  konmadı) + altta r11_cocuk; ses s1 "Bu çocuk bu sayıları nasıl bu kadar hızlı topluyor?". Sobi tanıtımı (G, O1–O5,
+  K) kaldırıldı → Reklam 7'deki gibi kısa 3B telefon + "bilgi" kartı (`Son kisa`), sesler t "Sorobit uygulaması bunu
+  yapay zekâ ile oyun oynar gibi öğretir." ve c "Ücretsiz denemek için yorumlara bilgi yaz." (Jessica). Ara bölüm
+  (s2–s6) henüz aynı; kullanıcıya daha somut, "ben de yapabilirim" hissi veren bir ara bölüm önerildi.
 - **Reklam 13 "Bu dahilik değil"** (`Reklam13.jsx`, `render:r13` → `reklam13\`): çocuk klibi + "DAHİ DEĞİL" damgası →
   "742" ve "yedi yüz kırk iki" balonu (kelime yolu) → 742 abaküste (görsel yol) → hayal + eller havada → araştırma
   kartları Sözel ✗ / Görsel ✓, kaynak Frank & Barner (2012), J. Exp. Psychol.: General → "YETENEK" üstü çizili,

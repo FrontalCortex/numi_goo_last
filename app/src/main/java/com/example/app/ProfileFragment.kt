@@ -80,6 +80,25 @@ class ProfileFragment : Fragment() {
     /** Başkasının profilini gösterirken set edilir. Null = kendi profili */
     private var targetUid: String? = null
     private val isOtherUser get() = targetUid != null && targetUid != auth.currentUser?.uid
+
+    /**
+     * Profil kartının gösterdiği rozet verisi; kart yalnızca buradan okur.
+     * [BadgeProgressRepository] giriş yapan kullanıcıya ait ortak depo: sezon ödül kapısı
+     * bekleyen sezonu oradan okuyor. Eskiden başkasının profili de oraya yazılıyordu ve
+     * o kişinin toplanmamış sezon ödülü bizim hesapta "Ödülleri topla" ekranı açıyordu.
+     */
+    private var shownBadgeProgress = UserBadgeProgress()
+    private var shownBadgeStates: List<BadgeState> = BadgeProgressEngine.calculate(shownBadgeProgress)
+
+    /**
+     * [shareWithRepo]: yalnızca Firestore'dan gerçekten okunan veri ortak depoya geçer.
+     * Okuma hatasında boş veriyle depoyu ezmiyoruz (bekleyen ödül vb. silinirdi).
+     */
+    private fun showBadgeProgress(progress: UserBadgeProgress, shareWithRepo: Boolean) {
+        shownBadgeProgress = progress
+        shownBadgeStates = BadgeProgressEngine.calculate(progress)
+        if (shareWithRepo && !isOtherUser) BadgeProgressRepository.update(progress)
+    }
     private val lockedBaseColor: Int
         get() = ContextCompat.getColor(requireContext(), R.color.badge_locked_base)
     private val lockedTopColor: Int
@@ -401,7 +420,7 @@ class ProfileFragment : Fragment() {
                     isDataLoaded = true
                     isUserDataLoading = false
                 } else {
-                    BadgeProgressRepository.update(UserBadgeProgress())
+                    showBadgeProgress(UserBadgeProgress(), shareWithRepo = true)
                     bindRandomProfileBadges()
                     showAvatar(if (isOtherUser) null else AvatarStore.loadActive(requireContext()))
                     binding.tvLongestStreak.text = appString(R.string.ui_en_uzun_seri_0_gun)
@@ -415,7 +434,7 @@ class ProfileFragment : Fragment() {
                     isUserDataLoading = false
                     return@addOnFailureListener
                 }
-                BadgeProgressRepository.update(UserBadgeProgress())
+                showBadgeProgress(UserBadgeProgress(), shareWithRepo = false)
                 bindRandomProfileBadges()
                 Log.e("ProfileFragment", "Firestore'dan kullanıcı bilgileri yüklenemedi", e)
                 hideLoadingState()
@@ -848,7 +867,10 @@ class ProfileFragment : Fragment() {
                         badgeProgressDoc(uid).set(missing, SetOptions.merge())
                     }
                 }
-                BadgeProgressRepository.update(BadgeProgressFirestore.userBadgeProgressFromStateSnapshot(badgeDoc))
+                showBadgeProgress(
+                    BadgeProgressFirestore.userBadgeProgressFromStateSnapshot(badgeDoc),
+                    shareWithRepo = true,
+                )
                 bindRandomProfileBadges()
                 binding.profileBadgesCard.visibility = View.VISIBLE
                 if (!isOtherUser) {
@@ -857,7 +879,7 @@ class ProfileFragment : Fragment() {
             }
             .addOnFailureListener {
                 if (!isAdded) return@addOnFailureListener
-                BadgeProgressRepository.update(UserBadgeProgress())
+                showBadgeProgress(UserBadgeProgress(), shareWithRepo = false)
                 bindRandomProfileBadges()
                 binding.profileBadgesCard.visibility = View.VISIBLE
             }
@@ -877,7 +899,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun getBadgeLevel(kind: BadgeKind): Int {
-        val progress = BadgeProgressRepository.getUserBadgeProgress()
+        val progress = shownBadgeProgress
         val raw = when (kind) {
             BadgeKind.DART -> progress.userDartProgress
             BadgeKind.FISHING -> progress.userFishingProgress
@@ -911,7 +933,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun getBadgeSortingWeight(kind: BadgeKind): Double {
-        val progress = BadgeProgressRepository.getUserBadgeProgress()
+        val progress = shownBadgeProgress
         val raw = when (kind) {
             BadgeKind.DART -> progress.userDartProgress
             BadgeKind.FISHING -> progress.userFishingProgress
@@ -953,7 +975,7 @@ class ProfileFragment : Fragment() {
             ProfileBadgeSlot(binding.badgeItemGolf, binding.badgeGolfBase, binding.badgeGolfTop, binding.badgeGolfValue),
         )
 
-        val badgesByType = BadgeProgressRepository.getStates().associateBy { it.kind }
+        val badgesByType = shownBadgeStates.associateBy { it.kind }
 
         // İlk grup (sabit öncelikli): GOLD, SILVER, BRONZE, CUP, KARATE
         val firstGroupOrder = listOf(
