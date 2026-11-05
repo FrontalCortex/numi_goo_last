@@ -36,6 +36,33 @@ soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `Tutoria
 Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
 Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
 
+## Yayın hediyesi: ilk 100 öğrenciye 1 ay Pro (05.11.2026 — testler geçti; kullanıcı onayıyla commit + push edildi, deploy planı "full" (effectivePlan çoğu fonksiyonda); telefonda denenmedi)
+- Söz: Reklam 13 kapanışı (TR, EN, ID, AR) "10 Kasım'da yayında, ilk 100 kişiye 1 ay ücretsiz tam
+  erişim". Play indirme sırasını vermediği için sıra = uygulamada hesap açılış sırası.
+- Sunucu: `functions/launchGift.js`, tetikleyici `grantLaunchGiftOnSignup` (`users/{uid}` onCreate,
+  `failurePolicy: true`). Transaction: `launchGift/counter.count` < 100 ise +1, defter
+  `launchGiftClaims/{uid}` (aynı hesap doküman silip yeniden yaratsa da ikinci kez almaz),
+  `users/{uid}.giftProUntil` = şimdi + 30 gün, `giftProSource = 'launch_2026_11'`.
+- Sayılmayanlar: Auth hesabı 10.11.2026 00:00 TR'den (09.11 21:00 UTC) önce açılanlar, öğretmenler,
+  `isTester: true`, `.env`'deki `LAUNCH_GIFT_EXCLUDED_EMAILS` (virgüllü) listesi. Yayından sonra
+  açılacak test hesapları için bu listeye e-posta ekle (isTester konsoldan sonradan yazıldığı için
+  kayıt anında genelde yok).
+- `plan` alanına dokunulmuyor. Sunucuda `effectivePlan` hediyeyi Pro sayıyor (enerji, Sobi, kredi
+  bonusu); abonelik rütbe kararı (`resolvePlanUpdate`) yeni `subscriptionPlan`'i kullanıyor, yani
+  hediyeli kullanıcının aldığı Lite reddedilmiyor. İstemcide `PlanStatus.effectivePlan` aynı kural;
+  `MainActivity` ve `LessonAdapter`'daki elle plan okuması PlanStatus'a bağlandı.
+- Kurallar: `giftProUntil`, `giftProSource` sunucu alanı (create ve update kapalı); sayaç/defter
+  catch-all ile kapalı.
+- Testler: `node functions/scripts/test-launch-gift.js` (emülatörle 120 hesap / 15 paralel işçi →
+  tam 100), `firestore-rules-tests` (52 + 65 + 38 geçti), `PlanStatusTest` (8), plan/abonelik/kredi
+  testleri geçti. 120'si birden aynı anda: emülatörde kilit zaman aşımı → `maxAttempts: 30` +
+  failurePolicy eklendi.
+- Bilinen eksikler: tetikleyici kayıttan birkaç saniye sonra yazdığı için kullanıcı ilk açılışta Pro'yu
+  görmeyebilir (sonraki plan okumasında görür); uygulamada "hediye kazandın" mesajı ve bitişe yakın
+  bildirim yok; profil rozeti (`publicProfiles.plan`) hediyeyi göstermiyor; Hesap ayarlarındaki
+  "Ödemeler" kartı ham `plan`'a bakıyor (doğru: hediyede ödeme yok).
+- Sayacı izlemek: Firestore'da `launchGift/counter` (count), kimin aldığı `launchGiftClaims`.
+
 ## Kilitli ders 1 anahtarla açılıyor (04.11.2026 — derlendi, cihazda denenmedi)
 - Can yapısı DEĞİŞMEDİ (kullanıcı kararı 04.11.2026): her ders başlatma 1 can; ücretsiz 5 can / 10 dk,
   Lite 10 can / 7 dk, Pro/Premium sonsuz. "Yalnızca çıkış/başarısızlıkta can" önerisi reddedildi.

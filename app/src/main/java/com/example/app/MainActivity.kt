@@ -2651,10 +2651,8 @@ class MainActivity : AppCompatActivity() {
                     // planExpiresAt: doğrulanmış Play aboneliğinin bitiş zamanı (ms).
                     // Süresi geçmişse kullanıcı Free'ye düşer — abonelik iptal edildiğinde
                     // sunucudan yeni bir doğrulama gelmese bile Pro süresiz kalmasın diye.
-                    val storedPlan = doc.getString("plan") ?: "Free"
-                    val planExpiresAt = doc.getLong("planExpiresAt")
-                    val planExpired = planExpiresAt != null && planExpiresAt < System.currentTimeMillis()
-                    val plan = if (planExpired) "Free" else storedPlan
+                    // Yayın hediyesi (giftProUntil) de burada sayılıyor, bkz. PlanStatus.
+                    val plan = PlanStatus.effectivePlan(doc)
                     val role = doc.getString("role") ?: ""
                     val teacherApproved = doc.getBoolean("teacherApproved") == true
                     // Avatar başka cihazda değişmiş ya da hesap değişmiş olabilir; alt bar ikonu

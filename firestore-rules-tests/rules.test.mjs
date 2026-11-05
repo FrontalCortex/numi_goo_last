@@ -178,6 +178,41 @@ await check('admin alaniyla kayit olunamiyor', assertFails(
 await check('admin alani olmadan kayit olunuyor', assertSucceeds(
   setDoc(doc(veli, 'users/veli'), { uid: 'veli', role: 'STUDENT', keys: 1, currency: 0 })));
 
+// Yayin hediyesi (functions/launchGift.js): ilk 100 ogrenciye 1 ay Pro. Alanlar ve sayac
+// yalniz sunucuda; istemci yazabilseydi kendine sinirsiz Pro verir ya da sayaci doldururdu.
+console.log('\n-- YAYIN HEDIYESI: alanlar ve sayac sunucuya ait --');
+const ayse = testEnv.authenticatedContext('ayse').firestore();
+await check('giftProUntil ile kayit olunamiyor', assertFails(
+  setDoc(doc(ayse, 'users/ayse'), {
+    uid: 'ayse', role: 'STUDENT', keys: 1, currency: 0, giftProUntil: Date.now() + 1e10,
+  })));
+await check('giftProSource ile kayit olunamiyor', assertFails(
+  setDoc(doc(ayse, 'users/ayse'), {
+    uid: 'ayse', role: 'STUDENT', keys: 1, currency: 0, giftProSource: 'x',
+  })));
+await check('hediye alani olmadan kayit olunuyor', assertSucceeds(
+  setDoc(doc(ayse, 'users/ayse'), { uid: 'ayse', role: 'STUDENT', keys: 1, currency: 0 })));
+await check('kullanici kendine giftProUntil yazamiyor', assertFails(
+  updateDoc(doc(ayse, 'users/ayse'), { giftProUntil: Date.now() + 1e10 })));
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await updateDoc(doc(ctx.firestore(), 'users/ayse'), {
+    giftProUntil: Date.now() + 1e9, giftProSource: 'launch_2026_11',
+  });
+});
+await check('kullanici hediyesini uzatamiyor', assertFails(
+  updateDoc(doc(ayse, 'users/ayse'), { giftProUntil: Date.now() + 1e10 })));
+await check('kullanici hediyesini silemiyor', assertFails(
+  updateDoc(doc(ayse, 'users/ayse'), { giftProUntil: deleteField() })));
+await check('hediyeli kullanici baska alanini guncelleyebiliyor', assertSucceeds(
+  updateDoc(doc(ayse, 'users/ayse'), { name: 'Ayse' })));
+await check('kullanici kendi hediye alanini okuyabiliyor', assertSucceeds(
+  getDoc(doc(ayse, 'users/ayse'))));
+await check('sayac okunamiyor', assertFails(getDoc(doc(ayse, 'launchGift/counter'))));
+await check('sayac yazilamiyor', assertFails(
+  setDoc(doc(ayse, 'launchGift/counter'), { count: 100 })));
+await check('hediye defteri yazilamiyor', assertFails(
+  setDoc(doc(ayse, 'launchGiftClaims/ayse'), { uid: 'ayse' })));
+
 console.log('\n-- REGRESYON: dokunulmayan yollar --');
 await check('kendi lessonProgress yazimi', assertSucceeds(
   setDoc(doc(ali, 'users/ali/lessonProgress/1'), { x: 1 })));

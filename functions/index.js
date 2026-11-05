@@ -37,6 +37,8 @@ const {
 const classes = require('./classes');
 // Ödevler (kurs öğretmeninin sınıfına verdiği); doğrulama orada, Firestore işi "Ödevler" bölümünde.
 const homework = require('./homework');
+// Yayın hediyesi: ilk 100 öğrenciye 1 ay Pro (bkz. launchGift.js).
+const launchGift = require('./launchGift');
 // `sendUserNotification` bir fonksiyon bildirimi (hoisted), yani burada tanımından önce
 // geçirilebiliyor; çağrı zaten çalışma anında, sezon bitince oluyor.
 exports.finalizeSeasonLeaderboardMedals = seasonLeaderboardFinalize.scheduleFinalize(
@@ -1659,6 +1661,9 @@ exports.mirrorPublicProfile = functions.firestore
 // İkisi de firestore.rules'ta sunucu alanı: istemci kendine yazamıyor.
 // Fonksiyonun adı geriye dönük uyum için değişmedi (yeniden adlandırmak sil + yeniden oluştur
 // demek, arada tetiklenmeyen yazımlar kaçardı).
+// Yayın hediyesi: hesap dokümanı ilk kez oluşunca sayaca bakar (bkz. launchGift.js).
+exports.grantLaunchGiftOnSignup = launchGift.createLaunchGiftTrigger({ functions, admin, db });
+
 exports.syncTeacherClaim = functions.firestore
   .document('users/{uid}')
   .onWrite(async (change, context) => {
@@ -2669,7 +2674,7 @@ function ownsStoredPlan(userData, purchaseToken, productId, linkedPurchaseToken)
 }
 
 function resolvePlanUpdate(userData, productId, newPlan, purchaseToken, linkedPurchaseToken) {
-  const storedPlan = effectivePlan(userData || {});
+  const storedPlan = subscriptionPlan(userData || {});
   if (ownsStoredPlan(userData, purchaseToken, productId, linkedPurchaseToken)) {
     return { write: true, reason: 'own_token' };
   }
@@ -5574,6 +5579,8 @@ exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
 // gerçek bir satın alma/iade olmadan, sahte bir processedPurchases kaydıyla test
 // edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
 exports._resolvePlanUpdate = resolvePlanUpdate;
+exports._effectivePlan = effectivePlan;
+exports._subscriptionPlan = subscriptionPlan;
 exports._ownsStoredPlan = ownsStoredPlan;
 exports._resolveUidForSubscriptionToken = resolveUidForSubscriptionToken;
 exports._purchaseTokenFingerprint = purchaseTokenFingerprint;
@@ -7708,11 +7715,24 @@ function energyConfigForPlan(plan) {
 }
 
 /** Süresi geçmiş abonelik Free sayılır (MainActivity.checkSubscriptionAndUpdateEnergy ile aynı). */
-function effectivePlan(userData) {
+/** Yalnızca abonelikten gelen plan (süresi geçmişse Free). Hediye dahil değil. */
+function subscriptionPlan(userData) {
   const stored = userData.plan || 'Free';
   const expiresAt = Number(userData.planExpiresAt) || 0;
   if (expiresAt && expiresAt < Date.now()) return 'Free';
   return stored;
+}
+
+/**
+ * Kullanıcının şu an yararlandığı plan: abonelik ya da (daha yüksekse) yayın hediyesi
+ * (`giftProUntil`, bkz. launchGift.js). İstemcideki PlanStatus.effectivePlan ile aynı kural.
+ * Abonelik rütbe kararları (resolvePlanUpdate) bunu değil subscriptionPlan'i kullanır:
+ * hediyeli kullanıcının aldığı Lite, "aktif Pro var" diye reddedilmemeli.
+ */
+function effectivePlan(userData) {
+  const sub = subscriptionPlan(userData);
+  if (launchGift.hasActiveGift(userData) && planRank(sub) < planRank('Pro')) return 'Pro';
+  return sub;
 }
 
 /** Rolü öğretmen ama hesabı henüz onaylanmamış (istemcide MainActivity.isUnapprovedTeacher). */

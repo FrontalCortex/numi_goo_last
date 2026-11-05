@@ -156,8 +156,7 @@ class LessonAdapter(
             .get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
-                    val plan = doc.getString("plan") ?: "Free"
-                    callback(plan)
+                    callback(PlanStatus.effectivePlan(doc))
                 } else {
                     callback("Free")
                 }
