@@ -213,6 +213,27 @@ await check('sayac yazilamiyor', assertFails(
 await check('hediye defteri yazilamiyor', assertFails(
   setDoc(doc(ayse, 'launchGiftClaims/ayse'), { uid: 'ayse' })));
 
+console.log('\n-- HAFTALIK KART: weeklyStats yalniz sunucu yazar, sahibi okur --');
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await setDoc(doc(ctx.firestore(), 'users/ali/weeklyStats/2026-W46'), { week: '2026-W46', cups: { addition_abacus_cup: 300 } });
+});
+await check('sahibi kendi kaydini okuyabiliyor', assertSucceeds(
+  getDoc(doc(ali, 'users/ali/weeklyStats/2026-W46'))));
+await check('sahibi kayit olusturamiyor', assertFails(
+  setDoc(doc(ali, 'users/ali/weeklyStats/2026-W47'), { cups: { addition_abacus_cup: 9999 } })));
+await check('sahibi kaydi degistiremiyor', assertFails(
+  updateDoc(doc(ali, 'users/ali/weeklyStats/2026-W46'), { cups: { addition_abacus_cup: 9999 } })));
+await check('baskasi okuyamiyor', assertFails(
+  getDoc(doc(veli, 'users/ali/weeklyStats/2026-W46'))));
+await check('baskasi yazamiyor', assertFails(
+  setDoc(doc(veli, 'users/ali/weeklyStats/2026-W48'), { x: 1 })));
+await check('sahibi silebiliyor (hesap silme akisi)', assertSucceeds(
+  deleteDoc(doc(ali, 'users/ali/weeklyStats/2026-W46'))));
+await check('ders kilometre tasi (lessonMilestones) sahibi yazabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'users/ali/lessonMilestones/4_p4_x'), { finishedAtMs: 1 })));
+await check('ders kilometre tasi baskasi yazamiyor', assertFails(
+  setDoc(doc(veli, 'users/ali/lessonMilestones/4_p4_x'), { finishedAtMs: 1 })));
+
 console.log('\n-- REGRESYON: dokunulmayan yollar --');
 await check('kendi lessonProgress yazimi', assertSucceeds(
   setDoc(doc(ali, 'users/ali/lessonProgress/1'), { x: 1 })));

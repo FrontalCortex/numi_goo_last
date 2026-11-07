@@ -231,6 +231,7 @@ service cloud.firestore {
     //   • `cupHistory`      — kupa puanının günlük geçmişi
     //   • `streak`          — günlük seri sayacı ve toplanan kilometre taşları
     //   • `notifyLedger`    — bildirim gönderim/açılma sayaçları
+    //   • `weeklyStats`     — haftalık ilerleme kartının anlık kayıtları (snapshotWeeklyStats)
     // Ayrı kuralları aşağıda. (Firestore kuralları VEYA'lı: daha özel bir eşleşme, geniş bir
     // kuralın verdiği izni GERİ ALAMAZ — bu yüzden istisna burada, kaynağında yazılı olmak
     // zorunda.)
@@ -239,8 +240,18 @@ service cloud.firestore {
       allow write: if isSelf(userId)
         && !(subcollection in [
           'badgeProgress', 'cupPathRewards', 'cupWayProgress', 'cupHistory', 'streak',
-          'notifyLedger'
+          'notifyLedger', 'weeklyStats'
         ]);
+    }
+
+    // Haftalık ilerleme kartının anlık kayıtları: Pazartesi sunucu yazıyor (snapshotWeeklyStats).
+    // İstemci yazamaz — kart "geçen hafta → bu hafta" kıyasını bunlarla yapacak ve paylaşılabilir
+    // olacak; kendi geçmişini elle düzeltmek kartı yalana çevirirdi. Okuma yalnızca sahibine
+    // (kart, çocuğun kendi uygulamasında veliye/çocuğa gösteriliyor). Silme hesap silme akışı için.
+    match /users/{userId}/weeklyStats/{week} {
+      allow read: if isSelf(userId);
+      allow create, update: if false;
+      allow delete: if isSelf(userId);
     }
 
     // Rozet ilerlemesi: başkasının profilini görüntülemek için okunabilir.

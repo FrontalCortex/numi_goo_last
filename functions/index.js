@@ -8146,3 +8146,137 @@ exports.startSobiExample = sobiWallet.startSobiExample;
 exports.sobiFeedback = require('./sobi/feedback')({ functions, admin, db, promptVersion: require('./sobi/callable').PROMPT_VERSION });
 // Sobi sekmesindeki genel sohbetlerin listesi, açılması ve silinmesi (sobi/sessions.js).
 exports.sobiSessions = require('./sobi/sessions')({ functions, db });
+
+// ─── Haftalık ilerleme kartı: anlık kayıt ───────────────────────────────────
+// Kartın kendisi (ekran, paylaşım) sonraki iş; bu bölüm yalnızca "geçen hafta"nın kaybolmaması
+// için her Pazartesi kapanan haftanın fotoğrafını çekiyor. Gövde ve gerekçe: weeklyStats.js.
+// Tasarım: docs/BUYUME_DONGUSU_ARASTIRMASI.md (döngü 2).
+const weeklyStats = require('./weeklyStats');
+
+/** Aynı anda işlenen öğrenci: Firestore'u boğmadan 540 sn içinde binlerce kullanıcı. */
+const WEEKLY_STATS_CONCURRENCY = 20;
+const WEEKLY_STATS_PAGE = 300;
+/** Ders bölümleri (veli paneliyle aynı: 7-8 yarış, 9 kupa modu ders ilerlemesi taşımıyor). */
+const WEEKLY_STATS_LESSON_PARTS = [1, 2, 3, 4, 5, 6];
+
+/**
+ * Bir öğrencinin kaydını yazar. Okuma: kullanıcı, kupa, kural istatistiği (3 doküman) +
+ * 7 sayım sorgusu (her biri 1000 kayda kadar 1 okuma sayılıyor). Seri dokümanı taramadan geliyor.
+ *
+ * Biten ders/adım sayısı için dokümanların kendisi değil SAYIM okunuyor: bir öğrencinin
+ * lessonProgress altında yüzlerce dersi var ve hepsini okumak haftada yüzlerce okuma demekti.
+ *
+ * @returns 'written' | 'skipped' (öğretmen ya da kullanıcı dokümanı yok)
+ */
+async function writeWeeklySnapshot(uid, streakData, week, nowMs) {
+  const userRef = db.collection('users').doc(uid);
+  const [userSnap, cupSnap, ruleSnap, passedAgg, ...partAggs] = await Promise.all([
+    userRef.get(),
+    userRef.collection('cupWayProgress').doc('progress').get(),
+    db.collection('homeworkRuleStats').doc(uid).get(),
+    userRef.collection('lessonSuccessRateState').where('passed', '==', true).count().get(),
+    ...WEEKLY_STATS_LESSON_PARTS.map((p) =>
+      userRef.collection('lessonProgress').doc(String(p)).collection('items')
+        .where('stepIsFinish', '==', true).count().get()
+    ),
+  ]);
+  // Hesap silinmişse (seri dokümanı yetim kalmış olabilir) kayıt açıp ölü veri bırakmayalım.
+  if (!userSnap.exists) return 'skipped';
+  const user = userSnap.data() || {};
+  if (user.role === 'TEACHER') return 'skipped';
+
+  const body = weeklyStats.buildWeeklySnapshot({
+    week,
+    todayDay: weeklyStats.trDay(nowMs),
+    user,
+    cupProgress: cupSnap.exists ? cupSnap.data() || {} : {},
+    ruleStats: ruleSnap.exists ? ruleSnap.data() || {} : {},
+    streak: streakData,
+    finishedLessons: partAggs.reduce((s, a) => s + (a.data().count || 0), 0),
+    passedSteps: passedAgg.data().count || 0,
+  });
+  body.capturedAt = admin.firestore.FieldValue.serverTimestamp();
+  body.capturedAtMs = nowMs;
+  // Üzerine yazma bilerek: aynı hafta ikinci kez çekilirse (elle taban kaydı, sonra Pazartesi
+  // koşusu ya da yeniden deneme) son hâl geçerli.
+  await userRef.collection('weeklyStats').doc(week.id).set(body);
+  return 'written';
+}
+
+/**
+ * Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin (ve deploy sonrası elle taban kaydı
+ * alınabilsin) diye ayrı.
+ *
+ * "Aktif öğrenci" = seri dokümanındaki `lastSeenAt` son 14 gün içinde. Uygulama bunu her gün ilk
+ * açılışta (submitStreakDay'in günsüz "buradayım" çağrısı) güncelliyor. Seri dokümanı hiç
+ * açılmamış kullanıcı (günlük hedefi hiç tutturmamış ve hatırlatma saati seçmemiş) taranmaz.
+ *
+ * @param week Verilmezse çalışma anından kapanan hafta (closingWeek).
+ */
+async function runWeeklyStatsSnapshot({ nowMs = Date.now(), week = null, deadlineMs = null } = {}) {
+  const targetWeek = week || weeklyStats.closingWeek(nowMs);
+  const cutoff = admin.firestore.Timestamp.fromMillis(
+    nowMs - weeklyStats.WEEKLY_STATS_ACTIVE_DAYS * 86400000
+  );
+  const counts = { week: targetWeek.id, scanned: 0, written: 0, skipped: 0, failed: 0, truncated: false };
+
+  let last = null;
+  for (;;) {
+    if (deadlineMs && Date.now() > deadlineMs) {
+      counts.truncated = true;
+      break;
+    }
+    let q = db.collectionGroup('streak')
+      .where('lastSeenAt', '>=', cutoff)
+      .orderBy('lastSeenAt')
+      .limit(WEEKLY_STATS_PAGE);
+    if (last) q = q.startAfter(last);
+    const snap = await q.get();
+    if (snap.empty) break;
+    last = snap.docs[snap.docs.length - 1];
+    counts.scanned += snap.size;
+
+    const docs = snap.docs.filter((d) => d.id === 'state' && d.ref.parent.parent);
+    counts.skipped += snap.size - docs.length;
+    for (let i = 0; i < docs.length; i += WEEKLY_STATS_CONCURRENCY) {
+      if (deadlineMs && Date.now() > deadlineMs) {
+        counts.truncated = true;
+        break;
+      }
+      await Promise.all(docs.slice(i, i + WEEKLY_STATS_CONCURRENCY).map(async (doc) => {
+        const uid = doc.ref.parent.parent.id;
+        try {
+          const r = await writeWeeklySnapshot(uid, doc.data() || {}, targetWeek, nowMs);
+          counts[r]++;
+        } catch (e) {
+          counts.failed++;
+          console.error('runWeeklyStatsSnapshot: hata', { uid, error: e.message });
+        }
+      }));
+    }
+    if (counts.truncated || snap.size < WEEKLY_STATS_PAGE) break;
+  }
+  if (counts.truncated) {
+    // Tek koşu 540 sn ile sınırlı. Buraya ulaşmak binlerce aktif öğrenci demek: o zaman tarama
+    // sayfalara bölünüp devam ettirilmeli (ör. Pub/Sub ile zincir). Şimdilik görünür bir uyarı.
+    console.warn('runWeeklyStatsSnapshot: süre doldu, kalan öğrenciler bu hafta kaydedilmedi', counts);
+  }
+  console.log('runWeeklyStatsSnapshot tamamlandı', counts);
+  return counts;
+}
+
+// Pazartesi 00:10 Türkiye saati: Pazar gece yarısı kapanan Pzt–Paz haftası (kullanıcı kararı
+// 08.11.2026). Hafta sınırı Türkiye saatiyle; başka ülkelerde yayına çıkılınca kullanıcının
+// saat dilimine göre ayrı koşular gerekebilir.
+exports.snapshotWeeklyStats = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('10 0 * * 1')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    await runWeeklyStatsSnapshot({ deadlineMs: Date.now() + 500 * 1000 });
+    return null;
+  });
+
+// Testler için.
+exports._runWeeklyStatsSnapshot = runWeeklyStatsSnapshot;
+exports._writeWeeklySnapshot = writeWeeklySnapshot;

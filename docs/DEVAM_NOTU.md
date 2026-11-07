@@ -36,6 +36,28 @@ soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `Tutoria
 Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
 Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
 
+## Haftalık ilerleme kartı: veri toplama (08.11.2026 — testler geçti, commit/push/deploy kullanıcı onayı bekliyor; kart ekranı YOK)
+Neden: kart "geçen hafta → bu hafta" diyecek; geçmiş geri gelmediği için veri karttan önce birikmeli.
+Tasarım: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` (döngü 2). Kararlar (kullanıcı, 08.11): yol
+`users/{uid}/weeklyStats/{yyyy-Www}`; Pzt–Paz ISO hafta, Türkiye saati, Pazartesi 00:10 koşu; aktif =
+`streak/state.lastSeenAt` son 14 gün; deploy sonrası bir kez elle koşu (taban kaydı); sandık süresi
+yalnızca sandığı geçen ve başarısı ≥ %80 koşular; örnek işlem dersin son adımındaki doğrulardan en zoru.
+- **Parça A (sunucu, yayından bağımsız deploy edilebilir):** `functions/weeklyStats.js` (saf: hafta, gövde) +
+  `index.js` sonu `snapshotWeeklyStats` / `runWeeklyStatsSnapshot`. İçerik: 6 kupa puanı (ham), Sobi
+  seviyeleri, canlı seri + en uzun, haftanın hedef günleri, günlük saniye (`dailyTimeSpent`), toplam süre,
+  biten ders ve geçilen adım SAYIMI (count sorgusu). Maliyet: öğrenci başına haftada ~10 okuma + 1 yazma.
+  Kurallar: istemci yazamaz, sahibi okur/siler. İndeks: `streak.lastSeenAt` koleksiyon grubu (fieldOverride).
+  Hesap silme: `users/{uid}` altında olduğu için mevcut recursiveDelete siliyor. Testler:
+  `functions/scripts/test-weekly-stats.js` (emülatörle), `firestore-rules-tests` (60/60).
+  Seri dokümanı hiç açılmamış (hedefi hiç tutturmamış, saat seçmemiş) kullanıcı taranmıyor. Tek koşu 540 sn;
+  binlerce öğrencide yarım kalırsa `truncated` uyarısı yazılır, zincirleme sonra.
+- **Parça B (uygulama, 10.11 yayın AAB'sine GİRMEYECEK, ilk güncelleme):** `LessonMilestones.kt` →
+  `users/{uid}/lessonMilestones/{partId}_{stableId}`: `finishedAtMs`, `sampleOp`, `chest{firstSec,bestSec,…}`.
+  Kullanıcı onayıyla üç noktaya bağlı: ders ekranlarının `recordRuleStats`'ı (bellekte örnek işlem),
+  `LessonSuccessRateRepository.recordItemFirstFinish` (bitiş + örnek), `ChestResult.record()` (süre).
+  LessonItem / merge / ekran geçişleri değişmedi. Birim testi `LessonMilestoneRulesTest` (5/5). Telefonda denenmedi.
+- Elle taban koşusu: Cloud Scheduler'da `firebase-schedule-snapshotWeeklyStats-…` işi → "Zorla çalıştır".
+
 ## Öğreticide oturumsuz Sobi notu (08.11.2026 — derlendi; kullanıcı onayıyla commit + push edildi, telefona kuruldu 08.11 00:11, kullanıcı deneyecek)
 Neden: kayıttan önce oynanan ilk öğreticide "Sobi'ye sor" ekranı (`MistakeReviewDialog.forTutorial`) oturum
 yokken yazma satırını tamamen gizliyordu (`sobiChat` oturum istiyor); yeni kullanıcı yapay zekâ sohbetini hiç
