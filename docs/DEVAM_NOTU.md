@@ -44,7 +44,7 @@ görmüyordu. Kullanıcı kararı: yazma çubuğunun (`reviewInputBar`) yerinde 
 yönlendirme yok**. Anonim oturum (Firebase anonymous auth + sunucuda günlük sınır) düşünüldü, yayından önce
 riskli bulundu: kodda ~50 yerde `currentUser != null` "kayıtlı" sayılıyor.
 
-## Sobi testinde abaküssüz (zihinden) sorular (07.11.2026 — birim testleri geçti; kullanıcı onayıyla commit + push edildi (Functions deploy push ile), telefona kuruldu 08.11 00:11, kullanıcı deneyecek)
+## Sobi testinde abaküssüz (zihinden) sorular (07.11.2026 — birim testleri geçti; kullanıcı onayıyla commit + push edildi , Functions deploy BAŞARILI 08.11.2026 (b0480ce), telefona kuruldu 08.11 00:11, kullanıcı deneyecek)
 Neden: soroban'ın vitrini zihinden hesap (Part 4–6 körleme), Sobi testi yalnızca abaküslü soru veriyordu
 (`docs/BUYUME_DONGUSU_ARASTIRMASI.md`). Kullanıcı kararları (07.11.2026):
 - **Görülmüş sayılma:** Part 4/5'te o kuralın bölümündeki HERHANGİ bir ders (ünite maratonu dahil) bitmişse
@@ -77,7 +77,7 @@ Neden: soroban'ın vitrini zihinden hesap (Part 4–6 körleme), Sobi testi yaln
 - Düzeltme: profil kartı kendi kopyasını (`shownBadgeProgress`) tutuyor; ortak depoya yalnızca kendi
   profilinde ve okuma başarılıysa yazılıyor (hata durumunda artık depo boş veriyle ezilmiyor).
 
-## Yayın hediyesi: ilk 100 öğrenciye 1 ay Pro (05.11.2026 — testler geçti; kullanıcı onayıyla commit + push edildi, deploy planı "full" (effectivePlan çoğu fonksiyonda); telefonda denenmedi)
+## Yayın hediyesi: ilk 100 öğrenciye 1 ay Pro (05.11.2026 — testler geçti; kullanıcı onayıyla commit + push edildi, telefonda denenmedi; 05.11 deploy'u "Pass the --force option" hatasıyla DÜŞMÜŞTÜ, tetikleyici 08.11.2026'ya kadar canlıda yoktu; iş akışına --force eklendi, b0480ce deploy'u ile CANLIDA)
 - Söz: Reklam 13 kapanışı (TR, EN, ID, AR) "10 Kasım'da yayında, ilk 100 kişiye 1 ay ücretsiz tam
   erişim". Play indirme sırasını vermediği için sıra = uygulamada hesap açılış sırası.
 - Sunucu: `functions/launchGift.js`, tetikleyici `grantLaunchGiftOnSignup` (`users/{uid}` onCreate,
