@@ -70,7 +70,7 @@ Neden: soroban'ın vitrini zihinden hesap (Part 4–6 körleme), Sobi testi yaln
 - Sunucu: `functions/homework.js` `RULE_TALLY_KEY` / `EXTRA_TALLY_KEY` `m_` kabul ediyor, seviye süzgeci 16 anahtar.
   **Deploy olmadan** yeni uygulamanın zihinden sayımı sunucuda süzülüp kaybolur (istemci gönderileni düşüyor).
 - GA4'e yeni olay eklenmedi.
-- **Çarpma (08.11.2026 kullanıcı kararları; 120 birim testi geçti, telefonda baştan sona denendi 00:51, kullanıcı onayıyla commit + push):**
+- **Çarpma (08.11.2026 kullanıcı kararları; 120 birim testi geçti, telefonda baştan sona denendi 00:51, kullanıcı onayıyla commit + push cc48436, Functions deploy BAŞARILI: recordRuleTally, recordSobiLevels, createHomework, onHomeworkProgressWritten):**
   her basamak çifti bir "kural" (`mulA_2x1` abaküslü, `mulM_2x1` zihinden; ödevin anahtarları). Zayıf kural seçiminde
   toplama/çıkarmayla birlikte yarışıyor (çarpmada zayıfsa test çoğunlukla çarpma). Görülme: Part 3 (2×1, 2×2, 3×1, 3×2)
   ve Part 6 (2×1, 2×2; kolay ve zor bölümü aynı çift) bölümlerinde bir adım; ödevden veri olsa da ders görülmemişse
