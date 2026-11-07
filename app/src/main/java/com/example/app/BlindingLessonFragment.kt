@@ -766,11 +766,20 @@ class BlindingLessonFragment : Fragment() {
 
     /**
      * Sobi'nin kural hafızası ([SobiRuleStats]): flaş dizisinin kuralları. Yanlışta yalnızca abaküs
-     * kaydından bulunan hatalı işlemler (klavyeyle cevapta kayıt yok, yanlış sayılmaz).
+     * kaydından bulunan hatalı işlemler.
+     *
+     * Körlemede (abaküs gizli, cevap klavyeyle; Part 4–5 dersleri ve körleme kupa yolu) abaküssüz başarıya
+     * gider, soru başına ([SobiRuleStats.recordMental]; kullanıcı kararı 07.11.2026). Eskiden körleme de
+     * abaküslü toplama yazılıyordu, ama yalnızca doğrular (klavyede hatanın yeri bulunamıyor): abaküslü
+     * oranı şişiriyor, zihinden eksiği hiç göstermiyordu. Sobi testi zihinden soruyu bu sayımla seçiyor.
      */
     private fun recordRuleStats(isCorrect: Boolean) {
         @Suppress("UNCHECKED_CAST")
         val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>() ?: return
+        if (lessonItem.isBlinding == true) {
+            SobiRuleStats.recordMental(requireContext(), numbers, isCorrect)
+            return
+        }
         val complete = lastFlashMarks.size == numbers.size
         SobiRuleStats.recordSequence(
             requireContext(), numbers, isCorrect,

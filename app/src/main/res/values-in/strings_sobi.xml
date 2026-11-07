@@ -99,6 +99,7 @@
     <!-- Sobi'nin günlük testi -->
     <string name="sobi_test_title">Kuis Sobi</string>
     <string name="sobi_test_step">Soal %1$d / %2$d</string>
+    <string name="sobi_test_step_mental">Soal %1$d / %2$d · Mental</string>
     <string name="sobi_test_done_title">Kuis Sobi selesai!</string>
     <!-- "Penjumlahan teman besar: 11 dari 14 operasi benar" -->
     <string name="sobi_test_rule_line">%1$s: %3$d dari %2$d operasi benar</string>
@@ -137,6 +138,7 @@
     <string name="sobi_test_rule_sub_five">pengurangan teman kecil</string>
     <string name="sobi_test_rule_sub_ten">pengurangan teman besar</string>
     <string name="sobi_test_rule_sub_bead">pengurangan rumus gabungan</string>
+    <string name="sobi_test_rule_mental">%1$s · mental</string>
 
     <!-- Sobi ekonomisi (functions/sobi/wallet.js; kullanıcı kararları 01.11.2026). -->
     <string name="sobi_balance_free">%1$d pesan gratis hari ini</string>

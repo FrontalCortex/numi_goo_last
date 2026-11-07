@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.example.app.abacus.MistakeAnalyzer
+import com.example.app.abacus.SobiTestPlanner
 import com.example.app.abacus.StepExplainer
 import com.example.app.homework.HomeworkOp
 import com.google.firebase.auth.FirebaseAuth
@@ -60,9 +61,14 @@ object SobiRuleStats {
         scheduleFlush(context)
     }
 
-    fun snapshot(context: Context): List<Entry> {
+    /**
+     * [withMental] false: yalnızca abaküslü kurallar. Sobi sohbetine giden bağlam bu; sunucudaki kural
+     * adları (functions/sobi/chat.js RULE_LABELS) "m_" anahtarını tanımıyor ve Sobi ekranındaki iş zaten
+     * abaküslü. Sobi testi ikisini birden istiyor.
+     */
+    fun snapshot(context: Context, withMental: Boolean = false): List<Entry> {
         val p = prefs(context)
-        return KEYS.map { Entry(it, p.getInt("ok_$it", 0), p.getInt("bad_$it", 0)) }
+        return (if (withMental) KEYS else BASE_KEYS).map { Entry(it, p.getInt("ok_$it", 0), p.getInt("bad_$it", 0)) }
             .filter { it.correct + it.wrong > 0 }
     }
 
@@ -93,6 +99,23 @@ object SobiRuleStats {
         val moves = mistakes.mapNotNull { it.diagnosis?.move }
         add(context, tallyOf(moves, false), question = false)
     }
+
+    /**
+     * Abaküssüz (körleme / zihinden) soru (kullanıcı kararları 07.11.2026): "m_" önekli ayrı anahtarlara,
+     * SORU BAŞINA — soruda geçen her kurala doğruysa 1 doğru, yanlışsa 1 yanlış. Neden işlem başına değil:
+     * klavyeyle verilen cevapta boncuk kaydı yok, hatanın hangi işlemde olduğu bulunamıyor. Eskiden
+     * körlemede yalnızca doğrular (işlem başına, abaküslü toplama) yazılıyordu; oran hep yüksek çıkıyor,
+     * abaküslü başarıyı da şişiriyordu. Soru başına sayım iki yönde eşit: bir yanlış, tek soruluk ağırlıkta.
+     * [numbers]: ilk sayı, sonra ± sayılar (çıkarılan eksi).
+     */
+    fun recordMental(context: Context, numbers: List<Int>, correct: Boolean) {
+        val rules = movesOf(numbers).flatMap { moveRules(it) }.toSet()
+        add(context, mentalTally(rules, correct), question = correct)
+    }
+
+    /** [rules] öneksiz kurallar ("add_ten"); sonuç "m_add_ten" → (1, 0) ya da (0, 1). */
+    fun mentalTally(rules: Collection<String>, correct: Boolean): Map<String, IntArray> =
+        rules.associate { SobiTestPlanner.mentalKey(it) to if (correct) intArrayOf(1, 0) else intArrayOf(0, 1) }
 
     /** Hamlenin kuralları, elde zinciri dahil: "add_bead", "add_ten". */
     fun moveRules(m: StepExplainer.ColumnMove): List<String> {
@@ -174,5 +197,7 @@ object SobiRuleStats {
     /** Sunucunun çağrı başına sınırı (homework.EXTRA_TALLY_MAX). */
     private const val SEND_MAX = 200
 
-    private val KEYS = listOf("add_direct", "add_five", "add_ten", "add_bead", "sub_direct", "sub_five", "sub_ten", "sub_bead")
+    private val BASE_KEYS = listOf("add_direct", "add_five", "add_ten", "add_bead", "sub_direct", "sub_five", "sub_ten", "sub_bead")
+    /** Abaküslü ve abaküssüz ("m_add_ten"); sunucu süzgeci functions/homework.js EXTRA_TALLY_KEY. */
+    private val KEYS = BASE_KEYS + BASE_KEYS.map { SobiTestPlanner.mentalKey(it) }
 }

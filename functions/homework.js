@@ -228,10 +228,11 @@ function doneNoticeText({ studentName, summary, correct, answered, doneCount, ta
  * Adımın kural sayımı (istemci RuleAnalysis.kt): { "add_five": { c, w }, "mulA_2x1": { c, w } … }.
  * Öğrencinin istatistiğine eklenecek değerler; bilinmeyen anahtar ve saçma sayı atılıyor. Bir adım
  * en çok 10 soru; toplama/çıkarmada her soru en çok 100 sayı × 8 basamak işlem, yani anahtar başına
- * 10 × 100 × 8 üst sınır.
+ * 10 × 100 × 8 üst sınır. "m_" önekli toplama/çıkarma: abaküssüz (zihinden) başarı, soru başına sayılıyor
+ * (körleme dersleri ve Sobi testinin zihinden soruları; kullanıcı kararı 07.11.2026: abaküslüden ayrı).
  * @returns {{ key: string, c: number, w: number }[]}
  */
-const RULE_TALLY_KEY = /^(?:(?:add|sub)_(?:direct|five|ten|bead)|mul[AM]_[1-8]x[1-8])$/;
+const RULE_TALLY_KEY = /^(?:(?:m_)?(?:add|sub)_(?:direct|five|ten|bead)|mul[AM]_[1-8]x[1-8])$/;
 const RULE_TALLY_MAX = 10 * 100 * 8;
 function sanitizeRuleTally(tally) {
   if (!tally || typeof tally !== 'object' || Array.isArray(tally)) return [];
@@ -313,12 +314,13 @@ function applyBlockToStats(prev, tally) {
 /**
  * DERS VE SOBİ SAYIMI — kural başarısına derslerden ve Sobi ile çalışmadan gelen sayım (kullanıcı kararı
  * 01.11.2026: "Ödev başarısı" kartı "Kural başarısı" oldu, hepsi tek toplamda). Uygulama biriktirip
- * gönderiyor (recordRuleTally). Yalnızca abaküslü toplama ve çıkarma kuralları (çarpma ödevde kalıyor);
+ * gönderiyor (recordRuleTally). Yalnızca toplama ve çıkarma kuralları, abaküslü ve abaküssüz ("m_"; çarpma ödevde kalıyor);
  * tek çağrıda kural başına ve soru sayısında en çok EXTRA_TALLY_MAX: uygulama hatası ya da oynanmış bir
  * istemci toplamı bir anda şişiremesin.
  */
 const EXTRA_TALLY_MAX = 200;
-const EXTRA_TALLY_KEY = /^(?:add|sub)_(?:direct|five|ten|bead)$/;
+// Abaküslü ve abaküssüz ("m_add_ten") kurallar; Sobi seviyesi de aynı anahtarlarla (iki ayrı seviye).
+const EXTRA_TALLY_KEY = /^(?:m_)?(?:add|sub)_(?:direct|five|ten|bead)$/;
 
 function sanitizeExtraTally(data) {
   const d = data && typeof data === 'object' ? data : {};
@@ -346,7 +348,8 @@ function sanitizeSobiLevels(data, prev) {
   const old = prev && typeof prev === 'object' ? prev : {};
   if (!d || typeof d !== 'object' || Array.isArray(d)) return {};
   const out = {};
-  for (const [key, v] of Object.entries(d).slice(0, 8)) {
+  // 8 kural × abaküslü/abaküssüz.
+  for (const [key, v] of Object.entries(d).slice(0, 16)) {
     if (!EXTRA_TALLY_KEY.test(key) || !Number.isInteger(v)) continue;
     const before = Number.isInteger(old[key]) ? old[key] : null;
     const lo = before === null ? 1 : Math.max(1, before - SOBI_LEVEL_STEP);

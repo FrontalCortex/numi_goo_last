@@ -175,6 +175,8 @@
     <string name="rule_stats_title">%1$s — Keberhasilan rumus</string>
     <string name="rule_stats_add">Penjumlahan</string>
     <string name="rule_stats_sub">Pengurangan</string>
+    <string name="rule_stats_add_mental">Penjumlahan tanpa sempoa</string>
+    <string name="rule_stats_sub_mental">Pengurangan tanpa sempoa</string>
     <string name="rule_stats_mul_abacus">Perkalian dengan sempoa</string>
     <string name="rule_stats_mul_mental">Perkalian tanpa sempoa</string>
     <string name="rule_stats_mul_digits">%1$d × %2$d digit</string>

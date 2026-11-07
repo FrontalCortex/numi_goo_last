@@ -50,6 +50,8 @@ import kotlinx.coroutines.withContext
  * başarısına yazılır ([com.example.app.SobiRuleStats]; soru başına, ödevle aynı işlem sayımı).
  * Yanlışta "Sobi ile analiz et"; bitince Sobi kural kural özetler, sandık derslerdekiyle aynı sunucu
  * sandığı ([com.example.app.NewChestFragment]). Ödev akışı değişmedi; kip yalnızca bu argümanla açılır.
+ * Sobi testinde abaküssüz (zihinden) sorular da var (07.11.2026): o soruda abaküs gizlenir, cevap
+ * ödevin abaküssüz kipindeki gibi klavyeyle; abaküsle ilgili her karar [questionWithAbacus]'tan.
  *
  * SAĞ DÜĞMELER (kupa yolundaki BlindingLessonFragment ile aynı; görünüm ve davranış ortak yardımcılarda:
  * [LessonRulesPanel], [AbacusSettingsPanel], [LessonSideButtons]). Ödevde ve Sobi testinde aynı çalışıyor:
@@ -86,11 +88,14 @@ class HomeworkPlayerFragment : Fragment() {
         private const val ARG_SOBI_WEAK = "sobi_weak"
         private const val ARG_SOBI_CURRENT = "sobi_current"
         private const val ARG_SOBI_PLAYED = "sobi_played"
+        private const val ARG_SOBI_MENTAL = "sobi_mental"
 
         /** Sobi'nin testi ([com.example.app.abacus.SobiTestPlanner.Plan]): sorular, araları, kuralların seviyeleri. */
         fun newSobiTest(plan: com.example.app.abacus.SobiTestPlanner.Plan) = HomeworkPlayerFragment().apply {
-            val weak = plan.weak.map { it.key }
+            // Abaküssüz kural "m_" önekiyle: sonda seviyesi abaküslüden ayrı hesaplanıp yazılıyor.
+            val weak = (plan.weak + plan.mentalWeak).map { it.key }
             arguments = Bundle().apply {
+                putBooleanArray(ARG_SOBI_MENTAL, plan.questions.map { it.mental }.toBooleanArray())
                 putIntArray(ARG_SOBI_OPS, plan.questions.map { if (it.question.op == HomeworkOp.SUB) 1 else 0 }.toIntArray())
                 putIntArray(ARG_SOBI_SIZES, plan.questions.map { it.question.numbers.size }.toIntArray())
                 putLongArray(ARG_SOBI_NUMBERS, plan.questions.flatMap { it.question.numbers }.toLongArray())
@@ -107,6 +112,15 @@ class HomeworkPlayerFragment : Fragment() {
     private var sobiWeak: List<String> = emptyList()
     /** Sorunun sayılarının arası (seviyeye göre); ödevde hep [HomeworkConfig.intervalMs]. */
     private var sobiIntervals: LongArray = LongArray(0)
+    /** Sobi testinde soru başına abaküssüz mü (kullanıcı kararı 07.11.2026: tek testte karışık). */
+    private var sobiMental: BooleanArray = BooleanArray(0)
+
+    /**
+     * Şu anki soru abaküslü mü. Ödevde bütün ödev için tek ayar ([HomeworkConfig.withAbacus]); Sobi
+     * testinde soru soru değişiyor. Abaküsle ilgili her karar buradan, ödev akışı aynı sonucu alıyor.
+     */
+    private fun questionWithAbacus(): Boolean =
+        if (sobiMode) sobiMental.getOrNull(questionIndex) != true else homework?.config?.withAbacus == true
 
 
     private var _binding: FragmentHomeworkPlayerBinding? = null
@@ -221,6 +235,7 @@ class HomeworkPlayerFragment : Fragment() {
         val numbers = a.getLongArray(ARG_SOBI_NUMBERS) ?: longArrayOf()
         sobiIntervals = a.getLongArray(ARG_SOBI_INTERVALS) ?: longArrayOf()
         sobiWeak = a.getStringArrayList(ARG_SOBI_WEAK).orEmpty()
+        sobiMental = a.getBooleanArray(ARG_SOBI_MENTAL) ?: BooleanArray(0)
         var at = 0
         val list = ops.indices.mapNotNull { i ->
             val n = sizes.getOrNull(i) ?: return@mapNotNull null
@@ -229,7 +244,8 @@ class HomeworkPlayerFragment : Fragment() {
             at += n
             q
         }
-        // Yalnızca abaküs ve sayıların arası kullanılıyor (ara soru başına: sobiIntervals).
+        // Yalnızca abaküs ve sayıların arası kullanılıyor (ara soru başına: sobiIntervals). Abaküs hep
+        // kuruluyor; abaküssüz sorularda yalnızca gizleniyor (showQuestion), kurulumu tekrarlamamak için.
         val config = HomeworkConfig(op = HomeworkOp.ADD, withAbacus = true, digits = 2, numberCount = 2, intervalMs = 2000L, questionCount = list.size)
         homework = Homeworks.Homework(
             id = "", classId = "", className = "", teacherName = "", config = config, blockCount = 1,
@@ -371,7 +387,7 @@ class HomeworkPlayerFragment : Fragment() {
         b.resetButton.visibility = side
         b.rulesPanelButton.visibility = side
         b.skipStepButton.visibility = side
-        b.abacusModeButton.visibility = if (visible && homework?.config?.withAbacus == true) View.VISIBLE else View.GONE
+        b.abacusModeButton.visibility = if (visible && questionWithAbacus()) View.VISIBLE else View.GONE
         if (!visible) {
             rulesPanel?.closeIfOpen()
             abacusSettings?.closeIfOpen()
@@ -410,8 +426,18 @@ class HomeworkPlayerFragment : Fragment() {
         answered = false
         flashStarted = false
         b.resultPanel.visibility = View.GONE
-        b.stepText.text = if (sobiMode) appString(R.string.sobi_test_step, questionIndex + 1, questions.size)
-        else appString(R.string.hw_player_step, blockIndex + 1, hw.blockCount, questionIndex + 1, questions.size)
+        b.stepText.text = when {
+            // Zihinden soruda abaküs birden kayboluyor: çocuk bunun bir hata olmadığını etiketten anlasın.
+            sobiMode && !questionWithAbacus() -> appString(R.string.sobi_test_step_mental, questionIndex + 1, questions.size)
+            sobiMode -> appString(R.string.sobi_test_step, questionIndex + 1, questions.size)
+            else -> appString(R.string.hw_player_step, blockIndex + 1, hw.blockCount, questionIndex + 1, questions.size)
+        }
+        if (sobiMode) {
+            val withAbacus = questionWithAbacus()
+            if (!withAbacus) abacusSettings?.closeIfOpen()
+            b.abacusContainer.visibility = if (withAbacus) View.VISIBLE else View.GONE
+            b.abacusModeButton.visibility = if (withAbacus) View.VISIBLE else View.GONE
+        }
         abacusController?.reset(animate = true)
         b.answerInput.text = null
         b.answerInput.visibility = View.GONE
@@ -446,7 +472,7 @@ class HomeworkPlayerFragment : Fragment() {
         abacusLog.clear()
         shownAtMs.clear()
         flashStarted = true
-        recordingAbacus = cfg.withAbacus
+        recordingAbacus = questionWithAbacus()
         recordAbacus() // sorunun başındaki değer
         // Çıkarmada başlangıçtan sonraki sayılar eksiyle gösteriliyor.
         flashLabels = q.numbers.mapIndexed { i, n -> if (q.op == HomeworkOp.SUB && i > 0) "−$n" else n.toString() }
@@ -492,7 +518,7 @@ class HomeworkPlayerFragment : Fragment() {
 
     private fun onFlashFinished() {
         val b = _binding ?: return
-        val withAbacus = homework?.config?.withAbacus == true
+        val withAbacus = questionWithAbacus()
         b.kontrolButton.text = appString(R.string.hw_player_check)
         b.kontrolButton.isEnabled = true
         b.kontrolButton.setOnClickListener { onKontrol() }
@@ -522,7 +548,7 @@ class HomeworkPlayerFragment : Fragment() {
         val b = _binding ?: return
         if (flashing || answered || questions.isEmpty()) return
         val q = questions[questionIndex]
-        val given: Long? = if (homework?.config?.withAbacus == true) {
+        val given: Long? = if (questionWithAbacus()) {
             abacusController?.getCurrentValue()?.toLong()
         } else {
             b.answerInput.text?.toString()?.trim()?.toLongOrNull()
@@ -561,7 +587,8 @@ class HomeworkPlayerFragment : Fragment() {
             return
         }
         val numbers = q.numbers.mapIndexed { i, n -> if (q.op == HomeworkOp.SUB && i > 0) -n.toInt() else n.toInt() }
-        val (log, marks) = reviewLog()
+        // Abaküssüzde boncuk kaydı yok: Sobi soruyu baştan adım adım anlatır (körleme dersindeki gibi).
+        val (log, marks) = if (questionWithAbacus()) reviewLog() else emptyList<Int>() to emptyList()
         button.visibility = View.VISIBLE
         DepthPress.attach(button)
         button.setOnClickListener {
@@ -576,14 +603,21 @@ class HomeworkPlayerFragment : Fragment() {
     /** Sorunun kural sayımını adımın sayımına ekler (bkz. [RuleAnalysis]). Hata olursa soru sayılmaz. */
     private fun countRules(q: HomeworkQuestion, given: Long, correct: Boolean) {
         val cfg = homework?.config ?: return
-        val attempts = runCatching {
-            when {
-                q.op == HomeworkOp.MUL -> RuleAnalysis.multiplication(cfg, correct)
-                cfg.withAbacus -> RuleAnalysis.abacus(q, abacusLog.toList(), shownAtMs.toList(), given)
-                else -> emptyList() // abaküssüz toplama/çıkarma sayılmıyor
-            }
-        }.getOrDefault(emptyList())
-        val tally = RuleAnalysis.tally(attempts)
+        // Sobi testinin abaküssüz sorusu: soru başına, "m_" anahtarlarına (SobiRuleStats.recordMental ile
+        // aynı ölçü; körleme dersleriyle aynı toplama gitsin). Ödevin abaküssüz kipi eskisi gibi sayılmıyor.
+        val tally = if (sobiMode && !questionWithAbacus()) {
+            runCatching { com.example.app.SobiRuleStats.mentalTally(com.example.app.abacus.SobiTestPlanner.rulesOf(q), correct) }
+                .getOrDefault(emptyMap())
+        } else {
+            val attempts = runCatching {
+                when {
+                    q.op == HomeworkOp.MUL -> RuleAnalysis.multiplication(cfg, correct)
+                    questionWithAbacus() -> RuleAnalysis.abacus(q, abacusLog.toList(), shownAtMs.toList(), given)
+                    else -> emptyList() // abaküssüz toplama/çıkarma sayılmıyor
+                }
+            }.getOrDefault(emptyList())
+            RuleAnalysis.tally(attempts)
+        }
         for ((key, cw) in tally) {
             val sum = blockTally.getOrPut(key) { IntArray(2) }
             sum[0] += cw[0]

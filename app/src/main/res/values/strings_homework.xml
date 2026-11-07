@@ -177,6 +177,8 @@
     <string name="rule_stats_title">%1$s — Kural başarısı</string>
     <string name="rule_stats_add">Toplama</string>
     <string name="rule_stats_sub">Çıkarma</string>
+    <string name="rule_stats_add_mental">Abaküssüz toplama</string>
+    <string name="rule_stats_sub_mental">Abaküssüz çıkarma</string>
     <string name="rule_stats_mul_abacus">Abaküslü çarpma</string>
     <string name="rule_stats_mul_mental">Abaküssüz çarpma</string>
     <string name="rule_stats_mul_digits">%1$d × %2$d basamak</string>

@@ -8,6 +8,7 @@ import android.util.Log
 import com.example.app.abacus.SobiTestLevels
 import com.example.app.abacus.SobiTestPlanner
 import com.example.app.homework.HomeworkPlayerFragment
+import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
@@ -44,6 +45,7 @@ object SobiDailyTest {
     private const val KEY_PAID_DAY = "extra_paid_day"
     private const val KEY_PAID_INDEX = "extra_paid_index"
     private const val KEY_UNLOCKED = "unlocked_"
+    private const val KEY_MENTAL_SEEN = "mental_seen_"
     /**
      * Sobi testi düğmesi Part 1'in 6. sıradaki dersi (lessonItems[6]) bitince açılıyor (kullanıcı kararı
      * 02.11.2026): ondan önce kural seviyesi ölçülecek kadar ders yok, test boş kalırdı.
@@ -53,8 +55,15 @@ object SobiDailyTest {
     /** functions/sobi/wallet.js EXTRA_TEST_KEYS ile aynı (yalnızca düğme metni; bedeli sunucu belirler). */
     const val EXTRA_TEST_KEYS = 3
 
-    /** Plan için gereken her şey: kural başarısı ve kayıtlı seviyeler. */
-    data class Info(val scores: List<SobiTestPlanner.RuleScore>, val levels: Map<String, Int>)
+    /**
+     * Plan için gereken her şey: kural başarısı ve kayıtlı seviyeler (abaküssüz olanlar "m_" önekli) ve
+     * abaküssüz görülmüş kurallar ([loadMentalSeen]; öneksiz).
+     */
+    data class Info(
+        val scores: List<SobiTestPlanner.RuleScore>,
+        val levels: Map<String, Int>,
+        val mentalSeen: Set<String> = emptySet(),
+    )
 
     fun today(): String = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("Europe/Istanbul")
@@ -131,10 +140,24 @@ object SobiDailyTest {
         return true
     }
 
-    /** Kural başarısı ve seviyeler: sunucu, olmazsa bu cihaz. */
+    /** Kural başarısı ve seviyeler (sunucu, olmazsa bu cihaz) ve abaküssüz görülmüş kurallar; ikisi paralel. */
     fun load(context: Context, onResult: (Info) -> Unit) {
         val app = context.applicationContext
-        val local = SobiRuleStats.snapshot(app).map { SobiTestPlanner.RuleScore(it.key, it.correct, it.wrong) }
+        var stats: Info? = null
+        var seen: Set<String>? = null
+        val main = Handler(Looper.getMainLooper())
+        // İki okuma da ana iş parçacığına alınıyor (değişkenler tek iş parçacığında); ikisi gelince bir kez.
+        val done = {
+            val st = stats
+            val se = seen
+            if (st != null && se != null) onResult(st.copy(mentalSeen = se))
+        }
+        loadMentalSeen(app) { s -> main.post { seen = s; done() } }
+        loadStats(app) { i -> main.post { stats = i; done() } }
+    }
+
+    private fun loadStats(app: Context, onResult: (Info) -> Unit) {
+        val local = SobiRuleStats.snapshot(app, withMental = true).map { SobiTestPlanner.RuleScore(it.key, it.correct, it.wrong) }
         val localLevels = localLevels(app)
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
@@ -152,7 +175,8 @@ object SobiDailyTest {
                 // yeniden gönder, veli panelinde görünsün.
                 val unsent = localLevels.filter { (k, v) -> v > (serverLevels[k] ?: 0) }
                 if (unsent.isNotEmpty()) saveLevels(app, unsent)
-                val enough = server.any { it.total >= SobiTestPlanner.MIN_OPS }
+                // Yeterlilik abaküslü kurallardan: test onlarsız kurulmuyor (abaküssüz yalnızca ek).
+                val enough = server.any { !SobiTestPlanner.isMentalKey(it.key) && it.total >= SobiTestPlanner.MIN_OPS }
                 onResult(Info(if (enough) server else local, levels))
             }
             .addOnFailureListener { onResult(Info(local, localLevels)) }
@@ -163,10 +187,43 @@ object SobiDailyTest {
         val seed = today().hashCode() * 31 + testsToday(context) * 7919 + offset
         val main = Handler(Looper.getMainLooper())
         Thread {
-            val plan = runCatching { SobiTestPlanner.plan(info.scores, info.levels, offset, seed) }
+            val plan = runCatching { SobiTestPlanner.plan(info.scores, info.levels, offset, seed, info.mentalSeen) }
                 .onFailure { Log.e(TAG, "plan kurulamadı", it) }.getOrNull()
             main.post { onResult(plan) }
         }.start()
+    }
+
+    /**
+     * Abaküssüz görülmüş kurallar: Part 4 (körleme toplama) ve Part 5 (körleme çıkarma) derslerinden
+     * ([SobiTestPlanner.mentalSeenRules]; kullanıcı kararı 07.11.2026: o kuralın herhangi bir dersi bitmiş).
+     * Ders geri alınmadığı için hesap başına önbellekte birikiyor; sekizi de görülmüşse Firestore'a hiç
+     * gidilmiyor. Harita o part'taysa bellekteki liste güncel (ders dönüşünde hemen sayılsın).
+     */
+    fun loadMentalSeen(context: Context, onResult: (Set<String>) -> Unit) {
+        val app = context.applicationContext
+        val key = KEY_MENTAL_SEEN + (FirebaseAuth.getInstance().currentUser?.uid ?: "guest")
+        val p = prefs(app)
+        val cached = p.getStringSet(key, emptySet()).orEmpty().toSet()
+        if (cached.size >= KEYS.size) return onResult(cached)
+        val found = HashSet(cached)
+        var pending = MENTAL_PARTS.size
+        val finishOne = { items: List<LessonItem> ->
+            found += SobiTestPlanner.mentalSeenRules(items.map {
+                SobiTestPlanner.LessonMark(it.stableId, it.type == LessonItem.TYPE_HEADER, it.stepIsFinish)
+            })
+            if (--pending == 0) {
+                if (found.size > cached.size) p.edit().putStringSet(key, found).apply()
+                onResult(found)
+            }
+        }
+        for (part in MENTAL_PARTS) {
+            val current = GlobalLessonData.lessonItems
+            if (GlobalLessonData.globalPartId == part && current.isNotEmpty()) {
+                finishOne(current.toList())
+            } else {
+                GlobalLessonData.loadLessonItemsForPart(app, part) { finishOne(it) }
+            }
+        }
     }
 
     /** Testten sonra yeni seviyeler: cihaza hemen, sunucuya (veli paneli, başka cihaz) ardından. */
@@ -184,7 +241,7 @@ object SobiDailyTest {
 
     private fun localLevels(context: Context): Map<String, Int> {
         val p = prefs(context)
-        return KEYS.mapNotNull { k -> p.getInt(KEY_LEVEL + k, 0).takeIf { it > 0 }?.let { k to it } }.toMap()
+        return LEVEL_KEYS.mapNotNull { k -> p.getInt(KEY_LEVEL + k, 0).takeIf { it > 0 }?.let { k to it } }.toMap()
     }
 
     /**
@@ -218,8 +275,13 @@ object SobiDailyTest {
         }.toMap()
     }
 
-    /** Kuralın çocuğun bildiği adı: "10'luk toplama" (SobiCurriculum anahtarı). */
-    fun ruleLabel(key: String): String = when (key) {
+    /** Kuralın çocuğun bildiği adı: "10'luk toplama" (SobiCurriculum anahtarı); abaküssüzde "… · zihinden". */
+    fun ruleLabel(key: String): String {
+        if (SobiTestPlanner.isMentalKey(key)) return appString(R.string.sobi_test_rule_mental, baseRuleLabel(SobiTestPlanner.baseKey(key)))
+        return baseRuleLabel(key)
+    }
+
+    private fun baseRuleLabel(key: String): String = when (key) {
         "add_direct" -> appString(R.string.sobi_test_rule_add_direct)
         "add_five" -> appString(R.string.sobi_test_rule_add_five)
         "add_ten" -> appString(R.string.sobi_test_rule_add_ten)
@@ -245,4 +307,8 @@ object SobiDailyTest {
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
     private val KEYS = listOf("add_direct", "add_five", "add_ten", "add_bead", "sub_direct", "sub_five", "sub_ten", "sub_bead")
+    /** Seviyesi saklanan anahtarlar: abaküslü ve abaküssüz ("m_add_ten"). */
+    private val LEVEL_KEYS = KEYS + KEYS.map { SobiTestPlanner.mentalKey(it) }
+    /** Körleme toplama ve körleme çıkarma part'ları (Part 6 çarpma; Sobi testi çarpma sormuyor). */
+    private val MENTAL_PARTS = listOf(4, 5)
 }

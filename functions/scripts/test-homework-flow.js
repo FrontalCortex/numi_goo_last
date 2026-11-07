@@ -213,6 +213,11 @@ async function main() {
     // Sobi testi seviyeleri: biçim, bir testte en çok 2 seviye, ilk kayıtta en çok 5.
     check('seviye süzgeci', h.sanitizeSobiLevels({ levels: { add_ten: 6, sub_bead: 20, mulA_2x1: 3, add_five: 'x' } }, { add_ten: 5 }), { add_ten: 6, sub_bead: 5 });
     check('seviye süzgeci: sıçrama sınırı', [h.sanitizeSobiLevels({ levels: { add_ten: 12 } }, { add_ten: 5 }), h.sanitizeSobiLevels({ levels: { add_ten: 0 } }, { add_ten: 5 })], [{ add_ten: 7 }, { add_ten: 3 }]);
+    // Abaküssüz (zihinden) kurallar "m_" önekiyle ayrı anahtar; bilinmeyen önek ve çarpma atılıyor.
+    check('ders sayımı süzgeci: abaküssüz', h.sanitizeExtraTally({
+      tally: { m_add_ten: { c: 1, w: 1 }, m_sub_bead: { c: 0, w: 2 }, x_add_ten: { c: 1, w: 0 }, m_mulA_2x1: { c: 1, w: 0 } },
+    }).tally, [{ key: 'm_add_ten', c: 1, w: 1 }, { key: 'm_sub_bead', c: 0, w: 2 }]);
+    check('seviye süzgeci: abaküssüz ayrı', h.sanitizeSobiLevels({ levels: { add_ten: 6, m_add_ten: 2 } }, { add_ten: 5 }), { add_ten: 6, m_add_ten: 2 });
   }
 
   console.log('\n=== HESAP SİLME ===');

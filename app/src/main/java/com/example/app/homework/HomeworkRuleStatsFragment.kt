@@ -67,8 +67,9 @@ class HomeworkRuleStatsFragment : Fragment() {
         /** Kalabalık olmasın: en çok bu kadar noktanın üstüne toplam yazılıyor (son noktadan geriye). */
         private const val MAX_POINT_LABELS = 7
 
-        /** Sobi testinin kuralları (çarpma değil). */
-        private val SOBI_KEY = Regex("""^(add|sub)_(direct|five|ten|bead)$""")
+        /** Sobi testinin kuralları (çarpma değil); "m_" önekli olanlar abaküssüz (zihinden). */
+        private val SOBI_KEY = Regex("""^(m_)?(add|sub)_(direct|five|ten|bead)$""")
+        private const val MENTAL = com.example.app.abacus.SobiTestPlanner.MENTAL_PREFIX
 
         private const val LINE_COLOR = 0xFF1CB0F6.toInt()
         private const val GREEN = 0xFF8CC63F.toInt()
@@ -170,12 +171,15 @@ class HomeworkRuleStatsFragment : Fragment() {
             days.values.flatMap { day -> day.t.filterValues { it.total > 0 }.keys }
         fun mulKeys(prefix: String, order: List<String>) = keys.filter { it.startsWith(prefix + "_") }.distinct()
             .sortedWith(compareBy({ order.indexOf(it.removePrefix(prefix + "_")).let { i -> if (i < 0) Int.MAX_VALUE else i } }, { it }))
-        return listOf(HomeworkOp.ADD, HomeworkOp.SUB).flatMap { op ->
-            AbacusRule.values().map { RuleAnalysis.ruleKey(op, it) }.filter { it in keys }
-        } + mulKeys("mulA", MUL_ABACUS) + mulKeys("mulM", MUL_MENTAL)
+        fun ruleKeys(prefix: String) = listOf(HomeworkOp.ADD, HomeworkOp.SUB).flatMap { op ->
+            AbacusRule.values().map { prefix + RuleAnalysis.ruleKey(op, it) }.filter { it in keys }
+        }
+        return ruleKeys("") + ruleKeys(MENTAL) + mulKeys("mulA", MUL_ABACUS) + mulKeys("mulM", MUL_MENTAL)
     }
 
     private fun keyLabel(key: String): String {
+        // Zihinden toplama/çıkarma (Sobi testi ve körleme dersleri; 07.11.2026): "… · zihinden".
+        if (key.startsWith(MENTAL)) return appString(R.string.sobi_test_rule_mental, keyLabel(key.removePrefix(MENTAL)))
         val op = HomeworkOp.fromKey(key.substringBefore('_'))
         val rule = AbacusRule.fromKey(key.substringAfter('_'))
         if (op != null && rule != null) {
@@ -186,9 +190,12 @@ class HomeworkRuleStatsFragment : Fragment() {
         return appString(if (key.startsWith("mulA")) R.string.rule_progress_chip_mul_abacus else R.string.rule_progress_chip_mul_mental, d1, d2)
     }
 
-    /** Sorular ve çarpma (her soru bir deneme) "soru"; toplama/çıkarma kuralları "işlem". */
+    /**
+     * Sorular, çarpma (her soru bir deneme) ve zihinden kurallar (soru başına sayılıyor; klavyede hatanın
+     * işlemi bulunamıyor) "soru"; abaküslü toplama/çıkarma kuralları "işlem".
+     */
     private fun unit(key: String?): String =
-        appString(if (key == null || key.startsWith("mul")) R.string.rule_progress_unit_question else R.string.rule_progress_unit_op)
+        appString(if (key == null || key.startsWith("mul") || key.startsWith(MENTAL)) R.string.rule_progress_unit_question else R.string.rule_progress_unit_op)
 
     // ── Ekran ───────────────────────────────────────────────────────────────
 
@@ -432,8 +439,8 @@ class HomeworkRuleStatsFragment : Fragment() {
 
     private fun renderMastery(container: LinearLayout) {
         val ctx = requireContext()
-        fun ruleRows(op: HomeworkOp) = AbacusRule.values().map { r ->
-            val key = RuleAnalysis.ruleKey(op, r)
+        fun ruleRows(op: HomeworkOp, prefix: String = "") = AbacusRule.values().map { r ->
+            val key = prefix + RuleAnalysis.ruleKey(op, r)
             Row(key, HomeworkText.ruleLabel(r), tally[key] ?: Cw.ZERO)
         }
         // Sıra orderedKeys'ten (kullanıcının istediği çarpma sırası).
@@ -445,6 +452,10 @@ class HomeworkRuleStatsFragment : Fragment() {
         val sections = listOf(
             appString(R.string.rule_stats_add) to ruleRows(HomeworkOp.ADD),
             appString(R.string.rule_stats_sub) to ruleRows(HomeworkOp.SUB),
+            // Zihinden ayrı kartlarda (çarpmadaki abaküslü/abaküssüz ayrımı gibi): körlemedeki eksik
+            // abaküslü orana karışıp gizlenmesin.
+            appString(R.string.rule_stats_add_mental) to ruleRows(HomeworkOp.ADD, MENTAL),
+            appString(R.string.rule_stats_sub_mental) to ruleRows(HomeworkOp.SUB, MENTAL),
             appString(R.string.rule_stats_mul_abacus) to mulRows("mulA"),
             appString(R.string.rule_stats_mul_mental) to mulRows("mulM"),
         ).map { (title, rows) -> title to rows.filter { it.cw.total > 0 } }.filter { it.second.isNotEmpty() }

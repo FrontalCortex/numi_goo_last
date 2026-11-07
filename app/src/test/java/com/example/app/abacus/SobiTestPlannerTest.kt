@@ -93,4 +93,78 @@ class SobiTestPlannerTest {
         assertNull(SobiTestPlanner.plan(emptyList(), emptyMap(), 0, 1))
         assertNull(SobiTestPlanner.plan(listOf(RuleScore("add_ten", 3, 2)), emptyMap(), 0, 1))
     }
+
+    // ── Abaküssüz (zihinden) sorular (07.11.2026) ──────────────────────────
+
+    @Test
+    fun abakussuz_gorulmemisse_test_tamamen_abakuslu() {
+        // Abaküssüz sayım olsa bile (ör. eski veri) körleme dersi bitmemişse zihinden soru yok.
+        val scores = add + RuleScore("m_add_ten", 2, 9)
+        val plan = SobiTestPlanner.plan(scores, emptyMap(), 0, seed = 7)!!
+        assertTrue(plan.questions.none { it.mental })
+        assertTrue(plan.mentalWeak.isEmpty())
+    }
+
+    @Test
+    fun abakussuz_yalnizca_gorulen_kurallardan() {
+        // Körlemede kuralsız ve 5'lik dersi bitmiş, 10'luk değil: 10'luk abaküslüde zayıf ama zihinden gelmez.
+        val plan = SobiTestPlanner.plan(add, emptyMap(), 0, seed = 3, mentalSeen = setOf("add_direct", "add_five"))!!
+        val mental = plan.questions.filter { it.mental }
+        assertEquals(3, mental.size)
+        // Henüz zihinden sayım yok: en yeni görülen kural, 1. seviyeden.
+        assertEquals(listOf("m_add_five"), plan.mentalWeak.map { it.key })
+        assertEquals(1, plan.played["m_add_five"])
+        for (q in mental) {
+            val used = SobiTestPlanner.rulesOf(q.question)
+            assertTrue("${q.question} $used", "add_five" in used && used.all { it in setOf("add_direct", "add_five") })
+            assertEquals("m_add_five", q.statKey)
+        }
+        // Abaküslü zayıf kural yine çoğunlukta.
+        assertTrue(plan.questions.count { !it.mental && it.rule == "add_ten" } >= 5)
+    }
+
+    @Test
+    fun zihinden_cok_zayifsa_bes_soru() {
+        // Abaküslü en zayıf %54, zihinden 10'luk %20: fark 20 puandan çok → 5 zihinden soru.
+        val scores = add + RuleScore("m_add_ten", 3, 12) + RuleScore("m_add_direct", 20, 0)
+        val plan = SobiTestPlanner.plan(scores, mapOf("m_add_ten" to 4), 0, seed = 9,
+            mentalSeen = setOf("add_direct", "add_five", "add_ten"))!!
+        assertEquals(listOf("m_add_ten"), plan.mentalWeak.map { it.key })
+        val mental = plan.questions.filter { it.mental }
+        assertEquals(5, mental.size)
+        // Kayıtlı abaküssüz seviye kullanılıyor, abaküslüden bağımsız.
+        assertTrue(mental.all { it.level <= 4 && "add_ten" in SobiTestPlanner.rulesOf(it.question) })
+        assertEquals(4, plan.current["m_add_ten"])
+    }
+
+    @Test
+    fun abakussuz_her_kural_her_seviyede_kurulur() {
+        val all = setOf("add_direct", "add_five", "add_ten", "add_bead", "sub_direct", "sub_five", "sub_ten", "sub_bead")
+        val rnd = Random(2)
+        for (key in all) {
+            for (level in listOf(1, 3, 8, 14, 20)) {
+                val q = SobiTestPlanner.question(key, level, all, rnd, withAbacus = false) ?: error("$key seviye $level soru yok")
+                assertTrue(q.mental)
+                assertTrue("$key $level ${q.question}", key in SobiTestPlanner.rulesOf(q.question))
+            }
+        }
+    }
+
+    @Test
+    fun kormeleme_dersinden_gorulen_kurallar() {
+        fun h(id: String) = SobiTestPlanner.LessonMark(id, isHeader = true, finished = false)
+        fun l(id: String, done: Boolean) = SobiTestPlanner.LessonMark(id, isHeader = false, finished = done)
+        val part4 = listOf(
+            h("p4_i00_kuralsiz_toplama"), l("p4_i01", false), l("p4_i02", false),
+            // 5'lik: ilk ders bitmemiş, ikincisi (anahtarla açılmış) bitmiş → görülmüş.
+            h("p4_i05_5_lik_toplama"), l("p4_i06", false), l("p4_i07", true),
+            h("p4_i10_10_luk_toplama_1_2_3_4_5"), l("p4_i11", false),
+            // 10'luk ikinci bölüm (6–9) de 10'luk.
+            h("p4_i15_10_luk_toplama_6_7_8_9"), l("p4_i19_unite_maratonu", true),
+            // Tanınmayan başlık bölümü kapatır.
+            h("p4_yeni_bolum"), l("p4_x", true),
+        )
+        assertEquals(setOf("add_five", "add_ten"), SobiTestPlanner.mentalSeenRules(part4))
+        assertEquals(emptySet<String>(), SobiTestPlanner.mentalSeenRules(listOf(l("p5_i01", true))))
+    }
 }

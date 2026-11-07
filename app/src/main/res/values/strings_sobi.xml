@@ -101,6 +101,7 @@
     <!-- Sobi'nin günlük testi (SobiDailyTest, HomeworkPlayerFragment Sobi testi kipi, MapSobiTestButton) -->
     <string name="sobi_test_title">Sobi\'nin testi</string>
     <string name="sobi_test_step">Soru %1$d / %2$d</string>
+    <string name="sobi_test_step_mental">Soru %1$d / %2$d · Zihinden</string>
     <string name="sobi_test_done_title">Sobi\'nin testi bitti!</string>
     <!-- "10'luk toplama: 14 işlemden 11'i doğru" -->
     <string name="sobi_test_rule_line">%1$s: %2$d işlemden %3$d doğru</string>
@@ -139,6 +140,7 @@
     <string name="sobi_test_rule_sub_five">5\'lik çıkarma</string>
     <string name="sobi_test_rule_sub_ten">10\'luk çıkarma</string>
     <string name="sobi_test_rule_sub_bead">boncuk kuralıyla çıkarma</string>
+    <string name="sobi_test_rule_mental">%1$s · zihinden</string>
 
     <!-- Sobi ekonomisi (functions/sobi/wallet.js; kullanıcı kararları 01.11.2026). -->
     <string name="sobi_balance_free">Bugün %1$d ücretsiz mesaj</string>

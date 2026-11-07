@@ -160,6 +160,8 @@
     <string name="rule_stats_title">%1$s — Rule success</string>
     <string name="rule_stats_add">Addition</string>
     <string name="rule_stats_sub">Subtraction</string>
+    <string name="rule_stats_add_mental">Mental addition</string>
+    <string name="rule_stats_sub_mental">Mental subtraction</string>
     <string name="rule_stats_mul_abacus">Multiplication with abacus</string>
     <string name="rule_stats_mul_mental">Mental multiplication</string>
     <string name="rule_stats_mul_digits">%1$d × %2$d digits</string>

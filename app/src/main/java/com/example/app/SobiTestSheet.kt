@@ -74,7 +74,7 @@ class SobiTestSheet(private val fragment: Fragment) {
         SobiDailyTest.load(ctx) { info ->
             if (!fragment.isAdded || dialog !== d) return@load
             view.findViewById<View>(R.id.sobiTestLoading).visibility = View.GONE
-            val choice = SobiTestPlanner.choose(info.scores, info.levels)
+            val choice = SobiTestPlanner.choose(info.scores, info.levels, info.mentalSeen)
             if (choice == null) {
                 showEmpty(view, start, appString(R.string.sobi_test_no_data))
                 return@load
@@ -97,7 +97,9 @@ class SobiTestSheet(private val fragment: Fragment) {
         val ctx = view.context
         val inflater = LayoutInflater.from(ctx)
         val rules = view.findViewById<LinearLayout>(R.id.sobiTestRules)
-        for (w in choice.weak) {
+        // Abaküssüz kural da kendi satırında ("10'luk toplama · zihinden"): çocuk ve veli testin zihinden
+        // soru da içerdiğini başlamadan görsün. Zorluk kartları abaküslü zayıf kuralın seviyesinden.
+        for (w in choice.weak + choice.mentalWeak) {
             val level = choice.current.getValue(w.key)
             val row = inflater.inflate(R.layout.item_sobi_test_rule, rules, false)
             row.findViewById<TextView>(R.id.ruleName).text = SobiDailyTest.ruleLabel(w.key).replaceFirstChar { it.uppercase() }
