@@ -95,8 +95,9 @@ object LessonMilestones {
     }
 
     /**
-     * Sandık dersinin bir koşusu ([ChestResult.record]; yalnızca sandığı geçen koşular o ekrana
-     * ulaşıyor). Başarı %[LessonMilestoneRules.CHEST_MIN_SUCCESS_PCT] altındaysa sayılmaz.
+     * Sandık dersinin bir koşusu: Part 1–3 ve 6'da [ChestResult.record] (yalnızca sandığı geçen
+     * koşular o ekrana ulaşıyor), Part 4–5'te BlindingLessonFragment'ın geçiş dalı (sandık ekranı yok).
+     * Başarı %[LessonMilestoneRules.CHEST_MIN_SUCCESS_PCT] altındaysa sayılmaz.
      */
     fun recordChestRun(partId: Int, stableId: String?, successPct: Float, timeSec: Int?) {
         if (partId !in 1..6 || stableId.isNullOrBlank() || timeSec == null) return

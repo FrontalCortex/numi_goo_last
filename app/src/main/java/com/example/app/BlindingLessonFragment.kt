@@ -1799,6 +1799,14 @@ class BlindingLessonFragment : Fragment() {
                 if (successRate < 75f) {
                     showLessonResultFalse()
                 } else {
+                    // Haftalık kart için sandık süresi: Part 4–5 sandıkları ChestResult'a uğramıyor (puan
+                    // yok, sonuç LessonResult), süre kaydı burada. Arka planda ve ayrı belgeye; %80 eşiği
+                    // LessonMilestones içinde (geçiş eşiği 75, rekor eşiği 80 — bilerek ayrı).
+                    if (lessonItem.type == LessonItem.TYPE_CHEST) {
+                        LessonMilestones.recordChestRun(
+                            globalPartId, lessonItem.stableId, successRate, parseTimeToSeconds(currentTime),
+                        )
+                    }
                     showLessonResult()
                 }
             }

@@ -24,6 +24,11 @@ class AdSkipFragment : DialogFragment() {
     private var crowdCheer: MediaPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
 
+    private companion object {
+        /** Panel kapandıktan sonra kuyruğun dürtülmesi için bekleme; bkz. [onDismiss]. */
+        const val PUMP_AFTER_DISMISS_MS = 250L
+    }
+
     // ── Ölçüm ───────────────────────────────────────────────────────────────
     // Ölçmek istediğimiz şey panelin yıpratıp yıpratmadığı: tekrar gördükçe kitle "hiç bakmadan
     // kapat" tarafına kayıyor mu, ve kaçı gerçekten Pro akışına giriyor.
@@ -123,6 +128,30 @@ class AdSkipFragment : DialogFragment() {
     override fun onCancel(dialog: DialogInterface) {
         super.onCancel(dialog)
         logClosed(AnalyticsLogger.AD_SKIP_DISMISSED)
+    }
+
+    /**
+     * Ders sonrası kuyruğunu dürt: bu panel açıkken kuyruk "ad_skip_showing" diye bekliyor.
+     *
+     * Kapanınca kimse dürtmüyordu. Bekçi de çalışmıyordu, çünkü bekleyen tek iş öğretmene sorma
+     * tanıtımıysa o zemin tutmuyor ve kuyruk "meşgul" sayılmıyor. Tanıtım bayrağı asılı kalıyor,
+     * harita kartın ilerleme çubuğunu `promo_pending` diye bir sonraki derse kadar eski değerde
+     * bırakıyordu (cihazda görüldü 08.11.2026). Dürtmek boşa çağrılsa da zararsız.
+     *
+     * Neden gecikmeli: kapılar paneli `findFragmentByTag("AdSkip")` ile arıyor ve `onDismiss`
+     * fragment'i kaldıran işlemden ÖNCE çalışıyor. Bir kare beklemek ([MainActivity.pumpPostLessonQueue]
+     * kendisi bekliyor) cihazda yetmedi: tur paneli hâlâ bulup "ad_skip_showing" deyip durdu.
+     * "Pro'ya geç" yolunda da güvenli: Pro/plan ekranı açıkken kuyruk zaten bekliyor
+     * (subscriptionFlowBlockReason) ve o ekranlar kapanınca kuyruğu kendileri dürtüyor.
+     */
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        val act = activity as? MainActivity ?: return
+        // Fragment'in kendi `handler`'ı değil: onDestroyView onu temizliyor ve panel kaldırılırken
+        // bu iş de silinirdi.
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!act.isFinishing && !act.isDestroyed) act.pumpPostLessonQueue("AdSkip.dismiss")
+        }, PUMP_AFTER_DISMISS_MS)
     }
 
     private fun logClosed(reason: String) {

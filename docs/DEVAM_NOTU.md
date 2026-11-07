@@ -59,11 +59,14 @@ yalnızca sandığı geçen ve başarısı ≥ %80 koşular; örnek işlem dersi
   Telefonda (08.11 01:33 kurulum, HEAD + yalnızca bu dosyalar): Part 4 ders 2→3. adım bitti → `recordFinish`
   (`finishedAtMs`, örnek `4 + 20 + 50 + 10 = 84`); Part 6 maraton (1 anahtarla açıldı) 96 sn → ilk kayıt, tekrar
   62 sn → `firstSec=96, bestSec=62`; tekrar oynamada bitiş yeniden yazılmadı. Doğrulama: `adb logcat -s LessonMilestones`.
-  **Bilinen boşluk:** Part 4–5 sandıkları ChestResult’a uğramıyor (BlindingLessonFragment `globalPartId in 4,5`
-  dalı), süre kaydı yalnızca Part 1–3 ve 6 sandıklarında.
-  **Testte görülen, bu işle ilgisiz:** reklam → "PRO ile reklamsız" teklifi kapandıktan sonra haritadaki ders
-  çubuğu eski değerde kaldı (`tryConsumeProgress` `promo_pending` engeli; veri doğruydu, panel 2/3 gösterdi).
-  Puanlama penceresi "Numi’yi Beğendin mi?" diyor (marka Sorobit).
+  Part 4–5 sandıkları ChestResult’a uğramıyor; süre kaydı BlindingLessonFragment’ın geçiş dalında (08.11 02:05
+  cihazda: Part 4 maraton `firstSec=168`).
+- **Ek düzeltmeler (08.11.2026, cihazda doğrulandı):** reklam sonrası "PRO ile reklamsız" paneli (AdSkip)
+  kapanınca ders sonrası kuyruğu dürtülmüyordu; öğretmene sorma tanıtımı bayrağı asılı kalıyor, harita kart
+  çubuğu `promo_pending` diye bir sonraki derse kadar eski değerde kalıyordu. `AdSkipFragment.onDismiss` →
+  250 ms sonra `pumpPostLessonQueue` (bir kare yetmedi: kapı paneli `findFragmentByTag` ile hâlâ buluyordu).
+  Cihazda (`AdSkipDebug.FORCE` geçici açılarak, sonra kapatıldı): kapanınca tanıtım adımı çalıştı, çubuk 1→2 oynadı.
+  Puanlama penceresi TR metni "Sorobit’i Beğendin mi?" (diğer diller zaten Sorobit).
 - Elle taban koşusu: Cloud Scheduler'da `firebase-schedule-snapshotWeeklyStats-…` işi → "Zorla çalıştır".
 
 ## Öğreticide oturumsuz Sobi notu (08.11.2026 — derlendi; kullanıcı onayıyla commit + push edildi, telefona kuruldu 08.11 00:11, kullanıcı deneyecek)

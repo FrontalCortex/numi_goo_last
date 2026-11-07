@@ -105,7 +105,7 @@
     <string name="dialog_question_media_picker_btn_video_desc">Video ile sor</string>
 
     <!-- layout/dialog_rating.xml -->
-    <string name="dialog_rating_tv_title">Numi\'yi Beğendin mi?</string>
+    <string name="dialog_rating_tv_title">Sorobit\'i Beğendin mi?</string>
     <string name="dialog_rating_tv_subtitle">Deneyimini değerlendirerek bize destek olabilirsin.</string>
     <string name="dialog_rating_et_feedback_hint">Sana nasıl daha iyi bir deneyim sunabiliriz?</string>
     <string name="dialog_rating_btn_submit_feedback">Gönder</string>
