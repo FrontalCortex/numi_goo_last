@@ -36,7 +36,7 @@ soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `Tutoria
 Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
 Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
 
-## Haftalık ilerleme kartı: veri toplama (08.11.2026 — testler geçti, commit/push/deploy kullanıcı onayı bekliyor; kart ekranı YOK)
+## Haftalık ilerleme kartı: veri toplama (08.11.2026 — Parça A f03da30 CANLIDA (fonksiyon + kural/indeks deploy başarılı); Parça B kullanıcı kararıyla 10.11 yayınına giriyor, telefonda uçtan uca denendi; kart ekranı YOK)
 Neden: kart "geçen hafta → bu hafta" diyecek; geçmiş geri gelmediği için veri karttan önce birikmeli.
 Tasarım: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` (döngü 2). Kararlar (kullanıcı, 08.11): yol
 `users/{uid}/weeklyStats/{yyyy-Www}`; Pzt–Paz ISO hafta, Türkiye saati, Pazartesi 00:10 koşu; aktif =
@@ -55,7 +55,15 @@ yalnızca sandığı geçen ve başarısı ≥ %80 koşular; örnek işlem dersi
   `users/{uid}/lessonMilestones/{partId}_{stableId}`: `finishedAtMs`, `sampleOp`, `chest{firstSec,bestSec,…}`.
   Kullanıcı onayıyla üç noktaya bağlı: ders ekranlarının `recordRuleStats`'ı (bellekte örnek işlem),
   `LessonSuccessRateRepository.recordItemFirstFinish` (bitiş + örnek), `ChestResult.record()` (süre).
-  LessonItem / merge / ekran geçişleri değişmedi. Birim testi `LessonMilestoneRulesTest` (5/5). Telefonda denenmedi.
+  LessonItem / merge / ekran geçişleri değişmedi. Birim testi `LessonMilestoneRulesTest` (5/5).
+  Telefonda (08.11 01:33 kurulum, HEAD + yalnızca bu dosyalar): Part 4 ders 2→3. adım bitti → `recordFinish`
+  (`finishedAtMs`, örnek `4 + 20 + 50 + 10 = 84`); Part 6 maraton (1 anahtarla açıldı) 96 sn → ilk kayıt, tekrar
+  62 sn → `firstSec=96, bestSec=62`; tekrar oynamada bitiş yeniden yazılmadı. Doğrulama: `adb logcat -s LessonMilestones`.
+  **Bilinen boşluk:** Part 4–5 sandıkları ChestResult’a uğramıyor (BlindingLessonFragment `globalPartId in 4,5`
+  dalı), süre kaydı yalnızca Part 1–3 ve 6 sandıklarında.
+  **Testte görülen, bu işle ilgisiz:** reklam → "PRO ile reklamsız" teklifi kapandıktan sonra haritadaki ders
+  çubuğu eski değerde kaldı (`tryConsumeProgress` `promo_pending` engeli; veri doğruydu, panel 2/3 gösterdi).
+  Puanlama penceresi "Numi’yi Beğendin mi?" diyor (marka Sorobit).
 - Elle taban koşusu: Cloud Scheduler'da `firebase-schedule-snapshotWeeklyStats-…` işi → "Zorla çalıştır".
 
 ## Öğreticide oturumsuz Sobi notu (08.11.2026 — derlendi; kullanıcı onayıyla commit + push edildi, telefona kuruldu 08.11 00:11, kullanıcı deneyecek)

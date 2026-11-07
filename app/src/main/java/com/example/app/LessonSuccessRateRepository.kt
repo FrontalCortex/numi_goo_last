@@ -221,7 +221,11 @@ object LessonSuccessRateRepository {
         if (partId !in 1..8) return
         // Oturum açmamış kullanıcı eskiden de sayılmıyordu; veri karşılaştırılabilir kalsın diye korundu.
         if (FirebaseAuth.getInstance().currentUser?.uid == null) return
-        AnalyticsLogger.logLessonItemFinish(partId, position, stableIdOf(partId, position), chestStars)
+        val stableId = stableIdOf(partId, position)
+        AnalyticsLogger.logLessonItemFinish(partId, position, stableId, chestStars)
+        // Haftalık kart: bitiş tarihi ve dersten bir örnek işlem (ayrı belge, arka planda).
+        // Yukarıdaki "Firestore'a yazılmaz" bu sınıfın sayımı için; o kayıt LessonMilestones'ta.
+        LessonMilestones.recordFinish(partId, stableId)
     }
 
     /**

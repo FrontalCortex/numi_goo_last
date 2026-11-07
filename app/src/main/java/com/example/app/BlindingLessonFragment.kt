@@ -780,6 +780,12 @@ class BlindingLessonFragment : Fragment() {
         (operations.getOrNull(currentIndex) as? MathOperation)?.let { op ->
             val a = op.firstNumber ?: return
             val b = op.secondNumber ?: return
+            if (isCorrect && !isDailyQuestionMode) {
+                LessonMilestones.noteCorrect(
+                    globalPartId, lessonItem.stableId, lessonItem.currentStep,
+                    LessonMilestoneRules.binary(a, op.operator, b),
+                )
+            }
             if (op.operator == "x") {
                 SobiRuleStats.recordMultiplication(requireContext(), a, b, isCorrect, withAbacus = lessonItem.isBlinding != true)
             }
@@ -787,6 +793,12 @@ class BlindingLessonFragment : Fragment() {
         }
         @Suppress("UNCHECKED_CAST")
         val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>() ?: return
+        // Haftalık kartın "çözdüğü bir işlem"i (günlük soru bir ders bitişi değil).
+        if (isCorrect && !isDailyQuestionMode) {
+            LessonMilestones.noteCorrect(
+                globalPartId, lessonItem.stableId, lessonItem.currentStep, LessonMilestoneRules.sequence(numbers),
+            )
+        }
         if (lessonItem.isBlinding == true) {
             SobiRuleStats.recordMental(requireContext(), numbers, isCorrect)
             return

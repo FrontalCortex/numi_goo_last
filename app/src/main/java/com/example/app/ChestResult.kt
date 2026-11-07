@@ -100,6 +100,9 @@ class ChestResult : Fragment() {
         lessonItem.record = m.record
         lessonItem.leaderboardSeasonId = m.leaderboardSeasonId
         lessonItem.leaderboardSeasonBest = m.leaderboardSeasonBest
+        // Haftalık kart için sandık süresi (ilk / en iyi): puan süreyi saklamıyor. Arka planda ve ayrı
+        // belgeye yazılır; bu ekranın akışını beklemez, hatası akışı durdurmaz (LessonMilestones).
+        LessonMilestones.recordChestRun(globalPartId, lessonItem.stableId, successRate, parseTimeToSeconds(time))
     }
 
     private fun continueFragment() {

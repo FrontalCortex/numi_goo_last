@@ -1885,6 +1885,13 @@ class AbacusFragment : Fragment() {
         val first = op.firstNumber ?: return
         val second = op.secondNumber ?: return
         val sign = op.operator
+        // Haftalık kartın "çözdüğü bir işlem"i: bellekte, ders bitince LessonMilestones yazar.
+        if (isCorrect) {
+            LessonMilestones.noteCorrect(
+                globalPartId, lessonItem.stableId, lessonItem.currentStep,
+                LessonMilestoneRules.binary(first, sign, second),
+            )
+        }
         if (sign == "x") {
             SobiRuleStats.recordMultiplication(requireContext(), first, second, isCorrect, withAbacus = true)
             return
