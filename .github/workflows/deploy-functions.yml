@@ -95,9 +95,12 @@ jobs:
         env:
           MODE: ${{ steps.plan.outputs.mode }}
           ONLY: ${{ steps.plan.outputs.only }}
+        # --force: yeniden deneme ayarı (failurePolicy) olan fonksiyon etkileşimsiz kipte onaysız
+        # deploy edilmiyor; 05.11.2026'da grantLaunchGiftOnSignup yüzünden bütün deploy düştü. Aynı bayrak
+        # canlıda olup kodda olmayan fonksiyonu da sormadan siler: fonksiyon kaldırırken bunu bilerek yap.
         run: |
           if [ "$MODE" = "partial" ]; then
-            npx firebase-tools deploy --only "$ONLY" --non-interactive
+            npx firebase-tools deploy --only "$ONLY" --non-interactive --force
           else
-            npx firebase-tools deploy --only functions --non-interactive
+            npx firebase-tools deploy --only functions --non-interactive --force
           fi
