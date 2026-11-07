@@ -36,6 +36,39 @@ soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `Tutoria
 Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
 Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
 
+## Öğreticide oturumsuz Sobi notu (08.11.2026 — derlendi; kullanıcı onayıyla commit + push edildi, telefona kuruldu 08.11 00:11, kullanıcı deneyecek)
+Neden: kayıttan önce oynanan ilk öğreticide "Sobi'ye sor" ekranı (`MistakeReviewDialog.forTutorial`) oturum
+yokken yazma satırını tamamen gizliyordu (`sobiChat` oturum istiyor); yeni kullanıcı yapay zekâ sohbetini hiç
+görmüyordu. Kullanıcı kararı: yazma çubuğunun (`reviewInputBar`) yerinde yalnızca bilgi notu
+(`reviewLoginNote`, `sobi_chat_needs_account`, 4 dil `strings_sobi_guest.xml`); **düğme yok, kayda buradan
+yönlendirme yok**. Anonim oturum (Firebase anonymous auth + sunucuda günlük sınır) düşünüldü, yayından önce
+riskli bulundu: kodda ~50 yerde `currentUser != null` "kayıtlı" sayılıyor.
+
+## Sobi testinde abaküssüz (zihinden) sorular (07.11.2026 — birim testleri geçti; kullanıcı onayıyla commit + push edildi (Functions deploy push ile), telefona kuruldu 08.11 00:11, kullanıcı deneyecek)
+Neden: soroban'ın vitrini zihinden hesap (Part 4–6 körleme), Sobi testi yalnızca abaküslü soru veriyordu
+(`docs/BUYUME_DONGUSU_ARASTIRMASI.md`). Kullanıcı kararları (07.11.2026):
+- **Görülmüş sayılma:** Part 4/5'te o kuralın bölümündeki HERHANGİ bir ders (ünite maratonu dahil) bitmişse
+  (`stepIsFinish`). İlk ders şart değil (anahtarla sonraki ders açılıp bitirilmiş olabilir). Eşleme bölüm
+  başlığının `stableId`'sinden: `SobiTestPlanner.BLINDING_SECTIONS`, `mentalSeenRules`. Cihazda hesap başına
+  önbellek (`sobi_test` → `mental_seen_<uid>`), sekizi de görülünce Firestore'a gidilmiyor. Görülmemiş kural
+  zihinden gelmiyor (motor izinli kurallarla kuruyor + `rulesOf` ikinci kilit).
+- **Ayrı veri:** `m_` önekli anahtarlar (`m_add_ten`) aynı `homeworkRuleStats/{uid}` belgesinde (tally/recent/
+  level/sobiLevel). Körleme dersi ve körleme kupa yolu (`BlindingLessonFragment`, `isBlinding`) artık yalnızca
+  buraya yazıyor; eskiden abaküslü toplama yalnızca doğruları yazıp oranı şişiriyordu. Eski karışık veri ayrılamadı.
+- **Sayım:** soru başına — soruda geçen her kurala 1 doğru / 1 yanlış (`SobiRuleStats.recordMental`, `mentalTally`);
+  klavyeli cevapta hatanın işlemi bulunamıyor. Ödevin abaküssüz kipi eskisi gibi kural saymıyor.
+- **Karışım:** tek test; zihinden görülmüş kural varsa 3 soru zihinden (sıra 4/7/10), abaküssüz oran abaküslü en
+  zayıftan 20+ puan düşükse 5 (tek sıralar). Zihinden kural: %90 altı en düşük, yoksa en az çalışılan (yeni ders
+  önce), yoksa en düşük. Pekiştirme 3'ten 2'ye (5 zihindende 1'e) iniyor.
+- **Merdiven:** aynı 20 seviye, seviye ayrı (`m_` anahtarı); kayıt yoksa 10+ zihinden soruda orandan tahmin, yoksa 1.
+- **Oynatıcı:** zihinden soruda abaküs gizli, cevap klavyeyle (ödevin abaküssüz kipi), üstte "Soru 3/10 · Zihinden";
+  yanlışta "Sobi ile analiz et" boncuk kaydı olmadan. Kararlar `HomeworkPlayerFragment.questionWithAbacus()`'tan.
+- Test sayfasında zihinden kural ayrı satır ("10'luk toplama · zihinden"); veli panelinde "Abaküssüz toplama /
+  çıkarma" kartları (birim "soru"). Sobi sohbetine giden `ruleStats` yalnızca abaküslü (`snapshot(withMental=false)`).
+- Sunucu: `functions/homework.js` `RULE_TALLY_KEY` / `EXTRA_TALLY_KEY` `m_` kabul ediyor, seviye süzgeci 16 anahtar.
+  **Deploy olmadan** yeni uygulamanın zihinden sayımı sunucuda süzülüp kaybolur (istemci gönderileni düşüyor).
+- GA4'e yeni olay eklenmedi.
+
 ## Başkasının profili → sahte "Sezon ödüllerini topla" (06.11.2026 — derlendi, commit yok, telefonda denenmedi)
 - Belirti: başka bir kullanıcının profiline bakınca kendi hesapta "Sezon 10 ödülleri" kapısı, iki kez.
 - Neden: `ProfileFragment.loadBadgeProgressFromFirestore` karşı tarafın rozet belgesini ortak

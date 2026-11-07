@@ -158,6 +158,7 @@
         android:visibility="gone" />
 
     <LinearLayout
+        android:id="@+id/reviewInputBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
@@ -196,6 +197,22 @@
             android:scaleType="fitCenter"
             android:src="@drawable/send_ic" />
     </LinearLayout>
+
+    <!-- Oturumsuz (kayıttan önce oynanan ilk öğretici): yazma çubuğu yerine yalnızca bilgi. Sohbet
+         sunucusu (sobiChat) oturum istiyor; çocuk yapay zekâyla yazışmanın var olduğunu bilsin diye
+         satır gizlenmek yerine bu not görünüyor. Düğme bilerek yok (kullanıcı kararı 08.11.2026):
+         öğretici yarıda kesilip kayda yönlendirilmesin, kayıt öğreticinin sonundaki akışta kalsın. -->
+    <TextView
+        android:id="@+id/reviewLoginNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:text="@string/sobi_chat_needs_account"
+        android:textColor="#8B949E"
+        android:textSize="13sp"
+        android:visibility="gone" />
     </LinearLayout>
 
     <FrameLayout

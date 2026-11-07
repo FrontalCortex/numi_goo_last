@@ -248,9 +248,12 @@ class MistakeReviewDialog : DialogFragment() {
 
         view.findViewById<View>(R.id.reviewClose).setOnClickListener { dismissAllowingStateLoss() }
 
-        // Sobi'ye yazmak oturum ister (sunucu çağrısı).
-        val inputRow = view.findViewById<View>(R.id.reviewInputRow)
-        inputRow.visibility = if (loggedIn) View.VISIBLE else View.GONE
+        // Sobi'ye yazmak oturum ister (sobiChat callable'ı). Oturumsuzken eskiden bütün satır gizleniyordu;
+        // kayıttan önce oynanan ilk öğreticide yeni kullanıcı Sobi'nin yapay zekâ sohbetinin varlığını hiç
+        // görmüyordu. Artık yazma çubuğunun yerinde "hesap açınca yazabilirsin" notu duruyor. Düğmesiz:
+        // öğretici yarıda kesilip kayda yönlendirilmesin (kullanıcı kararı 08.11.2026).
+        view.findViewById<View>(R.id.reviewInputBar).visibility = if (loggedIn) View.VISIBLE else View.GONE
+        view.findViewById<View>(R.id.reviewLoginNote).visibility = if (loggedIn) View.GONE else View.VISIBLE
         balanceBar = SobiBalanceBar(
             balanceView = view.findViewById(R.id.reviewBalance),
             trialView = view.findViewById(R.id.reviewProTrial),
