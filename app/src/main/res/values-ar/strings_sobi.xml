@@ -91,6 +91,7 @@
     <string name="sobi_test_step_mental">السؤال %1$d / %2$d · ذهنيًا</string>
     <string name="sobi_test_done_title">انتهى اختبار Sobi!</string>
     <string name="sobi_test_rule_line">%1$s: %3$d صحيحة من %2$d</string>
+    <string name="sobi_test_rule_line_questions">%1$s: %3$d صحيحة من %2$d أسئلة</string>
     <string name="sobi_test_cheer_good">أداؤك رائع! سأُعدّ لك اختبارًا جديدًا غدًا.</string>
     <string name="sobi_test_cheer_try">لنعُد إلى هذه القاعدة غدًا؛ ستتحسّن قليلًا كل يوم.</string>
     <string name="sobi_test_open_chest">افتح صندوقك</string>
@@ -127,6 +128,7 @@
     <string name="sobi_test_rule_sub_ten">الطرح بقاعدة الأصدقاء الكبار</string>
     <string name="sobi_test_rule_sub_bead">الطرح بالقاعدة المركّبة</string>
     <string name="sobi_test_rule_mental">%1$s · ذهنيًا</string>
+    <string name="sobi_test_rule_mul">الضرب %1$d×%2$d</string>
 
     <string name="sobi_balance_free">الرسائل المجانية اليوم: %1$d</string>
     <string name="sobi_balance_free_credits">الرسائل المجانية اليوم: %1$d · الرصيد: %2$d</string>

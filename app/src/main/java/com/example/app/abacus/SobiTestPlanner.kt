@@ -26,9 +26,9 @@ import kotlin.random.Random
  *
  * ABAKÜSSÜZ (ZİHİNDEN) SORULAR (kullanıcı kararları 07.11.2026): soroban'ın asıl hedefi zihinden hesap ve
  * Part 4–5 körleme dersleri bunu öğretiyor; test yalnızca abaküslü soru verirken bu eksik hiç ölçülmüyordu.
- *  - Aynı "görmediği kural çıkmaz" kuralı: bir kural ancak Part 4/5'te o kuralın HERHANGİ bir dersi
- *    (ünite maratonu dahil) bitmişse abaküssüz gelir ([mentalSeenRules]). İlk ders şart değil: çocuk
- *    hızlı anlayıp sonraki dersi anahtarla açıp bitirmiş olabilir.
+ *  - Aynı "görmediği kural çıkmaz" kuralı: bir kural ancak Part 4/5'te o kuralın HERHANGİ bir dersinin
+ *    (ünite maratonu dahil) en az bir adımı bitmişse abaküssüz gelir ([seenFromLessons]; 08.11.2026: tek
+ *    adım yeter, ders 3 adımlı). İlk ders şart değil: çocuk hızlı anlayıp sonraki dersi anahtarla açmış olabilir.
  *  - Başarı ve seviye abaküslüden ayrı, "m_" önekli anahtarlarda ([mentalKey]): körlemede iyi olan
  *    çocuk abaküste zayıf olabilir (ya da tersi), tek oran ikisini de gizlerdi.
  *  - Karışım: abaküssüz görülmüş kural varsa 10 sorunun [MENTAL_SLOTS]'ü abaküssüz (abaküssüzde en
@@ -36,6 +36,15 @@ import kotlin.random.Random
  *    [MENTAL_SLOTS_WEAK]. Hiç görülmemişse test eskisi gibi tamamen abaküslü.
  *  - Merdiven aynı ([SobiTestLevels]), seviye ayrı; abaküssüz verisi yoksa 1. seviyeden başlar
  *    (körleme derslerinin 3 / 2,5 / 2 sn'lik 1–2 basamaklı soruları 1–3. seviyelere denk).
+ *
+ * ÇARPMA (kullanıcı kararları 08.11.2026): her basamak çifti bir "kural" gibi ("mulA_2x1" abaküslü,
+ * "mulM_2x1" zihinden; ödevin anahtarlarıyla aynı). Zayıf kural seçiminde toplama/çıkarma kurallarıyla
+ * birlikte yarışıyor: çocuk çarpmada zayıfsa test çoğunlukla çarpma olur, değilse pekiştirmede arada gelir.
+ *  - Görülme: Part 3 (abaküslü) / Part 6 (körleme) bölümünde bir adım ([seenFromLessons]); veri olsa da
+ *    (ör. öğretmen ödevi) ders görülmemişse çıkmaz.
+ *  - Seviye yok: zorluk çiftin kendisi (2×1 → 23 × 4). Çarpmada sayılar akmıyor; 20'lik merdiven (basamak,
+ *    adet, ara) anlamsız. Kolay/Zor yalnızca toplama/çıkarmayı etkiliyor.
+ *  - Sayım soru başına (ödevle aynı, RuleAnalysis.multiplication).
  * Yeterli veri yoksa null.
  */
 object SobiTestPlanner {
@@ -52,9 +61,30 @@ object SobiTestPlanner {
     private const val MENTAL_GAP_PCT = 20
 
     fun mentalKey(rule: String): String = MENTAL_PREFIX + rule
-    fun isMentalKey(key: String): Boolean = key.startsWith(MENTAL_PREFIX)
-    /** "m_add_ten" → "add_ten"; abaküslü anahtar olduğu gibi döner. */
+    /** Abaküssüz anahtar mı: "m_add_ten" ya da zihinden çarpma "mulM_2x1". */
+    fun isMentalKey(key: String): Boolean = key.startsWith(MENTAL_PREFIX) || key.startsWith("mulM_")
+    /** "m_add_ten" → "add_ten"; abaküslü anahtar ve çarpma olduğu gibi döner. */
     fun baseKey(key: String): String = key.removePrefix(MENTAL_PREFIX)
+
+    private val MUL_KEY = Regex("""^mul([AM])_([1-8])x([1-8])$""")
+    /** Çarpma çifti mi ("mulA_2x1", "mulM_2x2"). */
+    fun isMulKey(key: String): Boolean = MUL_KEY.matches(key)
+    /** Seviyesi olan kural mı: çarpmada seviye yok (bkz. sınıf açıklaması). */
+    fun hasLevel(key: String): Boolean = !isMulKey(key)
+    /** "mulA_3x2" → (3, 2). */
+    fun mulDigits(key: String): Pair<Int, Int>? =
+        MUL_KEY.matchEntire(key)?.let { it.groupValues[2].toInt() to it.groupValues[3].toInt() }
+
+    /**
+     * Çarpma sorusunun anahtarı: büyük çarpanın basamağı önce (derslerde ve ödevde "2'ye 1" = 2 basamak
+     * × 1 basamak; çarpanlar ters yazılmış olsa da aynı çift sayılsın).
+     */
+    fun mulKeyOf(a: Long, b: Long, withAbacus: Boolean): String {
+        val d = listOf(digitsOf(a), digitsOf(b)).sortedDescending()
+        return com.example.app.homework.RuleAnalysis.mulKey(withAbacus, d[0], d[1])
+    }
+
+    private fun digitsOf(n: Long): Int = Math.abs(n).toString().length
 
     /** [key] "add_ten" gibi (abaküssüzde "m_add_ten"); [correct]/[wrong] son penceredeki işlem sayıları. */
     data class RuleScore(val key: String, val correct: Int, val wrong: Int) {
@@ -67,8 +97,10 @@ object SobiTestPlanner {
      * arası buradan) ve abaküssüz mü. Başarının yazıldığı anahtar [statKey].
      */
     data class Question(val question: HomeworkQuestion, val rule: String, val level: Int, val mental: Boolean = false) {
+        /** Çarpmada kullanılmıyor (sayılar akmıyor, işlem tahtada sabit). */
         val intervalMs: Long get() = SobiTestLevels.spec(level).intervalMs
-        val statKey: String get() = if (mental) mentalKey(rule) else rule
+        /** Çarpmada [rule] zaten tam anahtar ("mulM_2x1"); toplama/çıkarmada abaküssüze "m_" eklenir. */
+        val statKey: String get() = if (mental && !isMulKey(rule)) mentalKey(rule) else rule
     }
 
     /**
@@ -99,7 +131,10 @@ object SobiTestPlanner {
         levels[score.key]?.coerceIn(1, SobiTestLevels.MAX)
             ?: if (score.total >= MIN_OPS) SobiTestLevels.initial(score.percent) else 1
 
-    /** Testin kuralları ve seviyeleri (sorular üretilmeden; zorluk seçim penceresi için). */
+    /**
+     * Testin kuralları ve seviyeleri (sorular üretilmeden; zorluk seçim penceresi için). [current]'ta çarpma
+     * çifti yok (seviyesi yok).
+     */
     data class Choice(
         val weak: List<RuleScore>,
         val strong: List<RuleScore>,
@@ -113,27 +148,35 @@ object SobiTestPlanner {
         val mentalSlots: Int = 0,
     )
 
-    /** [mentalSeen]: abaküssüz görülmüş kurallar (öneksiz; [mentalSeenRules]). */
-    fun choose(scores: List<RuleScore>, levels: Map<String, Int>, mentalSeen: Set<String> = emptySet()): Choice? {
+    /**
+     * [lessonSeen]: derslerden görülmüş olanlar ([seenFromLessons]): öneksiz toplama/çıkarma kuralı
+     * (körlemede, yani abaküssüz görülmüş), "mulA_2x1" (Part 3), "mulM_2x1" (Part 6).
+     */
+    fun choose(scores: List<RuleScore>, levels: Map<String, Int>, lessonSeen: Set<String> = emptySet()): Choice? {
+        val byKey = scores.associateBy { it.key }
         val known = scores.filter { KEY.matches(it.key) && it.total > 0 }
-        val rated = known.filter { it.total >= MIN_OPS }.sortedWith(compareBy({ it.percent }, { -it.total }))
+        // Abaküslü çarpma çiftleri: yalnızca dersi görülmüşse; verisi yoksa sıfırla (pekiştirmede gelsin).
+        val mulA = lessonSeen.filter { isMulKey(it) && !isMentalKey(it) }.map { byKey[it] ?: RuleScore(it, 0, 0) }
+        val pool = known + mulA
+        val rated = pool.filter { it.total >= MIN_OPS }.sortedWith(compareBy({ it.percent }, { -it.total }))
         if (rated.isEmpty()) return null
         val weak = rated.filter { it.percent < WEAK_PCT }.take(2).ifEmpty { listOf(rated.first()) }
         val allowed = withDirect(known.map { it.key })
-        val strong = known.filter { s -> weak.none { it.key == s.key } }
-        val current = (weak + strong).associate { it.key to levelOf(it, levels) }.toMutableMap()
+        val strong = pool.filter { s -> weak.none { it.key == s.key } }
+        val current = (weak + strong).filter { hasLevel(it.key) }.associate { it.key to levelOf(it, levels) }.toMutableMap()
 
-        val seen = mentalSeen.filter { KEY.matches(it) }.toSet()
-        if (seen.isEmpty()) return Choice(weak, strong, allowed, current)
-        val byKey = scores.associateBy { it.key }
-        val mScores = seen.map { byKey[mentalKey(it)] ?: RuleScore(mentalKey(it), 0, 0) }
+        val seen = lessonSeen.filter { KEY.matches(it) }.toSet()
+        val mulM = lessonSeen.filter { isMulKey(it) && isMentalKey(it) }
+        if (seen.isEmpty() && mulM.isEmpty()) return Choice(weak, strong, allowed, current)
+        val mScores = seen.map { byKey[mentalKey(it)] ?: RuleScore(mentalKey(it), 0, 0) } +
+            mulM.map { byKey[it] ?: RuleScore(it, 0, 0) }
         val mRated = mScores.filter { it.total >= MIN_OPS }.sortedWith(compareBy({ it.percent }, { -it.total }))
         // Önce gerçekten zayıf olan; yoksa henüz az çalışılmış olan (ders bitti ama zihinden pek
         // sorulmadı: ölçülmeden "biliyor" sayılmasın); o da yoksa en düşük oranlı (pekiştirme).
         val mw = mRated.firstOrNull { it.percent < WEAK_PCT }
-            ?: mScores.filter { it.total < MIN_OPS }.minWithOrNull(compareBy({ it.total }, { -ORDER.indexOf(baseKey(it.key)) }))
+            ?: mScores.filter { it.total < MIN_OPS }.minWithOrNull(compareBy({ it.total }, { -orderOf(it.key) }))
             ?: mRated.first()
-        current[mw.key] = mentalLevelOf(mw, levels)
+        if (hasLevel(mw.key)) current[mw.key] = mentalLevelOf(mw, levels)
         // Abaküsle yaptığı kural zihinden çok daha kötüyse (ör. %90'a karşı %55) test zihinden ağırlıklı.
         val gap = mw.total >= MIN_OPS && weak.first().percent - mw.percent >= MENTAL_GAP_PCT
         return Choice(weak, strong, allowed, current, listOf(mw), withDirect(seen), if (gap) MENTAL_SLOTS_WEAK else MENTAL_SLOTS)
@@ -148,10 +191,11 @@ object SobiTestPlanner {
         if (any { it.startsWith("sub_") }) add("sub_direct")
     }
 
-    fun plan(scores: List<RuleScore>, levels: Map<String, Int>, offset: Int, seed: Int, mentalSeen: Set<String> = emptySet()): Plan? {
-        val c = choose(scores, levels, mentalSeen) ?: return null
+    fun plan(scores: List<RuleScore>, levels: Map<String, Int>, offset: Int, seed: Int, lessonSeen: Set<String> = emptySet()): Plan? {
+        val c = choose(scores, levels, lessonSeen) ?: return null
         val (weak, strong, allowed, current) = c
-        val played = (weak + c.mentalWeak).associate { it.key to (current.getValue(it.key) + offset).coerceIn(1, SobiTestLevels.MAX) }
+        val played = (weak + c.mentalWeak).filter { hasLevel(it.key) }
+            .associate { it.key to (current.getValue(it.key) + offset).coerceIn(1, SobiTestLevels.MAX) }
 
         // Sıralar: abaküssüz sorular araya serpiştirilmiş (art arda abaküs açılıp kapanmasın); pekiştirme
         // eskiden 3./6./9. sıradaydı, abaküssüz soru gelince ikiye (5 abaküssüzde bire) iniyor ki zayıf
@@ -174,15 +218,16 @@ object SobiTestPlanner {
         var strongTurn = 0
         for (i in 0 until QUESTION_COUNT) {
             val mental = i in mentalSlots
+            // Çarpmada seviye yok: 0 (soru çiftin basamağından).
             val (key, level) = when {
-                mental -> c.mentalWeak.first().let { baseKey(it.key) to played.getValue(it.key) }
+                mental -> c.mentalWeak.first().let { baseKey(it.key) to (played[it.key] ?: 0) }
                 i in strongSlots -> {
                     val s = strong[strongTurn++ % strong.size]
-                    s.key to (current.getValue(s.key) - 1 + offset).coerceIn(1, SobiTestLevels.MAX)
+                    s.key to (current[s.key]?.let { (it - 1 + offset).coerceIn(1, SobiTestLevels.MAX) } ?: 0)
                 }
                 else -> {
                     val w = weak[weakTurn++ % weak.size]
-                    w.key to played.getValue(w.key)
+                    w.key to (played[w.key] ?: 0)
                 }
             }
             var q: Question? = null
@@ -201,6 +246,7 @@ object SobiTestPlanner {
 
     /** [key] kuralını içeren, [level] seviyesinde (kurulamazsa daha aşağıda) bir soru. */
     fun question(key: String, level: Int, allowed: Set<String>, rnd: Random, withAbacus: Boolean = true): Question? {
+        if (isMulKey(key)) return mulQuestion(key, rnd)
         val add = key.startsWith("add_")
         val op = if (add) HomeworkOp.ADD else HomeworkOp.SUB
         val prefix = if (add) "add_" else "sub_"
@@ -230,6 +276,18 @@ object SobiTestPlanner {
         return Question(HomeworkQuestion(op, listOf(base.toLong(), Math.abs(n).toLong())), key, 1, mental = !withAbacus)
     }
 
+    /**
+     * Çarpma çiftinden soru (ödev motoru; çarpanların rakamları ödevdeki gibi: en büyük basamak 0 değil,
+     * tek basamaklı çarpan 2–9). Abaküslü mü anahtardan: "mulM" zihinden.
+     */
+    fun mulQuestion(key: String, rnd: Random): Question? {
+        val (d1, d2) = mulDigits(key) ?: return null
+        val withAbacus = !isMentalKey(key)
+        val cfg = HomeworkConfig(HomeworkOp.MUL, withAbacus = withAbacus, digits = d1, digits2 = d2, questionCount = 1)
+        val q = runCatching { HomeworkEngine.generateQuestion(cfg, rnd) }.getOrNull() ?: return null
+        return Question(q, key, 0, mental = !withAbacus)
+    }
+
     /** Sorunun kullandığı kurallar ("add_ten"…): ilk sayı yazılmış, sonrakiler eklenir ya da çıkarılır. */
     fun rulesOf(q: HomeworkQuestion): Set<String> {
         if (q.op == HomeworkOp.MUL || q.numbers.size < 2) return emptySet()
@@ -244,17 +302,26 @@ object SobiTestPlanner {
         return out
     }
 
-    // ── Abaküssüz görülmüş kurallar ─────────────────────────────────────────
+    // ── Derslerden görülmüş kurallar ────────────────────────────────────────
 
     /** Kural sırası (müfredat): az çalışılmış abaküssüz kurallarda yenisi önce gelsin. */
-    private val ORDER = listOf("add_direct", "add_five", "add_ten", "add_bead", "sub_direct", "sub_five", "sub_ten", "sub_bead")
+    private val ORDER = listOf("add_direct", "add_five", "add_ten", "add_bead", "sub_direct", "sub_five", "sub_ten", "sub_bead",
+        "mulM_2x1", "mulM_2x2")
+
+    private fun orderOf(key: String): Int = ORDER.indexOf(baseKey(key))
 
     /**
-     * Part 4 (körleme toplama) ve Part 5 (körleme çıkarma) bölüm başlıkları → öğrettikleri kural. Başlığın
-     * altındaki her ders ve ünite maratonu o kural. Kimlikler [com.example.app.model.LessonItem.stableId]:
-     * hiç değişmiyor, liste sırası değişse bile eşleme kopmaz. 10'luk toplamada iki bölüm var (1–5, 6–9).
+     * Bölüm başlıkları → öğrettikleri kural. Part 3: abaküslü çarpma ("mulA_"); Part 4 / 5: körleme toplama
+     * / çıkarma (öneksiz kural = abaküssüz görülmüş); Part 6: körleme çarpma ("mulM_"; kolay ve zor bölümü
+     * aynı çift). Başlığın altındaki her ders ve ünite maratonu o kural. Kimlikler
+     * [com.example.app.model.LessonItem.stableId]: hiç değişmiyor, liste sırası değişse bile eşleme kopmaz.
+     * 10'luk toplamada iki bölüm var (1–5, 6–9).
      */
-    val BLINDING_SECTIONS: Map<String, String> = mapOf(
+    val LESSON_SECTIONS: Map<String, String> = mapOf(
+        "p3_i00_2_ye_1_carpma" to "mulA_2x1",
+        "p3_i05_2_ye_2_carpma" to "mulA_2x2",
+        "p3_i10_3_e_1_carpma" to "mulA_3x1",
+        "p3_i15_3_e_2_carpma" to "mulA_3x2",
         "p4_i00_kuralsiz_toplama" to "add_direct",
         "p4_i05_5_lik_toplama" to "add_five",
         "p4_i10_10_luk_toplama_1_2_3_4_5" to "add_ten",
@@ -264,24 +331,31 @@ object SobiTestPlanner {
         "p5_i05_5_lik_cikarma" to "sub_five",
         "p5_i10_10_luk_cikarma" to "sub_ten",
         "p5_i15_boncuk_cikarma" to "sub_bead",
+        "p6_i00_2_ye_1_carpma_kolay" to "mulM_2x1",
+        "p6_i05_2_ye_1_carpma_zor" to "mulM_2x1",
+        "p6_i10_2_ye_2_carpma_kolay" to "mulM_2x2",
+        "p6_i15_2_ye_2_carpma_zor" to "mulM_2x2",
     )
 
-    /** Haritadaki bir satır: [isHeader] bölüm başlığı, [finished] ders bitti mi (LessonItem.stepIsFinish). */
+    /** Derslerden çıkabilecek bütün kurallar (önbellekteki "hepsi görüldü" sınırı). */
+    val LESSON_RULES: Set<String> get() = LESSON_SECTIONS.values.toSet()
+
+    /** Haritadaki bir satır: [isHeader] bölüm başlığı, [finished] dersin en az bir adımı bitti mi (SobiDailyTest hesaplar). */
     data class LessonMark(val stableId: String, val isHeader: Boolean, val finished: Boolean)
 
     /**
-     * Abaküssüz görülmüş kurallar (kullanıcı kararı 07.11.2026): o kuralın bölümünde en az bir ders
-     * bitmiş. [items]: bir part'ın satırları sırayla. Başlıktan önce gelen ya da tanınmayan bölümdeki
+     * Derslerden görülmüş kurallar (kullanıcı kararları 07–08.11.2026): o kuralın bölümünde en az bir ders
+     * oynanmış ([LessonMark.finished]). [items]: bir part'ın satırları sırayla. Başlıktan önce gelen ya da tanınmayan bölümdeki
      * ders sayılmaz.
      */
-    fun mentalSeenRules(items: List<LessonMark>): Set<String> {
+    fun seenFromLessons(items: List<LessonMark>): Set<String> {
         val out = HashSet<String>()
         var section: String? = null
         for (m in items) {
             if (m.isHeader) {
                 // Tanınmayan başlık bölümü kapatır: ileride araya başka bir bölüm eklenirse onun dersleri
                 // bir önceki kurala yazılmasın.
-                section = BLINDING_SECTIONS[m.stableId]
+                section = LESSON_SECTIONS[m.stableId]
                 continue
             }
             val rule = section ?: continue

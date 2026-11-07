@@ -113,6 +113,16 @@ object SobiRuleStats {
         add(context, mentalTally(rules, correct), question = correct)
     }
 
+    /**
+     * Ders çarpma sorusu (kullanıcı kararı 08.11.2026: dersler de kaydetsin; eskiden yalnızca öğretmen ödevi
+     * yazıyordu ve Sobi çarpmadaki eksiği göremiyordu). Ödevle aynı anahtar ve ölçü: basamak çifti başına,
+     * soru başına ("mulA_2x1" abaküslü Part 3, "mulM_2x1" körleme Part 6).
+     */
+    fun recordMultiplication(context: Context, a: Int, b: Int, correct: Boolean, withAbacus: Boolean) {
+        val key = SobiTestPlanner.mulKeyOf(a.toLong(), b.toLong(), withAbacus)
+        add(context, mapOf(key to if (correct) intArrayOf(1, 0) else intArrayOf(0, 1)), question = correct)
+    }
+
     /** [rules] öneksiz kurallar ("add_ten"); sonuç "m_add_ten" → (1, 0) ya da (0, 1). */
     fun mentalTally(rules: Collection<String>, correct: Boolean): Map<String, IntArray> =
         rules.associate { SobiTestPlanner.mentalKey(it) to if (correct) intArrayOf(1, 0) else intArrayOf(0, 1) }
@@ -199,5 +209,12 @@ object SobiRuleStats {
 
     private val BASE_KEYS = listOf("add_direct", "add_five", "add_ten", "add_bead", "sub_direct", "sub_five", "sub_ten", "sub_bead")
     /** Abaküslü ve abaküssüz ("m_add_ten"); sunucu süzgeci functions/homework.js EXTRA_TALLY_KEY. */
-    private val KEYS = BASE_KEYS + BASE_KEYS.map { SobiTestPlanner.mentalKey(it) }
+    private val KEYS = BASE_KEYS + BASE_KEYS.map { SobiTestPlanner.mentalKey(it) } + MUL_KEYS
+
+    /**
+     * Çarpma çiftleri (büyük çarpan önce): ödevin sınırları içinde, abaküslü 4×1'e, zihinden 6×1'e kadar
+     * (HomeworkRuleStatsFragment MUL_ABACUS / MUL_MENTAL). Sunucu süzgeci mul[AM]_[1-8]x[1-8].
+     */
+    private val MUL_KEYS: List<String>
+        get() = (1..6).flatMap { d1 -> (1..minOf(d1, 3)).flatMap { d2 -> listOf("mulA_${d1}x$d2", "mulM_${d1}x$d2") } }
 }

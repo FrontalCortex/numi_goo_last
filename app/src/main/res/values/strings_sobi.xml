@@ -105,6 +105,7 @@
     <string name="sobi_test_done_title">Sobi\'nin testi bitti!</string>
     <!-- "10'luk toplama: 14 işlemden 11'i doğru" -->
     <string name="sobi_test_rule_line">%1$s: %2$d işlemden %3$d doğru</string>
+    <string name="sobi_test_rule_line_questions">%1$s: %2$d sorudan %3$d doğru</string>
     <string name="sobi_test_cheer_good">Harika gidiyorsun! Yarın yeni bir test hazırlarım.</string>
     <string name="sobi_test_cheer_try">Bu kurala yarın yine bakalım; her gün biraz daha iyi olacak.</string>
     <string name="sobi_test_open_chest">Sandığını aç</string>
@@ -141,6 +142,8 @@
     <string name="sobi_test_rule_sub_ten">10\'luk çıkarma</string>
     <string name="sobi_test_rule_sub_bead">boncuk kuralıyla çıkarma</string>
     <string name="sobi_test_rule_mental">%1$s · zihinden</string>
+    <!-- Çarpma çifti: "2×1 çarpma" (2 basamaklı × 1 basamaklı) -->
+    <string name="sobi_test_rule_mul">%1$d×%2$d çarpma</string>
 
     <!-- Sobi ekonomisi (functions/sobi/wallet.js; kullanıcı kararları 01.11.2026). -->
     <string name="sobi_balance_free">Bugün %1$d ücretsiz mesaj</string>

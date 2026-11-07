@@ -47,9 +47,11 @@ riskli bulundu: kodda ~50 yerde `currentUser != null` "kayıtlı" sayılıyor.
 ## Sobi testinde abaküssüz (zihinden) sorular (07.11.2026 — birim testleri geçti; kullanıcı onayıyla commit + push edildi , Functions deploy BAŞARILI 08.11.2026 (b0480ce), telefona kuruldu 08.11 00:11, kullanıcı deneyecek)
 Neden: soroban'ın vitrini zihinden hesap (Part 4–6 körleme), Sobi testi yalnızca abaküslü soru veriyordu
 (`docs/BUYUME_DONGUSU_ARASTIRMASI.md`). Kullanıcı kararları (07.11.2026):
-- **Görülmüş sayılma:** Part 4/5'te o kuralın bölümündeki HERHANGİ bir ders (ünite maratonu dahil) bitmişse
-  (`stepIsFinish`). İlk ders şart değil (anahtarla sonraki ders açılıp bitirilmiş olabilir). Eşleme bölüm
-  başlığının `stableId`'sinden: `SobiTestPlanner.BLINDING_SECTIONS`, `mentalSeenRules`. Cihazda hesap başına
+- **Görülmüş sayılma:** Part 4/5'te o kuralın bölümündeki HERHANGİ bir dersin (ünite maratonu dahil) EN AZ BİR ADIMI
+  bitmişse (08.11.2026 kullanıcı kararı; `stepIsFinish` ancak 3 adımın hepsiyle geliyordu, telefonda 5'lik çıkarma 2/3
+  adımdayken zihinden gelmedi; artık `currentStep > 1` ya da `stepCompletionStatus` da sayılıyor). İlk ders şart değil. Teşhis
+  logu: `adb logcat -s SobiDailyTest` → "dersler:" satırı (her satır kimlik:tür:adım:BITTI). Eşleme bölüm
+  başlığının `stableId`'sinden: `SobiTestPlanner.LESSON_SECTIONS`, `seenFromLessons`. Cihazda hesap başına
   önbellek (`sobi_test` → `mental_seen_<uid>`), sekizi de görülünce Firestore'a gidilmiyor. Görülmemiş kural
   zihinden gelmiyor (motor izinli kurallarla kuruyor + `rulesOf` ikinci kilit).
 - **Ayrı veri:** `m_` önekli anahtarlar (`m_add_ten`) aynı `homeworkRuleStats/{uid}` belgesinde (tally/recent/
@@ -68,6 +70,17 @@ Neden: soroban'ın vitrini zihinden hesap (Part 4–6 körleme), Sobi testi yaln
 - Sunucu: `functions/homework.js` `RULE_TALLY_KEY` / `EXTRA_TALLY_KEY` `m_` kabul ediyor, seviye süzgeci 16 anahtar.
   **Deploy olmadan** yeni uygulamanın zihinden sayımı sunucuda süzülüp kaybolur (istemci gönderileni düşüyor).
 - GA4'e yeni olay eklenmedi.
+- **Çarpma (08.11.2026 kullanıcı kararları; 120 birim testi geçti, telefonda baştan sona denendi 00:51, kullanıcı onayıyla commit + push):**
+  her basamak çifti bir "kural" (`mulA_2x1` abaküslü, `mulM_2x1` zihinden; ödevin anahtarları). Zayıf kural seçiminde
+  toplama/çıkarmayla birlikte yarışıyor (çarpmada zayıfsa test çoğunlukla çarpma). Görülme: Part 3 (2×1, 2×2, 3×1, 3×2)
+  ve Part 6 (2×1, 2×2; kolay ve zor bölümü aynı çift) bölümlerinde bir adım; ödevden veri olsa da ders görülmemişse
+  çıkmaz. Seviye YOK (zorluk = çift; Kolay/Zor yalnızca toplama/çıkarma, zayıfların hepsi çarpmaysa seçim gizli).
+  Dersler artık çarpmayı da kaydediyor: `AbacusFragment` (Part 3) `mulA_`, `BlindingLessonFragment` körlemede `mulM_`,
+  abaküs açıkken (kupa yolu, günlük soru) `mulA_`; soru başına (`SobiRuleStats.recordMultiplication`). Sunucu
+  `EXTRA_TALLY_KEY` çarpmayı kabul ediyor, seviye süzgeci ayrı (`SOBI_LEVEL_KEY`, çarpma yok). **Deploy olmadan
+  derslerin çarpma sayımı sunucuda süzülüp kaybolur.** Test sonu satırı zihinden ve çarpmada "x sorudan y doğru".
+  Telefonda bulunan hata: oynatıcıya soru türü 0/1 (toplama/çıkarma) diye taşınıyordu, çarpma toplamaya dönüşüyordu
+  (62 × 5 → 62 + 5); artık 0/1/2 (`HomeworkPlayerFragment.opCode/opOf`).
 
 ## Başkasının profili → sahte "Sezon ödüllerini topla" (06.11.2026 — derlendi, commit yok, telefonda denenmedi)
 - Belirti: başka bir kullanıcının profiline bakınca kendi hesapta "Sezon 10 ödülleri" kapısı, iki kez.

@@ -91,6 +91,7 @@
     <string name="sobi_test_step_mental">Question %1$d / %2$d · Mental</string>
     <string name="sobi_test_done_title">Sobi\'s quiz is done!</string>
     <string name="sobi_test_rule_line">%1$s: %3$d of %2$d correct</string>
+    <string name="sobi_test_rule_line_questions">%1$s: %3$d of %2$d questions correct</string>
     <string name="sobi_test_cheer_good">You\'re doing great! I\'ll make a new quiz tomorrow.</string>
     <string name="sobi_test_cheer_try">Let\'s look at this rule again tomorrow; you\'ll get a little better every day.</string>
     <string name="sobi_test_open_chest">Open your chest</string>
@@ -127,6 +128,7 @@
     <string name="sobi_test_rule_sub_ten">big friends subtraction</string>
     <string name="sobi_test_rule_sub_bead">mixed friends subtraction</string>
     <string name="sobi_test_rule_mental">%1$s · mental</string>
+    <string name="sobi_test_rule_mul">%1$d×%2$d multiplication</string>
 
     <string name="sobi_balance_free">%1$d free messages today</string>
     <string name="sobi_balance_free_credits">%1$d free messages today · %2$d credits</string>

@@ -772,8 +772,19 @@ class BlindingLessonFragment : Fragment() {
      * gider, soru başına ([SobiRuleStats.recordMental]; kullanıcı kararı 07.11.2026). Eskiden körleme de
      * abaküslü toplama yazılıyordu, ama yalnızca doğrular (klavyede hatanın yeri bulunamıyor): abaküslü
      * oranı şişiriyor, zihinden eksiği hiç göstermiyordu. Sobi testi zihinden soruyu bu sayımla seçiyor.
+     *
+     * Çarpma ([MathOperation]; 08.11.2026, eskiden yazılmıyordu): basamak çifti, soru başına. Körlemede
+     * (Part 6) zihinden "mulM_", abaküs açıkken (kupa yolu, günlük soru) "mulA_".
      */
     private fun recordRuleStats(isCorrect: Boolean) {
+        (operations.getOrNull(currentIndex) as? MathOperation)?.let { op ->
+            val a = op.firstNumber ?: return
+            val b = op.secondNumber ?: return
+            if (op.operator == "x") {
+                SobiRuleStats.recordMultiplication(requireContext(), a, b, isCorrect, withAbacus = lessonItem.isBlinding != true)
+            }
+            return
+        }
         @Suppress("UNCHECKED_CAST")
         val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>() ?: return
         if (lessonItem.isBlinding == true) {

@@ -82,6 +82,19 @@ class HomeworkPlayerFragment : Fragment() {
         }
 
         private const val ARG_SOBI_OPS = "sobi_ops"
+
+        /** Sobi testinin soruları argümanda bu kodlarla taşınıyor (bkz. [newSobiTest]). */
+        internal fun opCode(op: HomeworkOp): Int = when (op) {
+            HomeworkOp.ADD -> 0
+            HomeworkOp.SUB -> 1
+            HomeworkOp.MUL -> 2
+        }
+
+        internal fun opOf(code: Int): HomeworkOp = when (code) {
+            1 -> HomeworkOp.SUB
+            2 -> HomeworkOp.MUL
+            else -> HomeworkOp.ADD
+        }
         private const val ARG_SOBI_SIZES = "sobi_sizes"
         private const val ARG_SOBI_NUMBERS = "sobi_numbers"
         private const val ARG_SOBI_INTERVALS = "sobi_intervals"
@@ -96,7 +109,9 @@ class HomeworkPlayerFragment : Fragment() {
             val weak = (plan.weak + plan.mentalWeak).map { it.key }
             arguments = Bundle().apply {
                 putBooleanArray(ARG_SOBI_MENTAL, plan.questions.map { it.mental }.toBooleanArray())
-                putIntArray(ARG_SOBI_OPS, plan.questions.map { if (it.question.op == HomeworkOp.SUB) 1 else 0 }.toIntArray())
+                // İşlem kodu: 0 toplama, 1 çıkarma, 2 çarpma. Eskiden yalnızca 0/1 vardı ve çarpma (08.11.2026)
+                // toplamaya dönüşüyordu: 62 × 5 ekrana 62 + 5 diye geliyordu.
+                putIntArray(ARG_SOBI_OPS, plan.questions.map { opCode(it.question.op) }.toIntArray())
                 putIntArray(ARG_SOBI_SIZES, plan.questions.map { it.question.numbers.size }.toIntArray())
                 putLongArray(ARG_SOBI_NUMBERS, plan.questions.flatMap { it.question.numbers }.toLongArray())
                 putLongArray(ARG_SOBI_INTERVALS, plan.questions.map { it.intervalMs }.toLongArray())
@@ -240,7 +255,7 @@ class HomeworkPlayerFragment : Fragment() {
         val list = ops.indices.mapNotNull { i ->
             val n = sizes.getOrNull(i) ?: return@mapNotNull null
             if (at + n > numbers.size) return@mapNotNull null
-            val q = HomeworkQuestion(if (ops[i] == 1) HomeworkOp.SUB else HomeworkOp.ADD, numbers.slice(at until at + n))
+            val q = HomeworkQuestion(opOf(ops[i]), numbers.slice(at until at + n))
             at += n
             q
         }
@@ -306,6 +321,12 @@ class HomeworkPlayerFragment : Fragment() {
             val cw = blockTally[key] ?: return@mapIndexedNotNull null
             val total = cw[0] + cw[1]
             if (total == 0) return@mapIndexedNotNull null
+            // Zihinden toplama/çıkarma ve çarpma soru başına sayılıyor; abaküslü toplama/çıkarma işlem başına.
+            val perQuestion = com.example.app.abacus.SobiTestPlanner.isMentalKey(key) || com.example.app.abacus.SobiTestPlanner.isMulKey(key)
+            val line = appString(if (perQuestion) R.string.sobi_test_rule_line_questions else R.string.sobi_test_rule_line,
+                com.example.app.SobiDailyTest.ruleLabel(key), total, cw[0])
+            // Çarpmada seviye yok: yalnızca sonuç satırı.
+            if (!com.example.app.abacus.SobiTestPlanner.hasLevel(key)) return@mapIndexedNotNull line
             val before = current.getOrNull(i) ?: 1
             val after = com.example.app.abacus.SobiTestLevels.next(before, played.getOrNull(i) ?: before, cw[0] * 100 / total)
             newLevels[key] = after
@@ -314,7 +335,7 @@ class HomeworkPlayerFragment : Fragment() {
                 after < before -> appString(R.string.sobi_test_level_down, after)
                 else -> appString(R.string.sobi_test_level_same, after)
             }
-            appString(R.string.sobi_test_rule_line, com.example.app.SobiDailyTest.ruleLabel(key), total, cw[0]) + "\n" + levelText
+            line + "\n" + levelText
         }
         com.example.app.SobiDailyTest.saveLevels(ctx, newLevels)
         val pct = if (questions.isEmpty()) 0 else blockCorrect * 100 / questions.size
@@ -605,7 +626,12 @@ class HomeworkPlayerFragment : Fragment() {
         val cfg = homework?.config ?: return
         // Sobi testinin abaküssüz sorusu: soru başına, "m_" anahtarlarına (SobiRuleStats.recordMental ile
         // aynı ölçü; körleme dersleriyle aynı toplama gitsin). Ödevin abaküssüz kipi eskisi gibi sayılmıyor.
-        val tally = if (sobiMode && !questionWithAbacus()) {
+        val tally = if (sobiMode && q.op == HomeworkOp.MUL) {
+            // Sobi testinde çarpma: ödev ayarı yok (sorular hazır geliyor), çift sorunun kendisinden; anahtar
+            // ödevle aynı (mulA_2x1 / mulM_2x1), soru başına.
+            val key = com.example.app.abacus.SobiTestPlanner.mulKeyOf(q.numbers[0], q.numbers[1], questionWithAbacus())
+            mapOf(key to if (correct) intArrayOf(1, 0) else intArrayOf(0, 1))
+        } else if (sobiMode && !questionWithAbacus()) {
             runCatching { com.example.app.SobiRuleStats.mentalTally(com.example.app.abacus.SobiTestPlanner.rulesOf(q), correct) }
                 .getOrDefault(emptyMap())
         } else {

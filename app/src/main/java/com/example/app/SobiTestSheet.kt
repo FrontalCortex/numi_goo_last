@@ -74,7 +74,7 @@ class SobiTestSheet(private val fragment: Fragment) {
         SobiDailyTest.load(ctx) { info ->
             if (!fragment.isAdded || dialog !== d) return@load
             view.findViewById<View>(R.id.sobiTestLoading).visibility = View.GONE
-            val choice = SobiTestPlanner.choose(info.scores, info.levels, info.mentalSeen)
+            val choice = SobiTestPlanner.choose(info.scores, info.levels, info.lessonSeen)
             if (choice == null) {
                 showEmpty(view, start, appString(R.string.sobi_test_no_data))
                 return@load
@@ -100,20 +100,35 @@ class SobiTestSheet(private val fragment: Fragment) {
         // Abaküssüz kural da kendi satırında ("10'luk toplama · zihinden"): çocuk ve veli testin zihinden
         // soru da içerdiğini başlamadan görsün. Zorluk kartları abaküslü zayıf kuralın seviyesinden.
         for (w in choice.weak + choice.mentalWeak) {
-            val level = choice.current.getValue(w.key)
             val row = inflater.inflate(R.layout.item_sobi_test_rule, rules, false)
             row.findViewById<TextView>(R.id.ruleName).text = SobiDailyTest.ruleLabel(w.key).replaceFirstChar { it.uppercase() }
-            row.findViewById<TextView>(R.id.ruleLevel).text = appString(R.string.sobi_test_level_of, level, SobiTestLevels.MAX)
-            row.findViewById<LinearProgressIndicator>(R.id.ruleLevelBar).apply {
-                max = SobiTestLevels.MAX
-                progress = level
+            val level = choice.current[w.key]
+            if (level == null) {
+                // Çarpma çiftinde seviye yok (zorluk çiftin kendisi): seviye yazısı ve çubuğu boş durmasın.
+                row.findViewById<View>(R.id.ruleLevel).visibility = View.GONE
+                row.findViewById<View>(R.id.ruleLevelBar).visibility = View.GONE
+            } else {
+                row.findViewById<TextView>(R.id.ruleLevel).text = appString(R.string.sobi_test_level_of, level, SobiTestLevels.MAX)
+                row.findViewById<LinearProgressIndicator>(R.id.ruleLevelBar).apply {
+                    max = SobiTestLevels.MAX
+                    progress = level
+                }
             }
             rules.addView(row)
         }
 
-        val base = choice.current.getValue(choice.weak.first().key)
         val options = view.findViewById<LinearLayout>(R.id.sobiTestOptions)
         optionViews.clear()
+        // Zorluk kartları ilk seviyeli zayıf kuraldan. Zayıf kuralların hepsi çarpmaysa Kolay/Zor hiçbir
+        // soruyu değiştirmiyor (çarpmada seviye yok): seçim hiç gösterilmiyor, test "Benim seviyem".
+        val base = choice.weak.firstNotNullOfOrNull { choice.current[it.key] }
+        if (base == null) {
+            view.findViewById<View>(R.id.sobiTestDifficultyLabel).visibility = View.GONE
+            options.visibility = View.GONE
+            offset = 0
+            view.findViewById<View>(R.id.sobiTestBody).visibility = View.VISIBLE
+            return
+        }
         for ((o, label) in listOf(-1 to R.string.sobi_test_diff_easy, 0 to R.string.sobi_test_diff_mine, 1 to R.string.sobi_test_diff_hard)) {
             val level = (base + o).coerceIn(1, SobiTestLevels.MAX)
             // Seviye 1'de "Kolay", 20'de "Zor" aynı seviyeye düşüyor: anlamsız kart gösterme.

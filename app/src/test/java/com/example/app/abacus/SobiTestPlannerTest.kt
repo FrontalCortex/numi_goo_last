@@ -108,7 +108,7 @@ class SobiTestPlannerTest {
     @Test
     fun abakussuz_yalnizca_gorulen_kurallardan() {
         // Körlemede kuralsız ve 5'lik dersi bitmiş, 10'luk değil: 10'luk abaküslüde zayıf ama zihinden gelmez.
-        val plan = SobiTestPlanner.plan(add, emptyMap(), 0, seed = 3, mentalSeen = setOf("add_direct", "add_five"))!!
+        val plan = SobiTestPlanner.plan(add, emptyMap(), 0, seed = 3, lessonSeen = setOf("add_direct", "add_five"))!!
         val mental = plan.questions.filter { it.mental }
         assertEquals(3, mental.size)
         // Henüz zihinden sayım yok: en yeni görülen kural, 1. seviyeden.
@@ -128,7 +128,7 @@ class SobiTestPlannerTest {
         // Abaküslü en zayıf %54, zihinden 10'luk %20: fark 20 puandan çok → 5 zihinden soru.
         val scores = add + RuleScore("m_add_ten", 3, 12) + RuleScore("m_add_direct", 20, 0)
         val plan = SobiTestPlanner.plan(scores, mapOf("m_add_ten" to 4), 0, seed = 9,
-            mentalSeen = setOf("add_direct", "add_five", "add_ten"))!!
+            lessonSeen = setOf("add_direct", "add_five", "add_ten"))!!
         assertEquals(listOf("m_add_ten"), plan.mentalWeak.map { it.key })
         val mental = plan.questions.filter { it.mental }
         assertEquals(5, mental.size)
@@ -164,7 +164,60 @@ class SobiTestPlannerTest {
             // Tanınmayan başlık bölümü kapatır.
             h("p4_yeni_bolum"), l("p4_x", true),
         )
-        assertEquals(setOf("add_five", "add_ten"), SobiTestPlanner.mentalSeenRules(part4))
-        assertEquals(emptySet<String>(), SobiTestPlanner.mentalSeenRules(listOf(l("p5_i01", true))))
+        assertEquals(setOf("add_five", "add_ten"), SobiTestPlanner.seenFromLessons(part4))
+        assertEquals(emptySet<String>(), SobiTestPlanner.seenFromLessons(listOf(l("p5_i01", true))))
+    }
+
+    // ── Çarpma (08.11.2026) ─────────────────────────────────────────────────
+
+    @Test
+    fun carpma_dersi_gorulmemisse_gelmez() {
+        // Ödevden çarpma verisi olsa bile Part 3 dersi görülmemişse test toplama/çıkarma.
+        val plan = SobiTestPlanner.plan(add + RuleScore("mulA_2x1", 2, 20), emptyMap(), 0, seed = 4)!!
+        assertTrue(plan.questions.none { it.question.op == HomeworkOp.MUL })
+    }
+
+    @Test
+    fun carpma_zayifsa_kural_gibi_secilir() {
+        // 2×1 çarpma %13: 10'luk toplamadan (%54) zayıf → ilk zayıf kural; seviye yok.
+        val scores = add + RuleScore("mulA_2x1", 2, 13)
+        val plan = SobiTestPlanner.plan(scores, emptyMap(), 0, seed = 6, lessonSeen = setOf("mulA_2x1", "mulA_2x2"))!!
+        assertEquals(listOf("mulA_2x1", "add_ten"), plan.weak.map { it.key })
+        assertNull(plan.current["mulA_2x1"])
+        assertNull(plan.played["mulA_2x1"])
+        val mul = plan.questions.filter { it.question.op == HomeworkOp.MUL }
+        assertTrue("çarpma sorusu: ${mul.size}", mul.size >= 3)
+        for (q in mul) {
+            assertTrue(!q.mental)
+            assertTrue(q.rule in setOf("mulA_2x1", "mulA_2x2"))
+            assertEquals(q.rule, SobiTestPlanner.mulKeyOf(q.question.numbers[0], q.question.numbers[1], withAbacus = true))
+        }
+        // 2×1: iki basamaklı × tek basamaklı (tek basamaklı çarpan 2–9).
+        assertTrue(mul.filter { it.rule == "mulA_2x1" }.all { it.question.numbers[0] in 10L..99L && it.question.numbers[1] in 2L..9L })
+    }
+
+    @Test
+    fun zihinden_carpma_part6dan() {
+        // Körleme çarpması görülmüş, zihinden toplama görülmemiş: zihinden sorular 2×1 çarpma.
+        val plan = SobiTestPlanner.plan(add, emptyMap(), 0, seed = 8, lessonSeen = setOf("mulM_2x1"))!!
+        assertEquals(listOf("mulM_2x1"), plan.mentalWeak.map { it.key })
+        val mental = plan.questions.filter { it.mental }
+        assertEquals(3, mental.size)
+        assertTrue(mental.all { it.question.op == HomeworkOp.MUL && it.statKey == "mulM_2x1" })
+    }
+
+    @Test
+    fun carpma_bolumleri_ve_anahtar() {
+        fun h(id: String) = SobiTestPlanner.LessonMark(id, isHeader = true, finished = false)
+        fun l(id: String, done: Boolean) = SobiTestPlanner.LessonMark(id, isHeader = false, finished = done)
+        val part3 = listOf(h("p3_i00_2_ye_1_carpma"), l("p3_i01", true), h("p3_i05_2_ye_2_carpma"), l("p3_i06", false),
+            h("p3_i15_3_e_2_carpma"), l("p3_i19_unite_maratonu", true))
+        assertEquals(setOf("mulA_2x1", "mulA_3x2"), SobiTestPlanner.seenFromLessons(part3))
+        // Part 6'nın zor bölümü de aynı çift.
+        val part6 = listOf(h("p6_i00_2_ye_1_carpma_kolay"), l("p6_i01", false), h("p6_i05_2_ye_1_carpma_zor"), l("p6_i06", true))
+        assertEquals(setOf("mulM_2x1"), SobiTestPlanner.seenFromLessons(part6))
+        // Çarpan sırası ters yazılsa da aynı çift.
+        assertEquals("mulM_2x1", SobiTestPlanner.mulKeyOf(7, 43, withAbacus = false))
+        assertEquals("mulA_3x2", SobiTestPlanner.mulKeyOf(123, 45, withAbacus = true))
     }
 }

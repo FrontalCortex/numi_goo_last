@@ -314,13 +314,16 @@ function applyBlockToStats(prev, tally) {
 /**
  * DERS VE SOBİ SAYIMI — kural başarısına derslerden ve Sobi ile çalışmadan gelen sayım (kullanıcı kararı
  * 01.11.2026: "Ödev başarısı" kartı "Kural başarısı" oldu, hepsi tek toplamda). Uygulama biriktirip
- * gönderiyor (recordRuleTally). Yalnızca toplama ve çıkarma kuralları, abaküslü ve abaküssüz ("m_"; çarpma ödevde kalıyor);
+ * gönderiyor (recordRuleTally). Toplama ve çıkarma kuralları, abaküslü ve abaküssüz ("m_"), ve çarpma çiftleri
+ * ("mulA_2x1" / "mulM_2x1"; 08.11.2026: dersler ve Sobi testi de yazıyor, eskiden yalnızca ödev);
  * tek çağrıda kural başına ve soru sayısında en çok EXTRA_TALLY_MAX: uygulama hatası ya da oynanmış bir
  * istemci toplamı bir anda şişiremesin.
  */
 const EXTRA_TALLY_MAX = 200;
-// Abaküslü ve abaküssüz ("m_add_ten") kurallar; Sobi seviyesi de aynı anahtarlarla (iki ayrı seviye).
-const EXTRA_TALLY_KEY = /^(?:m_)?(?:add|sub)_(?:direct|five|ten|bead)$/;
+// Abaküslü ve abaküssüz ("m_add_ten") kurallar ve çarpma çiftleri.
+const EXTRA_TALLY_KEY = /^(?:(?:m_)?(?:add|sub)_(?:direct|five|ten|bead)|mul[AM]_[1-8]x[1-8])$/;
+// Sobi seviyesi yalnızca toplama/çıkarmada (abaküslü ve abaküssüz iki ayrı seviye); çarpmada seviye yok.
+const SOBI_LEVEL_KEY = /^(?:m_)?(?:add|sub)_(?:direct|five|ten|bead)$/;
 
 function sanitizeExtraTally(data) {
   const d = data && typeof data === 'object' ? data : {};
@@ -350,7 +353,7 @@ function sanitizeSobiLevels(data, prev) {
   const out = {};
   // 8 kural × abaküslü/abaküssüz.
   for (const [key, v] of Object.entries(d).slice(0, 16)) {
-    if (!EXTRA_TALLY_KEY.test(key) || !Number.isInteger(v)) continue;
+    if (!SOBI_LEVEL_KEY.test(key) || !Number.isInteger(v)) continue;
     const before = Number.isInteger(old[key]) ? old[key] : null;
     const lo = before === null ? 1 : Math.max(1, before - SOBI_LEVEL_STEP);
     const hi = before === null ? SOBI_LEVEL_FIRST_MAX : Math.min(SOBI_LEVEL_MAX, before + SOBI_LEVEL_STEP);

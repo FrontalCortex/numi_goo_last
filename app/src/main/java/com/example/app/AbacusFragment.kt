@@ -1876,12 +1876,19 @@ class AbacusFragment : Fragment() {
         }
     }
 
-    /** Sobi'nin kural hafızası ([SobiRuleStats]): toplama/çıkarma sorusunun kuralları. */
+    /**
+     * Sobi'nin kural hafızası ([SobiRuleStats]): toplama/çıkarma sorusunun kuralları; çarpmada (Part 3,
+     * abaküslü) basamak çifti, soru başına (08.11.2026; eskiden çarpma hiç yazılmıyordu).
+     */
     private fun recordRuleStats(isCorrect: Boolean) {
         val op = operations.getOrNull(currentIndex) ?: return
         val first = op.firstNumber ?: return
         val second = op.secondNumber ?: return
         val sign = op.operator
+        if (sign == "x") {
+            SobiRuleStats.recordMultiplication(requireContext(), first, second, isCorrect, withAbacus = true)
+            return
+        }
         if (sign != "+" && sign != "-") return
         SobiRuleStats.recordAnswer(
             requireContext(), listOf(first, if (sign == "-") -second else second), isCorrect,
