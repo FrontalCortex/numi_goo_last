@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Öğretici sonu kısa anketi (TutorialQuestionPanelFragment): tek soru, üç ifade.
-     😕 seçilince "neresi zor geldi?" kutusu açılır; diğer iki ifade tek dokunuşta geçer. -->
+     Seçim değiştirilebilir; 😕 seçilince "neresi zor geldi?" kutusu açılır. Geçiş "Devam" ile. -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -115,22 +115,23 @@
                     android:textColor="@color/dark_text"
                     android:textColorHint="#80FFFFFF"
                     android:textSize="14sp" />
-
-                <Button
-                    android:id="@+id/sendButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:layout_gravity="end"
-                    android:layout_marginTop="12dp"
-                    android:backgroundTint="@color/lesson_completed"
-                    android:fontFamily="@font/font_regular"
-                    android:paddingHorizontal="24dp"
-                    android:text="@string/tutorial_quick_survey_send"
-                    android:textAllCaps="false"
-                    android:textColor="@color/button_text_enabled"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
             </LinearLayout>
+
+            <!-- Bir ifade seçilince görünür; seçim değiştirilebilir, geçiş yalnızca bununla -->
+            <Button
+                android:id="@+id/continueButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="@color/lesson_completed"
+                android:fontFamily="@font/font_regular"
+                android:paddingHorizontal="32dp"
+                android:text="@string/tutorial_quick_survey_continue"
+                android:textAllCaps="false"
+                android:textColor="@color/button_text_enabled"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
 
             <Space
                 android:layout_width="match_parent"

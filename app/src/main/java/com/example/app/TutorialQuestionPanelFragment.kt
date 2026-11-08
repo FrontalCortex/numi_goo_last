@@ -19,8 +19,9 @@ import com.google.firebase.firestore.FirebaseFirestore
  *
  * Eskiden iki 5'li ölçek sorusu ve üç yazı kutusu vardı (08.11.2026'ya kadar). Kullanıcıların bir
  * kısmı 7–8 yaşında; "ne yeterli ne yetersizdi" gibi şıklar onlara ağırdı ve cevapların %80'i
- * zaten 4–5'ti. Şimdi 😊 ve 😐 tek dokunuşta derse geçirir; yalnızca 😕 seçilince "neresi zor
- * geldi?" kutusu açılır.
+ * zaten 4–5'ti. Şimdi bir ifade seçilir (fikir değiştirilebilir), "Devam" ile derse geçilir;
+ * 😕 seçiliyken "neresi zor geldi?" kutusu açılır. (09.11.2026'ya kadar 😊/😐 dokununca 250 ms
+ * sonra kendiliğinden geçiyor, seçim kilitleniyordu; kullanıcı yanlış dokununca düzeltemiyordu.)
  *
  * ## Cevaplar nereye gidiyor
  * - **İfade → Firebase Analytics**: `lesson_survey_choice`, `survey_type = tutorial_quick`,
@@ -43,6 +44,9 @@ class TutorialQuestionPanelFragment : Fragment() {
 
     /** Seçilen ifade (CHOICE_*); null = henüz seçilmedi. */
     private var selectedChoice: Int? = null
+
+    /** Son seçim Analytics'e bir kez yazılır (Devam ve geri çakışırsa iki kez gitmesin). */
+    private var choiceLogged = false
 
     private val globalPartId: Int get() = arguments?.getInt(ARG_GLOBAL_PART_ID) ?: 0
     private val lessonId: String get() = arguments?.getString(ARG_LESSON_ID).orEmpty()
@@ -68,8 +72,8 @@ class TutorialQuestionPanelFragment : Fragment() {
         binding.optionSome.setOnClickListener { onChoice(CHOICE_SOME) }
         binding.optionNo.setOnClickListener { onChoice(CHOICE_NO) }
 
-        binding.sendButton.setOnClickListener {
-            if (!isSending) sendTextAndProceed()
+        binding.continueButton.setOnClickListener {
+            if (!isSending) submitAndProceed()
         }
         binding.skipButton.setOnClickListener {
             if (!isSending) leave()
@@ -86,19 +90,25 @@ class TutorialQuestionPanelFragment : Fragment() {
         )
     }
 
+    /**
+     * İfade seçimi: istediği kadar değiştirebilir, geçiş yalnızca "Devam" ile olur.
+     * Analytics'e burada değil, son seçim kesinleşince ([submitAndProceed]) yazılır;
+     * böylece fikir değiştirmeler sayıları şişirmez.
+     */
     private fun onChoice(choice: Int) {
-        if (isSending || selectedChoice != null) return
+        if (isSending || selectedChoice == choice) return
         selectedChoice = choice
-        AnalyticsLogger.logSurveyChoice(
-            AnalyticsLogger.SURVEY_TUTORIAL_QUICK, globalPartId, lessonId, 1, choice,
-        )
         binding.optionYes.isSelected = choice == CHOICE_YES
         binding.optionSome.isSelected = choice == CHOICE_SOME
         binding.optionNo.isSelected = choice == CHOICE_NO
+        binding.continueButton.visibility = View.VISIBLE
+        // Seçimden sonra "Atla" anlamsız; geri tuşu yine seçimi gönderip geçer.
+        binding.skipButton.visibility = View.GONE
 
         if (choice != CHOICE_NO) {
-            // Seçim görünsün diye kısa bir an bekle, sonra derse geç.
-            binding.root.postDelayed({ proceedToLesson() }, CHOICE_FEEDBACK_MS)
+            // 😕'dan vazgeçtiyse kutu kapanır; yazdığı metin silinmez ama gönderilmez.
+            binding.whyGroup.visibility = View.GONE
+            hideKeyboard()
             return
         }
         binding.whyGroup.visibility = View.VISIBLE
@@ -114,10 +124,22 @@ class TutorialQuestionPanelFragment : Fragment() {
             proceedToLesson()
             return
         }
-        sendTextAndProceed()
+        submitAndProceed()
     }
 
-    private fun sendTextAndProceed() {
+    /** Son seçimi Analytics'e yazar; 😕 ise ve metin varsa Firestore'a gönderir, sonra derse geçer. */
+    private fun submitAndProceed() {
+        val choice = selectedChoice ?: return leave()
+        if (!choiceLogged) {
+            choiceLogged = true
+            AnalyticsLogger.logSurveyChoice(
+                AnalyticsLogger.SURVEY_TUTORIAL_QUICK, globalPartId, lessonId, 1, choice,
+            )
+        }
+        if (choice != CHOICE_NO) {
+            proceedToLesson()
+            return
+        }
         val text = _binding?.whyTextInput?.text?.toString()?.trim().orEmpty()
         val uid = auth.currentUser?.uid
         // Kimliksiz ya da derssiz cevabı saklayacak yer yok; akış yine de asla durmamalı.
@@ -144,7 +166,7 @@ class TutorialQuestionPanelFragment : Fragment() {
         isSending = sending
         val b = _binding ?: return
         b.sendBlockingOverlay.visibility = if (sending) View.VISIBLE else View.GONE
-        b.sendButton.isEnabled = !sending
+        b.continueButton.isEnabled = !sending
         b.skipButton.isEnabled = !sending
     }
 
@@ -190,7 +212,6 @@ class TutorialQuestionPanelFragment : Fragment() {
         private const val EMOJI_YES = "😊"   // 😊
         private const val EMOJI_SOME = "😐"  // 😐
         private const val EMOJI_NO = "😕"    // 😕
-        private const val CHOICE_FEEDBACK_MS = 250L
 
         fun newInstance(
             globalPartId: Int,

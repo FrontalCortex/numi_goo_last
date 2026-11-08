@@ -741,7 +741,7 @@
     <string name="tutorial_quick_survey_some">قليلًا</string>
     <string name="tutorial_quick_survey_no">لم أفهم</string>
     <string name="tutorial_quick_survey_why_hint">ما الذي كان صعبًا؟ اكتبه إن أردت.</string>
-    <string name="tutorial_quick_survey_send">إرسال</string>
+    <string name="tutorial_quick_survey_continue">متابعة</string>
     <string name="tutorial_quick_survey_skip">تخطَّ</string>
     <!-- Öğreticide "ne zorladı?" (fragment_tutorial.xml, doğru paneli) -->
     <string name="tutorial_stuck_title">هل كانت هذه الخطوة صعبة؟ ما الذي صعّبها؟</string>

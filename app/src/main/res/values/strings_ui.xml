@@ -757,7 +757,7 @@
     <string name="tutorial_quick_survey_some">Biraz</string>
     <string name="tutorial_quick_survey_no">Anlamadım</string>
     <string name="tutorial_quick_survey_why_hint">Neresi zor geldi? İstersen yaz.</string>
-    <string name="tutorial_quick_survey_send">Gönder</string>
+    <string name="tutorial_quick_survey_continue">Devam</string>
     <string name="tutorial_quick_survey_skip">Atla</string>
     <!-- Öğreticide "ne zorladı?" (fragment_tutorial.xml, doğru paneli) -->
     <string name="tutorial_stuck_title">Bu adım zor muydu? Ne zorladı?</string>

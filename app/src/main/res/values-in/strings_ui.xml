@@ -741,7 +741,7 @@
     <string name="tutorial_quick_survey_some">Sedikit</string>
     <string name="tutorial_quick_survey_no">Tidak paham</string>
     <string name="tutorial_quick_survey_why_hint">Bagian mana yang sulit? Tulis jika mau.</string>
-    <string name="tutorial_quick_survey_send">Kirim</string>
+    <string name="tutorial_quick_survey_continue">Lanjut</string>
     <string name="tutorial_quick_survey_skip">Lewati</string>
     <!-- Öğreticide "ne zorladı?" (fragment_tutorial.xml, doğru paneli) -->
     <string name="tutorial_stuck_title">Apakah langkah ini sulit? Apa yang membuatnya sulit?</string>

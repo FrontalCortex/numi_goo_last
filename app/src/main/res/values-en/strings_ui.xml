@@ -560,7 +560,7 @@
     <string name="tutorial_quick_survey_some">A little</string>
     <string name="tutorial_quick_survey_no">No</string>
     <string name="tutorial_quick_survey_why_hint">What was hard? Write it if you like.</string>
-    <string name="tutorial_quick_survey_send">Send</string>
+    <string name="tutorial_quick_survey_continue">Continue</string>
     <string name="tutorial_quick_survey_skip">Skip</string>
     <!-- Öğreticide "ne zorladı?" (fragment_tutorial.xml, doğru paneli) -->
     <string name="tutorial_stuck_title">Was this step hard? What made it hard?</string>

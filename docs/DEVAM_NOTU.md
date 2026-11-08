@@ -49,6 +49,11 @@ kontrol et hoşuma gitmiyor"). Kullanıcı kararı: sıklığı düşür, kısal
   kuralı karıştırdım / yanlışlıkla bastım) → yeni `tutorial_stuck_reason` (`step_key`, `choice`,
   `attempt_bucket`). Yeni GA4 boyutu açılmadı; var olan parametreler.
 - Eski 20 `fragment_tutorial_question_panel_*` metni 4 dilden silindi, yeni 13 metin 4 dile eklendi.
+- **09.11.2026 düzeltme (derlendi, commit + push edildi, telefonda denenmedi):** seçim kilitleniyor, 😊/😐 250 ms
+  sonra kendiliğinden geçiyordu; yanlış dokunan düzeltemiyordu. Artık seçim serbestçe değişir, seçince
+  "Devam" düğmesi çıkar ("Atla" gizlenir), geçiş yalnızca Devam/geri ile. 😕'dan vazgeçilirse yazı kutusu
+  kapanır, metin gönderilmez. GA4 `lesson_survey_choice` artık her dokunuşta değil, geçişte son seçimle
+  bir kez yazılır. `tutorial_quick_survey_send` ("Gönder") → `tutorial_quick_survey_continue` ("Devam"), 4 dil.
 
 ## Haftalık kart paylaşımı ve davet ölçümü (08.11.2026 — derlendi, testler geçti (uygulama 3/3, sunucu emülatörde hepsi); telefona kuruldu; b61410a CANLIDA: 3 fonksiyon deploy'u ve hosting deploy'u başarılı; telefonda paylaşım ve başka telefonda kurulum kullanıcı deneyecek)
 Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.11): veli kapısı = yazıyla çarpma
