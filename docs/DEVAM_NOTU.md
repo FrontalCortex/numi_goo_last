@@ -64,7 +64,10 @@ Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.
   yılı yoksa), soru tek basamaklı yazıyla (3..9 × 3..9); 13+ için de `share_gate_pass` gönderiliyor (huni yaştan
   bağımsız). Ana satırda **seviye merdiveni** (`LevelLadderView`, `WeeklyCardRules.ladderFor`: kupada 1 basamak =
   100 puan, bir geriden iki ileriye, en çok 14; Sobi 1..20), altında örnek sayılar ve cümle. Çizgi grafik 4 hafta
-  veri birikince. Test 16/16; telefon adb'de offline olduğu için kurulmadı.
+  veri birikince. 8db19bd: örnek dizide en çok 5 sayı (fazlası "…"); kupada 5 basamaktan büyük sıçramada merdiven 9
+  basamağa sıkışıyor, arada `//` kırık. Test 17/17; telefonda (09.11 00:59, Ted, 2–8 Kas) görüldü.
+  DİKKAT: Ted'in 2–8 Kas kartı sunucunun gerçek kaydını SAHTE 26 Eki–1 Kas kaydıyla kıyaslıyor (toplama kupası
+  640 → gerçek), "2 → 3 basamaklı" abartılı; örnek verinin geri alınması önerildi, kullanıcı henüz karar vermedi.
 - **Paylaşma:** kartta "Paylaş" (yalnızca ilerleme varsa) → `ParentGate` → `WeeklyCardShare`: özet kartının bitmap'i
   + altta "Sorobit" → cache/share/haftalik.png, FileProvider, EXTRA_STREAM + metin (`weekly_share_text`, bağlantılı),
   `createChooser(…, IntentSender)` → `ChosenReceiver` EXTRA_CHOSEN_COMPONENT → `share_done_whatsapp|instagram|other`.
