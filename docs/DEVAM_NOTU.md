@@ -76,7 +76,10 @@ Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.
   anahtarları"nda bir eski anahtar daha var (1 Eyl 2026); parmak izi EKLENMEDİ (kullanıcı yalnızca kullanımdakini verdi).
   SplashActivity'de `/d/` için autoVerify; telefonda (debug) `pm get-app-links` → verified, bağlantı uygulamayı açtı.
 - **Ölçüm:** GA4 `share_card_shown_weekly`, `share_gate_pass`, `share_done_*`, `ref_install`, `ref_link_open` (parametresiz),
-  `ref_source` (kullanıcı). K raporu `tools/referral-report.js` (yalnız okur; canlıda izinle).
+  `ref_source` (kullanıcı). GA4'te (08.11 akşam): kullanıcı kapsamlı özel boyut "Davet kaynağı" (`ref_source`) ve keşif
+  "Davet hunisi (haftalık kart)" (kart gösterildi → veli kapısı → paylaşıldı: whatsapp/instagram/other). Huninin
+  build type filtresi YOK (kendi denemeleri de sayılır). `ref_install` başka cihazda olduğu için huniye girmiyor;
+  kesin sayı `tools/referral-report.js`. K raporu `tools/referral-report.js` (yalnız okur; canlıda izinle).
 - Kurallar: yeni koleksiyonlar catch-all ile istemciye kapalı; kural değişikliği yok. `users.referralCode/referredBy`
   serverOnlyFields'e EKLENMEDİ (istemci kendine yazabilir ama sunucu `referrals`'a bakıyor; zararsız).
 - Deploy önizlemesi (deploy-plan, f03da30 → şimdi): 76 fonksiyondan yalnızca 3 yeni. Yereldeki `.env`/debug log yüzünden
