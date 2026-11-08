@@ -41,6 +41,12 @@ class SplashActivity : AppCompatActivity() {
         
         setContentView(R.layout.activity_splash)
 
+        // Davet bağlantısı (/d/<kod>) uygulama yüklüyken açıldı (App Links). Atıf yok: bu kişi zaten
+        // kullanıcı; yalnızca "paylaşılan bağlantıya basıldı" sayılıyor. Uygulama normal akışla açılır.
+        if (intent?.action == android.content.Intent.ACTION_VIEW && intent?.data?.path?.startsWith("/d/") == true) {
+            AnalyticsLogger.logSimpleEvent("ref_link_open")
+        }
+
         // Daha önce indirilmiş medya dosyalarının cache'ini belleğe yükle
         GlobalValues.loadDownloadedMediaCache(applicationContext)
 
