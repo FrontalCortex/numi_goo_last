@@ -69,8 +69,12 @@ Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.
 - **Ödül:** `grantReferralRewardOnLesson` = `users/{uid}/lessonMilestones/1_p1_i02_2_basamakli_sayilar` yazılınca
   (finishedAtMs) transaction: gelene +7 gün `giftProUntil` (sürüyorsa bitişten), getirene de (`referralRewardCounts/{uid}_{yıl}` < 10).
   `giftProSource = 'referral'`. Uygulamada "Pro kazandın" bildirimi YOK (sonraki iş).
-- **Ölçüm:** GA4 `share_card_shown_weekly`, `share_gate_pass`, `share_done_*`, `ref_install` (parametresiz), `ref_source`
-  (kullanıcı). `ref_link_open` YOK (App Links gerekiyor). K raporu `tools/referral-report.js` (yalnız okur; canlıda izinle).
+- **App Links (98b2e79, hosting deploy edildi):** `assetlinks.json` paket `com.numigo.app`, parmak izleri Play uygulama
+  imzalama (79:40:D6…2E:80) + bu bilgisayarın debug anahtarı (DC:D9…86:CF). Play Console'da "Önceki uygulama imzalama
+  anahtarları"nda bir eski anahtar daha var (1 Eyl 2026); parmak izi EKLENMEDİ (kullanıcı yalnızca kullanımdakini verdi).
+  SplashActivity'de `/d/` için autoVerify; telefonda (debug) `pm get-app-links` → verified, bağlantı uygulamayı açtı.
+- **Ölçüm:** GA4 `share_card_shown_weekly`, `share_gate_pass`, `share_done_*`, `ref_install`, `ref_link_open` (parametresiz),
+  `ref_source` (kullanıcı). K raporu `tools/referral-report.js` (yalnız okur; canlıda izinle).
 - Kurallar: yeni koleksiyonlar catch-all ile istemciye kapalı; kural değişikliği yok. `users.referralCode/referredBy`
   serverOnlyFields'e EKLENMEDİ (istemci kendine yazabilir ama sunucu `referrals`'a bakıyor; zararsız).
 - Deploy önizlemesi (deploy-plan, f03da30 → şimdi): 76 fonksiyondan yalnızca 3 yeni. Yereldeki `.env`/debug log yüzünden
