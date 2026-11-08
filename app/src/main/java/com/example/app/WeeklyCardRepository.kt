@@ -49,9 +49,12 @@ object WeeklyCardRepository {
 
         val userDoc = async { user.get().await() }
         // Belge kimliği "2026-W44": sözlük sırası hafta sırası (yıl başında W53 → W01 de doğru, yıl önde).
+        // Son ~6 hafta, kimliğe göre ARTAN aralık sorgusu: ters sıralı (DESCENDING + limit) sorgu
+        // Firestore'da ayrı indeks istiyordu (08.11.2026 cihazda FAILED_PRECONDITION); artan aralık istemiyor.
         val weeks = async {
-            user.collection("weeklyStats").orderBy(FieldPath.documentId(), Query.Direction.DESCENDING)
-                .limit(4).get().await()
+            user.collection("weeklyStats")
+                .whereGreaterThanOrEqualTo(FieldPath.documentId(), isoWeekId(System.currentTimeMillis() - 42 * 86_400_000L))
+                .get().await()
         }
         val milestones = async { user.collection("lessonMilestones").get().await() }
         val rules = async { runCatching { db.collection("homeworkRuleStats").document(uid).get().await() }.getOrNull() }
@@ -104,6 +107,15 @@ object WeeklyCardRepository {
     }
 
     fun key(partId: Int, stableId: String) = "${partId}_$stableId"
+
+    /** [ms] anının Türkiye saatiyle ISO hafta kimliği ("2026-W44"; sunucudaki weeklyStats.trWeek ile aynı). */
+    private fun isoWeekId(ms: Long): String {
+        val c = Calendar.getInstance(java.util.TimeZone.getTimeZone("Europe/Istanbul"))
+        c.firstDayOfWeek = Calendar.MONDAY
+        c.minimalDaysInFirstWeek = 4
+        c.timeInMillis = ms
+        return "%d-W%02d".format(java.util.Locale.US, c.weekYear, c.get(Calendar.WEEK_OF_YEAR))
+    }
 
     /** Kural → ustalık aşaması; ödev başarısı ekranıyla aynı hesap (son ~50 işlem, yoksa toplam). */
     private fun stages(doc: DocumentSnapshot): Map<String, Int> {

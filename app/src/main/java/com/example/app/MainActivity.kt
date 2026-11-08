@@ -5144,6 +5144,8 @@ class MainActivity : AppCompatActivity() {
     private var weeklyCardCheckStarted = false
     private var weeklyCardPending: WeeklyCardRepository.Data? = null
     private var weeklyCardDeadlineMs = 0L
+    /** Aynı engel her yoklamada loga yazılmasın diye. */
+    private var lastWeeklyCardBlock: String? = null
     private val weeklyCardRunnable = Runnable { tryShowWeeklyCard() }
 
     private fun weeklyCardPrefKey(): String? = auth.currentUser?.uid?.let { "weekly_card_auto_week_$it" }
@@ -5151,8 +5153,10 @@ class MainActivity : AppCompatActivity() {
     private fun maybeAutoOpenWeeklyCard() {
         if (!::binding.isInitialized) return
         if (weeklyCardPending != null) {
+            // Ekran kapalıyken / arka plandayken geçen süre sayılmasın: öne her gelişte yeni süre.
+            weeklyCardDeadlineMs = android.os.SystemClock.elapsedRealtime() + WEEKLY_CARD_WAIT_MS
             binding.root.removeCallbacks(weeklyCardRunnable)
-            binding.root.post(weeklyCardRunnable)
+            binding.root.postDelayed(weeklyCardRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
             return
         }
         if (weeklyCardCheckStarted) return
@@ -5177,7 +5181,9 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing || isDestroyed || !::binding.isInitialized) return
         if (android.os.SystemClock.elapsedRealtime() > weeklyCardDeadlineMs) {
             weeklyCardPending = null
-            Log.d(WeeklyCardFragment.TAG, "otomatik: süre doldu, bir sonraki açılışta")
+            // Bir sonraki öne gelişte yeniden okunsun (süreç başına tek okuma kuralını yalnızca burada esnetiyoruz).
+            weeklyCardCheckStarted = false
+            Log.d(WeeklyCardFragment.TAG, "otomatik: süre doldu, bir sonraki öne gelişte")
             return
         }
         // Duraklatılmışken (reklam, arka plan) beklenmiyor; onResume yeniden dürtüyor.
@@ -5193,6 +5199,10 @@ class MainActivity : AppCompatActivity() {
             else -> offMapNewStreakBlockReason(base)
         }
         if (block != null) {
+            if (block != lastWeeklyCardBlock) {
+                lastWeeklyCardBlock = block
+                Log.d(WeeklyCardFragment.TAG, "otomatik: bekliyor block=$block")
+            }
             binding.root.postDelayed(weeklyCardRunnable, WEEKLY_CARD_RETRY_MS)
             return
         }

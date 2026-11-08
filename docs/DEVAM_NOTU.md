@@ -67,7 +67,11 @@ basılamaz, ilerleme yoksa hiç görünmez; düzen "tek büyük kart".
   gösterilmediyse, harita taban + ders sonu kuyruğu boş + yeni seri kapısındaki engeller yokken tam ekran
   pencere. 60 sn içinde açılamazsa o açılışta vazgeçer. Ders sonu akışına dokunulmadı. Hafta işareti
   `AppPrefs.weekly_card_auto_week_{uid}`; yeniden görmek için uygulama verisi ya da bu anahtar silinmeli.
-  Log: `adb logcat -s WeeklyCard`.
+  Log: `adb logcat -s WeeklyCard`. Bekleme süresi yalnızca uygulama öndeyken işler; dolarsa sonraki öne gelişte yeniden okunur.
+  `weeklyStats` okuması kimliğe göre ARTAN aralık (son 6 hafta): ters sıralı sorgu indeks istiyordu
+  (cihazda FAILED_PRECONDITION), indeks eklemek yerine sorgu değişti.
+  Cihazda (08.11 15:29): Ted hesabında otomatik okuma `hafta=2026-W44 ilerleme=true` buldu; telefon kilitliydi,
+  kartın ekranda görünüşü kullanıcı bakmadan DOĞRULANMADI.
 - GA4: `weekly_card_shown_{auto|hub}_{progress|empty}` (parametresiz). Metinler `strings_weekly_card.xml` 4 dil.
 - **ÖRNEK VERİ (canlıda, Ted `835398VV`):** `.github/scripts/seed-weekly-card-sample.js` + yml: `weeklyStats/2026-W43`,
   `2026-W44` ve 3 `lessonMilestones` (dokunulan belgelerin önceki hâli `users/{uid}/seedSamples/weeklyCard`'da).
