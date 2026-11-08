@@ -50,7 +50,7 @@ kontrol et hoşuma gitmiyor"). Kullanıcı kararı: sıklığı düşür, kısal
   `attempt_bucket`). Yeni GA4 boyutu açılmadı; var olan parametreler.
 - Eski 20 `fragment_tutorial_question_panel_*` metni 4 dilden silindi, yeni 13 metin 4 dile eklendi.
 
-## Haftalık kart paylaşımı ve davet ölçümü (08.11.2026 — derlendi, testler geçti (uygulama 3/3, sunucu emülatörde hepsi); telefona kuruldu; deploy/hosting kullanıcı onayı bekliyor)
+## Haftalık kart paylaşımı ve davet ölçümü (08.11.2026 — derlendi, testler geçti (uygulama 3/3, sunucu emülatörde hepsi); telefona kuruldu; b61410a CANLIDA: 3 fonksiyon deploy'u ve hosting deploy'u başarılı; telefonda paylaşım ve başka telefonda kurulum kullanıcı deneyecek)
 Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.11): veli kapısı = yazıyla çarpma
 ("on yedi çarpı üç", 3 yanlışta kapanır); ödül ikisine de 7 gün Pro, getiren yılda en çok 10; App Links ŞİMDİLİK YOK
 (Play App Signing SHA-256 gerekli, uygulama kapalı testte; `public/.well-known/assetlinks.json` zaten yanlış paket
