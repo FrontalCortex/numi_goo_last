@@ -612,6 +612,11 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   taraması (Kotlin, layout, values-en/in/ar eksik anahtar) başka arayüz metni bulmadı; kalanlar log, deneme
   ekranı etiketi, Sobi modeline giden bağlam ve sayı/denklem dizeleri. İmzalı (Numigo), 70 MB, kapalı teste
   kullanıcı yükleyecek. 20 yüklenmediyse doğrudan 21 yüklenebilir.
+- **versionCode 22 AAB (08.11.2026 23:43, HEAD 9f4a0da, temiz ağaçtan):** 21 + haftalık ilerleme kartı (somut özet,
+  otomatik açılış), Paylaş (veli kapısı, kart görseli + davet bağlantısı), Install Referrer atıfı, App Links (`/d/`),
+  "Bizi nereden duydun?"a veli/WhatsApp, ders 2 davet ödülü (sunucu zaten canlıda). Test anahtarları kapalı; imzalı
+  (Numigo), 70 MB, `app/release/sorobit-22.aab` (git'e girmiyor: .git/info/exclude). Kullanıcı önce DAHİLİ teste
+  yükleyip iki telefonla davet akışını deneyecek; aynı paket sonra kapalı teste/üretime yükseltilebilir.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 
