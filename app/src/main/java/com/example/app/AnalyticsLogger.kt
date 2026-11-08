@@ -50,6 +50,8 @@ object AnalyticsLogger {
     private const val EV_ACQUISITION_SOURCE = "acquisition_source"
     private const val EV_SURVEY_CHOICE = "lesson_survey_choice"
     private const val EV_SURVEY_TEXT = "lesson_survey_text"
+    private const val EV_SURVEY_SKIP = "lesson_survey_skip"
+    private const val EV_TUTORIAL_STUCK_REASON = "tutorial_stuck_reason"
     private const val EV_CHEST_OPEN_START = "chest_open_start"
     private const val EV_CHEST_OPEN_COMPLETE = "chest_open_complete"
     private const val EV_CHEST_ABANDONED = "chest_abandoned"
@@ -281,6 +283,16 @@ object AnalyticsLogger {
     /** [logSurveyChoice] / [logSurveyText] için anket türü. */
     const val SURVEY_LESSON = "lesson"
     const val SURVEY_TUTORIAL = "tutorial"
+    /**
+     * 08.11.2026'dan itibaren öğretici sonu anketi: tek soru, üç ifade. `choice` 1 = anlamadım,
+     * 2 = biraz, 3 = anladım. Eski 5'li ölçekle ([SURVEY_TUTORIAL]) karışmasın diye ayrı tür.
+     */
+    const val SURVEY_TUTORIAL_QUICK = "tutorial_quick"
+
+    /** [logTutorialStuckReason] için "ne zorladı?" cevapları (`choice` parametresine gider). */
+    const val STUCK_REASON_UNCLEAR = "unclear"
+    const val STUCK_REASON_RULE = "rule"
+    const val STUCK_REASON_MISTAP = "mistap"
 
     // ── Öğretici soru adımı türleri ─────────────────────────────────────────
     /** Kullanıcı abaküse sayıyı yazıp "Kontrol Et"e basıyor (`abacusClickable = true`). */
@@ -874,6 +886,40 @@ object AnalyticsLogger {
             param(P_LESSON_ID, sanitize(lessonId))
             param(P_QUESTION_NO, questionNo.toString())
             if (!unitTitle.isNullOrBlank()) param(P_UNIT_TITLE, sanitize(unitTitle))
+        }
+    }
+
+    /**
+     * Anket hiçbir şey seçilmeden geçildi (Atla ya da geri). Anketin ne kadar atlandığı
+     * eskiden ölçülmüyordu; "anket sıkıyor mu?" sorusunun cevabı buradan okunur:
+     * gösterim ≈ seçim + atlama.
+     */
+    fun logSurveySkip(surveyType: String, partId: Int, lessonId: String) = safe { fa ->
+        fa.logEvent(EV_SURVEY_SKIP) {
+            param(P_SURVEY_TYPE, sanitize(surveyType))
+            param(P_PART_ID, partId.toString())
+            param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
+     * Öğreticide bir adımı ancak birkaç denemede geçen çocuğun "ne zorladı?" cevabı
+     * (bkz. [TutorialSurveyPolicy]). Yeni boyut açmamak için var olan parametreler
+     * kullanılıyor: adım `step_key`, cevap `choice` ([STUCK_REASON_UNCLEAR] vb.).
+     */
+    fun logTutorialStuckReason(
+        tutorialNumber: Int,
+        stepKey: String,
+        lessonId: String?,
+        attemptNo: Int,
+        reason: String,
+    ) = safe { fa ->
+        fa.logEvent(EV_TUTORIAL_STUCK_REASON) {
+            param(P_TUTORIAL_NO, tutorialNumber.toString())
+            param(P_STEP_KEY, sanitize(stepKey))
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+            param(P_ATTEMPT_BUCKET, TutorialStepAnalytics.bucketOf(attemptNo))
+            param(P_CHOICE, sanitize(reason))
         }
     }
 

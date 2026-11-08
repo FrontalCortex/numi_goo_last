@@ -1,31 +1,34 @@
 package com.example.app
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.EditText
 import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.widget.AppCompatCheckBox
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentTutorialQuestionPanelBinding
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 /**
- * Tutorial sonu anket ekranı.
- * TutorialFragment, Abacus veya BlindingLesson'a geçmeden önce bu paneli açar.
- * Kullanıcı gönder veya atla'ya bastıktan sonra "tutorialQuestionPanelResult"
- * fragment result'u tetiklenir ve TutorialFragment asıl geçişi yapar.
+ * Öğretici sonu kısa anketi: "Bu dersi anladın mı?" ve üç ifade (😊 / 😐 / 😕).
+ *
+ * TutorialFragment derse geçmeden önce bu paneli açar; yalnızca ünite başlarında ve öğretici
+ * başına bir kez ([TutorialSurveyPolicy.takeEndSurveySlot]). Panel kapanınca
+ * "tutorialQuestionPanelResult" fragment result'u tetiklenir ve TutorialFragment asıl geçişi yapar.
+ *
+ * Eskiden iki 5'li ölçek sorusu ve üç yazı kutusu vardı (08.11.2026'ya kadar). Kullanıcıların bir
+ * kısmı 7–8 yaşında; "ne yeterli ne yetersizdi" gibi şıklar onlara ağırdı ve cevapların %80'i
+ * zaten 4–5'ti. Şimdi 😊 ve 😐 tek dokunuşta derse geçirir; yalnızca 😕 seçilince "neresi zor
+ * geldi?" kutusu açılır.
  *
  * ## Cevaplar nereye gidiyor
- * [QuestionPanelFragment] ile aynı ayrım geçerlidir:
- * - **Şık seçimleri → Firebase Analytics** (eski `questionPanelTutorial/.../choice{N}` sayaçları).
- * - **Serbest metin → Firestore'da KALIR**, `questionPanelTutorial/.../question{N}/text/{uid}`.
- *   Çocukların yazdığı metin Analytics'e gönderilmez; oraya yalnızca "metin yazıldı" bilgisi gider.
+ * - **İfade → Firebase Analytics**: `lesson_survey_choice`, `survey_type = tutorial_quick`,
+ *   `question_no = 1`, `choice` 1 = anlamadım, 2 = biraz, 3 = anladım.
+ * - **Yazı → Firestore**, eski 3. sorunun yolu: `questionPanelTutorial/{part}/{ders}/question3/text/{uid}`.
+ *   Çocuğun yazdığı metin Analytics'e gönderilmez; oraya yalnızca "metin yazıldı" bilgisi gider.
+ * - **Hiçbir şey seçmeden Atla / geri → `lesson_survey_skip`**. Anketin ne kadar atlandığı
+ *   eskiden ölçülmüyordu.
  */
 class TutorialQuestionPanelFragment : Fragment() {
 
@@ -35,42 +38,14 @@ class TutorialQuestionPanelFragment : Fragment() {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
-    /** Gönderim devam ederken true — geri tuşu ve overlay tıklaması bloklanır. */
+    /** Yazı gönderilirken true: geri tuşu ve düğmeler beklemede. */
     private var isSending = false
 
-    // Seçili seçenek indexleri (null = seçilmedi, 1–5 arası)
-    private var q1SelectedChoice: Int? = null
-    private var q2SelectedChoice: Int? = null
+    /** Seçilen ifade (CHOICE_*); null = henüz seçilmedi. */
+    private var selectedChoice: Int? = null
 
-    private lateinit var backCallback: OnBackPressedCallback
-
-    // ── Soru 1 row'ları ve checkbox'ları ──
-    private val q1Rows: List<View> by lazy {
-        listOf(
-            binding.q1Option1Row, binding.q1Option2Row, binding.q1Option3Row,
-            binding.q1Option4Row, binding.q1Option5Row
-        )
-    }
-    private val q1Checks: List<AppCompatCheckBox> by lazy {
-        listOf(
-            binding.q1Option1Check, binding.q1Option2Check, binding.q1Option3Check,
-            binding.q1Option4Check, binding.q1Option5Check
-        )
-    }
-
-    // ── Soru 2 row'ları ve checkbox'ları ──
-    private val q2Rows: List<View> by lazy {
-        listOf(
-            binding.q2Option1Row, binding.q2Option2Row, binding.q2Option3Row,
-            binding.q2Option4Row, binding.q2Option5Row
-        )
-    }
-    private val q2Checks: List<AppCompatCheckBox> by lazy {
-        listOf(
-            binding.q2Option1Check, binding.q2Option2Check, binding.q2Option3Check,
-            binding.q2Option4Check, binding.q2Option5Check
-        )
-    }
+    private val globalPartId: Int get() = arguments?.getInt(ARG_GLOBAL_PART_ID) ?: 0
+    private val lessonId: String get() = arguments?.getString(ARG_LESSON_ID).orEmpty()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -83,223 +58,81 @@ class TutorialQuestionPanelFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        hideKeyboard()
 
-        // Önceki ekrandan açık kalan bir klavye varsa kapat
-        view.post {
-            try {
-                val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                imm.hideSoftInputFromWindow(view.windowToken, 0)
-            } catch (e: Exception) {}
-        }
+        binding.optionYesEmoji.text = EMOJI_YES
+        binding.optionSomeEmoji.text = EMOJI_SOME
+        binding.optionNoEmoji.text = EMOJI_NO
 
-        setupBackPressBlock()
-        setupQ1Options()
-        setupQ2Options()
-        setupTextWatchers()
-        updateSendButtonState()
-
-        binding.skipButton.setOnClickListener {
-            if (isSending) return@setOnClickListener
-            proceedToLesson()
-        }
+        binding.optionYes.setOnClickListener { onChoice(CHOICE_YES) }
+        binding.optionSome.setOnClickListener { onChoice(CHOICE_SOME) }
+        binding.optionNo.setOnClickListener { onChoice(CHOICE_NO) }
 
         binding.sendButton.setOnClickListener {
-            if (isSending) return@setOnClickListener
-            submitAndProceed()
+            if (!isSending) sendTextAndProceed()
         }
-
-        // Overlay tıklaması: gönderim sırasında hiçbir şey yapılmaz
-        binding.sendBlockingOverlay.setOnClickListener { /* blok */ }
-    }
-
-    // ────────────────────────────────────────────────────────────
-    // Geri tuşu kontrolü
-    // ────────────────────────────────────────────────────────────
-
-    private fun setupBackPressBlock() {
-        backCallback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (isSending) return
-                proceedToLesson()
-            }
+        binding.skipButton.setOnClickListener {
+            if (!isSending) leave()
         }
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, backCallback)
-    }
+        binding.sendBlockingOverlay.setOnClickListener { /* gönderim sırasında dokunuşu yut */ }
 
-    // ────────────────────────────────────────────────────────────
-    // Seçenek mantığı — sadece 1 seçenek işaretlenebilir (radio)
-    // ────────────────────────────────────────────────────────────
-
-    private fun setupQ1Options() {
-        q1Rows.forEachIndexed { index, row ->
-            row.setOnClickListener {
-                val choiceNumber = index + 1
-                q1SelectedChoice = if (q1SelectedChoice == choiceNumber) null else choiceNumber
-                updateQ1CheckboxVisuals()
-                updateSendButtonState()
-            }
-        }
-    }
-
-    private fun setupQ2Options() {
-        q2Rows.forEachIndexed { index, row ->
-            row.setOnClickListener {
-                val choiceNumber = index + 1
-                q2SelectedChoice = if (q2SelectedChoice == choiceNumber) null else choiceNumber
-                updateQ2CheckboxVisuals()
-                updateSendButtonState()
-            }
-        }
-    }
-
-    private fun updateQ1CheckboxVisuals() {
-        q1Checks.forEachIndexed { index, cb ->
-            cb.isChecked = (q1SelectedChoice == index + 1)
-        }
-        q1Rows.forEachIndexed { index, row ->
-            row.isSelected = (q1SelectedChoice == index + 1)
-        }
-    }
-
-    private fun updateQ2CheckboxVisuals() {
-        q2Checks.forEachIndexed { index, cb ->
-            cb.isChecked = (q2SelectedChoice == index + 1)
-        }
-        q2Rows.forEachIndexed { index, row ->
-            row.isSelected = (q2SelectedChoice == index + 1)
-        }
-    }
-
-    // ────────────────────────────────────────────────────────────
-    // Text watcher — herhangi bir editText dolu olursa Gönder aktif
-    // ────────────────────────────────────────────────────────────
-
-    private fun setupTextWatchers() {
-        val watcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                updateSendButtonState()
-            }
-            override fun afterTextChanged(s: Editable?) {}
-        }
-        binding.q1TextInput.addTextChangedListener(watcher)
-        binding.q2TextInput.addTextChangedListener(watcher)
-        binding.q3TextInput.addTextChangedListener(watcher)
-    }
-
-    // ────────────────────────────────────────────────────────────
-    // Gönder butonu aktif/pasif durumu
-    // ────────────────────────────────────────────────────────────
-
-    private fun updateSendButtonState() {
-        val hasAnyAnswer = q1SelectedChoice != null
-                || q2SelectedChoice != null
-                || binding.q1TextInput.text.isNotBlank()
-                || binding.q2TextInput.text.isNotBlank()
-                || binding.q3TextInput.text.isNotBlank()
-
-        binding.sendButton.isEnabled = hasAnyAnswer
-        binding.sendButton.backgroundTintList = if (hasAnyAnswer) {
-            requireContext().getColorStateList(R.color.lesson_completed)
-        } else {
-            requireContext().getColorStateList(R.color.button_disabled)
-        }
-        binding.sendButton.setTextColor(
-            if (hasAnyAnswer) requireContext().getColor(R.color.button_text_enabled)
-            else requireContext().getColor(R.color.button_text_disabled)
+        requireActivity().onBackPressedDispatcher.addCallback(
+            viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (!isSending) leave()
+                }
+            },
         )
     }
 
-    // ────────────────────────────────────────────────────────────
-    // Gönderim
-    // ────────────────────────────────────────────────────────────
+    private fun onChoice(choice: Int) {
+        if (isSending || selectedChoice != null) return
+        selectedChoice = choice
+        AnalyticsLogger.logSurveyChoice(
+            AnalyticsLogger.SURVEY_TUTORIAL_QUICK, globalPartId, lessonId, 1, choice,
+        )
+        binding.optionYes.isSelected = choice == CHOICE_YES
+        binding.optionSome.isSelected = choice == CHOICE_SOME
+        binding.optionNo.isSelected = choice == CHOICE_NO
 
-    private fun submitAndProceed() {
-        val globalPartId = arguments?.getInt(ARG_GLOBAL_PART_ID) ?: return
-        val lessonId = arguments?.getString(ARG_LESSON_ID).orEmpty()
-        val uid = auth.currentUser?.uid
+        if (choice != CHOICE_NO) {
+            // Seçim görünsün diye kısa bir an bekle, sonra derse geç.
+            binding.root.postDelayed({ proceedToLesson() }, CHOICE_FEEDBACK_MS)
+            return
+        }
+        binding.whyGroup.visibility = View.VISIBLE
+        binding.questionScrollView.post {
+            _binding?.let { it.questionScrollView.smoothScrollTo(0, it.whyGroup.top) }
+        }
+    }
 
-        val hasAnyAnswer = q1SelectedChoice != null
-                || q2SelectedChoice != null
-                || binding.q1TextInput.text.isNotBlank()
-                || binding.q2TextInput.text.isNotBlank()
-                || binding.q3TextInput.text.isNotBlank()
-        // Kimliksiz cevabı saklayacak yer yok — ama akış ASLA burada durmamalı, yoksa
-        // çocuk anket ekranında kilitli kalır. Kaydetmeyi atla, derse devam et.
-        if (!hasAnyAnswer || lessonId.isBlank()) {
+    /** Atla ya da geri: hiçbir ifade seçilmediyse "atlandı" olarak ölçülür. */
+    private fun leave() {
+        if (selectedChoice == null) {
+            AnalyticsLogger.logSurveySkip(AnalyticsLogger.SURVEY_TUTORIAL_QUICK, globalPartId, lessonId)
             proceedToLesson()
             return
         }
+        sendTextAndProceed()
+    }
 
-        val basePath = firestore
-            .collection("questionPanelTutorial")
+    private fun sendTextAndProceed() {
+        val text = _binding?.whyTextInput?.text?.toString()?.trim().orEmpty()
+        val uid = auth.currentUser?.uid
+        // Kimliksiz ya da derssiz cevabı saklayacak yer yok; akış yine de asla durmamalı.
+        if (text.isEmpty() || uid == null || lessonId.isBlank()) {
+            proceedToLesson()
+            return
+        }
+        AnalyticsLogger.logSurveyText(AnalyticsLogger.SURVEY_TUTORIAL_QUICK, globalPartId, lessonId, 1)
+        setSendingUi(true)
+        firestore.collection("questionPanelTutorial")
             .document(globalPartId.toString())
             .collection(lessonId)
-
-        // Firestore'a yazılacak işler; yalnızca SERBEST METİN kaldı (bkz. sınıf başlığı).
-        val tasks = mutableListOf<com.google.android.gms.tasks.Task<*>>()
-
-        // ── Soru 1 ──
-        val q1Choice = q1SelectedChoice
-        val q1Text = binding.q1TextInput.text.toString().trim()
-        if (q1Choice != null) {
-            AnalyticsLogger.logSurveyChoice(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 1, q1Choice,
-            )
-        }
-        if (q1Text.isNotEmpty() && uid != null) {
-            tasks.add(
-                basePath.document("question1")
-                    .collection("text").document(uid)
-                    .set(mapOf("uid" to uid, "text" to q1Text))
-            )
-            AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 1,
-            )
-        }
-
-        // ── Soru 2 ──
-        val q2Choice = q2SelectedChoice
-        val q2Text = binding.q2TextInput.text.toString().trim()
-        if (q2Choice != null) {
-            AnalyticsLogger.logSurveyChoice(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 2, q2Choice,
-            )
-        }
-        if (q2Text.isNotEmpty() && uid != null) {
-            tasks.add(
-                basePath.document("question2")
-                    .collection("text").document(uid)
-                    .set(mapOf("uid" to uid, "text" to q2Text))
-            )
-            AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 2,
-            )
-        }
-
-        // ── Soru 3 (sadece metin) ──
-        val q3Text = binding.q3TextInput.text.toString().trim()
-        if (q3Text.isNotEmpty() && uid != null) {
-            tasks.add(
-                basePath.document("question3")
-                    .collection("text").document(uid)
-                    .set(mapOf("uid" to uid, "text" to q3Text))
-            )
-            AnalyticsLogger.logSurveyText(
-                AnalyticsLogger.SURVEY_TUTORIAL, globalPartId, lessonId, 3,
-            )
-        }
-
-        // Kullanıcı yalnızca şık seçtiyse Firestore'a yazılacak bir şey kalmaz; bekleme
-        // katmanını hiç göstermeden geç. (Analytics çağrıları ağı beklemez.)
-        if (tasks.isEmpty()) {
-            proceedToLesson()
-            return
-        }
-
-        setSendingUi(true)
-
-        com.google.android.gms.tasks.Tasks.whenAllComplete(tasks)
+            .document("question3")
+            .collection("text").document(uid)
+            .set(mapOf("uid" to uid, "text" to text, "choice" to selectedChoice))
             .addOnCompleteListener {
                 if (!isAdded) return@addOnCompleteListener
                 setSendingUi(false)
@@ -307,26 +140,34 @@ class TutorialQuestionPanelFragment : Fragment() {
             }
     }
 
-    // ────────────────────────────────────────────────────────────
-    // Loading UI
-    // ────────────────────────────────────────────────────────────
-
     private fun setSendingUi(sending: Boolean) {
         isSending = sending
-        binding.sendBlockingOverlay.visibility = if (sending) View.VISIBLE else View.GONE
-        binding.sendButton.isEnabled = !sending
-        binding.skipButton.isEnabled = !sending
+        val b = _binding ?: return
+        b.sendBlockingOverlay.visibility = if (sending) View.VISIBLE else View.GONE
+        b.sendButton.isEnabled = !sending
+        b.skipButton.isEnabled = !sending
     }
 
-    // ────────────────────────────────────────────────────────────
-    // Derse geçiş — TutorialFragment'e sinyal gönder
-    // ────────────────────────────────────────────────────────────
+    private fun hideKeyboard() {
+        val v = view ?: return
+        v.post {
+            try {
+                val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
+                    as android.view.inputmethod.InputMethodManager
+                imm.hideSoftInputFromWindow(v.windowToken, 0)
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private var proceeded = false
 
     private fun proceedToLesson() {
-        if (!isAdded) return
+        if (!isAdded || proceeded) return
+        proceeded = true
+        hideKeyboard()
         parentFragmentManager.setFragmentResult("tutorialQuestionPanelResult", Bundle())
-        // Sola kayarak kapanıyor: ders ekranı sağdan geliyor, ikisi tek bir itme gibi
-        // okunuyor. Animasyonsuz kapanıyordu ve zincirdeki tek sert kesme buydu.
+        // Sola kayarak kapanıyor: ders ekranı sağdan geliyor, ikisi tek bir itme gibi okunuyor.
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(0, R.anim.queue_screen_out)
             .remove(this)
@@ -341,6 +182,15 @@ class TutorialQuestionPanelFragment : Fragment() {
     companion object {
         const val ARG_GLOBAL_PART_ID = "globalPartId"
         const val ARG_LESSON_ID = "lessonId"
+
+        const val CHOICE_NO = 1
+        const val CHOICE_SOME = 2
+        const val CHOICE_YES = 3
+
+        private const val EMOJI_YES = "😊"   // 😊
+        private const val EMOJI_SOME = "😐"  // 😐
+        private const val EMOJI_NO = "😕"    // 😕
+        private const val CHOICE_FEEDBACK_MS = 250L
 
         fun newInstance(
             globalPartId: Int,

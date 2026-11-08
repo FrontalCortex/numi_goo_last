@@ -1590,22 +1590,12 @@ class TutorialFragment : Fragment() {
         binding.devamButton.setOnClickListener {
             (activity as? MainActivity)?.setActiveMapTutorialOverlayFromLesson(false)
 
-            // Tutorial soru panelini aç; panel bittikten sonra asıl geçişi yap
             val globalPartId = GlobalLessonData.globalPartId
-            // Ders çözülemezse kimlik boş gider; panel yine açılır, yalnızca anket kaydı atlanır
-            // (bkz. TutorialQuestionPanelFragment.submitAndProceed).
             val lessonId = lessonItem?.stableId.orEmpty()
-            val panelFragment = TutorialQuestionPanelFragment.newInstance(
-                globalPartId = globalPartId,
-                lessonId = lessonId,
-            )
 
-            parentFragmentManager.setFragmentResultListener(
-                "tutorialQuestionPanelResult",
-                viewLifecycleOwner
-            ) { _, _ ->
-                if (!isAdded) return@setFragmentResultListener
-                // Panel bitti — asıl derse geçiş
+            // Asıl derse geçiş: anket çıktıysa anket bitince, çıkmadıysa hemen.
+            fun goToLesson() {
+                if (!isAdded) return
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
                         R.anim.queue_screen_in,
@@ -1622,6 +1612,22 @@ class TutorialFragment : Fragment() {
                     .remove(this)
                     .commit()
             }
+
+            // Öğretici sonu anketi yalnızca ünite başlarında ve öğretici başına bir kez
+            // (bkz. TutorialSurveyPolicy).
+            if (!TutorialSurveyPolicy.takeEndSurveySlot(requireContext(), globalPartId, lessonId)) {
+                goToLesson()
+                return@setOnClickListener
+            }
+
+            val panelFragment = TutorialQuestionPanelFragment.newInstance(
+                globalPartId = globalPartId,
+                lessonId = lessonId,
+            )
+            parentFragmentManager.setFragmentResultListener(
+                "tutorialQuestionPanelResult",
+                viewLifecycleOwner
+            ) { _, _ -> goToLesson() }
 
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
@@ -17838,10 +17844,11 @@ class TutorialFragment : Fragment() {
      * [TutorialStepAnalytics.recordAttempt] tarafından `null` ile geri çevrilir: kullanıcı geri
      * tuşuyla dönüp yeniden (bilerek yanlış da olabilir) cevaplasa bile ölçüme girmez.
      */
-    private fun recordTutorialStepAnswer(isCorrect: Boolean, givenAnswer: String?) {
-        val info = stepAnalyticsInfo[currentStep] ?: return
-        val ctx = context ?: return
-        val attemptNo = TutorialStepAnalytics.recordAttempt(ctx, info.key, isCorrect) ?: return
+    /** @return Bu cevabın deneme numarası; adım daha önce geçildiyse ya da ölçülemediyse null. */
+    private fun recordTutorialStepAnswer(isCorrect: Boolean, givenAnswer: String?): Int? {
+        val info = stepAnalyticsInfo[currentStep] ?: return null
+        val ctx = context ?: return null
+        val attemptNo = TutorialStepAnalytics.recordAttempt(ctx, info.key, isCorrect) ?: return null
         AnalyticsLogger.logTutorialStepAnswer(
             tutorialNumber = tutorialNumber,
             stepKey = info.key,
@@ -17853,6 +17860,47 @@ class TutorialFragment : Fragment() {
             isCorrect = isCorrect,
             wrongAnswer = givenAnswer,
         )
+        return attemptNo
+    }
+
+    /**
+     * Doğru panelindeki "ne zorladı?" satırı. Adım ancak [TutorialSurveyPolicy.STUCK_MIN_ATTEMPT].
+     * denemede geçildiyse görünür; bir seçeneğe dokununca ölçüme gider ve "Teşekkürler!" yazar.
+     * Devam düğmesini beklemez: çocuk hiç dokunmadan da geçebilir.
+     */
+    private fun bindStuckSurvey(attemptNo: Int?) {
+        val group = binding.stuckSurveyGroup
+        val info = stepAnalyticsInfo[currentStep]
+        if (info == null || !TutorialSurveyPolicy.shouldAskStuck(attemptNo)) {
+            group.visibility = View.GONE
+            return
+        }
+        val options = listOf(
+            binding.stuckOptionUnclear to AnalyticsLogger.STUCK_REASON_UNCLEAR,
+            binding.stuckOptionRule to AnalyticsLogger.STUCK_REASON_RULE,
+            binding.stuckOptionMistap to AnalyticsLogger.STUCK_REASON_MISTAP,
+        )
+        group.visibility = View.VISIBLE
+        binding.stuckSurveyTitle.visibility = View.VISIBLE
+        binding.stuckSurveyOptions.visibility = View.VISIBLE
+        binding.stuckSurveyThanks.visibility = View.GONE
+        options.forEach { (view, reason) ->
+            view.isSelected = false
+            view.setOnClickListener {
+                options.forEach { it.first.setOnClickListener(null) }
+                view.isSelected = true
+                AnalyticsLogger.logTutorialStuckReason(
+                    tutorialNumber = tutorialNumber,
+                    stepKey = info.key,
+                    lessonId = lessonItem?.stableId,
+                    attemptNo = attemptNo ?: 0,
+                    reason = reason,
+                )
+                binding.stuckSurveyTitle.visibility = View.GONE
+                binding.stuckSurveyOptions.visibility = View.GONE
+                binding.stuckSurveyThanks.visibility = View.VISIBLE
+            }
+        }
     }
 
     private fun updateOptionsPanelForStep(step: TutorialStep) {
@@ -18117,11 +18165,12 @@ class TutorialFragment : Fragment() {
      *   şık adımlarında seçtiği şık(lar). Yalnızca ölçüme gider, panelin görünümünü etkilemez.
      */
     private fun showResultPanelForOptions(isCorrect: Boolean, givenAnswer: String? = null) {
-        recordTutorialStepAnswer(isCorrect, givenAnswer)
+        val attemptNo = recordTutorialStepAnswer(isCorrect, givenAnswer)
         dismissOptionsPanelBeforeResult()
 
         if (isCorrect) {
             // Doğru cevap durumu
+            bindStuckSurvey(attemptNo)
 
             playCorretSound(R.raw.correct_answer_sound, volume = 0.3f)
 

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Öğretici sonu kısa anketi (TutorialQuestionPanelFragment): tek soru, üç ifade.
+     😕 seçilince "neresi zor geldi?" kutusu açılır; diğer iki ifade tek dokunuşta geçer. -->
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
@@ -11,661 +13,160 @@
         android:id="@+id/questionScrollView"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:scrollbars="none"
         android:fillViewport="true"
-        app:layout_constraintTop_toTopOf="parent"
+        android:scrollbars="none"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
             android:orientation="vertical"
-            android:padding="20dp">
+            android:paddingHorizontal="20dp"
+            android:paddingTop="56dp"
+            android:paddingBottom="20dp">
 
-            <!-- Başlık -->
             <TextView
                 android:id="@+id/questionPanelTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/fragment_tutorial_question_panel_question_panel_title"
+                android:layout_marginBottom="28dp"
+                android:fontFamily="@font/font_regular"
+                android:gravity="center"
+                android:text="@string/tutorial_quick_survey_title"
                 android:textColor="@color/dark_text"
-                android:textSize="20sp"
-                android:fontFamily="@font/font_regular"
-                android:textStyle="bold"
-                android:layout_marginBottom="4dp" />
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/questionPanelSubtitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/fragment_tutorial_question_panel_question_panel_subtitle"
-                android:textColor="@color/dark_text_secondary"
-                android:textSize="12sp"
-                android:fontFamily="@font/font_regular"
-                android:layout_marginBottom="24dp" />
-
-            <!-- ───────────── SORU 1 ───────────── -->
-            <TextView
-                android:id="@+id/question1Title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/fragment_tutorial_question_panel_question1_title"
-                android:textColor="@color/dark_text"
-                android:textSize="15sp"
-                android:fontFamily="@font/font_regular"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Soru 1 Seçenekler 1. Satır -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
+                android:baselineAligned="false"
+                android:orientation="horizontal">
 
-                <!-- Q1 Seçenek 1 -->
                 <LinearLayout
-                    android:id="@+id/q1Option1Row"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
+                    android:id="@+id/optionYes"
+                    style="@style/TutorialQuickSurveyOption"
+                    android:layout_marginEnd="6dp">
+
                     <TextView
-                        android:id="@+id/q1Option1Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q1_option1_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q1Option1Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
+                        android:id="@+id/optionYesEmoji"
+                        style="@style/TutorialQuickSurveyEmoji" />
+
+                    <TextView
+                        style="@style/TutorialQuickSurveyLabel"
+                        android:text="@string/tutorial_quick_survey_yes" />
                 </LinearLayout>
 
-                <!-- Q1 Seçenek 2 -->
                 <LinearLayout
-                    android:id="@+id/q1Option2Row"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
+                    android:id="@+id/optionSome"
+                    style="@style/TutorialQuickSurveyOption"
+                    android:layout_marginHorizontal="6dp">
+
                     <TextView
-                        android:id="@+id/q1Option2Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q1_option2_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q1Option2Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
+                        android:id="@+id/optionSomeEmoji"
+                        style="@style/TutorialQuickSurveyEmoji" />
+
+                    <TextView
+                        style="@style/TutorialQuickSurveyLabel"
+                        android:text="@string/tutorial_quick_survey_some" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/optionNo"
+                    style="@style/TutorialQuickSurveyOption"
+                    android:layout_marginStart="6dp">
+
+                    <TextView
+                        android:id="@+id/optionNoEmoji"
+                        style="@style/TutorialQuickSurveyEmoji" />
+
+                    <TextView
+                        style="@style/TutorialQuickSurveyLabel"
+                        android:text="@string/tutorial_quick_survey_no" />
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- Soru 1 Seçenekler 2. Satır -->
+            <!-- Yalnızca 😕 seçilince görünür -->
             <LinearLayout
+                android:id="@+id/whyGroup"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
+                android:layout_marginTop="24dp"
+                android:orientation="vertical"
+                android:visibility="gone">
 
-                <!-- Q1 Seçenek 3 -->
-                <LinearLayout
-                    android:id="@+id/q1Option3Row"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
-                    <TextView
-                        android:id="@+id/q1Option3Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q1_option3_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q1Option3Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                </LinearLayout>
-
-                <!-- Q1 Seçenek 4 -->
-                <LinearLayout
-                    android:id="@+id/q1Option4Row"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
-                    <TextView
-                        android:id="@+id/q1Option4Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q1_option4_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q1Option4Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Soru 1 Seçenekler 3. Satır -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
-
-                <!-- Q1 Seçenek 5 -->
-                <LinearLayout
-                    android:id="@+id/q1Option5Row"
-                    android:layout_width="0dp"
+                <EditText
+                    android:id="@+id/whyTextInput"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
-                    <TextView
-                        android:id="@+id/q1Option5Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q1_option5_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q1Option5Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                </LinearLayout>
-
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp" />
-            </LinearLayout>
-
-            <!-- Q1 Text input -->
-            <EditText
-                android:id="@+id/q1TextInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minLines="2"
-                android:gravity="top|start"
-                android:inputType="textMultiLine|textCapSentences"
-                android:hint="@string/fragment_tutorial_question_panel_q1_text_input_hint"
-                android:textSize="13sp"
-                android:padding="12dp"
-                android:background="@drawable/hint_background"
-                android:textColor="@color/dark_text"
-                android:textColorHint="#80FFFFFF"
-                android:fontFamily="@font/font_regular"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="28dp" />
-
-            <!-- ───────────── SORU 2 ───────────── -->
-            <TextView
-                android:id="@+id/question2Title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/fragment_tutorial_question_panel_question2_title"
-                android:textColor="@color/dark_text"
-                android:textSize="15sp"
-                android:fontFamily="@font/font_regular"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Soru 2 Seçenekler 1. Satır -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
-
-                <!-- Q2 Seçenek 1 -->
-                <LinearLayout
-                    android:id="@+id/q2Option1Row"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
-                    <TextView
-                        android:id="@+id/q2Option1Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q2_option1_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q2Option1Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                </LinearLayout>
-
-                <!-- Q2 Seçenek 2 -->
-                <LinearLayout
-                    android:id="@+id/q2Option2Row"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
-                    <TextView
-                        android:id="@+id/q2Option2Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q2_option2_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q2Option2Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Soru 2 Seçenekler 2. Satır -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
-
-                <!-- Q2 Seçenek 3 -->
-                <LinearLayout
-                    android:id="@+id/q2Option3Row"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
-                    <TextView
-                        android:id="@+id/q2Option3Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q2_option3_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q2Option3Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                </LinearLayout>
-
-                <!-- Q2 Seçenek 4 -->
-                <LinearLayout
-                    android:id="@+id/q2Option4Row"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
-                    <TextView
-                        android:id="@+id/q2Option4Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q2_option4_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q2Option4Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- Soru 2 Seçenekler 3. Satır -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
-
-                <!-- Q2 Seçenek 5 -->
-                <LinearLayout
-                    android:id="@+id/q2Option5Row"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    android:orientation="horizontal"
-                    android:clipChildren="false"
-                    android:clipToPadding="false"
-                    android:background="@drawable/tutorial_option_row_selector"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="12dp">
-                    <TextView
-                        android:id="@+id/q2Option5Text"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/fragment_tutorial_question_panel_q2_option5_text"
-                        android:textColor="@color/question_panel_text_selector"
-                        android:textSize="13sp"
-                        android:fontFamily="@font/font_regular"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                    <androidx.appcompat.widget.AppCompatCheckBox
-                        android:id="@+id/q2Option5Check"
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:background="@android:color/transparent"
-                        android:button="@drawable/tutorial_option_checkbox_btn"
-                        app:buttonTint="@null"
-                        android:clickable="false"
-                        android:focusable="false"
-                        android:duplicateParentState="true" />
-                </LinearLayout>
-
-                <Space
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp" />
-            </LinearLayout>
-
-            <!-- Q2 Text input -->
-            <EditText
-                android:id="@+id/q2TextInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minLines="2"
-                android:gravity="top|start"
-                android:inputType="textMultiLine|textCapSentences"
-                android:hint="@string/fragment_tutorial_question_panel_q2_text_input_hint"
-                android:textSize="13sp"
-                android:padding="12dp"
-                android:background="@drawable/hint_background"
-                android:textColor="@color/dark_text"
-                android:textColorHint="#80FFFFFF"
-                android:fontFamily="@font/font_regular"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="28dp" />
-
-            <!-- ───────────── SORU 3 ───────────── -->
-            <TextView
-                android:id="@+id/question3Title"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/fragment_tutorial_question_panel_question3_title"
-                android:textColor="@color/dark_text"
-                android:textSize="15sp"
-                android:fontFamily="@font/font_regular"
-                android:textStyle="bold"
-                android:layout_marginBottom="12dp" />
-
-            <EditText
-                android:id="@+id/q3TextInput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minLines="3"
-                android:gravity="top|start"
-                android:inputType="textMultiLine|textCapSentences"
-                android:hint="@string/fragment_tutorial_question_panel_q3_text_input_hint"
-                android:textSize="13sp"
-                android:padding="12dp"
-                android:background="@drawable/hint_background"
-                android:textColor="@color/dark_text"
-                android:textColorHint="#80FFFFFF"
-                android:fontFamily="@font/font_regular"
-                android:layout_marginBottom="32dp" />
-
-            <!-- ───────────── Butonlar ───────────── -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="end"
-                android:layout_marginBottom="16dp">
-
-                <Button
-                    android:id="@+id/skipButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:text="@string/fragment_tutorial_question_panel_skip_button"
-                    android:textAllCaps="false"
-                    android:textSize="14sp"
-                    android:textColor="@color/dark_text_secondary"
-                    android:backgroundTint="@android:color/transparent"
-                    android:layout_marginEnd="8dp"
-                    android:fontFamily="@font/font_regular" />
+                    android:background="@drawable/hint_background"
+                    android:fontFamily="@font/font_regular"
+                    android:gravity="top|start"
+                    android:hint="@string/tutorial_quick_survey_why_hint"
+                    android:importantForAutofill="no"
+                    android:inputType="textMultiLine|textCapSentences"
+                    android:maxLength="500"
+                    android:minLines="3"
+                    android:padding="12dp"
+                    android:textColor="@color/dark_text"
+                    android:textColorHint="#80FFFFFF"
+                    android:textSize="14sp" />
 
                 <Button
                     android:id="@+id/sendButton"
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
-                    android:text="@string/fragment_tutorial_question_panel_send_button"
-                    android:textAllCaps="false"
-                    android:textSize="14sp"
-                    android:textColor="@color/button_text_enabled"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="12dp"
                     android:backgroundTint="@color/lesson_completed"
-                    android:paddingHorizontal="24dp"
                     android:fontFamily="@font/font_regular"
-                    android:textStyle="bold"
-                    android:enabled="false" />
-
+                    android:paddingHorizontal="24dp"
+                    android:text="@string/tutorial_quick_survey_send"
+                    android:textAllCaps="false"
+                    android:textColor="@color/button_text_enabled"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
+            <Space
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/skipButton"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginTop="24dp"
+                android:backgroundTint="@android:color/transparent"
+                android:fontFamily="@font/font_regular"
+                android:text="@string/tutorial_quick_survey_skip"
+                android:textAllCaps="false"
+                android:textColor="@color/dark_text_secondary"
+                android:textSize="15sp" />
         </LinearLayout>
     </ScrollView>
 
-    <!-- Gönderim sırasında tüm ekranı kilitleyen overlay -->
+    <!-- Yazı gönderilirken ekranı kilitleyen katman -->
     <FrameLayout
         android:id="@+id/sendBlockingOverlay"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="#CC000000"
         android:clickable="true"
+        android:elevation="16dp"
         android:focusable="true"
         android:visibility="gone"
-        android:elevation="16dp"
-        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent">
 
         <ProgressBar
-            android:id="@+id/sendProgressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"

@@ -36,6 +36,20 @@ soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `Tutoria
 Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
 Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
 
+## Öğretici anketi sadeleşti (08.11.2026 — derlendi, birim testi geçti; kullanıcı isteğiyle commit edildi, telefonda denenmedi)
+Neden: 1 Eki–8 Kas'ta 19 kişiden 58 cevap, %80'i 4–5; tek işe yarar bilgi bir yazılı yorumdu ("tek tek
+kontrol et hoşuma gitmiyor"). Kullanıcı kararı: sıklığı düşür, kısalt, takılınca sor.
+- `TutorialSurveyPolicy`: öğretici sonu anketi yalnızca ünite başı öğreticilerde (başlıktan sonraki ilk
+  ders; p1_i01, p1_i06, p1_i12, p1_i17 …) ve öğretici başına cihazda bir kez.
+- `TutorialQuestionPanelFragment` + layout baştan: "Bu dersi anladın mı?" 😊/😐/😕. 😊 ve 😐 tek dokunuşla
+  geçer; 😕 yazı kutusunu açar (Firestore'da eski `question3/text/{uid}` yolu, `choice` alanıyla).
+  GA4: `lesson_survey_choice` `survey_type=tutorial_quick`, choice 1 anlamadım / 2 biraz / 3 anladım;
+  hiçbir şey seçmeden Atla/geri → yeni `lesson_survey_skip`.
+- Takılınca sor: adım ancak 3. denemede ya da sonra geçilirse doğru panelinde "Ne zorladı?" (anlamadım /
+  kuralı karıştırdım / yanlışlıkla bastım) → yeni `tutorial_stuck_reason` (`step_key`, `choice`,
+  `attempt_bucket`). Yeni GA4 boyutu açılmadı; var olan parametreler.
+- Eski 20 `fragment_tutorial_question_panel_*` metni 4 dilden silindi, yeni 13 metin 4 dile eklendi.
+
 ## Haftalık ilerleme kartı: veri toplama (08.11.2026 — Parça A f03da30 CANLIDA (fonksiyon + kural/indeks deploy başarılı); Parça B kullanıcı kararıyla 10.11 yayınına giriyor, telefonda uçtan uca denendi; kart ekranı YOK)
 Neden: kart "geçen hafta → bu hafta" diyecek; geçmiş geri gelmediği için veri karttan önce birikmeli.
 Tasarım: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` (döngü 2). Kararlar (kullanıcı, 08.11): yol

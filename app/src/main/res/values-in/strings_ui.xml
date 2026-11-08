@@ -735,26 +735,20 @@
     <string name="fragment_tutorial_continue_button">Lanjut</string>
 
     <!-- layout/fragment_tutorial_question_panel.xml -->
-    <string name="fragment_tutorial_question_panel_question_panel_title">Masukan tutorial</string>
-    <string name="fragment_tutorial_question_panel_question_panel_subtitle">Pendapatmu membantu kami menyempurnakan tutorial.</string>
-    <string name="fragment_tutorial_question_panel_question1_title">1) Apakah tutorial ini cukup untuk memahami topiknya?</string>
-    <string name="fragment_tutorial_question_panel_q1_option1_text">Sangat kurang</string>
-    <string name="fragment_tutorial_question_panel_q1_option2_text">Kurang</string>
-    <string name="fragment_tutorial_question_panel_q1_option3_text">Biasa saja</string>
-    <string name="fragment_tutorial_question_panel_q1_option4_text">Cukup</string>
-    <string name="fragment_tutorial_question_panel_q1_option5_text">Sangat cukup</string>
-    <string name="fragment_tutorial_question_panel_q1_text_input_hint">Ada hal lain yang ingin kamu tambahkan?</string>
-    <string name="fragment_tutorial_question_panel_question2_title">2) Apakah contoh soal di tutorial mudah dipahami?</string>
-    <string name="fragment_tutorial_question_panel_q2_option1_text">Sama sekali tidak jelas</string>
-    <string name="fragment_tutorial_question_panel_q2_option2_text">Kurang jelas</string>
-    <string name="fragment_tutorial_question_panel_q2_option3_text">Cukup jelas</string>
-    <string name="fragment_tutorial_question_panel_q2_option4_text">Jelas</string>
-    <string name="fragment_tutorial_question_panel_q2_option5_text">Sangat jelas</string>
-    <string name="fragment_tutorial_question_panel_q2_text_input_hint">Ada yang ingin kamu jelaskan?</string>
-    <string name="fragment_tutorial_question_panel_question3_title">3) Kalau ada bagian yang membuatmu bingung atau perlu diperbaiki, tolong tulis di sini.</string>
-    <string name="fragment_tutorial_question_panel_q3_text_input_hint">Tulis di sini…</string>
-    <string name="fragment_tutorial_question_panel_skip_button">Lewati</string>
-    <string name="fragment_tutorial_question_panel_send_button">Kirim</string>
+    <!-- Öğretici sonu kısa anketi (fragment_tutorial_question_panel.xml) -->
+    <string name="tutorial_quick_survey_title">Apakah kamu memahami pelajaran ini?</string>
+    <string name="tutorial_quick_survey_yes">Paham</string>
+    <string name="tutorial_quick_survey_some">Sedikit</string>
+    <string name="tutorial_quick_survey_no">Tidak paham</string>
+    <string name="tutorial_quick_survey_why_hint">Bagian mana yang sulit? Tulis jika mau.</string>
+    <string name="tutorial_quick_survey_send">Kirim</string>
+    <string name="tutorial_quick_survey_skip">Lewati</string>
+    <!-- Öğreticide "ne zorladı?" (fragment_tutorial.xml, doğru paneli) -->
+    <string name="tutorial_stuck_title">Apakah langkah ini sulit? Apa yang membuatnya sulit?</string>
+    <string name="tutorial_stuck_option_unclear">Aku tidak tahu harus apa</string>
+    <string name="tutorial_stuck_option_rule">Aku bingung aturannya</string>
+    <string name="tutorial_stuck_option_mistap">Aku salah tekan</string>
+    <string name="tutorial_stuck_thanks">Terima kasih!</string>
 
     <!-- layout/fragment_user_info.xml -->
     <string name="fragment_user_info_et_age_hint">Usia</string>

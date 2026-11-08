@@ -554,21 +554,20 @@
     <string name="fragment_tutorial_question_text">Sample</string>
     <string name="fragment_tutorial_text_35">Skip tutorial</string>
 
-    <string name="fragment_tutorial_question_panel_question_panel_title">Tutorial feedback</string>
-    <string name="fragment_tutorial_question_panel_question_panel_subtitle">Your feedback helps us improve the tutorials.</string>
-    <string name="fragment_tutorial_question_panel_question1_title">1) Was this tutorial enough for you to learn the topic?</string>
-    <string name="fragment_tutorial_question_panel_q1_option1_text">Not at all</string>
-    <string name="fragment_tutorial_question_panel_q1_option2_text">Not really</string>
-    <string name="fragment_tutorial_question_panel_q1_option3_text">Neutral</string>
-    <string name="fragment_tutorial_question_panel_q1_option4_text">Yes</string>
-    <string name="fragment_tutorial_question_panel_q1_option5_text">Absolutely</string>
-    <string name="fragment_tutorial_question_panel_question2_title">2) Were the examples in the tutorial easy to understand?</string>
-    <string name="fragment_tutorial_question_panel_q2_option1_text">Not clear at all</string>
-    <string name="fragment_tutorial_question_panel_q2_option2_text">Not very clear</string>
-    <string name="fragment_tutorial_question_panel_q2_option3_text">Somewhat clear</string>
-    <string name="fragment_tutorial_question_panel_q2_option4_text">Clear</string>
-    <string name="fragment_tutorial_question_panel_q2_option5_text">Very clear</string>
-    <string name="fragment_tutorial_question_panel_question3_title">3) If there\'s a part where you got stuck or that you think could be better, please write it here.</string>
+    <!-- Öğretici sonu kısa anketi (fragment_tutorial_question_panel.xml) -->
+    <string name="tutorial_quick_survey_title">Did you understand this lesson?</string>
+    <string name="tutorial_quick_survey_yes">Yes</string>
+    <string name="tutorial_quick_survey_some">A little</string>
+    <string name="tutorial_quick_survey_no">No</string>
+    <string name="tutorial_quick_survey_why_hint">What was hard? Write it if you like.</string>
+    <string name="tutorial_quick_survey_send">Send</string>
+    <string name="tutorial_quick_survey_skip">Skip</string>
+    <!-- Öğreticide "ne zorladı?" (fragment_tutorial.xml, doğru paneli) -->
+    <string name="tutorial_stuck_title">Was this step hard? What made it hard?</string>
+    <string name="tutorial_stuck_option_unclear">I didn\'t know what to do</string>
+    <string name="tutorial_stuck_option_rule">I mixed up the rule</string>
+    <string name="tutorial_stuck_option_mistap">I tapped by mistake</string>
+    <string name="tutorial_stuck_thanks">Thank you!</string>
 
     <string name="fragment_user_info_et_age_hint">Age</string>
     <string name="fragment_user_info_challenge_intro_text">Now let\'s help you build a learning habit.</string>
@@ -801,11 +800,6 @@
     <string name="fragment_tutorial_okay_button">Try Again</string>
     <string name="fragment_tutorial_correct_text">Well done!</string>
     <string name="fragment_tutorial_continue_button">Continue</string>
-    <string name="fragment_tutorial_question_panel_q1_text_input_hint">Anything else you\'d like to add?</string>
-    <string name="fragment_tutorial_question_panel_q2_text_input_hint">Anything you\'d like to explain?</string>
-    <string name="fragment_tutorial_question_panel_q3_text_input_hint">Write here…</string>
-    <string name="fragment_tutorial_question_panel_skip_button">Skip</string>
-    <string name="fragment_tutorial_question_panel_send_button">Send</string>
     <string name="fragment_user_info_btn_continue">Continue</string>
     <string name="layout_tab1_bead_options_text_2">Soroban</string>
     <string name="layout_tab1_bead_options_text_5">Bowling</string>

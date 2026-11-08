@@ -751,26 +751,20 @@
     <string name="fragment_tutorial_continue_button">Devam et</string>
 
     <!-- layout/fragment_tutorial_question_panel.xml -->
-    <string name="fragment_tutorial_question_panel_question_panel_title">Eğitim geri bildirimi</string>
-    <string name="fragment_tutorial_question_panel_question_panel_subtitle">Görüşleriniz eğitimlerin geliştirilmesine katkı sağlar.</string>
-    <string name="fragment_tutorial_question_panel_question1_title">1) Bu eğitim konuyu öğrenmeniz için yeterli miydi?</string>
-    <string name="fragment_tutorial_question_panel_q1_option1_text">Kesinlikle yetersizdi</string>
-    <string name="fragment_tutorial_question_panel_q1_option2_text">Yetersizdi</string>
-    <string name="fragment_tutorial_question_panel_q1_option3_text">Ne yeterli ne yetersizdi</string>
-    <string name="fragment_tutorial_question_panel_q1_option4_text">Yeterliydi</string>
-    <string name="fragment_tutorial_question_panel_q1_option5_text">Tamamen yeterliydi</string>
-    <string name="fragment_tutorial_question_panel_q1_text_input_hint">Eklemek istediğiniz başka bir şey var mı?</string>
-    <string name="fragment_tutorial_question_panel_question2_title">2) Eğitimde çözülen örnekler anlaşılır mıydı?</string>
-    <string name="fragment_tutorial_question_panel_q2_option1_text">Hiç anlaşılır değildi</string>
-    <string name="fragment_tutorial_question_panel_q2_option2_text">Pek anlaşılır değildi</string>
-    <string name="fragment_tutorial_question_panel_q2_option3_text">Kısmen anlaşılırdı</string>
-    <string name="fragment_tutorial_question_panel_q2_option4_text">Anlaşılırdı</string>
-    <string name="fragment_tutorial_question_panel_q2_option5_text">Çok anlaşılırdı</string>
-    <string name="fragment_tutorial_question_panel_q2_text_input_hint">Açıklamak istediğiniz bir şey var mı?</string>
-    <string name="fragment_tutorial_question_panel_question3_title">3) Takıldığınız veya geliştirilmesini önerdiğiniz bir bölüm varsa lütfen yazın.</string>
-    <string name="fragment_tutorial_question_panel_q3_text_input_hint">Buraya yazabilirsiniz…</string>
-    <string name="fragment_tutorial_question_panel_skip_button">Atla</string>
-    <string name="fragment_tutorial_question_panel_send_button">Gönder</string>
+    <!-- Öğretici sonu kısa anketi (fragment_tutorial_question_panel.xml) -->
+    <string name="tutorial_quick_survey_title">Bu dersi anladın mı?</string>
+    <string name="tutorial_quick_survey_yes">Anladım</string>
+    <string name="tutorial_quick_survey_some">Biraz</string>
+    <string name="tutorial_quick_survey_no">Anlamadım</string>
+    <string name="tutorial_quick_survey_why_hint">Neresi zor geldi? İstersen yaz.</string>
+    <string name="tutorial_quick_survey_send">Gönder</string>
+    <string name="tutorial_quick_survey_skip">Atla</string>
+    <!-- Öğreticide "ne zorladı?" (fragment_tutorial.xml, doğru paneli) -->
+    <string name="tutorial_stuck_title">Bu adım zor muydu? Ne zorladı?</string>
+    <string name="tutorial_stuck_option_unclear">Ne yapacağımı anlamadım</string>
+    <string name="tutorial_stuck_option_rule">Kuralı karıştırdım</string>
+    <string name="tutorial_stuck_option_mistap">Yanlışlıkla bastım</string>
+    <string name="tutorial_stuck_thanks">Teşekkürler!</string>
 
     <!-- layout/fragment_user_info.xml -->
     <string name="fragment_user_info_et_age_hint">Yaş</string>

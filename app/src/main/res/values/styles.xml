@@ -24,4 +24,56 @@
         <item name="android:windowEnterAnimation">@anim/queue_screen_in</item>
         <item name="android:windowExitAnimation">@anim/queue_screen_out</item>
     </style>
+
+    <!-- Öğretici sonu kısa anketi (fragment_tutorial_question_panel.xml) -->
+    <style name="TutorialQuickSurveyOption">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:orientation">vertical</item>
+        <item name="android:gravity">center</item>
+        <item name="android:paddingTop">16dp</item>
+        <item name="android:paddingBottom">14dp</item>
+        <item name="android:paddingHorizontal">4dp</item>
+        <item name="android:background">@drawable/tutorial_option_row_selector</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+    </style>
+
+    <style name="TutorialQuickSurveyEmoji">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textSize">40sp</item>
+        <item name="android:importantForAccessibility">no</item>
+        <item name="android:duplicateParentState">true</item>
+    </style>
+
+    <!-- Öğreticide "ne zorladı?" seçenekleri (fragment_tutorial.xml, correctPanel) -->
+    <style name="TutorialStuckOption">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">match_parent</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:gravity">center</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingHorizontal">6dp</item>
+        <item name="android:paddingVertical">8dp</item>
+        <item name="android:background">@drawable/tutorial_option_row_selector</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:fontFamily">@font/font_regular</item>
+        <item name="android:textColor">@color/question_panel_text_selector</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <style name="TutorialQuickSurveyLabel">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:layout_marginTop">6dp</item>
+        <item name="android:gravity">center</item>
+        <item name="android:fontFamily">@font/font_regular</item>
+        <item name="android:textColor">@color/question_panel_text_selector</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:duplicateParentState">true</item>
+    </style>
 </resources>

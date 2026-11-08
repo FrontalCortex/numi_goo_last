@@ -735,26 +735,20 @@
     <string name="fragment_tutorial_continue_button">متابعة</string>
 
     <!-- layout/fragment_tutorial_question_panel.xml -->
-    <string name="fragment_tutorial_question_panel_question_panel_title">ملاحظات على الشرح</string>
-    <string name="fragment_tutorial_question_panel_question_panel_subtitle">ملاحظاتك تساعدنا على تحسين الشروح.</string>
-    <string name="fragment_tutorial_question_panel_question1_title">1) هل كان هذا الشرح كافيًا لتتعلّم الموضوع؟</string>
-    <string name="fragment_tutorial_question_panel_q1_option1_text">غير كافٍ إطلاقًا</string>
-    <string name="fragment_tutorial_question_panel_q1_option2_text">غير كافٍ</string>
-    <string name="fragment_tutorial_question_panel_q1_option3_text">محايد</string>
-    <string name="fragment_tutorial_question_panel_q1_option4_text">كافٍ</string>
-    <string name="fragment_tutorial_question_panel_q1_option5_text">كافٍ تمامًا</string>
-    <string name="fragment_tutorial_question_panel_q1_text_input_hint">هل تريد إضافة شيء آخر؟</string>
-    <string name="fragment_tutorial_question_panel_question2_title">2) هل كانت الأمثلة المحلولة في الشرح مفهومة؟</string>
-    <string name="fragment_tutorial_question_panel_q2_option1_text">غير مفهومة إطلاقًا</string>
-    <string name="fragment_tutorial_question_panel_q2_option2_text">غير مفهومة كثيرًا</string>
-    <string name="fragment_tutorial_question_panel_q2_option3_text">مفهومة جزئيًا</string>
-    <string name="fragment_tutorial_question_panel_q2_option4_text">مفهومة</string>
-    <string name="fragment_tutorial_question_panel_q2_option5_text">مفهومة جدًا</string>
-    <string name="fragment_tutorial_question_panel_q2_text_input_hint">هل هناك ما تريد شرحه؟</string>
-    <string name="fragment_tutorial_question_panel_question3_title">3) إن كان هناك جزء توقّفت عنده أو ترى أنه يحتاج إلى تحسين، فاكتبه هنا من فضلك.</string>
-    <string name="fragment_tutorial_question_panel_q3_text_input_hint">اكتب هنا…</string>
-    <string name="fragment_tutorial_question_panel_skip_button">تخطَّ</string>
-    <string name="fragment_tutorial_question_panel_send_button">إرسال</string>
+    <!-- Öğretici sonu kısa anketi (fragment_tutorial_question_panel.xml) -->
+    <string name="tutorial_quick_survey_title">هل فهمت هذا الدرس؟</string>
+    <string name="tutorial_quick_survey_yes">فهمت</string>
+    <string name="tutorial_quick_survey_some">قليلًا</string>
+    <string name="tutorial_quick_survey_no">لم أفهم</string>
+    <string name="tutorial_quick_survey_why_hint">ما الذي كان صعبًا؟ اكتبه إن أردت.</string>
+    <string name="tutorial_quick_survey_send">إرسال</string>
+    <string name="tutorial_quick_survey_skip">تخطَّ</string>
+    <!-- Öğreticide "ne zorladı?" (fragment_tutorial.xml, doğru paneli) -->
+    <string name="tutorial_stuck_title">هل كانت هذه الخطوة صعبة؟ ما الذي صعّبها؟</string>
+    <string name="tutorial_stuck_option_unclear">لم أعرف ماذا أفعل</string>
+    <string name="tutorial_stuck_option_rule">اختلطت عليّ القاعدة</string>
+    <string name="tutorial_stuck_option_mistap">ضغطت بالخطأ</string>
+    <string name="tutorial_stuck_thanks">شكرًا لك!</string>
 
     <!-- layout/fragment_user_info.xml -->
     <string name="fragment_user_info_et_age_hint">العمر</string>
