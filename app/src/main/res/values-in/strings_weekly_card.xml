@@ -69,4 +69,9 @@
     <string name="weekly_card_say_chest_other">Menyelesaikan maraton yang sama %1$d detik lebih cepat.</string>
     <string name="weekly_card_show_details">Lihat rincian</string>
     <string name="weekly_card_hide_details">Sembunyikan rincian</string>
+
+    <string name="weekly_card_value_digits">%1$d digit</string>
+    <string name="weekly_card_value_count">%1$d bilangan</string>
+    <string name="weekly_card_value_seconds">%1$s dtk</string>
+    <string name="weekly_card_value_mul">%1$d×%2$d digit</string>
 </resources>

@@ -12,14 +12,14 @@ class ReferralShareTest {
 
     @Test
     fun veliKapisi() {
-        val q = ParentGate.Question(17, 3)
-        assertTrue(ParentGate.isCorrect(q, " 51 "))
+        val q = ParentGate.Question(7, 8)
+        assertTrue(ParentGate.isCorrect(q, " 56 "))
         assertFalse(ParentGate.isCorrect(q, "50"))
         assertFalse(ParentGate.isCorrect(q, ""))
         // Sayılar yazıyla gösterilecek dizinin içinde kalmalı (0..19).
         repeat(200) {
             val n = ParentGate.newQuestion(Random(it))
-            assertTrue(n.a in 11..19 && n.b in 3..9)
+            assertTrue(n.a in 3..9 && n.b in 3..9)
         }
     }
 

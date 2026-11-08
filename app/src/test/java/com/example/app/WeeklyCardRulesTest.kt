@@ -174,6 +174,19 @@ class WeeklyCardRulesTest {
     }
 
     @Test
+    fun merdiven() {
+        val f = "addition_abacus_cup"
+        // 280 → 420: basamak 2 → 4; bir geriden başla, iki ileride bitir.
+        val l = WeeklyCardRules.ladderFor(Item.CupStep(f, 280, 420, WeeklyCardRules.cupLevel(f, 280), WeeklyCardRules.cupLevel(f, 420)))!!
+        assertEquals(WeeklyCardRules.Ladder(6, 1, 3), l)
+        // Büyük sıçramada basamak sayısı sınırda kalır, "bu hafta" yine çizginin içinde.
+        val big = WeeklyCardRules.ladderFor(Item.CupStep(f, 100, 2900, WeeklyCardRules.cupLevel(f, 100), WeeklyCardRules.cupLevel(f, 2900)))!!
+        assertEquals(WeeklyCardRules.LADDER_MAX, big.total)
+        assertTrue(big.to < big.total && big.from < big.to)
+        assertEquals(WeeklyCardRules.Ladder(20, 3, 6), WeeklyCardRules.ladderFor(Item.SobiStep("add_five", 4, 7)))
+    }
+
+    @Test
     fun bicim() {
         assertEquals("1:20", WeeklyCardRules.mmss(80))
         assertEquals("0:52", WeeklyCardRules.mmss(52))

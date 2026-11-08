@@ -405,6 +405,36 @@ object WeeklyCardRules {
         else -> nums.first().toString() + nums.drop(1).joinToString("") { if (it < 0) " − ${-it}" else " + $it" }
     }
 
+    // ── Seviye merdiveni (kullanıcı kararı 09.11.2026) ───────────────────────
+    //
+    // "Geçen hafta / bu hafta" iki satır metin olarak net görünmüyordu; çizgi grafik için de henüz yalnızca
+    // 1–2 haftalık kayıt var (2 noktalı çizgi bir şey anlatmıyor). Merdiven: basamaklar soldan sağa, geçen
+    // haftanın yeri küçük gri, bu haftanın yeri büyük yeşil. 4 hafta birikince altına çizgi eklenecek.
+
+    /** [total] basamak (0..total-1); [from] geçen hafta, [to] bu hafta (0 tabanlı). */
+    data class Ladder(val total: Int, val from: Int, val to: Int)
+
+    /** En çok bu kadar basamak çizilir: kupada büyük sıçramada ölçek sıkışmasın. */
+    const val LADDER_MAX = 14
+
+    fun ladderFor(item: Item): Ladder? = when (item) {
+        is Item.CupStep -> {
+            // Kural tablosu 100 puanda bir değiştiği için bir basamak = 100 puan. Bir basamak geriden
+            // başlayıp iki ileride bitiyor: "daha gidilecek yol var" görünsün.
+            val b = item.beforeScore / 100
+            val a = item.afterScore / 100
+            val start = maxOf(0, b - 1)
+            val end = maxOf(a + 2, start + 4)
+            val total = (end - start + 1).coerceAtMost(LADDER_MAX)
+            Ladder(total, (b - start).coerceIn(0, total - 1), (a - start).coerceIn(0, total - 1))
+        }
+        is Item.SobiStep -> {
+            val max = com.example.app.abacus.SobiTestLevels.MAX
+            Ladder(max, (item.before - 1).coerceIn(0, max - 1), (item.after - 1).coerceIn(0, max - 1))
+        }
+        else -> null
+    }
+
     // ── Biçim yardımcıları (dilden bağımsız) ─────────────────────────────────
 
     /** 80 → "1:20". */

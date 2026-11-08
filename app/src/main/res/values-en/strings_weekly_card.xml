@@ -69,4 +69,9 @@
     <string name="weekly_card_say_chest_other">Finishes the same marathon %1$d seconds faster.</string>
     <string name="weekly_card_show_details">Show details</string>
     <string name="weekly_card_hide_details">Hide details</string>
+
+    <string name="weekly_card_value_digits">%1$d-digit</string>
+    <string name="weekly_card_value_count">%1$d numbers</string>
+    <string name="weekly_card_value_seconds">%1$s s</string>
+    <string name="weekly_card_value_mul">%1$d×%2$d digits</string>
 </resources>

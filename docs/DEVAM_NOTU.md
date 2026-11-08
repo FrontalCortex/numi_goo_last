@@ -55,6 +55,11 @@ Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.
 ("on yedi çarpı üç", 3 yanlışta kapanır); ödül ikisine de 7 gün Pro, getiren yılda en çok 10; App Links ŞİMDİLİK YOK
 (Play App Signing SHA-256 gerekli, uygulama kapalı testte; `public/.well-known/assetlinks.json` zaten yanlış paket
 `com.example.app` içeriyor, düzeltilmedi).
+- **09.11 değişiklikleri (versionCode 22 AAB'de YOK, sonraki pakete):** veli kapısı yalnızca 13 yaş altında (ve doğum
+  yılı yoksa), soru tek basamaklı yazıyla (3..9 × 3..9); 13+ için de `share_gate_pass` gönderiliyor (huni yaştan
+  bağımsız). Ana satırda **seviye merdiveni** (`LevelLadderView`, `WeeklyCardRules.ladderFor`: kupada 1 basamak =
+  100 puan, bir geriden iki ileriye, en çok 14; Sobi 1..20), altında örnek sayılar ve cümle. Çizgi grafik 4 hafta
+  veri birikince. Test 16/16; telefon adb'de offline olduğu için kurulmadı.
 - **Paylaşma:** kartta "Paylaş" (yalnızca ilerleme varsa) → `ParentGate` → `WeeklyCardShare`: özet kartının bitmap'i
   + altta "Sorobit" → cache/share/haftalik.png, FileProvider, EXTRA_STREAM + metin (`weekly_share_text`, bağlantılı),
   `createChooser(…, IntentSender)` → `ChosenReceiver` EXTRA_CHOSEN_COMPONENT → `share_done_whatsapp|instagram|other`.

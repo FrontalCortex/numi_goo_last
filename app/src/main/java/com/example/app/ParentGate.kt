@@ -14,8 +14,12 @@ import kotlin.random.Random
  *
  * Neden: Play Aile politikası, çocuklara yönelik uygulamada dış bağlantı / paylaşım gibi işlerin bir
  * yetişkin tarafından açılmasını istiyor. Kullanıcı kararı (08.11.2026): yazıyla çarpma sorusu.
- * Sayılar YAZIYLA ("on yedi çarpı üç"): soroban öğrencisi rakamla çarpmayı bilir, ama yazıyla
- * verilmiş iki basamaklı çarpımı okuyup çözmek küçük çocuğu ayırıyor. Her açılışta farklı soru.
+ * Sayılar YAZIYLA ("yedi çarpı sekiz"): okuma yazması yeni olan küçük çocuğu ayırıyor.
+ *
+ * 09.11.2026 hafifletildi (kullanıcı: "kapıda kayıp olur"): soru tek basamaklı (önce "on yedi çarpı üç"
+ * idi; veliyi de yoruyordu) ve kapı yalnızca 13 yaş altında (doğum yılı yoksa da) açılıyor; 13+ kendi
+ * hesabıyla paylaşan için politika "yetişkin adımı" istemiyor. Çağıran taraf karar veriyor
+ * (WeeklyCardFragment). Kaç kişinin kapıda kaldığı GA4 hunisinde: share_card_shown_weekly → share_gate_pass.
  */
 object ParentGate {
 
@@ -24,7 +28,8 @@ object ParentGate {
         val answer get() = a * b
     }
 
-    fun newQuestion(rand: Random = Random.Default) = Question(11 + rand.nextInt(9), 3 + rand.nextInt(7))
+    /** 3..9 × 3..9: 1 ve 2 çok kolay (cevap sayının kendisi / iki katı). */
+    fun newQuestion(rand: Random = Random.Default) = Question(3 + rand.nextInt(7), 3 + rand.nextInt(7))
 
     fun isCorrect(q: Question, typed: String): Boolean = typed.trim().toIntOrNull() == q.answer
 

@@ -89,4 +89,10 @@
     <string name="weekly_card_say_chest_other">Aynı maratonu %1$d saniye daha kısa sürede bitiriyor.</string>
     <string name="weekly_card_show_details">Ayrıntıları göster</string>
     <string name="weekly_card_hide_details">Ayrıntıları gizle</string>
+
+    <!-- Seviye merdivenindeki kısa değer (LevelLadderView): değişen tek şey. -->
+    <string name="weekly_card_value_digits">%1$d basamaklı</string>
+    <string name="weekly_card_value_count">%1$d sayı</string>
+    <string name="weekly_card_value_seconds">%1$s sn</string>
+    <string name="weekly_card_value_mul">%1$d×%2$d basamak</string>
 </resources>

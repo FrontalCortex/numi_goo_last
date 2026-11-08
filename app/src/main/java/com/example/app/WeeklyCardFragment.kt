@@ -167,7 +167,11 @@ class WeeklyCardFragment : DialogFragment() {
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                     .apply { topMargin = dp(12) }
                 setOnClickListener { button ->
-                    ParentGate.show(requireContext()) {
+                    // Kapı yalnızca 13 yaş altında (kullanıcı kararı 09.11.2026). 13+ için de share_gate_pass
+                    // gönderiliyor: hunideki "paylaşmaya devam etti" adımı yaştan bağımsız kalsın.
+                    val gate: (() -> Unit) -> Unit =
+                        if (d.speaksToChild) { next -> next() } else { next -> ParentGate.show(requireContext(), next) }
+                    gate {
                         AnalyticsLogger.logSimpleEvent("share_gate_pass")
                         button.isEnabled = false
                         viewLifecycleOwner.lifecycleScope.launch {
@@ -215,10 +219,24 @@ class WeeklyCardFragment : DialogFragment() {
                 // 08.11.2026: "240 + 320 + 423'ü 4 saniyede topluyordun, şimdi 2 saniyede").
                 val c = WeeklyCardRules.concrete(item, seedKey(d, item)) ?: return
                 parent.addView(text(topicOf(item, c), 15f, color = ACCENT, bold = true, top = 18))
-                parent.addView(text(appString(R.string.weekly_card_example_numbers), 12f, secondary = true))
-                exampleRow(parent, R.string.weekly_card_before, c.beforeText, c.before, after = false)
-                exampleRow(parent, R.string.weekly_card_after, c.afterText, c.after, after = true)
-                sayFor(c, d.speaksToChild)?.let { parent.addView(text(it, 18f, bold = true, color = GOLD, top = 16)) }
+                // Seviye merdiveni (kullanıcı kararı 09.11.2026): önce/sonra bir bakışta. Basamak etiketi,
+                // değişen tek şeyi söylüyor (basamak / sayı adedi / hız), cümleyle aynı öncelikte.
+                WeeklyCardRules.ladderFor(item)?.let { lad ->
+                    parent.addView(LevelLadderView(requireContext()).apply {
+                        ladder = lad
+                        beforeLabel = appString(R.string.weekly_card_before)
+                        afterLabel = appString(R.string.weekly_card_after) + " ✔"
+                        beforeValue = ladderValue(c, c.before)
+                        afterValue = ladderValue(c, c.after)
+                        layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                            .apply { topMargin = dp(12) }
+                    })
+                }
+                parent.addView(text(appString(R.string.weekly_card_example_numbers), 12f, secondary = true, top = 8))
+                parent.addView(text(c.beforeText, 18f, secondary = true, ltr = true, top = 2))
+                parent.addView(text("↓", 14f, secondary = true))
+                parent.addView(text(c.afterText, 24f, bold = true, ltr = true))
+                sayFor(c, d.speaksToChild)?.let { parent.addView(text(it, 18f, bold = true, color = GOLD, top = 14)) }
             }
             is Item.ChestStep -> {
                 parent.addView(text(appString(R.string.weekly_card_chest_title, unitOf(d, item.partId, item.stableId)), 15f, color = ACCENT, bold = true, top = 18))
@@ -273,14 +291,12 @@ class WeeklyCardFragment : DialogFragment() {
         }
     }
 
-    /** "Geçen hafta / 4 + 7 + 2 + 5 / her sayı 3,6 saniyede". Sayılar soldan sağa (Arapçada da). */
-    private fun exampleRow(parent: LinearLayout, label: Int, numbers: String, level: WeeklyCardRules.Level, after: Boolean) {
-        parent.addView(text(appString(label), 12f, secondary = true, top = 12))
-        parent.addView(text(numbers, if (after) 26f else 22f, bold = after, secondary = !after, ltr = true))
-        if (level.mulSecond == null && level.intervalMs > 0) {
-            val each = appString(R.string.weekly_card_each_number, seconds(level.intervalMs))
-            parent.addView(text(if (after) "$each  ✔" else each, 13f, secondary = !after, color = if (after) ACCENT else null))
-        }
+    /** Merdivendeki kısa değer: değişen şey neyse o ("2 basamaklı", "5 sayı", "3,4 sn", "2×1 basamak"). */
+    private fun ladderValue(c: WeeklyCardRules.Concrete, l: WeeklyCardRules.Level): String = when {
+        c.op == WeeklyCardRules.Op.MUL -> appString(R.string.weekly_card_value_mul, l.digits, l.mulSecond ?: 1)
+        c.change == WeeklyCardRules.Change.DIGITS -> appString(R.string.weekly_card_value_digits, l.digits)
+        c.change == WeeklyCardRules.Change.FASTER -> appString(R.string.weekly_card_value_seconds, seconds(l.intervalMs))
+        else -> appString(R.string.weekly_card_value_count, l.count)
     }
 
     /** Örnek sayılar hafta + yol başına sabit: kart her açılışta başka sayı göstermesin. */

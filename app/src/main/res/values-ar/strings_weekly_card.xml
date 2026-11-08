@@ -69,4 +69,9 @@
     <string name="weekly_card_say_chest_other">يُنهي الماراثون نفسه أسرع بـ %1$d ثانية.</string>
     <string name="weekly_card_show_details">عرض التفاصيل</string>
     <string name="weekly_card_hide_details">إخفاء التفاصيل</string>
+
+    <string name="weekly_card_value_digits">%1$d منازل</string>
+    <string name="weekly_card_value_count">%1$d أعداد</string>
+    <string name="weekly_card_value_seconds">%1$s ث</string>
+    <string name="weekly_card_value_mul">%1$d×%2$d منازل</string>
 </resources>
