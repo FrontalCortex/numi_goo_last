@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Haftalık ilerleme kartı (WeeklyCardFragment); ayrıntı values/strings_weekly_card.xml. -->
+<resources>
+    <string name="progress_hub_weekly">Week in review</string>
+    <string name="progress_hub_weekly_desc">What moved forward since last week</string>
+
+    <string name="weekly_card_header">Week in review</string>
+    <string name="weekly_card_title_self">Your week</string>
+    <string name="weekly_card_title_other">%1$s · week in review</string>
+    <string name="weekly_card_title_fallback">Week in review</string>
+    <string name="weekly_card_dates">%1$s – %2$s</string>
+
+    <string name="weekly_card_before">Last week</string>
+    <string name="weekly_card_after">This week</string>
+    <string name="weekly_card_chest_before">First time</string>
+    <string name="weekly_card_chest_after">Now</string>
+
+    <string name="weekly_card_level_digits">%2$s numbers, %1$d-digit</string>
+    <string name="weekly_card_level_interval">%1$s s apart</string>
+    <string name="weekly_card_level_mul">%1$d-digit × %2$d-digit</string>
+    <string name="weekly_card_cup_points">trophies %1$d → %2$d</string>
+    <string name="weekly_card_sobi_points">Sobi level %1$d → %2$d</string>
+    <string name="weekly_card_sobi_title">Sobi test · %1$s</string>
+    <string name="weekly_card_chest_title">Unit marathon · %1$s</string>
+
+    <string name="weekly_card_learned_self">Learned this week: %1$s</string>
+    <string name="weekly_card_learned_other">Learned this week: %1$s</string>
+    <string name="weekly_card_sample_self">A problem you solved: %1$s</string>
+    <string name="weekly_card_sample_other">A problem solved: %1$s</string>
+    <string name="weekly_card_sample_blinding">%1$s (without looking at the abacus)</string>
+    <string name="weekly_card_learned_more">+%1$d more lessons</string>
+    <string name="weekly_card_part_progress">%1$s: %2$d/%3$d lessons</string>
+
+    <string name="weekly_card_effort_days_self">You practiced %1$d days</string>
+    <string name="weekly_card_effort_days_other">Practiced %1$d days</string>
+    <string name="weekly_card_effort_minutes">%1$d min</string>
+    <string name="weekly_card_effort_streak">%1$d-day streak</string>
+
+    <string name="weekly_card_suggest_next">Sobi suggests: %1$s is next.</string>
+    <string name="weekly_card_suggest_generic">Sobi suggests: a little practice every day grows both the streak and the speed.</string>
+    <string name="weekly_card_no_progress_self">No new step this week, but every day you practiced counts.</string>
+    <string name="weekly_card_no_progress_other">No new step this week, but every practice day counts.</string>
+    <string name="weekly_card_empty">No weekly review yet. The first one is ready on Monday after a week of practice.</string>
+    <string name="weekly_card_share_soon">Share · coming soon</string>
+    <string name="weekly_card_details">Details</string>
+
+    <string name="weekly_card_section_cups">Trophy roads</string>
+    <string name="weekly_card_section_lessons">Lessons</string>
+    <string name="weekly_card_section_chests">Unit marathons</string>
+    <string name="weekly_card_section_sobi">Sobi levels</string>
+    <string name="weekly_card_section_rules">Rule mastery</string>
+</resources>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Haftalık ilerleme kartı (WeeklyCardFragment). Ayrı dosya: başka oturumlar aynı anda büyük strings
+  dosyalarına yazıyor. Hitap iki türlü (kullanıcı kararı 08.11.2026): 13 yaş ve üstü kendisine
+  (_self), altı veli diliyle üçüncü şahıs (_other). Ek gerektiren yerlerde ad başa ve eksiz konuyor
+  (Türkçede "Ayşe'nin / Mert'in" ünlü uyumu koda bırakılmasın diye).
+-->
+<resources>
+    <!-- İlerleme sayfasındaki giriş kartı. -->
+    <string name="progress_hub_weekly">Haftanın özeti</string>
+    <string name="progress_hub_weekly_desc">Geçen haftaya göre neler ilerledi</string>
+
+    <string name="weekly_card_header">Haftanın özeti</string>
+    <string name="weekly_card_title_self">Senin haftan</string>
+    <!-- %1$s ad (soyad yok). -->
+    <string name="weekly_card_title_other">%1$s · haftanın özeti</string>
+    <string name="weekly_card_title_fallback">Haftanın özeti</string>
+    <!-- %1$s – %2$s: "26 Eki – 1 Kas". -->
+    <string name="weekly_card_dates">%1$s – %2$s</string>
+
+    <string name="weekly_card_before">Geçen hafta</string>
+    <string name="weekly_card_after">Bu hafta</string>
+    <string name="weekly_card_chest_before">İlk seferinde</string>
+    <string name="weekly_card_chest_after">Şimdi</string>
+
+    <!-- Seviye dili: basamak × sayı adedi × hız. %2$s "4–6" ya da "5". -->
+    <string name="weekly_card_level_digits">%1$d basamaklı %2$s sayı</string>
+    <!-- %1$s "2,9" -->
+    <string name="weekly_card_level_interval">%1$s sn arayla</string>
+    <string name="weekly_card_level_mul">%1$d basamaklı × %2$d basamaklı</string>
+    <string name="weekly_card_cup_points">kupa %1$d → %2$d</string>
+    <string name="weekly_card_sobi_points">Sobi seviyesi %1$d → %2$d</string>
+    <!-- %1$s kural adı ("5\'lik toplama"). -->
+    <string name="weekly_card_sobi_title">Sobi testi · %1$s</string>
+    <!-- %1$s ünite adı. -->
+    <string name="weekly_card_chest_title">Ünite maratonu · %1$s</string>
+
+    <string name="weekly_card_learned_self">Bu hafta öğrendin: %1$s</string>
+    <string name="weekly_card_learned_other">Bu hafta öğrendi: %1$s</string>
+    <string name="weekly_card_sample_self">Çözdüğün bir işlem: %1$s</string>
+    <string name="weekly_card_sample_other">Çözdüğü bir işlem: %1$s</string>
+    <string name="weekly_card_sample_blinding">%1$s (abaküse bakmadan)</string>
+    <string name="weekly_card_learned_more">+%1$d ders daha</string>
+    <!-- %1$s bölüm adı, %2$d / %3$d ders. -->
+    <string name="weekly_card_part_progress">%1$s: %2$d/%3$d ders</string>
+
+    <string name="weekly_card_effort_days_self">%1$d gün çalıştın</string>
+    <string name="weekly_card_effort_days_other">%1$d gün çalıştı</string>
+    <string name="weekly_card_effort_minutes">%1$d dk</string>
+    <string name="weekly_card_effort_streak">seri %1$d gün</string>
+
+    <!-- %1$s kural adı. -->
+    <string name="weekly_card_suggest_next">Sobi\'nin önerisi: sırada %1$s var.</string>
+    <string name="weekly_card_suggest_generic">Sobi\'nin önerisi: her gün biraz çalışmak seriyi ve hızı birlikte büyütür.</string>
+    <string name="weekly_card_no_progress_self">Bu hafta yeni bir basamak yok; yine de her çalıştığın gün sayılır.</string>
+    <string name="weekly_card_no_progress_other">Bu hafta yeni bir basamak yok; yine de her çalıştığı gün sayılır.</string>
+    <string name="weekly_card_empty">Henüz haftalık özet yok. İlk özet bir hafta çalıştıktan sonra pazartesi hazırlanır.</string>
+    <string name="weekly_card_share_soon">Paylaş · yakında</string>
+    <string name="weekly_card_details">Ayrıntılar</string>
+
+    <!-- Ayrıntı bölümleri; yalnızca ilerleme olan görünür. -->
+    <string name="weekly_card_section_cups">Kupa yolları</string>
+    <string name="weekly_card_section_lessons">Dersler</string>
+    <string name="weekly_card_section_chests">Ünite maratonları</string>
+    <string name="weekly_card_section_sobi">Sobi seviyeleri</string>
+    <string name="weekly_card_section_rules">Kural ustalığı</string>
+</resources>

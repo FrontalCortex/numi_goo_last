@@ -680,6 +680,16 @@ object AnalyticsLogger {
         }
     }
 
+    /**
+     * Haftalık ilerleme kartı açıldı. Olay kapsamlı boyut kotası dolu (46/50): kırılım olay adında,
+     * parametresiz — `weekly_card_shown_{auto|hub}_{progress|empty}`. Paylaşım gelince "kart gösterildi →
+     * paylaşıldı" oranının paydası bu.
+     */
+    fun logWeeklyCardShown(auto: Boolean, hasProgress: Boolean) = safe { fa ->
+        val name = "weekly_card_shown_" + (if (auto) "auto" else "hub") + (if (hasProgress) "_progress" else "_empty")
+        fa.logEvent(name, null)
+    }
+
     /** Ders anahtarla açıldı; anahtar sunucuda düşüldükten SONRA çağrılır. */
     fun logLessonUnlockKey(partId: Int, lessonId: String?) = safe { fa ->
         fa.logEvent(EV_LESSON_UNLOCK_KEY) {

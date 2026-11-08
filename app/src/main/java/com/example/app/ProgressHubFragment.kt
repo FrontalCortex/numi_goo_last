@@ -53,6 +53,12 @@ class ProgressHubFragment : Fragment() {
             open(if (uid != null) ParentPanelFragment.newForStudent(uid, studentName) else ParentPanelFragment())
         }
         binding.cardRules.setOnClickListener { open(HomeworkRuleStatsFragment.newInstance(uid, studentName)) }
+        // Haftanın özeti yalnızca kendi hesabında (öğretmen görünümünde kart oturumdakinin verisini okurdu).
+        if (uid == null && com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) {
+            binding.cardWeekly.visibility = View.VISIBLE
+            binding.cardWeekly.setOnClickListener { open(WeeklyCardFragment()) }
+            DepthPress.attach(binding.cardWeekly)
+        }
         DepthPress.attach(binding.cardLessons, binding.cardRules)
         if (uid == null && com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null) loadSobi()
     }

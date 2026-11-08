@@ -50,6 +50,32 @@ kontrol et hoşuma gitmiyor"). Kullanıcı kararı: sıklığı düşür, kısal
   `attempt_bucket`). Yeni GA4 boyutu açılmadı; var olan parametreler.
 - Eski 20 `fragment_tutorial_question_panel_*` metni 4 dilden silindi, yeni 13 metin 4 dile eklendi.
 
+## Haftalık ilerleme kartı: ekran (08.11.2026 — derlendi, birim testi 11/11; kullanıcı kararıyla 10.11 YAYININA GİRİYOR; Ted'e örnek veri yazıldı; telefonda kullanıcı bakacak)
+Kararlar (kullanıcı, 08.11): kapanan hafta (Pazarı bugünden önce olan en yeni `weeklyStats`) önceki kayıtla
+(en çok 3 hafta geriden) kıyaslanır; ilk sürüm kaynakları kupa + sandık + ders + Sobi (öğretmen ödevi YOK);
+eşikler: kupa görünen kural (basamak/adet/aralık) değişmeli, sandık ≥3 sn ve ≥%10, Sobi ≥1 seviye, ders
+bu hafta bitmiş; beceri adı = mevcut ünite başlığı (yeni ders metni yok); "Paylaş · yakında" görünür ama
+basılamaz, ilerleme yoksa hiç görünmez; düzen "tek büyük kart".
+- `WeeklyCardRules.kt` (saf, `WeeklyCardRulesTest`): hafta seçimi, kupa puanı → `CupRuleEngine.configsFor` /
+  `multiplicationDigitsFor` (yeni, okuma amaçlı) ile "N basamaklı a–b sayı · x sn arayla", ana satır önceliği
+  körleme (körleme kupası, `m_` Sobi kuralı) → kupa/Sobi → sandık → yeni ders; yalnızca yükselen; Sobi önerisi
+  (yarım kalan ilk kural, yoksa ustalaşılanın sonraki). `WeeklyCardRepository.kt`: okuma (kullanıcı, son 4 hafta,
+  tüm `lessonMilestones`, `homeworkRuleStats`, ders biten bölüm varsa `ParentReportRepository`). Hitap: doğum
+  yılından 13+ kendisine, altı (ve yılı yoksa) adın ilk kelimesiyle üçüncü şahıs.
+- `WeeklyCardFragment` (DialogFragment): İlerleme sayfası → "Haftanın özeti" kartı (yalnızca kendi hesabında);
+  ve `MainActivity.maybeAutoOpenWeeklyCard` (onResume'dan, süreç başına bir okuma): ilerleme varsa ve o hafta
+  gösterilmediyse, harita taban + ders sonu kuyruğu boş + yeni seri kapısındaki engeller yokken tam ekran
+  pencere. 60 sn içinde açılamazsa o açılışta vazgeçer. Ders sonu akışına dokunulmadı. Hafta işareti
+  `AppPrefs.weekly_card_auto_week_{uid}`; yeniden görmek için uygulama verisi ya da bu anahtar silinmeli.
+  Log: `adb logcat -s WeeklyCard`.
+- GA4: `weekly_card_shown_{auto|hub}_{progress|empty}` (parametresiz). Metinler `strings_weekly_card.xml` 4 dil.
+- **ÖRNEK VERİ (canlıda, Ted `835398VV`):** `.github/scripts/seed-weekly-card-sample.js` + yml: `weeklyStats/2026-W43`,
+  `2026-W44` ve 3 `lessonMilestones` (dokunulan belgelerin önceki hâli `users/{uid}/seedSamples/weeklyCard`'da).
+  8 Kasım'da kart W44'ü (26 Eki–1 Kas) gösterir; 9 Kasım'dan itibaren sunucunun GERÇEK W45'i sahte W44 ile
+  kıyaslanır (Ted için anlamsız satırlar çıkabilir). **Geri almak için:** yml'de `REMOVE: '1'` yapıp push et.
+- Denenmeyenler: Arapça sağdan sola görünüm, 13 yaş üstü hitap, ilerlemesiz hafta, öğretmen görünümü (kart gizli).
+  İşlem başına süre ("8 sn → 5 sn") yok: sandık kaydında soru sayısı tutulmuyor.
+
 ## Haftalık ilerleme kartı: veri toplama (08.11.2026 — Parça A f03da30 CANLIDA (fonksiyon + kural/indeks deploy başarılı); Parça B kullanıcı kararıyla 10.11 yayınına giriyor, telefonda uçtan uca denendi; kart ekranı YOK)
 Neden: kart "geçen hafta → bu hafta" diyecek; geçmiş geri gelmediği için veri karttan önce birikmeli.
 Tasarım: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` (döngü 2). Kararlar (kullanıcı, 08.11): yol

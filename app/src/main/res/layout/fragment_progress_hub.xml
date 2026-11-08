@@ -54,6 +54,32 @@
         android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Haftanın özeti (WeeklyCardFragment): yalnızca kendi hesabında; öğretmen öğrencisine
+             bakarken gizli (kart oturumdaki kullanıcının haftalık kaydını okuyor). -->
+        <LinearLayout
+            android:id="@+id/cardWeekly"
+            style="@style/ProgressHubCard"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone">
+
+            <ImageView
+                style="@style/ProgressHubIcon"
+                android:src="@drawable/cup_ic" />
+
+            <LinearLayout style="@style/ProgressHubTexts">
+
+                <TextView
+                    style="@style/ProgressHubTitle"
+                    android:text="@string/progress_hub_weekly" />
+
+                <TextView
+                    style="@style/ProgressHubSubtitle"
+                    android:text="@string/progress_hub_weekly_desc" />
+            </LinearLayout>
+
+            <ImageView style="@style/ProgressHubArrow" />
+        </LinearLayout>
+
         <LinearLayout
             android:id="@+id/cardLessons"
             style="@style/ProgressHubCard">

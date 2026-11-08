@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Haftalık ilerleme kartı (WeeklyCardFragment); ayrıntı values/strings_weekly_card.xml. -->
+<resources>
+    <string name="progress_hub_weekly">ملخص الأسبوع</string>
+    <string name="progress_hub_weekly_desc">ما الذي تقدّم مقارنة بالأسبوع الماضي</string>
+
+    <string name="weekly_card_header">ملخص الأسبوع</string>
+    <string name="weekly_card_title_self">أسبوعك</string>
+    <string name="weekly_card_title_other">%1$s · ملخص الأسبوع</string>
+    <string name="weekly_card_title_fallback">ملخص الأسبوع</string>
+    <string name="weekly_card_dates">%1$s – %2$s</string>
+
+    <string name="weekly_card_before">الأسبوع الماضي</string>
+    <string name="weekly_card_after">هذا الأسبوع</string>
+    <string name="weekly_card_chest_before">أول مرة</string>
+    <string name="weekly_card_chest_after">الآن</string>
+
+    <string name="weekly_card_level_digits">%2$s أعداد من %1$d منازل</string>
+    <string name="weekly_card_level_interval">بفاصل %1$s ث</string>
+    <string name="weekly_card_level_mul">%1$d منازل × %2$d منازل</string>
+    <string name="weekly_card_cup_points">الكؤوس %1$d ← %2$d</string>
+    <string name="weekly_card_sobi_points">مستوى Sobi %1$d ← %2$d</string>
+    <string name="weekly_card_sobi_title">اختبار Sobi · %1$s</string>
+    <string name="weekly_card_chest_title">ماراثون الوحدة · %1$s</string>
+
+    <string name="weekly_card_learned_self">تعلّمت هذا الأسبوع: %1$s</string>
+    <string name="weekly_card_learned_other">تعلّم هذا الأسبوع: %1$s</string>
+    <string name="weekly_card_sample_self">عملية حللتها: %1$s</string>
+    <string name="weekly_card_sample_other">عملية محلولة: %1$s</string>
+    <string name="weekly_card_sample_blinding">%1$s (دون النظر إلى العدّاد)</string>
+    <string name="weekly_card_learned_more">+%1$d دروس أخرى</string>
+    <string name="weekly_card_part_progress">%1$s: %2$d/%3$d دروس</string>
+
+    <string name="weekly_card_effort_days_self">تدرّبت %1$d أيام</string>
+    <string name="weekly_card_effort_days_other">تدرّب %1$d أيام</string>
+    <string name="weekly_card_effort_minutes">%1$d د</string>
+    <string name="weekly_card_effort_streak">سلسلة %1$d يومًا</string>
+
+    <string name="weekly_card_suggest_next">اقتراح Sobi: التالي هو %1$s.</string>
+    <string name="weekly_card_suggest_generic">اقتراح Sobi: قليل من التدريب كل يوم ينمّي السلسلة والسرعة معًا.</string>
+    <string name="weekly_card_no_progress_self">لا خطوة جديدة هذا الأسبوع، لكن كل يوم تدرّبت فيه محسوب.</string>
+    <string name="weekly_card_no_progress_other">لا خطوة جديدة هذا الأسبوع، لكن كل يوم تدريب محسوب.</string>
+    <string name="weekly_card_empty">لا يوجد ملخص أسبوعي بعد. يجهز أول ملخص يوم الإثنين بعد أسبوع من التدريب.</string>
+    <string name="weekly_card_share_soon">مشاركة · قريبًا</string>
+    <string name="weekly_card_details">التفاصيل</string>
+
+    <string name="weekly_card_section_cups">طرق الكؤوس</string>
+    <string name="weekly_card_section_lessons">الدروس</string>
+    <string name="weekly_card_section_chests">ماراثونات الوحدات</string>
+    <string name="weekly_card_section_sobi">مستويات Sobi</string>
+    <string name="weekly_card_section_rules">إتقان القواعد</string>
+</resources>

@@ -26,6 +26,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -264,6 +266,10 @@ class MainActivity : AppCompatActivity() {
         @Volatile
         var currentActivity: MainActivity? = null
         private const val PREFS_APP = "AppPrefs"
+        /** Haftalık kartın otomatik açılışı: ilk deneme, engel varken yoklama aralığı, en uzun bekleme. */
+        private const val WEEKLY_CARD_FIRST_DELAY_MS = 2_500L
+        private const val WEEKLY_CARD_RETRY_MS = 800L
+        private const val WEEKLY_CARD_WAIT_MS = 60_000L
         private const val KEY_NOTIF_PERMISSION_PROMPTED = "notif_permission_prompted"
 
         /**
@@ -3978,8 +3984,9 @@ class MainActivity : AppCompatActivity() {
         checkSubscriptionAndUpdateEnergy()
         attachSeasonLeaderboardPendingListenerIfLoggedIn()
         refreshPendingSeasonLeaderboardRewardFromFirestore()
+        maybeAutoOpenWeeklyCard()
     }
-    
+
     override fun onPause() {
         super.onPause()
         SessionDeviceManager.stopSessionHeartbeat()
@@ -5122,6 +5129,77 @@ class MainActivity : AppCompatActivity() {
         if (!offMapNewStreakPromptPending || !::binding.isInitialized) return
         binding.root.removeCallbacks(offMapNewStreakRunnable)
         binding.root.post(offMapNewStreakRunnable)
+    }
+
+    // ── Haftalık ilerleme kartı: haftanın ilk açılışında bir kez (kullanıcı kararı 08.11.2026) ──
+    //
+    // Ders sonu akışına (kuyruk, harita dönüşü) DOKUNMUYOR: yalnızca harita boşta ve hiçbir panel
+    // açık değilken, ayrı bir tam ekran pencere olarak açılıyor. Engeller yeni seri sorusunun kapısıyla
+    // aynı ([offMapNewStreakBlockReason]) + ders sonu kuyruğu. Engel [WEEKLY_CARD_WAIT_MS] içinde
+    // kalkmazsa o açılışta vazgeçiliyor; hafta işaretlenmediği için bir sonraki uygulama açılışında yeniden.
+    // Yalnızca İLERLEME VARSA açılıyor: boş haftayı çocuğun önüne zorla koymanın anlamı yok (kart
+    // ilerleme sayfasından yine açılabiliyor).
+
+    /** Süreç başına bir okuma: her onResume'da Firestore'a gidilmesin. */
+    private var weeklyCardCheckStarted = false
+    private var weeklyCardPending: WeeklyCardRepository.Data? = null
+    private var weeklyCardDeadlineMs = 0L
+    private val weeklyCardRunnable = Runnable { tryShowWeeklyCard() }
+
+    private fun weeklyCardPrefKey(): String? = auth.currentUser?.uid?.let { "weekly_card_auto_week_$it" }
+
+    private fun maybeAutoOpenWeeklyCard() {
+        if (!::binding.isInitialized) return
+        if (weeklyCardPending != null) {
+            binding.root.removeCallbacks(weeklyCardRunnable)
+            binding.root.post(weeklyCardRunnable)
+            return
+        }
+        if (weeklyCardCheckStarted) return
+        val prefKey = weeklyCardPrefKey() ?: return
+        weeklyCardCheckStarted = true
+        lifecycleScope.launch {
+            val data = runCatching { WeeklyCardRepository.load() }
+                .onFailure { Log.w(WeeklyCardFragment.TAG, "otomatik kart okunamadı", it) }
+                .getOrNull() ?: return@launch
+            val shownWeek = getSharedPreferences(PREFS_APP, MODE_PRIVATE).getString(prefKey, null)
+            Log.d(WeeklyCardFragment.TAG, "otomatik: hafta=${data.card.week.week} ilerleme=${data.card.hasProgress} gösterilen=$shownWeek")
+            if (!data.card.hasProgress || shownWeek == data.card.week.week) return@launch
+            weeklyCardPending = data
+            weeklyCardDeadlineMs = android.os.SystemClock.elapsedRealtime() + WEEKLY_CARD_WAIT_MS
+            // Harita açılışındaki diğer panellere (seri, puanlama, hediye) önce sıra versin diye kısa pay.
+            binding.root.postDelayed(weeklyCardRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+        }
+    }
+
+    private fun tryShowWeeklyCard() {
+        val data = weeklyCardPending ?: return
+        if (isFinishing || isDestroyed || !::binding.isInitialized) return
+        if (android.os.SystemClock.elapsedRealtime() > weeklyCardDeadlineMs) {
+            weeklyCardPending = null
+            Log.d(WeeklyCardFragment.TAG, "otomatik: süre doldu, bir sonraki açılışta")
+            return
+        }
+        // Duraklatılmışken (reklam, arka plan) beklenmiyor; onResume yeniden dürtüyor.
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        val fm = supportFragmentManager
+        val base = fm.findFragmentById(R.id.fragmentContainerID)
+        val block = when {
+            base !is MapFragment -> "harita_degil:${base?.javaClass?.simpleName}"
+            postLessonQueueBusy() || postLessonHandoffActive() -> "ders_sonu_kuyrugu"
+            offMapNewStreakPromptPending -> "yeni_seri_bekliyor"
+            streakCelebrationShowing -> "seri_kutlamasi"
+            fm.findFragmentByTag(WeeklyCardFragment.TAG) != null -> "zaten_acik"
+            else -> offMapNewStreakBlockReason(base)
+        }
+        if (block != null) {
+            binding.root.postDelayed(weeklyCardRunnable, WEEKLY_CARD_RETRY_MS)
+            return
+        }
+        weeklyCardPending = null
+        weeklyCardPrefKey()?.let { getSharedPreferences(PREFS_APP, MODE_PRIVATE).edit().putString(it, data.card.week.week).apply() }
+        Log.d(WeeklyCardFragment.TAG, "otomatik: açılıyor hafta=${data.card.week.week}")
+        WeeklyCardFragment.showAuto(fm, data)
     }
 
     private fun runOffMapNewStreakPrompt(caller: String) {
