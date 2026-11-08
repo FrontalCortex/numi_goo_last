@@ -3,7 +3,7 @@
 <resources>
     <string name="weekly_card_share">مشاركة</string>
     <string name="weekly_share_chooser">مشاركة ملخص الأسبوع</string>
-    <string name="weekly_share_text">تقدّمي في Sorobit هذا الأسبوع 🎉 العدّاد والحساب الذهني، جرّبه أنت أيضًا: %1$s</string>
+    <string name="weekly_share_text">تقدّمي في Sorobit هذا الأسبوع 🎉 العدّاد والحساب الذهني. ثبّته عبر هذا الرابط واحصل على Pro لمدة أسبوع: %1$s</string>
 
     <string name="parent_gate_title">لأولياء الأمور</string>
     <string name="parent_gate_question">المشاركة تحتاج إلى شخص بالغ. اكتب الناتج بالأرقام: %1$s ضرب %2$s</string>
@@ -18,4 +18,20 @@
     </string-array>
 
     <string name="ui_baska_veli_whatsapp">وليّ أمر آخر / مجموعة واتساب</string>
+
+    <string name="share_reward_hint">عندما ينضم صديق عبر هذا الرابط وينهي الدرس الثاني، تحصلان كلاكما على Pro لمدة أسبوع.</string>
+    <string name="invite_title">ادعُ صديقًا</string>
+    <string name="invite_entry_desc">تحصلان كلاكما على Pro لمدة أسبوع</string>
+    <string name="invite_hero_title">أتعلّم العدّاد في Sorobit</string>
+    <string name="invite_hero_desc">جرّبه أنت أيضًا: أسبوع Pro هدية 🎁</string>
+    <string name="invite_how_title">كيف يعمل؟</string>
+    <string name="invite_how_steps">1. شارك رابط دعوتك.\n2. يثبّت صديقك Sorobit من الرابط وينشئ حسابًا.\n3. عندما ينهي صديقك الدرس الثاني، تحصلان كلاكما على Pro لمدة أسبوع.</string>
+    <string name="invite_stats">الأصدقاء المدعوون: %1$d · ربحت: %2$d يوم Pro</string>
+    <string name="invite_limit_note">يمكن ربح Pro من 10 دعوات كحد أقصى في السنة. يُحتسب كل هاتف مرة واحدة.</string>
+    <string name="invite_share_button">ادعُ</string>
+    <string name="invite_share_text">أتعلّم العدّاد والحساب الذهني في Sorobit 🎉 ثبّته عبر هذا الرابط واحصل على Pro لمدة أسبوع: %1$s</string>
+    <string name="referral_reward_title">ربحت أسبوع Pro 🎉</string>
+    <string name="referral_reward_referrer">صديقك الذي دعوته أنهى الدرس الثاني في Sorobit. ربحتما كلاكما أسبوع Pro!</string>
+    <string name="referral_reward_invitee">انضممت بدعوة وأنهيت الدرس الثاني. أسبوع Pro لك، وصديقك ربحه أيضًا!</string>
+    <string name="referral_reward_ok">رائع</string>
 </resources>

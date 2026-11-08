@@ -2,6 +2,7 @@ package com.example.app
 
 import android.content.Context
 import android.net.Uri
+import android.provider.Settings
 import android.util.Log
 import com.android.installreferrer.api.InstallReferrerClient
 import com.android.installreferrer.api.InstallReferrerStateListener
@@ -46,7 +47,21 @@ object ReferralAttribution {
     }
 
     private val CODE_RE = Regex("^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$")
-    private val SOURCES = setOf("weekly", "badge", "challenge", "class")
+    private val SOURCES = setOf("weekly", "invite", "badge", "challenge", "class")
+
+    /**
+     * Sahte hesapla Pro toplanmasın diye cihaz parmak izi (kullanıcı isteği 09.11.2026): ANDROID_ID'nin
+     * tuzlu SHA-256'sı. Ham kimlik sunucuya gitmiyor; ANDROID_ID uygulama silinip yeniden kurulunca
+     * değişmiyor (Android 8+, uygulama imzasına göre), SessionDeviceManager'ın UUID'si ise değişiyor.
+     * Sunucu: bir telefon bir kez "davetle gelen" sayılır, davet edenin telefonu sayılmaz.
+     */
+    fun deviceFingerprint(context: Context): String? {
+        @Suppress("HardwareIds")
+        val id = Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
+        if (id.isNullOrBlank()) return null
+        val bytes = java.security.MessageDigest.getInstance("SHA-256").digest("sorobit-ref:$id".toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
 
     fun checkInstallReferrer(context: Context) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -91,7 +106,7 @@ object ReferralAttribution {
         if (FirebaseAuth.getInstance().currentUser == null) return
         val source = prefs.getString(KEY_SOURCE, "weekly") ?: "weekly"
         FirebaseFunctions.getInstance().getHttpsCallable("claimReferral")
-            .call(mapOf("code" to code, "source" to source))
+            .call(mapOf("code" to code, "source" to source, "device" to deviceFingerprint(context)))
             .addOnSuccessListener { r ->
                 // Kabul ya da kesin ret (kendi kodu, eski hesap…): tekrar denemek sonucu değiştirmez.
                 Log.d(TAG, "claimReferral → ${r.getData()}")

@@ -270,6 +270,8 @@ class MainActivity : AppCompatActivity() {
         private const val WEEKLY_CARD_FIRST_DELAY_MS = 2_500L
         private const val WEEKLY_CARD_RETRY_MS = 800L
         private const val WEEKLY_CARD_WAIT_MS = 60_000L
+        /** Davet ödülü bildirimi en çok bu aralıkla okunur (bkz. maybeShowReferralReward). */
+        private const val REFERRAL_NOTICE_CHECK_MS = 30 * 60_000L
         private const val KEY_NOTIF_PERMISSION_PROMPTED = "notif_permission_prompted"
 
         /**
@@ -3985,6 +3987,7 @@ class MainActivity : AppCompatActivity() {
         attachSeasonLeaderboardPendingListenerIfLoggedIn()
         refreshPendingSeasonLeaderboardRewardFromFirestore()
         maybeAutoOpenWeeklyCard()
+        maybeShowReferralReward()
         // Davetle kurulduysa (Install Referrer'da kod) ve hesap artık varsa davet edene bağla.
         ReferralAttribution.claimIfPending(this)
     }
@@ -5191,17 +5194,7 @@ class MainActivity : AppCompatActivity() {
         // Duraklatılmışken (reklam, arka plan) beklenmiyor; onResume yeniden dürtüyor.
         if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
         val fm = supportFragmentManager
-        val base = fm.findFragmentById(R.id.fragmentContainerID)
-        val block = when {
-            // Uygulama açılışta bölüm seçiminde (PartSelectionFragment) başlıyor, harita ondan sonra;
-            // ikisi de "boşta ana ekran" (08.11.2026 cihazda: yalnızca harita beklenince kart hiç açılmadı).
-            base !is MapFragment && base !is PartSelectionFragment -> "ana_ekran_degil:${base?.javaClass?.simpleName}"
-            postLessonQueueBusy() || postLessonHandoffActive() -> "ders_sonu_kuyrugu"
-            offMapNewStreakPromptPending -> "yeni_seri_bekliyor"
-            streakCelebrationShowing -> "seri_kutlamasi"
-            fm.findFragmentByTag(WeeklyCardFragment.TAG) != null -> "zaten_acik"
-            else -> offMapNewStreakBlockReason(base)
-        }
+        val block = homeIdleBlockReason()
         if (block != null) {
             if (block != lastWeeklyCardBlock) {
                 lastWeeklyCardBlock = block
@@ -5214,6 +5207,93 @@ class MainActivity : AppCompatActivity() {
         weeklyCardPrefKey()?.let { getSharedPreferences(PREFS_APP, MODE_PRIVATE).edit().putString(it, data.card.week.week).apply() }
         Log.d(WeeklyCardFragment.TAG, "otomatik: açılıyor hafta=${data.card.week.week}")
         WeeklyCardFragment.showAuto(fm, data)
+    }
+
+    /**
+     * Ana ekran (harita ya da bölüm seçimi) boşta mı; değilse engelin adı. Haftalık kartın ve davet ödülü
+     * panelinin ortak kapısı: ders sonu kuyruğu, seri soruları/kutlaması, reklam, abonelik, sezon kapısı ve
+     * birbirleri açıkken açılmıyorlar (ders sonu akışına dokunmadan, yalnızca bekleyerek).
+     */
+    private fun homeIdleBlockReason(): String? {
+        val fm = supportFragmentManager
+        val base = fm.findFragmentById(R.id.fragmentContainerID)
+        return when {
+            // Uygulama açılışta bölüm seçiminde (PartSelectionFragment) başlıyor, harita ondan sonra;
+            // ikisi de "boşta ana ekran" (08.11.2026 cihazda: yalnızca harita beklenince kart hiç açılmadı).
+            base !is MapFragment && base !is PartSelectionFragment -> "ana_ekran_degil:${base?.javaClass?.simpleName}"
+            postLessonQueueBusy() || postLessonHandoffActive() -> "ders_sonu_kuyrugu"
+            offMapNewStreakPromptPending -> "yeni_seri_bekliyor"
+            streakCelebrationShowing -> "seri_kutlamasi"
+            fm.findFragmentByTag(WeeklyCardFragment.TAG) != null -> "haftalik_kart_acik"
+            referralRewardDialogShowing -> "davet_odulu_acik"
+            else -> offMapNewStreakBlockReason(base)
+        }
+    }
+
+    // ── Davet ödülü paneli: "1 hafta Pro kazandın" (kullanıcı kararı 09.11.2026) ──
+    //
+    // Sunucu ödülü verince users/{uid}.referralRewardNotice = {role, days, atMs} yazıyor (referrals.js).
+    // Görülen atMs cihazda saklanıyor; aynı ödül iki kez gösterilmiyor. Okuma, öne her gelişte değil en çok
+    // REFERRAL_NOTICE_CHECK_MS'de bir (bir kullanıcı belgesi okuması).
+    private var referralNoticeLastCheckMs = 0L
+    private var referralRewardDialogShowing = false
+    private var referralNoticePending: Map<*, *>? = null
+    private var referralNoticeDeadlineMs = 0L
+    private val referralNoticeRunnable = Runnable { tryShowReferralReward() }
+
+    private fun maybeShowReferralReward() {
+        val uid = auth.currentUser?.uid ?: return
+        if (!::binding.isInitialized) return
+        if (referralNoticePending != null) {
+            referralNoticeDeadlineMs = android.os.SystemClock.elapsedRealtime() + WEEKLY_CARD_WAIT_MS
+            binding.root.removeCallbacks(referralNoticeRunnable)
+            binding.root.postDelayed(referralNoticeRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+            return
+        }
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (referralNoticeLastCheckMs != 0L && now - referralNoticeLastCheckMs < REFERRAL_NOTICE_CHECK_MS) return
+        referralNoticeLastCheckMs = now
+        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                val n = doc.get("referralRewardNotice") as? Map<*, *> ?: return@addOnSuccessListener
+                val at = (n["atMs"] as? Number)?.toLong() ?: return@addOnSuccessListener
+                val seen = getSharedPreferences(PREFS_APP, MODE_PRIVATE).getLong("referral_reward_seen_$uid", 0L)
+                if (at <= seen) return@addOnSuccessListener
+                referralNoticePending = n
+                referralNoticeDeadlineMs = android.os.SystemClock.elapsedRealtime() + WEEKLY_CARD_WAIT_MS
+                binding.root.postDelayed(referralNoticeRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+            }
+    }
+
+    private fun tryShowReferralReward() {
+        val n = referralNoticePending ?: return
+        val uid = auth.currentUser?.uid ?: return
+        if (isFinishing || isDestroyed || !::binding.isInitialized) return
+        if (android.os.SystemClock.elapsedRealtime() > referralNoticeDeadlineMs) {
+            referralNoticePending = null
+            referralNoticeLastCheckMs = 0L
+            return
+        }
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        if (homeIdleBlockReason() != null) {
+            binding.root.postDelayed(referralNoticeRunnable, WEEKLY_CARD_RETRY_MS)
+            return
+        }
+        referralNoticePending = null
+        val at = (n["atMs"] as? Number)?.toLong() ?: 0L
+        getSharedPreferences(PREFS_APP, MODE_PRIVATE).edit().putLong("referral_reward_seen_$uid", at).apply()
+        AnalyticsLogger.logSimpleEvent("referral_reward_shown")
+        referralRewardDialogShowing = true
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(appString(R.string.referral_reward_title))
+            .setMessage(appString(if (n["role"] == "referrer") R.string.referral_reward_referrer else R.string.referral_reward_invitee))
+            .setPositiveButton(appString(R.string.referral_reward_ok), null)
+            .setOnDismissListener {
+                referralRewardDialogShowing = false
+                // Pro rozeti / can paneli hemen güncellensin (hediye giftProUntil ile geldi).
+                checkSubscriptionAndUpdateEnergy()
+            }
+            .show()
     }
 
     private fun runOffMapNewStreakPrompt(caller: String) {

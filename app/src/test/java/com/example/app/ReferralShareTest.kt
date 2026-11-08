@@ -27,6 +27,7 @@ class ReferralShareTest {
     fun referrer() {
         assertEquals(ReferralAttribution.Parsed("K7M2QX", "weekly"), ReferralAttribution.parseParams("ref", "weekly", "k7m2qx"))
         assertEquals("weekly", ReferralAttribution.parseParams("ref", "bilinmeyen", "K7M2QX")!!.source)
+        assertEquals("invite", ReferralAttribution.parseParams("ref", "invite", "K7M2QX")!!.source)
         assertNull(ReferralAttribution.parseParams("google-play", "organic", "K7M2QX"))
         assertNull(ReferralAttribution.parseParams("ref", "weekly", "K7M2Q0"))
         assertNull(ReferralAttribution.parseParams("ref", "weekly", null))

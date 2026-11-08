@@ -37,11 +37,31 @@ object WeeklyCardShare {
     const val LINK_BASE = "https://numigo-new.web.app/d/"
     const val STORE_URL = "https://play.google.com/store/apps/details?id=com.numigo.app"
 
-    suspend fun fetchLink(): String = runCatching {
-        val r = FirebaseFunctions.getInstance().getHttpsCallable("getReferralCode").call().await()
-        val code = (r.getData() as? Map<*, *>)?.get("code") as? String
-        if (code.isNullOrBlank()) STORE_URL else LINK_BASE + code
-    }.onFailure { Log.w(TAG, "davet kodu alınamadı", it) }.getOrDefault(STORE_URL)
+/**
+     * Davet bilgisi: bağlantı ve sayaç (davet ekranı "Davet ettiklerin: 2 · kazandığın: 14 gün Pro").
+     * [source] bağlantıya yazılıyor (?k=invite), sayfa onu Play referrer'ına utm_medium olarak koyuyor;
+     * haftalık kart için parametresiz (eski bağlantılarla aynı).
+     */
+    data class Invite(val link: String, val invited: Int, val earnedDays: Int, val hasCode: Boolean)
+
+    suspend fun fetchInvite(context: Context, source: String = "weekly"): Invite = runCatching {
+        val r = FirebaseFunctions.getInstance().getHttpsCallable("getReferralCode")
+            .call(mapOf("device" to ReferralAttribution.deviceFingerprint(context))).await()
+        val m = r.getData() as? Map<*, *>
+        val code = m?.get("code") as? String
+        if (code.isNullOrBlank()) {
+            Invite(STORE_URL, 0, 0, false)
+        } else {
+            Invite(
+                LINK_BASE + code + if (source == "weekly") "" else "?k=$source",
+                (m["invited"] as? Number)?.toInt() ?: 0,
+                (m["earnedDays"] as? Number)?.toInt() ?: 0,
+                true,
+            )
+        }
+    }.onFailure { Log.w(TAG, "davet kodu alınamadı", it) }.getOrDefault(Invite(STORE_URL, 0, 0, false))
+
+    suspend fun fetchLink(context: Context): String = fetchInvite(context).link
 
     /** Kartın görünüşü + kenar boşluğu + altta marka satırı. */
     fun renderBitmap(context: Context, card: View): Bitmap {

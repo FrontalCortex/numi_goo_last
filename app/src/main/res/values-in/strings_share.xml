@@ -3,7 +3,7 @@
 <resources>
     <string name="weekly_card_share">Bagikan</string>
     <string name="weekly_share_chooser">Bagikan ringkasan minggu ini</string>
-    <string name="weekly_share_text">Kemajuanku di Sorobit minggu ini 🎉 Sempoa dan berhitung cepat, coba juga: %1$s</string>
+    <string name="weekly_share_text">Kemajuanku di Sorobit minggu ini 🎉 Sempoa dan berhitung cepat. Pasang lewat tautan ini dan dapatkan Pro 1 minggu: %1$s</string>
 
     <string name="parent_gate_title">Untuk orang tua</string>
     <string name="parent_gate_question">Berbagi memerlukan orang dewasa. Tulis jawabannya dengan angka: %1$s kali %2$s</string>
@@ -18,4 +18,20 @@
     </string-array>
 
     <string name="ui_baska_veli_whatsapp">Orang tua lain / grup WhatsApp</string>
+
+    <string name="share_reward_hint">Jika teman bergabung lewat tautan ini dan menyelesaikan pelajaran 2, kalian berdua mendapat Pro 1 minggu.</string>
+    <string name="invite_title">Undang teman</string>
+    <string name="invite_entry_desc">Kalian berdua dapat Pro 1 minggu</string>
+    <string name="invite_hero_title">Aku belajar sempoa di Sorobit</string>
+    <string name="invite_hero_desc">Coba juga: hadiah Pro 1 minggu 🎁</string>
+    <string name="invite_how_title">Bagaimana caranya?</string>
+    <string name="invite_how_steps">1. Bagikan tautan undanganmu.\n2. Temanmu memasang Sorobit dari tautan dan membuat akun.\n3. Saat temanmu menyelesaikan pelajaran 2, kalian berdua mendapat Pro 1 minggu.</string>
+    <string name="invite_stats">Teman diundang: %1$d · Didapat: %2$d hari Pro</string>
+    <string name="invite_limit_note">Pro bisa didapat dari maksimal 10 undangan per tahun. Setiap ponsel dihitung sekali.</string>
+    <string name="invite_share_button">Undang</string>
+    <string name="invite_share_text">Aku belajar sempoa dan berhitung cepat di Sorobit 🎉 Pasang lewat tautan ini dan dapatkan Pro 1 minggu: %1$s</string>
+    <string name="referral_reward_title">Kamu dapat Pro 1 minggu 🎉</string>
+    <string name="referral_reward_referrer">Teman yang kamu undang menyelesaikan pelajaran 2 di Sorobit. Kalian berdua dapat Pro 1 minggu!</string>
+    <string name="referral_reward_invitee">Kamu bergabung lewat undangan dan menyelesaikan pelajaran 2. Pro 1 minggu untukmu, temanmu juga dapat!</string>
+    <string name="referral_reward_ok">Hebat</string>
 </resources>

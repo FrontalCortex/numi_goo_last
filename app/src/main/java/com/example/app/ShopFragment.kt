@@ -451,6 +451,19 @@ class ShopFragment : Fragment() {
             })
         }
 
+        // Davet: Pro kartının altında "ücretsiz yol" (InviteFragment). Mağazanın kendi kabına açılıyor,
+        // böylece mağaza üst katmandayken de görünür ve geri tuşu önce davet ekranını kapatır.
+        view.findViewById<View>(R.id.shopInviteCard)?.let { card ->
+            if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser == null) {
+                card.visibility = View.GONE
+            } else {
+                card.setOnClickListener {
+                    val containerId = (requireView().parent as? View)?.id ?: R.id.fragmentContainerID
+                    InviteFragment.open(parentFragmentManager, containerId, replace = false)
+                }
+            }
+        }
+
         renderStreakFreezeCard()
         // Kart yerel önbellekten çizildi; dondurma dün harcanmış ya da başka bir cihazda
         // alınmış olabilir, o yüzden sunucudaki durum da okunup yeniden çiziliyor.

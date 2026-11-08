@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Davet et düğmesi (fragment_invite); haftalık kartın Paylaş düğmesiyle aynı yeşil. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="#33FFFFFF">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#8CC63F" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+</ripple>

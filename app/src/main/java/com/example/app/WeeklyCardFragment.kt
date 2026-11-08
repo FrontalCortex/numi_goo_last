@@ -175,7 +175,7 @@ class WeeklyCardFragment : DialogFragment() {
                         AnalyticsLogger.logSimpleEvent("share_gate_pass")
                         button.isEnabled = false
                         viewLifecycleOwner.lifecycleScope.launch {
-                            val link = WeeklyCardShare.fetchLink()
+                            val link = WeeklyCardShare.fetchLink(requireContext())
                             button.isEnabled = true
                             if (_binding == null) return@launch
                             val bmp = WeeklyCardShare.renderBitmap(requireContext(), summary)
@@ -183,6 +183,11 @@ class WeeklyCardFragment : DialogFragment() {
                         }
                     }
                 }
+            })
+            // Ödül paylaşandan saklı kalmasın (kullanıcı isteği 09.11.2026): paylaşmanın nedeni bu.
+            root.addView(text(appString(R.string.share_reward_hint), 13f, secondary = true, top = 8).apply {
+                gravity = Gravity.CENTER
+                textAlignment = View.TEXT_ALIGNMENT_CENTER
             })
         }
 

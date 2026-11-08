@@ -5,7 +5,7 @@
     <string name="weekly_card_share">Paylaş</string>
     <string name="weekly_share_chooser">Haftanın özetini paylaş</string>
     <!-- %1$s davet bağlantısı. -->
-    <string name="weekly_share_text">Sorobit\'te bu haftaki ilerlemem 🎉 Soroban ve zihinden hesap; sen de dene: %1$s</string>
+    <string name="weekly_share_text">Sorobit\'te bu haftaki ilerlemem 🎉 Soroban ve zihinden hesap. Bu bağlantıyla kurarsan 1 hafta Pro hediye: %1$s</string>
 
     <string name="parent_gate_title">Veliler için</string>
     <!-- %1$s ve %2$s sayıların yazıyla hâli (parent_gate_numbers). -->
@@ -22,4 +22,22 @@
 
     <!-- "Bizi nereden duydun?" yeni seçeneği (UserInfoFragment; kayıtlı değer "Veli/WhatsApp"). -->
     <string name="ui_baska_veli_whatsapp">Başka bir veli / WhatsApp grubu</string>
+
+    <!-- Davet ödülü (kullanıcı isteği 09.11.2026): kartta ipucu, genel davet ekranı (InviteFragment),
+         ödül paneli (ReferralRewardNotice). Ödül/koşul functions/referrals.js ile aynı. -->
+    <string name="share_reward_hint">Bağlantıyla gelen arkadaş 2. dersi bitirince ikiniz de 1 hafta Pro kazanırsınız.</string>
+    <string name="invite_title">Arkadaşını davet et</string>
+    <string name="invite_entry_desc">İkiniz de 1 hafta Pro kazanın</string>
+    <string name="invite_hero_title">Sorobit\'te soroban öğreniyorum</string>
+    <string name="invite_hero_desc">Sen de dene: 1 hafta Pro hediye 🎁</string>
+    <string name="invite_how_title">Nasıl çalışır?</string>
+    <string name="invite_how_steps">1. Davet bağlantını paylaş.\n2. Arkadaşın bağlantıdan Sorobit\'i kurup hesap açsın.\n3. Arkadaşın 2. dersi bitirince ikiniz de 1 hafta Pro kazanırsınız.</string>
+    <string name="invite_stats">Davet ettiklerin: %1$d · Kazandığın: %2$d gün Pro</string>
+    <string name="invite_limit_note">Yılda en çok 10 davetten Pro kazanılır. Her telefon bir kez davetli sayılır.</string>
+    <string name="invite_share_button">Davet et</string>
+    <string name="invite_share_text">Sorobit\'te soroban ve zihinden hesap öğreniyorum 🎉 Bu bağlantıyla kurarsan 1 hafta Pro hediye: %1$s</string>
+    <string name="referral_reward_title">1 hafta Pro kazandın 🎉</string>
+    <string name="referral_reward_referrer">Davet ettiğin arkadaşın Sorobit\'te 2. dersini bitirdi. İkiniz de 1 hafta Pro kazandınız!</string>
+    <string name="referral_reward_invitee">Davetle geldin ve 2. dersi bitirdin. 1 hafta Pro senin; davet eden arkadaşın da kazandı!</string>
+    <string name="referral_reward_ok">Harika</string>
 </resources>

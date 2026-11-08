@@ -3,7 +3,7 @@
 <resources>
     <string name="weekly_card_share">Share</string>
     <string name="weekly_share_chooser">Share the week in review</string>
-    <string name="weekly_share_text">My progress on Sorobit this week 🎉 Abacus and mental math, try it too: %1$s</string>
+    <string name="weekly_share_text">My progress on Sorobit this week 🎉 Abacus and mental math. Install with this link and get 1 week of Pro: %1$s</string>
 
     <string name="parent_gate_title">For parents</string>
     <string name="parent_gate_question">Sharing needs an adult. Type the answer in digits: %1$s times %2$s</string>
@@ -18,4 +18,20 @@
     </string-array>
 
     <string name="ui_baska_veli_whatsapp">Another parent / WhatsApp group</string>
+
+    <string name="share_reward_hint">When a friend joins with this link and finishes lesson 2, you both get 1 week of Pro.</string>
+    <string name="invite_title">Invite a friend</string>
+    <string name="invite_entry_desc">You both get 1 week of Pro</string>
+    <string name="invite_hero_title">I\'m learning the abacus on Sorobit</string>
+    <string name="invite_hero_desc">Try it too: 1 week of Pro free 🎁</string>
+    <string name="invite_how_title">How does it work?</string>
+    <string name="invite_how_steps">1. Share your invite link.\n2. Your friend installs Sorobit from the link and creates an account.\n3. When your friend finishes lesson 2, you both get 1 week of Pro.</string>
+    <string name="invite_stats">Friends invited: %1$d · Earned: %2$d days of Pro</string>
+    <string name="invite_limit_note">Pro can be earned from up to 10 invites a year. Each phone counts as invited once.</string>
+    <string name="invite_share_button">Invite</string>
+    <string name="invite_share_text">I\'m learning abacus and mental math on Sorobit 🎉 Install with this link and get 1 week of Pro: %1$s</string>
+    <string name="referral_reward_title">You earned 1 week of Pro 🎉</string>
+    <string name="referral_reward_referrer">The friend you invited finished lesson 2 on Sorobit. You both earned 1 week of Pro!</string>
+    <string name="referral_reward_invitee">You joined with an invite and finished lesson 2. 1 week of Pro is yours, and your friend earned it too!</string>
+    <string name="referral_reward_ok">Great</string>
 </resources>

@@ -155,6 +155,7 @@ class AccountSettingsFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
+        binding.btnInvite.setOnClickListener { InviteFragment.open(requireActivity().supportFragmentManager) }
 
         binding.btnPrivacySettings.setOnClickListener {
             val fragment = SoundSettingsFragment().apply {
