@@ -64,4 +64,30 @@
     <string name="weekly_card_section_chests">Ünite maratonları</string>
     <string name="weekly_card_section_sobi">Sobi seviyeleri</string>
     <string name="weekly_card_section_rules">Kural ustalığı</string>
+
+    <!-- Somut ana satır (kullanıcı isteği 08.11.2026): örnek sayılar + tek cümle. Cümlelerde ad yok
+         (ek gerektirmesin); kimin olduğu başlıkta yazıyor. -->
+    <string name="weekly_card_topic_add_abacus">Abaküste toplama</string>
+    <string name="weekly_card_topic_sub_abacus">Abaküste çıkarma</string>
+    <string name="weekly_card_topic_mul_abacus">Abaküste çarpma</string>
+    <string name="weekly_card_topic_add_mental">Abaküse bakmadan toplama</string>
+    <string name="weekly_card_topic_sub_mental">Abaküse bakmadan çıkarma</string>
+    <string name="weekly_card_topic_mul_mental">Abaküse bakmadan çarpma</string>
+    <string name="weekly_card_example_numbers">örnek sayılar</string>
+    <!-- %1$s "2,5" -->
+    <string name="weekly_card_each_number">her sayı %1$s saniyede</string>
+    <!-- %1$s önceki, %2$s yeni saniye. -->
+    <string name="weekly_card_say_faster_self">Aynı sayıları artık %1$s saniye yerine %2$s saniyede çözüyorsun.</string>
+    <string name="weekly_card_say_faster_other">Aynı sayıları artık %1$s saniye yerine %2$s saniyede çözüyor.</string>
+    <string name="weekly_card_say_count_self">Artık bir seferde %1$d sayıyla çalışıyorsun.</string>
+    <string name="weekly_card_say_count_other">Artık bir seferde %1$d sayıyla çalışıyor.</string>
+    <string name="weekly_card_say_digits_self">Artık %1$d basamaklı sayılarla çalışıyorsun.</string>
+    <string name="weekly_card_say_digits_other">Artık %1$d basamaklı sayılarla çalışıyor.</string>
+    <string name="weekly_card_say_mul_self">Artık %1$d basamaklı × %2$d basamaklı çarpıyorsun.</string>
+    <string name="weekly_card_say_mul_other">Artık %1$d basamaklı × %2$d basamaklı çarpıyor.</string>
+    <!-- %1$d saniye. -->
+    <string name="weekly_card_say_chest_self">Aynı maratonu %1$d saniye daha kısa sürede bitiriyorsun.</string>
+    <string name="weekly_card_say_chest_other">Aynı maratonu %1$d saniye daha kısa sürede bitiriyor.</string>
+    <string name="weekly_card_show_details">Ayrıntıları göster</string>
+    <string name="weekly_card_hide_details">Ayrıntıları gizle</string>
 </resources>

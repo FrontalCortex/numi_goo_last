@@ -49,4 +49,25 @@
     <string name="weekly_card_section_chests">Unit marathons</string>
     <string name="weekly_card_section_sobi">Sobi levels</string>
     <string name="weekly_card_section_rules">Rule mastery</string>
+
+    <string name="weekly_card_topic_add_abacus">Addition on the abacus</string>
+    <string name="weekly_card_topic_sub_abacus">Subtraction on the abacus</string>
+    <string name="weekly_card_topic_mul_abacus">Multiplication on the abacus</string>
+    <string name="weekly_card_topic_add_mental">Addition without looking at the abacus</string>
+    <string name="weekly_card_topic_sub_mental">Subtraction without looking at the abacus</string>
+    <string name="weekly_card_topic_mul_mental">Multiplication without looking at the abacus</string>
+    <string name="weekly_card_example_numbers">example numbers</string>
+    <string name="weekly_card_each_number">%1$s seconds per number</string>
+    <string name="weekly_card_say_faster_self">You now solve the same numbers in %2$s seconds instead of %1$s.</string>
+    <string name="weekly_card_say_faster_other">Now solves the same numbers in %2$s seconds instead of %1$s.</string>
+    <string name="weekly_card_say_count_self">You now work with %1$d numbers at a time.</string>
+    <string name="weekly_card_say_count_other">Now works with %1$d numbers at a time.</string>
+    <string name="weekly_card_say_digits_self">You now work with %1$d-digit numbers.</string>
+    <string name="weekly_card_say_digits_other">Now works with %1$d-digit numbers.</string>
+    <string name="weekly_card_say_mul_self">You now multiply %1$d-digit × %2$d-digit.</string>
+    <string name="weekly_card_say_mul_other">Now multiplies %1$d-digit × %2$d-digit.</string>
+    <string name="weekly_card_say_chest_self">You finish the same marathon %1$d seconds faster.</string>
+    <string name="weekly_card_say_chest_other">Finishes the same marathon %1$d seconds faster.</string>
+    <string name="weekly_card_show_details">Show details</string>
+    <string name="weekly_card_hide_details">Hide details</string>
 </resources>

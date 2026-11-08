@@ -248,12 +248,18 @@ object WeeklyCardRules {
         }.sortedByDescending { it.finishedAtMs }
 
         // Aynı katmanda kupa Sobi'den önce (eşitlikte): kupa yolu çocuğun her gün gördüğü yer.
+        val order = compareBy<Item> { it.tier }.thenByDescending { it.magnitude }
         val all: List<Item> = cups + sobi + chests + learned.take(1)
-        val headline = all.sortedWith(compareBy<Item> { it.tier }.thenByDescending { it.magnitude }).firstOrNull()
+        val headline = all.sortedWith(order).firstOrNull()
 
-        val extras = listOfNotNull<Item>(cups.firstOrNull(), chests.firstOrNull(), learned.firstOrNull(), sobi.firstOrNull())
-            .filter { it != headline }
-            .take(3)
+        // Her türün ana satır olmayan en iyisi, ana satırla aynı öncelikle sıralı: özette yalnızca ilki
+        // görünüyor (kullanıcı kararı: "bir somut satır daha").
+        val extras = listOfNotNull<Item>(
+            cups.firstOrNull { it != headline },
+            chests.firstOrNull { it != headline },
+            learned.firstOrNull { it != headline },
+            sobi.firstOrNull { it != headline },
+        ).sortedWith(order).take(3)
 
         val effort = Effort(
             days = week.dailySeconds.count { it.value > 0 },
@@ -282,6 +288,121 @@ object WeeklyCardRules {
         practiced.firstOrNull { (stages[it] ?: 0) < 2 }?.let { return it }
         val lastMastered = SUGGESTION_ORDER.indexOfLast { stages[it] == 2 }
         return SUGGESTION_ORDER.getOrNull(lastMastered + 1)
+    }
+
+    // ── Somut önce/sonra: örnek sayılar (kullanıcı isteği 08.11.2026) ─────────
+    //
+    // "1 basamaklı 4–6 sayı → 2 basamaklı" veliye hâlâ soyut geldi. İstenen: "önceden 240 + 320 + 423'ü
+    // her sayı 4 saniyede topluyordun, şimdi aynı sayıları 2 saniyede". Kupa yolunda ve Sobi testinde
+    // çözülen işlemler saklanmıyor; sayılar o seviyenin kuralıyla ÜRETİLİYOR ve ekranda "örnek" diye
+    // yazılıyor. Aynı hafta + aynı yol hep aynı sayıları veriyor (kart her açılışta değişmesin).
+    // Yalnızca hız değiştiyse önce ve sonra AYNI sayılar: farkı tek bir şeye indirmek okumayı kolaylaştırıyor.
+
+    enum class Op { ADD, SUB, MUL }
+
+    /** Ana satırın neyi söylediği; cümle buna göre seçiliyor (öncelik bu sırada). */
+    enum class Change { DIGITS, COUNT, FASTER, NONE }
+
+    /** Bir seviyenin somut hâli: [count] sayı, her biri [digits] basamaklı, [intervalMs] arayla. */
+    data class Level(val digits: Int, val count: Int, val intervalMs: Long, val mulSecond: Int? = null)
+
+    data class Concrete(
+        val op: Op,
+        /** Abaküse bakmadan (körleme kupası ya da Sobi'nin zihinden kuralı). */
+        val mental: Boolean,
+        val before: Level,
+        val after: Level,
+        val beforeText: String,
+        val afterText: String,
+        val change: Change,
+    ) {
+        val sameNumbers: Boolean get() = beforeText == afterText
+    }
+
+    fun opOfCup(field: String): Op = when {
+        field.contains("extraction") -> Op.SUB
+        field.contains("impact") -> Op.MUL
+        else -> Op.ADD
+    }
+
+    /** Sobi kural anahtarı ("m_add_five") → işlem; çarpma anahtarları Sobi seviyesinde yok. */
+    fun opOfRuleKey(key: String): Op =
+        if (key.removePrefix(MENTAL_PREFIX).startsWith("sub")) Op.SUB else Op.ADD
+
+    fun levelOf(l: CupLevel): Level = Level(l.digits, l.countMin, l.intervalMs, l.mulSecondDigits)
+
+    fun changeOf(b: Level, a: Level): Change = when {
+        a.digits > b.digits || (a.mulSecond ?: 0) > (b.mulSecond ?: 0) -> Change.DIGITS
+        a.count > b.count -> Change.COUNT
+        a.intervalMs in 1 until b.intervalMs -> Change.FASTER
+        else -> Change.NONE
+    }
+
+    /** Ana satır kupa ya da Sobi ise somut hâli; sandık ve ders kendi verisiyle çiziliyor (null). */
+    fun concrete(item: Item, seedKey: String): Concrete? {
+        val (op, mental, b, a) = when (item) {
+            is Item.CupStep -> {
+                val b = levelOf(item.before)
+                var a = levelOf(item.after)
+                // Aralığın en az sayı adedi aynı kalıp en çoğu arttıysa "daha çok sayı" yine söylenebilsin.
+                if (changeOf(b, a) == Change.NONE && item.after.countMax > item.before.countMax) {
+                    a = a.copy(count = item.after.countMax)
+                }
+                Quad(opOfCup(item.field), isBlindingCup(item.field), b, a)
+            }
+            is Item.SobiStep -> {
+                val sb = com.example.app.abacus.SobiTestLevels.spec(item.before)
+                val sa = com.example.app.abacus.SobiTestLevels.spec(item.after)
+                Quad(opOfRuleKey(item.key), item.key.startsWith(MENTAL_PREFIX),
+                    Level(sb.digits, sb.count, sb.intervalMs), Level(sa.digits, sa.count, sa.intervalMs))
+            }
+            else -> return null
+        }
+        val seed = seedKey.hashCode().toLong()
+        return Concrete(
+            op, mental, b, a,
+            exampleText(op, exampleNumbers(op, b, seed)),
+            exampleText(op, exampleNumbers(op, a, seed)),
+            changeOf(b, a),
+        )
+    }
+
+    private data class Quad(val op: Op, val mental: Boolean, val b: Level, val a: Level)
+
+    private fun pow10(n: Int): Int { var p = 1; repeat(n) { p *= 10 }; return p }
+
+    /**
+     * Seviyeye uygun örnek sayılar. Aynı tohum + aynı basamak → aynı başlangıç: yalnızca adet arttıysa
+     * "sonra" dizisi "önce"nin devamı oluyor (240 + 320 → 240 + 320 + 423), yalnızca hız değiştiyse aynısı.
+     * Çıkarmada sonuç eksiye düşmesin diye çıkanlar kalan miktarı paylaşıyor; gerekirse daha az basamaklı.
+     */
+    fun exampleNumbers(op: Op, level: Level, seed: Long): List<Int> {
+        val r = java.util.Random(seed * 31 + level.digits)
+        fun num(d: Int): Int {
+            val lo = pow10(d - 1)
+            return lo + r.nextInt(pow10(d) - lo)
+        }
+        if (op == Op.MUL) return listOf(num(level.digits), num(level.mulSecond ?: 1))
+        val count = level.count.coerceAtLeast(2)
+        if (op == Op.ADD) return List(count) { num(level.digits) }
+        // Çıkarma: büyük bir başlangıç (en büyük basamağı 7–9), sonra çıkanlar. Kalan yetmezse o sayı
+        // eklenir (işaretli, + olarak yazılır): 1 basamaklı 10+ sayıda yalnızca çıkarma mümkün değil ve
+        // çıkarma kupası da sonucun eksiye düşmesine izin vermiyor.
+        val d = level.digits
+        val start = (7 + r.nextInt(3)) * pow10(d - 1) + if (d > 1) r.nextInt(pow10(d - 1)) else 0
+        val out = mutableListOf(start)
+        var left = start
+        for (i in 1 until count) {
+            val v = num(d)
+            if (v <= left) { out += -v; left -= v } else { out += v; left += v }
+        }
+        return out
+    }
+
+    /** Çarpmada iki çarpan; toplama/çıkarmada işaretli dizi (eksi = çıkan). */
+    fun exampleText(op: Op, nums: List<Int>): String = when (op) {
+        Op.MUL -> "${nums[0]} × ${nums[1]}"
+        else -> nums.first().toString() + nums.drop(1).joinToString("") { if (it < 0) " − ${-it}" else " + $it" }
     }
 
     // ── Biçim yardımcıları (dilden bağımsız) ─────────────────────────────────

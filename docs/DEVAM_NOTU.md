@@ -70,8 +70,15 @@ basılamaz, ilerleme yoksa hiç görünmez; düzen "tek büyük kart".
   Log: `adb logcat -s WeeklyCard`. Bekleme süresi yalnızca uygulama öndeyken işler; dolarsa sonraki öne gelişte yeniden okunur.
   `weeklyStats` okuması kimliğe göre ARTAN aralık (son 6 hafta): ters sıralı sorgu indeks istiyordu
   (cihazda FAILED_PRECONDITION), indeks eklemek yerine sorgu değişti.
-  Cihazda (08.11 15:29): Ted hesabında otomatik okuma `hafta=2026-W44 ilerleme=true` buldu; telefon kilitliydi,
-  kartın ekranda görünüşü kullanıcı bakmadan DOĞRULANMADI.
+  Otomatik açılış için "boşta ana ekran" = harita YA DA bölüm seçimi (uygulama açılışta PartSelectionFragment'ta
+  başlıyor; yalnızca harita beklenince kart hiç açılmamıştı).
+- **Somut özet (kullanıcı geri bildirimi 08.11 akşam: "çok karmaşık, daha somut"):** kupa/Sobi ana satırı artık o
+  seviyeden ÜRETİLMİŞ örnek sayılar ("örnek sayılar" etiketiyle): Geçen hafta `3 + 4 + 1 + 2` · her sayı 3,6 saniyede
+  → Bu hafta `3 + 4 + 1 + 2 + 3` · 3,4 saniyede ✔, altında tek cümle (basamak > adet > hız önceliği; yalnızca hız
+  değiştiyse önce/sonra AYNI sayılar). Sayılar hafta + yol başına sabit (`WeeklyCardRules.concrete`,
+  `exampleNumbers`; çıkarmada ara sonuç eksiye düşmez, gerekirse + ile). Maraton: büyük 1:20 → 0:52 + "28 saniye daha
+  kısa". Özette yalnızca bir somut satır daha; geri kalan her şey "Ayrıntıları göster" ile açılıyor. Test 15/15.
+  Cihazda (08.11 18:14, Ted): kart bölüm seçiminden kendiliğinden açıldı, ekran görüntüsüyle bakıldı.
 - GA4: `weekly_card_shown_{auto|hub}_{progress|empty}` (parametresiz). Metinler `strings_weekly_card.xml` 4 dil.
 - **ÖRNEK VERİ (canlıda, Ted `835398VV`):** `.github/scripts/seed-weekly-card-sample.js` + yml: `weeklyStats/2026-W43`,
   `2026-W44` ve 3 `lessonMilestones` (dokunulan belgelerin önceki hâli `users/{uid}/seedSamples/weeklyCard`'da).
@@ -913,6 +920,23 @@ sevdirmek. Fotoğrafı yok, "Merhaba ben Başar" cümlesi çıkarıldı. Giriş 
 - Cümleler `araclar/r10_sesler.mjs` (j1–j12; kullanıcının metni, öneri 1 "bizim çocuklarımız neden matematikten
   korkuyor?" ve 4 "Bu yüzden Sorobit'i geliştirdim: …" uygulandı). Kelime kareleri r10_zaman.json; kayıtlar gelince
   `node araclar/r10_sesler.mjs --indir` (en yeni 12 ElevenLabs mp3) ya da kendi sesi `reklam10\ses\j1–j12.mp3`.
+- **Endonezce (08.11.2026, ~56 sn, 1682 kare):** kullanıcı "Reklam 8'in Endonezcesi, sınıf görseli Endonezya sınıfı
+  olsun" dedi; Reklam 8'de sınıf yok, sorunca Reklam 10 olduğu netleşti. `Reklam10.jsx` artık `DILLER.tr/id` +
+  `yap(dil)` (yazılar, animasyon kelimeleri `k`, sınıf fotoğrafı, yorum "INFO"); Türkçe süre aynı (1448). Modül
+  düzeyinde JSX olduğu için dosyada `import React` var. `Reklam10ID`, `render:r10id` → `reklam10\Sorobit_reklam10_ID.mp4`.
+  Sesler `tr_sesler.mjs r10id --uret` (Bee Ard, Endonezce erkek; Türkçedeki Hasan Yasin'in karşılığı; hız 1,2; hamlar
+  `reklam10\ses_id`, işlenmiş `public/r10ids_j*.wav`). Okunuş Scribe ile doğrulandı. Sınıf: `public/r10_id_sinif.jpg`
+  = Unsplash `1tq5bahX8wg` (Fiqih Alfarish, Jakarta, batikli ilkokul çocukları, 1600×900, Unsplash Lisansı — Türk
+  fotoğrafının aksine telif sorunu yok). "Türk çocukları" → "Anak-anak Indonesia", damga "BISA!", test damgası
+  "VERSI UJI". H cümlesi yumuşatıldı: "Hanya saja, banyak yang belum mengenal metode ini" (Endonezya'da sempoa
+  kursları biliniyor, "hiç tanışmadılar" doğru olmazdı). Uygulama kesitleri Türkçe arayüzlü kaldı.
+- **Endonezce kapanış (08.11.2026, kullanıcı isteği):** test/INFO çağrısı yerine Reklam 15 gibi yayın + takip: j11
+  "Sorobit akan rilis tanggal 10 November." (damga "RILIS 10 NOV"), j12 "Seratus orang pertama … Follow sekarang …
+  Ayo, kita buat anak-anak cinta matematika!". `DILLER.id.takip` varsa `Kart` yerine `TakipKarti` (Son.jsx'teki
+  düğmenin kopyası: hediye rozeti "seratus"ta, Follow düğmesi "follow" + 8 karede basılır). Türkçe kapanış aynı.
+- **"Tujuan saya" sahnesi (J, kullanıcı isteği):** arkada Türkçe eğitim ekranı + konfeti yerine Sobi'nin Endonezce
+  açıklaması (`DILLER.id.amacKlip` = `r11id_anlamadim.mp4`, 231 kare sahneye sığacak kadar hızlanır); yazı baloncuğu
+  kapatmasın diye abaküsün üstünde (ust 1090).
 - Kapanış kartında "Test sürümü · Ücretsiz", yorumlara "bilgi", "Kurulum linkini ben göndereyim".
 
 ## Reklam 9: oyunlaştırma (29.10.2026 — kullanıcının 7 kaydıyla render edildi, ses ElevenLabs "Lauren", ~24 sn)

@@ -131,6 +131,49 @@ class WeeklyCardRulesTest {
     }
 
     @Test
+    fun somut_yalnizcaHizDegistiyseAyniSayilar() {
+        // 500–599 ve 600–699: ikisi de 2 basamaklı 4–6 sayı; aralık 4,2 → 4,05 sn.
+        val step = Item.CupStep("addition_abacus_cup", 520, 640,
+            WeeklyCardRules.cupLevel("addition_abacus_cup", 520), WeeklyCardRules.cupLevel("addition_abacus_cup", 640))
+        val c = WeeklyCardRules.concrete(step, "2026-W44/addition")!!
+        assertEquals(WeeklyCardRules.Change.FASTER, c.change)
+        assertTrue(c.sameNumbers)
+        assertEquals(4, c.afterText.split(" + ").size)
+        assertTrue(c.afterText.split(" + ").all { it.length == 2 })
+    }
+
+    @Test
+    fun somut_adetArttiysaOncekininDevami() {
+        // Körleme 280 → 420: 1 basamaklı 4 sayı → 5 sayı.
+        val f = "blinding_addition_abacus_cup"
+        val c = WeeklyCardRules.concrete(Item.CupStep(f, 280, 420, WeeklyCardRules.cupLevel(f, 280), WeeklyCardRules.cupLevel(f, 420)), "k")!!
+        assertEquals(WeeklyCardRules.Change.COUNT, c.change)
+        assertTrue(c.mental)
+        assertTrue(c.afterText.startsWith(c.beforeText + " + "))
+    }
+
+    @Test
+    fun somut_cikarmaEksiyeDusmez() {
+        for (seed in 0L until 200L) {
+            for (lvl in listOf(WeeklyCardRules.Level(1, 12, 2000), WeeklyCardRules.Level(2, 5, 3000), WeeklyCardRules.Level(3, 4, 4000))) {
+                val nums = WeeklyCardRules.exampleNumbers(WeeklyCardRules.Op.SUB, lvl, seed)
+                assertEquals(lvl.count, nums.size)
+                var run = 0
+                nums.forEach { run += it; assertTrue("ara sonuç eksi: $nums", run >= 0) }
+            }
+        }
+    }
+
+    @Test
+    fun somut_sobiBasamakAtlamasi() {
+        // Seviye 2 (1 basamaklı 3 sayı) → 3 (2 basamaklı 2 sayı): basamak öncelikli.
+        val c = WeeklyCardRules.concrete(Item.SobiStep("m_sub_five", 2, 3), "s")!!
+        assertEquals(WeeklyCardRules.Change.DIGITS, c.change)
+        assertEquals(WeeklyCardRules.Op.SUB, c.op)
+        assertTrue(c.mental)
+    }
+
+    @Test
     fun bicim() {
         assertEquals("1:20", WeeklyCardRules.mmss(80))
         assertEquals("0:52", WeeklyCardRules.mmss(52))

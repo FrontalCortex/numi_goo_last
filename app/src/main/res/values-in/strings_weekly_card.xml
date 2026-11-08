@@ -49,4 +49,25 @@
     <string name="weekly_card_section_chests">Maraton unit</string>
     <string name="weekly_card_section_sobi">Level Sobi</string>
     <string name="weekly_card_section_rules">Penguasaan aturan</string>
+
+    <string name="weekly_card_topic_add_abacus">Penjumlahan dengan sempoa</string>
+    <string name="weekly_card_topic_sub_abacus">Pengurangan dengan sempoa</string>
+    <string name="weekly_card_topic_mul_abacus">Perkalian dengan sempoa</string>
+    <string name="weekly_card_topic_add_mental">Penjumlahan tanpa melihat sempoa</string>
+    <string name="weekly_card_topic_sub_mental">Pengurangan tanpa melihat sempoa</string>
+    <string name="weekly_card_topic_mul_mental">Perkalian tanpa melihat sempoa</string>
+    <string name="weekly_card_example_numbers">contoh bilangan</string>
+    <string name="weekly_card_each_number">%1$s detik per bilangan</string>
+    <string name="weekly_card_say_faster_self">Sekarang kamu menyelesaikan bilangan yang sama dalam %2$s detik, bukan %1$s detik.</string>
+    <string name="weekly_card_say_faster_other">Sekarang menyelesaikan bilangan yang sama dalam %2$s detik, bukan %1$s detik.</string>
+    <string name="weekly_card_say_count_self">Sekarang kamu berlatih dengan %1$d bilangan sekaligus.</string>
+    <string name="weekly_card_say_count_other">Sekarang berlatih dengan %1$d bilangan sekaligus.</string>
+    <string name="weekly_card_say_digits_self">Sekarang kamu berlatih dengan bilangan %1$d digit.</string>
+    <string name="weekly_card_say_digits_other">Sekarang berlatih dengan bilangan %1$d digit.</string>
+    <string name="weekly_card_say_mul_self">Sekarang kamu mengalikan %1$d digit × %2$d digit.</string>
+    <string name="weekly_card_say_mul_other">Sekarang mengalikan %1$d digit × %2$d digit.</string>
+    <string name="weekly_card_say_chest_self">Kamu menyelesaikan maraton yang sama %1$d detik lebih cepat.</string>
+    <string name="weekly_card_say_chest_other">Menyelesaikan maraton yang sama %1$d detik lebih cepat.</string>
+    <string name="weekly_card_show_details">Lihat rincian</string>
+    <string name="weekly_card_hide_details">Sembunyikan rincian</string>
 </resources>

@@ -5191,7 +5191,9 @@ class MainActivity : AppCompatActivity() {
         val fm = supportFragmentManager
         val base = fm.findFragmentById(R.id.fragmentContainerID)
         val block = when {
-            base !is MapFragment -> "harita_degil:${base?.javaClass?.simpleName}"
+            // Uygulama açılışta bölüm seçiminde (PartSelectionFragment) başlıyor, harita ondan sonra;
+            // ikisi de "boşta ana ekran" (08.11.2026 cihazda: yalnızca harita beklenince kart hiç açılmadı).
+            base !is MapFragment && base !is PartSelectionFragment -> "ana_ekran_degil:${base?.javaClass?.simpleName}"
             postLessonQueueBusy() || postLessonHandoffActive() -> "ders_sonu_kuyrugu"
             offMapNewStreakPromptPending -> "yeni_seri_bekliyor"
             streakCelebrationShowing -> "seri_kutlamasi"

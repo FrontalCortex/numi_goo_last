@@ -49,4 +49,25 @@
     <string name="weekly_card_section_chests">ماراثونات الوحدات</string>
     <string name="weekly_card_section_sobi">مستويات Sobi</string>
     <string name="weekly_card_section_rules">إتقان القواعد</string>
+
+    <string name="weekly_card_topic_add_abacus">الجمع على العدّاد</string>
+    <string name="weekly_card_topic_sub_abacus">الطرح على العدّاد</string>
+    <string name="weekly_card_topic_mul_abacus">الضرب على العدّاد</string>
+    <string name="weekly_card_topic_add_mental">الجمع دون النظر إلى العدّاد</string>
+    <string name="weekly_card_topic_sub_mental">الطرح دون النظر إلى العدّاد</string>
+    <string name="weekly_card_topic_mul_mental">الضرب دون النظر إلى العدّاد</string>
+    <string name="weekly_card_example_numbers">أعداد للمثال</string>
+    <string name="weekly_card_each_number">%1$s ثانية لكل عدد</string>
+    <string name="weekly_card_say_faster_self">صرت تحلّ الأعداد نفسها في %2$s ثانية بدلًا من %1$s.</string>
+    <string name="weekly_card_say_faster_other">صار يحلّ الأعداد نفسها في %2$s ثانية بدلًا من %1$s.</string>
+    <string name="weekly_card_say_count_self">صرت تتدرّب على %1$d أعداد في المرة الواحدة.</string>
+    <string name="weekly_card_say_count_other">صار يتدرّب على %1$d أعداد في المرة الواحدة.</string>
+    <string name="weekly_card_say_digits_self">صرت تتدرّب على أعداد من %1$d منازل.</string>
+    <string name="weekly_card_say_digits_other">صار يتدرّب على أعداد من %1$d منازل.</string>
+    <string name="weekly_card_say_mul_self">صرت تضرب %1$d منازل × %2$d منازل.</string>
+    <string name="weekly_card_say_mul_other">صار يضرب %1$d منازل × %2$d منازل.</string>
+    <string name="weekly_card_say_chest_self">تُنهي الماراثون نفسه أسرع بـ %1$d ثانية.</string>
+    <string name="weekly_card_say_chest_other">يُنهي الماراثون نفسه أسرع بـ %1$d ثانية.</string>
+    <string name="weekly_card_show_details">عرض التفاصيل</string>
+    <string name="weekly_card_hide_details">إخفاء التفاصيل</string>
 </resources>

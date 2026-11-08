@@ -137,9 +137,11 @@ class WeeklyCardFragment : DialogFragment() {
         val head = card.headline
         if (head != null) {
             headline(summary, head, d)
-            if (card.extras.isNotEmpty()) {
+            // Özette yalnızca BİR somut satır daha (kullanıcı kararı 08.11.2026: "başlangıçta somut,
+            // ayrıntı isteyen ayrıntıya baksın"); geri kalanı "Ayrıntıları göster"in altında.
+            card.extras.firstOrNull()?.let {
                 summary.addView(divider())
-                card.extras.forEach { summary.addView(text(smallLine(it, d), 15f, top = 6)) }
+                summary.addView(text(extraLine(it, d), 15f))
             }
         } else {
             summary.addView(text(appString(if (self) R.string.weekly_card_no_progress_self else R.string.weekly_card_no_progress_other), 16f, top = 16))
@@ -166,30 +168,54 @@ class WeeklyCardFragment : DialogFragment() {
             })
         }
 
-        details(root, d)
+        if (head != null) {
+            val detailBox = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL
+                visibility = View.GONE
+            }
+            details(detailBox, d)
+            root.addView(TextView(requireContext()).apply {
+                text = appString(R.string.weekly_card_show_details)
+                gravity = Gravity.CENTER
+                textSize = 15f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(ACCENT)
+                setPadding(dp(16), dp(14), dp(16), dp(14))
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { topMargin = dp(8) }
+                setOnClickListener {
+                    val open = detailBox.visibility != View.VISIBLE
+                    detailBox.visibility = if (open) View.VISIBLE else View.GONE
+                    text = appString(if (open) R.string.weekly_card_hide_details else R.string.weekly_card_show_details)
+                }
+            })
+            root.addView(detailBox)
+        }
     }
 
     /** Büyük punto ana satır: ne, önce, sonra ve iki çubuk. */
     private fun headline(parent: LinearLayout, item: Item, d: WeeklyCardRepository.Data) {
         when (item) {
-            is Item.CupStep -> {
-                parent.addView(text(cupTitle(item.field), 15f, color = ACCENT, bold = true, top = 18))
-                beforeAfter(parent, cupLevelText(item.before), cupLevelText(item.after),
-                    item.beforeScore.toFloat() / item.afterScore, 1f, big = true)
-                parent.addView(text(appString(R.string.weekly_card_cup_points, item.beforeScore, item.afterScore), 12f, secondary = true, top = 4))
-            }
-            is Item.SobiStep -> {
-                parent.addView(text(appString(R.string.weekly_card_sobi_title, ruleLabel(item.key)), 15f, color = ACCENT, bold = true, top = 18))
-                beforeAfter(parent, sobiSpecText(item.before), sobiSpecText(item.after),
-                    item.before.toFloat() / SobiTestLevels.MAX, item.after.toFloat() / SobiTestLevels.MAX, big = true)
-                parent.addView(text(appString(R.string.weekly_card_sobi_points, item.before, item.after), 12f, secondary = true, top = 4))
+            is Item.CupStep, is Item.SobiStep -> {
+                // Somut önce/sonra: örnek sayılar büyük, altında hız, en altta tek cümle (kullanıcı isteği
+                // 08.11.2026: "240 + 320 + 423'ü 4 saniyede topluyordun, şimdi 2 saniyede").
+                val c = WeeklyCardRules.concrete(item, seedKey(d, item)) ?: return
+                parent.addView(text(topicOf(item, c), 15f, color = ACCENT, bold = true, top = 18))
+                parent.addView(text(appString(R.string.weekly_card_example_numbers), 12f, secondary = true))
+                exampleRow(parent, R.string.weekly_card_before, c.beforeText, c.before, after = false)
+                exampleRow(parent, R.string.weekly_card_after, c.afterText, c.after, after = true)
+                sayFor(c, d.speaksToChild)?.let { parent.addView(text(it, 18f, bold = true, color = GOLD, top = 16)) }
             }
             is Item.ChestStep -> {
                 parent.addView(text(appString(R.string.weekly_card_chest_title, unitOf(d, item.partId, item.stableId)), 15f, color = ACCENT, bold = true, top = 18))
-                // Süre kısaldıkça çubuk da kısalıyor: "daha az zaman" gözle görülsün.
-                beforeAfter(parent, WeeklyCardRules.mmss(item.firstSec), WeeklyCardRules.mmss(item.bestSec),
-                    1f, item.bestSec.toFloat() / item.firstSec, big = true,
-                    beforeLabel = R.string.weekly_card_chest_before, afterLabel = R.string.weekly_card_chest_after)
+                parent.addView(text(appString(R.string.weekly_card_chest_before), 12f, secondary = true, top = 12))
+                parent.addView(text(WeeklyCardRules.mmss(item.firstSec), 26f, secondary = true, ltr = true))
+                parent.addView(text(appString(R.string.weekly_card_chest_after), 12f, secondary = true, top = 10))
+                parent.addView(text(WeeklyCardRules.mmss(item.bestSec) + "  ✔", 30f, bold = true, ltr = true))
+                parent.addView(text(appString(
+                    if (d.speaksToChild) R.string.weekly_card_say_chest_self else R.string.weekly_card_say_chest_other,
+                    item.firstSec - item.bestSec,
+                ), 18f, bold = true, color = GOLD, top = 16))
             }
             is Item.Learned -> {
                 parent.addView(text(learnedText(item, d), 22f, bold = true, color = ACCENT, top = 18))
@@ -233,14 +259,60 @@ class WeeklyCardFragment : DialogFragment() {
         }
     }
 
-    /** Özetteki küçük satır: tek satırda ne + önce → sonra. */
-    private fun smallLine(item: Item, d: WeeklyCardRepository.Data): String = when (item) {
-        is Item.CupStep -> "🏆 ${cupTitle(item.field)}: ${cupLevelText(item.after)}"
-        is Item.SobiStep -> "▲ " + appString(R.string.weekly_card_sobi_title, ruleLabel(item.key)) + ": " +
-            appString(R.string.weekly_card_sobi_points, item.before, item.after)
-        is Item.ChestStep -> "⏱ " + appString(R.string.weekly_card_chest_title, unitOf(d, item.partId, item.stableId)) +
+    /** "Geçen hafta / 4 + 7 + 2 + 5 / her sayı 3,6 saniyede". Sayılar soldan sağa (Arapçada da). */
+    private fun exampleRow(parent: LinearLayout, label: Int, numbers: String, level: WeeklyCardRules.Level, after: Boolean) {
+        parent.addView(text(appString(label), 12f, secondary = true, top = 12))
+        parent.addView(text(numbers, if (after) 26f else 22f, bold = after, secondary = !after, ltr = true))
+        if (level.mulSecond == null && level.intervalMs > 0) {
+            val each = appString(R.string.weekly_card_each_number, seconds(level.intervalMs))
+            parent.addView(text(if (after) "$each  ✔" else each, 13f, secondary = !after, color = if (after) ACCENT else null))
+        }
+    }
+
+    /** Örnek sayılar hafta + yol başına sabit: kart her açılışta başka sayı göstermesin. */
+    private fun seedKey(d: WeeklyCardRepository.Data, item: Item): String = d.card.week.week + "/" + when (item) {
+        is Item.CupStep -> item.field
+        is Item.SobiStep -> item.key
+        else -> ""
+    }
+
+    private fun topicOf(item: Item, c: WeeklyCardRules.Concrete): String {
+        if (item is Item.SobiStep) return appString(R.string.weekly_card_sobi_title, ruleLabel(item.key))
+        return appString(
+            when (c.op) {
+                WeeklyCardRules.Op.ADD -> if (c.mental) R.string.weekly_card_topic_add_mental else R.string.weekly_card_topic_add_abacus
+                WeeklyCardRules.Op.SUB -> if (c.mental) R.string.weekly_card_topic_sub_mental else R.string.weekly_card_topic_sub_abacus
+                WeeklyCardRules.Op.MUL -> if (c.mental) R.string.weekly_card_topic_mul_mental else R.string.weekly_card_topic_mul_abacus
+            }
+        )
+    }
+
+    /** Değişen tek şeyi söyleyen cümle; basamak > adet > hız sırasıyla. */
+    private fun sayFor(c: WeeklyCardRules.Concrete, self: Boolean): String? {
+        val a = c.after
+        return when {
+            c.op == WeeklyCardRules.Op.MUL ->
+                appString(if (self) R.string.weekly_card_say_mul_self else R.string.weekly_card_say_mul_other, a.digits, a.mulSecond ?: 1)
+            c.change == WeeklyCardRules.Change.DIGITS ->
+                appString(if (self) R.string.weekly_card_say_digits_self else R.string.weekly_card_say_digits_other, a.digits)
+            c.change == WeeklyCardRules.Change.COUNT ->
+                appString(if (self) R.string.weekly_card_say_count_self else R.string.weekly_card_say_count_other, a.count)
+            c.change == WeeklyCardRules.Change.FASTER ->
+                appString(if (self) R.string.weekly_card_say_faster_self else R.string.weekly_card_say_faster_other,
+                    seconds(c.before.intervalMs), seconds(a.intervalMs))
+            else -> null
+        }
+    }
+
+    /** Özetteki ikinci satır: tek somut cümle. */
+    private fun extraLine(item: Item, d: WeeklyCardRepository.Data): String = when (item) {
+        is Item.CupStep, is Item.SobiStep -> {
+            val c = WeeklyCardRules.concrete(item, seedKey(d, item))
+            if (c == null) "" else listOfNotNull(topicOf(item, c), sayFor(c, d.speaksToChild)).joinToString(": ")
+        }
+        is Item.ChestStep -> appString(R.string.weekly_card_chest_title, unitOf(d, item.partId, item.stableId)) +
             ": ${WeeklyCardRules.mmss(item.firstSec)} → ${WeeklyCardRules.mmss(item.bestSec)}"
-        is Item.Learned -> "★ " + learnedText(item, d)
+        is Item.Learned -> listOfNotNull(learnedText(item, d), item.sampleOp).joinToString(" · ")
     }
 
     // ── Ayrıntı ─────────────────────────────────────────────────────────────
@@ -248,7 +320,6 @@ class WeeklyCardFragment : DialogFragment() {
     private fun details(root: LinearLayout, d: WeeklyCardRepository.Data) {
         val card = d.card
         if (!card.hasProgress) return
-        root.addView(text(appString(R.string.weekly_card_details), 18f, bold = true, top = 28))
 
         if (card.cups.isNotEmpty()) section(root, R.string.weekly_card_section_cups) { p ->
             val max = card.cups.maxOf { it.afterScore }.toFloat()
@@ -315,7 +386,8 @@ class WeeklyCardFragment : DialogFragment() {
     )
 
     private fun seconds(ms: Long): String =
-        NumberFormat.getNumberInstance(locale()).apply { maximumFractionDigits = 1; minimumFractionDigits = 1 }.format(ms / 1000.0)
+        // En çok iki ondalık: kural tablosunda 4050 ms gibi değerler var; tek ondalıkta "4,2 yerine 4,0" yanlış olurdu.
+        NumberFormat.getNumberInstance(locale()).apply { maximumFractionDigits = 2; minimumFractionDigits = 1 }.format(ms / 1000.0)
 
     private fun cupLevelText(l: WeeklyCardRules.CupLevel): String {
         l.mulSecondDigits?.let { return appString(R.string.weekly_card_level_mul, l.digits, it) }
@@ -406,10 +478,13 @@ class WeeklyCardFragment : DialogFragment() {
         secondary: Boolean = false,
         color: Int? = null,
         top: Int = 0,
+        /** İşlem ve süre: Arapçada da soldan sağa okunmalı ("240 + 320"), hizası yine satır başı. */
+        ltr: Boolean = false,
     ) = TextView(requireContext()).apply {
         text = s
         textSize = sizeSp
         textAlignment = View.TEXT_ALIGNMENT_VIEW_START
+        if (ltr) textDirection = View.TEXT_DIRECTION_LTR
         if (bold) setTypeface(typeface, Typeface.BOLD)
         setTextColor(color ?: ContextCompat.getColor(context, if (secondary) R.color.dark_text_secondary else R.color.dark_text))
         layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
