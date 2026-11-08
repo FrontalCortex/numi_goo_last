@@ -95,6 +95,18 @@ async function flow() {
   check('  A +7 gün', (await db.collection('users').doc('ref_A').get()).get('giftProUntil'), NOW + 7 * DAY);
   check('  tekrar zararsız', (await rf.grantReferralReward({ db, admin, uid: 'ref_B', nowMs: NOW })).reason, 'already_rewarded');
 
+  console.log('Sıra hatası: ders 2 atıftan ÖNCE bitmiş (emülatör)');
+  await user('ref_E');
+  await db.collection('users').doc('ref_E').collection('lessonMilestones').doc(rf.REWARD_MILESTONE_ID)
+    .set({ partId: 1, stableId: 'p1_i02_2_basamakli_sayilar', finishedAtMs: NOW - 60000 });
+  const e = await rf.claimAndMaybeReward({ db, admin, uid: 'ref_E', rawCode: c1.code, authCreatedMs: created, nowMs: NOW });
+  check('  atıf + ödül hemen', e.ok && e.rewardedNow, true);
+  check('  E +7 gün', (await db.collection('users').doc('ref_E').get()).get('giftProUntil'), NOW + 7 * DAY);
+  check('  A +7 gün daha (14)', (await db.collection('users').doc('ref_A').get()).get('giftProUntil'), NOW + 14 * DAY);
+  await user('ref_F');
+  const f = await rf.claimAndMaybeReward({ db, admin, uid: 'ref_F', rawCode: c1.code, authCreatedMs: created, nowMs: NOW });
+  check('  ders 2 bitmemişse ödül yok', f.ok && !f.rewardedNow, true);
+
   console.log('Yıllık sınır (emülatör)');
   const year = new Date(NOW).getUTCFullYear();
   await db.collection('referralRewardCounts').doc(`ref_A_${year}`).set({ count: rf.REFERRER_YEARLY_LIMIT });
@@ -102,7 +114,7 @@ async function flow() {
   check('  D atıf', (await rf.claimReferral({ db, admin, uid: 'ref_D', rawCode: c1.code, authCreatedMs: created })).reason, 'ok');
   const g2 = await rf.grantReferralReward({ db, admin, uid: 'ref_D', nowMs: NOW });
   check('  D ödül alır, A almaz', g2.granted && !g2.referrerRewarded, true);
-  check('  A değişmedi', (await db.collection('users').doc('ref_A').get()).get('giftProUntil'), NOW + 7 * DAY);
+  check('  A değişmedi', (await db.collection('users').doc('ref_A').get()).get('giftProUntil'), NOW + 14 * DAY);
 }
 
 (async () => {

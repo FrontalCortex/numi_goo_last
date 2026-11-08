@@ -69,6 +69,8 @@ Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.
 - **Ödül:** `grantReferralRewardOnLesson` = `users/{uid}/lessonMilestones/1_p1_i02_2_basamakli_sayilar` yazılınca
   (finishedAtMs) transaction: gelene +7 gün `giftProUntil` (sürüyorsa bitişten), getirene de (`referralRewardCounts/{uid}_{yıl}` < 10).
   `giftProSource = 'referral'`. Uygulamada "Pro kazandın" bildirimi YOK (sonraki iş).
+  Sıra hatası kapatıldı (08.11 akşam): atıf ders 2'den SONRA gelirse tetikleyici kaçırıyordu; `claimAndMaybeReward`
+  atıf kabulünde ders 2 kaydı varsa ödülü hemen veriyor (emülatörde test edildi).
 - **App Links (98b2e79, hosting deploy edildi):** `assetlinks.json` paket `com.numigo.app`, parmak izleri Play uygulama
   imzalama (79:40:D6…2E:80) + bu bilgisayarın debug anahtarı (DC:D9…86:CF). Play Console'da "Önceki uygulama imzalama
   anahtarları"nda bir eski anahtar daha var (1 Eyl 2026); parmak izi EKLENMEDİ (kullanıcı yalnızca kullanımdakini verdi).

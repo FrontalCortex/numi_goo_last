@@ -129,6 +129,23 @@ async function claimReferral({ db, admin, uid, rawCode, rawSource, authCreatedMs
   });
 }
 
+/**
+ * Atıf + gerekiyorsa ödül. Sıra hatasını kapatıyor: ödül tetikleyicisi yalnızca ders 2'nin bitiş
+ * kaydı YAZILDIĞI anda çalışıyor; atıf o andan sonra gelirse (ör. çevrimdışı bitirilen ders, gecikmiş
+ * claimReferral) tetikleyici "davetle gelmemiş" deyip geçmişti ve ödül hiç verilmezdi. Atıf kabul
+ * edildiğinde ders 2 zaten bitmişse ödül burada veriliyor; ikisi aynı anda olsa bile
+ * grantReferralReward transaction'ı (rewarded bayrağı) iki kez vermiyor.
+ */
+async function claimAndMaybeReward(args) {
+  const r = await claimReferral(args);
+  if (!r.ok) return r;
+  const { db, admin, uid } = args;
+  const ms = await db.collection('users').doc(uid).collection('lessonMilestones').doc(REWARD_MILESTONE_ID).get();
+  if (!ms.exists || !ms.get('finishedAtMs')) return r;
+  const g = await grantReferralReward({ db, admin, uid, nowMs: args.nowMs });
+  return { ...r, rewardedNow: g.granted === true };
+}
+
 /** Ders 2 bitince: gelene ve (yıllık sınır dolmadıysa) getirene 7 gün Pro. Tekrarı zararsız. */
 async function grantReferralReward({ db, admin, uid, nowMs = Date.now() }) {
   const refRef = db.collection('referrals').doc(uid);
@@ -184,7 +201,7 @@ function createClaimReferral({ functions, admin, db }) {
     } catch (e) {
       console.warn('claimReferral: Auth kullanıcısı okunamadı', { uid, error: e.message });
     }
-    const r = await claimReferral({
+    const r = await claimAndMaybeReward({
       db, admin, uid, rawCode: data && data.code, rawSource: data && data.source, authCreatedMs,
     });
     console.log('claimReferral', { uid, ...r });
@@ -220,6 +237,7 @@ module.exports = {
   rewardDecision,
   getOrCreateCode,
   claimReferral,
+  claimAndMaybeReward,
   grantReferralReward,
   createGetReferralCode,
   createClaimReferral,
