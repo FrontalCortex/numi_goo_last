@@ -28,6 +28,8 @@ class LevelLadderView(context: Context) : View(context) {
     private val track = 0xFF3D4A50.toInt()
     private val muted = ContextCompat.getColor(context, R.color.dark_text_secondary)
     private val text = ContextCompat.getColor(context, R.color.dark_text)
+    /** Kartın zemin rengi (WeeklyCardFragment.panel): kırık işaretinin arası. */
+    private val bg = ContextCompat.getColor(context, R.color.bright_background_color)
 
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = 4 * d; strokeCap = Paint.Cap.ROUND }
     private val dot = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -56,6 +58,16 @@ class LevelLadderView(context: Context) : View(context) {
         // Geçen hafta → bu hafta arası yeşil.
         line.color = accent
         c.drawLine(x(ladder.from), y, x(ladder.to), y, line)
+        if (ladder.gap) {
+            // Atlanan basamaklar: yolun ortasında kırık (iki eğik çizgi, arası zemin rengi). Gerçek mesafe
+            // ekrana sığmıyor; düz bir yol "her basamak eşit" sanılmasın.
+            val mid = (x(ladder.from) + x(ladder.to)) / 2
+            dot.color = bg
+            c.drawRect(mid - 7 * d, y - 9 * d, mid + 7 * d, y + 9 * d, dot)
+            val slash = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = accent; strokeWidth = 3 * d; strokeCap = Paint.Cap.ROUND }
+            c.drawLine(mid - 9 * d, y + 8 * d, mid - 3 * d, y - 8 * d, slash)
+            c.drawLine(mid + 3 * d, y + 8 * d, mid + 9 * d, y - 8 * d, slash)
+        }
         dot.color = muted
         c.drawCircle(x(ladder.from), y, 7 * d, dot)
         dot.color = accent

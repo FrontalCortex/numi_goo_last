@@ -235,7 +235,7 @@ class WeeklyCardFragment : DialogFragment() {
                 parent.addView(text(appString(R.string.weekly_card_example_numbers), 12f, secondary = true, top = 8))
                 parent.addView(text(c.beforeText, 18f, secondary = true, ltr = true, top = 2))
                 parent.addView(text("↓", 14f, secondary = true))
-                parent.addView(text(c.afterText, 24f, bold = true, ltr = true))
+                parent.addView(text(c.afterText, 22f, bold = true, ltr = true))
                 sayFor(c, d.speaksToChild)?.let { parent.addView(text(it, 18f, bold = true, color = GOLD, top = 14)) }
             }
             is Item.ChestStep -> {

@@ -400,9 +400,18 @@ object WeeklyCardRules {
     }
 
     /** Çarpmada iki çarpan; toplama/çıkarmada işaretli dizi (eksi = çıkan). */
-    fun exampleText(op: Op, nums: List<Int>): String = when (op) {
-        Op.MUL -> "${nums[0]} × ${nums[1]}"
-        else -> nums.first().toString() + nums.drop(1).joinToString("") { if (it < 0) " − ${-it}" else " + $it" }
+    /**
+     * Ekranda en çok bu kadar sayı yazılır, fazlası "…": yedi tane 3 basamaklı sayı telefonda iki satıra
+     * taşıyordu (09.11.2026). Kaç sayı olduğunu merdivendeki etiket ve cümle zaten söylüyor.
+     */
+    const val EXAMPLE_MAX_SHOWN = 5
+
+    fun exampleText(op: Op, nums: List<Int>): String {
+        if (op == Op.MUL) return "${nums[0]} × ${nums[1]}"
+        fun signed(n: Int) = if (n < 0) " − ${-n}" else " + $n"
+        val shown = if (nums.size > EXAMPLE_MAX_SHOWN) nums.take(EXAMPLE_MAX_SHOWN - 1) else nums
+        val more = if (nums.size > EXAMPLE_MAX_SHOWN) " + …" else ""
+        return shown.first().toString() + shown.drop(1).joinToString("") { signed(it) } + more
     }
 
     // ── Seviye merdiveni (kullanıcı kararı 09.11.2026) ───────────────────────
@@ -411,11 +420,18 @@ object WeeklyCardRules {
     // 1–2 haftalık kayıt var (2 noktalı çizgi bir şey anlatmıyor). Merdiven: basamaklar soldan sağa, geçen
     // haftanın yeri küçük gri, bu haftanın yeri büyük yeşil. 4 hafta birikince altına çizgi eklenecek.
 
-    /** [total] basamak (0..total-1); [from] geçen hafta, [to] bu hafta (0 tabanlı). */
-    data class Ladder(val total: Int, val from: Int, val to: Int)
+    /**
+     * [total] basamak (0..total-1); [from] geçen hafta, [to] bu hafta (0 tabanlı). [gap]: arada atlanmış
+     * basamaklar var, yol ortasında kırık işaretiyle çiziliyor (gerçek mesafe ekrana sığmıyor).
+     */
+    data class Ladder(val total: Int, val from: Int, val to: Int, val gap: Boolean = false)
 
-    /** En çok bu kadar basamak çizilir: kupada büyük sıçramada ölçek sıkışmasın. */
-    const val LADDER_MAX = 14
+    /**
+     * Sıçrama bundan büyükse merdiven sıkıştırılır (09.11.2026: 14 basamaklı yol "çok uzun bir yol" gibi
+     * duruyordu ve noktalar sıkışıyordu): geçen hafta 2., bu hafta sondan 3. basamakta, arada kırık.
+     */
+    const val LADDER_MAX_JUMP = 5
+    private const val LADDER_COMPACT_TOTAL = 9
 
     fun ladderFor(item: Item): Ladder? = when (item) {
         is Item.CupStep -> {
@@ -423,10 +439,13 @@ object WeeklyCardRules {
             // başlayıp iki ileride bitiyor: "daha gidilecek yol var" görünsün.
             val b = item.beforeScore / 100
             val a = item.afterScore / 100
-            val start = maxOf(0, b - 1)
-            val end = maxOf(a + 2, start + 4)
-            val total = (end - start + 1).coerceAtMost(LADDER_MAX)
-            Ladder(total, (b - start).coerceIn(0, total - 1), (a - start).coerceIn(0, total - 1))
+            if (a - b > LADDER_MAX_JUMP) {
+                Ladder(LADDER_COMPACT_TOTAL, 1, LADDER_COMPACT_TOTAL - 3, gap = true)
+            } else {
+                val start = maxOf(0, b - 1)
+                val end = maxOf(a + 2, start + 4)
+                Ladder(end - start + 1, b - start, a - start)
+            }
         }
         is Item.SobiStep -> {
             val max = com.example.app.abacus.SobiTestLevels.MAX

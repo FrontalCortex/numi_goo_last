@@ -179,11 +179,20 @@ class WeeklyCardRulesTest {
         // 280 → 420: basamak 2 → 4; bir geriden başla, iki ileride bitir.
         val l = WeeklyCardRules.ladderFor(Item.CupStep(f, 280, 420, WeeklyCardRules.cupLevel(f, 280), WeeklyCardRules.cupLevel(f, 420)))!!
         assertEquals(WeeklyCardRules.Ladder(6, 1, 3), l)
-        // Büyük sıçramada basamak sayısı sınırda kalır, "bu hafta" yine çizginin içinde.
-        val big = WeeklyCardRules.ladderFor(Item.CupStep(f, 100, 2900, WeeklyCardRules.cupLevel(f, 100), WeeklyCardRules.cupLevel(f, 2900)))!!
-        assertEquals(WeeklyCardRules.LADDER_MAX, big.total)
-        assertTrue(big.to < big.total && big.from < big.to)
+        // Büyük sıçramada merdiven sıkışır: arada kırık, bu hafta sondan 3. basamakta.
+        val big = WeeklyCardRules.ladderFor(Item.CupStep(f, 600, 1900, WeeklyCardRules.cupLevel(f, 600), WeeklyCardRules.cupLevel(f, 1900)))!!
+        assertEquals(WeeklyCardRules.Ladder(9, 1, 6, gap = true), big)
+        // Sınırda (5 basamak) henüz sıkışmaz.
+        assertFalse(WeeklyCardRules.ladderFor(Item.CupStep(f, 300, 800, WeeklyCardRules.cupLevel(f, 300), WeeklyCardRules.cupLevel(f, 800)))!!.gap)
         assertEquals(WeeklyCardRules.Ladder(20, 3, 6), WeeklyCardRules.ladderFor(Item.SobiStep("add_five", 4, 7)))
+    }
+
+    @Test
+    fun ornekDizisiKisalir() {
+        val op = WeeklyCardRules.Op.ADD
+        assertEquals("354 + 586 + 373 + 714 + …", WeeklyCardRules.exampleText(op, listOf(354, 586, 373, 714, 319, 624, 136)))
+        assertEquals("1 + 2 + 3 + 4 + 5", WeeklyCardRules.exampleText(op, listOf(1, 2, 3, 4, 5)))
+        assertEquals("90 − 12 + 30 − 4 + …", WeeklyCardRules.exampleText(WeeklyCardRules.Op.SUB, listOf(90, -12, 30, -4, -5, -6)))
     }
 
     @Test
