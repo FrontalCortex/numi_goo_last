@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Haftalık kart paylaşımı ve veli kapısı; ayrıntı values/strings_share.xml. -->
+<resources>
+    <string name="weekly_card_share">مشاركة</string>
+    <string name="weekly_share_chooser">مشاركة ملخص الأسبوع</string>
+    <string name="weekly_share_text">تقدّمي في Sorobit هذا الأسبوع 🎉 العدّاد والحساب الذهني، جرّبه أنت أيضًا: %1$s</string>
+
+    <string name="parent_gate_title">لأولياء الأمور</string>
+    <string name="parent_gate_question">المشاركة تحتاج إلى شخص بالغ. اكتب الناتج بالأرقام: %1$s ضرب %2$s</string>
+    <string name="parent_gate_wrong">الإجابة غير صحيحة، حاول مرة أخرى.</string>
+    <string name="parent_gate_continue">متابعة</string>
+    <string name="parent_gate_cancel">إلغاء</string>
+    <string-array name="parent_gate_numbers">
+        <item>صفر</item><item>واحد</item><item>اثنان</item><item>ثلاثة</item><item>أربعة</item>
+        <item>خمسة</item><item>ستة</item><item>سبعة</item><item>ثمانية</item><item>تسعة</item>
+        <item>عشرة</item><item>أحد عشر</item><item>اثنا عشر</item><item>ثلاثة عشر</item><item>أربعة عشر</item>
+        <item>خمسة عشر</item><item>ستة عشر</item><item>سبعة عشر</item><item>ثمانية عشر</item><item>تسعة عشر</item>
+    </string-array>
+
+    <string name="ui_baska_veli_whatsapp">وليّ أمر آخر / مجموعة واتساب</string>
+</resources>

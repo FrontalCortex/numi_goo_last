@@ -134,6 +134,9 @@ dependencies {
     //character animation
     implementation(libs.lottie)
 
+    // Davet atıfı: Play'in kurulum referrer'ı (haftalık kart bağlantısındaki kod; ReferralAttribution).
+    implementation("com.android.installreferrer:installreferrer:2.2")
+
     //bundle off
     //noinspection UseTomlInstead
 

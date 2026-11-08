@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Haftalık kart paylaşımı ve veli kapısı; ayrıntı values/strings_share.xml. -->
+<resources>
+    <string name="weekly_card_share">Bagikan</string>
+    <string name="weekly_share_chooser">Bagikan ringkasan minggu ini</string>
+    <string name="weekly_share_text">Kemajuanku di Sorobit minggu ini 🎉 Sempoa dan berhitung cepat, coba juga: %1$s</string>
+
+    <string name="parent_gate_title">Untuk orang tua</string>
+    <string name="parent_gate_question">Berbagi memerlukan orang dewasa. Tulis jawabannya dengan angka: %1$s kali %2$s</string>
+    <string name="parent_gate_wrong">Jawabannya belum benar, coba lagi.</string>
+    <string name="parent_gate_continue">Lanjut</string>
+    <string name="parent_gate_cancel">Batal</string>
+    <string-array name="parent_gate_numbers">
+        <item>nol</item><item>satu</item><item>dua</item><item>tiga</item><item>empat</item>
+        <item>lima</item><item>enam</item><item>tujuh</item><item>delapan</item><item>sembilan</item>
+        <item>sepuluh</item><item>sebelas</item><item>dua belas</item><item>tiga belas</item><item>empat belas</item>
+        <item>lima belas</item><item>enam belas</item><item>tujuh belas</item><item>delapan belas</item><item>sembilan belas</item>
+    </string-array>
+
+    <string name="ui_baska_veli_whatsapp">Orang tua lain / grup WhatsApp</string>
+</resources>

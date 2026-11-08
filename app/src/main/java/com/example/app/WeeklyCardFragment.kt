@@ -153,18 +153,32 @@ class WeeklyCardFragment : DialogFragment() {
         root.addView(summary)
 
         if (head != null) {
-            // Paylaşım ayrı iş; yeri şimdiden ayrılmış, basılamaz (kullanıcı kararı: görünür, devre dışı).
+            // Paylaş: önce veli kapısı, sonra yalnızca özet kartının görseli + davet bağlantısı (WeeklyCardShare).
+            // İlerleme yoksa düğme hiç yok: kötü hafta paylaşılmaz.
+            AnalyticsLogger.logSimpleEvent("share_card_shown_weekly")
             root.addView(TextView(requireContext()).apply {
-                text = appString(R.string.weekly_card_share_soon)
+                text = appString(R.string.weekly_card_share)
                 gravity = Gravity.CENTER
-                textSize = 15f
+                textSize = 16f
                 setTypeface(typeface, Typeface.BOLD)
-                setTextColor(ContextCompat.getColor(context, R.color.dark_text_secondary))
-                background = rounded(TRACK, 24)
-                setPadding(dp(16), dp(12), dp(16), dp(12))
-                isEnabled = false
+                setTextColor(0xFF10220A.toInt())
+                background = rounded(ACCENT, 24)
+                setPadding(dp(16), dp(14), dp(16), dp(14))
                 layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
                     .apply { topMargin = dp(12) }
+                setOnClickListener { button ->
+                    ParentGate.show(requireContext()) {
+                        AnalyticsLogger.logSimpleEvent("share_gate_pass")
+                        button.isEnabled = false
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val link = WeeklyCardShare.fetchLink()
+                            button.isEnabled = true
+                            if (_binding == null) return@launch
+                            val bmp = WeeklyCardShare.renderBitmap(requireContext(), summary)
+                            WeeklyCardShare.share(requireContext(), bmp, appString(R.string.weekly_share_text, link))
+                        }
+                    }
+                }
             })
         }
 

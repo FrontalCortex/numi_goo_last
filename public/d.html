@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<!--
+  Davet sayfası: https://numigo-new.web.app/d/<KOD> (firebase.json rewrite "/d/**" → bu dosya).
+  Haftalık kart paylaşımındaki bağlantı buraya geliyor (bkz. functions/referrals.js). Sayfa kodu
+  Play bağlantısının `referrer` parametresine koyuyor; uygulama ilk açılışta Install Referrer'dan
+  okuyup `claimReferral`'a gönderiyor. Kişisel veri yok: sayfa yalnızca kodu biliyor.
+  og:image sabit (kartın kendisi değil): kart görseli zaten mesajın içinde gidiyor.
+-->
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sorobit · Sen de dene</title>
+  <meta property="og:title" content="Sorobit · Sen de dene">
+  <meta property="og:description" content="Soroban (abaküs) ve zihinden hesap, oyun gibi. 7–14 yaş.">
+  <meta property="og:image" content="https://numigo-new.web.app/og-sorobit.png">
+  <meta property="og:type" content="website">
+  <style>
+    :root { --bg:#141F23; --card:#203137; --text:#F0F6FC; --muted:#8B949E; --accent:#8CC63F; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width:480px; margin:0 auto; padding:32px 16px; text-align:center; }
+    img { width:112px; height:112px; border-radius:24px; }
+    h1 { font-size:26px; margin:20px 0 8px; }
+    p { color:var(--muted); font-size:16px; line-height:1.5; margin:0 0 24px; }
+    .card { background:var(--card); border-radius:20px; padding:24px 18px; }
+    a.btn { display:block; background:var(--accent); color:#10220A; font-weight:700; font-size:18px; text-decoration:none; padding:16px; border-radius:24px; }
+    small { display:block; color:var(--muted); margin-top:16px; }
+  </style>
+</head>
+<body>
+<main>
+  <img src="/og-sorobit.png" alt="Sorobit">
+  <div class="card">
+    <h1 id="t">Bir arkadaşın Sorobit'te soroban öğreniyor</h1>
+    <p id="d">Çocuğunuz 3 sayıyı kaç saniyede toplar? Soroban ve zihinden hesap, her gün birkaç dakika, oyun gibi.</p>
+    <a class="btn" id="go" href="https://play.google.com/store/apps/details?id=com.numigo.app">Google Play'den indir</a>
+    <small id="s">Android · 7–14 yaş</small>
+  </div>
+</main>
+<script>
+  (function () {
+    // Kod yalnızca izin verilen harflerden (functions/referrals.js CODE_ALPHABET); değilse referrer'sız Play.
+    var m = location.pathname.match(/^\/d\/([A-Za-z0-9]{6})\/?$/);
+    var code = m ? m[1].toUpperCase() : null;
+    if (code && !/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/.test(code)) code = null;
+    var url = 'https://play.google.com/store/apps/details?id=com.numigo.app';
+    if (code) {
+      url += '&referrer=' + encodeURIComponent('utm_source=ref&utm_medium=weekly&utm_campaign=' + code);
+    }
+    document.getElementById('go').href = url;
+    var L = (navigator.language || 'tr').slice(0, 2);
+    var T = {
+      en: ['A friend is learning the abacus on Sorobit', 'How fast can your child add 3 numbers? Abacus and mental math, a few minutes a day, like a game.', 'Get it on Google Play', 'Android · ages 7–14'],
+      id: ['Temanmu sedang belajar sempoa di Sorobit', 'Seberapa cepat anak Anda menjumlahkan 3 bilangan? Sempoa dan berhitung cepat, beberapa menit sehari, seperti bermain.', 'Unduh di Google Play', 'Android · usia 7–14'],
+      ar: ['صديقك يتعلم العدّاد في Sorobit', 'كم ثانية يحتاج طفلك لجمع 3 أعداد؟ العدّاد والحساب الذهني، دقائق كل يوم، مثل اللعب.', 'حمّله من Google Play', 'أندرويد · من 7 إلى 14 سنة']
+    }[L];
+    if (T) {
+      document.documentElement.lang = L;
+      if (L === 'ar') document.documentElement.dir = 'rtl';
+      ['t', 'd', 'go', 's'].forEach(function (id, i) { document.getElementById(id).textContent = T[i]; });
+    }
+  })();
+</script>
+</body>
+</html>

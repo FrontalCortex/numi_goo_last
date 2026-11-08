@@ -279,6 +279,13 @@ class NumiGooApplication : Application() {
         // İlk olaylardan önce yazılsın ki geliştiricinin denemeleri baştan işaretli olsun.
         AnalyticsLogger.setBuildType(BuildConfig.DEBUG)
 
+        // Davet atıfı: kurulumun Play referrer'ında kod var mı (cihaz başına bir kez; arka planda).
+        try {
+            ReferralAttribution.checkInstallReferrer(this)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Install Referrer okunamadı", e)
+        }
+
         // Sezon saatinin kalıcı sapmasını yükle. Ağ çağrısı yok, yalnızca disk okuması;
         // sunucuyla eşitleme oturum açıldıktan sonra MainActivity'de yapılıyor.
         try {

@@ -41,7 +41,6 @@
     <string name="weekly_card_no_progress_self">Belum ada langkah baru minggu ini, tapi setiap hari kamu berlatih tetap dihitung.</string>
     <string name="weekly_card_no_progress_other">Belum ada langkah baru minggu ini, tapi setiap hari latihan tetap dihitung.</string>
     <string name="weekly_card_empty">Belum ada ringkasan mingguan. Ringkasan pertama siap hari Senin setelah seminggu berlatih.</string>
-    <string name="weekly_card_share_soon">Bagikan · segera</string>
     <string name="weekly_card_details">Rincian</string>
 
     <string name="weekly_card_section_cups">Jalur piala</string>

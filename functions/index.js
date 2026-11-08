@@ -39,6 +39,8 @@ const classes = require('./classes');
 const homework = require('./homework');
 // Yayın hediyesi: ilk 100 öğrenciye 1 ay Pro (bkz. launchGift.js).
 const launchGift = require('./launchGift');
+// Davet döngüsü: kod, atıf, ders 2 ödülü (bkz. referrals.js).
+const referrals = require('./referrals');
 // `sendUserNotification` bir fonksiyon bildirimi (hoisted), yani burada tanımından önce
 // geçirilebiliyor; çağrı zaten çalışma anında, sezon bitince oluyor.
 exports.finalizeSeasonLeaderboardMedals = seasonLeaderboardFinalize.scheduleFinalize(
@@ -1663,6 +1665,13 @@ exports.mirrorPublicProfile = functions.firestore
 // demek, arada tetiklenmeyen yazımlar kaçardı).
 // Yayın hediyesi: hesap dokümanı ilk kez oluşunca sayaca bakar (bkz. launchGift.js).
 exports.grantLaunchGiftOnSignup = launchGift.createLaunchGiftTrigger({ functions, admin, db });
+
+// Davet döngüsü: haftalık kart paylaşımının kodu, davetle gelen kaydı ve ders 2 ödülü (bkz. referrals.js).
+// Her biri ayrı export ifadesi (launchGift kalıbı): yükleme anındaki tek bir ortak çağrı
+// deploy-plan'da bütün fonksiyonların parmak izine karışıp "hepsini deploy et" diyordu.
+exports.getReferralCode = referrals.createGetReferralCode({ functions, admin, db });
+exports.claimReferral = referrals.createClaimReferral({ functions, admin, db });
+exports.grantReferralRewardOnLesson = referrals.createRewardTrigger({ functions, admin, db });
 
 exports.syncTeacherClaim = functions.firestore
   .document('users/{uid}')

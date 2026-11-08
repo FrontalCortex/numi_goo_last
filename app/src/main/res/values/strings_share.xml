@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Haftalık kart paylaşımı ve veli kapısı (WeeklyCardShare, ParentGate). Ayrı dosya: başka oturumlar
+     büyük strings dosyalarına aynı anda yazıyor. -->
+<resources>
+    <string name="weekly_card_share">Paylaş</string>
+    <string name="weekly_share_chooser">Haftanın özetini paylaş</string>
+    <!-- %1$s davet bağlantısı. -->
+    <string name="weekly_share_text">Sorobit\'te bu haftaki ilerlemem 🎉 Soroban ve zihinden hesap; sen de dene: %1$s</string>
+
+    <string name="parent_gate_title">Veliler için</string>
+    <!-- %1$s ve %2$s sayıların yazıyla hâli (parent_gate_numbers). -->
+    <string name="parent_gate_question">Paylaşmak için bir yetişkin gerekiyor. Sonucu rakamla yazın: %1$s çarpı %2$s</string>
+    <string name="parent_gate_wrong">Cevap doğru değil, tekrar deneyin.</string>
+    <string name="parent_gate_continue">Devam</string>
+    <string name="parent_gate_cancel">Vazgeç</string>
+    <string-array name="parent_gate_numbers">
+        <item>sıfır</item><item>bir</item><item>iki</item><item>üç</item><item>dört</item>
+        <item>beş</item><item>altı</item><item>yedi</item><item>sekiz</item><item>dokuz</item>
+        <item>on</item><item>on bir</item><item>on iki</item><item>on üç</item><item>on dört</item>
+        <item>on beş</item><item>on altı</item><item>on yedi</item><item>on sekiz</item><item>on dokuz</item>
+    </string-array>
+
+    <!-- "Bizi nereden duydun?" yeni seçeneği (UserInfoFragment; kayıtlı değer "Veli/WhatsApp"). -->
+    <string name="ui_baska_veli_whatsapp">Başka bir veli / WhatsApp grubu</string>
+</resources>

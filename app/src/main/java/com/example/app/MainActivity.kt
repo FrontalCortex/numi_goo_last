@@ -3985,6 +3985,8 @@ class MainActivity : AppCompatActivity() {
         attachSeasonLeaderboardPendingListenerIfLoggedIn()
         refreshPendingSeasonLeaderboardRewardFromFirestore()
         maybeAutoOpenWeeklyCard()
+        // Davetle kurulduysa (Install Referrer'da kod) ve hesap artık varsa davet edene bağla.
+        ReferralAttribution.claimIfPending(this)
     }
 
     override fun onPause() {

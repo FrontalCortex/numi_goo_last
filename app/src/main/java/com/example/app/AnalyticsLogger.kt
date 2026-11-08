@@ -690,6 +690,15 @@ object AnalyticsLogger {
         fa.logEvent(name, null)
     }
 
+    /**
+     * Davet döngüsünün parametresiz olayları (kota yüzünden kırılım adda): `share_card_shown_weekly`,
+     * `share_gate_pass`, `share_done_{whatsapp|instagram|other}`, `ref_install`, `ref_link_open`.
+     */
+    fun logSimpleEvent(name: String) = safe { fa -> fa.logEvent(name, null) }
+
+    /** Kullanıcı kapsamlı `ref_source` (weekly / badge / challenge / class): davetle gelenler ayrı kırılsın. */
+    fun setRefSource(source: String) = safe { fa -> fa.setUserProperty("ref_source", source.take(36)) }
+
     /** Ders anahtarla açıldı; anahtar sunucuda düşüldükten SONRA çağrılır. */
     fun logLessonUnlockKey(partId: Int, lessonId: String?) = safe { fa ->
         fa.logEvent(EV_LESSON_UNLOCK_KEY) {

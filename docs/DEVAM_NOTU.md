@@ -50,6 +50,32 @@ kontrol et hoşuma gitmiyor"). Kullanıcı kararı: sıklığı düşür, kısal
   `attempt_bucket`). Yeni GA4 boyutu açılmadı; var olan parametreler.
 - Eski 20 `fragment_tutorial_question_panel_*` metni 4 dilden silindi, yeni 13 metin 4 dile eklendi.
 
+## Haftalık kart paylaşımı ve davet ölçümü (08.11.2026 — derlendi, testler geçti (uygulama 3/3, sunucu emülatörde hepsi); telefona kuruldu; deploy/hosting kullanıcı onayı bekliyor)
+Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.11): veli kapısı = yazıyla çarpma
+("on yedi çarpı üç", 3 yanlışta kapanır); ödül ikisine de 7 gün Pro, getiren yılda en çok 10; App Links ŞİMDİLİK YOK
+(Play App Signing SHA-256 gerekli, uygulama kapalı testte; `public/.well-known/assetlinks.json` zaten yanlış paket
+`com.example.app` içeriyor, düzeltilmedi).
+- **Paylaşma:** kartta "Paylaş" (yalnızca ilerleme varsa) → `ParentGate` → `WeeklyCardShare`: özet kartının bitmap'i
+  + altta "Sorobit" → cache/share/haftalik.png, FileProvider, EXTRA_STREAM + metin (`weekly_share_text`, bağlantılı),
+  `createChooser(…, IntentSender)` → `ChosenReceiver` EXTRA_CHOSEN_COMPONENT → `share_done_whatsapp|instagram|other`.
+  Bağlantı `getReferralCode` callable'ından; alınamazsa Play bağlantısı (atıf kaybolur, paylaşım olur).
+- **Bağlantı:** `public/d.html` + firebase.json rewrite `/d/**`; Play'e `referrer=utm_source=ref&utm_medium=weekly&utm_campaign=<KOD>`.
+  Dil `navigator.language` (tr/en/id/ar). og:image `public/og-sorobit.png` (uygulama ikonu). Hosting push'la GİTMEZ.
+- **Atıf:** `ReferralAttribution` (installreferrer 2.2): `NumiGooApplication` ilk açılışta (cihaz başına bir kez) referrer'ı
+  okur, kod varsa bekletir + `ref_install` + kullanıcı özelliği `ref_source`; `MainActivity.onResume` oturum açıksa
+  `claimReferral`. Sunucu (`functions/referrals.js`): `referralCodes/{KOD}`, `users.referralCode`, `referrals/{yeniUid}`
+  (yalnızca bir kez, kendi kodu olmaz, Auth hesabı ≤7 gün), `users.referredBy`. "Bizi nereden duydun?"a
+  "Başka bir veli / WhatsApp grubu" (değer `Veli/WhatsApp`).
+- **Ödül:** `grantReferralRewardOnLesson` = `users/{uid}/lessonMilestones/1_p1_i02_2_basamakli_sayilar` yazılınca
+  (finishedAtMs) transaction: gelene +7 gün `giftProUntil` (sürüyorsa bitişten), getirene de (`referralRewardCounts/{uid}_{yıl}` < 10).
+  `giftProSource = 'referral'`. Uygulamada "Pro kazandın" bildirimi YOK (sonraki iş).
+- **Ölçüm:** GA4 `share_card_shown_weekly`, `share_gate_pass`, `share_done_*`, `ref_install` (parametresiz), `ref_source`
+  (kullanıcı). `ref_link_open` YOK (App Links gerekiyor). K raporu `tools/referral-report.js` (yalnız okur; canlıda izinle).
+- Kurallar: yeni koleksiyonlar catch-all ile istemciye kapalı; kural değişikliği yok. `users.referralCode/referredBy`
+  serverOnlyFields'e EKLENMEDİ (istemci kendine yazabilir ama sunucu `referrals`'a bakıyor; zararsız).
+- Deploy önizlemesi (deploy-plan, f03da30 → şimdi): 76 fonksiyondan yalnızca 3 yeni. Yereldeki `.env`/debug log yüzünden
+  yerel çalıştırma "full" der; CI'da yalnızca commit'li dosyalar var. Testler: `node scripts/test-referrals.js` (emülatörle).
+
 ## Haftalık ilerleme kartı: ekran (08.11.2026 — derlendi, birim testi 11/11; kullanıcı kararıyla 10.11 YAYININA GİRİYOR; Ted'e örnek veri yazıldı; telefonda kullanıcı bakacak)
 Kararlar (kullanıcı, 08.11): kapanan hafta (Pazarı bugünden önce olan en yeni `weeklyStats`) önceki kayıtla
 (en çok 3 hafta geriden) kıyaslanır; ilk sürüm kaynakları kupa + sandık + ders + Sobi (öğretmen ödevi YOK);

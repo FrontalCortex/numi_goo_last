@@ -19,6 +19,10 @@
       {
         "source": "/__/auth/links",
         "destination": "/index.html"
+      },
+      {
+        "source": "/d/**",
+        "destination": "/d.html"
       }
     ],
     "headers": [

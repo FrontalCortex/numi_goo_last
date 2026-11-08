@@ -55,7 +55,6 @@
     <string name="weekly_card_no_progress_self">Bu hafta yeni bir basamak yok; yine de her çalıştığın gün sayılır.</string>
     <string name="weekly_card_no_progress_other">Bu hafta yeni bir basamak yok; yine de her çalıştığı gün sayılır.</string>
     <string name="weekly_card_empty">Henüz haftalık özet yok. İlk özet bir hafta çalıştıktan sonra pazartesi hazırlanır.</string>
-    <string name="weekly_card_share_soon">Paylaş · yakında</string>
     <string name="weekly_card_details">Ayrıntılar</string>
 
     <!-- Ayrıntı bölümleri; yalnızca ilerleme olan görünür. -->

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Haftalık kart paylaşımı ve veli kapısı; ayrıntı values/strings_share.xml. -->
+<resources>
+    <string name="weekly_card_share">Share</string>
+    <string name="weekly_share_chooser">Share the week in review</string>
+    <string name="weekly_share_text">My progress on Sorobit this week 🎉 Abacus and mental math, try it too: %1$s</string>
+
+    <string name="parent_gate_title">For parents</string>
+    <string name="parent_gate_question">Sharing needs an adult. Type the answer in digits: %1$s times %2$s</string>
+    <string name="parent_gate_wrong">That is not right, please try again.</string>
+    <string name="parent_gate_continue">Continue</string>
+    <string name="parent_gate_cancel">Cancel</string>
+    <string-array name="parent_gate_numbers">
+        <item>zero</item><item>one</item><item>two</item><item>three</item><item>four</item>
+        <item>five</item><item>six</item><item>seven</item><item>eight</item><item>nine</item>
+        <item>ten</item><item>eleven</item><item>twelve</item><item>thirteen</item><item>fourteen</item>
+        <item>fifteen</item><item>sixteen</item><item>seventeen</item><item>eighteen</item><item>nineteen</item>
+    </string-array>
+
+    <string name="ui_baska_veli_whatsapp">Another parent / WhatsApp group</string>
+</resources>

@@ -128,6 +128,9 @@ class UserInfoFragment : Fragment() {
         "Google Araması" to appString(R.string.ui_google_aramasi),
         "Arkadaş/Aile" to appString(R.string.ui_arkadas_aile),
         "Okul/Öğretmen" to appString(R.string.ui_okul_ogretmen),
+        // Davet döngüsü (08.11.2026): haftalık kart veli gruplarında paylaşılıyor; bu cevap
+        // "Arkadaş/Aile"ye karışmasın, davet sayımıyla (referrals) karşılaştırılabilsin.
+        "Veli/WhatsApp" to appString(R.string.ui_baska_veli_whatsapp),
         "TikTok" to "TikTok",
         "Uygulama Mağazası" to appString(R.string.ui_uygulama_magazasi),
         "Diğer" to appString(R.string.ui_diger),

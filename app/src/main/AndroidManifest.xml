@@ -160,6 +160,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Haftalık kart paylaşımında hangi uygulamanın seçildiği (EXTRA_CHOSEN_COMPONENT → GA4). -->
+        <receiver
+            android:name=".WeeklyCardShare$ChosenReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>
