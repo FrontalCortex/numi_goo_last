@@ -79,6 +79,23 @@ class PlanFragment : DialogFragment() {
 
         applyLivePrices()
 
+        // Kapatma tuşu (kullanıcı isteği 09.11.2026): önceden yalnızca geri tuşuyla kapanıyordu.
+        binding.btnPlanClose.setOnClickListener { dismiss() }
+
+        // Pro almayana ücretsiz yol (kullanıcı kararı 09.11.2026): satın alma düğmesinin altında küçük bir
+        // bağlantı; düğmeyle yarışmasın diye yalnızca metin. Davet ekranı pencere olarak açılıyor (bkz.
+        // InviteFragment.showAsDialog). Oturum yoksa davet kodu alınamaz, bağlantı gizli.
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser == null) {
+            binding.tvPlanInvite.visibility = View.GONE
+        } else {
+            binding.tvPlanInvite.setOnClickListener {
+                AnalyticsLogger.logSimpleEvent("plan_invite_tap")
+                val fm = parentFragmentManager
+                dismiss()
+                InviteFragment.showAsDialog(fm)
+            }
+        }
+
         binding.btnTryFree.setOnClickListener {
             // `plan` alanını istemci yazamaz (firestore.rules kilitli tutuyor). Play'den gelen
             // abonelik token'ı sunucuda doğrulandıktan sonra Admin SDK ile yazılır.

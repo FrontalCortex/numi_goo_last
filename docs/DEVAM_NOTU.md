@@ -655,6 +655,12 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   Panel A'da (Ted) çıktı, B'de çıkmadı: B ders başında okumuştu, 30 dk'lık aralık yüzünden ödülden sonra bakmadı.
   Düzeltme (sürüm 24'e): 2. ders bitiş kaydı yazılınca `MainActivity.requestReferralRewardCheck` 8 ve 30 sn sonra
   aralığı sıfırlayıp yeniden okuyor; panel yine ana ekran boşalınca. Derlendi, telefonda denenmedi.
+- **Pro plan ekranı (PlanFragment, sürüm 24'e):** sol üstte kapatma tuşu (`btnPlanClose`; önceden yalnızca geri tuşu),
+  satın alma düğmesinin altında "Ya da arkadaşını davet et: ikiniz de 1 hafta Pro kazanın ›" (`tvPlanInvite`,
+  GA4 `plan_invite_tap`). `InviteFragment` artık DialogFragment: Ayarlar/Mağaza'dan sayfa, plandan tam ekran pencere
+  (`showAsDialog`; plan reklam sonrası Pro panelinden, yani ders sonu kuyruğunun ortasında da açılabiliyor).
+  Ders sonu kuyruğuna TEK dokunuş: `subscriptionFlowBlockReason` davet penceresi açıkken de bekliyor, kapanınca
+  `pumpPostLessonQueue("Invite.dismiss")`. Derlendi, telefonda denenmedi.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 

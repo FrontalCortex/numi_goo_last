@@ -34,4 +34,8 @@
     <string name="referral_reward_referrer">Teman yang kamu undang menyelesaikan pelajaran 2 di Sorobit. Kalian berdua dapat Pro 1 minggu!</string>
     <string name="referral_reward_invitee">Kamu bergabung lewat undangan dan menyelesaikan pelajaran 2. Pro 1 minggu untukmu, temanmu juga dapat!</string>
     <string name="referral_reward_ok">Hebat</string>
+
+    <!-- Pro plan ekranı (PlanFragment): kapatma tuşu ve davet bağlantısı (09.11.2026). -->
+    <string name="plan_close_desc">Tutup</string>
+    <string name="plan_invite_link">Atau undang teman: kalian berdua dapat Pro 1 minggu ›</string>
 </resources>

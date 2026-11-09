@@ -4,7 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.Fragment
+import android.app.Dialog
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.example.app.databinding.FragmentInviteBinding
@@ -25,8 +26,12 @@ import java.util.Calendar
  *
  * Sayaç ("Davet ettiklerin: 2 · kazandığın: 14 gün Pro") `getReferralCode`'un cevabından: paylaşmayı
  * sürdürmenin en güçlü nedeni, ödülün gerçekten geldiğini görmek.
+ *
+ * DialogFragment: Ayarlar ve Mağaza'dan sayfa olarak (kaba eklenince), Pro plan ekranından ([showAsDialog])
+ * tam ekran pencere olarak açılıyor. Plan ekranı ders sonu akışının ortasında (reklam sonrası Pro paneli)
+ * da açılabildiği için oradan sayfa yığınına girmek ders sonu kuyruğunun varsaydığı tabanı bozardı.
  */
-class InviteFragment : Fragment() {
+class InviteFragment : DialogFragment() {
 
     companion object {
         /**
@@ -40,6 +45,28 @@ class InviteFragment : Fragment() {
             if (replace) tx.replace(containerId, InviteFragment()) else tx.add(containerId, InviteFragment())
             tx.addToBackStack(null).commit()
         }
+
+        /** Pro plan ekranından (PlanFragment): sayfa yığınına girmeden, her şeyin üstünde. */
+        fun showAsDialog(fm: FragmentManager) {
+            if (fm.findFragmentByTag(TAG) == null) InviteFragment().show(fm, TAG)
+        }
+
+        const val TAG = "Invite"
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Pencere olarak açılınca da uygulama teması ve tam ekran (WeeklyCardFragment ile aynı).
+        setStyle(STYLE_NO_FRAME, R.style.Theme_NumiGoo)
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog = super.onCreateDialog(savedInstanceState).apply {
+        window?.setBackgroundDrawableResource(R.color.background_color)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        dialog?.window?.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
     }
 
     private var _binding: FragmentInviteBinding? = null
@@ -57,7 +84,9 @@ class InviteFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.btnBack.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.btnBack.setOnClickListener {
+            if (showsDialog) dismissAllowingStateLoss() else parentFragmentManager.popBackStack()
+        }
         AnalyticsLogger.logSimpleEvent("share_card_shown_invite")
         binding.btnInviteShare.setOnClickListener { onShare() }
         if (FirebaseAuth.getInstance().currentUser == null) return
@@ -93,6 +122,12 @@ class InviteFragment : Fragment() {
                 WeeklyCardShare.share(requireContext(), bmp, appString(R.string.invite_share_text, inv.link))
             }
         }
+    }
+
+    /** Pencere olarak açıldıysa ders sonu kuyruğu bunu bekliyordu (subscriptionFlowBlockReason); devam etsin. */
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        (activity as? MainActivity)?.pumpPostLessonQueue("Invite.dismiss")
     }
 
     override fun onDestroyView() {

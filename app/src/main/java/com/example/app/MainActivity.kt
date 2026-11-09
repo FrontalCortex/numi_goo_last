@@ -3426,6 +3426,9 @@ class MainActivity : AppCompatActivity() {
     private fun subscriptionFlowBlockReason(): String? {
         if (dialogStillShowing("ProDiffirent")) return "pro_panel_showing"
         if (dialogStillShowing("Plan")) return "plan_showing"
+        // Plan ekranındaki "arkadaşını davet et"ten açılan pencere (09.11.2026): kuyruk onun üstüne açılmasın,
+        // kapanınca dürtülüyor (InviteFragment.onDismiss).
+        if (dialogStillShowing(InviteFragment.TAG)) return "invite_showing"
         if (::billingManager.isInitialized && billingManager.isPurchaseFlowActive()) {
             return "purchase_flow"
         }

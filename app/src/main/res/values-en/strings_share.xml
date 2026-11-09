@@ -34,4 +34,8 @@
     <string name="referral_reward_referrer">The friend you invited finished lesson 2 on Sorobit. You both earned 1 week of Pro!</string>
     <string name="referral_reward_invitee">You joined with an invite and finished lesson 2. 1 week of Pro is yours, and your friend earned it too!</string>
     <string name="referral_reward_ok">Great</string>
+
+    <!-- Pro plan ekranı (PlanFragment): kapatma tuşu ve davet bağlantısı (09.11.2026). -->
+    <string name="plan_close_desc">Close</string>
+    <string name="plan_invite_link">Or invite a friend: you both get 1 week of Pro ›</string>
 </resources>

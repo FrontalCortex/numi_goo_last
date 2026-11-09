@@ -34,4 +34,8 @@
     <string name="referral_reward_referrer">صديقك الذي دعوته أنهى الدرس الثاني في Sorobit. ربحتما كلاكما أسبوع Pro!</string>
     <string name="referral_reward_invitee">انضممت بدعوة وأنهيت الدرس الثاني. أسبوع Pro لك، وصديقك ربحه أيضًا!</string>
     <string name="referral_reward_ok">رائع</string>
+
+    <!-- Pro plan ekranı (PlanFragment): kapatma tuşu ve davet bağlantısı (09.11.2026). -->
+    <string name="plan_close_desc">إغلاق</string>
+    <string name="plan_invite_link">أو ادعُ صديقًا: تحصلان كلاكما على Pro لمدة أسبوع ‹</string>
 </resources>
