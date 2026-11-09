@@ -118,11 +118,17 @@ class ShopFragment : Fragment() {
         buyButton.setOnClickListener { buyLifeWithKeys(buyButton) }
 
         // --- SUPER CARD ---
-        val superCard = v.findViewById<View>(R.id.shopSuperCard)
-        superCard?.setOnClickListener {
+        val openProPlans = View.OnClickListener {
             ProDiffirentFragment
                 .newInstance(AnalyticsLogger.PRO_ENTRY_SHOP)
                 .show(requireActivity().supportFragmentManager, "ProDiffirent")
+        }
+        v.findViewById<View>(R.id.shopSuperCard)?.setOnClickListener(openProPlans)
+        // "Pro'ya geç" içe göçen düğme; kendi tıklaması olmalı, yoksa dokunuşu kart alır ve
+        // düğme basılı kalır. Davranış kartla aynı.
+        v.findViewById<View>(R.id.superButton)?.let { btn ->
+            DepthButtons.style(btn, Color.WHITE, 16f, lip = Color.parseColor("#C7CCD1"))
+            btn.setOnClickListener(openProPlans)
         }
 
         // --- Özel Teklifler ---
@@ -337,7 +343,9 @@ class ShopFragment : Fragment() {
 
         if (held) {
             desc.text = appString(R.string.ui_serin_korunuyor_kullaninca_yenisini_alabilir)
-            button.setCardBackgroundColor(Color.parseColor("#17394B"))
+            // Hazır: düz (dudaksız) — basılacak bir şey yok.
+            DepthButtons.style(button, Color.parseColor("#17394B"), 8f)
+            button.isEnabled = false
             icon.visibility = View.GONE
             text.text = appString(R.string.ui_hazir)
             text.setTextColor(Color.parseColor("#4FC3F7"))
@@ -353,7 +361,8 @@ class ShopFragment : Fragment() {
                 )
             }
             desc.text = appString(R.string.ui_serini_1_gun_boyunca_korur_serin)
-            button.setCardBackgroundColor(Color.parseColor("#37474F"))
+            DepthButtons.style(button, Color.parseColor("#37474F"), 8f)
+            button.isEnabled = true
             icon.visibility = View.VISIBLE
             text.text = StreakRepository.FREEZE_COST_GOLD.toString()
             text.setTextColor(Color.parseColor("#FFFFFF"))
@@ -589,7 +598,8 @@ class ShopFragment : Fragment() {
             timerText.setTextColor(Color.parseColor("#78909C")) // Gri
             
             // Butonu gri yap
-            buyButton.setCardBackgroundColor(Color.parseColor("#1E2A30"))
+            DepthButtons.style(buyButton, Color.parseColor("#1E2A30"), 8f)
+            buyButton.isEnabled = false
             buyText.setTextColor(Color.parseColor("#78909C")) // Koyu gri metin
             buyIcon.alpha = 0.5f
             buyButton.isClickable = false
@@ -605,7 +615,8 @@ class ShopFragment : Fragment() {
             timerText.setTextColor(Color.parseColor("#29B6F6")) // Mavi
             
             // Butonu aktif yap
-            buyButton.setCardBackgroundColor(Color.parseColor("#37474F"))
+            DepthButtons.style(buyButton, Color.parseColor("#37474F"), 8f)
+            buyButton.isEnabled = true
             buyText.setTextColor(Color.parseColor("#FFFFFF"))
             buyIcon.alpha = 1.0f
             buyButton.isClickable = true

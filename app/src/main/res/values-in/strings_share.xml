@@ -38,4 +38,13 @@
     <!-- Pro plan ekranı (PlanFragment): kapatma tuşu ve davet bağlantısı (09.11.2026). -->
     <string name="plan_close_desc">Tutup</string>
     <string name="plan_invite_link">Atau undang teman: kalian berdua dapat Pro 1 minggu ›</string>
+
+    <string name="moment_streak_title">Beruntun %1$d hari! 🔥</string>
+    <string name="moment_streak_desc">%1$d hari berlatih berturut-turut</string>
+    <string name="moment_badge_title">Lencana baru! 🏅</string>
+    <string name="moment_later">Nanti saja</string>
+    <string name="moment_share_text_streak">Beruntun %1$d hari di Sorobit 🔥 Sempoa dan berhitung cepat. Pasang lewat tautan ini dan dapatkan Pro 1 minggu: %2$s</string>
+    <string name="moment_share_text_badge">Lencana baru di Sorobit: %1$s 🏅 Sempoa dan berhitung cepat. Pasang lewat tautan ini dan dapatkan Pro 1 minggu: %2$s</string>
+    <!-- Paylaş düğmesi: davet bağlantısı beklenirken (ShareMomentDialog, WeeklyCardFragment). -->
+    <string name="share_preparing">Menyiapkan…</string>
 </resources>

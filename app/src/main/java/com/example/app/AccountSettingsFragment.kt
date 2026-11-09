@@ -201,6 +201,18 @@ class AccountSettingsFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
+        binding.btnCredits.setOnClickListener {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.fragmentContainerID, CreditsFragment())
+                .addToBackStack(null)
+                .commit()
+        }
         binding.btnAccountSettingsLogout.setOnClickListener {
             MyFirebaseMessagingService.clearCurrentTokenFromFirestore()
             authManager.logout()

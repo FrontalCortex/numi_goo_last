@@ -6,11 +6,14 @@
 #   mipmap-*dpi/ic_launcher.png / _round.png Android 8.0 öncesi hazır ikonlar (48dp)
 #   drawable-*dpi/ic_notification.png        bildirim küçük ikonu (24dp, tek renk silüet)
 #   src/main/ic_launcher-playstore.png       Play Store ikonu (512x512, köşesiz; köşeyi Play yuvarlıyor)
+#   drawable-xxxhdpi/splash_icon.png         açılış ekranı ikonu (288dp tuval, mor 160dp daire resmin içinde;
+#                                            1152 px: 432 px'lik ön katman açılışta bulanıklaşıyordu)
 #
-# Kullanım (depo kökünden):  powershell -ExecutionPolicy Bypass -File tools\ikon_uret.ps1 [-Onizleme yol.png]
+# Kullanım (depo kökünden):  powershell -ExecutionPolicy Bypass -File tools\ikon_uret.ps1 [-Onizleme yol.png] [-YalnizAcilis]
 param(
     [string]$Kaynak = "design\sobi_ikon_kaynak.png",
-    [string]$Onizleme = ""
+    [string]$Onizleme = "",
+    [switch]$YalnizAcilis
 )
 $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
@@ -159,6 +162,20 @@ public static class IkonUret {
         return b;
     }
 
+    // Açılış ekranı ikonu: 288dp tuval (zeminsiz açılış ikonu boyu), ortada 160dp mor daire ve içinde
+    // tavşan (uyarlanabilir ikondaki oranla: 33.5/108 x 240dp = ~74.4dp yarıçap). Daire resmin içinde,
+    // çünkü MIUI açılış ikonunun zemin rengini daireye kırpmadan kare çiziyor.
+    public static Bitmap Acilis(Bitmap k, PointF m, float kr, int boy) {
+        var b = new Bitmap(boy, boy, PixelFormat.Format32bppArgb);
+        float dp = boy / 288f;
+        using (var g = G(b)) {
+            g.Clear(Color.Transparent);
+            using (var f = new SolidBrush(Zemin)) g.FillEllipse(f, boy / 2f - 80 * dp, boy / 2f - 80 * dp, 160 * dp, 160 * dp);
+            Ciz(g, k, m, kr, boy / 2f, boy / 2f, 240f * 33.5f / 108f * dp);
+        }
+        return b;
+    }
+
     // Play Store: 512x512 kare; uyarlanabilir ikonun ortadaki 72dp'si.
     public static Bitmap Play(Bitmap k, PointF m, float kr) {
         var b = new Bitmap(512, 512, PixelFormat.Format32bppArgb);
@@ -227,6 +244,10 @@ Write-Host "kaynak kırpıldı: $($k.Width)x$($k.Height), merkez $m, yarıçap $
 if ($Onizleme) { [IkonUret]::Onizleme($k, $tek, $m, $r, $Onizleme); Write-Host "önizleme: $Onizleme"; return }
 
 $kok = (Get-Location).Path
+# Açılış ikonu: 288dp x 4 = 1152 px, mor daire resmin içinde (bkz. Acilis).
+[IkonUret]::Kaydet([IkonUret]::Acilis($k, $m, $r, 1152), (Join-Path $kok "$res\drawable-xxxhdpi\splash_icon.png"))
+Write-Host "açılış ikonu üretildi"
+if ($YalnizAcilis) { return }
 $yogunluk = [ordered]@{ mdpi = 1.0; hdpi = 1.5; xhdpi = 2.0; xxhdpi = 3.0; xxxhdpi = 4.0 }
 foreach ($y in $yogunluk.Keys) {
     $c = $yogunluk[$y]

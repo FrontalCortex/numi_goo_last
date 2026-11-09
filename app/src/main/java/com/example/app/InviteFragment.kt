@@ -88,6 +88,8 @@ class InviteFragment : DialogFragment() {
             if (showsDialog) dismissAllowingStateLoss() else parentFragmentManager.popBackStack()
         }
         AnalyticsLogger.logSimpleEvent("share_card_shown_invite")
+        // Sonuç ekranının "Devam" düğmesiyle aynı yeşil ve dudak.
+        DepthButtons.style(binding.btnInviteShare, 0xFF8CC63F.toInt(), 24f, lip = 0xFF62A12E.toInt())
         binding.btnInviteShare.setOnClickListener { onShare() }
         if (FirebaseAuth.getInstance().currentUser == null) return
         viewLifecycleOwner.lifecycleScope.launch {

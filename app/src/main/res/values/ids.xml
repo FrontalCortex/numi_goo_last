@@ -2,4 +2,6 @@
 <resources>
     <!-- panel_cup_path kartı kilitli mi (TasksFragment.setupCupPathCard işaretler). -->
     <item name="cupCardLockedTag" type="id" />
+    <!-- DepthButtons.style: dolgu ve basma dinleyicisi bir kez eklensin. -->
+    <item name="depthButtonStyled" type="id" />
 </resources>

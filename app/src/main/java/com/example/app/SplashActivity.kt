@@ -2,11 +2,16 @@ package com.example.app
 
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.View
+import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.splashscreen.SplashScreenViewProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -17,8 +22,11 @@ class SplashActivity : AppCompatActivity() {
     }
 
     companion object {
-        // Splash animasyonunun minimum süresi (mevcut davranış).
-        private const val SPLASH_ANIMATION_MS = 2000L
+        // Açılışın en kısa süresi (onCreate'ten). Eskiden 2 sn'ydi ve bir şey yüklenmediği hâlde
+        // çark dönüyordu (10.11.2026); şimdi marka bir kez okunacak kadar: sistem ikonu + yazının
+        // gelişi (~450 ms) + kısa bekleme.
+        private const val SPLASH_ANIMATION_MS = 1200L
+        private const val BRAND_REVEAL_MS = 450L
         // Zorunlu güncelleme kontrolü animasyon bittikten sonra en fazla bu kadar bekletir;
         // çekme genelde animasyon sürerken biter. Bkz. ForceUpdateManager.runIfAllowed.
         private const val FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS = 1000L
@@ -34,12 +42,16 @@ class SplashActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // super'den ve setContentView'dan önce: sistemin açılış ekranı (Theme.App.Starting) buradan
+        // sonra Theme.NumiGoo'ya geçiyor.
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         
         // Navigation bar rengini background_color yap
         window.navigationBarColor = androidx.core.content.ContextCompat.getColor(this, R.color.background_color)
         
         setContentView(R.layout.activity_splash)
+        splashScreen.setOnExitAnimationListener { provider -> revealBrand(provider) }
 
         // Davet bağlantısı (/d/<kod>) uygulama yüklüyken açıldı (App Links). Atıf yok: bu kişi zaten
         // kullanıcı; yalnızca "paylaşılan bağlantıya basıldı" sayılıyor. Uygulama normal akışla açılır.
@@ -78,6 +90,46 @@ class SplashActivity : AppCompatActivity() {
         }
     }
     
+    /**
+     * Sistemin açılış ekranından bizimkine geçiş: kendi ikonumuzu sistem ikonunun tam üstüne
+     * (aynı yer ve boy) koyup sistem ekranını kaldırıyoruz; sonra ikon yukarı kayıyor ve altından
+     * "Sorobit" beliriyor. Kullanıcı tek bir ekran görüyor.
+     *
+     * Sistem ekranı gösterilmediyse (ör. uygulama zaten açıkken bağlantıyla gelme) bu çağrılmıyor;
+     * düzen o zaman doğrudan son hâliyle görünüyor.
+     */
+    private fun revealBrand(provider: SplashScreenViewProvider) {
+        val brand = findViewById<View>(R.id.splashBrand)
+        val icon = findViewById<View>(R.id.splashIcon)
+        val wordmark = findViewById<View>(R.id.splashWordmark)
+        runCatching {
+            val sys = provider.iconView
+            if (sys.width == 0 || icon.width == 0) return@runCatching
+            val s = IntArray(2).also { sys.getLocationInWindow(it) }
+            val o = IntArray(2).also { icon.getLocationInWindow(it) }
+            // Android 12+ ikon kutusu görünen maske boyunda (192dp), resim onun 1,5 katı çiziliyor
+            // (uyarlanabilir ikondaki 108/72 gibi); kutu genişliğiyle hesaplayınca ikonumuz ⅔ boyda
+            // başlayıp büyüyordu (10.11.2026 MIUI 14 kaydı). Eski sürümlerde (kütüphanenin kendi
+            // çizimi) kutu resmin boyunda.
+            val drawn = sys.width * (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 1.5f else 1f)
+            val scale = drawn / icon.width
+            brand.pivotX = icon.left + icon.width / 2f
+            brand.pivotY = icon.top + icon.height / 2f
+            brand.scaleX = scale
+            brand.scaleY = scale
+            brand.translationX = (s[0] + sys.width / 2f) - (o[0] + icon.width / 2f)
+            brand.translationY = (s[1] + sys.height / 2f) - (o[1] + icon.height / 2f)
+            wordmark.alpha = 0f
+            wordmark.translationY = 12 * resources.displayMetrics.density
+        }
+        provider.remove()
+        val ease = DecelerateInterpolator(1.6f)
+        brand.animate().translationX(0f).translationY(0f).scaleX(1f).scaleY(1f)
+            .setDuration(BRAND_REVEAL_MS).setInterpolator(ease).start()
+        wordmark.animate().alpha(1f).translationY(0f)
+            .setStartDelay(BRAND_REVEAL_MS / 3).setDuration(BRAND_REVEAL_MS).setInterpolator(ease).start()
+    }
+
     private fun checkLoginStatus() {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)

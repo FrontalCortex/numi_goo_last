@@ -73,7 +73,15 @@ class MainActivity : AppCompatActivity() {
                 // Reklam gösterim aralığı: 5 dakika (5 * 60 * 1000 ms)
                 if (now - GlobalValues.lastInterstitialAdShownTime >= 5 * 60 * 1000L) {
                     isPastInterstitialLessonGate { pastGate ->
-                        if (pastGate) {
+                        if (pastGate && !adManager.isInterstitialReady()) {
+                            // Reklam yüklü değil: gösterilemeyecek. Aralığı BAŞLATMA (eskiden başlıyordu ve
+                            // sonraki 5 dakikanın dersleri reklamsız geçiyordu); yüklemeyi başlat, bir sonraki
+                            // ders sonunda gösterilsin.
+                            Log.d("AdDiag", "Skipping Ad on $logContext: interstitial not loaded yet (aralık başlatılmadı)")
+                            AnalyticsLogger.logAdNotReady(AnalyticsLogger.AD_TYPE_INTERSTITIAL)
+                            adManager.ensureInterstitialLoading()
+                            onDone()
+                        } else if (pastGate) {
                             GlobalValues.lastInterstitialAdShownTime = System.currentTimeMillis()
                             Log.d("AdDiag", "Showing Interstitial Ad on $logContext")
                             val shouldShowSkip = GlobalValues.pendingCupPathRevealPartId == null
@@ -87,7 +95,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     return
                 } else {
-                    Log.d("AdDiag", "Skipping Interstitial Ad on $logContext due to 40 sec cooldown")
+                    Log.d("AdDiag", "Skipping Interstitial Ad on $logContext due to 5 min cooldown")
                 }
             } else {
                 Log.d("AdDiag", "Skipping Interstitial Ad on $logContext because user is Premium/Pro or Teacher Approved")
@@ -272,6 +280,8 @@ class MainActivity : AppCompatActivity() {
         private const val WEEKLY_CARD_WAIT_MS = 60_000L
         /** Davet ödülü bildirimi en çok bu aralıkla okunur (bkz. maybeShowReferralReward). */
         private const val REFERRAL_NOTICE_CHECK_MS = 30 * 60_000L
+        /** Başarı anı paneli ders sonu zincirini en çok bu kadar bekler; sonra bir sonraki öne gelişte. */
+        private const val SHARE_MOMENT_WAIT_MS = 3 * 60_000L
         /** 2. ders bitince ödül bildiriminin yeniden okunduğu anlar (bkz. requestReferralRewardCheck). */
         private const val REFERRAL_NOTICE_RECHECK_1_MS = 8_000L
         private const val REFERRAL_NOTICE_RECHECK_2_MS = 30_000L
@@ -3429,6 +3439,9 @@ class MainActivity : AppCompatActivity() {
         // Plan ekranındaki "arkadaşını davet et"ten açılan pencere (09.11.2026): kuyruk onun üstüne açılmasın,
         // kapanınca dürtülüyor (InviteFragment.onDismiss).
         if (dialogStillShowing(InviteFragment.TAG)) return "invite_showing"
+        // Başarı anı paneli açıkken geç gelen bir rozet kutlaması onun altına açılmasın; panel kapanınca
+        // (ShareMomentDialog.onDismiss) kuyruk dürtülüyor. Panelin kendisi kuyruk boşken açılıyor.
+        if (dialogStillShowing(ShareMomentDialog.TAG)) return "share_moment_showing"
         if (::billingManager.isInitialized && billingManager.isPurchaseFlowActive()) {
             return "purchase_flow"
         }
@@ -3994,6 +4007,7 @@ class MainActivity : AppCompatActivity() {
         refreshPendingSeasonLeaderboardRewardFromFirestore()
         maybeAutoOpenWeeklyCard()
         maybeShowReferralReward()
+        requestShareMomentCheck()
         // Davetle kurulduysa (Install Referrer'da kod) ve hesap artık varsa davet edene bağla.
         ReferralAttribution.claimIfPending(this)
     }
@@ -5232,8 +5246,47 @@ class MainActivity : AppCompatActivity() {
             streakCelebrationShowing -> "seri_kutlamasi"
             fm.findFragmentByTag(WeeklyCardFragment.TAG) != null -> "haftalik_kart_acik"
             referralRewardDialogShowing -> "davet_odulu_acik"
+            fm.findFragmentByTag(ShareMomentDialog.TAG) != null -> "paylasim_ani_acik"
             else -> offMapNewStreakBlockReason(base)
         }
+    }
+
+    // ── Başarı anı paylaşım paneli (ShareMoments; kullanıcı kararı 09.11.2026) ──
+    //
+    // An kaydedilince ve öne her gelişte denenir; ana ekran boşalana kadar (ders sonu zinciri, seri şeridi,
+    // haftalık kart, ödül paneli…) bekler. Ders sonu zinciri uzun sürebildiği için bekleme süresi daha uzun.
+    private var shareMomentDeadlineMs = 0L
+    /** Aynı engel her yoklamada loga yazılmasın (adb logcat -s ShareMoment). */
+    private var lastShareMomentBlock: String? = null
+    private val shareMomentRunnable = Runnable { tryShowShareMoment() }
+
+    fun requestShareMomentCheck() = runOnUiThread {
+        if (!::binding.isInitialized || auth.currentUser == null) return@runOnUiThread
+        val pending = ShareMoments.pendingToShow(this) ?: return@runOnUiThread
+        Log.d(ShareMomentDialog.TAG, "deneniyor an=${pending.key}")
+        lastShareMomentBlock = null
+        shareMomentDeadlineMs = android.os.SystemClock.elapsedRealtime() + SHARE_MOMENT_WAIT_MS
+        binding.root.removeCallbacks(shareMomentRunnable)
+        binding.root.postDelayed(shareMomentRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+    }
+
+    private fun tryShowShareMoment() {
+        if (isFinishing || isDestroyed || !::binding.isInitialized) return
+        val m = ShareMoments.pendingToShow(this) ?: return
+        if (android.os.SystemClock.elapsedRealtime() > shareMomentDeadlineMs) return
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        val block = homeIdleBlockReason() ?: if (streakCelebrationShowing) "seri_seridi" else null
+        if (block != null) {
+            if (block != lastShareMomentBlock) {
+                lastShareMomentBlock = block
+                Log.d(ShareMomentDialog.TAG, "bekliyor block=$block an=${m.key}")
+            }
+            binding.root.postDelayed(shareMomentRunnable, WEEKLY_CARD_RETRY_MS)
+            return
+        }
+        Log.d(ShareMomentDialog.TAG, "açılıyor an=${m.key}")
+        ShareMoments.markShown(this, m)
+        ShareMomentDialog.show(supportFragmentManager, m)
     }
 
     // ── Davet ödülü paneli: "1 hafta Pro kazandın" (kullanıcı kararı 09.11.2026) ──
@@ -5527,6 +5580,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showStreakCelebration(streak: Int) {
+        // 7/30/100 gün: paylaşım anı kaydı (ShareMoments); panel şerit ve ders sonu zinciri bitince.
+        ShareMoments.recordStreak(this, streak)
         val view = binding.streakCelebration
         streakCelebrationShowing = true
         binding.streakCelebrationTitle.text = appString(R.string.ui_bugunku_hedefini_tamamladin)

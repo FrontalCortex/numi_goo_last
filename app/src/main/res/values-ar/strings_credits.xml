@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ayarlar → Kaynaklar ve lisanslar; ayrıntı values/strings_credits.xml. -->
+<resources>
+    <string name="credits_title">المصادر والتراخيص</string>
+    <string name="credits_intro">يحتوي Sorobit أيضًا على رسومات ورسوم متحركة وأصوات من صنع آخرين. شكرًا لهم جميعًا.</string>
+    <string name="credits_mascot">رسم التميمة سوبي</string>
+    <string name="credits_avatars">الصور الرمزية</string>
+    <string name="credits_emoji">رموز تعبيرية متحركة</string>
+    <string name="credits_icons">الأيقونات والصور</string>
+    <string name="credits_sounds">المؤثرات الصوتية</string>
+    <string name="credits_animations">الرسوم المتحركة</string>
+    <string name="credits_font">الخط</string>
+    <string name="credits_modified">استُخدم مع تعديلات.</string>
+    <string name="credits_open_source">تراخيص المصادر المفتوحة</string>
+    <string name="credits_open_source_desc">مكتبات البرمجيات المستخدمة في التطبيق</string>
+</resources>

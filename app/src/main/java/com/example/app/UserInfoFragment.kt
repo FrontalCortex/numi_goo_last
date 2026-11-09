@@ -287,6 +287,7 @@ class UserInfoFragment : Fragment() {
             }
         })
 
+        updateContinueButton(binding.btnContinue.isEnabled)
         binding.btnContinue.setOnClickListener {
             if (animating) return@setOnClickListener
             // Bilgi sorularında devam edilirken maskot cevabı deftere yazıyor, sonra defterle
@@ -1060,8 +1061,8 @@ class UserInfoFragment : Fragment() {
         } else {
             ContextCompat.getColor(requireContext(), R.color.dark_text_secondary)
         }
-        binding.btnContinue.backgroundTintList =
-            android.content.res.ColorStateList.valueOf(tintColor)
+        // İçe göçen düğme; seçim yapılmadıysa gri ve dudaksız.
+        DepthButtons.style(binding.btnContinue, tintColor, 8f)
     }
 
     private fun saveBirthYearAndProceed(birthYear: Int, source: String) {

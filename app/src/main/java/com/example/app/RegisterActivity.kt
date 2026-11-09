@@ -169,6 +169,10 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             }
         }
         
+        DepthButtons.primary(binding.btnContinue)
+        DepthButtons.primary(binding.btnRegister)
+        DepthButtons.google(binding.btnGoogleSignIn)
+
         // Öğrenci kaydı: OTP akışı
         binding.btnContinue.setOnClickListener {
             requireOnlineOrShowOffline {

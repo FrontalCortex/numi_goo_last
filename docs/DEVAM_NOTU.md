@@ -23,6 +23,40 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Kaynaklar ve lisanslar ekranı (10.11.2026 — derlendi, telefona kuruldu, kullanıcı bakacak; 10.11 commit + push, sürüm 24)
+Ayarlar → Destek → "Kaynaklar ve lisanslar" (`CreditsFragment`, `fragment_credits.xml`, `strings_credits.xml`
+4 dil). Atıf metinleri lisansın istediği gibi İngilizce, kodda (`CREDITS` listesi); başlıklar çevrili.
+Altta "Açık kaynak lisansları" → `OssLicensesMenuActivity` (eklenti `com.google.android.gms.oss-licenses-plugin`
+0.10.6, settings.gradle.kts'de `resolutionStrategy` ile modüle eşlendi; kütüphane 17.1.0; koyu tema
+`Theme.NumiGoo.Licenses`). Liste yalnızca RELEASE'de gerçek (308 kütüphane doğrulandı), debug'da yer tutucu.
+Tarama sonucu (dosyalardan + eski notlardan):
+- Kesin atıf gerekli, ekranda: Sobi uygulama içi çizimi (`BunnyMascotArt`, Freepik no. 1040416 →
+  "designed by Freepik - Magnific.com"); avatarlar (Personas by Draftbit, CC BY 4.0); ~30 `emoji_*` Lottie
+  (Google Noto Emoji Animation, CC BY 4.0; kullanıcının notundaki IconScout "Google Inc." bunlar, Racing Car
+  artık yok).
+- Atıf istemeyen ama ekranda: floraphonic (Pixabay), LottieFiles, Baloo 2 (OFL), "Designed by Magnific"
+  (kullanıcının notu). nomagician (success_finish_sound) uygulamada YOK, eklenmedi.
+- KAYNAĞI BİLİNMEYEN (kullanıcı bakacak): raw'daki abacus_sound1–5, correct/incorrect, badge, chest_level,
+  reward, star, confetti_pop, crowd_cheer, lesson_result, energic_music; 229 vektör ikonun çoğu (ör.
+  `abacus_svg_ic` Flaticon → yazar adıyla atıf ister); raster görseller (blinding_tutorial*, class_board*,
+  book_ic, rules_book_image.jpg, mini_abacus_ic, mipmap back/energy/map/tasks/user…). Öğretici sesleri
+  ElevenLabs: ücretli planda üretildiyse atıf gerekmez (TR seslerin planı doğrulanmadı).
+- Freepik 8.1 marka yasağı atıfla kalkmıyor (Sobi maskot); eski not geçerli.
+
+## Açılış ekranı sadeleşti (10.11.2026 — derlendi, telefona kuruldu, kullanıcı bakacak; 10.11 commit + push, sürüm 24)
+Kullanıcı kararı: Duolingo/Mimo gibi yalnızca marka. Eskiden Android 12+'da önce sistemin ikon ekranı, sonra
+bizim farklı (abaküs) logolu ekranımız + "Öğrenmeye hazır mısın?" + boşuna dönen çark geliyordu ve sabit 2 sn
+bekletiyordu. Şimdi `androidx.core:core-splashscreen:1.0.1`, `Theme.App.Starting` (koyu zemin, mor dairede
+Sobi = uygulama ikonu), `SplashActivity.revealBrand`: kendi ikonunu sistem ikonunun üstüne koyup sistem
+ekranını kaldırıyor, ikon yukarı kayıp altından "Sorobit" beliriyor (450 ms). En kısa süre 2000 → 1200 ms
+(zorunlu güncelleme bekleyişi aynı, en çok +1 sn). İkon `drawable-xxxhdpi/splash_icon.png` (960 px)
+`tools/ikon_uret.ps1 -YalnizAcilis` ile üretildi. `activity_splash_text_2` artık kullanılmıyor.
+Düzeltme (aynı gün, kullanıcı fark etti): MIUI 14 ikon zemin rengini (`Theme.SplashScreen.IconBackground`)
+daireye kırpmadan KARE çiziyordu → mor daire artık resmin içinde (`IkonUret.Acilis`, 288dp tuval = 1152 px,
+tema `Theme.SplashScreen`, zeminsiz). Android 12+ ikon kutusu görünen maske boyunda, resim 1,5 katı çiziliyor
+→ `revealBrand` ölçeği `sys.width * 1.5 / icon.width` (31 altı 1.0, DENENMEDİ). Telefonda ekran kaydıyla
+doğrulandı: şekil ve boy geçişte aynı.
+
 ## GA4 kopma analizi (03.11.2026, son 28 gün 6 Eki–2 Kas, `Build type ≠ debug` filtreli)
 
 Ayıklama: son 28 günde `tester = true` olan kullanıcı YOK (değer listesinde yalnızca `false`); ayıklama
@@ -675,6 +709,34 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   önleme, güvenlik ve kanunlara uygunluk" + "Uygulama işlevselliği" işaretli → değişiklik GEREKMEDİ (okundu, kaydedilmedi).
   GA4: yeni keşif "Plan ekranı: satın alma mı davet mi" (plan_shown → plan_invite_tap → share_gate_pass → share_done_*);
   satın alma tarafı mevcut "Pro Hunisi" keşfinde.
+- **Başarı anı paylaşımı (09.11 gece, sürüm 24'e; telefonda rozet ve seri paneli doğal akışta görüldü, paylaşım
+  çalıştı; 13 altı veli kapısı DENENMEDİ):** kullanıcı kararı: seri 7/30/100 gün + rozet
+  seviye atlaması; ders sonu zincirine dokunmadan "an kaydı + sonra panel". `ShareMoments` (prefs `share_moments`:
+  bekleyen an, günde en çok bir panel, seri rozeti ezer, görülenler) kaydı `MainActivity.showStreakCelebration` ve
+  `BadgeProgressFirestore.logLevelUps`'tan; `ShareMomentDialog` (Sobi + başlık kartı paylaşılan bitmap, 13 altı veli
+  kapısı, `?k=moment`) `homeIdleBlockReason` boşalınca, en çok 3 dk bekler. GA4 `share_card_shown_streak|badge`.
+  Sunucu (`SOURCES` + 'moment') ve d.html regex'i 10.11 commit + push (4 fonksiyon deploy'u; d.html HOSTING DEPLOY EDİLMEDİ, onay bekliyor)
+  (deploy-plan: 4 fonksiyon — 3 davet + cleanupUserOnDelete, aynı modülü kullandığı için). Denemek için:
+  `adb shell run-as com.numigo.app` ile `shared_prefs/share_moments.xml`'e bekleyen an yazılıp uygulama açılabilir.
+  Rozet anı anahtarı `BADGE:<ad>:<reachedTarget>`: aynı seviyeye yeniden çıkmak (kullanıcı denemek için 49'a
+  düşürüyordu) yeni an değil, bilerek böyle. Günlük hak dolduysa an ertesi güne kalıyor ve ilk açılışta çıkıyor
+  (10.11 00:01'de dünkü Siyah Kuşak böyle geldi); kayıt cihaz başına, hesap başına değil. Kullanıcı kararı (10.11):
+  BÖYLE KALSIN (aynı güne sınırlanmadı). Paylaş düğmesi içe göçen, köşe 14 dp. Paylaş'a basınca "Hazırlanıyor…" (davet bağlantısı panel açılırken
+  önceden isteniyor). Yanında düzeltilenler (kullanıcı onaylı, 10.11 commit edildi):
+  `MissionChestRewardFragment` "Devam"dan sonra gelen rozet yükünü `MainActivity.enqueuePendingBadgePayloads`'a
+  aktarıyor (önceden kayboluyordu; rozet kutlaması telefonda görüldü). Reklam: geçiş reklamı yüklü değilse 5 dk'lık
+  aralık artık BAŞLAMIYOR (`AdManager.isInterstitialReady`, `ensureInterstitialLoading`); B hesabında telefonda
+  doğrulandı. Mağazada davet kartı Pro (SUPER) kartının hemen altına taşındı.
+- **İçe göçen düğmeler (09–10.11, kullanıcı isteği; telefona kuruldu, kullanıcı bakıyor; 10.11 commit + push):**
+  10.11: mağaza kartlarında basınca üst kenar yerinde kalıyordu — CardView `clipToOutline` ile kendini arka planın
+  çizgisine (dudak katmanı, üstten 4 dp içeride) göre kırpıyordu; `clipToOutline = false`. Plan ve Pro karşılaştırma
+  ekranlarındaki mavi `btnTryFree` (#3D4DFF, 12 dp) da eklendi.
+  `DepthButtons.style(view, yüz, köşe, dudak?, kenar?)` kodla 4 dp dudaklı seçici + `DepthPress`; rengi duruma göre
+  değişen düğmeler için (aynı renkle tekrar çağrı bir şey yapmaz; devre dışıyken dudaksız düz). Uygulananlar: ders
+  paneli `actionButton` (Başla/Devam/Tekrar dene/1 anahtarla aç; yükseklik 52→56 dp, kilitli ve rehber modunda
+  düz), davet ekranı "Davet et", mağaza "Pro'ya geç" (artık kendi tıklaması var, kartla aynı), seri dondurma
+  "4000" ve ekstra can "1 anahtar" kartları (hazır/dolu hâlde `isEnabled=false` + düz), LoginStart "Başla",
+  UserInfo "Devam Et", Register "Devam/Kayıt ol/Google", Login "Devam/Google".
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 

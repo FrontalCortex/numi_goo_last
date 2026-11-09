@@ -173,10 +173,15 @@ class WeeklyCardFragment : DialogFragment() {
                         if (d.speaksToChild) { next -> next() } else { next -> ParentGate.show(requireContext(), next) }
                     gate {
                         AnalyticsLogger.logSimpleEvent("share_gate_pass")
+                        // Basış hemen görünsün: davet bağlantısı sunucu soğukken birkaç saniye sürebiliyor.
                         button.isEnabled = false
+                        button.alpha = 0.6f
+                        (button as? TextView)?.text = appString(R.string.share_preparing)
                         viewLifecycleOwner.lifecycleScope.launch {
                             val link = WeeklyCardShare.fetchLink(requireContext())
                             button.isEnabled = true
+                            button.alpha = 1f
+                            (button as? TextView)?.text = appString(R.string.weekly_card_share)
                             if (_binding == null) return@launch
                             val bmp = WeeklyCardShare.renderBitmap(requireContext(), summary)
                             WeeklyCardShare.share(requireContext(), bmp, appString(R.string.weekly_share_text, link))

@@ -91,6 +91,15 @@ object BadgeProgressFirestore {
     /** Kazanılan her kademeyi ayrı olay olarak ölçüme yazar. Boş listede hiçbir şey yapmaz. */
     private fun logLevelUps(payloads: List<BadgeLevelUpPayload>) {
         payloads.forEach { AnalyticsLogger.logBadgeLevelUp(badgeIdOf(it.mode), it.reachedTarget) }
+        // Başarı anı paylaşımı (09.11.2026): yalnızca KAYIT; panel ders sonu zinciri bittikten sonra
+        // ana ekranda açılıyor (ShareMoments). Rozet ekranlarına dokunulmuyor.
+        // Anahtar kademenin hedefiyle (reachedTarget): aynı kademe yeniden kutlanırsa (09.11.2026 cihazda son
+        // kademedeki Kusursuz Odak her sandık dersinde yeniden kutlandı) paylaşım bir kez önerilsin.
+        payloads.lastOrNull()?.let { p ->
+            runCatching {
+                ShareMoments.recordBadge(AppStrings.context(), BadgeKind.fromMode(p.mode)?.title.orEmpty(), p.reachedTarget)
+            }
+        }
     }
 
     /**

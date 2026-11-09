@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ayarlar → Kaynaklar ve lisanslar; ayrıntı values/strings_credits.xml. -->
+<resources>
+    <string name="credits_title">Credits and licenses</string>
+    <string name="credits_intro">Sorobit also includes illustrations, animations and sounds made by others. Thank you to all of them.</string>
+    <string name="credits_mascot">Sobi mascot illustration</string>
+    <string name="credits_avatars">Avatars</string>
+    <string name="credits_emoji">Animated emoji</string>
+    <string name="credits_icons">Icons and images</string>
+    <string name="credits_sounds">Sound effects</string>
+    <string name="credits_animations">Animations</string>
+    <string name="credits_font">Font</string>
+    <string name="credits_modified">Modified for this app.</string>
+    <string name="credits_open_source">Open source licenses</string>
+    <string name="credits_open_source_desc">Software libraries used in the app</string>
+</resources>

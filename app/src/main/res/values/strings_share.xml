@@ -44,4 +44,14 @@
     <!-- Pro plan ekranı (PlanFragment): kapatma tuşu ve davet bağlantısı (09.11.2026). -->
     <string name="plan_close_desc">Kapat</string>
     <string name="plan_invite_link">Ya da arkadaşını davet et: ikiniz de 1 hafta Pro kazanın ›</string>
+
+    <!-- Başarı anı paneli (ShareMomentDialog, ShareMoments): seri 7/30/100 gün ve rozet. -->
+    <string name="moment_streak_title">%1$d günlük seri! 🔥</string>
+    <string name="moment_streak_desc">%1$d gün üst üste çalışıldı</string>
+    <string name="moment_badge_title">Yeni rozet! 🏅</string>
+    <string name="moment_later">Şimdi değil</string>
+    <string name="moment_share_text_streak">Sorobit\'te %1$d günlük seri 🔥 Soroban ve zihinden hesap. Bu bağlantıyla kurarsan 1 hafta Pro hediye: %2$s</string>
+    <string name="moment_share_text_badge">Sorobit\'te yeni rozet: %1$s 🏅 Soroban ve zihinden hesap. Bu bağlantıyla kurarsan 1 hafta Pro hediye: %2$s</string>
+    <!-- Paylaş düğmesi: davet bağlantısı beklenirken (ShareMomentDialog, WeeklyCardFragment). -->
+    <string name="share_preparing">Hazırlanıyor…</string>
 </resources>

@@ -6,6 +6,7 @@ plugins {
     id("com.google.devtools.ksp") version "1.9.24-1.0.20"
     id("com.google.gms.google-services")
     id("com.google.firebase.crashlytics")
+    id("com.google.android.gms.oss-licenses-plugin")
 }
 
 // Yayın imzalama bilgileri keystore.properties'ten okunur (git'e girmez, bkz. .gitignore).
@@ -33,7 +34,7 @@ android {
         applicationId = "com.numigo.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 23
+        versionCode = 24
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -162,6 +163,14 @@ dependencies {
     // Avatar (Personas) parçalarını SVG olarak çizmek için; VectorDrawable maske ve
     // gradyanları desteklemiyor. Bkz. AvatarArt.
     implementation("com.caverock:androidsvg-aar:1.4")
+
+    // Açılış ekranı: Android 12+'nın sistem açılışıyla bizimki tek ekran olsun (eskiden önce sistemin
+    // ikon ekranı, sonra bizim farklı logolu ekranımız geliyordu). Android 7–11'de de aynı görünüm.
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // Açık kaynak lisansları ekranı (OssLicensesMenuActivity). Liste yalnızca release derlemesinde
+    // gerçek; debug'da eklenti yer tutucu bir satır koyuyor.
+    implementation("com.google.android.gms:play-services-oss-licenses:17.1.0")
 
     // Firebase dependencies
     // Email link (passwordless) migration away from Dynamic Links requires newer Auth SDKs.

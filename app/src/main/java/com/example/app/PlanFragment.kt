@@ -96,6 +96,7 @@ class PlanFragment : DialogFragment() {
             }
         }
 
+        DepthButtons.style(binding.btnTryFree, 0xFF3D4DFF.toInt(), 12f)
         binding.btnTryFree.setOnClickListener {
             // `plan` alanını istemci yazamaz (firestore.rules kilitli tutuyor). Play'den gelen
             // abonelik token'ı sunucuda doğrulandıktan sonra Admin SDK ile yazılır.

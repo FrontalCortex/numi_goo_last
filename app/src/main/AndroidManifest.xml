@@ -71,7 +71,7 @@
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.NumiGoo"
+            android:theme="@style/Theme.App.Starting"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -178,6 +178,19 @@
         <receiver
             android:name=".WeeklyCardShare$ChosenReceiver"
             android:exported="false" />
+        <!-- Açık kaynak lisansları (Ayarlar → Kaynaklar ve lisanslar); koyu tema. -->
+        <activity
+            android:name="com.google.android.gms.oss.licenses.OssLicensesMenuActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.NumiGoo.Licenses"
+            tools:replace="android:theme" />
+        <activity
+            android:name="com.google.android.gms.oss.licenses.OssLicensesActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.NumiGoo.Licenses"
+            tools:replace="android:theme" />
     </application>
 
 </manifest>

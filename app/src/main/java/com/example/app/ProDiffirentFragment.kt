@@ -80,6 +80,7 @@ class ProDiffirentFragment : DialogFragment() {
 
         SubscriptionCta.apply((activity as? MainActivity)?.billingManager, binding.btnTryFreeText)
 
+        DepthButtons.style(binding.btnTryFree, 0xFF3D4DFF.toInt(), 12f)
         binding.btnTryFree.setOnClickListener {
             // Yeni fragmenti hemen açıyoruz
             PlanFragment().show(requireActivity().supportFragmentManager, "Plan")

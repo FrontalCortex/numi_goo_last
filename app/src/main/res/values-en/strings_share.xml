@@ -38,4 +38,13 @@
     <!-- Pro plan ekranı (PlanFragment): kapatma tuşu ve davet bağlantısı (09.11.2026). -->
     <string name="plan_close_desc">Close</string>
     <string name="plan_invite_link">Or invite a friend: you both get 1 week of Pro ›</string>
+
+    <string name="moment_streak_title">%1$d-day streak! 🔥</string>
+    <string name="moment_streak_desc">%1$d days of practice in a row</string>
+    <string name="moment_badge_title">New badge! 🏅</string>
+    <string name="moment_later">Not now</string>
+    <string name="moment_share_text_streak">A %1$d-day streak on Sorobit 🔥 Abacus and mental math. Install with this link and get 1 week of Pro: %2$s</string>
+    <string name="moment_share_text_badge">New badge on Sorobit: %1$s 🏅 Abacus and mental math. Install with this link and get 1 week of Pro: %2$s</string>
+    <!-- Paylaş düğmesi: davet bağlantısı beklenirken (ShareMomentDialog, WeeklyCardFragment). -->
+    <string name="share_preparing">Preparing…</string>
 </resources>

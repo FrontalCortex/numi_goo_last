@@ -38,4 +38,13 @@
     <!-- Pro plan ekranı (PlanFragment): kapatma tuşu ve davet bağlantısı (09.11.2026). -->
     <string name="plan_close_desc">إغلاق</string>
     <string name="plan_invite_link">أو ادعُ صديقًا: تحصلان كلاكما على Pro لمدة أسبوع ‹</string>
+
+    <string name="moment_streak_title">سلسلة %1$d يومًا! 🔥</string>
+    <string name="moment_streak_desc">%1$d أيام من التدريب المتواصل</string>
+    <string name="moment_badge_title">شارة جديدة! 🏅</string>
+    <string name="moment_later">ليس الآن</string>
+    <string name="moment_share_text_streak">سلسلة %1$d يومًا في Sorobit 🔥 العدّاد والحساب الذهني. ثبّته عبر هذا الرابط واحصل على Pro لمدة أسبوع: %2$s</string>
+    <string name="moment_share_text_badge">شارة جديدة في Sorobit: %1$s 🏅 العدّاد والحساب الذهني. ثبّته عبر هذا الرابط واحصل على Pro لمدة أسبوع: %2$s</string>
+    <!-- Paylaş düğmesi: davet bağlantısı beklenirken (ShareMomentDialog, WeeklyCardFragment). -->
+    <string name="share_preparing">جارٍ التحضير…</string>
 </resources>

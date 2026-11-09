@@ -6,4 +6,6 @@ plugins {
     // Crashlytics: release derlemesinde R8 mapping dosyasını yükler, böylece karıştırılmış
     // yığın izleri konsolda okunabilir hale gelir.
     id("com.google.firebase.crashlytics") version "3.0.2" apply false
+    // Ayarlar → Kaynaklar ve lisanslar → Açık kaynak lisansları sayfasını bağımlılıklardan üretir.
+    id("com.google.android.gms.oss-licenses-plugin") version "0.10.6" apply false
 }

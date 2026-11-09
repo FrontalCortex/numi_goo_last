@@ -284,7 +284,8 @@ class LessonAdapter(
         stepBar.trackColor = ContextCompat.getColor(context, R.color.lesson_panel_track)
         stepBar.setSegmentState(stepCount, doneSteps)
         stepText.text = "$doneSteps/$stepCount"
-        actionButton.backgroundTintList = android.content.res.ColorStateList.valueOf(palette.buttonBg)
+        // İçe göçen düğme (rengi duruma göre; kilitliyken dudaksız düz gri).
+        DepthButtons.style(actionButton, palette.buttonBg, 14f)
         actionButton.setTextColor(palette.buttonText)
 
         if (item.isCompleted) {
@@ -317,7 +318,7 @@ class LessonAdapter(
             actionButton.iconSize = (20 * density).toInt()
             actionButton.iconGravity = MaterialButton.ICON_GRAVITY_TEXT_START
             val open = panelPalette(PanelState.OPEN)
-            actionButton.backgroundTintList = android.content.res.ColorStateList.valueOf(open.buttonBg)
+            DepthButtons.style(actionButton, open.buttonBg, 14f)
             actionButton.setTextColor(open.buttonText)
             actionButton.isEnabled = true
             if (!isGuidePanelVisible) AnalyticsLogger.logLessonUnlockOffer(globalPartId, item.stableId)

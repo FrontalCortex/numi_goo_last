@@ -128,6 +128,18 @@ class AdManager(private val context: Context) {
         })
     }
 
+    /**
+     * Geçiş reklamı yüklü mü. MainActivity 5 dakikalık aralığı ancak reklam gerçekten gösterilecekse
+     * başlatıyor: hazır olmayan reklam "gösterildi" sayılıyor ve sonraki 5 dakikadaki dersler boşa
+     * geçiyordu (09.11.2026 cihazda: 2. sandığı yeni bitiren hesap).
+     */
+    fun isInterstitialReady(): Boolean = interstitialAd != null
+
+    /** Yüklü değilse yüklemeyi başlatır (MainActivity, gösterilemeyen deneme sonrası). */
+    fun ensureInterstitialLoading() {
+        if (interstitialAd == null) preloadInterstitialAd()
+    }
+
     fun showInterstitialAd(activity: Activity, showAdSkipAfter: Boolean = true, onClosed: () -> Unit = {}) {
         if (interstitialAd != null) {
             interstitialAd?.fullScreenContentCallback = object : FullScreenContentCallback() {

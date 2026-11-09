@@ -8,6 +8,7 @@ import com.android.installreferrer.api.InstallReferrerClient
 import com.android.installreferrer.api.InstallReferrerStateListener
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.functions.FirebaseFunctions
+import kotlinx.coroutines.tasks.await
 
 /**
  * DAVET ATIFI: haftalık kart bağlantısından (`/d/<kod>` → Play) gelen kurulumu davet edene bağlar.
@@ -50,7 +51,15 @@ object ReferralAttribution {
     }
 
     private val CODE_RE = Regex("^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$")
-    private val SOURCES = setOf("weekly", "invite", "badge", "challenge", "class")
+    private val SOURCES = setOf("weekly", "invite", "moment", "badge", "challenge", "class")
+
+    /** 13 yaş ve üstü mü (veli kapısı kararı). Doğum yılı yoksa ya da okunamazsa çocuk sayılır. */
+    suspend fun isAdultUser(): Boolean = runCatching {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return false
+        val y = com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(uid)
+            .get().await().getLong("birthYear")?.toInt() ?: -1
+        y > 0 && java.util.Calendar.getInstance().get(java.util.Calendar.YEAR) - y >= 13
+    }.getOrDefault(false)
 
     /**
      * Sahte hesapla Pro toplanmasın diye cihaz parmak izi (kullanıcı isteği 09.11.2026): ANDROID_ID'nin

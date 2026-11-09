@@ -45,11 +45,21 @@ class MissionChestRewardFragment : Fragment() {
     )
 
     fun setBadgePayloads(payloads: List<String>) {
-        if (payloads.isNotEmpty()) {
-            shouldOpenBadgeAfterContinue = true
-            badgePayloadQueue.addAll(payloads)
+        if (payloads.isEmpty()) return
+        // "Devam"a basıldıktan SONRA gelen rozet (Firestore sonucu geç döndü): kuyruğun kopyası basışta
+        // alındığı için buraya eklenen kayboluyor, kutlama hiç gösterilmiyordu (09.11.2026 cihazda, Kusursuz
+        // Odak). Haritanın rozet kuyruğuna gidiyor: görev ekranı yokken ChestFragment/ChestResult'ın kullandığı yol.
+        if (continueTapped) {
+            BadgeDiagnostics.log("MissionChestRewardFragment late badge payloads after continue, size=${payloads.size} -> enqueuePendingBadgePayloads")
+            (activity as? MainActivity ?: MainActivity.currentActivity)?.enqueuePendingBadgePayloads(badgeStringPayloads = payloads)
+            return
         }
+        shouldOpenBadgeAfterContinue = true
+        badgePayloadQueue.addAll(payloads)
     }
+
+    /** "Devam"a basıldı mı: sonra gelen rozet bu ekranın kuyruğuna değil haritanınkine gider. */
+    private var continueTapped = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -113,6 +123,7 @@ class MissionChestRewardFragment : Fragment() {
         }, 500)
 
         binding.missionChestRewardContinue.setOnClickListener {
+            continueTapped = true
             val openBadgeAfter = shouldOpenBadgeAfterContinue && badgePayloadQueue.isNotEmpty()
             val queueCopy = ArrayList(badgePayloadQueue)
             val activityFm = requireActivity().supportFragmentManager

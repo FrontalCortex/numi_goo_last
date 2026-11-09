@@ -84,6 +84,8 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             }
         }
 
+        DepthButtons.primary(binding.btnContinue)
+        DepthButtons.google(binding.btnGoogleSignIn)
         binding.btnContinue.setOnClickListener {
             requireOnlineOrShowOffline {
                 if (isGoogleFlowInProgress) return@requireOnlineOrShowOffline

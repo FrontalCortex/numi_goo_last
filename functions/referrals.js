@@ -32,8 +32,8 @@ const REFERRER_YEARLY_LIMIT = 10;
 const CLAIM_MAX_ACCOUNT_AGE_MS = 7 * DAY_MS;
 /** Ödülü tetikleyen ders: Part 1'in "2 basamaklı sayılar" dersi (GA4 hunisinde "ders 2"). */
 const REWARD_MILESTONE_ID = '1_p1_i02_2_basamakli_sayilar';
-// 'invite': Mağaza / Ayarlar'daki genel "Arkadaşını davet et" ekranı (09.11.2026).
-const SOURCES = new Set(['weekly', 'invite', 'badge', 'challenge', 'class']);
+// 'invite': Mağaza / Ayarlar'daki genel "Arkadaşını davet et" ekranı; 'moment': seri / rozet anı paneli (09.11.2026).
+const SOURCES = new Set(['weekly', 'invite', 'moment', 'badge', 'challenge', 'class']);
 /** İstemcinin gönderdiği cihaz parmak izi: SHA-256 (64 onaltılık). Ham cihaz kimliği sunucuya gelmiyor. */
 const DEVICE_RE = /^[0-9a-f]{64}$/;
 const REWARD_SOURCE = 'referral';

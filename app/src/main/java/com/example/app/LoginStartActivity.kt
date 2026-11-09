@@ -82,6 +82,7 @@ class LoginStartActivity : AppCompatActivity() {
         }
 
         // "Başla" → Önce UserInfoFragment'i aç
+        DepthButtons.primary(binding.btnStart, 16f)
         binding.btnStart.setOnClickListener {
             showUserInfoFragment(isTeacherMode)
         }
