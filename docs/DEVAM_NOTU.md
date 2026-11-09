@@ -670,7 +670,11 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   Arkadaş davetleri ve paylaşım** (paylaşılan içerik, davet kodu, Install Referrer, ödül, silme), Bölüm 7 saklanan
   verilere "davet cihaz özeti", yürürlük 10 Kasım 2026. `cleanupUserOnDelete` sonuna `referrals.deleteReferralData`:
   `referrals/{uid}` silinir, davet ettiklerinde `referrerUid: null, referrerDeleted: true`, `referralCodes` ve
-  `referralRewardCounts` silinir, `referralDevices` KALIR. Emülatör testleri geçti.
+  `referralRewardCounts` silinir, `referralDevices` KALIR. Emülatör testleri geçti. 1033c75 canlı (4 fonksiyon +
+  hosting). Veri güvenliği formu: "Cihaz veya diğer kimlikler" zaten toplanıyor/paylaşılıyor, amaçlarda "Sahtekarlığı
+  önleme, güvenlik ve kanunlara uygunluk" + "Uygulama işlevselliği" işaretli → değişiklik GEREKMEDİ (okundu, kaydedilmedi).
+  GA4: yeni keşif "Plan ekranı: satın alma mı davet mi" (plan_shown → plan_invite_tap → share_gate_pass → share_done_*);
+  satın alma tarafı mevcut "Pro Hunisi" keşfinde.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 
