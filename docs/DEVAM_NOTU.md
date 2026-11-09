@@ -647,6 +647,11 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   (Mağaza + Ayarlar), ödül paneli, cihaz parmak izi; dalda o ana kadar commit'lenmiş başka oturumların işleri de
   içinde (öğretici anket paneli vb.). İmzalı (Numigo), 70 MB, `app/release/sorobit-23.aab`. Önce dahili test,
   B telefonuyla davet denemesi, sonra kapalı teste yükseltilecek.
+  **Uçtan uca deneme BAŞARILI (09.11.2026 18:08–18:10, dahili test 23):** A = Ted (kod FF3F7V), B = başka telefon,
+  yeni hesap (uid 7Pserfq8…). `referrals/7Pserfq8…`: source weekly, cihaz parmak izi var, rewarded + referrerRewarded
+  true; iki hesapta `giftProUntil` = ödül anı + tam 7 gün, `giftProSource: referral`, `referralRewardNotice` yazıldı.
+  Kullanıcı iki uygulamada da Pro'yu gördü. Ders: B'nin hesabı dahili test listesinde olsa da dahili testin
+  KENDİ katılım bağlantısıyla (`/apps/internaltest/4701623111001835867`) katılmadan Play kapalı test sürümünü veriyordu.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 
