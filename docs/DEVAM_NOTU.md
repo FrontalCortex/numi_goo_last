@@ -642,6 +642,11 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   "Bizi nereden duydun?"a veli/WhatsApp, ders 2 davet ödülü (sunucu zaten canlıda). Test anahtarları kapalı; imzalı
   (Numigo), 70 MB, `app/release/sorobit-22.aab` (git'e girmiyor: .git/info/exclude). Kullanıcı önce DAHİLİ teste
   yükleyip iki telefonla davet akışını deneyecek; aynı paket sonra kapalı teste/üretime yükseltilebilir.
+- **versionCode 23 AAB (09.11.2026 12:09, HEAD 52056b0, temiz ağaçtan):** 22 + seviye merdiveni (kırık, en çok 5
+  örnek sayı), veli kapısı yalnızca 13 yaş altında (tek basamaklı soru), kartta ödül satırı, "Arkadaşını davet et"
+  (Mağaza + Ayarlar), ödül paneli, cihaz parmak izi; dalda o ana kadar commit'lenmiş başka oturumların işleri de
+  içinde (öğretici anket paneli vb.). İmzalı (Numigo), 70 MB, `app/release/sorobit-23.aab`. Önce dahili test,
+  B telefonuyla davet denemesi, sonra kapalı teste yükseltilecek.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 
