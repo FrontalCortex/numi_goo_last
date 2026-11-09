@@ -715,7 +715,7 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   bekleyen an, günde en çok bir panel, seri rozeti ezer, görülenler) kaydı `MainActivity.showStreakCelebration` ve
   `BadgeProgressFirestore.logLevelUps`'tan; `ShareMomentDialog` (Sobi + başlık kartı paylaşılan bitmap, 13 altı veli
   kapısı, `?k=moment`) `homeIdleBlockReason` boşalınca, en çok 3 dk bekler. GA4 `share_card_shown_streak|badge`.
-  Sunucu (`SOURCES` + 'moment') ve d.html regex'i 10.11 commit + push (4 fonksiyon deploy'u; d.html HOSTING DEPLOY EDİLMEDİ, onay bekliyor)
+  Sunucu (`SOURCES` + 'moment') ve d.html regex'i 10.11 commit + push (4 fonksiyon deploy'u başarılı; d.html hosting deploy'u 10.11 başarılı)
   (deploy-plan: 4 fonksiyon — 3 davet + cleanupUserOnDelete, aynı modülü kullandığı için). Denemek için:
   `adb shell run-as com.numigo.app` ile `shared_prefs/share_moments.xml`'e bekleyen an yazılıp uygulama açılabilir.
   Rozet anı anahtarı `BADGE:<ad>:<reachedTarget>`: aynı seviyeye yeniden çıkmak (kullanıcı denemek için 49'a
