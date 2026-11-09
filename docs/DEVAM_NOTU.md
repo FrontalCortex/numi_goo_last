@@ -68,6 +68,18 @@ Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.
   basamağa sıkışıyor, arada `//` kırık. Test 17/17; telefonda (09.11 00:59, Ted, 2–8 Kas) görüldü.
   DİKKAT: Ted'in 2–8 Kas kartı sunucunun gerçek kaydını SAHTE 26 Eki–1 Kas kaydıyla kıyaslıyor (toplama kupası
   640 → gerçek), "2 → 3 basamaklı" abartılı; örnek verinin geri alınması önerildi, kullanıcı henüz karar vermedi.
+- **Davet her yerde + genel davet (09.11 gece; uygulama 1fc671c, sunucu/sayfa sonraki commit):** kartta Paylaş
+  altında ödül satırı (`share_reward_hint`), paylaşım metninde "1 hafta Pro hediye". `InviteFragment` ("Arkadaşını
+  davet et"): Mağaza'da Pro kartının altı (`shopInviteCard`, mağazanın kendi kabına `add`) ve Ayarlar'da Veli
+  paneli altında (`btnInvite`); Sobi'li davet görseli (`inviteHero` paylaşılan bitmap), nasıl çalışır, sayaç
+  (`getReferralCode` artık `invited`, `earnedDays` dönüyor), bağlantı `/d/<kod>?k=invite` → `utm_medium=invite`.
+  Ödül paneli: sunucu `users.referralRewardNotice {role, days, atMs}`; `MainActivity.maybeShowReferralReward`
+  (30 dk'da bir okuma, `homeIdleBlockReason` ortak kapı — haftalık kartla birlikte), görülen atMs
+  `AppPrefs.referral_reward_seen_{uid}`; GA4 `referral_reward_shown`, `share_card_shown_invite`.
+  **Sahte hesaba karşı cihaz sınırı:** istemci ANDROID_ID'nin tuzlu SHA-256'sını (`deviceFingerprint`) gönderiyor;
+  `referralDevices/{hash}` bir telefon bir kez davetli, `referralCodes.devices` davet edenin telefonu sayılmaz
+  (`device_used`, `same_device`). Parmak izi gelmezse (sürüm 22) geçiyor; herkes 23+'a geçince zorunlu yapılabilir.
+  Play Integrity (App Check zorunluluğu) konuşuldu, şimdilik yapılmadı.
 - **Paylaşma:** kartta "Paylaş" (yalnızca ilerleme varsa) → `ParentGate` → `WeeklyCardShare`: özet kartının bitmap'i
   + altta "Sorobit" → cache/share/haftalik.png, FileProvider, EXTRA_STREAM + metin (`weekly_share_text`, bağlantılı),
   `createChooser(…, IntentSender)` → `ChosenReceiver` EXTRA_CHOSEN_COMPONENT → `share_done_whatsapp|instagram|other`.

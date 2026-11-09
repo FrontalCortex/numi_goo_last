@@ -107,6 +107,26 @@ async function flow() {
   const f = await rf.claimAndMaybeReward({ db, admin, uid: 'ref_F', rawCode: c1.code, authCreatedMs: created, nowMs: NOW });
   check('  ders 2 bitmemişse ödül yok', f.ok && !f.rewardedNow, true);
 
+  console.log('Ödül bildirimi ve sayaç (emülatör)');
+  check('  B bildirimi invitee', ((await db.collection('users').doc('ref_B').get()).get('referralRewardNotice') || {}).role, 'invitee');
+  check('  A bildirimi referrer', ((await db.collection('users').doc('ref_A').get()).get('referralRewardNotice') || {}).role, 'referrer');
+  const st = await rf.referralStats({ db, uid: 'ref_A' });
+  check('  A davet sayısı (B, E, F)', st.invited, 3);
+  check('  A kazandığı gün (B, E)', st.earnedDays, 14);
+
+  console.log('Cihaz sınırı (emülatör)');
+  const devA = 'a'.repeat(64);
+  const devX = 'b'.repeat(64);
+  await rf.getOrCreateCode({ db, admin, uid: 'ref_A', device: devA });
+  check('  A cihazı koda yazıldı', ((await db.collection('referralCodes').doc(c1.code).get()).get('devices') || []).includes(devA), true);
+  await user('ref_G');
+  check('  A\'nın telefonunda açılan hesap', (await rf.claimReferral({ db, admin, uid: 'ref_G', rawCode: c1.code, authCreatedMs: created, rawDevice: devA })).reason, 'same_device');
+  check('  yeni telefon X', (await rf.claimReferral({ db, admin, uid: 'ref_G', rawCode: c1.code, authCreatedMs: created, rawDevice: devX })).reason, 'ok');
+  await user('ref_H');
+  check('  X\'te ikinci yeni hesap', (await rf.claimReferral({ db, admin, uid: 'ref_H', rawCode: c1.code, authCreatedMs: created, rawDevice: devX })).reason, 'device_used');
+  check('  bozuk parmak izi yok sayılır', (await rf.claimReferral({ db, admin, uid: 'ref_H', rawCode: c1.code, authCreatedMs: created, rawDevice: 'xyz' })).reason, 'ok');
+  check('  invite kaynağı', (await rf.claimReferral({ db, admin, uid: 'ref_G', rawCode: c1.code, authCreatedMs: created, rawSource: 'invite' })).reason, 'already_referred');
+
   console.log('Yıllık sınır (emülatör)');
   const year = new Date(NOW).getUTCFullYear();
   await db.collection('referralRewardCounts').doc(`ref_A_${year}`).set({ count: rf.REFERRER_YEARLY_LIMIT });

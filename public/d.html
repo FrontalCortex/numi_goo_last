@@ -26,6 +26,7 @@
     .card { background:var(--card); border-radius:20px; padding:24px 18px; }
     a.btn { display:block; background:var(--accent); color:#10220A; font-weight:700; font-size:18px; text-decoration:none; padding:16px; border-radius:24px; }
     small { display:block; color:var(--muted); margin-top:16px; }
+    .gift { color:#FFC94D; font-weight:700; margin:-8px 0 20px; }
   </style>
 </head>
 <body>
@@ -34,6 +35,8 @@
   <div class="card">
     <h1 id="t">Bir arkadaşın Sorobit'te soroban öğreniyor</h1>
     <p id="d">Çocuğunuz 3 sayıyı kaç saniyede toplar? Soroban ve zihinden hesap, her gün birkaç dakika, oyun gibi.</p>
+    <!-- Ödül (09.11.2026): yalnızca kodlu bağlantıda; koşul functions/referrals.js ile aynı. -->
+    <p id="g" class="gift" style="display:none">🎁 Bu davetle 1 hafta Pro hediye: hesap açıp 2. dersi bitirince açılır.</p>
     <a class="btn" id="go" href="https://play.google.com/store/apps/details?id=com.numigo.app">Google Play'den indir</a>
     <small id="s">Android · 7–14 yaş</small>
   </div>
@@ -45,20 +48,24 @@
     var code = m ? m[1].toUpperCase() : null;
     if (code && !/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/.test(code)) code = null;
     var url = 'https://play.google.com/store/apps/details?id=com.numigo.app';
+    // Kaynak: haftalık kart bağlantısı parametresiz (weekly), genel davet ?k=invite (InviteFragment).
+    var k = new URLSearchParams(location.search).get('k');
+    var medium = /^(weekly|invite|badge|challenge|class)$/.test(k || '') ? k : 'weekly';
     if (code) {
-      url += '&referrer=' + encodeURIComponent('utm_source=ref&utm_medium=weekly&utm_campaign=' + code);
+      url += '&referrer=' + encodeURIComponent('utm_source=ref&utm_medium=' + medium + '&utm_campaign=' + code);
+      document.getElementById('g').style.display = 'block';
     }
     document.getElementById('go').href = url;
     var L = (navigator.language || 'tr').slice(0, 2);
     var T = {
-      en: ['A friend is learning the abacus on Sorobit', 'How fast can your child add 3 numbers? Abacus and mental math, a few minutes a day, like a game.', 'Get it on Google Play', 'Android · ages 7–14'],
-      id: ['Temanmu sedang belajar sempoa di Sorobit', 'Seberapa cepat anak Anda menjumlahkan 3 bilangan? Sempoa dan berhitung cepat, beberapa menit sehari, seperti bermain.', 'Unduh di Google Play', 'Android · usia 7–14'],
-      ar: ['صديقك يتعلم العدّاد في Sorobit', 'كم ثانية يحتاج طفلك لجمع 3 أعداد؟ العدّاد والحساب الذهني، دقائق كل يوم، مثل اللعب.', 'حمّله من Google Play', 'أندرويد · من 7 إلى 14 سنة']
+      en: ['A friend is learning the abacus on Sorobit', 'How fast can your child add 3 numbers? Abacus and mental math, a few minutes a day, like a game.', 'Get it on Google Play', 'Android · ages 7–14', '🎁 1 week of Pro with this invite: unlocks after creating an account and finishing lesson 2.'],
+      id: ['Temanmu sedang belajar sempoa di Sorobit', 'Seberapa cepat anak Anda menjumlahkan 3 bilangan? Sempoa dan berhitung cepat, beberapa menit sehari, seperti bermain.', 'Unduh di Google Play', 'Android · usia 7–14', '🎁 Hadiah Pro 1 minggu dengan undangan ini: terbuka setelah membuat akun dan menyelesaikan pelajaran 2.'],
+      ar: ['صديقك يتعلم العدّاد في Sorobit', 'كم ثانية يحتاج طفلك لجمع 3 أعداد؟ العدّاد والحساب الذهني، دقائق كل يوم، مثل اللعب.', 'حمّله من Google Play', 'أندرويد · من 7 إلى 14 سنة', '🎁 أسبوع Pro هدية مع هذه الدعوة: يُفتح بعد إنشاء حساب وإنهاء الدرس الثاني.']
     }[L];
     if (T) {
       document.documentElement.lang = L;
       if (L === 'ar') document.documentElement.dir = 'rtl';
-      ['t', 'd', 'go', 's'].forEach(function (id, i) { document.getElementById(id).textContent = T[i]; });
+      ['t', 'd', 'go', 's', 'g'].forEach(function (id, i) { document.getElementById(id).textContent = T[i]; });
     }
   })();
 </script>

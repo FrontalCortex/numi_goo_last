@@ -32,7 +32,10 @@ const REFERRER_YEARLY_LIMIT = 10;
 const CLAIM_MAX_ACCOUNT_AGE_MS = 7 * DAY_MS;
 /** Ödülü tetikleyen ders: Part 1'in "2 basamaklı sayılar" dersi (GA4 hunisinde "ders 2"). */
 const REWARD_MILESTONE_ID = '1_p1_i02_2_basamakli_sayilar';
-const SOURCES = new Set(['weekly', 'badge', 'challenge', 'class']);
+// 'invite': Mağaza / Ayarlar'daki genel "Arkadaşını davet et" ekranı (09.11.2026).
+const SOURCES = new Set(['weekly', 'invite', 'badge', 'challenge', 'class']);
+/** İstemcinin gönderdiği cihaz parmak izi: SHA-256 (64 onaltılık). Ham cihaz kimliği sunucuya gelmiyor. */
+const DEVICE_RE = /^[0-9a-f]{64}$/;
 const REWARD_SOURCE = 'referral';
 
 /** Kullanıcının yazdığı / referrer'dan gelen kodu düzeltir; geçersizse null. */
@@ -50,10 +53,15 @@ function randomCode(rand = Math.random) {
 /**
  * Atıf kararı (saf). @returns {{ ok: boolean, reason: string }}
  */
-function claimDecision({ codeOwnerUid, uid, alreadyReferred, accountAgeMs }) {
+function claimDecision({ codeOwnerUid, uid, alreadyReferred, accountAgeMs, deviceUsedBy, referrerDevices, device }) {
   if (!codeOwnerUid) return { ok: false, reason: 'unknown_code' };
   if (codeOwnerUid === uid) return { ok: false, reason: 'self' };
   if (alreadyReferred) return { ok: false, reason: 'already_referred' };
+  // Cihaz sınırı (kullanıcı isteği 09.11.2026: sahte hesapla Pro toplanmasın): bir telefon yalnızca bir
+  // kez "davetle gelen" sayılır ve davet edenin kendi telefonu sayılmaz. Uygulamayı silip yeni hesapla
+  // yeniden kurmak cihaz parmak izini değiştirmiyor (ANDROID_ID). Parmak izi gelmezse (eski sürüm) geçiyor.
+  if (device && deviceUsedBy && deviceUsedBy !== uid) return { ok: false, reason: 'device_used' };
+  if (device && Array.isArray(referrerDevices) && referrerDevices.includes(device)) return { ok: false, reason: 'same_device' };
   if (!(accountAgeMs >= 0) || accountAgeMs > CLAIM_MAX_ACCOUNT_AGE_MS) return { ok: false, reason: 'account_too_old' };
   return { ok: true, reason: 'ok' };
 }
@@ -76,19 +84,27 @@ function rewardDecision({ referral, referrerCount }) {
 }
 
 /** Kullanıcının kodu; yoksa benzersiz yeni bir kod üretip iki yere birden yazar. */
-async function getOrCreateCode({ db, admin, uid, rand = Math.random }) {
+async function getOrCreateCode({ db, admin, uid, rand = Math.random, device = null }) {
   const userRef = db.collection('users').doc(uid);
+  const dev = DEVICE_RE.test(String(device || '')) ? device : null;
+  // Davet edenin cihazları koda yazılıyor: o telefonda açılan "davetli" hesap ödül alamasın.
+  const addDevice = (tx, codeRef) => {
+    if (dev) tx.set(codeRef, { devices: admin.firestore.FieldValue.arrayUnion(dev) }, { merge: true });
+  };
   for (let attempt = 0; attempt < 8; attempt++) {
     const candidate = randomCode(rand);
     const code = await db.runTransaction(async (tx) => {
       const userSnap = await tx.get(userRef);
       if (!userSnap.exists) return { error: 'no_user_doc' };
       const existing = normalizeCode(userSnap.get('referralCode'));
-      if (existing) return { code: existing };
+      if (existing) {
+        addDevice(tx, db.collection('referralCodes').doc(existing));
+        return { code: existing };
+      }
       const codeRef = db.collection('referralCodes').doc(candidate);
       const codeSnap = await tx.get(codeRef);
       if (codeSnap.exists) return null; // çakışma: yeni adayla yeniden
-      tx.set(codeRef, { uid, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+      tx.set(codeRef, { uid, createdAt: admin.firestore.FieldValue.serverTimestamp(), ...(dev ? { devices: [dev] } : {}) });
       tx.update(userRef, { referralCode: candidate });
       return { code: candidate };
     });
@@ -98,21 +114,28 @@ async function getOrCreateCode({ db, admin, uid, rand = Math.random }) {
 }
 
 /** Atıf: `referrals/{uid}` (yalnızca bir kez) ve `users/{uid}.referredBy`. */
-async function claimReferral({ db, admin, uid, rawCode, rawSource, authCreatedMs, nowMs = Date.now() }) {
+async function claimReferral({ db, admin, uid, rawCode, rawSource, authCreatedMs, rawDevice = null, nowMs = Date.now() }) {
   const code = normalizeCode(rawCode);
   if (!code) return { ok: false, reason: 'bad_code' };
   const source = SOURCES.has(rawSource) ? rawSource : 'weekly';
+  const device = DEVICE_RE.test(String(rawDevice || '')) ? rawDevice : null;
   const codeRef = db.collection('referralCodes').doc(code);
   const refRef = db.collection('referrals').doc(uid);
   const userRef = db.collection('users').doc(uid);
+  const devRef = device ? db.collection('referralDevices').doc(device) : null;
   return db.runTransaction(async (tx) => {
-    const [codeSnap, refSnap, userSnap] = await Promise.all([tx.get(codeRef), tx.get(refRef), tx.get(userRef)]);
+    const [codeSnap, refSnap, userSnap, devSnap] = await Promise.all([
+      tx.get(codeRef), tx.get(refRef), tx.get(userRef), devRef ? tx.get(devRef) : Promise.resolve(null),
+    ]);
     if (!userSnap.exists) return { ok: false, reason: 'no_user_doc' };
     const d = claimDecision({
       codeOwnerUid: codeSnap.exists ? codeSnap.get('uid') : null,
       uid,
       alreadyReferred: refSnap.exists,
       accountAgeMs: nowMs - (Number(authCreatedMs) || 0),
+      deviceUsedBy: devSnap && devSnap.exists ? devSnap.get('uid') : null,
+      referrerDevices: codeSnap.exists ? codeSnap.get('devices') : null,
+      device,
     });
     if (!d.ok) return d;
     const ts = admin.firestore.FieldValue.serverTimestamp();
@@ -123,7 +146,9 @@ async function claimReferral({ db, admin, uid, rawCode, rawSource, authCreatedMs
       createdAt: ts,
       createdAtMs: nowMs,
       rewarded: false,
+      ...(device ? { device } : {}),
     });
+    if (devRef) tx.set(devRef, { uid, code, atMs: nowMs });
     tx.update(userRef, { referredBy: code, referredSource: source });
     return { ok: true, reason: 'ok' };
   });
@@ -167,12 +192,21 @@ async function grantReferralReward({ db, admin, uid, nowMs = Date.now() }) {
     });
     if (!d.grant) return { granted: false, reason: d.reason };
     const ts = admin.firestore.FieldValue.serverTimestamp();
+    // referralRewardNotice: uygulama bir kez "1 hafta Pro kazandın" paneli gösteriyor (kullanıcı kararı
+    // 09.11.2026; Pro sessizce açılınca döngü kendini anlatmıyordu). atMs cihazda "görüldü" diye saklanıyor.
+    const notice = (role) => ({ role, days: REWARD_DAYS, atMs: nowMs });
     if (userSnap.exists) {
-      tx.update(userRef, { giftProUntil: extendGift(userSnap.get('giftProUntil'), nowMs), giftProSource: REWARD_SOURCE });
+      tx.update(userRef, {
+        giftProUntil: extendGift(userSnap.get('giftProUntil'), nowMs), giftProSource: REWARD_SOURCE,
+        referralRewardNotice: notice('invitee'),
+      });
     }
     const referrerToo = d.referrerToo && referrerSnap.exists;
     if (referrerToo) {
-      tx.update(referrerRef, { giftProUntil: extendGift(referrerSnap.get('giftProUntil'), nowMs), giftProSource: REWARD_SOURCE });
+      tx.update(referrerRef, {
+        giftProUntil: extendGift(referrerSnap.get('giftProUntil'), nowMs), giftProSource: REWARD_SOURCE,
+        referralRewardNotice: notice('referrer'),
+      });
       tx.set(counterRef, { count: (Number(counterSnap.exists ? counterSnap.get('count') : 0) || 0) + 1, year, updatedAt: ts }, { merge: true });
     }
     tx.update(refRef, { rewarded: true, rewardedAt: ts, rewardedAtMs: nowMs, referrerRewarded: referrerToo });
@@ -180,13 +214,27 @@ async function grantReferralReward({ db, admin, uid, nowMs = Date.now() }) {
   });
 }
 
+/** Davet ekranındaki sayaç: kaç kişi davetle geldi, getiren kaç gün Pro kazandı. */
+async function referralStats({ db, uid }) {
+  const col = db.collection('referrals').where('referrerUid', '==', uid);
+  const [all, mine] = await Promise.all([
+    col.count().get(),
+    col.where('referrerRewarded', '==', true).count().get(),
+  ]);
+  return { invited: all.data().count, earnedDays: mine.data().count * REWARD_DAYS };
+}
+
 /** Callable'lar ve tetikleyici: index.js'te her biri ayrı export (deploy-plan yalnızca değişeni seçsin). */
 function createGetReferralCode({ functions, admin, db }) {
   return functions.https.onCall(async (data, context) => {
     if (!context.auth) throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
-    const r = await getOrCreateCode({ db, admin, uid: context.auth.uid });
+    const uid = context.auth.uid;
+    const r = await getOrCreateCode({ db, admin, uid, device: data && data.device });
     if (r.error) throw new functions.https.HttpsError('failed-precondition', r.error);
-    return { code: r.code };
+    // Sayaç okunamazsa kod yine dönsün (paylaşım durmasın).
+    let stats = { invited: 0, earnedDays: 0 };
+    try { stats = await referralStats({ db, uid }); } catch (e) { console.warn('referralStats', e.message); }
+    return { code: r.code, rewardDays: REWARD_DAYS, ...stats };
   });
 }
 
@@ -203,6 +251,7 @@ function createClaimReferral({ functions, admin, db }) {
     }
     const r = await claimAndMaybeReward({
       db, admin, uid, rawCode: data && data.code, rawSource: data && data.source, authCreatedMs,
+      rawDevice: data && data.device,
     });
     console.log('claimReferral', { uid, ...r });
     return r;
@@ -239,6 +288,7 @@ module.exports = {
   claimReferral,
   claimAndMaybeReward,
   grantReferralReward,
+  referralStats,
   createGetReferralCode,
   createClaimReferral,
   createRewardTrigger,
