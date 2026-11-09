@@ -661,6 +661,11 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   (`showAsDialog`; plan reklam sonrası Pro panelinden, yani ders sonu kuyruğunun ortasında da açılabiliyor).
   Ders sonu kuyruğuna TEK dokunuş: `subscriptionFlowBlockReason` davet penceresi açıkken de bekliyor, kapanınca
   `pumpPostLessonQueue("Invite.dismiss")`. Derlendi, telefonda denenmedi.
+- **Kötüye kullanım (09.11 gece):** cihaz izi artık ZORUNLU (`no_device`; sürüm 22 izsizdi, yalnızca 4 dahili
+  test kullanıcısında). `tools/referral-report.js` son 7 günde 5'ten fazla davet alan kişiyi listeliyor (uid · davet
+  · ödüllü · izsiz). Kalan açık: çok sayıda emülatör/telefon (yılda en çok 70 gün); görülürse Play Integrity
+  (App Check zorunluluğu). Cihaz izi topladığımız için Veri güvenliği formunda "Cihaz veya diğer kimlikler" ve
+  gizlilik politikasında madde gerekiyor (aynı gece ele alınıyor).
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 

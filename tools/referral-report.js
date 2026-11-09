@@ -62,6 +62,34 @@ async function main() {
   console.log(`  ders 2'yi bitirip ödül alan: ${rewarded}`);
   console.log(`  farklı davet eden: ${referrers.size}`);
   console.log(`K (aylık) = ${refs.size} / ${active} = ${k.toFixed(3)}`);
+
+  // Kötüye kullanım işareti (kullanıcı kararı 09.11.2026: önce izle, gerekirse sıkılaştır). Cihaz sınırı
+  // aynı telefonu engelliyor; kalan yol çok sayıda farklı cihaz/emülatör. Bir kişiye son 7 günde
+  // SUSPICIOUS_WEEKLY'den fazla davet gelmesi gerçek hayatta nadir (bir veli grubu bile birkaç kişi).
+  const weekAgo = Date.now() - 7 * 86400000;
+  const recent = await db.collection('referrals').where('createdAtMs', '>=', weekAgo).get();
+  const perReferrer = {};
+  for (const d of recent.docs) {
+    const r = d.data();
+    const p = (perReferrer[r.referrerUid] = perReferrer[r.referrerUid] || { n: 0, rewarded: 0, noDevice: 0 });
+    p.n++;
+    if (r.rewarded) p.rewarded++;
+    if (!r.device) p.noDevice++;
+  }
+  const flagged = Object.entries(perReferrer).filter(([, p]) => p.n > SUSPICIOUS_WEEKLY);
+  console.log(`\nSon 7 gün: ${recent.size} davet, ${Object.keys(perReferrer).length} davet eden.`);
+  if (!flagged.length) {
+    console.log(`Şüpheli yok (kimse 7 günde ${SUSPICIOUS_WEEKLY}'ten fazla davet almamış).`);
+  } else {
+    console.log(`⚠ 7 günde ${SUSPICIOUS_WEEKLY}'ten fazla davet: (uid · davet · ödüllü · cihaz izi olmayan)`);
+    for (const [uid, p] of flagged.sort((a, b) => b[1].n - a[1].n)) {
+      console.log(`  ${uid} · ${p.n} · ${p.rewarded} · ${p.noDevice}`);
+    }
+    console.log('  İncelemek için: referrals koleksiyonunda referrerUid == uid; aynı saatlerde art arda açılmış hesaplar,');
+    console.log('  2. dersi dakikalar içinde bitiren hesaplar emülatör çiftliği işareti olabilir.');
+  }
 }
+
+const SUSPICIOUS_WEEKLY = 5;
 
 main().then(() => process.exit(0)).catch((e) => { console.error(e); process.exit(1); });

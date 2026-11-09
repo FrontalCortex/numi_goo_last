@@ -41,12 +41,13 @@ check('  boş', rf.normalizeCode(undefined), null);
 check('  üretilen kod geçerli', rf.normalizeCode(rf.randomCode()) !== null, true);
 
 console.log('Atıf kararı');
-const base = { codeOwnerUid: 'A', uid: 'B', alreadyReferred: false, accountAgeMs: DAY };
+const base = { codeOwnerUid: 'A', uid: 'B', alreadyReferred: false, accountAgeMs: DAY, device: 'd'.repeat(64) };
 check('  yeni hesap', rf.claimDecision(base).reason, 'ok');
 check('  bilinmeyen kod', rf.claimDecision({ ...base, codeOwnerUid: null }).reason, 'unknown_code');
 check('  kendi kodu', rf.claimDecision({ ...base, codeOwnerUid: 'B' }).reason, 'self');
 check('  ikinci kez', rf.claimDecision({ ...base, alreadyReferred: true }).reason, 'already_referred');
 check('  8 günlük hesap', rf.claimDecision({ ...base, accountAgeMs: 8 * DAY }).reason, 'account_too_old');
+check('  cihaz izi yok', rf.claimDecision({ ...base, device: null }).reason, 'no_device');
 
 console.log('Pro uzatma');
 check('  süresi geçmiş → şimdiden 7 gün', rf.extendGift(NOW - DAY, NOW), NOW + 7 * DAY);
@@ -58,6 +59,9 @@ check('  davetle gelmemiş', rf.rewardDecision({ referral: null }).reason, 'not_
 check('  zaten ödüllü', rf.rewardDecision({ referral: { rewarded: true } }).reason, 'already_rewarded');
 check('  getiren 9. ödülde', rf.rewardDecision({ referral: { rewarded: false }, referrerCount: 9 }).referrerToo, true);
 check('  getiren 10. ödülden sonra', rf.rewardDecision({ referral: { rewarded: false }, referrerCount: 10 }).referrerToo, false);
+
+/** Her test hesabı için ayrı, geçerli biçimde bir cihaz izi. */
+const dev = (k) => require('crypto').createHash('sha256').update('test-' + k).digest('hex');
 
 async function flow() {
   const db = admin.firestore();
@@ -82,7 +86,7 @@ async function flow() {
   console.log('Atıf (emülatör)');
   const created = NOW - DAY;
   check('  kendi kodu', (await rf.claimReferral({ db, admin, uid: 'ref_A', rawCode: c1.code, authCreatedMs: created })).reason, 'self');
-  check('  B, A\'nın koduyla', (await rf.claimReferral({ db, admin, uid: 'ref_B', rawCode: c1.code.toLowerCase(), authCreatedMs: created })).reason, 'ok');
+  check('  B, A\'nın koduyla', (await rf.claimReferral({ db, admin, uid: 'ref_B', rawCode: c1.code.toLowerCase(), authCreatedMs: created, rawDevice: dev('B') })).reason, 'ok');
   check('  B ikinci kez', (await rf.claimReferral({ db, admin, uid: 'ref_B', rawCode: c1.code, authCreatedMs: created })).reason, 'already_referred');
   check('  C eski hesap', (await rf.claimReferral({ db, admin, uid: 'ref_C', rawCode: c1.code, authCreatedMs: NOW - 30 * DAY })).reason, 'account_too_old');
   check('  B.referredBy', (await db.collection('users').doc('ref_B').get()).get('referredBy'), c1.code);
@@ -99,12 +103,12 @@ async function flow() {
   await user('ref_E');
   await db.collection('users').doc('ref_E').collection('lessonMilestones').doc(rf.REWARD_MILESTONE_ID)
     .set({ partId: 1, stableId: 'p1_i02_2_basamakli_sayilar', finishedAtMs: NOW - 60000 });
-  const e = await rf.claimAndMaybeReward({ db, admin, uid: 'ref_E', rawCode: c1.code, authCreatedMs: created, nowMs: NOW });
+  const e = await rf.claimAndMaybeReward({ db, admin, uid: 'ref_E', rawCode: c1.code, authCreatedMs: created, nowMs: NOW, rawDevice: dev('E') });
   check('  atıf + ödül hemen', e.ok && e.rewardedNow, true);
   check('  E +7 gün', (await db.collection('users').doc('ref_E').get()).get('giftProUntil'), NOW + 7 * DAY);
   check('  A +7 gün daha (14)', (await db.collection('users').doc('ref_A').get()).get('giftProUntil'), NOW + 14 * DAY);
   await user('ref_F');
-  const f = await rf.claimAndMaybeReward({ db, admin, uid: 'ref_F', rawCode: c1.code, authCreatedMs: created, nowMs: NOW });
+  const f = await rf.claimAndMaybeReward({ db, admin, uid: 'ref_F', rawCode: c1.code, authCreatedMs: created, nowMs: NOW, rawDevice: dev('F') });
   check('  ders 2 bitmemişse ödül yok', f.ok && !f.rewardedNow, true);
 
   console.log('Ödül bildirimi ve sayaç (emülatör)');
@@ -124,14 +128,14 @@ async function flow() {
   check('  yeni telefon X', (await rf.claimReferral({ db, admin, uid: 'ref_G', rawCode: c1.code, authCreatedMs: created, rawDevice: devX })).reason, 'ok');
   await user('ref_H');
   check('  X\'te ikinci yeni hesap', (await rf.claimReferral({ db, admin, uid: 'ref_H', rawCode: c1.code, authCreatedMs: created, rawDevice: devX })).reason, 'device_used');
-  check('  bozuk parmak izi yok sayılır', (await rf.claimReferral({ db, admin, uid: 'ref_H', rawCode: c1.code, authCreatedMs: created, rawDevice: 'xyz' })).reason, 'ok');
+  check('  bozuk parmak izi = iz yok', (await rf.claimReferral({ db, admin, uid: 'ref_H', rawCode: c1.code, authCreatedMs: created, rawDevice: 'xyz' })).reason, 'no_device');
   check('  invite kaynağı', (await rf.claimReferral({ db, admin, uid: 'ref_G', rawCode: c1.code, authCreatedMs: created, rawSource: 'invite' })).reason, 'already_referred');
 
   console.log('Yıllık sınır (emülatör)');
   const year = new Date(NOW).getUTCFullYear();
   await db.collection('referralRewardCounts').doc(`ref_A_${year}`).set({ count: rf.REFERRER_YEARLY_LIMIT });
   await user('ref_D');
-  check('  D atıf', (await rf.claimReferral({ db, admin, uid: 'ref_D', rawCode: c1.code, authCreatedMs: created })).reason, 'ok');
+  check('  D atıf', (await rf.claimReferral({ db, admin, uid: 'ref_D', rawCode: c1.code, authCreatedMs: created, rawDevice: dev('D') })).reason, 'ok');
   const g2 = await rf.grantReferralReward({ db, admin, uid: 'ref_D', nowMs: NOW });
   check('  D ödül alır, A almaz', g2.granted && !g2.referrerRewarded, true);
   check('  A değişmedi', (await db.collection('users').doc('ref_A').get()).get('giftProUntil'), NOW + 14 * DAY);

@@ -57,12 +57,15 @@ function claimDecision({ codeOwnerUid, uid, alreadyReferred, accountAgeMs, devic
   if (!codeOwnerUid) return { ok: false, reason: 'unknown_code' };
   if (codeOwnerUid === uid) return { ok: false, reason: 'self' };
   if (alreadyReferred) return { ok: false, reason: 'already_referred' };
+  if (!(accountAgeMs >= 0) || accountAgeMs > CLAIM_MAX_ACCOUNT_AGE_MS) return { ok: false, reason: 'account_too_old' };
   // Cihaz sınırı (kullanıcı isteği 09.11.2026: sahte hesapla Pro toplanmasın): bir telefon yalnızca bir
   // kez "davetle gelen" sayılır ve davet edenin kendi telefonu sayılmaz. Uygulamayı silip yeni hesapla
-  // yeniden kurmak cihaz parmak izini değiştirmiyor (ANDROID_ID). Parmak izi gelmezse (eski sürüm) geçiyor.
-  if (device && deviceUsedBy && deviceUsedBy !== uid) return { ok: false, reason: 'device_used' };
-  if (device && Array.isArray(referrerDevices) && referrerDevices.includes(device)) return { ok: false, reason: 'same_device' };
-  if (!(accountAgeMs >= 0) || accountAgeMs > CLAIM_MAX_ACCOUNT_AGE_MS) return { ok: false, reason: 'account_too_old' };
+  // yeniden kurmak cihaz parmak izini değiştirmiyor (ANDROID_ID). Parmak izi ZORUNLU (kullanıcı kararı
+  // 09.11.2026): göndermeyen tek sürüm 22 yalnızca 4 dahili test kullanıcısındaydı; izsiz istek sınırı
+  // atlatmanın kolay yolu olurdu.
+  if (!device) return { ok: false, reason: 'no_device' };
+  if (deviceUsedBy && deviceUsedBy !== uid) return { ok: false, reason: 'device_used' };
+  if (Array.isArray(referrerDevices) && referrerDevices.includes(device)) return { ok: false, reason: 'same_device' };
   return { ok: true, reason: 'ok' };
 }
 
