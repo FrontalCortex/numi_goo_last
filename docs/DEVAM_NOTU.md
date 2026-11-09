@@ -652,6 +652,9 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   true; iki hesapta `giftProUntil` = ödül anı + tam 7 gün, `giftProSource: referral`, `referralRewardNotice` yazıldı.
   Kullanıcı iki uygulamada da Pro'yu gördü. Ders: B'nin hesabı dahili test listesinde olsa da dahili testin
   KENDİ katılım bağlantısıyla (`/apps/internaltest/4701623111001835867`) katılmadan Play kapalı test sürümünü veriyordu.
+  Panel A'da (Ted) çıktı, B'de çıkmadı: B ders başında okumuştu, 30 dk'lık aralık yüzünden ödülden sonra bakmadı.
+  Düzeltme (sürüm 24'e): 2. ders bitiş kaydı yazılınca `MainActivity.requestReferralRewardCheck` 8 ve 30 sn sonra
+  aralığı sıfırlayıp yeniden okuyor; panel yine ana ekran boşalınca. Derlendi, telefonda denenmedi.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 

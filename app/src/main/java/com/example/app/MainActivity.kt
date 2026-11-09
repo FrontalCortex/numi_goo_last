@@ -272,6 +272,9 @@ class MainActivity : AppCompatActivity() {
         private const val WEEKLY_CARD_WAIT_MS = 60_000L
         /** Davet ödülü bildirimi en çok bu aralıkla okunur (bkz. maybeShowReferralReward). */
         private const val REFERRAL_NOTICE_CHECK_MS = 30 * 60_000L
+        /** 2. ders bitince ödül bildiriminin yeniden okunduğu anlar (bkz. requestReferralRewardCheck). */
+        private const val REFERRAL_NOTICE_RECHECK_1_MS = 8_000L
+        private const val REFERRAL_NOTICE_RECHECK_2_MS = 30_000L
         private const val KEY_NOTIF_PERMISSION_PROMPTED = "notif_permission_prompted"
 
         /**
@@ -5240,6 +5243,21 @@ class MainActivity : AppCompatActivity() {
     private var referralNoticePending: Map<*, *>? = null
     private var referralNoticeDeadlineMs = 0L
     private val referralNoticeRunnable = Runnable { tryShowReferralReward() }
+
+    /**
+     * 2. ders bitince (LessonMilestones) çağrılıyor: sunucu ödülü birkaç saniye içinde yazıyor; 30 dakikalık
+     * okuma aralığını sıfırlayıp iki kez bakılıyor (tetikleyici gecikirse ikincisi yakalar). Panel yine
+     * [homeIdleBlockReason] boşalınca açılıyor: ders sonu ekranları bitmeden araya girmiyor.
+     */
+    fun requestReferralRewardCheck() = runOnUiThread {
+        if (!::binding.isInitialized) return@runOnUiThread
+        for (delay in longArrayOf(REFERRAL_NOTICE_RECHECK_1_MS, REFERRAL_NOTICE_RECHECK_2_MS)) {
+            binding.root.postDelayed({
+                if (referralNoticePending == null) referralNoticeLastCheckMs = 0L
+                maybeShowReferralReward()
+            }, delay)
+        }
+    }
 
     private fun maybeShowReferralReward() {
         val uid = auth.currentUser?.uid ?: return

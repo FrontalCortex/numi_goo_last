@@ -88,6 +88,12 @@ object LessonMilestones {
             }.addOnSuccessListener { keys ->
                 // Cihazda doğrulama için (adb logcat -s LessonMilestones); yazılan alanları gösterir.
                 Log.d(TAG, "recordFinish yazıldı part=$partId id=$stableId alanlar=$keys örnek=${op?.text}")
+                // Davet ödülü bu kaydı bekliyor (functions/referrals.js grantReferralRewardOnLesson). Davetle
+                // gelen kişi "1 hafta Pro kazandın"ı 2. dersin hemen ardından görsün diye (09.11.2026 cihazda B'de
+                // 30 dk'lık okuma aralığı yüzünden çıkmamıştı) ödül bildirimi birkaç saniye sonra yeniden okunuyor.
+                if (partId == 1 && stableId == ReferralAttribution.REWARD_LESSON_ID) {
+                    MainActivity.currentActivity?.requestReferralRewardCheck()
+                }
             }.addOnFailureListener { e -> Log.w(TAG, "recordFinish part=$partId id=$stableId", e) }
         } catch (e: Exception) {
             Log.w(TAG, "recordFinish başlatılamadı", e)

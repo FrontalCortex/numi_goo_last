@@ -32,6 +32,9 @@ object ReferralAttribution {
 
     data class Parsed(val code: String, val source: String)
 
+    /** Davet ödülünü açan ders (sunucuda REWARD_MILESTONE_ID = "1_" + bu). */
+    const val REWARD_LESSON_ID = "p1_i02_2_basamakli_sayilar"
+
     /** Yan etkisiz: referrer metninden kod. utm_source "ref" değilse (reklam, mağaza araması) null. */
     fun parse(raw: String?): Parsed? {
         if (raw.isNullOrBlank()) return null
