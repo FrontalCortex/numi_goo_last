@@ -105,7 +105,7 @@
   <p class="langs"><a href="privacy-policy.html">English</a> &middot; <strong>Türkçe</strong> &middot; <a href="privacy-policy-id.html">Bahasa Indonesia</a> &middot; <a href="privacy-policy-ar.html" lang="ar" dir="rtl">العربية</a></p>
 
   <h1>Sorobit — Gizlilik Politikası ve Kullanım Şartları</h1>
-  <p class="updated">Yürürlük tarihi: 3 Kasım 2026</p>
+  <p class="updated">Yürürlük tarihi: 10 Kasım 2026</p>
 
   <p>
     Sorobit ("Uygulama"), abaküs (soroban) ile zihinden aritmetik eğitimi üzerine kurulu, öğrenci
@@ -199,6 +199,7 @@
     <li><strong>Bildirim kimliği:</strong> bildirim iletmek için kullanılır (Firebase Cloud Messaging).</li>
     <li><strong>Cihaz ve oturum verileri:</strong> cihaz modeli, işletim sistemi sürümü ve etkin oturum sayısı; aynı anda tek/sınırlı cihazdan giriş kuralını uygulamak için kullanılır.</li>
     <li><strong>Cihaz kimliği (kötüye kullanımı önleme):</strong> Pro aboneliği başlattığınızda tek seferlik hoş geldin danışma kredisinin her cihaza en fazla bir kez verilebilmesi için cihazınızın Android ID'si bir kez iletilir. Ham kimliği <strong>saklamıyor</strong> ve kaydetmiyoruz: sunucu onu geri döndürülemez, tuzlanmış bir özete (HMAC-SHA256) çevirir ve yalnızca bu özeti, kredinin verildiği tarihle birlikte tutar. Özet yalnızca aynı tek seferlik hakkın tekrar tekrar alınmasını önlemek için kullanılır; reklam kimliğinizle ilişkilendirilmez, reklam, profil oluşturma ya da analiz için kullanılmaz.</li>
+    <li><strong>Cihaz özeti (arkadaş daveti):</strong> Arkadaş davetindeki 1 haftalık Pro ödülünün her telefona en fazla bir kez verilebilmesi için uygulama, cihazınızın Android ID'sini telefonda tuzlanmış, geri döndürülemez bir özete (SHA-256) çevirir ve yalnızca bu özeti gönderir; ham kimlik cihazdan çıkmaz. Özet yalnızca aynı ödülün aynı telefonla tekrar tekrar alınmasını önlemek için kullanılır; reklam, profil oluşturma ya da analiz için kullanılmaz (bkz. Bölüm 2.5).</li>
   </ul>
 
   <h3 id="pp-2-4">2.4 Yapay zekâ destekli öğrenme yardımcısı Sobi</h3>
@@ -231,6 +232,16 @@
       gönderilen veriler modellerini eğitmek için kullanılmaz.</li>
     <li>Sobi'nin cevapları otomatik üretilir ve hata içerebilir; öğretmenin yerini tutmaz. Yanlış
       ya da uygunsuz görünen bir cevap Uygulamadan bildirilebilir.</li>
+  </ul>
+
+  <h3 id="pp-2-5">2.5 Arkadaş davetleri ve paylaşım</h3>
+  <p>Uygulamada haftalık ilerleme özetini ya da genel bir daveti paylaşabilirsiniz. 13 yaşından küçük kullanıcılarda paylaşımdan önce bir yetişkin doğrulaması (veli kapısı) istenir.</p>
+  <ul>
+    <li><strong>Paylaşılan içerik:</strong> paylaşımı, seçtiğiniz uygulama (ör. WhatsApp) üzerinden siz yaparsınız; biz kimseye mesaj göndermeyiz. Haftalık özet görseli yalnızca adınızın ilk kelimesini ve ilerleme bilgisini içerir; soyad, fotoğraf, okul ya da konum içermez.</li>
+    <li><strong>Davet kodu:</strong> size özel, kişisel bilgi içermeyen bir kod ve bağlantı (numigo-new.web.app/d/…) oluşturulur.</li>
+    <li><strong>Davetle gelme bilgisi:</strong> uygulama bir davet bağlantısından yüklendiğinde Google Play'in yükleme kaynağı bilgisinden (Install Referrer) davet kodu okunur. Hesap açıldığında hangi koddan geldiğiniz, tarih, kaynak türü ve ödül durumu kaydedilir. Davet eden kişi yalnızca kaç kişinin davetle geldiğini ve kazandığı gün sayısını görür; gelenlerin kim olduğunu görmez.</li>
+    <li><strong>Ödül:</strong> davetle gelen kişi 2. dersi bitirince her iki hesaba da 7 günlük Pro tanımlanır (davet eden için yılda en çok 10 kez).</li>
+    <li><strong>Silme:</strong> hesabınızı silerseniz davet kodunuz, davetle geldiğiniz kaydı ve ödül sayacınız silinir; davet ettiğiniz kişilerin kayıtlarındaki kimliğiniz boşaltılır. Yalnızca Bölüm 2.2'deki cihaz özeti, aynı ödülün hesap silinip yeniden açılarak tekrar alınmaması için saklanır.</li>
   </ul>
 
   <h2 id="pp-3">3. Üçüncü Taraf Hizmetler</h2>
@@ -374,6 +385,7 @@
     <li><strong>Tuzlanmış cihaz özeti</strong> (bkz. Bölüm 2.2) — süresiz saklanır. Yalnızca tek
       seferlik hoş geldin kredisinin bir cihaza daha önce verildiğini kaydeder ve kişisel veri
       içermez.</li>
+    <li><strong>Davet cihaz özeti</strong> (bkz. Bölüm 2.2 ve 2.5) — süresiz saklanır. Yalnızca bir telefonun daha önce davetle ödül aldığını kaydeder ve kişisel veri içermez.</li>
     <li><strong>Reklam ödülü kayıtları</strong> — aynı ödüllü reklamın iki kez alınmasını önlemek
       için 7 gün saklanır, sonra kendiliğinden silinir.</li>
     <li><strong>Açık moderasyon incelemesindeki danışma</strong> — danışmalarınızdan birindeki bir
@@ -493,7 +505,7 @@
   </div>
 
   <footer>
-    Sorobit &middot; Gizlilik Politikası ve Kullanım Şartları &middot; Yürürlük tarihi: 3 Kasım 2026
+    Sorobit &middot; Gizlilik Politikası ve Kullanım Şartları &middot; Yürürlük tarihi: 10 Kasım 2026
   </footer>
 
 </div>

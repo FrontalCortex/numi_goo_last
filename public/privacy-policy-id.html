@@ -105,7 +105,7 @@
   <p class="langs"><a href="privacy-policy.html">English</a> &middot; <a href="privacy-policy-tr.html">Türkçe</a> &middot; <strong>Bahasa Indonesia</strong> &middot; <a href="privacy-policy-ar.html" lang="ar" dir="rtl">العربية</a></p>
 
   <h1>Sorobit — Kebijakan Privasi &amp; Ketentuan Layanan</h1>
-  <p class="updated">Tanggal berlaku: 3 November 2026</p>
+  <p class="updated">Tanggal berlaku: 10 November 2026</p>
 
   <p>
     Sorobit ("Aplikasi") adalah aplikasi pendidikan untuk latihan aritmetika mental dengan sempoa
@@ -200,6 +200,7 @@
     <li><strong>Token notifikasi:</strong> digunakan untuk mengirim notifikasi (Firebase Cloud Messaging).</li>
     <li><strong>Data perangkat dan sesi:</strong> model perangkat, versi sistem operasi, dan jumlah sesi aktif, digunakan untuk menerapkan aturan masuk dari satu/terbatas perangkat secara bersamaan.</li>
     <li><strong>ID perangkat (pencegahan penipuan):</strong> saat Anda mengaktifkan langganan Pro, Android ID perangkat Anda dikirim satu kali agar kredit konsultasi sambutan satu kali hanya dapat diberikan paling banyak sekali per perangkat. Kami <strong>tidak</strong> menyimpan atau mencatat ID mentahnya: server mengubahnya menjadi hash bergaram yang tidak dapat dibalik (HMAC-SHA256) dan hanya menyimpan hash tersebut, bersama tanggal kredit diberikan. Hash ini hanya digunakan untuk mencegah klaim berulang atas manfaat satu kali yang sama; hash ini tidak dikaitkan dengan ID iklan Anda dan tidak digunakan untuk iklan, pembuatan profil, atau analitik.</li>
+    <li><strong>Hash perangkat (undangan teman):</strong> agar hadiah Pro 1 minggu untuk mengundang teman hanya dapat diberikan paling banyak sekali per ponsel, aplikasi mengubah Android ID perangkat Anda di ponsel menjadi hash bergaram yang tidak dapat dibalik (SHA-256) dan hanya mengirim hash tersebut; ID mentah tidak pernah keluar dari perangkat. Hash ini hanya digunakan untuk mencegah hadiah yang sama diklaim berulang kali dengan ponsel yang sama; tidak digunakan untuk iklan, pembuatan profil, atau analitik (lihat Bagian 2.5).</li>
   </ul>
 
   <h3 id="pp-2-4">2.4 Sobi, asisten belajar berbasis AI</h3>
@@ -234,6 +235,16 @@
     <li>Balasan Sobi dibuat secara otomatis dan dapat mengandung kesalahan; balasan ini tidak
       menggantikan guru. Balasan yang tampak salah atau tidak pantas dapat dilaporkan di
       Aplikasi.</li>
+  </ul>
+
+  <h3 id="pp-2-5">2.5 Undangan teman dan berbagi</h3>
+  <p>Anda dapat membagikan ringkasan kemajuan mingguan atau undangan umum dari Aplikasi. Untuk pengguna di bawah 13 tahun, pemeriksaan orang dewasa (gerbang orang tua) diperlukan sebelum berbagi.</p>
+  <ul>
+    <li><strong>Konten yang dibagikan:</strong> Anda sendiri yang membagikan melalui aplikasi pilihan Anda (mis. WhatsApp); kami tidak mengirim pesan kepada siapa pun. Gambar ringkasan mingguan hanya berisi kata pertama nama Anda dan informasi kemajuan; tanpa nama belakang, foto, sekolah, atau lokasi.</li>
+    <li><strong>Kode undangan:</strong> kode dan tautan pribadi (numigo-new.web.app/d/…) yang tidak berisi informasi pribadi dibuat untuk Anda.</li>
+    <li><strong>Atribusi undangan:</strong> saat Aplikasi dipasang dari tautan undangan, kode undangan dibaca dari informasi sumber pemasangan Google Play (Install Referrer). Saat akun dibuat, kode asalnya, tanggal, jenis sumber, dan status hadiah dicatat. Pengundang hanya melihat berapa orang yang bergabung dan berapa hari yang ia dapatkan, bukan siapa orang-orang tersebut.</li>
+    <li><strong>Hadiah:</strong> saat orang yang diundang menyelesaikan pelajaran 2, kedua akun mendapat Pro 7 hari (paling banyak 10 kali setahun untuk pengundang).</li>
+    <li><strong>Penghapusan:</strong> jika Anda menghapus akun, kode undangan Anda, catatan undangan Anda, dan penghitung hadiah Anda dihapus, dan identitas Anda dihapus dari catatan orang yang Anda undang. Hanya hash perangkat di Bagian 2.2 yang disimpan, agar hadiah yang sama tidak dapat diklaim lagi dengan menghapus dan membuat ulang akun.</li>
   </ul>
 
   <h2 id="pp-3">3. Layanan Pihak Ketiga</h2>
@@ -379,6 +390,7 @@
     <li><strong>Hash perangkat bergaram</strong> (lihat Bagian 2.2) — disimpan tanpa batas waktu. Hash
       ini hanya mencatat bahwa kredit sambutan satu kali sudah diberikan ke suatu perangkat dan tidak
       berisi data pribadi.</li>
+    <li><strong>Hash perangkat undangan</strong> (lihat Bagian 2.2 dan 2.5) — disimpan tanpa batas waktu. Hanya mencatat bahwa sebuah ponsel sudah pernah menerima hadiah undangan dan tidak berisi data pribadi.</li>
     <li><strong>Catatan hadiah iklan</strong> — disimpan selama 7 hari untuk mencegah iklan berhadiah
       yang sama diklaim dua kali, lalu dihapus otomatis.</li>
     <li><strong>Konsultasi yang sedang dalam peninjauan moderasi</strong> — jika sebuah pesan dalam
@@ -495,7 +507,7 @@
   </div>
 
   <footer>
-    Sorobit &middot; Kebijakan Privasi &amp; Ketentuan Layanan &middot; Tanggal berlaku: 3 November 2026
+    Sorobit &middot; Kebijakan Privasi &amp; Ketentuan Layanan &middot; Tanggal berlaku: 10 November 2026
   </footer>
 
 </div>

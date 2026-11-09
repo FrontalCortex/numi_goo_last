@@ -105,7 +105,7 @@
   <p class="langs"><strong>English</strong> &middot; <a href="privacy-policy-tr.html">Türkçe</a> &middot; <a href="privacy-policy-id.html">Bahasa Indonesia</a> &middot; <a href="privacy-policy-ar.html" lang="ar" dir="rtl">العربية</a></p>
 
   <h1>Sorobit — Privacy Policy &amp; Terms of Service</h1>
-  <p class="updated">Effective date: November 3, 2026</p>
+  <p class="updated">Effective date: November 10, 2026</p>
 
   <p>
     Sorobit ("the App") is an educational application built around abacus (soroban) mental
@@ -199,6 +199,7 @@
     <li><strong>Push notification token:</strong> used to deliver notifications (Firebase Cloud Messaging).</li>
     <li><strong>Device and session data:</strong> device model, OS version, and active session count, used to enforce single/limited concurrent device sign-in.</li>
     <li><strong>Device identifier (fraud prevention):</strong> when you activate a Pro subscription, your device's Android ID is transmitted once so that the one-time welcome consultation credit can be granted no more than once per device. We do <strong>not</strong> store or log the raw identifier: the server converts it into an irreversible salted hash (HMAC-SHA256) and keeps only that hash, together with the date the credit was granted. The hash is used solely to prevent repeated claiming of the same one-time benefit; it is not linked to your advertising identifier and is not used for advertising, profiling, or analytics.</li>
+    <li><strong>Device hash (friend invites):</strong> so that the 1-week Pro reward for inviting a friend can be granted no more than once per phone, the app converts your device's Android ID on the phone into an irreversible salted hash (SHA-256) and sends only that hash; the raw identifier never leaves the device. The hash is used solely to prevent the same reward from being claimed repeatedly with the same phone; it is not used for advertising, profiling, or analytics (see Section 2.5).</li>
   </ul>
 
   <h3 id="pp-2-4">2.4 Sobi, the AI learning helper</h3>
@@ -231,6 +232,16 @@
       not used to train its models.</li>
     <li>Sobi's replies are generated automatically and may contain mistakes; they do not replace
       a teacher. A reply that seems wrong or inappropriate can be reported in the App.</li>
+  </ul>
+
+  <h3 id="pp-2-5">2.5 Friend invites and sharing</h3>
+  <p>You can share your weekly progress summary or a general invite from the App. For users under 13, an adult check (parental gate) is required before sharing.</p>
+  <ul>
+    <li><strong>Shared content:</strong> you share through an app you choose (e.g. WhatsApp); we do not send messages to anyone. The weekly summary image contains only the first word of your name and progress information; no surname, photo, school, or location.</li>
+    <li><strong>Invite code:</strong> a personal code and link (numigo-new.web.app/d/…) that contains no personal information is created for you.</li>
+    <li><strong>Invite attribution:</strong> when the App is installed from an invite link, the invite code is read from Google Play's install source information (Install Referrer). When an account is created, which code it came from, the date, the source type, and the reward status are recorded. The inviter only sees how many people joined and how many days they earned, not who those people are.</li>
+    <li><strong>Reward:</strong> when the invited person finishes lesson 2, both accounts receive 7 days of Pro (at most 10 times a year for the inviter).</li>
+    <li><strong>Deletion:</strong> if you delete your account, your invite code, the record of how you were invited, and your reward counter are deleted, and your identity is removed from the records of people you invited. Only the device hash in Section 2.2 is kept, so the same reward cannot be claimed again by deleting and recreating an account.</li>
   </ul>
 
   <h2 id="pp-3">3. Third-Party Services</h2>
@@ -379,6 +390,7 @@
     <li><strong>Salted device hash</strong> (see Section 2.2) — retained indefinitely. It
       records only that the one-time welcome credit has already been granted to a device and
       contains no personal data.</li>
+    <li><strong>Invite device hash</strong> (see Sections 2.2 and 2.5) — retained indefinitely. It only records that a phone has already received an invite reward and contains no personal data.</li>
     <li><strong>Ad reward records</strong> — retained for 7 days to prevent the same rewarded
       ad from being claimed twice, then deleted automatically.</li>
     <li><strong>A consultation under open moderation review</strong> — if a message in one of
@@ -499,7 +511,7 @@
   </div>
 
   <footer>
-    Sorobit &middot; Privacy Policy &amp; Terms of Service &middot; Effective date: November 3, 2026
+    Sorobit &middot; Privacy Policy &amp; Terms of Service &middot; Effective date: November 10, 2026
   </footer>
 
 </div>

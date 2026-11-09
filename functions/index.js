@@ -1908,6 +1908,14 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   } catch (error) {
     console.error(`Error removing Sobi chats for ${uid}:`, error);
   }
+
+  // Davet verisi üst seviyede (referrals, referralCodes, referralRewardCounts); bkz. referrals.js.
+  try {
+    const counts = await referrals.deleteReferralData({ db, uid });
+    console.log('Silinen kullanıcının davet verisi temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing referral data for ${uid}:`, error);
+  }
 });
 
 // Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.

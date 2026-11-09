@@ -666,6 +666,11 @@ kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığı
   · ödüllü · izsiz). Kalan açık: çok sayıda emülatör/telefon (yılda en çok 70 gün); görülürse Play Integrity
   (App Check zorunluluğu). Cihaz izi topladığımız için Veri güvenliği formunda "Cihaz veya diğer kimlikler" ve
   gizlilik politikasında madde gerekiyor (aynı gece ele alınıyor).
+- **Gizlilik + hesap silme (09.11 gece):** politika 4 dilde: 2.2'ye "cihaz özeti (arkadaş daveti)", yeni **2.5
+  Arkadaş davetleri ve paylaşım** (paylaşılan içerik, davet kodu, Install Referrer, ödül, silme), Bölüm 7 saklanan
+  verilere "davet cihaz özeti", yürürlük 10 Kasım 2026. `cleanupUserOnDelete` sonuna `referrals.deleteReferralData`:
+  `referrals/{uid}` silinir, davet ettiklerinde `referrerUid: null, referrerDeleted: true`, `referralCodes` ve
+  `referralRewardCounts` silinir, `referralDevices` KALIR. Emülatör testleri geçti.
 - Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
   okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
 

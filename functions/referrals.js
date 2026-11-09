@@ -217,6 +217,39 @@ async function grantReferralReward({ db, admin, uid, nowMs = Date.now() }) {
   });
 }
 
+/**
+ * Hesap silinince davet verisi (cleanupUserOnDelete). Koleksiyonlar üst seviyede; users/{uid}'nin
+ * recursiveDelete'i onlara ulaşmıyor. Gizlilik politikası Bölüm 7 bununla aynı:
+ *   - referrals/{uid} (bu kişi davetle geldiyse) silinir,
+ *   - bu kişinin davet ettiklerinin kayıtlarında referrerUid boşaltılır (sayım K için kalsın, kim olduğu kalmasın),
+ *   - kodu (referralCodes) ve yıllık ödül sayacı (referralRewardCounts) silinir: bağlantısı artık çalışmaz,
+ *   - cihaz özeti (referralDevices) KALIR: hesabı silip yeniden açarak aynı telefonla ödül alınmasın
+ *     (hoş geldin kredisinin welcomeCreditGrants'ı ile aynı ilke).
+ */
+async function deleteReferralData({ db, uid }) {
+  const counts = { referral: 0, anonymized: 0, codes: 0, counters: 0 };
+  const own = db.collection('referrals').doc(uid);
+  if ((await own.get()).exists) { await own.delete(); counts.referral = 1; }
+  const invited = await db.collection('referrals').where('referrerUid', '==', uid).get();
+  for (let i = 0; i < invited.docs.length; i += 400) {
+    const batch = db.batch();
+    invited.docs.slice(i, i + 400).forEach((d) => batch.update(d.ref, { referrerUid: null, referrerDeleted: true }));
+    await batch.commit();
+  }
+  counts.anonymized = invited.size;
+  const codes = await db.collection('referralCodes').where('uid', '==', uid).get();
+  const counters = await db.collection('referralRewardCounts')
+    .where(require('firebase-admin').firestore.FieldPath.documentId(), '>=', uid + '_')
+    .where(require('firebase-admin').firestore.FieldPath.documentId(), '<', uid + '_~').get();
+  const batch = db.batch();
+  codes.docs.forEach((d) => batch.delete(d.ref));
+  counters.docs.forEach((d) => batch.delete(d.ref));
+  if (codes.size || counters.size) await batch.commit();
+  counts.codes = codes.size;
+  counts.counters = counters.size;
+  return counts;
+}
+
 /** Davet ekranındaki sayaç: kaç kişi davetle geldi, getiren kaç gün Pro kazandı. */
 async function referralStats({ db, uid }) {
   const col = db.collection('referrals').where('referrerUid', '==', uid);
@@ -292,6 +325,7 @@ module.exports = {
   claimAndMaybeReward,
   grantReferralReward,
   referralStats,
+  deleteReferralData,
   createGetReferralCode,
   createClaimReferral,
   createRewardTrigger,

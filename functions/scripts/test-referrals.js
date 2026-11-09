@@ -139,6 +139,19 @@ async function flow() {
   const g2 = await rf.grantReferralReward({ db, admin, uid: 'ref_D', nowMs: NOW });
   check('  D ödül alır, A almaz', g2.granted && !g2.referrerRewarded, true);
   check('  A değişmedi', (await db.collection('users').doc('ref_A').get()).get('giftProUntil'), NOW + 14 * DAY);
+
+  console.log('Hesap silme (emülatör)');
+  const delB = await rf.deleteReferralData({ db, uid: 'ref_B' });
+  check('  B\'nin davet kaydı silindi', (await db.collection('referrals').doc('ref_B').get()).exists, false);
+  check('  B silme sayımı', delB.referral, 1);
+  const delA = await rf.deleteReferralData({ db, uid: 'ref_A' });
+  check('  A\'nın kodu silindi', (await db.collection('referralCodes').doc(c1.code).get()).exists, false);
+  check('  A\'nın yıllık sayacı silindi', (await db.collection('referralRewardCounts').doc(`ref_A_${year}`).get()).exists, false);
+  const dRef = await db.collection('referrals').doc('ref_D').get();
+  check('  A\'nın davet ettiklerinde kimlik boşaldı', dRef.get('referrerUid'), null);
+  check('  ... kayıt (K sayımı için) duruyor', dRef.exists && dRef.get('rewarded'), true);
+  check('  cihaz özeti kalıyor', (await db.collection('referralDevices').doc(dev('X')).get()).exists || (await db.collection('referralDevices').doc('b'.repeat(64)).get()).exists, true);
+  check('  A silme sayımı (kod 1, sayaç 1)', delA.codes + delA.counters, 2);
 }
 
 (async () => {
