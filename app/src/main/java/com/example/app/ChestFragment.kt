@@ -159,7 +159,18 @@ class ChestFragment : Fragment() {
         // geçen animasyon/geçiş süresinin arkasında gizlenir.
         ServerRewards.prefetchChest(NewChestFragment.ChestRarity.COMMON.name)
 
-        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        // Ders listesi bu an elde değilse (ör. süreç yeniden kurulduktan sonra) `!!` çöküyordu
+        // (Crashlytics, sürüm 21: NullPointerException). Sandığı göstermeden haritaya dön; ödül
+        // akışı başlamadığı için kaybolan bir şey yok. Dönüş bir sonraki karede: onViewCreated
+        // bir fragment işleminin içinden çağrılıyor, burada senkron işlem yapılamaz.
+        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) ?: run {
+            AnalyticsLogger.recordNonFatal(
+                "ChestFragment: ders bulunamadı, haritaya dönülüyor",
+                IllegalStateException("mapIdx=$mapFragmentStepIndex part=$globalPartId"),
+            )
+            view.post { returnToMapWithoutLessonItem() }
+            return
+        }
         recordScore = arguments?.getInt("toplamPuan", arguments?.getInt("dersPuani", 0) ?: 0) ?: 0
         lessonSuccessRate = arguments?.getFloat("successRate", 0f) ?: 0f
         questionElapsedMs = arguments?.getLong("questionElapsedMs", -1L)?.takeIf { it >= 0L }
@@ -844,6 +855,21 @@ class ChestFragment : Fragment() {
         if (activity is MainActivity) {
             //activity.refreshRacePanel()
         }
+    }
+
+    /** Ders bulunamadığında (bkz. onViewCreated) sandığı hiç açmadan haritaya dönüş. */
+    private fun returnToMapWithoutLessonItem() {
+        if (!isAdded) return
+        val main = activity as? MainActivity
+        parentFragmentManager.beginTransaction()
+            .remove(this@ChestFragment)
+            .commitAllowingStateLoss()
+        main?.prepareMapReturnAfterLessonClaim()
+        main?.finalizeMapReturnAfterLessonClaim(
+            caller = "ChestFragment.noLessonItem",
+            badgePayloads = emptyList(),
+            isLessonTypeReturn = false,
+        )
     }
 
     override fun onDestroyView() {

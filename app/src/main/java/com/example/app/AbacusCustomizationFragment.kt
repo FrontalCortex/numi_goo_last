@@ -157,12 +157,16 @@ class AbacusCustomizationFragment : Fragment() {
                     keyText?.text = UserWalletFirestore.displayText(v.context, wallet.keys)
                 },
             )
+            // Firestore cevabı ekran kapandıktan sonra gelebilir: o zaman sekmeyi kurmaya çalışmak
+            // requireContext() ile çöküyordu (Crashlytics, sürüm 21: "not attached to a context").
             BeadPurchaseFirestore.loadOwnedBeads(uid, onResult = { owned ->
                 ownedBeads = owned
+                if (!isAdded || view == null) return@loadOwnedBeads
                 if (currentTab == 0) selectTab(0)
             })
             FramePurchaseFirestore.loadOwnedFrames(uid, onResult = { owned ->
                 ownedFrames = owned
+                if (!isAdded || view == null) return@loadOwnedFrames
                 if (currentTab == 2) selectTab(2)
                 if (currentTab == 3) selectTab(3)
             })
@@ -262,6 +266,9 @@ class AbacusCustomizationFragment : Fragment() {
     // ── Tab management ────────────────────────────────────────────────────────
 
     private fun selectTab(index: Int) {
+        // Geç gelen Firestore cevapları (sahip olunan boncuk/çerçeve, hydrate) buraya ekran
+        // kapandıktan sonra da düşebiliyor; sekme kurmak requireContext() ister.
+        if (!isAdded || view == null) return
         currentTab = index
         for (i in 0..3) {
             tabViews[i]?.clearColorFilter()

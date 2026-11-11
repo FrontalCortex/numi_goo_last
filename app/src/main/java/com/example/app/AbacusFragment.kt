@@ -1814,6 +1814,8 @@ class AbacusFragment : Fragment() {
             Log.e("AbacusFragment", "Operations list is empty")
             return false
         }
+        // Son sorudan sonra gelen dokunuş (BlindingLessonFragment'te bu yüzden çöktü, sürüm 21).
+        if (currentIndex !in operations.indices) return false
 
         if (operations[currentIndex].secondNumber == null && operations[currentIndex].firstNumber == null) {
             answerNumber = operations[currentIndex].operator?.toInt() ?: 0

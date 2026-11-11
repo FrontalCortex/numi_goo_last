@@ -844,6 +844,11 @@ class BlindingLessonFragment : Fragment() {
                     if (currentTime - lastClickTime >= 100) {
                         lastClickTime = currentTime
 
+                        // Son sorudan sonra (ders kapanırken) gelen dokunuş: soru kalmadı, yok say.
+                        // Sürüm 21'de operations[currentIndex] burada listenin dışına çıkıp çöktü
+                        // (Crashlytics, 08.11.2026: "Index 1 out of bounds for length 1").
+                        if (currentIndex !in operations.indices) return@OnTouchListener true
+
                         // Tıklama işlemini gerçekleştir (cevabı tek kez hesapla)
                         hasSubmittedAnyAnswer = true
                         val isCorrect = stepAnswerAlgorithm()
@@ -1642,7 +1647,7 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun stepAnswerAlgorithm(): Boolean {
-        if (operations.isEmpty()) {
+        if (currentIndex !in operations.indices) {
             return false
         }
         val currentOperation = operations[currentIndex]

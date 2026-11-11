@@ -2170,7 +2170,19 @@ class MainActivity : AppCompatActivity() {
         val fm = supportFragmentManager
         var steps = 0
         while (steps++ < 8) {
-            fm.executePendingTransactions()
+            // FragmentManager kendi işlemlerini yürütürken çağrıldıysak (ör. bir fragment-result
+            // dinleyicisinin içinden: ChestFragment chest_closed → ödül hatası → harita dönüşü)
+            // executePendingTransactions ve commitNow "already executing transactions" ile çöküyor
+            // (Crashlytics, sürüm 21). Temizliği bir sonraki kareye ertele; kaplar şimdiden gizlenir.
+            try {
+                fm.executePendingTransactions()
+            } catch (busy: IllegalStateException) {
+                logMapTouchDiag("purgeAbacus", "DEFERRED_FM_BUSY", "caller=$caller")
+                binding.root.post {
+                    if (!isFinishing && !isDestroyed) purgeAbacusOverlayHosts("$caller.deferred")
+                }
+                break
+            }
             val overlay = liveOverlayIn(R.id.abacusFragmentContainer) ?: break
             if (firstTutorialOverlayBootstrapActive && overlay is TutorialFragment) break
             if (overlay is TutorialFragment && activeMapTutorialOverlayFromLesson) break
