@@ -45,7 +45,7 @@ check('  hariç e-posta (büyük/küçük harf, boşluk)', lg.launchGiftCandidat
 check('  listede olmayan e-posta', lg.launchGiftCandidate({
   authCreatedMs: after, userData: student, email: 'veli@gmail.com', excludedEmails: excluded,
 }).eligible, true);
-check('  10.11.2026 00:00 TR = 09.11 21:00 UTC', new Date(lg.LAUNCH_GIFT_START_MS).toISOString(), '2026-11-09T21:00:00.000Z');
+check('  12.11.2026 00:00 TR = 11.11 21:00 UTC', new Date(lg.LAUNCH_GIFT_START_MS).toISOString(), '2026-11-11T21:00:00.000Z');
 
 console.log('\nSayaç kararı (launchGiftDecision)');
 check('  0 → verilir', lg.launchGiftDecision({ count: 0, alreadyClaimed: false, nowMs: NOW }).grant, true);

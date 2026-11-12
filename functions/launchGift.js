@@ -1,5 +1,6 @@
 /**
- * Yayın hediyesi: 10 Kasım 2026'dan itibaren hesap açan ilk 100 öğrenciye 1 ay Pro.
+ * Yayın hediyesi: 12 Kasım 2026'dan itibaren hesap açan ilk 100 öğrenciye 1 ay Pro.
+ * (Başlangıç 10.11'di; 12.11.2026'da kullanıcı kararıyla Play üretim gönderiminin günü yapıldı.)
  *
  * NEDEN
  *   Reklam 13 videosunun kapanışında (TR, EN, ID, AR) bu söz verildi. Play Store indirme
@@ -28,8 +29,8 @@
  *     listesindeki e-postalar — yayından sonra açılan test hesapları için.
  */
 
-// 10.11.2026 00:00 Türkiye saati (UTC+3).
-const LAUNCH_GIFT_START_MS = Date.UTC(2026, 10, 9, 21, 0, 0);
+// 12.11.2026 00:00 Türkiye saati (UTC+3).
+const LAUNCH_GIFT_START_MS = Date.UTC(2026, 10, 11, 21, 0, 0);
 const LAUNCH_GIFT_LIMIT = 100;
 const LAUNCH_GIFT_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 const LAUNCH_GIFT_SOURCE = 'launch_2026_11';
