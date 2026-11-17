@@ -56,6 +56,8 @@
     <string name="settings_notify_reward">المكافآت والفعاليات</string>
 
     <string name="settings_language">اللغة</string>
+    <string name="settings_ad_privacy_options">خيارات خصوصية الإعلانات</string>
+    <string name="settings_ad_privacy_options_error">تعذّر فتح خيارات الخصوصية الآن. يُرجى المحاولة مرة أخرى لاحقًا.</string>
     <string name="settings_language_system">لغة الهاتف</string>
 
     <string name="notification_download_cancel">إلغاء</string>

@@ -61,6 +61,8 @@
 
     <!-- Ayarlar → Dil (AppLanguage) -->
     <string name="settings_language">Bahasa</string>
+    <string name="settings_ad_privacy_options">Opsi privasi iklan</string>
+    <string name="settings_ad_privacy_options_error">Opsi privasi tidak dapat dibuka saat ini. Silakan coba lagi nanti.</string>
     <string name="settings_language_system">Bahasa ponsel</string>
 
     <string name="notification_download_cancel">Batal</string>

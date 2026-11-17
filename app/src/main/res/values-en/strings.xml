@@ -56,6 +56,8 @@
     <string name="settings_notify_reward">Rewards and events</string>
 
     <string name="settings_language">Language</string>
+    <string name="settings_ad_privacy_options">Ad privacy options</string>
+    <string name="settings_ad_privacy_options_error">Privacy options could not be opened right now. Please try again later.</string>
     <string name="settings_language_system">Phone language</string>
 
     <string name="notification_download_cancel">Cancel</string>

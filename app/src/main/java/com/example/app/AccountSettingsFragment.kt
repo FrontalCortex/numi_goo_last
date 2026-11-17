@@ -9,6 +9,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentAccountSettingsBinding
+import com.google.android.ump.ConsentInformation
+import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -33,7 +35,40 @@ class AccountSettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         authManager = AuthManager().apply { initialize(requireContext()) }
         setupClickListeners()
+        setupAdPrivacyOptions()
         loadUserPlan()
+    }
+
+    /**
+     * Reklam rızasını geri alma / değiştirme girişi. AB kuralı: rıza veren kullanıcı kararını
+     * uygulama içinden değiştirebilmeli. Durumu UMP biliyor — MainActivity açılışta
+     * [AgeConsentManager] üzerinden rıza bilgisini güncelliyor; burada yalnızca okunuyor.
+     * Satır yalnızca REQUIRED iken (AEA/İngiltere/İsviçre) görünür; Türkiye'de gizli kalır.
+     */
+    private fun setupAdPrivacyOptions() {
+        val consentInfo = UserMessagingPlatform.getConsentInformation(requireContext())
+        val required = consentInfo.privacyOptionsRequirementStatus ==
+            ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+        binding.btnAdPrivacyOptions.visibility = if (required) View.VISIBLE else View.GONE
+        binding.dividerAdPrivacy.visibility = if (required) View.VISIBLE else View.GONE
+        binding.btnAdPrivacyOptions.setOnClickListener {
+            val activity = activity ?: return@setOnClickListener
+            UserMessagingPlatform.showPrivacyOptionsForm(activity) { formError ->
+                if (formError != null) {
+                    android.util.Log.w(
+                        "AccountSettings",
+                        "Privacy options form error: ${formError.errorCode} ${formError.message}"
+                    )
+                    if (isAdded) {
+                        Toast.makeText(
+                            requireContext(),
+                            appString(R.string.settings_ad_privacy_options_error),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
     }
 
     override fun onResume() {
