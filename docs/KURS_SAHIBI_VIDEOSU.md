@@ -13,6 +13,63 @@ geçiyor. Ağırlık ödev oluşturmada: kurs sahibinin ilk sorusu "ödevler ben
 - Videoda fiyat, iletişim bilgisi ve henüz olmayan özellik yok.
 - Ekranda gerçek çocuk verisi yok: yalnızca botlar ve test hesapları (Esma, Ted).
 
+**19.11.2026 — v2 (`sahip\Sorobit_neden_v2.mp4`, 3 dk 10 sn):** SINIF YAPISI'nda beklemeler kesildi (sınıf açılırken
+yükleme, Yeni sınıf'tan önceki duraklama, kod panelinin uzun durması); sahne 34,8 → 24,2 sn. SORULAR bölümü (32–37. satırlar: soru gönderme,
+ekran kaydı, öğretmenin videoyla cevabı) çıktı; özellik kapalı. SINIF YAPISI'nın başındaki eski Soru havuzu ekranı
+kesildi (`kurs2_sinif_ac_1.mp4` artık 21,65'ten; kayıt değişken kare hızlı). Sesler yazı sırasıyla numaralı olduğu için
+yeni önek `sahip_v2_sound` (0–31 aynı, eski 38–41 → 32–35); eski dosyalar ve `Sorobit_neden_taslak.mp4` duruyor,
+betiğin eski hâli `sahip_metin.js.yedek_20261119`. Bütün sahneler baştan üretildi: önbellekteki `s6.mp4` sesten
+kısa kalmıştı ve VELİ'den sonrası görüntüsüz çıkıyordu.
+
+## Endonezce çekim (19–20.11.2026)
+
+Ham kayıtlar `Videos\Sorobit_tanitim\id_*.mp4`. Arayüz Bahasa Indonesia, telefon Xiaomi, versionCode 26 debug.
+Kayıtlar değişken kare hızlı; kesim yerini karelerin zaman damgasıyla bul (v2'deki gibi). Montaj, seslendirme ve çeviri
+henüz yapılmadı. Hedef süre 2–2,5 dk. ÖDEV OLUŞTURMA tek akıcı form kaydına indi, SORULAR yok.
+
+**Ekrandaki veri:** öğretmen **Bu Sari** (Mehmet Öğretmen hesabının adı değiştirildi), kurs Sennin School, sınıf
+**Minggu 14:00** (kod PGW SX8; eski "Pazar 14:00" yeniden adlandırıldı), 12 Endonezce adlı bot
+(`tools/kurs/sinifa_bot_ekle.js --dil id`) + öğrenci **Ted**. Esma kullanılmadı. 3. bölümün yapı grafiği (`sahip_yapi`)
+Endonezce sürümde bu adlarla üretilmeli: Sennin School → Bu Sari → Minggu 14:00.
+
+| Kayıt | Süre | Sahne | İçerik |
+|---|---|---|---|
+| `id_sinif_ac_1.mp4` | 38,3 sn | s3 (sınıf açar, kod) | Kelas-kelasku (Minggu 14:00) → + Kelas baru → "Sabtu 10:00" yazılıyor → Buat kelas → Pengaturan kelas, kod XMW GGA. Sabtu 10:00 çekimden sonra arşivlendi. |
+| `id_odev_formu_1.mp4` | 110,1 sn | s4 (ödev oluşturma, tek geçiş) | Minggu 14:00 (PR kartı boş) → PR baru: Operasi, Topik (Langsung + Teman Kecil), Dengan/Tanpa sempoa, Jumlah digit, Banyak angka, Kecepatan tampil, Banyak soal, Untuk siapa (Pilih murid ↔ Seluruh kelas), özet kartında örnek soru + yenile → Kirim PR → "PR dikirim ke 13 murid". |
+| `id_sinif_ekrani_1.mp4` | 22,5 sn | s2 + s3 (sınıf ekranı, kod, liste) | Minggu 14:00: PR kartı (1 PR) + Murid (13) → dişli → kod PGW SX8 → Salin, "Kode disalin" → liste Ted'e kadar kayıyor. |
+| `id_ogrenci_cozuyor_1.mp4` | 111,8 sn | s5 (bildirim, sayılar, kontrol) | Ted profilde; ~33 sn'de bildirim çekmecesi: "PR baru — Bu Sari: penjumlahan langsung, teman kecil, 10 soal" (yanında MIUI'nin Türkçe USB bildirimi ve tarih: bulanıklaştır) → PR-ku → abaküslü 10 soru, "Benar!" → "Langkah selesai! 10/10 benar". |
+| `id_abakussuz_1.mp4` | 35,8 sn | s5 (abaküssüz cevap yazma) | PR-ku → Tanpa sempoa 5 soal → sayılar tek tek, cevap klavyeyle yazılıyor (Soal 1–3/5). Sonuç ekranı yok (kullanıcı kararı). |
+| `id_takip_1.mp4` | 85,9 sn | s6 (bildirim, kim bitirdi, ödev başarısı) | Öğretmen ana ekranı → bildirim çekmecesi: "PR selesai … Rizky Siregar selesai · 10/10 benar · 7/13 murid selesai" (USB bildirimi bulanıklaştır) → ödev ayrıntısı (Selesai / Belum mulai) → sınıf → Ted — Kemajuan (iki kart) → Keberhasilan rumus. DİKKAT: bu görünümde "Minggu ini belum ada soal yang dikerjakan" yazıyor; grafik ve kural satırları kullanılabilir. |
+| `id_gelismis_1.mp4` | 26,8 sn | s4 (Gelişmiş panel; Türkçe v2'deki guncel3_gelismis satırı) | 20.11.2026 ek kayıt, PR baru formu içinden (sınıf/öğretmen adı görünmüyor): Langsung + Teman Kecil → Lanjutan → "Angka mana yang ditambahkan?" → Teman Kecil'de 4 kapanıyor → Oke → satırda "Teman Kecil: 1, 2, 3". |
+| `id_veli_1.mp4` | 59,5 sn | veli | Ted: Pengaturan (Panel Orang Tua satırı) → Panel Orang Tua iki kart → Pelajaran (haftalık grafik, bölümler) → Keberhasilan rumus ("Minggu ini 100%", kural kural ustalık). |
+| `id_evde_1.mp4` | 28,5 sn | evde (harita, görevler, kupa) | Ted: ders haritası kayıyor → Misi harian (görevler) → profil, Jalur Piala → Pencapaian (kupalar, rozetler). |
+
+Evde bölümünün "konu adım adım anlatılır, testle pekiştirilir" satırı için Reklam 11'in Endonezce ham kayıtları
+kullanılabilir: `r11id_egitim_1.mp4` (abaküste Endonezce anlatım, 32 sn) ve `r11id_test_1.mp4` (Sobi kuisi, "Soal 4/10").
+
+**İki dilde de uygulamada kalan Türkçe (montajda atla ya da bulanıklaştır):** Veli panelindeki ders listesinde
+"Bitti · 2 steps, hepsi ilk denemede" (`ParentReportAdapter.kt` ~302, metin koda gömülü) ve Başarımlar'daki
+"Kusursuz Odak" rozet adı (`BadgeProgressEngine.kt` 61). Uygulama tarafında düzeltilmesi ayrı iş.
+
+## İngilizce çekim (20.11.2026)
+
+Ham kayıtlar `Videos\Sorobit_tanitim\en_*.mp4`; Endonezceyle aynı 8 sahne, arayüz English. Öğretmen **Mr. James**
+(aynı hesap, ad yeniden değiştirildi), sınıf **Sunday 2:00 PM** (kod QQS L6H, öğretmen adına sunucudan açıldı),
+12 İngilizce adlı bot (`--dil en`) + Ted. Endonezce sınıf Minggu 14:00 arşivde, verisi duruyor. Yapı grafiği:
+Sennin School → Mr. James → Sunday 2:00 PM. Evde bölümünün anlatım/test kısmı için `r11en_egitim_1.mp4`, `r11en_test_1.mp4`.
+
+| Kayıt | Süre | Sahne | İçerik |
+|---|---|---|---|
+| `en_sinif_ac_1.mp4` | 38,0 sn | s3 | My classes (Sunday 2:00 PM) → + New class → "Saturday 10:00" → Create class → "Class created. Code: HU9 DNC" (kısa bildirim; kod paneli YOK). Klavye öneri şeridinde Türkçe kelimeler var (kullanıcı böyle kalsın dedi). Saturday 10:00 arşivlendi. |
+| `en_odev_formu_1.mp4` | 76,3 sn | s4 | Sunday 2:00 PM → Homework → New homework: Operation, Direct + Small friends, With/Without abacus, Digits, How many numbers, Display speed, Number of questions, Assign to (Choose students ↔ Whole class), örnek soru + yenile → gönder → "0/13 finished". Sınıf ekranı ilk açılışta avatarlar yerine baş harfler (bir an). |
+| `en_sinif_ekrani_1.mp4` | 25,8 sn | s2 + s3 | Sınıf ekranı (Homework kartı, Students (13)) → Class settings, kod QQS L6H → Copy, "Code copied" → liste Ted'e kadar. |
+| `en_ogrenci_cozuyor_1.mp4` | 100,6 sn | s5 | Ted uygulama ana ekranında; ~25–25,7 sn bildirim çekmecesi "New homework — Mr. James: direct, small friends addition, 10 …" (yalnızca ~1 sn: dondur) → My homework → abaküslü 10 soru → "Completed". |
+| `en_abakussuz_1.mp4` | 27,1 sn | s5 (abaküssüz) | My homework → Without abacus 5 questions → cevap klavyeyle (Question 1–3/5). |
+| `en_takip_1.mp4` | 84,3 sn | s6 | Öğretmen sınıf ekranında; ~26 sn bildirim "Homework done … Ruby Wright finished · 8/10 correct · 7/13 students finished" → ödev ayrıntısı (Done / Not started) → Ted — Progress → Rule success → Lessons. |
+| `en_gelismis_1.mp4` | 23,8 sn | s4 (Gelişmiş panel) | New homework formu içinden: Direct + Small friends → Advanced → "Which numbers should be added?" → Small friends'te 4 kapanıyor (1, 2, 3 kalıyor). Kayıt panel açıkken bitiyor, kapanış yok. |
+| `en_veli_1.mp4` | 44,2 sn | veli | Settings (Parent Panel) → Parent Panel dört kart → Lessons (Türkçe "Bitti …" satırları: atla) → Rule success (grafik, kural kural). |
+| `en_evde_1.mp4` | 26,7 sn | evde | Ders haritası kayıyor → Daily missions → profil, Trophy road → Achievements ("Kusursuz Odak" rozeti Türkçe). |
+
 ## Seslendirme dosyaları (montajın son hâli, 24.10.2026)
 
 Kurgu `VideosSorobit_tanitimmontajetiklersahip_metin.js` içinde; taslak `VideosSorobit_tanitimsahipSorobit_neden_taslak.mp4`.

@@ -11,6 +11,7 @@
 // Kullanım (proje kökünden):
 //   node tools/kurs/sinifa_bot_ekle.js --kod 24MX5U --adet 12          → KURU ÇALIŞMA
 //   node tools/kurs/sinifa_bot_ekle.js --kod 24MX5U --adet 12 --yaz
+//   node tools/kurs/sinifa_bot_ekle.js --kod PGWSX8 --adet 12 --dil id --yaz → Endonezce adlar
 //   node tools/kurs/sinifa_bot_ekle.js --kod 24MX5U --geri-al --yaz    → bu sınıftaki botları siler
 
 const fs = require('fs');
@@ -19,9 +20,25 @@ const { ROOT, fail, openFirestore } = require('./ortak');
 
 const PREFIX = 'seed_cls_';
 
-const GIRLS = ['Elif', 'Zeynep', 'Defne', 'Ecrin', 'Azra', 'Nehir', 'Asel', 'Eylül', 'Duru', 'Ela', 'Mira', 'Belinay'];
-const BOYS = ['Yusuf', 'Ömer', 'Mustafa', 'Kerem', 'Alparslan', 'Göktuğ', 'Eymen', 'Aras', 'Miraç', 'Çınar', 'Emir', 'Atlas'];
-const SURNAMES = ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Öztürk', 'Aydın', 'Arslan', 'Doğan', 'Kılıç', 'Koç'];
+// --dil id: Endonezce tanıtım videosu için Endonezce adlar (19.11.2026)
+const ADLAR = {
+  tr: {
+    GIRLS: ['Elif', 'Zeynep', 'Defne', 'Ecrin', 'Azra', 'Nehir', 'Asel', 'Eylül', 'Duru', 'Ela', 'Mira', 'Belinay'],
+    BOYS: ['Yusuf', 'Ömer', 'Mustafa', 'Kerem', 'Alparslan', 'Göktuğ', 'Eymen', 'Aras', 'Miraç', 'Çınar', 'Emir', 'Atlas'],
+    SURNAMES: ['Yılmaz', 'Kaya', 'Demir', 'Şahin', 'Çelik', 'Yıldız', 'Öztürk', 'Aydın', 'Arslan', 'Doğan', 'Kılıç', 'Koç'],
+  },
+  id: {
+    GIRLS: ['Putri', 'Aisyah', 'Nadia', 'Salsabila', 'Zahra', 'Kirana', 'Alya', 'Nayla', 'Citra', 'Dewi', 'Keisha', 'Anindya'],
+    BOYS: ['Rizky', 'Bima', 'Fajar', 'Arya', 'Dimas', 'Raka', 'Fikri', 'Galang', 'Hafiz', 'Bagas', 'Naufal', 'Kevin'],
+    SURNAMES: ['Pratama', 'Wulandari', 'Saputra', 'Lestari', 'Nugroho', 'Hidayat', 'Kusuma', 'Santoso', 'Permata', 'Wijaya', 'Ramadhan', 'Siregar'],
+  },
+  // --dil en: İngilizce tanıtım videosu için (20.11.2026)
+  en: {
+    GIRLS: ['Emma', 'Olivia', 'Ava', 'Sophia', 'Mia', 'Grace', 'Lily', 'Chloe', 'Ella', 'Zoe', 'Ruby', 'Hannah'],
+    BOYS: ['Liam', 'Noah', 'Oliver', 'Ethan', 'Lucas', 'Jack', 'Leo', 'Henry', 'Samuel', 'Daniel', 'Ryan', 'Adam'],
+    SURNAMES: ['Smith', 'Johnson', 'Brown', 'Taylor', 'Wilson', 'Davies', 'Clarke', 'Walker', 'Wright', 'Hughes', 'Evans', 'Turner'],
+  },
+};
 
 // ── Avatar (seed-lesson-leaderboard-realistic.js ile aynı; AvatarArt.kt → PERSONAS) ──
 const PARTS = JSON.parse(fs.readFileSync(path.join(ROOT, 'app/src/main/assets/avatar/personas_parts.json'), 'utf8'));
@@ -57,15 +74,17 @@ function randomUserId() {
 }
 
 function parseArgs(argv) {
-  const out = { kod: '', adet: 12, yaz: false, geriAl: false };
+  const out = { kod: '', adet: 12, yaz: false, geriAl: false, dil: 'tr' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--kod') out.kod = (argv[++i] || '').replace(/[\s-]/g, '').toUpperCase();
     else if (a === '--adet') out.adet = Number.parseInt(argv[++i], 10);
     else if (a === '--yaz') out.yaz = true;
     else if (a === '--geri-al') out.geriAl = true;
+    else if (a === '--dil') out.dil = argv[++i];
     else fail(`Bilinmeyen seçenek: ${a}`);
   }
+  if (!ADLAR[out.dil]) fail('--dil tr | id | en');
   if (!/^[A-Z0-9]{6}$/.test(out.kod)) fail('--kod 6 karakterli sınıf kodu (ör. 24MX5U)');
   if (!out.geriAl && !(out.adet >= 1 && out.adet <= 24)) fail('--adet 1–24');
   return out;
@@ -97,6 +116,7 @@ async function main() {
   }
 
   // Ad + soyad: birbirinden farklı, yarısı kız yarısı erkek.
+  const { GIRLS, BOYS, SURNAMES } = ADLAR[opts.dil];
   const girls = [...GIRLS].sort(() => Math.random() - 0.5);
   const boys = [...BOYS].sort(() => Math.random() - 0.5);
   const surnames = [...SURNAMES].sort(() => Math.random() - 0.5);
