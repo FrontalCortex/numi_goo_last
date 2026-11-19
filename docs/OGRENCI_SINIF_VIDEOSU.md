@@ -160,3 +160,22 @@ Mevcut kayıtlardan: `kurs5_ogrenci_cozuyor_1.mp4` (bildirim, liste, abaküslü 
   çekimden sonra istenirse yine silinir.
 - Ö1 ve Ö2'de Ted sınıftan çıkıp geri giriyor; çekimden sonra sınıfta kalmalı (studentCount değişmez).
 - Montaj: `ogrenci_sinif_metin.js` (kurs_metin.js düzeni), `VIDEO=ogrsinif`; ses öneki `ogrsinif_sound`.
+
+## Endonezce ve İngilizce çekim (20.11.2026)
+
+Bu video (`ogrsinif_metin.js`, "Sınıfa katılma ve ödev çözme") için ek kayıtlar, Ted ile. Dosyalar
+`Videos\Sorobit_tanitim\`; diğerleri "neden Sorobit?" videosunun id/en kayıtları (`docs/KURS_SAHIBI_VIDEOSU.md`).
+Öğretmen id'de Bu Sari (Minggu 14:00, kod PGWSX8), en'de Mr. James (Sunday 2:00 PM, kod QQSL6H).
+Sınıftan ayrılma (ayrıl düğmesi ve penceresi) kullanıcı kararıyla videoda YOK.
+
+| Sahne | Endonezce | İngilizce |
+|---|---|---|
+| s1 Sınıfa katıl (kodla) | `id_katil_1` (27,7 sn: Pengaturan → Gabung ke kelas → PGWSX8 → Gabung → "Kamu bergabung ke kelas 'Minggu 14:00'!") | `en_katil_1` (41,8 sn: Settings → Join a class → QQSL6H → Join → "You joined the 'Sunday 2:00 PM' class!") |
+| s2 Davet | `id_davet_ogrenci_1` (18 sn: "ada undangan" → "Bu Sari mengundangmu…" → Gabung); öğretmen tarafı `id_davet_ogretmen_1` | `en_davet_ogrenci_1` (32,5 sn: "You have a class invite waiting" → "Mr. James invited you…" → Join); öğretmen tarafı `en_davet_ogretmen_1` |
+| s3 Sınıfım | `id_sinifim_1` (35,4 sn: sınıf ekranı Bu Sari · Guru, PR-ku kartı, liste, Keisha Kusuma profili; 4–8 sn bildirim çubuğu açık, konum ve USB görünüyor: KES; Pengaturan → Kelasku yolu yok) | `en_sinifim_1` (45,1 sn: Settings → My class → sınıf ekranı Mr. James · Teacher, My homework, Chloe Davies profili; İLK SANİYEDE kişisel bildirimler (Gmail, konum): KES) |
+| s4 bildirim, ödev listesi, Başla, sayılar, Kontrol | `id_ogrenci_cozuyor_1` | `en_ogrenci_cozuyor_1` |
+| s4 abaküssüz | `id_abakussuz_1` | `en_abakussuz_1` |
+| s4 **yanlış cevap** | `id_adimlar_1` ("Jawaban benar: 8") | `en_adimlar_1` (0–25 sn hatalı deneme KES; sonra "Correct answer: 7") |
+| s5 adım bitti, sonraki adım | `id_adimlar_1` ("Langkah selesai! 8/10 benar · Langkah berikutnya") | `en_adimlar2_1` ("Step complete! 9/10 correct · Next step / Finish") |
+| s5 adım ortasında çıkış | `id_adimlar_1` ("Keluar dari PR?" → Batal) | `en_adimlar2_1` ("Leave the homework? … restart the step from the beginning" → Cancel) |
+| s5 tamamlanma | `id_ogrenci_cozuyor_1` | `en_ogrenci_cozuyor_1` |

@@ -196,3 +196,25 @@ ilerleme ekranı (dersler, başarı oranları) → yavaşça kaydır.
   `tools/kurs/kurs_ogretmeni_ata.js` ile kursa bağlanıyor (bağımsız öğretmen: `--bagimsiz`).
 - Ödevi bitiren her bot için öğretmene "Ödev tamamlandı" bildirimi gitti (24.10.2026); sahne 6'yı
   çekmeden önce bildirim tepsisini temizle, yoksa eski bot bildirimleri görünür.
+
+## Endonezce ve İngilizce çekim (20.11.2026)
+
+Bu video (`kurs_metin.js`, "Sınıf açma, ödev verme ve öğrenci takibi") için ayrı çekim yok: "neden Sorobit?"
+videosunun Endonezce/İngilizce ham kayıtları (`docs/KURS_SAHIBI_VIDEOSU.md` → "Endonezce çekim", "İngilizce çekim")
+ve aşağıdaki ek kayıtlar kullanılıyor. Dosyalar `Videos\Sorobit_tanitim\`; `id_` / `en_` önekli. Öğretmen id'de
+Bu Sari (sınıf Minggu 14:00, kod PGW SX8), en'de Mr. James (Sunday 2:00 PM, kod QQS L6H); öğrenci Ted (835398VV).
+
+| Sahne | Endonezce | İngilizce |
+|---|---|---|
+| k2 sınıf aç | `id_sinif_ac_1` | `en_sinif_ac_1` (kod paneli yok, yalnızca kısa bildirim) |
+| k3 kod / ayarlar düğmesi | `id_sinif_ekrani_1` | `en_sinif_ekrani_1` |
+| k3 **Ekle ile davet** | `id_davet_ogretmen_1` (31,3 sn; Tambah murid → 835398VV → Kirim undangan → "Menunggu undangan: Ted"; son ~5 sn hesap değiştirme, KES) | `en_davet_ogretmen_1` (111,6 sn; Add student; ilk yanlış yazım KES; ~100. sn Türkçe USB bildirimi KES; "Pending invites: Ted") |
+| k4 form, örnek soru, öğrenci seçme, gönder | `id_odev_formu_1` | `en_odev_formu_1` |
+| k4 Gelişmiş (toplama) | `id_gelismis_1` | `en_gelismis_1` |
+| k4 **Gelişmiş (çarpma basamak rakamları) + sarı uyarı** | `id_form_ek_1` (42 sn: Banyak angka 9 → sarı uyarı; Perkalian → Lanjutan "Angka apa saja yang muncul di setiap digit?") | `en_form_ek_1` (41,7 sn: How many numbers 9 → uyarı; Multiplication → "Which digits should appear in each place?") |
+| k5 bildirim, sayılar, tamamlanma | `id_ogrenci_cozuyor_1` | `en_ogrenci_cozuyor_1` |
+| k5 **onar soruluk adımlar** | `id_adimlar_1` ("Langkah selesai! 8/10 benar") | `en_adimlar2_1` ("Step complete! 9/10 correct") |
+| k6 kim bitirdi | `id_takip_1` | `en_takip_1` |
+| k7 ilerleme, ödev başarısı | `id_takip_1`, `id_veli_1` | `en_takip_1`, `en_veli_1` |
+
+Veli panelindeki ders satırlarında Türkçe "Bitti …" kalıntısı var (bkz. KURS_SAHIBI_VIDEOSU.md); o kısmı atla.
