@@ -181,6 +181,7 @@
     <string name="ui_gumus_madalya">Silver Medal</string>
     <string name="ui_siyah_kusak">Black Belt</string>
     <string name="ui_strike_ustasi">Streak Master</string>
+    <string name="ui_kusursuz_odak">Flawless Focus</string>
     <string name="ui_derin_avci">Deep Hunter</string>
     <string name="ui_nokta_atisi">Bullseye</string>
     <string name="ui_sinir_tanimaz">Limitless</string>
@@ -470,6 +471,12 @@
         <item quantity="other">%1$s steps</item>
     </plurals>
     <string name="ui_devam_ediyor_x_x_adim_gecildi">In progress · %1$s/%2$s steps passed</string>
+    <string name="ui_bitti_x">Done · %1$s</string>
+    <string name="ui_bitti_x_hepsi_ilk_denemede">Done · %1$s, all on the first try</string>
+    <plurals name="ui_bitti_x_toplam_x_deneme">
+        <item quantity="one">Done · %1$s, %2$s attempt in total</item>
+        <item quantity="other">Done · %1$s, %2$s attempts in total</item>
+    </plurals>
     <string name="ui_adim_x">Step %1$s</string>
     <string name="ui_ilk_denemede_gecti">Passed on the first try</string>
     <string name="ui_x_denemede_gecti">Passed on try #%1$s</string>

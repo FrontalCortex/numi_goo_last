@@ -43,7 +43,7 @@
             android:layout_marginTop="2dp"
             android:textColor="@color/parent_text_muted"
             android:textSize="14sp"
-            tools:text="Bitti · 2 adım, 3 denemede" />
+            tools:text="Bitti · 2 adım, toplam 3 deneme" />
     </LinearLayout>
 
     <ImageView

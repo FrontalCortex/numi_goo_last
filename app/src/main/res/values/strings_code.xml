@@ -202,6 +202,7 @@
     <string name="ui_gumus_madalya">Gümüş Madalya</string>
     <string name="ui_siyah_kusak">Siyah Kuşak</string>
     <string name="ui_strike_ustasi">Strike Ustası</string>
+    <string name="ui_kusursuz_odak">Kusursuz Odak</string>
     <string name="ui_derin_avci">Derin Avcı</string>
     <string name="ui_nokta_atisi">Nokta Atışı</string>
     <string name="ui_sinir_tanimaz">Sınır Tanımaz</string>
@@ -523,6 +524,12 @@
         <item quantity="other">%1$s adım</item>
     </plurals>
     <string name="ui_devam_ediyor_x_x_adim_gecildi">Devam ediyor · %1$s/%2$s adım geçildi</string>
+    <string name="ui_bitti_x">Bitti · %1$s</string>
+    <string name="ui_bitti_x_hepsi_ilk_denemede">Bitti · %1$s, hepsi ilk denemede</string>
+    <plurals name="ui_bitti_x_toplam_x_deneme">
+        <item quantity="one">Bitti · %1$s, toplam %2$s deneme</item>
+        <item quantity="other">Bitti · %1$s, toplam %2$s deneme</item>
+    </plurals>
     <string name="ui_adim_x">Adım %1$s</string>
     <string name="ui_ilk_denemede_gecti">İlk denemede geçti</string>
     <string name="ui_x_denemede_gecti">%1$s. denemede geçti</string>

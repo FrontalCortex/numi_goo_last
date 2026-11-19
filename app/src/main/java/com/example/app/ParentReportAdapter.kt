@@ -299,10 +299,15 @@ class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             return when {
                 // Adımlardan biri bile ölçümsüzse toplam deneme sayısı eksik kalır; eksik bir
                 // sayı söylemektense hiç söylememek daha dürüst.
-                known < lesson.stepCount -> "Bitti · $stepWord"
+                known < lesson.stepCount -> appString(R.string.ui_bitti_x, stepWord)
                 lesson.totalKnownAttempts == lesson.stepCount ->
-                    "Bitti · $stepWord, hepsi ilk denemede"
-                else -> "Bitti · $stepWord, toplam ${lesson.totalKnownAttempts} deneme"
+                    appString(R.string.ui_bitti_x_hepsi_ilk_denemede, stepWord)
+                else -> appPlural(
+                    R.plurals.ui_bitti_x_toplam_x_deneme,
+                    lesson.totalKnownAttempts,
+                    stepWord,
+                    lesson.totalKnownAttempts,
+                )
             }
         }
     }

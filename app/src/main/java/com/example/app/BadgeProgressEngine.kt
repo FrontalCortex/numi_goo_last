@@ -58,7 +58,7 @@ enum class BadgeKind(
     BRONZE(BadgeFragment.BadgeAnimMode.BRONZE_MEDAL, "Bronz Madalya", ""),
     KARATE(BadgeFragment.BadgeAnimMode.KARATE, appString(R.string.ui_siyah_kusak), ""),
     BOWLING(BadgeFragment.BadgeAnimMode.BOWLING_WITH_BASE, appString(R.string.ui_strike_ustasi), "1 / 10"),
-    DART(BadgeFragment.BadgeAnimMode.DAILY_ONLY, "Kusursuz Odak", "1 / 10"),
+    DART(BadgeFragment.BadgeAnimMode.DAILY_ONLY, appString(R.string.ui_kusursuz_odak), "1 / 10"),
     FISHING(BadgeFragment.BadgeAnimMode.FISHING_WITH_BASE, appString(R.string.ui_derin_avci), "1 / 5"),
     GOLF(BadgeFragment.BadgeAnimMode.GOLF_WITH_BASE, appString(R.string.ui_nokta_atisi), "1 / 10"),
     ROCKET(BadgeFragment.BadgeAnimMode.ROCKET_WITH_BASE, appString(R.string.ui_sinir_tanimaz), "1 / 10"),

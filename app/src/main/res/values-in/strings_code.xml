@@ -202,6 +202,7 @@
     <string name="ui_gumus_madalya">Medali Perak</string>
     <string name="ui_siyah_kusak">Sabuk Hitam</string>
     <string name="ui_strike_ustasi">Master Streak</string>
+    <string name="ui_kusursuz_odak">Fokus Sempurna</string>
     <string name="ui_derin_avci">Pemburu Ulung</string>
     <string name="ui_nokta_atisi">Tepat Sasaran</string>
     <string name="ui_sinir_tanimaz">Tanpa Batas</string>
@@ -522,6 +523,12 @@
         <item quantity="other">%1$s langkah</item>
     </plurals>
     <string name="ui_devam_ediyor_x_x_adim_gecildi">Sedang berjalan · %1$s/%2$s langkah lulus</string>
+    <string name="ui_bitti_x">Selesai · %1$s</string>
+    <string name="ui_bitti_x_hepsi_ilk_denemede">Selesai · %1$s, semua di percobaan pertama</string>
+    <plurals name="ui_bitti_x_toplam_x_deneme">
+        <item quantity="one">Selesai · %1$s, total %2$s percobaan</item>
+        <item quantity="other">Selesai · %1$s, total %2$s percobaan</item>
+    </plurals>
     <string name="ui_adim_x">Langkah %1$s</string>
     <string name="ui_ilk_denemede_gecti">Lulus di percobaan pertama</string>
     <string name="ui_x_denemede_gecti">Lulus di percobaan ke-%1$s</string>

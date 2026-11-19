@@ -206,6 +206,7 @@
     <string name="ui_gumus_madalya">الميدالية الفضية</string>
     <string name="ui_siyah_kusak">الحزام الأسود</string>
     <string name="ui_strike_ustasi">سيّد السلسلة</string>
+    <string name="ui_kusursuz_odak">تركيز مثالي</string>
     <string name="ui_derin_avci">الصياد الماهر</string>
     <string name="ui_nokta_atisi">إصابة الهدف</string>
     <string name="ui_sinir_tanimaz">بلا حدود</string>
@@ -542,6 +543,16 @@
         <item quantity="other">%1$s خطوة</item>
     </plurals>
     <string name="ui_devam_ediyor_x_x_adim_gecildi">قيد التقدّم · الخطوات المجتازة: %1$s/%2$s</string>
+    <string name="ui_bitti_x">مكتمل · %1$s</string>
+    <string name="ui_bitti_x_hepsi_ilk_denemede">مكتمل · %1$s، جميعها من المحاولة الأولى</string>
+    <plurals name="ui_bitti_x_toplam_x_deneme">
+        <item quantity="zero">مكتمل · %1$s، مجموع المحاولات: %2$s</item>
+        <item quantity="one">مكتمل · %1$s، مجموع المحاولات: %2$s</item>
+        <item quantity="two">مكتمل · %1$s، مجموع المحاولات: %2$s</item>
+        <item quantity="few">مكتمل · %1$s، مجموع المحاولات: %2$s</item>
+        <item quantity="many">مكتمل · %1$s، مجموع المحاولات: %2$s</item>
+        <item quantity="other">مكتمل · %1$s، مجموع المحاولات: %2$s</item>
+    </plurals>
     <string name="ui_adim_x">الخطوة %1$s</string>
     <string name="ui_ilk_denemede_gecti">نجح من المحاولة الأولى</string>
     <string name="ui_x_denemede_gecti">نجح في المحاولة رقم %1$s</string>
