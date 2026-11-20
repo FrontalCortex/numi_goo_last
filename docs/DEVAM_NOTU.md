@@ -23,6 +23,19 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
+## Öğretmen sınıfını siler (21.11.2026 — sürüm 26'ya giriyor; derlendi, testler geçti; telefon bağlı değildi, kurulmadı; commit edilmedi, deploy YOK)
+Kullanıcı kararı: **gerçek silme** (arşiv değil). Sınıf ayrıntısı → Sınıf ayarları paneli → en altta kırmızı "Sınıfı sil"
+→ geri alınamaz olduğunu söyleyen onay → `deleteClass` callable (functions/index.js `deleteClassData`; yetki
+`classes.deleteClassDecision`: yalnızca `teacherUids` içindeki öğretmen, kapanmış sınıf da silinebilir, olmayan sınıf
+`deleted:false` başarı). Sıra: `archived:true` (silme sürerken katılma/davet/ödev kapalı) → katılma kodu → öğrencilerin
+üyelik alanları (members ∪ `users.classId` sorgusu, öğrenci başına transaction; başka sınıfa geçmişe dokunmuyor) →
+bekleyen sorular genel havuza (sahiplenilmiş sohbetler öğretmende kalır) → davetler, ödevler + ilerlemeleri, sınıf + members.
+**Kalan:** `homeworkRuleStats/{uid}` (kural başarısı) öğrencide. Kurallar zaten istemciye kapalıydı, değişmedi.
+Öğrenci: Ayarlar Kurs satırı ve sınıf ekranı `loadMyClass` ile "Sınıfa katıl"a dönüyor; açık sınıf ekranında
+`members` dinleyicisi hata verirse ekran yeniden okunuyor. Metinler 4 dilde (`class_delete*`).
+Testler: test-classes 64, test-class-flow 76, test:pools 75, npm test 60 — hepsi geçti. Push edilince `deleteClass`
+yeni fonksiyon olarak deploy edilir (kurallar değişmedi).
+
 ## Kaynaklar ve lisanslar ekranı (10.11.2026 — derlendi, telefona kuruldu, kullanıcı bakacak; 10.11 commit + push, sürüm 24)
 Ayarlar → Destek → "Kaynaklar ve lisanslar" (`CreditsFragment`, `fragment_credits.xml`, `strings_credits.xml`
 4 dil). Atıf metinleri lisansın istediği gibi İngilizce, kodda (`CREDITS` listesi); başlıklar çevrili.

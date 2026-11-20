@@ -4458,6 +4458,109 @@ exports.leaveMyClass = functions.https.onCall(async (data, context) => {
   return leaveClass(uid);
 });
 
+/** Bir toplu yazımdaki en fazla işlem: Firestore sınırı 500, pay bırakılıyor. */
+const CLASS_DELETE_BATCH = 400;
+
+/** Dokümanlara aynı işlemi [CLASS_DELETE_BATCH]'lik toplu yazımlarla uygular. */
+async function commitInChunks(docs, apply) {
+  for (let i = 0; i < docs.length; i += CLASS_DELETE_BATCH) {
+    const batch = db.batch();
+    docs.slice(i, i + CLASS_DELETE_BATCH).forEach((d) => apply(batch, d));
+    await batch.commit();
+  }
+}
+
+/**
+ * Sınıfı ve ona bağlı her şeyi siler (deleteClass). Sıra bilerek böyle:
+ *
+ *   1. `archived: true` — silme sürerken kimse katılamasın, davet ya da ödev verilemesin
+ *      (joinDecision / inviteDecision / createHomework classIsActive'e bakıyor). Yarıda kalırsa
+ *      sınıf öğretmenin listesinden düşer ama deleteClass yeniden çağrılabilir (kapanmış sınıf
+ *      da silinebiliyor).
+ *   2. Katılma kodu.
+ *   3. Öğrencilerin üyeliği: `users.classId` bu sınıfı gösteriyorsa alanlar siliniyor, böylece
+ *      uygulama (Ayarlar → Kurs, sınıf ekranı) yeniden "Sınıfa katıl" gösteriyor. Öğrenci listesi
+ *      `members`'tan VE `users.classId` sorgusundan birleştiriliyor; iki kopya bir yerde ayrışmış
+ *      olsa da kimse yarım kalmasın. Her öğrenci kendi transaction'ında: tam o anda başka sınıfa
+ *      geçen öğrencinin yeni üyeliği silinmesin.
+ *   4. Bekleyen (kimsenin almadığı) sorular genel havuza. Sahiplenilmiş sohbetler öğretmende kalıyor.
+ *   5. Davetler (her durumda), ödevler ve ilerlemeleri, en son sınıf dokümanı ve `members`.
+ *
+ * Öğrencinin kural başarısı (homeworkRuleStats/{uid}) öğrencinin; ödev silinince düşürülmüyor
+ * (onHomeworkProgressWritten silinen ilerlemede hiçbir şey yapmıyor).
+ */
+async function deleteClassData(classId, classData) {
+  const classRef = classRefOf(classId);
+  const counts = { students: 0, questions: 0, invites: 0, homeworks: 0 };
+
+  await classRef.update({ archived: true });
+
+  if (classData.joinCode) {
+    const codeRef = db.collection('classJoinCodes').doc(classData.joinCode);
+    const codeSnap = await codeRef.get();
+    if (codeSnap.exists && codeSnap.get('classId') === classId) await codeRef.delete();
+  }
+
+  const [memberSnap, userSnap] = await Promise.all([
+    classRef.collection('members').get(),
+    db.collection('users').where('classId', '==', classId).get(),
+  ]);
+  const studentUids = [...new Set([...memberSnap.docs.map((d) => d.id), ...userSnap.docs.map((d) => d.id)])];
+  const cleared = {};
+  classes.MEMBERSHIP_FIELDS.forEach((f) => { cleared[f] = admin.firestore.FieldValue.delete(); });
+  for (const studentUid of studentUids) {
+    const userRef = db.collection('users').doc(studentUid);
+    const wasMember = await db.runTransaction(async (transaction) => {
+      const s = await transaction.get(userRef);
+      if (!s.exists || s.get('classId') !== classId) return false;
+      transaction.update(userRef, cleared);
+      return true;
+    });
+    if (wasMember) {
+      counts.students++;
+      await retagPendingQuestions(studentUid, classes.questionPoolFields({}, null));
+    }
+  }
+
+  // Öğrenci başka sınıfa geçmiş ama sorusu hâlâ bu sınıfta bekliyorsa (taşıma yarıda kaldıysa).
+  const pendingSnap = await db.collection('questions')
+    .where('classId', '==', classId)
+    .where('status', '==', 'pending')
+    .get();
+  const general = classes.questionPoolFields({}, null);
+  await commitInChunks(pendingSnap.docs, (batch, d) => batch.update(d.ref, general));
+  counts.questions = pendingSnap.size;
+
+  const inviteSnap = await db.collection('classInvites').where('classId', '==', classId).get();
+  await commitInChunks(inviteSnap.docs, (batch, d) => batch.delete(d.ref));
+  counts.invites = inviteSnap.size;
+
+  // recursiveDelete toplu yazım sınırına takılmıyor (BulkWriter); ilerlemeler alt koleksiyonda.
+  const homeworkSnap = await db.collection('homeworks').where('classId', '==', classId).get();
+  for (const d of homeworkSnap.docs) await db.recursiveDelete(d.ref);
+  counts.homeworks = homeworkSnap.size;
+
+  await db.recursiveDelete(classRef);
+  return counts;
+}
+
+/**
+ * Öğretmen kendi sınıfını siler. Geri alınamaz; uygulama önce onay soruyor
+ * (TeacherClassDetailFragment). Yalnızca sınıfın öğretmeni (classes.deleteClassDecision).
+ * Sınıf zaten yoksa başarı dönüyor: iki kez basılan düğme hata göstermesin.
+ */
+exports.deleteClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const snap = await classRefOf(classId).get();
+  if (!snap.exists) return { success: true, deleted: false };
+  throwIfFailed(classes.deleteClassDecision(snap.data(), uid));
+
+  const counts = await deleteClassData(classId, snap.data());
+  console.log('Sınıf silindi', { uid, classId, ...counts });
+  return { success: true, deleted: true, ...counts };
+});
+
 /**
  * Silinen hesabın sınıf izlerini temizler (cleanupUserOnDelete). Kullanıcı dokümanına
  * bakmıyor, çünkü istemci (AccountDeletionHelper) onu Auth kaydından ÖNCE siliyor; üyelik

@@ -88,4 +88,10 @@
     <string name="class_student_progress_desc">Student\'s progress</string>
     <string name="class_student_progress_title">%1$s — Progress</string>
     <string name="class_student_progress_empty">The student hasn\'t started a lesson yet. Their progress will show up here once they open the first lesson.</string>
+    <string name="class_delete">Delete class</string>
+    <string name="class_delete_title">Delete this class?</string>
+    <string name="class_delete_message">\"%1$s\" and everything in it will be permanently deleted: the student list, join code, pending invites, homework and homework results. Students leave the class; their own rule success is kept. This cannot be undone.</string>
+    <string name="class_delete_confirm">Delete</string>
+    <string name="class_deleting">Deleting…</string>
+    <string name="class_deleted">\"%1$s\" was deleted.</string>
 </resources>

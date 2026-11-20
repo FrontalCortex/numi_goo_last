@@ -114,6 +114,12 @@ test('yanıtlanmış davet red', () => assert.strictEqual(c.respondDecision({ ..
 test('süresi dolan davet red', () =>
   assert.strictEqual(c.respondDecision({ ...INVITE, createdAtMs: NOW - c.INVITE_TTL_MS - 1 }, 's1', NOW).code, 'deadline-exceeded'));
 
+console.log('sınıf silme');
+test('sınıfın öğretmeni silebilir', () => assert.strictEqual(c.deleteClassDecision(CLASS, 't1').ok, true));
+test('başka öğretmen silemez', () => assert.strictEqual(c.deleteClassDecision(CLASS, 't2').code, 'permission-denied'));
+test('kapanmış sınıf da silinebilir', () => assert.strictEqual(c.deleteClassDecision({ ...CLASS, archived: true }, 't1').ok, true));
+test('olmayan sınıf', () => assert.strictEqual(c.deleteClassDecision(null, 't1').code, 'not-found'));
+
 console.log('öğretmenin gördüğü havuz');
 const classQ = { pool: 'class', classTeacherUids: ['t1'] };
 const generalQ = { pool: 'general', classTeacherUids: [] };

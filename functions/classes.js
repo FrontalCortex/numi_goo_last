@@ -241,6 +241,18 @@ function inviteDecision(teacherUid, classData, student) {
   return { ok: true };
 }
 
+/**
+ * Öğretmen bu sınıfı silebilir mi. Yalnızca sınıfın öğretmeni; kapanmış (archived) sınıf da
+ * silinebilir — yarıda kalmış bir silmeyi tamamlamak ya da yöneticinin kapattığını temizlemek için.
+ * Silme GERÇEK silme (deleteClass, index.js): sınıf, üye listesi, kod, davetler, ödevler ve ödev
+ * ilerlemeleri gidiyor. Öğrencinin kural başarısı (homeworkRuleStats/{uid}) öğrencinin, dokunulmuyor.
+ */
+function deleteClassDecision(classData, uid) {
+  if (!classData) return fail('not-found', 'Bu sınıf artık yok.');
+  if (!isTeacherOfClass(classData, uid)) return fail('permission-denied', 'Bu sınıf senin değil.');
+  return { ok: true };
+}
+
 /** Öğrenci daveti yanıtlayabilir mi. */
 function respondDecision(invite, uid, nowMs) {
   if (!invite || invite.studentUid !== uid) {
@@ -310,6 +322,7 @@ module.exports = {
   joinGuardAfterWrong,
   inviteIdOf,
   inviteDecision,
+  deleteClassDecision,
   respondDecision,
   poolVisibility,
   questionVisibleTo,

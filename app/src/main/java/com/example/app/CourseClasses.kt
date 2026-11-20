@@ -328,6 +328,14 @@ object CourseClasses {
         }
     }
 
+    /**
+     * Sınıfı kalıcı olarak siler (functions/index.js deleteClass): üye listesi, kod, davetler,
+     * ödevler ve ilerlemeleri gidiyor; öğrencilerin üyeliği sunucuda temizleniyor.
+     */
+    fun deleteClass(classId: String, onResult: (error: String?) -> Unit) {
+        call("deleteClass", mapOf("classId" to classId)) { _, error -> onResult(error) }
+    }
+
     private fun call(name: String, payload: Map<String, Any>, onResult: (Map<*, *>?, String?) -> Unit) {
         functions.getHttpsCallable(name).call(payload)
             .addOnSuccessListener { result -> onResult(result.data as? Map<*, *> ?: emptyMap<Any, Any>(), null) }

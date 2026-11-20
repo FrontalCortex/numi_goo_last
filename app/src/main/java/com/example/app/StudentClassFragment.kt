@@ -119,7 +119,11 @@ class StudentClassFragment : Fragment() {
             teachersLoaded = true
             showMembers(lastMembers)
         }
-        membersListener = CourseClasses.listenMembers(c.id) { list -> showMembers(list.orEmpty()) }
+        // Dinleyici hata verirse (çoğunlukla öğretmen sınıfı sildi ya da öğrenciyi çıkardı: kurallar
+        // listeyi artık açmıyor) ekran baştan okunuyor; üyelik gittiyse "Sınıfa katıl" kartı görünür.
+        membersListener = CourseClasses.listenMembers(c.id) { list ->
+            if (list == null) reload() else showMembers(list)
+        }
     }
 
     private fun stopMembers() {

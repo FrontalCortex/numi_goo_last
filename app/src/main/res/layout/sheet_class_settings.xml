@@ -112,4 +112,18 @@
             <TextView style="@style/ClassSheetActionText" android:text="@string/class_regenerate" />
         </LinearLayout>
     </LinearLayout>
+
+    <!-- Sınıfı silme: kod işlemlerinden ayrı, en altta ve kırmızı; onay penceresi geri alınamaz olduğunu söylüyor. -->
+    <TextView
+        android:id="@+id/sheetDeleteClass"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:background="?attr/selectableItemBackground"
+        android:gravity="center"
+        android:minHeight="48dp"
+        android:text="@string/class_delete"
+        android:textColor="@color/red"
+        android:textSize="15sp"
+        android:textStyle="bold" />
 </LinearLayout>

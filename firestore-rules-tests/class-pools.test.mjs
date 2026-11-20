@@ -18,7 +18,7 @@ import {
   initializeTestEnvironment, assertFails, assertSucceeds,
 } from '@firebase/rules-unit-testing';
 import {
-  doc, setDoc, getDoc, getDocs, updateDoc, collection, query, where, orderBy,
+  doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, collection, query, where, orderBy,
 } from 'firebase/firestore';
 
 const testEnv = await initializeTestEnvironment({
@@ -36,6 +36,7 @@ const t2 = fs('t2');   // ayni kursun ogretmeni, genel havuza da yardim ediyor, 
 const g1 = fs('g1');   // kursu olmayan ogretmen
 const s1 = fs('s1');   // c1 sinifinda ogrenci
 const s2 = fs('s2');   // sinifsiz ogrenci
+const s3 = fs('s3');   // sinifi silinmis ogrenci
 
 let pass = 0;
 let fail = 0;
@@ -74,6 +75,10 @@ await testEnv.withSecurityRulesDisabled(async (ctx) => {
     setDoc(doc(db, 'classInvites/c1_s2'), { classId: 'c1', teacherUid: 't1', studentUid: 's2', status: 'pending' }),
     setDoc(doc(db, 'users/s1/lessonSuccessRateState/1_x_1'), { attempted: true }),
     setDoc(doc(db, 'users/s2/lessonSuccessRateState/1_x_1'), { attempted: true }),
+    setDoc(doc(db, 'homeworks/hw1'), { classId: 'c1', teacherUid: 't1', wholeClass: true, assignedUids: [] }),
+    // Sinifi (cGone) silinmis ogrenci: kullanici dokumanindaki classId henuz temizlenmemis.
+    setDoc(doc(db, 'users/s3'), { uid: 's3', role: 'STUDENT', classId: 'cGone' }),
+    setDoc(doc(db, 'homeworkRuleStats/s3'), { total: {} }),
   ]);
 });
 
@@ -190,6 +195,23 @@ await check('gonderen ogretmen okur', assertSucceeds(getDoc(doc(t1, 'classInvite
 await check('baska ogrenci okuyamaz', assertFails(getDoc(doc(s1, 'classInvites/c1_s2'))));
 await check('ogrenci daveti kendisi kabul edemez (yalniz CF)', assertFails(
   updateDoc(doc(s2, 'classInvites/c1_s2'), { status: 'accepted' })));
+
+console.log('\n-- SINIF SILME (yalniz deleteClass; istemci hicbirini silemez) --');
+await check('ogretmen sinifini dogrudan silemez', assertFails(deleteDoc(doc(t1, 'classes/c1'))));
+await check('ogretmen ogrenci listesinden silemez', assertFails(deleteDoc(doc(t1, 'classes/c1/members/s1'))));
+await check('ogretmen kod eslemesini silemez', assertFails(deleteDoc(doc(t1, 'classJoinCodes/ABC234'))));
+await check('ogretmen daveti silemez', assertFails(deleteDoc(doc(t1, 'classInvites/c1_s2'))));
+await check('ogretmen odevi dogrudan silemez', assertFails(deleteDoc(doc(t1, 'homeworks/hw1'))));
+await check('ogrenci sinifi silemez', assertFails(deleteDoc(doc(s1, 'classes/c1'))));
+await check('ogretmen sinifi arsivleyemez', assertFails(updateDoc(doc(t1, 'classes/c1'), { archived: true })));
+// Sunucu uyeligi temizlemeden once uygulama eski classId ile okursa: izin hatasi degil "yok"
+// donmeli (CourseClasses.loadMyClass bunu "sinifsiz" sayiyor).
+await check('silinmis sinifi eski uyesi okur: yok doner', (async () => {
+  const snap = await assertSucceeds(getDoc(doc(s3, 'classes/cGone')));
+  if (snap.exists()) throw new Error('belge var');
+})());
+await check('uyeligi temizlenmis ogrenci kural basarisini okur', assertSucceeds(getDoc(doc(s3, 'homeworkRuleStats/s3'))));
+await check('silinen sinifin ogretmeni kural basarisini artik okuyamaz', assertFails(getDoc(doc(t1, 'homeworkRuleStats/s3'))));
 
 await testEnv.cleanup();
 console.log(`\n==== ${pass} gecti, ${fail} basarisiz ====`);

@@ -96,4 +96,10 @@
     <string name="class_student_progress_desc">تقدّم الطالب</string>
     <string name="class_student_progress_title">%1$s — التقدّم</string>
     <string name="class_student_progress_empty">لم يبدأ الطالب أي درس بعد. عندما يفتح الدرس الأول سيظهر تقدّمه هنا.</string>
+    <string name="class_delete">حذف الصف</string>
+    <string name="class_delete_title">حذف هذا الصف؟</string>
+    <string name="class_delete_message">سيُحذف \"%1$s\" وكل ما فيه نهائيًا: قائمة الطلاب، ورمز الانضمام، والدعوات المنتظرة، والواجبات ونتائجها. يخرج الطلاب من الصف، ويبقى نجاحهم في القواعد محفوظًا. لا يمكن التراجع عن ذلك.</string>
+    <string name="class_delete_confirm">حذف</string>
+    <string name="class_deleting">جارٍ الحذف…</string>
+    <string name="class_deleted">تم حذف \"%1$s\".</string>
 </resources>

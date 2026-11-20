@@ -219,6 +219,67 @@ async function main() {
   const delT = await fns._removeDeletedUserFromClasses(T2);
   check('öğretmen silinince sınıfı kapandı', [delT.teacherClasses, (await getDoc(`classes/${created2.classId}`)).archived], [1, true]);
 
+  console.log('\n=== SINIF SİLME ===');
+  // Temiz öğrenciler: yukarıdaki bölümlerin üyelik izleri karışmasın.
+  const S3 = `${S}_s3`;
+  const S4 = `${S}_s4`;
+  const S4_ID = `${ID}AYSE`;
+  await Promise.all([
+    db.collection('users').doc(S3).set({ role: 'STUDENT', userId: `${ID}CAN`, name: 'Can', questionCredits: 10 }),
+    db.collection('users').doc(S4).set({ role: 'STUDENT', userId: S4_ID, name: 'Ayşe', questionCredits: 10 }),
+  ]);
+  const doomed = await call('createClass', T1, { name: 'Silinecek' });
+  const D = doomed.classId;
+  await call('joinClassByCode', S3, { code: doomed.joinCode });
+  const pendingInvite = await call('inviteStudentToClass', T1, { classId: D, userId: S4_ID });
+  const doomedQ = await ask(S3);
+  check('silmeden önce soru sınıf havuzunda', [doomedQ.pool, doomedQ.classId], ['class', D]);
+  const hwD = await call('createHomework', T1, {
+    classId: D,
+    config: { op: 'add', rules: ['five'], withAbacus: true, digits: 1, numberCount: 3, intervalMs: 1500, questionCount: 10 },
+    target: { wholeClass: true },
+  });
+  await db.doc(`homeworks/${hwD.homeworkId}/studentProgress/${S3}`).set({ uid: S3, completedBlocks: 1, answered: 10, correct: 8 });
+  // Kural başarısı öğrencinin; sınıf silinince kalmalı.
+  await db.doc(`homeworkRuleStats/${S3}`).set({ total: { five: { ok: 8, all: 10 } } });
+  await db.doc(`homeworkRuleStats/${S3}/months/2026-11`).set({ days: { 21: { q: 10 } } });
+
+  await rejects('başka öğretmen silemez', call('deleteClass', T2, { classId: D }), 'permission-denied');
+  await rejects('öğrenci silemez', call('deleteClass', S3, { classId: D }), 'permission-denied');
+  await rejects('oturum yok RED', fns.deleteClass.run({ classId: D }, {}), 'unauthenticated');
+  check('reddedilen silmeden sonra sınıf duruyor', (await getDoc(`classes/${D}`)).archived, false);
+
+  const delC = await call('deleteClass', T1, { classId: D });
+  check('silindi', [delC.deleted, delC.students, delC.invites, delC.homeworks], [true, 1, 1, 1]);
+  check('sınıf dokümanı yok', await getDoc(`classes/${D}`), null);
+  check('öğrenci listesi yok', (await db.collection(`classes/${D}/members`).get()).size, 0);
+  check('katılma kodu yok', await getDoc(`classJoinCodes/${doomed.joinCode}`), null);
+  check('bekleyen davet yok', await getDoc(`classInvites/${pendingInvite.inviteId}`), null);
+  check('ödev ve ilerlemesi yok', [await getDoc(`homeworks/${hwD.homeworkId}`), await getDoc(`homeworks/${hwD.homeworkId}/studentProgress/${S3}`)], [null, null]);
+  const u3 = await user(S3);
+  check('öğrencinin üyelik alanları silindi', [u3.classId, u3.courseId, u3.classTeacherUids, u3.classJoinedAt], [undefined, undefined, undefined, undefined]);
+  const q3 = await getDoc(`questions/${(await db.collection('questions').where('studentUid', '==', S3).get()).docs[0].id}`);
+  check('bekleyen soru genel havuza', [q3.pool, q3.classId, q3.classTeacherUids], ['general', null, []]);
+  check('kural başarısı duruyor', [(await getDoc(`homeworkRuleStats/${S3}`)).total.five.ok, !!(await getDoc(`homeworkRuleStats/${S3}/months/2026-11`))], [8, true]);
+  check('öğrencinin yeni sorusu genel', (await ask(S3)).pool, 'general');
+  await rejects('silinen sınıfın koduyla katılınamaz', call('joinClassByCode', S3, { code: doomed.joinCode }), 'not-found');
+  await rejects('silinen sınıfın daveti kabul edilemez', call('respondClassInvite', S4, { inviteId: pendingInvite.inviteId, accept: true }), 'not-found');
+  const delAgain = await call('deleteClass', T1, { classId: D });
+  check('ikinci silme: zaten yok', [delAgain.success, delAgain.deleted], [true, false]);
+  check('öğretmenin diğer sınıfı duruyor', !!(await getDoc(`classes/${CLS}`)), true);
+
+  // Kapanmış (archived) sınıf da silinebiliyor; bu sırada başka sınıfa geçmiş öğrenciye dokunulmuyor.
+  const arch = await call('createClass', T1, { name: 'Kapanmış' });
+  await call('joinClassByCode', S3, { code: arch.joinCode });
+  const other = await call('createClass', T1, { name: 'Diğer' });
+  await call('joinClassByCode', S4, { code: other.joinCode });
+  await db.collection('classes').doc(arch.classId).update({ archived: true });
+  // Bozuk durum: S4'ün eski üyelik kaydı arşivli sınıfta kalmış (iki kopya ayrışmış).
+  await db.doc(`classes/${arch.classId}/members/${S4}`).set({ uid: S4, name: 'Ayşe' });
+  const delArch = await call('deleteClass', T1, { classId: arch.classId });
+  check('kapanmış sınıf silindi, yalnızca gerçek üye temizlendi', [delArch.deleted, delArch.students, await getDoc(`classes/${arch.classId}`)], [true, 1, null]);
+  check('başka sınıftaki öğrencinin üyeliği bozulmadı', (await user(S4)).classId, other.classId);
+
   console.log(`\n${pass} geçti, ${fail} hata`);
   process.exit(fail ? 1 : 0);
 }

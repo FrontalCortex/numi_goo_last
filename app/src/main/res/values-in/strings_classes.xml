@@ -95,4 +95,10 @@
     <string name="class_student_progress_desc">Kemajuan murid</string>
     <string name="class_student_progress_title">%1$s — Kemajuan</string>
     <string name="class_student_progress_empty">Murid belum memulai pelajaran. Kemajuannya akan muncul di sini setelah ia membuka pelajaran pertama.</string>
+    <string name="class_delete">Hapus kelas</string>
+    <string name="class_delete_title">Hapus kelas ini?</string>
+    <string name="class_delete_message">\"%1$s\" dan semua isinya akan dihapus permanen: daftar murid, kode bergabung, undangan yang menunggu, PR, dan hasil PR. Murid keluar dari kelas; keberhasilan rumus mereka sendiri tetap tersimpan. Tindakan ini tidak bisa dibatalkan.</string>
+    <string name="class_delete_confirm">Hapus</string>
+    <string name="class_deleting">Menghapus…</string>
+    <string name="class_deleted">\"%1$s\" dihapus.</string>
 </resources>

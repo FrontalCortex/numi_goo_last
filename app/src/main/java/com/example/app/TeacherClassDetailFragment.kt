@@ -140,6 +140,7 @@ class TeacherClassDetailFragment : Fragment() {
         view.findViewById<View>(R.id.sheetCopy).setOnClickListener { copyCode() }
         view.findViewById<View>(R.id.sheetShare).setOnClickListener { shareCode() }
         view.findViewById<View>(R.id.sheetRegenerate).setOnClickListener { confirmRegenerate() }
+        view.findViewById<View>(R.id.sheetDeleteClass).setOnClickListener { confirmDelete() }
         val dialog = com.google.android.material.bottomsheet.BottomSheetDialog(requireContext())
         dialog.setContentView(view)
         // Malzeme kütüphanesinin beyaz kabı görünmesin; köşeler panelin kendi arka planından.
@@ -182,6 +183,37 @@ class TeacherClassDetailFragment : Fragment() {
             }
             .setNegativeButton(appString(R.string.class_cancel), null)
             .show()
+    }
+
+    /**
+     * Sınıfı silme: geri alınamaz, bu yüzden ne gideceğini sayan bir onay. Sunucu işi birkaç
+     * saniye sürebiliyor (öğrenci başına bir transaction); bu sırada kapatılamayan bir bekleme
+     * penceresi duruyor ki öğretmen ikinci kez basmasın ya da ekrandan çıkıp yarım sanmasın.
+     * Başarıda Sınıflarım'a dönülüyor; liste dinleyicisi sınıfı kendiliğinden düşürüyor.
+     */
+    private fun confirmDelete() {
+        val name = current?.name?.takeIf { it.isNotBlank() } ?: binding.classTitle.text.toString()
+        AlertDialog.Builder(requireContext())
+            .setTitle(appString(R.string.class_delete_title))
+            .setMessage(appString(R.string.class_delete_message, name))
+            .setPositiveButton(appString(R.string.class_delete_confirm)) { _, _ ->
+                settingsSheet?.dismiss()
+                val waiting = AlertDialog.Builder(requireContext())
+                    .setMessage(appString(R.string.class_deleting))
+                    .setCancelable(false)
+                    .show()
+                CourseClasses.deleteClass(classId) { error ->
+                    waiting.dismiss()
+                    if (!isAdded) return@deleteClass
+                    Toast.makeText(requireContext(), error ?: appString(R.string.class_deleted, name), Toast.LENGTH_LONG).show()
+                    if (error == null && !parentFragmentManager.isStateSaved) parentFragmentManager.popBackStack()
+                }
+            }
+            .setNegativeButton(appString(R.string.class_cancel), null)
+            .show()
+            // Silme düğmesi kırmızı: yanlışlıkla "Sil"e basmak "İptal"e basmaktan zor fark edilsin.
+            .getButton(AlertDialog.BUTTON_POSITIVE)
+            ?.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.red))
     }
 
     private fun showInviteDialog() {
