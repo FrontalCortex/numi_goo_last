@@ -18,6 +18,10 @@ kotlin {
     }
 
     sourceSets {
+        commonMain.dependencies {
+            // Saat dilimi / takvim hesapları için (java.util.Calendar karşılığı).
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
+        }
         commonTest.dependencies {
             implementation(kotlin("test"))
         }
