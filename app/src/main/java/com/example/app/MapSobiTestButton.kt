@@ -89,6 +89,11 @@ class MapSobiTestButton(private val fragment: Fragment, private val root: ViewGr
      */
     fun refresh(nudge: Boolean = true) {
         if (!fragment.isAdded) return
+        // Öğretmende Sobi testi yok ([SobiAccess]).
+        if (!SobiAccess.isAllowed(root.context)) {
+            apply(unlocked = false, nudge = false)
+            return
+        }
         SobiDailyTest.checkUnlocked(root.context) { unlocked ->
             if (fragment.isAdded) apply(unlocked, nudge)
         }

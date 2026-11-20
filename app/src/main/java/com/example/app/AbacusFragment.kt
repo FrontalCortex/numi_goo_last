@@ -1854,7 +1854,7 @@ class AbacusFragment : Fragment() {
         val numbers = if (first != null && second != null && (sign == "+" || sign == "-")) {
             listOf(first, if (sign == "-") -second else second)
         } else null
-        if (!MistakeReviewDialog.canReview(numbers)) {
+        if (!MistakeReviewDialog.canReview(numbers) || !SobiAccess.isAllowed(requireContext())) {
             button.visibility = View.GONE
             return
         }

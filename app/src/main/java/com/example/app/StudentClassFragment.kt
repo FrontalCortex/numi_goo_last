@@ -17,7 +17,8 @@ import com.google.firebase.firestore.ListenerRegistration
 
 /**
  * Öğrencinin kurs ve sınıf ekranı: sınıf koduyla katılma, öğretmenden gelen davetler ve şu
- * anki sınıf (ayrılma dahil).
+ * anki sınıf (ayrılma dahil). Sınıftaki öğrencinin Ödevlerim kartı da burada (19.11.2026): eskiden
+ * Sohbet sekmesindeydi, öğrencide o sekme Sobi olunca ödev listesine başka yol kalmamıştı.
  *
  * Giriş Ayarlar'daki "Kurs" satırından ve sınıf daveti bildiriminden (MainActivity
  * [MainActivity.EXTRA_OPEN_STUDENT_CLASS]). Bütün değişiklikler sunucuda (CourseClasses →
@@ -45,6 +46,9 @@ class StudentClassFragment : Fragment() {
     private var teachersLoaded = false
     private var lastMembers: List<CourseClasses.ClassMember> = emptyList()
     private val avatars = HashMap<String, String?>()
+    // Ödevlerim kartının alt satırı ("2 ödev seni bekliyor"); sınıf değişince yeniden kuruluyor.
+    private var homeworkWatcher: com.example.app.homework.HomeworkCard.Watcher? = null
+    private var homeworkClassId: String? = null
     private val classmateAdapter by lazy {
         ClassmateAdapter(com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid) { member ->
             parentFragmentManager.beginTransaction()
@@ -70,6 +74,15 @@ class StudentClassFragment : Fragment() {
         binding.btnLeaveClass.setOnClickListener { confirmLeave() }
         binding.classmateList.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext())
         binding.classmateList.adapter = classmateAdapter
+        binding.studentHomeworkCard.setOnClickListener {
+            val classId = myClass?.id ?: return@setOnClickListener
+            parentFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                .replace(R.id.fragmentContainerID, com.example.app.homework.StudentHomeworkListFragment.newInstance(classId))
+                .addToBackStack(null)
+                .commit()
+        }
+        com.example.app.homework.DepthPress.attach(binding.studentHomeworkCard)
 
         invitesListener = CourseClasses.listenMyInvites { list ->
             invites = list
@@ -106,10 +119,12 @@ class StudentClassFragment : Fragment() {
         b.btnLeaveClass.visibility = if (c != null) View.VISIBLE else View.INVISIBLE
         if (c == null) {
             stopMembers()
+            stopHomeworks()
             return
         }
         b.currentCourseName.text = c.courseName
         b.currentCourseName.visibility = if (c.courseName.isBlank()) View.GONE else View.VISIBLE
+        watchHomeworks(c.id)
         if (membersClassId == c.id) return
         stopMembers()
         membersClassId = c.id
@@ -124,6 +139,28 @@ class StudentClassFragment : Fragment() {
         membersListener = CourseClasses.listenMembers(c.id) { list ->
             if (list == null) reload() else showMembers(list)
         }
+    }
+
+    private fun watchHomeworks(classId: String) {
+        if (homeworkClassId == classId) return
+        stopHomeworks()
+        homeworkClassId = classId
+        _binding?.studentHomeworkSubtitle?.text = ""
+        homeworkWatcher = com.example.app.homework.HomeworkCard.Watcher(classId) onItems@{ items ->
+            val b = _binding ?: return@onItems
+            val pending = items.count { !it.done }
+            b.studentHomeworkSubtitle.text = when {
+                items.isEmpty() -> appString(R.string.hw_student_card_none)
+                pending == 0 -> appString(R.string.hw_student_card_all_done)
+                else -> appPlural(R.plurals.hw_student_card_pending, pending, pending)
+            }
+        }
+    }
+
+    private fun stopHomeworks() {
+        homeworkWatcher?.stop()
+        homeworkWatcher = null
+        homeworkClassId = null
     }
 
     private fun stopMembers() {
@@ -280,6 +317,7 @@ class StudentClassFragment : Fragment() {
     override fun onDestroyView() {
         invitesListener?.remove()
         stopMembers()
+        stopHomeworks()
         invitesListener = null
         _binding = null
         super.onDestroyView()

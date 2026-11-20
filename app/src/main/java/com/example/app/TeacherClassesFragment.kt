@@ -24,10 +24,21 @@ import com.google.firebase.firestore.ListenerRegistration
  * Kurs öğretmeninin sınıfları: liste, yeni sınıf açma ve "genel havuza da yardım et" tercihi
  * (tercih kartı şimdilik gizli).
  *
- * Giriş Havuz ekranındaki "Sınıflarım" düğmesinden; düğme yalnızca kursa bağlı öğretmende
- * görünüyor (bkz. NotificationFragment). Bir sınıfa dokununca [TeacherClassDetailFragment].
+ * Giriş: onaylı öğretmende alt menünün sohbet sekmesi ([newAsTab], 19.11.2026; bkz.
+ * MainActivity.isTeacherClassesTab). Soru danışması açıksa Havuz ekranındaki "Sınıflarım" düğmesinden;
+ * o düğme yalnızca kursa bağlı öğretmende görünüyor (bkz. NotificationFragment). Bir sınıfa dokununca
+ * [TeacherClassDetailFragment].
  */
 class TeacherClassesFragment : Fragment() {
+
+    companion object {
+        private const val ARG_AS_TAB = "as_tab"
+
+        /** Alt menü sekmesi olarak: geri gidilecek ekran yok, geri oku gizli. */
+        fun newAsTab() = TeacherClassesFragment().apply {
+            arguments = Bundle().apply { putBoolean(ARG_AS_TAB, true) }
+        }
+    }
 
     private var _binding: FragmentTeacherClassesBinding? = null
     private val binding get() = _binding!!
@@ -43,6 +54,8 @@ class TeacherClassesFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.btnBack.setOnClickListener { parentFragmentManager.popBackStack() }
+        // Sekmede yer tutsun diye INVISIBLE: başlık ortada kalıyor (sağdaki boşlukla eşit).
+        if (arguments?.getBoolean(ARG_AS_TAB) == true) binding.btnBack.visibility = View.INVISIBLE
         binding.classList.layoutManager = LinearLayoutManager(requireContext())
         binding.classList.adapter = adapter
         binding.btnNewClass.setOnClickListener { showNewClassDialog() }

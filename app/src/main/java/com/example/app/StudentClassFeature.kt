@@ -3,10 +3,11 @@ package com.example.app
 /**
  * Öğrencinin "Kurs / Sınıfım" girişinin görünürlüğü (Ayarlar'daki kurs kartı).
  *
- * Şimdilik kapalı (kullanıcı kararı 02.11.2026): sınıfa katılmış öğrenci yok; ürünün odağı Sobi.
- * Yalnızca görünürlük: sınıf, davet ve ödev akışı, sunucu ve öğretmen ekranları duruyor ve çalışıyor;
- * ödev bildirimi yine ödev ekranını açar. Yeniden açmak için bu bayrağı true yapmak yeter.
+ * 02.11.2026'da kapatılmıştı (sınıfa katılmış öğrenci yoktu, odak Sobi). 19.11.2026'da yeniden açıldı:
+ * kurs yerlerine satış (kullanıcı kararı). Öğrencinin Ödevlerim listesi eskiden Sohbet sekmesindeydi;
+ * öğrencide o sekme Sobi olduğu için liste artık sınıf ekranında ([StudentClassFragment]).
+ * Yalnızca görünürlük: kapatılırsa sınıf, davet ve ödev akışı, sunucu ve öğretmen ekranları çalışmaya devam eder.
  */
 object StudentClassFeature {
-    const val ENABLED = false
+    const val ENABLED = true
 }

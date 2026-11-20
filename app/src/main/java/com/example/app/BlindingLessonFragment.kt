@@ -737,7 +737,7 @@ class BlindingLessonFragment : Fragment() {
         val button = incorrectPanel.findViewById<View>(R.id.incorrectSobiAnalyze) ?: return
         @Suppress("UNCHECKED_CAST")
         val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>()
-        if (!MistakeReviewDialog.canReview(numbers)) {
+        if (!MistakeReviewDialog.canReview(numbers) || !SobiAccess.isAllowed(requireContext())) {
             button.visibility = View.GONE
             return
         }

@@ -1031,6 +1031,9 @@ class MainActivity : AppCompatActivity() {
                     R.id.notification -> if (sobiTabActive) {
                         if (currentFragment is SobiChatFragment) return@requireOnlineAndLoggedInOrLogin
                         changeFragment(SobiChatFragment())
+                    } else if (isTeacherClassesTab()) {
+                        if (currentFragment is TeacherClassesFragment) return@requireOnlineAndLoggedInOrLogin
+                        changeFragment(TeacherClassesFragment.newAsTab())
                     } else {
                         if (currentFragment is NotificationFragment) return@requireOnlineAndLoggedInOrLogin
                         // CreateQuestion'dan Gönder ile açılan seçim modu fragment'ı üzerine yazma
@@ -1169,6 +1172,16 @@ class MainActivity : AppCompatActivity() {
      * sekmeden cevapladığı için öğretmende eski ekran kalıyor; [TeacherQuestionsFeature.ENABLED]
      * açılırsa öğrencide de geri geliyor. [role]: users belgesindeki rol (yoksa son bilinen).
      */
+    /**
+     * Öğretmende sohbet sekmesi doğrudan Sınıflarım ([TeacherClassesFragment]; kullanıcı kararı 19.11.2026):
+     * soru gönderme (ekran kaydı) yapısı kullanılmıyor, havuz/sohbet/rapor sekmeleri boş kalıyordu.
+     * Onay bekleyen öğretmen eski ekranda kalıyor: "onayın bekleniyor" ve destek düğmesi orada
+     * (sınıf açmak zaten onay ve kurs bağlantısı istiyor). [TeacherQuestionsFeature.ENABLED] açılırsa
+     * öğretmen yine eski ekrana döner; Sınıflarım oradaki düğmeden açılır.
+     */
+    private fun isTeacherClassesTab(): Boolean =
+        !TeacherQuestionsFeature.ENABLED && isApprovedTeacher()
+
     private fun applySobiTab(role: String = authManager.getCurrentUserType()) {
         sobiTabActive = !TeacherQuestionsFeature.ENABLED && role != AuthManager.ROLE_TEACHER
         val item = binding.bottomNavigationID.menu.findItem(R.id.notification) ?: return
@@ -1176,6 +1189,10 @@ class MainActivity : AppCompatActivity() {
             val sizePx = resources.getDimensionPixelSize(R.dimen.main_bottom_nav_icon_size)
             item.icon = android.graphics.drawable.BitmapDrawable(resources, SobiHeadView.toBitmap(this, sizePx * 2))
             androidx.core.view.MenuItemCompat.setContentDescription(item, getString(R.string.sobi_tab_title))
+        } else if (role == AuthManager.ROLE_TEACHER && !TeacherQuestionsFeature.ENABLED) {
+            // Öğretmende sekme Sınıflarım ([isTeacherClassesTab]); onay bekleyen öğretmende de aynı simge.
+            item.setIcon(R.drawable.class_ic)
+            androidx.core.view.MenuItemCompat.setContentDescription(item, appString(R.string.class_list_title))
         } else {
             item.setIcon(R.drawable.chat_pair_ic)
             androidx.core.view.MenuItemCompat.setContentDescription(item, null)

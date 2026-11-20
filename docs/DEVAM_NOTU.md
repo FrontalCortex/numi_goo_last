@@ -23,7 +23,7 @@ olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çal
   `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
   sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
 
-## Öğretmen sınıfını siler (21.11.2026 — sürüm 26'ya giriyor; derlendi, testler geçti; telefon bağlı değildi, kurulmadı; commit edilmedi, deploy YOK)
+## Öğretmen sınıfını siler (21.11.2026 — sürüm 26'ya giriyor; telefona kuruldu 00:34; 6a96e36 push edildi, deleteClass + 12 sınıf fonksiyonu CANLIDA; telefonda deneme silmesi kullanıcıda)
 Kullanıcı kararı: **gerçek silme** (arşiv değil). Sınıf ayrıntısı → Sınıf ayarları paneli → en altta kırmızı "Sınıfı sil"
 → geri alınamaz olduğunu söyleyen onay → `deleteClass` callable (functions/index.js `deleteClassData`; yetki
 `classes.deleteClassDecision`: yalnızca `teacherUids` içindeki öğretmen, kapanmış sınıf da silinebilir, olmayan sınıf
@@ -35,6 +35,50 @@ bekleyen sorular genel havuza (sahiplenilmiş sohbetler öğretmende kalır) →
 `members` dinleyicisi hata verirse ekran yeniden okunuyor. Metinler 4 dilde (`class_delete*`).
 Testler: test-classes 64, test-class-flow 76, test:pools 75, npm test 60 — hepsi geçti. Push edilince `deleteClass`
 yeni fonksiyon olarak deploy edilir (kurallar değişmedi).
+
+## Kurs satışı: sınıf yapısı yeniden açıldı (19.11.2026 — versionCode 26 derlendi, telefona kuruldu 12:14, kullanıcı bakacak; commit edilmedi, AAB yok)
+**Sürüm 26:** `StudentClassFeature.ENABLED = true` (Ayarlar'da Kurs kartı); `StudentClassFragment`'ta sınıftaki
+öğrenciye Ödevlerim kartı (eski Sohbet sekmesindekinin aynısı, `HomeworkCard.Watcher` alt satırı) →
+`StudentHomeworkListFragment`. Metinler dört dilde zaten vardı. Derleme + birim testler geçti.
+**Öğretmen (aynı sürüm 26, telefona kuruldu 13:03; kullanıcı kararı 19.11):** öğretmende Sobi yok (`SobiAccess`):
+öğreticideki Sobi düğmeleri/balonları, derslerin "Sobi ile analiz et"i, haritadaki Sobi testi düğmesi gizli.
+Onaylı öğretmende sohbet sekmesi doğrudan Sınıflarım (`TeacherClassesFragment.newAsTab`, simge `class_ic`,
+`MainActivity.isTeacherClassesTab`); onay bekleyen öğretmen eski ekranda ("onay bekleniyor"). Soru havuzu,
+sohbet ve rapor sekmelerine öğretmenin artık yolu yok (soru gönderme kullanılmıyor).
+Kalan: telefonda öğrenciyle kodla katıl → ödev listesi, öğretmenle sekme/ders denemesi, commit + push, release AAB.
+
+**Videolar v2 (19.11.2026, `Videos\Sorobit_tanitim`):** soru gönderme bölümleri ve eski havuz ekranı çıktı, sesler
+yeni önekle (`*_v2_sound`, metinden eşlendi). `sahip\Sorobit_neden_v2.mp4` (3:10, kurs sahibi), `kurs\Sorobit_ogretmen_sinif_v2.mp4`
+(2:22, YouTube w9VcGvZ5JkA'nın yerine), `ogrsinif\Sorobit_ogrenci_sinif_v2.mp4` (1:26, 5lu67-4rN8Q'nun yerine; açılış sesinin
+"sorularını ona sor"u kesildi). Eksik: öğrenci videosunda sürüm 26 sınıf ekranının Ödevlerim kartı (yeni kayıt gerekiyor).
+Eski: "teste katılma" (5THLibeS0sE) ve "öğretmen rehberi" (E2q3DklpcgA) tamamen eskidi, mesajlardan çıktı.
+
+Önceki tarama (sürüm 26'dan önce):
+Plan (kullanıcı): kursla anlaşınca öğretmen hesap açar, kullanıcı adını verir; onay + `kurs_ogretmeni_ata.js`
+elle; sınıfa katılana 1 ay Pro elle. Sınıf kapatıldıktan (ef7f7aa) sonraki 109 commit sınıf/ödev/ilerleme
+paneliyle çakışma için tarandı: **çakışma yok.** Dokunan işler: çeviriler, Sobi testi aynı oynatıcıda
+(`questionWithAbacus`, ödev kipi aynı davranıyor), kural panelinde zihinden (`m_`) kartlar, öğretmen
+görünümünde haftalık kart gizli, `weeklyStats` öğretmeni atlıyor. Testler: birim 153, test:classes 60,
+kurallar 60 + pools 65 + homework 38, emülatör ödev akışı 58 + sınıf akışı 55 — hepsi geçti.
+- **Engel:** sürüm 25'te öğrenci sınıfa kodla katılamıyor (`StudentClassFeature.ENABLED = false`) ve
+  Ödevlerim listesine yol yok (eski Sohbet sekmesinde kaldı, öğrencide Sobi var). Sürüm 26 gerekiyor.
+- **Elle Pro:** `plan` değil `giftProUntil` (ms) + `giftProSource: 'kurs'` yazılmalı; istemci ve sunucu
+  bunu Pro sayıyor, abonelik alanlarına dokunmuyor. Bitince çocuk yine reklam görür.
+- Emülatör testleri Windows'ta Firestore emülatörünü açık bırakıyor; arka arkaya koşarken arada
+  `cloud-firestore-emulator` java sürecini kapat.
+
+## Biyografi indirme sayfası /i (17.11.2026 — Hosting'e YÜKLENDİ, canlıda; commit edilmedi)
+
+- Sorun: Instagram biyografisindeki doğrudan `play.google.com/...id=com.numigo.app` bağlantısı (referrer'lı da,
+  düz de) kullanıcının telefonunda dokununca hiçbir şey yapmıyordu (Instagram'ın uygulama içi tarayıcısı Play'e
+  devredemiyor; başka telefonda denenmedi).
+- Çözüm: `public/i.html` + `firebase.json` rewrite `/i` → `/i.html`. Adres `https://numigo-new.web.app/i?k=<kaynak>`:
+  simge, slogan, üç madde, "Google Play'den indir" düğmesi (kullanıcı dokunduğu için geçiş açılıyor). `k`
+  (`[a-z0-9_]{1,40}`) Play referrer'ına `utm_source=<k>&utm_medium=bio` olarak gider; dil k'nın sonekinden
+  (`_tr/_en/_id/_ar`), yoksa tarayıcı dilinden; ar rtl. Instagram/Facebook/TikTok tarayıcısında "⋮ → Tarayıcıda
+  aç" ipucu. `firebase deploy --only hosting` ile yüklendi; canlıda `?k=instagram_id` Endonezce açıldı, href
+  `...&referrer=utm_source%3Dinstagram_id%26utm_medium%3Dbio` doğrulandı. Biyografi linkleri:
+  `/i?k=instagram_tr|instagram_en|instagram_id|instagram_ar`. Kullanıcı Instagram'dan deneyecek.
 
 ## Kaynaklar ve lisanslar ekranı (10.11.2026 — derlendi, telefona kuruldu, kullanıcı bakacak; 10.11 commit + push, sürüm 24)
 Ayarlar → Destek → "Kaynaklar ve lisanslar" (`CreditsFragment`, `fragment_credits.xml`, `strings_credits.xml`
@@ -82,6 +126,56 @@ completed 20 → ders 2 (`p1_i02`) açıldı 14 → seri günü tamamlayan 12. E
 soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `TutorialFragment` 31 kullanıcıyla 1.).
 Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
 Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
+
+## AdMob kurulumu (17.11.2026 — kısmen)
+- `public/app-ads.txt` (`google.com, pub-8436855856536384, DIRECT, f08c47fec0942fa0`) hosting'e deploy
+  edildi, `https://numigo-new.web.app/app-ads.txt` 200 dönüyor (b118860).
+- Play Console → Mağaza ayarları → Web sitesi = `https://numigo-new.web.app` (kaydedildi ve yayınlandı).
+- AdMob (panelde authuser=1 hesabı): uygulama "Numigo" → mağaza URL'siyle Google Play'e bağlandı (paket adıyla
+  arama bulamadı, `https://play.google.com/store/apps/details?id=com.numigo.app` ile buldu), adı "Sorobit" oldu.
+  "Sorobit (Android) uygulamasını başarıyla doğruladınız" → AdMob incelemesi 2–3 gün; o zamana kadar sınırlı sunum.
+- GDPR mesajı (17.11): AdMob'da Sorobit'e gizlilik politikası URL'si (`https://numigo-new.web.app/privacy-policy.html`)
+  kaydedildi; mesaj düzenleyicide uygulama seçildi ama "Yayınla" otomasyonla sonuçlanmadı (düğme griye dönüp
+  listede mesaj çıkmadı). Kullanıcı elle yayınladı: 4 ek dil, "İzin vermeyin" tüm ülkelerde açık
+  (yayın düğmesi bu seçim yapılmadan gri kalıyordu). Listede "Yayınlandı" henüz doğrulanmadı.
+- UMP "gizlilik seçenekleri" girişi (iptal bağlantısı) EKLENDİ (615df94, sürüm 26'ya girecek): Hesap ayarları →
+  "Reklam gizlilik seçenekleri", yalnızca `privacyOptionsRequirementStatus == REQUIRED` iken görünür,
+  `showPrivacyOptionsForm` açar. Derleme tamam; telefon bağlı olmadığı için cihazda denenmedi
+  (Türkiye'de satır zaten gizli; görmek için VPN/AEA test cihazı gerekir).
+- AdMob durumu (17.11): uygulama "Hazırlanıyor" (inceleme sürüyor) → son 7 gün 38 istek, 0 gösterim. Ödeme hesabı
+  (AdSense Türkiye) kurulu, eşik ₺200, birikmiş ₺6,40; kimlik doğrulama eşikte istenecek. Reklam yerleri:
+  geçiş (ders/ödev/kupa dönüşü, 5 dk aralık, 1. bölüm 2. sandıktan sonra), ödüllü (Mağaza). Pro/öğretmen
+  onaylı/oturumsuz kullanıcıya geçiş reklamı yok → "ilk 100'e 1 ay Pro" alanlar 1 ay reklam görmez.
+
+## YAYINDA (17.11.2026): Sorobit Google Play'de herkese açık
+Play Console "Son yayınlanma tarihi: 17 Kasım 2026", inceleme bölümü boş; mağaza sayfası
+`play.google.com/store/apps/details?id=com.numigo.app` açık ("10+ indirme", "Reklam içerir · Uygulama içi satın alma").
+
+## ÜRETİM: sürüm 25 Google incelemesine gönderildi (12.11.2026 ~03:15, kullanıcı kararı "direkt yayına")
+Üretim kanalı: 25 (1.0), tam kullanıma sunum (%100), 177 ülke + "dünyanın geri kalanı" (=178, kapalı testle aynı),
+yönetilen yayınlama KAPALI → Google onaylayınca kendiliğinden yayına girer. Sürüm notları tr/en/id/ar.
+Play inceleme hesabı: Play'deki öğrenci kullanıcı adı = `serverConfig/reviewLogin.email`, hesap STUDENT + Pro
+(12.11 kontrol); şifre = kod eşleşmesi telefonda denenmedi. Yayın hediyesi başlangıcı 12.11.2026 00:00 TR'ye
+çekildi (9641fa2, 15 fonksiyon deploy BAŞARILI). Tek kayıt ekip hesabı "Başar"dı: sayaç 0/100'e indirildi,
+`launchGiftClaims` kaydı `excludedFromCount: true` ile korundu, hesap `isTester: true` (kullanıcı, 12.11). Ret gelirse nedeni e-postayla ve Yayın özeti'nde.
+
+## versionCode 25 AAB (12.11.2026 02:57, HEAD 3d0bff4, temiz ağaçtan)
+24 + aşağıdaki iki commit. Test anahtarları kapalı; imzalı (Numigo, `jar verified`), 70,8 MB,
+`app/release/sorobit-25.aab`. Plan: önce kapalı teste, sonra yönetilen yayınlamayla üretime (hedef 17.11).
+
+## Sürüm 25'e girenler (12.11.2026 — derlendi, telefona kuruldu, push edildi)
+- 8a872e3: oturum açmamış kullanıcıya öğreticide Sobi gösterilmiyor (`isSobiChatAvailable`).
+- f5f867b: Crashlytics'te sürüm 21'de görülen 4 çökmeye savunma (purgeAbacusOverlayHosts FM meşgulken
+  erteleniyor; ChestFragment ders yoksa haritaya dönüyor; körleme/abaküs son sorudan sonra Kontrol yok
+  sayılıyor; AbacusCustomization geç Firestore cevabı). Sürüm 24'te 7 günde 0 çökme/ANR (Crashlytics).
+- Temel yolu GİRMİYOR (`claude/temel-yolu` dalında, telefonda denenmedi).
+
+## Play üretim erişimi başvurusu (10.11.2026 13:57 gönderildi — 12.11.2026'da ONAYLANMIŞ görüldü; üretim kanalı henüz "Etkin değil", mağaza sayfası 404)
+Kapalı test: 53 etkin test kullanıcısı, son sürüm 24 (10.11 01:33). Form İngilizce dolduruldu (testçiler Instagram +
+arkadaş çevresi, "ne zor ne kolay", ilk yıl 10–100 bin kurulum). Google "genellikle 7 gün veya daha kısa"
+diyor; sonuç hesap sahibine e-postayla gelir. Onay yayın demek değil: üretim sürümü ayrıca yüklenip yayınlanacak
+(hedef 17.11). Yayından önce bakılacaklar: yayın hediyesi sayacı 10.11'den sayıyor (`launchGift.js`
+LAUNCH_GIFT_START_MS), Play inceleme hesabı (`tryReviewLogin`) çalışıyor mu.
 
 ## Öğretici anketi sadeleşti (08.11.2026 — derlendi, birim testi geçti; kullanıcı isteğiyle commit edildi, telefonda denenmedi)
 Neden: 1 Eki–8 Kas'ta 19 kişiden 58 cevap, %80'i 4–5; tek işe yarar bilgi bir yazılı yorumdu ("tek tek
@@ -990,6 +1084,13 @@ Kullanıcı: Reklam 11/10 mantığıyla (kanca → ara anlatım → Sobi tanıt�
 
 ## Reklam 7 rekor İngilizce (03.11.2026 — kullanıcının Instagram hesabı için, ~48,7 sn)
 
+- **Yayın kapanışı (17.11.2026, kullanıcı; ~52,4 sn):** "Comment INFO" kartı yerine Reklam 18'in Google Play sahnesi.
+  Ortak bileşen `src/modern/PlayKapanis.jsx` (`PlayKapanis`, `playKapanisSure(ySure, iSure)`; yazılar `M` ile). Reklam
+  7 EN'de `DILLER.en.play` varsa telefon sahnesi (p8) `TELEFON_SURE` kadar oynar, ardından PlayKapanis; üst köşe notu
+  ve imza o sırada gizlenir. id/ar eski "INFO" kapanışıyla aynı. Sesler `r7en_sesler.mjs` en y "It's now live on
+  Google Play." / i "Download it now from the link in my profile!" (Liam, Scribe ile doğrulandı). Render için ayrı
+  giriş `src/r7en_giris.jsx` (`--gl=angle --concurrency=1`). Eski INFO sürümü `reklam7\Sorobit_reklam7_rekor_EN_info.mp4`.
+
 - `src/modern/Reklam7RekorEN.jsx`, `npm run render:r7en` → `reklam7\Sorobit_reklam7_rekor_EN.mp4`. Görüntü Reklam 7
   rekorla aynı; zamanlar sabit kare değil, `r7en_zaman.json`'daki ölçülmüş kelime karelerinden (ders cümleleri
   arka arkaya 8 kare arayla; boncuklar "one"/"five", "Here's 123", "three, five, one"e oturur).
@@ -1077,6 +1178,134 @@ en iyi elektrikli hesap makinesi operatörü seçilmiş). Turlar: toplama (50 sa
   `r11s_k*.wav` geçicilerin önüne geçer, zamanlar `r11_zaman.json`'dan kendiliğinden kayar.
 - `Reklam10.jsx`'ten `Yazi` ve `Efekt` artık dışa aktarılıyor (Reklam 11 kullanıyor).
 - Sırada: tanıtım (Sobi sahnesi, gerçek soru-cevap kaydı) + kapanış kartı (yorumlara "bilgi").
+
+## Reklam 18 (yayın günü) kanca klibi (12.11.2026 — yalnızca kanca kesildi, video yok)
+
+- Business Suite verisi: tutanların hepsi ilk karede gerçek çocuğun "imkânsız" hızı; dağıtımı paylaşım sürüklüyor
+  (Reklam 16: 654 izlenme, 1 paylaşım). Kullanıcı kanca olarak Aaryan Shukla'nın Pune "Mega Mental Arithmetic"
+  sahnesini (50 × 5 basamak) istedi. Orijinal (resmî kanal wWS4FU7wSxM) üstte başlık yazılı; IBC/AppWonders/SnapSpaxx
+  logolu ya da altyazılı. Yazısız sürüm DeKosky `eAZZZbotF3Q` (720p dikey) → yt-dlp ile (winget, `--js-runtimes node`)
+  `reklam18\kaynak\aaryan_dekosky_eAZZZbotF3Q.mp4`. Zaman: 0–4 geri sayım, 4–24 sayılar (~0,5 sn'de bir), ~34,5 ✓,
+  37,5+ alkış. Kesimler `public/r18_kanca_sayilar.mp4` (4–8 sn, 1,5 kat, sessiz, 82 kare) ve `public/r18_kanca_cevap.mp4`
+  (33,8–38,3, ✓ + dönüş, sesli, 135 kare), 1080×1920. Uyarı iletildi: görüntü başkasının; isim yazılmaz, Sorobit
+  kullanıyormuş gibi gösterilmez, öne çıkarılmaz.
+- **Video (12.11.2026, ilk çıktı, ~34,8 sn, -14,2 LUFS, kullanıcı bakmadı):** `src/modern/Reklam18.jsx`, giriş
+  `src/r18_giris.jsx`, `npm run render:r18` → `reklam18\Sorobit_reklam18.mp4`. ElevenLabs kredisi BİTTİ (0 kredi,
+  quota_exceeded); `tr_sesler.mjs`'e r18 metni eklendi ama üretilmedi. Bunun yerine Jessica'nın eski kayıtları:
+  A r13ys_s1 kanca · B ses yok, orijinal alkış ("DOĞRU ✓") · C r13ys_g1 (34.123 kartı + abaküs) · D r17s_k4 (soroban,
+  Japonya) · E r17s_k5 (Sobi, r11_egitim) · F r16s_s5 (oz5 → kupa yolu → veli) · K r16s_c ("artık Google Play'de",
+  ilk 100'e 1 ay Pro, link profilde) + ekranda "Bu videoyu bir anneye gönderin". `Kayan`, `Kart`, `Rozet`, `Telefon`
+  artık Reklam17'den dışa aktarılıyor. Gömleğindeki isim kartı küçük de olsa okunuyor.
+- **Sadeleştirildi (12.11.2026, kullanıcı; ~24,4 sn, -14,0 LUFS):** A kanca aynı (r13ys_s1), sayılar uzun
+  (`public/r18_kanca_sayilar_uzun.mp4` = 4–14 sn, 1,5 kat, 202 kare) · B ✓ + alkış, ses "Cevap, soroban."
+  (`public/r18s_cevap.wav` = r15s_p1'in ilk 1,3 sn'si; kredi yok), yazı "Çünkü soroban tekniğini kullanıyor" ·
+  E Reklam 16'nın uygulama bölümü birebir (r16s_s5; oz2 → eğitim → kupa yolu → veli) · K Reklam 16 kartı,
+  son satır "👆 Profildeki linkten indirin" (r16s_c). Boncuk, soroban/Japonya ve telefon sahneleri çıktı. İlk sürüm
+  `reklam18\Sorobit_reklam18_ilk.mp4`. Kredi gelince: `tr_sesler.mjs r18 --uret g` ("Çünkü soroban tekniğini
+  kullanıyor.") → B'de `r18s_cevap.wav` yerine `r18s_g.wav`, `CEVAP_SES_SURE` = r18_zaman.json g.sure.
+- **Son akış (12.11.2026, kullanıcı "net ve açık"; ~16 sn, -15,2 LUFS):** A kanca + uzun sayılar · B ✓ + alkış, g
+  "Çünkü soroban tekniğini biliyor." · C sahte Google Play sayfası (`public/sorobit_ikon.png` = Downloads'taki mağaza
+  simgesi; "Yükle" → % → "Aç"), y "Bu tekniği öğreten uygulamamız şu anda yayında.", i "Profilimdeki linkten hemen
+  indir!" + sarı düğme. Uygulama tanıtımı ve hediye satırı çıktı. g/y/i ŞİMDİLİK Windows "Tolga" (erkek, geçici;
+  `public/gecici_r18s_*.wav`, scratchpad tts.ps1). Kredi gelince `node araclar/tr_sesler.mjs r18 --uret g,y,i`
+  yeterli: kod `r18s_*.wav` + `r18_zaman.json` varsa onları kullanıyor (`varMi`). Önceki sade sürüm
+  `reklam18\Sorobit_reklam18_sade1.mp4`.
+- **Yeni kanca (17.11.2026, kullanıcı; ~15,1 sn):** ses ve yazı "Bu sayıları bu kadar hızlı toplamasını sağlayan
+  tekniği öğrenmek ister misin?" (`tr_sesler r18 k`, Jessica, yeni anahtar; `public/r18s_k.wav`), r13ys_s1 yerine.
+  Videodaki ses Scribe ile doğrulandı. Eski kancalı sürüm `reklam18\Sorobit_reklam18_eski_kanca.mp4`.
+- **"Çünkü soroban" kaldırıldı (17.11.2026, kullanıcı; ~13,6 sn):** B sahnesi yalnızca DOĞRU ✓ + alkış, 60 kare
+  (g sesi ve yazısı yok; `G_BAS` artık kullanılmıyor). Önceki sürüm `reklam18\Sorobit_reklam18_cunku_soroban.mp4`.
+- **Jessica sesleri eklendi (12.11.2026):** kullanıcının verdiği yeni ElevenLabs anahtarıyla g/y/i üretildi
+  (`public/r18s_{g,y,i}.wav`, `r18_zaman.json`), Scribe ile doğrulandı. Video ~17,1 sn, -13,5 LUFS. Kullanıcı ortam
+  değişkenindeki eski anahtarın kredisi 0; yeni anahtar ortam değişkenine kaydedilmedi (kullanıcı kararı bekliyor).
+
+## Reklam 17: annelere "kaç saniyede yapıyor?" (09.11.2026 — ilk çıktı, ~46 sn, Jessica, kullanıcı bakmadı)
+
+Kullanıcı: Reklam 11 yapısında, görseller sürekli sağdan/soldan gelsin, hedef anneler. Yedi kanca önerildi; kullanıcı
+2'yi seçti: "Çocuğunuz kırk yedi artı otuz sekizi kaç saniyede yapıyor?" (anne kafasında kendi çocuğunu dener).
+- `src/modern/Reklam17.jsx`, `npm run render:r17` → `out/Sorobit_reklam17.mp4`. Giriş dosyası AYRI:
+  `src/r17_giris.jsx` (yalnızca Reklam17; o sırada başka oturum Reklam16'yı düzenlerken index.jsx bozuktu).
+  index.jsx'e de kayıtlı. `Kronometre`, `KafaAbakusu`, `El` Reklam 16'dan kopya (bağımlılık yok).
+- Sahneler: A+B kanca tek parça (işlem kartı soldan; parmakla sayan el + kırmızı kronometre soldan → sola çıkar,
+  Pexels kızı 5199633 sağdan, sarı kronometre "iki"de 2,0 sn, "seksen"de 85 ✓, "canlandırma" etiketi) · C "Dahi
+  değil" (soldan parmak ✗, sağdan kafadaki abaküs) · D Japonya kartı soldan, soroban sağdan, "küçük yaşta" rozeti ·
+  E telefon (r11_egitim) · F1 oz5 "Sobi'ye sor" · F2 oz2 → oz6 (test) · F3 r9_kupayolu → oz6 56–100. kare ("10/10,
+  Seviye 4 → 5") + "Seviye 4 → 5 ✓" rozeti · F4 r11_veli · K "Çok yakında Google Play'de", yorumlara "bilgi yazın",
+  ilk 100 kişiye 1 ay Pro. Her klip `Kayan` ile yandan girer, sonraki klip öncekini karşı yana iter.
+- Ses `tr_sesler.mjs r17 --uret` (Jessica, hamlar `reklam17\ses`), k1–k9 + c; Scribe ile okunuş doğrulandı.
+- Not: 47 + 38 ve aynı Pexels kızı Reklam 16'da da var; ikisi aynı hafta paylaşılırsa tekrar gibi görünebilir.
+
+## Reklam 16: annelere "aynı çocuk, aynı soru" (08.11.2026 — ~32 sn, ElevenLabs "Mine K.", yayın günü için)
+
+Kullanıcı: abaküs öğreten video istemiyor; hedef çocuklu anneler, bir vaat olmalı. "Ekran süresi" açısı daha önce
+denenip az izlenmişti. Meta Reklam Kütüphanesi taraması (SplashLearn, Kidslar, 25 Matematik, Pro Matematik, Kanguru;
+TikTok Top Ads girişsiz açılmıyor): ortak kalıp = annenin tanıdığı belirti ("2. sınıfta hâlâ heceliyor mu?") →
+"fark zekâ değil" (Kidslar: "Aynı sınıfta iki çocuk… Fark zekâ değil — hazırlık") → "daha çok çalıştırmak çözüm
+değil" → küçük günlük doz ("30 minutes a day", "25 dakikada"). Türkiye'de abaküs/zihinden aritmetik reklamı yok denecek
+kadar az. Bu ücretli reklamlar; organik Reels'te kitleyi içerik belirliyor (bkz. Reklam 7 %92 erkek).
+- `src/modern/Reklam16.jsx`, `npm run render:r16` → `reklam16\Sorobit_reklam16.mp4` (963 kare). Sahneler dosyanın başında:
+  bölünmüş ekran (aynı kız: üstte düşünceli, sayaç 48, 49… ve kronometre, C'de donar; altta gülümseyen, düşünce
+  balonunda 2D abaküs 47 → 85, "seksen"de 85 ✓, 2 sn) → "Fark zekâ değil… YÖNTEM" → "Daha çok işlem çözdürmek parmakla
+  saymayı bitirmez" → uygulama (Sobi r11_oz2, eğitim, kupa yolu, veli r11_veli; "Günde sadece 10 dakika") → kart
+  ("Google Play'de", "İlk 100 kişiye 1 ay ücretsiz", "👆 Link profilde").
+- Görüntü: Pexels Max Fischer 5199628 (düşünceli) / 5199633 (gülümseyen), aynı kız ve kara tahta (4K, `reklam16\kaynak`;
+  `public/r16_k*.mp4` 960 yükseklik 30 fps). İkisi de aynı çocuk olduğu için "iki çocuk" yerine "aynı çocuk, aynı soru"
+  (fark yöntem). Alttaki kız sola kaydırıldı (düşünce balonu yüzü kapatıyordu).
+- Ses `tr_sesler.mjs r16 --uret` (Mine K. `8WPhqbK1tiExOyeiOUT0`, Türkçe anadil kadın; hamlar `reklam16\ses`),
+  okunuş Scribe ile doğrulandı. Kapanış "Sorobit artık Google Play'de" (10.11 ve sonrası için; "bugün" denmedi).
+- Vaat sınırı: not/sonuç garantisi yok; "günde 10 dakika, oyun gibi" + veli takibi.
+- **Yayından önceki iki kapanış (09.11.2026, kullanıcı isteği; asıl "artık Google Play'de" sürümü duruyor):**
+  `Reklam16Takip` (`render:r16y`, ses cy: "çok yakında… ilk yüz kişiye bir ay ücretsiz. Kaçırmamak için hemen takip
+  et!", "Takip et" düğmesi basılır) ve `Reklam16Bilgi` (`render:r16b`, ses cb: "Erken erişim için yorumlara bilgi
+  yaz, ilk yüz kişiye bir ay ücretsiz!", yorum kutusuna "bilgi" yazılır) → `reklam16\Sorobit_reklam16_{takip,bilgi}.mp4`.
+  Ortak `YakindaKart({c})`; A–E sahneleri aynı. Öneri "bilgi": yorum hem algoritmaya güçlü sinyal hem DM'den
+  ulaşılacak kişi listesi; takip edenler yayın gününü çoğu zaman görmüyor. "bilgi" yazanlara link elle/otomatik DM.
+- **Düzeltme (09.11.2026, kullanıcı):** "1 ay ücretsiz" uygulamayı ücretli gibi gösteriyordu → üç kapanışta da (c, cy,
+  cb) ses ve yazı "İlk yüz kişiye bir ay Pro abonelik hediye". D sahnesinin ikinci yarısına görsel: yazı yukarı (top
+  250), "işlem"den itibaren üst üste düşen çalışma kâğıtları (`Kagit`, 6 karede bir, en çok 14), "parmakla"dan itibaren
+  parmaklarını tek tek açan SVG el (`El`, 7 karede bir, tik sesi) ve 48, 49… sayacı (`IslemYigini`).
+- **Ses değişti (09.11.2026, kullanıcı "bu ses kötü"):** Mine K. yerine premade Jessica (`tr_sesler.mjs`'te r16
+  `SESLER`'den çıktı, varsayılan). Mine K. hamları `reklam16\ses_mine`. Scribe ile doğrulandı (s5 ilk denemede
+  "Sorobith" → yeniden üretildi). Alternatif: Lauren `DODLEQrClDo8wCz460ld` hesapta var, denenmedi.
+- **Müzik kaldırıldı (09.11.2026, kullanıcı):** dört sürümde de `muzik` varsayılanı false.
+- **Endonezce "bilgi" sürümü (09.11.2026):** `Reklam16.jsx` artık `DILLER` + `yap(dil)` (modül düzeyinde JSX için
+  `import React`); `Reklam16BilgiID`, `render:r16bid` → `reklam16\Sorobit_reklam16_bilgi_ID.mp4` (~42 sn; Endonezce
+  cümleler uzun). Ses `tr_sesler.mjs r16id --uret` (honeypie, hamlar `reklam16\ses_id`, Scribe ile doğrulandı; s5
+  "Sorobid" → yeniden üretildi). Sayılar yazıyla, animasyon kelimeleri `DILLER.id.k` (parmak eli "kebiasaan"da).
+  Yorum kelimesi INFO, hediye "Hadiah 1 bulan Pro untuk 100 orang pertama". Uygulama kayıtları Endonezce arayüz:
+  Sobi r11id_anlamadim, eğitim r11id_egitim, veli r11id_veli; kupa yolu (r9_kupayolu) Türkçe kaldı (Endonezcesi yok).
+  Takip ve yayın günü kapanışlarının Endonezcesi yok (c / cy sesleri üretilmedi).
+- **Yeni giriş, ayrı kompozisyon (09.11.2026, kullanıcının metni; eski dört sürüm duruyor):** `src/modern/Reklam16Yeni.jsx`,
+  giriş dosyası `src/r16n_giris.jsx`, `npm run render:r16n` → `out/Sorobit_reklam16_yeni.mp4`. Akış: "basit bir işlemde
+  bile parmaklarıyla mı sayıyor?" (`Downloads\videoplayback.mp4` alt yarısı, crop 1080×1120 @ 0,800, 1,0–7,2 sn →
+  `public/r16n_parmak.mp4`; başkasının reaksiyon videosu, tanınabilir çocuk: telif/görüntü riski) → "daha çok işlem…
+  bitirmez, mesele yöntemi değiştirmek" (IslemYigini) → rekor çocuğu (`soroban_world_record` 3,0–9,0 bölünmüş ekran +
+  34,2–35,4 cevap kutusu → `r16n_rekor.mp4`; 36,0–37,8 + 39,8–42,7 → `r16n_sevinc.mp4`) → "en iyi eğitimi neden
+  vermeyesiniz, hem de ücretsizken" → eğitim / kupa yolu / Sobi (r11_oz5) → veli → "günde 10 dakika, boyut atlattırın"
+  (r11_oz6) → Reklam16Takip kartı. Ses `tr_sesler.mjs r16n` (Jessica, hamlar `reklam16\ses_yeni`, cy eski kaydın
+  kopyası), Scribe ile doğrulandı. Kullanıcının "Play Store" dediği yer "Google Play" bırakıldı.
+  **Aynı gün değişti:** giriş videosu dikeyde ortada (top 400), yazı üstte; veli (s6) ve "günde 10 dakika" (s7)
+  sahneleri çıkarıldı (Sobi'den sonra doğrudan takip kartı, ~37,6 sn); ses Reklam 7 rekorun erkek sesi "Bunty - Funny
+  Best Friend" (`7b9mYhmnp0y2qSH1FnBL`, hamlar `reklam16\ses_bunty`, cy dahil yeniden üretildi, Scribe ile doğrulandı;
+  Jessica hamları `reklam16\ses_yeni`). Kopya `reklam16\Sorobit_reklam16_yeni.mp4`.
+  **Takılma + 1,2x (09.11.2026):** rekor klibinin kaynağı 25 fps; `fps=30` her 5 karede bir kare tekrarlıyordu
+  (mpdecimate: 216'da 23 tekrar) → takılma. Rekor/sevinç artık kaynak kareleri 30 fps'e birebir (`setpts=N/(30*TB)`,
+  tam 1,2x, tekrar yok; rekor 150 + 30 kare, CEVAP 150). Genel hız 1,2x: `tr_sesler` r16n HIZ 1,38 (1,15 × 1,2,
+  yeniden üretim yok), uygulama kayıtları ve parmak klibi playbackRate 1,2, sahne araları /1,2. Süre ~31,4 sn.
+  Rekor klibinin orijinal sesi kapatıldı (`muted`; Guinness çekimi, Meta ses eşleşmesi riski), yalnızca ding kaldı.
+  Müzik videoya gömülmedi: kullanıcı Instagram'ın kendi kütüphanesinden ~%10–15 seviyede ekleyecek.
+- **Yayın kapanışı + 4 dil (17.11.2026, kullanıcı):** kapanış "takip et" yerine c "Sorobit şu anda Google Play'de
+  yayında. Profilimdeki linkten hemen indir!" (kart: ŞU ANDA YAYINDA, Google Play, sarı "👆 Profilimdeki linkten
+  indir"; hediye satırı çıktı). `Reklam16Yeni.jsx` artık `yap(dil)` + `DILLER.{tr,en,id,ar}` (yazılar, kelime
+  anahtarları `k`, uygulama kayıtları: tr eğitim/kupa yolu/oz5, diğerleri r11{dil}_egitim/_test/_anlamadim); ar `rtl`.
+  Kompozisyonlar Reklam16Yeni/EN/ID/AR (`src/r16n_giris.jsx`), `npm run render:r16n|r16nen|r16nid|r16nar` →
+  `reklam16\Sorobit_reklam16_yeni{,_EN,_ID,_AR}.mp4`. Ses dört dilde premade **Liam** (`TX3LPaxmHKxFdv7VOQHJ`,
+  Eleven v4): kullanıcının yeni ElevenLabs anahtarı ücretsiz planda, kütüphane sesleri (Bunty, honeypie, Habibah,
+  Bee Ard) API'de 402 veriyor; kullanıcı örnekleri dinleyip "hepsinin ilki" (Liam) dedi (`reklam16\ses_ornekleri`).
+  Hamlar `reklam16\ses_liam` (tr), `ses_yeni_{en,id,ar}`; tr_sesler r16n/r16nen/r16nid/r16nar. Scribe ile 24 cümle
+  doğrulandı; Arapça c'de marka "سوروبيت" "سرو بت" duyulduğu için Latin "Sorobit" yazıldı. Bunty sürümü yedek:
+  `proje\public_yedek_bunty\` (sesler, zaman, kod) ve `reklam16\Sorobit_reklam16_yeni_bunty_takip.mp4`.
+  Açık konu: s4/s5 "tamamen ücretsiz" diyor, uygulamada Pro abonelik var (kullanıcıya soruldu, cevap yok).
 
 ## Reklam 10: kurucunun vizyonu (29.10.2026 — kullanıcının 12 kaydıyla render edildi, ses ElevenLabs "Hasan Yasin", ~48 sn)
 
@@ -4600,3 +4829,31 @@ bunlar kullanılıyor ve korunmalı:
 - `functions/scripts/test-*.js` — sunucu mantığını kaynaktan türetip kilitleyen testler
   (`node functions/scripts/test-chest-rarity-table.js` gibi; tablo kopyalanmıyor, kaynaktan okunuyor)
 - `tools/rules-test/` — Firestore kuralları, emülatörle 22 test
+
+## Reklam 19–33: Sobi serileri (18.11.2026, paralel oturumlar)
+
+Viral video incelemelerinden (bkz. `docs/ICERIK_FIKIRLERI.md`: Duolingo, @gizlizekaegitim, Remix adayları) 16 video
+üretildi; hepsi `Videos\Sorobit_tanitim\reklamNN\Sorobit_reklamNN.mp4` + `SENARYO.md`, kod `reklam3\proje\src\rNN*`.
+Kurallar: `Videos\Sorobit_tanitim\REKLAM_19_28_ORTAK_KURALLAR.md`, `REKLAM_SOBI_TRIP_SERISI.md`, `REKLAM_SOBI_MEME_SERISI.md`.
+- 19–23 (ilk tur, geçici Tolga sesi): 19 hayal vs gerçek, 20 "DUR!" 3 tüyo, 21 Sobi dehşette (meme, sessiz), 22 Sobi trip, 23 son boncuk.
+- Kullanıcı 22 (trip) ve 21 (meme) tarzını beğendi. 22 v2 (abaküs dersi çıkarıldı) + 24–28 trip serisi (abaküs dersi yok,
+  beceri gündelik sahnelerle), 29–33 meme serisi (tek kısa soroban püf noktası, "matematikten korkmasın" sloganı).
+- Ses: ElevenLabs Jessica (`cgSgspJ2msm6clMCkdW9`); 33'te baba için Brian. 32'de seslendirme yok (yalnızca 2 efekt).
+  Yeni anahtar (18.11) ücretsiz plan, 10.000 karakter; ~2.700 karakter + ~10 efekt harcandı. Ücretsiz plan ticari
+  lisans vermez → paylaşmadan önce Starter ya da atıf. Hiçbiri yayınlanmadı; videolar insan gözüyle izlenmedi.
+- Resmî Remotion yeteneği `.claude/skills/remotion-best-practices` kuruldu (`.git/info/exclude`'da, commit edilmez).
+- **Güncelleme (18.11.2026 akşam):** kullanıcı kararıyla abaküs anlatımı 19, 20, 21, 29–33'ten kaldırıldı (yerine "soroban
+  tekniğiyle akıldan çok hızlı / matematikten korkmaz, eğlenerek öğrenir" fayda anı); 23 tamamen abaküs bulmacası, dokunulmadı.
+  33 v3: Sobi'nin soroban övgü tahtası, zorlaşan 3 soru (12 / 85 / 375), bölünmüş ekran + kronometre (v2 yedekte).
+  Yeni "Ya … olsaydın?" serisi (@utopia_3077 akışı; kurallar `Videos\Sorobit_tanitim\REKLAM_YA_OLSAYDIN_SERISI.md`):
+  34 matematik dehası (51,9 sn), 35 hesap makineleri bozulsa (56,9), 36 sınavda zaman yavaşlasa (58,0),
+  37 matematikten hiç korkmasaydın (54,4), 38 bir bakışta sayabilseydin (53,3); hepsi Jessica. ElevenLabs ücretsiz
+  kredisinden ~7.600 / 10.000 kullanıldı (yenileme 19.12.2026). Hiçbiri yayınlanmadı ve insan gözüyle izlenmedi.
+- **Reklam 39–61 (19–20.11.2026):** 39 (zihin ekranı) kullanıcının favorisi; 40 renkli sayılar, 41 sınıfa sen anlat.
+  42–61: 39 tarzında 20 video, 5 oturum × 4 (kurallar `Videos\Sorobit_tanitim\REKLAM_42_61_SERISI.md`): 42–45 her gün 2 katı
+  (IQ, harçlık, kâğıt katlama, satranç pirinci), 46–49 "bu sayı ne kadar büyük" kuleleri (tavşan, veli WhatsApp, kum/yıldız,
+  kalp atışı), 50–53 ya … olsaydın (beyin güncellemesi, rüyada ders, matematik oyun, hesap makinesine dönüşmek), 54–57 absürt
+  (dinozor, kedi, uzaylılar, rakamlar kaybolsa), 58–61 anne komedisi. Ses: kullanıcı erkek ses istedi; Reklam 7'nin Bunty'si
+  (`7b9mYhmnp0y2qSH1FnBL`) ücretsiz planda API'den 402 → **Liam** (`TX3LPaxmHKxFdv7VOQHJ`). Gerçek Liam sesli: 44, 47, 50,
+  55, 58; diğer 15'i geçici Tolga, `node araclar/rNN_sesler.mjs --uret` + render ile yenilenir. Anahtar 20.11'de değişti
+  (ücretsiz, kredi bitti; yenileme 20.12.2026). Hiçbiri yayınlanmadı, insan gözüyle izlenmedi.

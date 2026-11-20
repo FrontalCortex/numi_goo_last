@@ -899,10 +899,10 @@ class TutorialFragment : Fragment() {
      * Sobi ekranı açılabilir mi. Oturum açmamış kullanıcıya (kayıttan önceki ilk öğretici) Sobi hiç
      * gösterilmiyor: sağ üstteki düğme, yanlış panelindeki "Sobi'ye sor" ve iki dürtme balonu bu
      * kapıdan geçiyor (kullanıcı kararı 12.11.2026). Eskiden oturum şart değildi; kural motoru
-     * mesajları açılıyor, yalnızca yazma kutusu gizleniyordu.
+     * mesajları açılıyor, yalnızca yazma kutusu gizleniyordu. Öğretmen hesabında da yok ([SobiAccess]).
      */
     private fun isSobiChatAvailable(): Boolean =
-        _binding != null && FirebaseAuth.getInstance().currentUser != null
+        _binding != null && FirebaseAuth.getInstance().currentUser != null && SobiAccess.isAllowed(requireContext())
 
     /** Abaküslü soru adımı mı: abaküs bağlamı, hata bulma ve gösterim yalnızca burada. */
     private fun isSobiQuestionStep(): Boolean {
