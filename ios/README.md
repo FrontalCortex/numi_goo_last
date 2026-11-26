@@ -187,6 +187,14 @@ Aşağıdakiler öneridir; hiçbirine başlanmadı.
 4. **App Store ürün kimlikleri.** `BillingCatalog` Play kimliklerini taşıyor; aynı kimlikler App Store'da kullanılırsa sunucu kataloğu değişmez.
 5. **Hesaplar platformlar arası ortak mı.** Ortaksa cüzdan, satın alınan boncuklar ve enerji iki mağazadan beslenir; sunucu doğrulaması iki makbuz türünü de tanımalı.
 
+### Verilen kararlar (26.11.2026)
+
+1. **Firebase:** Swift tarafında resmî Firebase iOS SDK. Ortak kod yalnızca kuralları hesaplar, okuma/yazmayı Swift yapar.
+2. **`stepCupIcon`:** iOS hep rekordan türetir; Android'e dokunulmaz. Ortak hesap kararı (5) nedeniyle, iOS'un yazdığı kayıtların Android'de nasıl göründüğü ayrıca denenmeli.
+3. **Kategori:** 4+ Eğitim; Kids kategorisi değil. Analitik, reklam ve sosyal özellikler Android'deki gibi kalır, yaş/rıza ekranı korunur.
+4. **Ürün kimlikleri:** App Store'da Play ile aynı kimlikler kullanılır.
+5. **Hesaplar:** ortak. iOS aynı Firebase projesine bağlanır; sunucudaki satın alma doğrulamasına App Store makbuzu eklenmesi gerekir (`functions/` değişikliği, ayrı iş).
+
 ### SwiftUI ekranları
 
 - Önerilen sıra: giriş/kayıt → harita (ders listesi) → abaküs dersi → ders sonucu → sandık → kör (zihinden) ders → günlük soru ve görevler → kupa/rozet → mağaza ve özelleştirme → profil/sosyal. İlk üçü bitince uçtan uca bir ders oynanabilir.
