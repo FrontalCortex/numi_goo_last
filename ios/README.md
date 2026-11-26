@@ -209,6 +209,8 @@ Aşağıdakiler öneridir; hiçbirine başlanmadı.
 
 **Durum (26.11.2026):** depo kökündeki `codemagic.yaml` içinde `ios-shared-test` iş akışı hazır. İlk çalıştırma (commit `d90149c`, Mac mini M2, 10 dk 4 sn) yeşil bitti: ortak kod gerçek iOS hedefinde derlendi, simülatör testleri geçti, cihaz framework'ü bağlandı. Webhook henüz eklenmedi; derlemeler elle başlatılıyor. Yaptıkları: JVM testleri → `:shared:iosSimulatorArm64Test` → `:shared:linkDebugFrameworkIosArm64`. İmzalama ve Apple hesabı gerektirmez. `claude/sorobit-ios-*` dallarına push'ta, yalnızca `ios/` ya da `codemagic.yaml` değişmişse tetiklenir.
 
+İkinci iş akışı `ios-app-build` (yalnızca elle başlatılır): `ios/iosApp/project.yml` dosyasından XcodeGen ile Xcode projesini üretir, uygulamayı imzasız olarak simülatör için derler, simülatörde açıp ekran görüntüsünü (`ekran.png`) derleme çıktısı olarak bırakır. `ios/iosApp/` şimdilik tek ekranlı bir iskelettir: ortak koddan 1. bölümün öğe sayısını okuyup gösterir. Paket kimliği `com.sorobit.app` geçicidir. **Bu iş akışı henüz çalıştırılmadı.**
+
 Kurulum (bir kez, hesap sahibi yapar):
 
 1. codemagic.io'da GitHub ile oturum açılır, bu depo uygulama olarak eklenir.

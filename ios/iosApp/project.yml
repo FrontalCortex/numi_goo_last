@@ -1,0 +1,40 @@
+# XcodeGen tanımı: Xcode proje dosyası (.xcodeproj) depoda tutulmaz,
+# Mac'te (Codemagic) `xcodegen generate` ile bu dosyadan üretilir.
+# Böylece proje Mac olmadan, Windows'tan düzenlenebilir.
+name: iosApp
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    # Gradle betiği proje klasörü dışına yazdığı için betik korumalı alanı kapalı olmalı.
+    ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: iosApp
+    scheme: {}
+    settings:
+      base:
+        # Geçici kimlik; App Store kaydı açılırken kesinleşecek.
+        PRODUCT_BUNDLE_IDENTIFIER: com.sorobit.app
+        MARKETING_VERSION: "0.1"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: "YES"
+        INFOPLIST_KEY_CFBundleDisplayName: Sorobit
+        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+        # Ortak Kotlin kodu: Gradle'ın ürettiği statik framework.
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)"
+        OTHER_LDFLAGS: "$(inherited) -framework Shared"
+    preBuildScripts:
+      - name: Ortak Kotlin framework'ünü derle
+        basedOnDependencyAnalysis: false
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode

@@ -5,3 +5,6 @@ build/
 .idea/
 local.properties
 xcuserdata/
+# Xcode projesi XcodeGen ile üretilir (iosApp/project.yml), depoda tutulmaz.
+*.xcodeproj/
+DerivedData/

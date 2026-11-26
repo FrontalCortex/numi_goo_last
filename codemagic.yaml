@@ -41,3 +41,56 @@ workflows:
         script: ./gradlew :shared:linkDebugFrameworkIosArm64 --no-daemon
     artifacts:
       - ios/shared/build/reports/tests/**
+
+  ios-app-build:
+    name: iOS uygulama derlemesi (simülatör)
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    working_directory: ios
+    environment:
+      xcode: latest
+      java: 17
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.konan
+    # Tetikleyici yok: dakika harcamamak için yalnızca elle başlatılır.
+    scripts:
+      - name: Gradle sarmalayıcısına çalıştırma izni
+        script: chmod +x gradlew
+      - name: Xcode projesini üret
+        working_directory: ios/iosApp
+        script: |
+          which xcodegen || brew install xcodegen
+          xcodegen generate
+      - name: Uygulamayı simülatör için derle
+        working_directory: ios/iosApp
+        # İmzasız, yalnızca Apple silicon simülatörü; Apple hesabı gerektirmez.
+        script: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild build \
+            -project iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/dd \
+            ARCHS=arm64 ONLY_ACTIVE_ARCH=NO \
+            CODE_SIGNING_ALLOWED=NO | tee build/xcodebuild.log | tail -n 200
+      - name: Simülatörde aç ve ekran görüntüsü al
+        working_directory: ios/iosApp
+        # Mac olmadan ekranı görebilmenin yolu; başarısız olsa da derleme sonucu etkilenmez.
+        ignore_failure: true
+        script: |
+          UDID=$(xcrun simctl list devices available | grep -E "iPhone" | head -1 | grep -oE "[0-9A-F-]{36}")
+          echo "Simülatör: $UDID"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/dd/Build/Products/Debug-iphonesimulator/iosApp.app
+          xcrun simctl launch "$UDID" com.sorobit.app
+          sleep 8
+          xcrun simctl io "$UDID" screenshot build/ekran.png
+    artifacts:
+      - ios/iosApp/build/ekran.png
+      - ios/iosApp/build/xcodebuild.log
