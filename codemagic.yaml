@@ -89,3 +89,5 @@ workflows:
     artifacts:
       - $CM_BUILD_DIR/ios/iosApp/build/ekran.png
       - $CM_BUILD_DIR/ios/iosApp/build/xcodebuild.log
+      # Ortak Kotlin kodunun Swift'e görünen adları (derleme hatası ayıklamak için).
+      - $CM_BUILD_DIR/ios/shared/build/xcode-frameworks/**/Shared.framework/Headers/Shared.h
