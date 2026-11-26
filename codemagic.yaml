@@ -37,7 +37,7 @@ workflows:
       - name: Gerçek cihaz için framework bağlama
         script: ./gradlew :shared:linkDebugFrameworkIosArm64 --no-daemon
     artifacts:
-      - ios/shared/build/reports/tests/**
+      - $CM_BUILD_DIR/ios/shared/build/reports/tests/**
 
   ios-app-build:
     name: iOS uygulama derlemesi (simülatör)
@@ -85,6 +85,7 @@ workflows:
           xcrun simctl launch "$UDID" com.sorobit.app
           sleep 8
           xcrun simctl io "$UDID" screenshot build/ekran.png
+    # Yollar tam verilir: göreli yollar working_directory nedeniyle bulunamadı.
     artifacts:
-      - ios/iosApp/build/ekran.png
-      - ios/iosApp/build/xcodebuild.log
+      - $CM_BUILD_DIR/ios/iosApp/build/ekran.png
+      - $CM_BUILD_DIR/ios/iosApp/build/xcodebuild.log
