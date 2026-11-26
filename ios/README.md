@@ -207,6 +207,15 @@ Aşağıdakiler öneridir; hiçbirine başlanmadı.
 
 ### Codemagic
 
+**Durum (26.11.2026):** depo kökündeki `codemagic.yaml` içinde `ios-shared-test` iş akışı hazır; henüz hiç çalıştırılmadı (Codemagic hesabı bağlanmadı). Yaptıkları: JVM testleri → `:shared:iosSimulatorArm64Test` → `:shared:linkDebugFrameworkIosArm64`. İmzalama ve Apple hesabı gerektirmez. `claude/sorobit-ios-*` dallarına push'ta, yalnızca `ios/` ya da `codemagic.yaml` değişmişse tetiklenir.
+
+Kurulum (bir kez, hesap sahibi yapar):
+
+1. codemagic.io'da GitHub ile oturum açılır, bu depo uygulama olarak eklenir.
+2. Uygulama ayarlarında yapılandırma olarak `codemagic.yaml` seçilir.
+3. Otomatik tetikleme için sağ kenardaki *Webhooks → Create webhook* tıklanır.
+4. İlk çalıştırma elle: *Start new build* → dal `claude/sorobit-ios-phase-1-b59a74`, iş akışı *iOS ortak kod testleri*.
+
 - Mac olmadığı için derleme, imzalama ve TestFlight yüklemesi Codemagic'te yapılır. Ücretsiz katman ayda 500 dakika macOS M2 verir; bir iOS derlemesi 10–20 dakika sürer.
 - İş akışı: `ios/` içinde `./gradlew :shared:assembleSharedXCFramework` (ya da Xcode derleme aşamasında `embedAndSignAppleFrameworkForXcode`) → `xcodebuild` → TestFlight.
 - **Önce yalnızca `:shared:iosSimulatorArm64Test` çalıştıran küçük bir iş akışı kurulmalı.** Bu, Aşama 1 kodunun gerçek iOS hedefinde derlendiğini ve 668 testin geçtiğini kanıtlar; ekran yazmadan önce yapılacak en ucuz doğrulama.

@@ -1,0 +1,43 @@
+# Codemagic yapılandırması — yalnızca iOS tarafı (ios/ klasörü) içindir.
+# Android derlemesi buradan yapılmaz; app/ ve kök Gradle dosyalarına dokunmaz.
+# Codemagic bu dosyayı depo kökünde arar, o yüzden ios/ içinde değil burada durur.
+
+workflows:
+  ios-shared-test:
+    name: iOS ortak kod testleri
+    instance_type: mac_mini_m2      # ücretsiz kotada kullanılabilen tek Mac türü
+    max_build_duration: 45
+    working_directory: ios
+    environment:
+      xcode: latest
+      java: 17
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.konan                  # Kotlin/Native derleyicisi ve bağımlılıkları
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'claude/sorobit-ios-*'
+          include: true
+      cancel_previous_builds: true
+    # Dakika harcamamak için yalnızca iOS dosyaları değişince çalışır.
+    when:
+      changeset:
+        includes:
+          - 'ios/'
+          - 'codemagic.yaml'
+    scripts:
+      - name: Gradle sarmalayıcısına çalıştırma izni
+        script: chmod +x gradlew
+      - name: JVM testleri
+        script: ./gradlew :shared:jvmTest --no-daemon
+        test_report: shared/build/test-results/jvmTest/*.xml
+      - name: iOS simülatör testleri
+        script: ./gradlew :shared:iosSimulatorArm64Test --no-daemon
+        test_report: shared/build/test-results/iosSimulatorArm64Test/*.xml
+      - name: Gerçek cihaz için framework bağlama
+        script: ./gradlew :shared:linkDebugFrameworkIosArm64 --no-daemon
+    artifacts:
+      - ios/shared/build/reports/tests/**
