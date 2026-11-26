@@ -174,7 +174,8 @@ class AbacusCustomizationFragment : Fragment() {
             // edilmediyse) lokale uygula, sonra önizlemeyi/aktif sekmeyi yenile.
             val ctx = requireContext().applicationContext
             AbacusCustomizationFirestore.ensureHydrated(requireContext(), uid) {
-                if (!isAdded) return@ensureHydrated
+                // View yoksa viewLifecycleOwner IllegalStateException atar.
+                if (!isAdded || view == null) return@ensureHydrated
                 // Pahalı (bitmap tabanlı) boncuk tiplerini ana thread'i kilitlemeden önce
                 // arka planda ısıt — bkz. AbacusBeadRenderer.prewarmAllSlotDrawables.
                 viewLifecycleOwner.lifecycleScope.launch {

@@ -1158,6 +1158,9 @@ class MapFragment : Fragment() {
         // Veriyi yükle (lokal → yoksa Firestore → yoksa varsayılan); hazır olunca listeyi kur
         GlobalLessonData.initialize(requireContext(), globalPartId) {
             activity?.runOnUiThread {
+                // Firestore yüklemesi view yok edildikten sonra bitebiliyor (Play vitals:
+                // getBinding NPE). View yoksa listeyi kurmuyoruz; yeni view kendi yüklemesini yapar.
+                if (!isAdded || _binding == null) return@runOnUiThread
                 setupRecyclerView()
                 changeAdapterList()
             }
@@ -1169,6 +1172,7 @@ class MapFragment : Fragment() {
         
         // View hazır olduğunda scroll listener'ı tetikle
         view.post {
+            if (!isAdded || _binding == null) return@post
             // İlk açılışta liste her zaman en üstten başlasın.
             // Sadece state restore senaryosunda eski pozisyonu uygula.
             if (savedInstanceState != null && GlobalValues.scrollPosition > 0) {
@@ -2016,7 +2020,7 @@ class MapFragment : Fragment() {
             lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
         }
         view?.post {
-            if (!isAdded) return@post
+            if (!isAdded || _binding == null) return@post
             tryConsumePendingLessonProgress("onResume")
             val act = activity as? MainActivity ?: return@post
             act.logChromeBlockerDiagnostic("MapFragment.onResume")

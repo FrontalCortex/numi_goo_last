@@ -25,6 +25,13 @@ class ParentConsentFragment : Fragment() {
     private var _binding: FragmentParentConsentBinding? = null
     private val binding get() = _binding!!
 
+    /**
+     * Kod gönderildiğinde uygulama arka plandaysa (kullanıcı e-postaya bakıyor) kod ekranına
+     * geçiş `commit()`'te IllegalStateException atıyordu. Geçiş burada bekletilip
+     * [onResume]'da yapılıyor.
+     */
+    private var pendingNavigation: (() -> Unit)? = null
+
     private lateinit var authManager: AuthManager
 
     private val childEmail: String by lazy { requireArguments().getString(ARG_CHILD_EMAIL).orEmpty() }
@@ -105,21 +112,23 @@ class ParentConsentFragment : Fragment() {
                 AnalyticsLogger.SIGNUP_OTP_SENT,
                 AnalyticsLogger.SIGNUP_ROLE_STUDENT,
             )
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                .replace(
-                    id,
-                    OtpVerificationFragment.newInstance(
-                        email = childEmail,
-                        isRegistration = true,
-                        birthYear = birthYear,
-                        acquisitionSource = acquisitionSource,
-                        parentEmail = parentEmail,
-                        googleParental = isGoogle,
+            navigateWhenResumed {
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                    .replace(
+                        id,
+                        OtpVerificationFragment.newInstance(
+                            email = childEmail,
+                            isRegistration = true,
+                            birthYear = birthYear,
+                            acquisitionSource = acquisitionSource,
+                            parentEmail = parentEmail,
+                            googleParental = isGoogle,
+                        )
                     )
-                )
-                .addToBackStack("otp")
-                .commit()
+                    .addToBackStack("otp")
+                    .commit()
+            }
         }
         if (isGoogle) {
             authManager.requestGoogleParentalConsent(parentEmail, birthYear, acquisitionSource, onSent)
@@ -141,20 +150,40 @@ class ParentConsentFragment : Fragment() {
                 return@sent
             }
             OtpVerificationFragment.startResendCooldownInPrefs(requireContext(), childEmail)
-            parentFragmentManager.beginTransaction()
-                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                .replace(
-                    id,
-                    OtpVerificationFragment.newInstance(
-                        email = childEmail,
-                        isRegistration = true,
-                        birthYear = birthYear,
-                        acquisitionSource = acquisitionSource,
-                        pendingParentEmail = parentEmail,
+            navigateWhenResumed {
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                    .replace(
+                        id,
+                        OtpVerificationFragment.newInstance(
+                            email = childEmail,
+                            isRegistration = true,
+                            birthYear = birthYear,
+                            acquisitionSource = acquisitionSource,
+                            pendingParentEmail = parentEmail,
+                        )
                     )
-                )
-                .addToBackStack("otp_child")
-                .commit()
+                    .addToBackStack("otp_child")
+                    .commit()
+            }
+        }
+    }
+
+    /** Fragment ayrıldıysa geçişi atlar; durum kaydedildiyse [onResume]'a erteler. */
+    private fun navigateWhenResumed(action: () -> Unit) {
+        if (!isAdded) return
+        if (parentFragmentManager.isStateSaved) {
+            pendingNavigation = action
+            return
+        }
+        action()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        pendingNavigation?.let { action ->
+            pendingNavigation = null
+            action()
         }
     }
 

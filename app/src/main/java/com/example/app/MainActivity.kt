@@ -531,6 +531,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Pencere (decor) kurulumu ve setContentView her şeyden önce: Play vitals'ta sürüm 26'da
+        // tablette (Galaxy Tab A11+, Android 16) yeniden başlatmada (döndürme/yeniden boyutlandırma)
+        // enableEdgeToEdge → getDecorView → generateLayout içinde "Window couldn't find content
+        // container view" çöküşü vardı. Önceden AdMob/UMP başlatması (MobileAds.initialize WebView'ı
+        // arka planda yükleyip uygulamanın kaynaklarına yol ekliyor) decor şişirilmeden önce
+        // çalışıyordu; ikisi çakışınca decor düzeni eksik kurulabiliyor. Androidx'in önerdiği düzen de
+        // enableEdgeToEdge'in super.onCreate'ten hemen sonra çağrılması (26.11.2026).
+        enableEdgeToEdge()
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
         Log.d("ScreenDebug", "screenHeightDp=${resources.configuration.screenHeightDp} screenWidthDp=${resources.configuration.screenWidthDp}")
 
         // adManager'ı burada init et; AgeConsentManager'ın asenkron callback'i
@@ -555,10 +566,6 @@ class MainActivity : AppCompatActivity() {
             adManager.preloadAd()
             preloadInterstitialIfEligible()
         }
-        
-        enableEdgeToEdge()
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
 
         supportFragmentManager.addOnBackStackChangedListener {
             if (liveOverlayIn(R.id.createQuestionOverlayContainer) == null) {

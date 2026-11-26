@@ -37,6 +37,14 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null
     private var isGoogleFlowInProgress: Boolean = false
+
+    /**
+     * Durum kaydedildikten sonra (kullanıcı kodu okumak için e-posta uygulamasına geçtiğinde)
+     * gelen ağ cevabının açmak istediği adım. `commit()` o anda IllegalStateException atıyordu;
+     * adım burada bekletilip [onResume]'da açılıyor, böylece kullanıcı döndüğünde doğru
+     * ekranı (kod / veli onayı) görüyor.
+     */
+    private var pendingStepTransition: (() -> Unit)? = null
     
     companion object {
         const val EXTRA_ACQUISITION_SOURCE = "extra_acquisition_source"
@@ -92,6 +100,10 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
     override fun onResume() {
         super.onResume()
+        pendingStepTransition?.let { step ->
+            pendingStepTransition = null
+            step()
+        }
         if (binding.emailStepContainer.visibility == android.view.View.VISIBLE) {
             updateContinueButtonForResendCooldown()
         }
@@ -431,13 +443,15 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     reenableBackAndContinue()
                     if (success) {
                         OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
-                        hideKeyboard()
-                        showCodeStep()
-                        supportFragmentManager.beginTransaction()
-                            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                            .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email.trim().lowercase(), isRegistration = false))
-                            .addToBackStack("otp")
-                            .commit()
+                        runStepTransitionSafely {
+                            hideKeyboard()
+                            showCodeStep()
+                            supportFragmentManager.beginTransaction()
+                                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                                .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email.trim().lowercase(), isRegistration = false))
+                                .addToBackStack("otp")
+                                .commit()
+                        }
                     } else {
                         showError(error ?: appString(R.string.ui_kod_gonderilemedi))
                     }
@@ -471,13 +485,15 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                                 AnalyticsLogger.SIGNUP_ROLE_STUDENT,
                             )
                             OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
-                            hideKeyboard()
-                            showCodeStep()
-                            supportFragmentManager.beginTransaction()
-                                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                                .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
-                                .addToBackStack("otp")
-                                .commit()
+                            runStepTransitionSafely {
+                                hideKeyboard()
+                                showCodeStep()
+                                supportFragmentManager.beginTransaction()
+                                    .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                                    .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
+                                    .addToBackStack("otp")
+                                    .commit()
+                            }
                         } else {
                             showError(error ?: appString(R.string.ui_kod_gonderilemedi))
                         }
@@ -609,7 +625,7 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     }
     
     /** 13 yaş altı kayıt: velinin e-postasını soran ekran (bkz. [ParentConsentFragment]). */
-    private fun showParentConsentStep(childEmail: String, isGoogle: Boolean, birthYear: Int) {
+    private fun showParentConsentStep(childEmail: String, isGoogle: Boolean, birthYear: Int) = runStepTransitionSafely {
         hideKeyboard()
         showCodeStep()
         supportFragmentManager.beginTransaction()
@@ -620,6 +636,21 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             )
             .addToBackStack("parent_consent")
             .commit()
+    }
+
+    /**
+     * Ağ cevabından sonra adım değiştiren geçişleri güvenle çalıştırır: activity kapanıyorsa
+     * hiçbir şey yapmaz; durum kaydedilmişse (uygulama arka planda) geçişi [onResume]'a erteler.
+     * `commitAllowingStateLoss` yerine erteleme seçildi: o, süreç ölürse adımı sessizce
+     * kaybederdi; burada kullanıcı döndüğünde adım gerçekten açılıyor.
+     */
+    private fun runStepTransitionSafely(step: () -> Unit) {
+        if (isFinishing || isDestroyed) return
+        if (supportFragmentManager.isStateSaved) {
+            pendingStepTransition = step
+            return
+        }
+        step()
     }
 
     private fun registerTeacherWithOtp() {
@@ -670,13 +701,15 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     binding.btnBack.isEnabled = true
                     binding.btnRegister.isEnabled = true
                     if (codeSuccess) {
-                        hideKeyboard()
-                        showCodeStep()
-                        supportFragmentManager.beginTransaction()
-                            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                            .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
-                            .addToBackStack("otp")
-                            .commit()
+                        runStepTransitionSafely {
+                            hideKeyboard()
+                            showCodeStep()
+                            supportFragmentManager.beginTransaction()
+                                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                                .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
+                                .addToBackStack("otp")
+                                .commit()
+                        }
                     } else {
                         showError(codeError ?: appString(R.string.ui_kod_gonderilemedi))
                     }

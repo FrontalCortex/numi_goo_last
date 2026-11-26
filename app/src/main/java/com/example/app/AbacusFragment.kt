@@ -238,10 +238,21 @@ class AbacusFragment : Fragment() {
     private val mistakeLog = ArrayList<Int>()
     private val mistakeLogMax = 400
     private var abacusMetricsInitialized = false
+    /** true: onCreate'te ders bilgisi bulunamadı; ekran kurulmadan kapatılacak. */
+    private var lessonMissing = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         GlobalValues.shouldShowAdOnReturn = true
-        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        // Android süreci öldürüp activity'yi geri yükleyince fragment yeniden yaratılıyor ama
+        // LessonManager/GlobalLessonData belleği boş geliyor (Play vitals NPE). Çökmek yerine
+        // ekranı kurmadan haritaya dönüyoruz (bkz. [exitBecauseLessonMissing]).
+        val restoredItem = LessonManager.getLessonItem(mapFragmentStepIndex)
+        if (restoredItem == null) {
+            lessonMissing = true
+            android.util.Log.w("AbacusFragment", "onCreate: lessonItem yok (index=$mapFragmentStepIndex), ders kapatılıyor")
+            return
+        }
+        lessonItem = restoredItem
 
         questionSessionStartMs = System.currentTimeMillis()
         hasSubmittedAnyAnswer = false
@@ -271,6 +282,10 @@ class AbacusFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (lessonMissing) {
+            exitBecauseLessonMissing(view)
+            return
+        }
         abacusMetricsInitialized = false
         findIDs()
         
@@ -1946,6 +1961,19 @@ class AbacusFragment : Fragment() {
             .start()
     }
 
+    /**
+     * Ders bilgisi bellekte yokken (süreç yeniden başlatıldı) ekranı kurmadan kapatır.
+     * Yaşam döngüsü geri çağrısı içinde fragment işlemi yürütülemediği için bir sonraki
+     * kareye erteleniyor.
+     */
+    private fun exitBecauseLessonMissing(view: View) {
+        view.post {
+            if (!isAdded || isAbacusClosing || parentFragmentManager.isStateSaved) return@post
+            isAbacusClosing = true
+            performAbacusDismiss()
+        }
+    }
+
     /** [closeFragment] kayma animasyonu bittikten sonra: mevcut haritaya dönüş akışı. */
     private fun performAbacusDismiss() {
         val main = activity as? MainActivity
@@ -2972,7 +3000,7 @@ class AbacusFragment : Fragment() {
      * when the user navigates back to this fragment.
      */
     private fun applyCustomization() {
-        if (_binding == null) return
+        if (_binding == null || lessonMissing || !::abacusController.isInitialized) return
         val ctx = requireContext()
         binding.abacusContainer.background =
             com.example.app.abacus.AbacusFrameRenderer.buildFrameDrawable(ctx)

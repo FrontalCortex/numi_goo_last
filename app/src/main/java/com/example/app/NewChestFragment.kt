@@ -132,6 +132,8 @@ class NewChestFragment : Fragment() {
 
     // Oyun durumu
     private var canClose = false
+    /** Durum kaydedildiği için yapılamayan "map_chest" kapanışı; onStart'ta yeniden denenir. */
+    private var pendingChestHandoffClose: (() -> Unit)? = null
     private var currentRarity = ChestRarity.COMMON
     private var earnedGoldAmount = 0
     private var earnedKeyAmount = 0
@@ -250,6 +252,11 @@ class NewChestFragment : Fragment() {
         super.onStart()
         // MainActivity'deki when bloğu NewChestFragment'i görecek; insets yeniden hesaplansın.
         requireActivity().findViewById<View>(R.id.bottomNavigationID)?.requestApplyInsets()
+        // Arka plandayken ertelenen sandık kapanışı (bkz. closeFragment/finishClose).
+        pendingChestHandoffClose?.let { retry ->
+            pendingChestHandoffClose = null
+            view?.post { if (isAdded) retry() }
+        }
     }
 
     override fun onStop() {
@@ -709,14 +716,27 @@ class NewChestFragment : Fragment() {
             // indirip haritayı yumuşakça getiriyor.
             (activity as? MainActivity)?.raisePostLessonBackdropForHandoff("chestHandoff")
             var closeHandled = false
-            val finishClose: () -> Unit = {
-                if (!closeHandled) {
-                    closeHandled = true
-                    if (isAdded) {
-                        fm.popBackStackImmediate(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-                    }
-                    fm.setFragmentResult("chest_closed", resultBundle)
+            // Play vitals: animasyon bitince popBackStackImmediate IllegalStateException atıyordu
+            // (uygulama bu arada arka plana düşüp durum kaydedilmişti ya da fragment ayrılmıştı).
+            fun finishClose() {
+                if (closeHandled || fm.isDestroyed) return
+                if (isAdded && fm.isStateSaved) {
+                    // Durum kaydedildikten sonra pop yapılamaz; kullanıcı dönünce (onStart) yeniden dene.
+                    pendingChestHandoffClose = { finishClose() }
+                    return
                 }
+                closeHandled = true
+                pendingChestHandoffClose = null
+                if (isAdded) {
+                    try {
+                        fm.popBackStackImmediate(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                    } catch (e: IllegalStateException) {
+                        // Örn. başka bir işlem yürütülürken çağrıldı: senkron yerine sıraya al.
+                        android.util.Log.w("NewChestFragment", "finishClose: popBackStackImmediate olmadı, sıraya alınıyor", e)
+                        fm.popBackStack(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                    }
+                }
+                fm.setFragmentResult("chest_closed", resultBundle)
             }
             val rootView = binding.root
             rootView.animate()
