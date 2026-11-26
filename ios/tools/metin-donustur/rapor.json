@@ -1,0 +1,18 @@
+{
+  "varsayilanDil": "tr",
+  "diller": {
+    "tr": {
+      "kaynak": "app/src/main/res/values",
+      "cikti": "ios/iosApp/iosApp/tr.lproj/Localizable.strings",
+      "metin": 101,
+      "dizi": 0,
+      "cogul": 0,
+      "toplamAnahtar": 101,
+      "bicimliAnahtar": 21,
+      "cevrilmezIsaretli": [],
+      "bosDeger": []
+    }
+  },
+  "uyarilar": [],
+  "hatalar": []
+}

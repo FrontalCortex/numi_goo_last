@@ -1,0 +1,15 @@
+{
+  "images": [
+    {
+      "filename": "ic_star_four_point.svg",
+      "idiom": "universal"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  },
+  "properties": {
+    "preserves-vector-representation": true
+  }
+}

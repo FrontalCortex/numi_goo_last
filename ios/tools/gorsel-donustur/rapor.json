@@ -1,0 +1,4881 @@
+{
+  "ozet": {
+    "cevrilenGorsel": 216,
+    "turlereGore": {
+      "vector": 187,
+      "bitmap": 20,
+      "shape": 3,
+      "layer-list": 6
+    },
+    "atlananGorsel": 120,
+    "atlananTurlereGore": {
+      "layer-list": 8,
+      "shape": 97,
+      "ripple": 7,
+      "başlatıcı simgesi": 4,
+      "gif": 1,
+      "selector": 3
+    },
+    "toplamBayt": 6961969,
+    "renk": {
+      "yazilan": 72,
+      "karanlikli": 0,
+      "cozulemeyen": []
+    },
+    "font": 1
+  },
+  "oncelikliGorseller": [
+    {
+      "ad": "bg_drawer_button_right_rounded",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#111416 (@color/message_topbar)"
+        },
+        "corners": {
+          "topRightRadius": "12dp",
+          "bottomRightRadius": "12dp",
+          "topLeftRadius": "0dp",
+          "bottomLeftRadius": "0dp"
+        }
+      },
+      "nereden": [
+        "layout/view_drawing_controls_overlay.xml"
+      ]
+    },
+    {
+      "ad": "bg_drawing_panel_right_rounded",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#111416 (@color/message_topbar)"
+        },
+        "corners": {
+          "topRightRadius": "0dp",
+          "bottomRightRadius": "10dp",
+          "topLeftRadius": "0dp",
+          "bottomLeftRadius": "0dp"
+        }
+      },
+      "nereden": [
+        "layout/view_drawing_controls_overlay.xml"
+      ]
+    },
+    {
+      "ad": "bg_panel_daily_question_continue",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#2A2A2A (@color/panel_background)"
+        },
+        "corners": {
+          "radius": "18dp"
+        }
+      },
+      "nereden": [
+        "layout/panel_race_fast_forward.xml"
+      ]
+    },
+    {
+      "ad": "bg_pencil_circle",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "görünür içerik yok (tamamen saydam)",
+      "sekil": {
+        "bicim": "oval",
+        "size": {
+          "width": "40dp",
+          "height": "40dp"
+        },
+        "solid": {
+          "color": "@android:color/transparent"
+        }
+      },
+      "nereden": [
+        "MainActivity.kt",
+        "layout/view_drawing_controls_overlay.xml"
+      ]
+    },
+    {
+      "ad": "bg_pencil_circle_selected",
+      "durum": "cevrildi",
+      "tur": "shape",
+      "ayrinti": "svg 40x40",
+      "nereden": [
+        "MainActivity.kt"
+      ]
+    },
+    {
+      "ad": "book_icon",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "LessonAdapter.kt",
+        "layout/item_lesson.xml"
+      ]
+    },
+    {
+      "ad": "bottom_sheet_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#222"
+        },
+        "corners": {
+          "topLeftRadius": "16dp",
+          "topRightRadius": "16dp"
+        }
+      },
+      "nereden": [
+        "layout/lesson_bottom_sheet.xml",
+        "layout/race_lesson_bottom_sheet.xml"
+      ]
+    },
+    {
+      "ad": "chat_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 32x32",
+      "nereden": [
+        "menu/bottom_menu.xml"
+      ]
+    },
+    {
+      "ad": "chest_stars_tier0",
+      "durum": "cevrildi",
+      "tur": "layer-list",
+      "ayrinti": "svg 22x22",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/GlobalLessonData.kt",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "chest_stars_tier1",
+      "durum": "cevrildi",
+      "tur": "layer-list",
+      "ayrinti": "svg 22x22",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "chest_stars_tier2",
+      "durum": "cevrildi",
+      "tur": "layer-list",
+      "ayrinti": "svg 22x22",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "chest_stars_tier3",
+      "durum": "cevrildi",
+      "tur": "layer-list",
+      "ayrinti": "svg 22x22",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "corner_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "corners": {
+          "radius": "16dp"
+        }
+      },
+      "nereden": [
+        "layout/fragment_map.xml"
+      ]
+    },
+    {
+      "ad": "cup_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 512x512",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "cup_ic2",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 512x512",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "cup_ic3",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 512x512",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "explore_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 32x32",
+      "nereden": [
+        "menu/bottom_menu.xml"
+      ]
+    },
+    {
+      "ad": "fab_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#263C31"
+        }
+      },
+      "nereden": [
+        "layout/fragment_map.xml"
+      ]
+    },
+    {
+      "ad": "flag_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 512x512",
+      "nereden": [
+        "LessonAdapter.kt",
+        "layout/item_race.xml"
+      ]
+    },
+    {
+      "ad": "gold_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 36x36",
+      "nereden": [
+        "layout/activity_main.xml"
+      ]
+    },
+    {
+      "ad": "heart_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 48x48",
+      "nereden": [
+        "layout/activity_main.xml"
+      ]
+    },
+    {
+      "ad": "home_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 32x32",
+      "nereden": [
+        "menu/bottom_menu.xml"
+      ]
+    },
+    {
+      "ad": "ic_back_arrow",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "layout/activity_main.xml"
+      ]
+    },
+    {
+      "ad": "ic_close_black",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "layout/panel_race_fast_forward.xml"
+      ]
+    },
+    {
+      "ad": "ic_delete",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "layout/view_recording_overlay.xml"
+      ]
+    },
+    {
+      "ad": "ic_done",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "layout/view_recording_overlay.xml"
+      ]
+    },
+    {
+      "ad": "key",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 36x36",
+      "nereden": [
+        "LessonAdapter.kt",
+        "layout/activity_main.xml",
+        "layout/panel_race_fast_forward.xml",
+        "ortak/ders/LessonAdapterLogic.kt"
+      ]
+    },
+    {
+      "ad": "lesson_card_shine_primary",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "corners": {
+          "radius": "100dp"
+        },
+        "gradient": {
+          "angle": "45",
+          "startColor": "#00FFFFFF",
+          "centerColor": "#CCFFFFFF",
+          "endColor": "#00FFFFFF"
+        }
+      },
+      "nereden": [
+        "layout/item_lesson.xml"
+      ]
+    },
+    {
+      "ad": "lesson_card_shine_secondary",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "corners": {
+          "radius": "100dp"
+        },
+        "gradient": {
+          "angle": "45",
+          "startColor": "#00FFFFFF",
+          "centerColor": "#80FFFFFF",
+          "endColor": "#00FFFFFF"
+        }
+      },
+      "nereden": [
+        "layout/item_lesson.xml"
+      ]
+    },
+    {
+      "ad": "lighting__1_",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonAdapterLogic.kt"
+      ]
+    },
+    {
+      "ad": "pause_video_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 20x20",
+      "nereden": [
+        "MainActivity.kt",
+        "layout/view_recording_overlay.xml"
+      ]
+    },
+    {
+      "ad": "pen_panel_drawer_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 32x32",
+      "nereden": [
+        "layout/view_drawing_controls_overlay.xml"
+      ]
+    },
+    {
+      "ad": "play_video_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 20x20",
+      "nereden": [
+        "MainActivity.kt"
+      ]
+    },
+    {
+      "ad": "profile_ic2",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 32x32",
+      "nereden": [
+        "menu/bottom_menu.xml"
+      ]
+    },
+    {
+      "ad": "question_pencil_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "layout/view_drawing_controls_overlay.xml"
+      ]
+    },
+    {
+      "ad": "record_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFB703"
+        },
+        "corners": {
+          "radius": "12dp"
+        }
+      },
+      "nereden": [
+        "LessonAdapter.kt"
+      ]
+    },
+    {
+      "ad": "send_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "layout/activity_main.xml"
+      ]
+    },
+    {
+      "ad": "shop_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 64x64",
+      "nereden": [
+        "menu/bottom_menu.xml"
+      ]
+    },
+    {
+      "ad": "skip_tutorial",
+      "durum": "atlandi",
+      "tur": "shape",
+      "ayrinti": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#424242"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      },
+      "nereden": [
+        "layout/lesson_bottom_sheet.xml"
+      ]
+    },
+    {
+      "ad": "star_off_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 36x36",
+      "nereden": [
+        "LessonAdapter.kt",
+        "chest_stars_tier0 (iç başvuru)",
+        "chest_stars_tier1 (iç başvuru)",
+        "chest_stars_tier2 (iç başvuru)",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "star_on_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 36x36",
+      "nereden": [
+        "LessonAdapter.kt",
+        "chest_stars_tier1 (iç başvuru)",
+        "chest_stars_tier2 (iç başvuru)",
+        "chest_stars_tier3 (iç başvuru)",
+        "ortak/ders/LessonAdapterLogic.kt",
+        "ortak/ders/LessonItem.kt"
+      ]
+    },
+    {
+      "ad": "tasks_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 32x32",
+      "nereden": [
+        "menu/bottom_menu.xml"
+      ]
+    },
+    {
+      "ad": "teacher_ask_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 32x32",
+      "nereden": [
+        "layout/fragment_map.xml"
+      ]
+    },
+    {
+      "ad": "teacher_emotes_gpt3",
+      "durum": "cevrildi",
+      "tur": "bitmap",
+      "ayrinti": "png 1024x1024px@1x",
+      "nereden": [
+        "MapFragment.kt",
+        "ortak/ders/GuidePanelData.kt"
+      ]
+    },
+    {
+      "ad": "teacher_emotes_gpt4",
+      "durum": "cevrildi",
+      "tur": "bitmap",
+      "ayrinti": "png 1024x1024px@1x",
+      "nereden": [
+        "MapFragment.kt",
+        "ortak/ders/GuidePanelData.kt"
+      ]
+    },
+    {
+      "ad": "undo_drawing_ic",
+      "durum": "cevrildi",
+      "tur": "vector",
+      "ayrinti": "svg 24x24",
+      "nereden": [
+        "layout/view_drawing_controls_overlay.xml"
+      ]
+    }
+  ],
+  "oncelikliRenkler": [
+    {
+      "ad": "background_color",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt",
+        "MainActivity.kt",
+        "layout/activity_main.xml",
+        "layout/fragment_map.xml",
+        "layout/lesson_bottom_sheet.xml",
+        "layout/race_bottom_sheet.xml",
+        "layout/race_lesson_bottom_sheet.xml",
+        "ortak/ders/PartSelectionLogic.kt"
+      ]
+    },
+    {
+      "ad": "button_enabled",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt",
+        "layout/panel_race_fast_forward.xml"
+      ]
+    },
+    {
+      "ad": "chest_star_light_gray",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt"
+      ]
+    },
+    {
+      "ad": "circleBackground_color",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt",
+        "layout/activity_main.xml",
+        "layout/item_race.xml"
+      ]
+    },
+    {
+      "ad": "circleForeground_color",
+      "durum": "cevrildi",
+      "nereden": [
+        "layout/item_race.xml"
+      ]
+    },
+    {
+      "ad": "dark_success",
+      "durum": "cevrildi",
+      "nereden": [
+        "layout/view_recording_overlay.xml"
+      ]
+    },
+    {
+      "ad": "dark_surface",
+      "durum": "cevrildi",
+      "nereden": [
+        "layout/view_recording_overlay.xml"
+      ]
+    },
+    {
+      "ad": "lesson_center_blue",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonAdapterLogic.kt"
+      ]
+    },
+    {
+      "ad": "lesson_center_gold",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt"
+      ]
+    },
+    {
+      "ad": "lesson_completed",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt",
+        "layout/lesson_bottom_sheet.xml",
+        "layout/race_lesson_bottom_sheet.xml",
+        "ortak/ders/LessonAdapterLogic.kt"
+      ]
+    },
+    {
+      "ad": "lesson_header_blue",
+      "durum": "cevrildi",
+      "nereden": [
+        "ortak/ders/GlobalLessonDataKatalog.kt",
+        "ortak/ders/LessonItem.kt",
+        "ortak/ders/PartSelectionLogic.kt"
+      ]
+    },
+    {
+      "ad": "lesson_header_green",
+      "durum": "cevrildi",
+      "nereden": [
+        "layout/race_bottom_sheet.xml",
+        "ortak/ders/GlobalLessonDataKatalog.kt",
+        "ortak/ders/PartSelectionLogic.kt"
+      ]
+    },
+    {
+      "ad": "lesson_header_orange",
+      "durum": "cevrildi",
+      "nereden": [
+        "ortak/ders/GlobalLessonDataKatalog.kt",
+        "ortak/ders/PartSelectionLogic.kt"
+      ]
+    },
+    {
+      "ad": "lesson_header_pink",
+      "durum": "cevrildi",
+      "nereden": [
+        "ortak/ders/GlobalLessonDataKatalog.kt"
+      ]
+    },
+    {
+      "ad": "lesson_header_red",
+      "durum": "cevrildi",
+      "nereden": [
+        "ortak/ders/GlobalLessonDataKatalog.kt"
+      ]
+    },
+    {
+      "ad": "lesson_header_yellow",
+      "durum": "cevrildi",
+      "nereden": [
+        "ortak/ders/GlobalLessonDataKatalog.kt"
+      ]
+    },
+    {
+      "ad": "lesson_locked",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt",
+        "ortak/ders/LessonAdapterLogic.kt",
+        "ortak/ders/PartSelectionLogic.kt"
+      ]
+    },
+    {
+      "ad": "lesson_ring_active_blue",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt",
+        "layout/item_lesson.xml"
+      ]
+    },
+    {
+      "ad": "lesson_ring_gold",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt"
+      ]
+    },
+    {
+      "ad": "lesson_ring_inactive_dark",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt",
+        "layout/item_lesson.xml"
+      ]
+    },
+    {
+      "ad": "message_buttons",
+      "durum": "cevrildi",
+      "nereden": [
+        "layout/view_drawing_controls_overlay.xml",
+        "layout/view_recording_overlay.xml"
+      ]
+    },
+    {
+      "ad": "message_topbar",
+      "durum": "cevrildi",
+      "nereden": [
+        "layout/activity_main.xml"
+      ]
+    },
+    {
+      "ad": "panel_background",
+      "durum": "cevrildi",
+      "nereden": [
+        "LessonAdapter.kt"
+      ]
+    },
+    {
+      "ad": "white",
+      "durum": "cevrildi",
+      "nereden": [
+        "layout/lesson_bottom_sheet.xml",
+        "layout/race_bottom_sheet.xml",
+        "ortak/ders/PartSelectionLogic.kt"
+      ]
+    }
+  ],
+  "atlananlar": [
+    {
+      "ad": "abacus_frame_bg",
+      "durum": "atlandi",
+      "tur": "layer-list",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/abacus_frame_bg.xml"
+    },
+    {
+      "ad": "abacus_horizontal_bar",
+      "durum": "atlandi",
+      "tur": "layer-list",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/abacus_horizontal_bar.xml"
+    },
+    {
+      "ad": "avatar_area_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/avatar_area_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#2D2D2D"
+        },
+        "corners": {
+          "radius": "16dp"
+        },
+        "stroke": {
+          "width": "2dp",
+          "color": "#8FD14F (@color/lesson_completed)"
+        }
+      }
+    },
+    {
+      "ad": "avatar_preview_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/avatar_preview_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#424242"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_action_dialog",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_action_dialog.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#161B22 (@color/dark_surface)"
+        },
+        "corners": {
+          "radius": "20dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#37464F (@color/outline_button_stroke)"
+        }
+      }
+    },
+    {
+      "ad": "bg_add_friend_btn",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_add_friend_btn.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#1CB0F6"
+        },
+        "corners": {
+          "radius": "12dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_add_friend_btn_sent",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_add_friend_btn_sent.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#4D93A5B3"
+        },
+        "corners": {
+          "radius": "12dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_badge_circle_frame",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_badge_circle_frame.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "@android:color/transparent"
+        }
+      }
+    },
+    {
+      "ad": "bg_blue_rounded_button",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_blue_rounded_button.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#3D4DFF"
+        },
+        "corners": {
+          "radius": "12dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_bottom_sheet_white",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_bottom_sheet_white.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFFFFF"
+        },
+        "corners": {
+          "topLeftRadius": "24dp",
+          "topRightRadius": "24dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_button_outline",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_button_outline.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#152121"
+        },
+        "stroke": {
+          "width": "3dp",
+          "color": "#5B5D5F"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_chest_platform",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_chest_platform.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#263238"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_daily_question_card",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_daily_question_card.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "gradient": {
+          "angle": "135",
+          "endColor": "#FF8F00",
+          "startColor": "#FFB74D",
+          "type": "linear"
+        },
+        "corners": {
+          "radius": "18dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_drawer_button_right_rounded",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_drawer_button_right_rounded.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#111416 (@color/message_topbar)"
+        },
+        "corners": {
+          "topRightRadius": "12dp",
+          "bottomRightRadius": "12dp",
+          "topLeftRadius": "0dp",
+          "bottomLeftRadius": "0dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_drawing_panel_left_rounded",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_drawing_panel_left_rounded.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#111416 (@color/message_topbar)"
+        },
+        "corners": {
+          "topLeftRadius": "10dp",
+          "bottomLeftRadius": "10dp",
+          "topRightRadius": "0dp",
+          "bottomRightRadius": "0dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_drawing_panel_right_rounded",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_drawing_panel_right_rounded.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#111416 (@color/message_topbar)"
+        },
+        "corners": {
+          "topRightRadius": "0dp",
+          "bottomRightRadius": "10dp",
+          "topLeftRadius": "0dp",
+          "bottomLeftRadius": "0dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_edit_profile_input",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_edit_profile_input.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#203137 (@color/bright_background_color)"
+        },
+        "corners": {
+          "radius": "12dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#30363D"
+        }
+      }
+    },
+    {
+      "ad": "bg_medal_piece_names_list",
+      "durum": "atlandi",
+      "tur": "ripple",
+      "neden": "<ripple> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/bg_medal_piece_names_list.xml"
+    },
+    {
+      "ad": "bg_mission_section_frame",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_mission_section_frame.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#1A262B"
+        },
+        "stroke": {
+          "width": "2dp",
+          "color": "#4D6673"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_panel_daily_question_continue",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_panel_daily_question_continue.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#2A2A2A (@color/panel_background)"
+        },
+        "corners": {
+          "radius": "18dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_pencil_circle",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "görünür içerik yok (tamamen saydam)",
+      "kaynak": "app/src/main/res/drawable/bg_pencil_circle.xml",
+      "sekil": {
+        "bicim": "oval",
+        "size": {
+          "width": "40dp",
+          "height": "40dp"
+        },
+        "solid": {
+          "color": "@android:color/transparent"
+        }
+      }
+    },
+    {
+      "ad": "bg_plan_bireysel",
+      "durum": "atlandi",
+      "tur": "layer-list",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_plan_bireysel.xml"
+    },
+    {
+      "ad": "bg_plan_lite",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_plan_lite.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFFFFF"
+        },
+        "stroke": {
+          "width": "2dp",
+          "color": "#E0E0E0"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_play_overlay_circle",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_play_overlay_circle.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#8A000000"
+        }
+      }
+    },
+    {
+      "ad": "bg_popup_badge_piece",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_popup_badge_piece.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#161B22 (@color/dark_surface)"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_question_thumbnail_placeholder",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_question_thumbnail_placeholder.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#131F24 (@color/outline_button_bg)"
+        },
+        "corners": {
+          "radius": "10dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#37464F (@color/outline_button_stroke)"
+        }
+      }
+    },
+    {
+      "ad": "bg_reason_chip",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_reason_chip.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#3358A6FF"
+        },
+        "corners": {
+          "radius": "999dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#5558A6FF"
+        }
+      }
+    },
+    {
+      "ad": "bg_reason_chip_error",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_reason_chip_error.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#26F85149"
+        },
+        "corners": {
+          "radius": "999dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#66F85149"
+        }
+      }
+    },
+    {
+      "ad": "bg_record_decor_circle",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_record_decor_circle.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#33FFFFFF"
+        }
+      }
+    },
+    {
+      "ad": "bg_record_rank_badge_blue",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_record_rank_badge_blue.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#90CAF9"
+        }
+      }
+    },
+    {
+      "ad": "bg_record_rank_badge_mint",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_record_rank_badge_mint.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#80CBC4"
+        }
+      }
+    },
+    {
+      "ad": "bg_record_rank_badge_purple",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_record_rank_badge_purple.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#D1C4E9"
+        }
+      }
+    },
+    {
+      "ad": "bg_record_rank_badge_yellow",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_record_rank_badge_yellow.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#FFF59D"
+        }
+      }
+    },
+    {
+      "ad": "bg_record_rank_gold",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_record_rank_gold.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#FFE082"
+        }
+      }
+    },
+    {
+      "ad": "bg_record_time_pill",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_record_time_pill.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#B8E986"
+        },
+        "corners": {
+          "radius": "24dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_report_action_destructive_button",
+      "durum": "atlandi",
+      "tur": "ripple",
+      "neden": "<ripple> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/bg_report_action_destructive_button.xml"
+    },
+    {
+      "ad": "bg_report_action_outline_button",
+      "durum": "atlandi",
+      "tur": "ripple",
+      "neden": "<ripple> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/bg_report_action_outline_button.xml"
+    },
+    {
+      "ad": "bg_report_action_row",
+      "durum": "atlandi",
+      "tur": "ripple",
+      "neden": "<ripple> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/bg_report_action_row.xml"
+    },
+    {
+      "ad": "bg_report_context_card",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_report_context_card.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#0D1117 (@color/dark_background)"
+        },
+        "corners": {
+          "radius": "12dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_report_list_card",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_report_list_card.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#161B22 (@color/dark_surface)"
+        },
+        "corners": {
+          "radius": "14dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#37464F (@color/outline_button_stroke)"
+        }
+      }
+    },
+    {
+      "ad": "bg_restricted_row",
+      "durum": "atlandi",
+      "tur": "ripple",
+      "neden": "<ripple> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/bg_restricted_row.xml"
+    },
+    {
+      "ad": "bg_search_bar",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_search_bar.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#203137"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_segment_control",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_segment_control.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#0D1117 (@color/dark_background)"
+        },
+        "corners": {
+          "radius": "12dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#37464F (@color/outline_button_stroke)"
+        }
+      }
+    },
+    {
+      "ad": "bg_segment_selected",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_segment_selected.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#58A6FF (@color/dark_primary)"
+        },
+        "corners": {
+          "radius": "9dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_shop_super_badge",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_shop_super_badge.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "gradient": {
+          "angle": "0",
+          "endColor": "#D558FF",
+          "centerColor": "#3A82FF",
+          "startColor": "#1DF0A4",
+          "type": "linear"
+        },
+        "corners": {
+          "radius": "6dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_shop_super_card",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_shop_super_card.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "gradient": {
+          "angle": "315",
+          "endColor": "#8028B4",
+          "startColor": "#051230",
+          "type": "linear"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_status_chip_error",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_status_chip_error.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#26F85149"
+        },
+        "corners": {
+          "radius": "999dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#66F85149"
+        }
+      }
+    },
+    {
+      "ad": "bg_status_chip_info",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_status_chip_info.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#2658A6FF"
+        },
+        "corners": {
+          "radius": "999dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#6658A6FF"
+        }
+      }
+    },
+    {
+      "ad": "bg_status_chip_success",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_status_chip_success.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#263FB950"
+        },
+        "corners": {
+          "radius": "999dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#663FB950"
+        }
+      }
+    },
+    {
+      "ad": "bg_status_chip_warning",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_status_chip_warning.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#26D29922"
+        },
+        "corners": {
+          "radius": "999dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#66D29922"
+        }
+      }
+    },
+    {
+      "ad": "bg_super_badge",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_super_badge.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#00E676"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_super_column",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_super_column.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#F2F3FF"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bg_tap_star_glow",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_tap_star_glow.xml",
+      "sekil": {
+        "bicim": "oval",
+        "gradient": {
+          "angle": "0",
+          "centerColor": "#B3FFFFFF",
+          "endColor": "#00FFFFFF",
+          "gradientRadius": "18dp",
+          "startColor": "#00FFFFFF",
+          "type": "radial"
+        }
+      }
+    },
+    {
+      "ad": "bg_tap_wave_circle",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_tap_wave_circle.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "@android:color/transparent"
+        },
+        "stroke": {
+          "width": "4dp",
+          "color": "#FFFFFFFF"
+        }
+      }
+    },
+    {
+      "ad": "bg_tap_wave_glow",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_tap_wave_glow.xml",
+      "sekil": {
+        "bicim": "oval",
+        "gradient": {
+          "angle": "0",
+          "centerColor": "#66FFFFFF",
+          "endColor": "#00FFFFFF",
+          "gradientRadius": "64dp",
+          "startColor": "#00FFFFFF",
+          "type": "radial"
+        }
+      }
+    },
+    {
+      "ad": "bg_tap_wave_yellow_circle",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_tap_wave_yellow_circle.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "@android:color/transparent"
+        },
+        "stroke": {
+          "width": "5dp",
+          "color": "#FFFFD54A"
+        }
+      }
+    },
+    {
+      "ad": "bg_tap_wave_yellow_glow",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_tap_wave_yellow_glow.xml",
+      "sekil": {
+        "bicim": "oval",
+        "gradient": {
+          "angle": "0",
+          "centerColor": "#CCFFD54A",
+          "endColor": "#00FFD54A",
+          "gradientRadius": "78dp",
+          "startColor": "#00FFD54A",
+          "type": "radial"
+        }
+      }
+    },
+    {
+      "ad": "bg_unban_button",
+      "durum": "atlandi",
+      "tur": "ripple",
+      "neden": "<ripple> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/bg_unban_button.xml"
+    },
+    {
+      "ad": "bg_white_rounded_16dp",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bg_white_rounded_16dp.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFFFFF"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "bottom_sheet_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/bottom_sheet_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#222"
+        },
+        "corners": {
+          "topLeftRadius": "16dp",
+          "topRightRadius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "button_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/button_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#8FD14F (@color/lesson_completed)"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "cancel_button_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/cancel_button_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FF6B6B"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "chat_bubble_me",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/chat_bubble_me.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#1E6655"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "chat_media_image_bg",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/chat_media_image_bg.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#20000000"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "chat_media_video_bg",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/chat_media_video_bg.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#40000000"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "corner_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/corner_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "daily_question_progress_fill",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/daily_question_progress_fill.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FF5500 (@color/daily_question_progress_fill)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_bar_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "daily_question_progress_fill_complete",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/daily_question_progress_fill_complete.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFD600 (@color/missions_progress_complete)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_bar_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "daily_question_progress_shine",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/daily_question_progress_shine.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FF8F00 (@color/daily_question_progress_shine)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_shine_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "daily_question_progress_shine_complete",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/daily_question_progress_shine_complete.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFF9C4 (@color/missions_progress_gold_shine)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_shine_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "daily_question_progress_track",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/daily_question_progress_track.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFD59B (@color/daily_question_progress_track)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_bar_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "fab_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/fab_background.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#263C31"
+        }
+      }
+    },
+    {
+      "ad": "guide_panel_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/guide_panel_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#222"
+        },
+        "corners": {
+          "radius": "18dp"
+        }
+      }
+    },
+    {
+      "ad": "hint_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/hint_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#292E2C (@color/message_getter)"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "ic_launcher",
+      "durum": "atlandi",
+      "tur": "başlatıcı simgesi",
+      "neden": "uygulama simgesi; imageset olarak taşınmaz (AppIcon ayrı)"
+    },
+    {
+      "ad": "ic_launcher_background",
+      "durum": "atlandi",
+      "tur": "başlatıcı simgesi",
+      "neden": "uygulama simgesi; imageset olarak taşınmaz (AppIcon ayrı)"
+    },
+    {
+      "ad": "ic_launcher_foreground",
+      "durum": "atlandi",
+      "tur": "başlatıcı simgesi",
+      "neden": "uygulama simgesi; imageset olarak taşınmaz (AppIcon ayrı)"
+    },
+    {
+      "ad": "ic_launcher_round",
+      "durum": "atlandi",
+      "tur": "başlatıcı simgesi",
+      "neden": "uygulama simgesi; imageset olarak taşınmaz (AppIcon ayrı)"
+    },
+    {
+      "ad": "item_question_unread_badge_bg",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/item_question_unread_badge_bg.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#58A6FF (@color/dark_primary)"
+        },
+        "corners": {
+          "radius": "999dp"
+        }
+      }
+    },
+    {
+      "ad": "lesson_card_shine_primary",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/lesson_card_shine_primary.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "corners": {
+          "radius": "100dp"
+        },
+        "gradient": {
+          "angle": "45",
+          "startColor": "#00FFFFFF",
+          "centerColor": "#CCFFFFFF",
+          "endColor": "#00FFFFFF"
+        }
+      }
+    },
+    {
+      "ad": "lesson_card_shine_secondary",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/lesson_card_shine_secondary.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "corners": {
+          "radius": "100dp"
+        },
+        "gradient": {
+          "angle": "45",
+          "startColor": "#00FFFFFF",
+          "centerColor": "#80FFFFFF",
+          "endColor": "#00FFFFFF"
+        }
+      }
+    },
+    {
+      "ad": "lesson_hint_ic",
+      "durum": "atlandi",
+      "tur": "gif",
+      "neden": "Asset Catalog hareketli GIF oynatmaz; kareleri ayrı taşınmalı",
+      "kaynak": "app/src/main/res/drawable/lesson_hint_ic.gif",
+      "bayt": 1882473
+    },
+    {
+      "ad": "mission_progress_fill_blue",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/mission_progress_fill_blue.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#2196F3 (@color/missions_progress_blue)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_bar_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "mission_progress_fill_claimed",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/mission_progress_fill_claimed.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#CCCCCC (@color/button_disabled)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_bar_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "mission_progress_fill_gold",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/mission_progress_fill_gold.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFD600 (@color/missions_progress_complete)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_bar_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "mission_progress_shine_blue",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/mission_progress_shine_blue.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#B3E5FC (@color/missions_progress_blue_shine)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_shine_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "mission_progress_shine_claimed",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/mission_progress_shine_claimed.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#BDBDBD (@color/chest_star_light_gray)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_shine_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "mission_progress_shine_gold",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/mission_progress_shine_gold.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFF9C4 (@color/missions_progress_gold_shine)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_shine_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "mission_progress_track",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/mission_progress_track.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#3D4A50 (@color/missions_track)"
+        },
+        "corners": {
+          "radius": "@dimen/mission_progress_bar_corner_radius"
+        }
+      }
+    },
+    {
+      "ad": "option_button_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/option_button_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#4A4A4A"
+        },
+        "corners": {
+          "radius": "8dp"
+        },
+        "stroke": {
+          "width": "2dp",
+          "color": "#666666"
+        }
+      }
+    },
+    {
+      "ad": "option_button_selected_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/option_button_selected_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#6A4A4A"
+        },
+        "corners": {
+          "radius": "8dp"
+        },
+        "stroke": {
+          "width": "3dp",
+          "color": "#8FD14F (@color/lesson_completed)"
+        }
+      }
+    },
+    {
+      "ad": "premium_badge",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/premium_badge.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFFFD600"
+        },
+        "corners": {
+          "radius": "8dp"
+        },
+        "stroke": {
+          "width": "1dp",
+          "color": "#FFD4AF37"
+        }
+      }
+    },
+    {
+      "ad": "profile_info_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/profile_info_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#2D2D2D"
+        },
+        "corners": {
+          "radius": "12dp"
+        }
+      }
+    },
+    {
+      "ad": "progress_bar_fill",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/progress_bar_fill.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#7CFC00"
+        },
+        "corners": {
+          "topRightRadius": "4dp",
+          "bottomRightRadius": "4dp",
+          "topLeftRadius": "3dp",
+          "bottomLeftRadius": "3dp"
+        }
+      }
+    },
+    {
+      "ad": "race_button_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/race_button_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#484A52"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "record_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/record_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#FFB703"
+        },
+        "corners": {
+          "radius": "12dp"
+        }
+      }
+    },
+    {
+      "ad": "rectangle_border",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/rectangle_border.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "stroke": {
+          "width": "@dimen/tutorial_question_border_width",
+          "color": "#FFFFFF"
+        },
+        "corners": {
+          "radius": "10dp"
+        },
+        "solid": {
+          "color": "@android:color/transparent"
+        }
+      }
+    },
+    {
+      "ad": "result_box_green",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/result_box_green.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#222"
+        },
+        "stroke": {
+          "width": "2dp",
+          "color": "#21D07A"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "result_box_yellow",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/result_box_yellow.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#222"
+        },
+        "stroke": {
+          "width": "2dp",
+          "color": "#FFD600"
+        },
+        "corners": {
+          "radius": "16dp"
+        }
+      }
+    },
+    {
+      "ad": "ripple_video_tap",
+      "durum": "atlandi",
+      "tur": "ripple",
+      "neden": "<ripple> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/ripple_video_tap.xml"
+    },
+    {
+      "ad": "rounded_button",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/rounded_button.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "corners": {
+          "radius": "12dp"
+        },
+        "solid": {
+          "color": "@android:color/white"
+        }
+      }
+    },
+    {
+      "ad": "rounded_edittext",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/rounded_edittext.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#BAB9B9"
+        },
+        "corners": {
+          "radius": "12dp"
+        },
+        "stroke": {
+          "width": "10dp",
+          "color": "#000000"
+        }
+      }
+    },
+    {
+      "ad": "save_button_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/save_button_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#4CAF50"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "screenshot_border_bg",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/screenshot_border_bg.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#262A2E"
+        },
+        "stroke": {
+          "width": "2dp",
+          "color": "#8FD14F (@color/lesson_completed)"
+        },
+        "corners": {
+          "radius": "8dp"
+        },
+        "padding": {
+          "left": "4dp",
+          "top": "4dp",
+          "right": "4dp",
+          "bottom": "4dp"
+        }
+      }
+    },
+    {
+      "ad": "skip_tutorial",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/skip_tutorial.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#424242"
+        },
+        "corners": {
+          "radius": "8dp"
+        }
+      }
+    },
+    {
+      "ad": "step_circle_active",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/step_circle_active.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#FFB300"
+        }
+      }
+    },
+    {
+      "ad": "step_circle_done",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/step_circle_done.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#555555"
+        }
+      }
+    },
+    {
+      "ad": "step_circle_future",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/step_circle_future.xml",
+      "sekil": {
+        "bicim": "oval",
+        "solid": {
+          "color": "#3A3010"
+        }
+      }
+    },
+    {
+      "ad": "switch_track_custom",
+      "durum": "atlandi",
+      "tur": "selector",
+      "neden": "<selector> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/switch_track_custom.xml"
+    },
+    {
+      "ad": "table_cell_border",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/table_cell_border.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#222"
+        },
+        "stroke": {
+          "width": "3dp",
+          "color": "#000"
+        },
+        "corners": {
+          "radius": "3dp"
+        }
+      }
+    },
+    {
+      "ad": "table_cell_border1",
+      "durum": "atlandi",
+      "tur": "layer-list",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/table_cell_border1.xml"
+    },
+    {
+      "ad": "table_cell_border2",
+      "durum": "atlandi",
+      "tur": "layer-list",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/table_cell_border2.xml"
+    },
+    {
+      "ad": "table_cell_border3",
+      "durum": "atlandi",
+      "tur": "layer-list",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/table_cell_border3.xml"
+    },
+    {
+      "ad": "table_cell_border4",
+      "durum": "atlandi",
+      "tur": "layer-list",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/table_cell_border4.xml"
+    },
+    {
+      "ad": "table_cell_border5",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/table_cell_border5.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#222"
+        },
+        "stroke": {
+          "width": "5dp",
+          "color": "#000"
+        },
+        "corners": {
+          "radius": "3dp"
+        }
+      }
+    },
+    {
+      "ad": "table_cell_border6",
+      "durum": "atlandi",
+      "tur": "layer-list",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/table_cell_border6.xml"
+    },
+    {
+      "ad": "text_background",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/text_background.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "solid": {
+          "color": "#424242"
+        },
+        "corners": {
+          "radius": "50dp"
+        }
+      }
+    },
+    {
+      "ad": "tutorial_focus_border",
+      "durum": "atlandi",
+      "tur": "shape",
+      "neden": "kendi boyutu yok (esneyen arka plan); SwiftUI'da şekil olarak çizilmeli",
+      "kaynak": "app/src/main/res/drawable/tutorial_focus_border.xml",
+      "sekil": {
+        "bicim": "rectangle",
+        "stroke": {
+          "width": "@dimen/tutorial_question_border_width",
+          "color": "#FFFFFF"
+        },
+        "corners": {
+          "radius": "@dimen/tutorial_focus_corner_radius"
+        },
+        "solid": {
+          "color": "@android:color/transparent"
+        }
+      }
+    },
+    {
+      "ad": "tutorial_option_checkbox_btn",
+      "durum": "atlandi",
+      "tur": "selector",
+      "neden": "<selector> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/tutorial_option_checkbox_btn.xml"
+    },
+    {
+      "ad": "tutorial_option_row_selector",
+      "durum": "atlandi",
+      "tur": "selector",
+      "neden": "<selector> SVG'ye çevrilemez",
+      "kaynak": "app/src/main/res/drawable/tutorial_option_row_selector.xml"
+    }
+  ],
+  "uyarililar": [
+    {
+      "ad": "ic_arrow_back",
+      "uyarilar": [
+        "çözülemeyen renk başvurusu: ?attr/colorControlNormal",
+        "tint uygulanamadı (?attr/colorControlNormal); yol renkleri olduğu gibi bırakıldı"
+      ]
+    }
+  ],
+  "buyukDosyalar": [
+    {
+      "ad": "teacher_emotes_gpt3",
+      "bayt": 1593874,
+      "durum": "cevrildi",
+      "boyut": "1024x1024px@1x"
+    },
+    {
+      "ad": "teacher_emotes_gpt4",
+      "bayt": 1580062,
+      "durum": "cevrildi",
+      "boyut": "1024x1024px@1x"
+    },
+    {
+      "ad": "teacher_emotes_stick",
+      "bayt": 1964984,
+      "durum": "cevrildi",
+      "boyut": "1024x1536px@1x"
+    },
+    {
+      "ad": "lesson_hint_ic",
+      "bayt": 1882473,
+      "durum": "atlandi"
+    }
+  ],
+  "drawableMipmapCakismalari": [
+    {
+      "ad": "correct_ic",
+      "kazanan": "drawable",
+      "atlanan": "mipmap-*/correct_ic.png"
+    },
+    {
+      "ad": "energy_ic",
+      "kazanan": "drawable",
+      "atlanan": "mipmap-*/energy_ic.png"
+    }
+  ],
+  "gorselRenkAdCakismalari": [],
+  "fontlar": [
+    {
+      "dosya": "font_regular.ttf",
+      "bayt": 680212,
+      "tablolar": [
+        "GDEF",
+        "GPOS",
+        "GSUB",
+        "HVAR",
+        "OS/2",
+        "STAT",
+        "avar",
+        "cmap",
+        "fvar",
+        "gasp",
+        "glyf",
+        "gvar",
+        "head",
+        "hhea",
+        "hmtx",
+        "loca",
+        "maxp",
+        "name",
+        "post",
+        "prep"
+      ],
+      "degisken": true,
+      "eksenler": [
+        {
+          "etiket": "wght",
+          "en_az": 400,
+          "varsayilan": 400,
+          "en_cok": 800
+        }
+      ],
+      "aile": "Baloo 2",
+      "altAile": "Regular",
+      "tamAd": "Baloo 2 Regular",
+      "postScript": "Baloo2-Regular",
+      "agirlik": 400
+    }
+  ],
+  "cevrilenler": [
+    {
+      "ad": "abacus_bead_ball1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball1.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 3,
+      "bayt": 1417
+    },
+    {
+      "ad": "abacus_bead_ball10",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball10.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 18,
+      "bayt": 3397
+    },
+    {
+      "ad": "abacus_bead_ball11",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball11.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 7,
+      "bayt": 2583
+    },
+    {
+      "ad": "abacus_bead_ball12",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball12.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 5,
+      "bayt": 1859
+    },
+    {
+      "ad": "abacus_bead_ball13",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball13.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 6,
+      "bayt": 12105
+    },
+    {
+      "ad": "abacus_bead_ball14",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball14.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 6,
+      "bayt": 2019
+    },
+    {
+      "ad": "abacus_bead_ball3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball3.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 4,
+      "bayt": 2143
+    },
+    {
+      "ad": "abacus_bead_ball4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball4.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 14,
+      "bayt": 4939
+    },
+    {
+      "ad": "abacus_bead_ball5",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball5.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 6,
+      "bayt": 1730
+    },
+    {
+      "ad": "abacus_bead_ball6",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball6.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 28,
+      "bayt": 5217
+    },
+    {
+      "ad": "abacus_bead_ball7",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball7.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 19,
+      "bayt": 3545
+    },
+    {
+      "ad": "abacus_bead_ball8",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball8.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 750 750",
+      "yolSayisi": 15,
+      "bayt": 4438
+    },
+    {
+      "ad": "abacus_bead_ball9",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_ball9.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 9,
+      "bayt": 2387
+    },
+    {
+      "ad": "abacus_bead_selected_ball1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball1.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 3,
+      "bayt": 1417
+    },
+    {
+      "ad": "abacus_bead_selected_ball10",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball10.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 18,
+      "bayt": 3397
+    },
+    {
+      "ad": "abacus_bead_selected_ball11",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball11.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 7,
+      "bayt": 2583
+    },
+    {
+      "ad": "abacus_bead_selected_ball12",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball12.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 5,
+      "bayt": 1859
+    },
+    {
+      "ad": "abacus_bead_selected_ball13",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball13.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 6,
+      "bayt": 12105
+    },
+    {
+      "ad": "abacus_bead_selected_ball14",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball14.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 6,
+      "bayt": 2019
+    },
+    {
+      "ad": "abacus_bead_selected_ball3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball3.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 4,
+      "bayt": 2143
+    },
+    {
+      "ad": "abacus_bead_selected_ball4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball4.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 14,
+      "bayt": 4939
+    },
+    {
+      "ad": "abacus_bead_selected_ball5",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball5.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 6,
+      "bayt": 1730
+    },
+    {
+      "ad": "abacus_bead_selected_ball6",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball6.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 541.75 541.75",
+      "yolSayisi": 28,
+      "bayt": 5217
+    },
+    {
+      "ad": "abacus_bead_selected_ball7",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball7.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 19,
+      "bayt": 3545
+    },
+    {
+      "ad": "abacus_bead_selected_ball8",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball8.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 750 750",
+      "yolSayisi": 15,
+      "bayt": 4438
+    },
+    {
+      "ad": "abacus_bead_selected_ball9",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_bead_selected_ball9.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 622.75 622.75",
+      "yolSayisi": 9,
+      "bayt": 2387
+    },
+    {
+      "ad": "abacus_color_tab_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_color_tab_ic.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 7,
+      "bayt": 1909
+    },
+    {
+      "ad": "abacus_frame_bg2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_frame_bg2.xml",
+      "boyut": "1x1",
+      "viewBox": "0 0 1000 1000",
+      "yolSayisi": 44,
+      "bayt": 10062
+    },
+    {
+      "ad": "abacus_frame_bg3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_frame_bg3.xml",
+      "boyut": "1x1",
+      "viewBox": "0 0 1000 1000",
+      "yolSayisi": 44,
+      "bayt": 27102
+    },
+    {
+      "ad": "abacus_frame_bg4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_frame_bg4.xml",
+      "boyut": "1x1",
+      "viewBox": "0 0 1000 1000",
+      "yolSayisi": 4,
+      "bayt": 1105
+    },
+    {
+      "ad": "abacus_frame_color_tab_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_frame_color_tab_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 6,
+      "bayt": 1832
+    },
+    {
+      "ad": "abacus_frame_tab_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_frame_tab_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 2,
+      "bayt": 421
+    },
+    {
+      "ad": "abacus_svg_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/abacus_svg_ic.xml",
+      "boyut": "64x64",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 9,
+      "bayt": 21096
+    },
+    {
+      "ad": "animal_head_ic1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic1.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 10,
+      "bayt": 3794
+    },
+    {
+      "ad": "animal_head_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic2.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 10,
+      "bayt": 4137
+    },
+    {
+      "ad": "animal_head_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic3.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 24,
+      "bayt": 8528
+    },
+    {
+      "ad": "animal_head_ic4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic4.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 9,
+      "bayt": 5204
+    },
+    {
+      "ad": "animal_head_ic5",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic5.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 18,
+      "bayt": 7109
+    },
+    {
+      "ad": "animal_head_ic6",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic6.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 9,
+      "bayt": 3568
+    },
+    {
+      "ad": "animal_head_ic7",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic7.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 15,
+      "bayt": 5896
+    },
+    {
+      "ad": "animal_head_ic8",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic8.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 8,
+      "bayt": 2886
+    },
+    {
+      "ad": "animal_head_ic9",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_ic9.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 7,
+      "bayt": 3055
+    },
+    {
+      "ad": "animal_head_selected_ic1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic1.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 10,
+      "bayt": 3794
+    },
+    {
+      "ad": "animal_head_selected_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic2.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 10,
+      "bayt": 4137
+    },
+    {
+      "ad": "animal_head_selected_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic3.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 24,
+      "bayt": 8528
+    },
+    {
+      "ad": "animal_head_selected_ic4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic4.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 9,
+      "bayt": 5204
+    },
+    {
+      "ad": "animal_head_selected_ic5",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic5.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 18,
+      "bayt": 7109
+    },
+    {
+      "ad": "animal_head_selected_ic6",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic6.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 9,
+      "bayt": 3568
+    },
+    {
+      "ad": "animal_head_selected_ic7",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic7.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 15,
+      "bayt": 5896
+    },
+    {
+      "ad": "animal_head_selected_ic8",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic8.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 8,
+      "bayt": 2886
+    },
+    {
+      "ad": "animal_head_selected_ic9",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/animal_head_selected_ic9.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 171.52 171.52",
+      "yolSayisi": 7,
+      "bayt": 3055
+    },
+    {
+      "ad": "avatar_ic1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic1.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 28,
+      "bayt": 10464
+    },
+    {
+      "ad": "avatar_ic10",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic10.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 18,
+      "bayt": 7440
+    },
+    {
+      "ad": "avatar_ic11",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic11.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 21,
+      "bayt": 8767
+    },
+    {
+      "ad": "avatar_ic12",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic12.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 28,
+      "bayt": 10425
+    },
+    {
+      "ad": "avatar_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic2.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 22,
+      "bayt": 9780
+    },
+    {
+      "ad": "avatar_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic3.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 33,
+      "bayt": 12678
+    },
+    {
+      "ad": "avatar_ic4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic4.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 17,
+      "bayt": 7113
+    },
+    {
+      "ad": "avatar_ic5",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic5.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 30,
+      "bayt": 11609
+    },
+    {
+      "ad": "avatar_ic6",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic6.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 18,
+      "bayt": 8637
+    },
+    {
+      "ad": "avatar_ic7",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic7.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 15,
+      "bayt": 7122
+    },
+    {
+      "ad": "avatar_ic8",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic8.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 17,
+      "bayt": 6700
+    },
+    {
+      "ad": "avatar_ic9",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatar_ic9.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 200 200",
+      "yolSayisi": 25,
+      "bayt": 9648
+    },
+    {
+      "ad": "avatars_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatars_ic3.xml",
+      "boyut": "500x500",
+      "viewBox": "0 0 500 500",
+      "yolSayisi": 148,
+      "bayt": 59349
+    },
+    {
+      "ad": "avatars_ic4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/avatars_ic4.xml",
+      "boyut": "666.67x666.67",
+      "viewBox": "0 0 666.67 666.67",
+      "yolSayisi": 124,
+      "bayt": 49214
+    },
+    {
+      "ad": "back_button",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/back_button.xml",
+      "boyut": "58x58",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 3959
+    },
+    {
+      "ad": "back_circle_button",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/back_circle_button.xml",
+      "boyut": "48x48",
+      "viewBox": "0 0 960 960",
+      "yolSayisi": 1,
+      "bayt": 622
+    },
+    {
+      "ad": "back_ic",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/mipmap-mdpi/back_ic.png",
+      "olcekler": [
+        "1x",
+        "2x",
+        "3x"
+      ],
+      "boyut": "144x144px@3x",
+      "bayt": 1956
+    },
+    {
+      "ad": "balls_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/balls_ic2.xml",
+      "boyut": "1000x588.2353",
+      "viewBox": "0 0 3400 2000",
+      "yolSayisi": 142,
+      "bayt": 59135
+    },
+    {
+      "ad": "bead",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/bead.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 3,
+      "bayt": 500
+    },
+    {
+      "ad": "bg_pencil_circle_selected",
+      "tur": "shape",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/bg_pencil_circle_selected.xml",
+      "boyut": "40x40",
+      "viewBox": "0 0 40 40",
+      "yolSayisi": 0,
+      "bayt": 186
+    },
+    {
+      "ad": "blinding_tutorial1",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/blinding_tutorial1.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "793x1600px@1x",
+      "bayt": 198220
+    },
+    {
+      "ad": "blinding_tutorial2",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/blinding_tutorial2.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "789x1600px@1x",
+      "bayt": 102299
+    },
+    {
+      "ad": "blinding_tutorial3",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/blinding_tutorial3.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "793x1599px@1x",
+      "bayt": 123753
+    },
+    {
+      "ad": "board3_img",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/mipmap-mdpi/board3_img.png",
+      "olcekler": [
+        "1x",
+        "2x",
+        "3x"
+      ],
+      "boyut": "144x144px@3x",
+      "bayt": 3087
+    },
+    {
+      "ad": "book_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable-anydpi/book_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 960 960",
+      "yolSayisi": 1,
+      "bayt": 1182
+    },
+    {
+      "ad": "book_icon",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/book_icon.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 960 960",
+      "yolSayisi": 1,
+      "bayt": 1161
+    },
+    {
+      "ad": "bowling_ball_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/bowling_ball_ic.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 600 600",
+      "yolSayisi": 15,
+      "bayt": 2721
+    },
+    {
+      "ad": "bowling_ball_selected_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/bowling_ball_selected_ic.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 600 600",
+      "yolSayisi": 15,
+      "bayt": 2721
+    },
+    {
+      "ad": "chat_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/chat_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 4,
+      "bayt": 5149
+    },
+    {
+      "ad": "chat_microphone_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/chat_microphone_ic.xml",
+      "boyut": "13x13",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 4631
+    },
+    {
+      "ad": "chest_stars_tier0",
+      "tur": "layer-list",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/chest_stars_tier0.xml",
+      "boyut": "22x22",
+      "viewBox": "0 0 22 22",
+      "yolSayisi": 3,
+      "bayt": 28132
+    },
+    {
+      "ad": "chest_stars_tier1",
+      "tur": "layer-list",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/chest_stars_tier1.xml",
+      "boyut": "22x22",
+      "viewBox": "0 0 22 22",
+      "yolSayisi": 3,
+      "bayt": 19480
+    },
+    {
+      "ad": "chest_stars_tier2",
+      "tur": "layer-list",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/chest_stars_tier2.xml",
+      "boyut": "22x22",
+      "viewBox": "0 0 22 22",
+      "yolSayisi": 3,
+      "bayt": 10828
+    },
+    {
+      "ad": "chest_stars_tier3",
+      "tur": "layer-list",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/chest_stars_tier3.xml",
+      "boyut": "22x22",
+      "viewBox": "0 0 22 22",
+      "yolSayisi": 3,
+      "bayt": 2176
+    },
+    {
+      "ad": "circle_background",
+      "tur": "shape",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/circle_background.xml",
+      "boyut": "120x120",
+      "viewBox": "0 0 120 120",
+      "yolSayisi": 0,
+      "bayt": 190
+    },
+    {
+      "ad": "circle_correct",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/circle_correct.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 960 960",
+      "yolSayisi": 1,
+      "bayt": 588
+    },
+    {
+      "ad": "class_board",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/class_board.xml",
+      "boyut": "512x512",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 18,
+      "bayt": 5647
+    },
+    {
+      "ad": "class_board1",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/class_board1.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "512x512px@1x",
+      "bayt": 10194
+    },
+    {
+      "ad": "class_board2",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/class_board2.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "512x512px@1x",
+      "bayt": 5574
+    },
+    {
+      "ad": "class_board3",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable-xxhdpi/class_board3.png",
+      "olcekler": [
+        "3x"
+      ],
+      "boyut": "512x512px@3x",
+      "bayt": 4442
+    },
+    {
+      "ad": "clock_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/clock_ic.xml",
+      "boyut": "16x16",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 4793
+    },
+    {
+      "ad": "closed_chest",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/closed_chest.xml",
+      "boyut": "200x200",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 12,
+      "bayt": 4403
+    },
+    {
+      "ad": "color_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/color_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 402 402",
+      "yolSayisi": 4,
+      "bayt": 1490
+    },
+    {
+      "ad": "correct_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/correct_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 4,
+      "bayt": 1670
+    },
+    {
+      "ad": "correct_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/correct_ic2.xml",
+      "boyut": "48x48",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 635
+    },
+    {
+      "ad": "cross",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/cross.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 673
+    },
+    {
+      "ad": "crystal_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/crystal_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 22,
+      "bayt": 40951
+    },
+    {
+      "ad": "cup_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/cup_ic.xml",
+      "boyut": "512x512",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 8,
+      "bayt": 4098
+    },
+    {
+      "ad": "cup_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/cup_ic2.xml",
+      "boyut": "512x512",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 18,
+      "bayt": 6390
+    },
+    {
+      "ad": "cup_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/cup_ic3.xml",
+      "boyut": "512x512",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 8,
+      "bayt": 3701
+    },
+    {
+      "ad": "diamond",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/diamond.xml",
+      "boyut": "48x48",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 10,
+      "bayt": 3230
+    },
+    {
+      "ad": "dualingo_arrow_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/dualingo_arrow_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 730
+    },
+    {
+      "ad": "empty_chest_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/empty_chest_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 11,
+      "bayt": 3988
+    },
+    {
+      "ad": "energy_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/energy_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 18,
+      "bayt": 18214
+    },
+    {
+      "ad": "explore_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/explore_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 897
+    },
+    {
+      "ad": "export_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/export_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 6478
+    },
+    {
+      "ad": "feedback_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/feedback_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 39,
+      "bayt": 38596
+    },
+    {
+      "ad": "flag_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/flag_ic.xml",
+      "boyut": "512x512",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 11,
+      "bayt": 5273
+    },
+    {
+      "ad": "forbidden_abacus_ic",
+      "tur": "layer-list",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/forbidden_abacus_ic.xml",
+      "boyut": "88x88",
+      "viewBox": "0 0 88 88",
+      "yolSayisi": 11,
+      "bayt": 21475
+    },
+    {
+      "ad": "forbidden_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/forbidden_ic.xml",
+      "boyut": "64x64",
+      "viewBox": "0 0 100 100",
+      "yolSayisi": 2,
+      "bayt": 402
+    },
+    {
+      "ad": "forward_button",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/forward_button.xml",
+      "boyut": "512x512",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 879
+    },
+    {
+      "ad": "gallery_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/gallery_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 4661
+    },
+    {
+      "ad": "gold_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/gold_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 2122 2122",
+      "yolSayisi": 15,
+      "bayt": 5997
+    },
+    {
+      "ad": "google_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/google_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 4,
+      "bayt": 7769
+    },
+    {
+      "ad": "heart_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/heart_ic.xml",
+      "boyut": "48x48",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 3,
+      "bayt": 4371
+    },
+    {
+      "ad": "home_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/home_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 6183
+    },
+    {
+      "ad": "ic_arrow_back",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_arrow_back.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 234
+    },
+    {
+      "ad": "ic_back_arrow",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_back_arrow.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 234
+    },
+    {
+      "ad": "ic_close_black",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_close_black.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 261
+    },
+    {
+      "ad": "ic_delete",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_delete.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 4,
+      "bayt": 9826
+    },
+    {
+      "ad": "ic_done",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_done.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 216
+    },
+    {
+      "ad": "ic_download",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_download.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 223
+    },
+    {
+      "ad": "ic_education_logo",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_education_logo.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 266
+    },
+    {
+      "ad": "ic_flag_outline",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_flag_outline.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 220
+    },
+    {
+      "ad": "ic_fullscreen",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_fullscreen.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 294
+    },
+    {
+      "ad": "ic_google",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_google.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 4,
+      "bayt": 860
+    },
+    {
+      "ad": "ic_person_add",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_person_add.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 392
+    },
+    {
+      "ad": "ic_play_circle",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_play_circle.xml",
+      "boyut": "48x48",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 264
+    },
+    {
+      "ad": "ic_question_picture",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_question_picture.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 3970
+    },
+    {
+      "ad": "ic_schedule_clock",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_schedule_clock.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 378
+    },
+    {
+      "ad": "ic_star_diamond",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_star_diamond.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 349
+    },
+    {
+      "ad": "ic_star_four_point",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_star_four_point.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 254
+    },
+    {
+      "ad": "ic_tap_spark_star",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/ic_tap_spark_star.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 245
+    },
+    {
+      "ad": "infinity_cup_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/infinity_cup_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 256 256",
+      "yolSayisi": 27,
+      "bayt": 7590
+    },
+    {
+      "ad": "info_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/info_ic.xml",
+      "boyut": "48x48",
+      "viewBox": "0 0 960 960",
+      "yolSayisi": 1,
+      "bayt": 823
+    },
+    {
+      "ad": "key",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/key.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 8,
+      "bayt": 11008
+    },
+    {
+      "ad": "lighting__1_",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/lighting__1_.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 924
+    },
+    {
+      "ad": "lock_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/lock_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 1120
+    },
+    {
+      "ad": "magic_wand_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/magic_wand_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 4,
+      "bayt": 10370
+    },
+    {
+      "ad": "map",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/mipmap-mdpi/map.png",
+      "olcekler": [
+        "1x",
+        "2x",
+        "3x"
+      ],
+      "boyut": "144x144px@3x",
+      "bayt": 14191
+    },
+    {
+      "ad": "math_book_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/math_book_ic.xml",
+      "boyut": "512x512",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 29,
+      "bayt": 11253
+    },
+    {
+      "ad": "math_book_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/math_book_ic2.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 3,
+      "bayt": 1367
+    },
+    {
+      "ad": "message_read_status_delivered",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/message_read_status_delivered.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 5549
+    },
+    {
+      "ad": "message_read_status_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/message_read_status_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 5549
+    },
+    {
+      "ad": "message_read_status_read",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/message_read_status_read.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 5549
+    },
+    {
+      "ad": "message_read_status_sent",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/message_read_status_sent.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 3142
+    },
+    {
+      "ad": "microphone_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/microphone_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 4631
+    },
+    {
+      "ad": "mini_abacus_ic",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/mini_abacus_ic.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "512x512px@1x",
+      "bayt": 26095
+    },
+    {
+      "ad": "new_chest_close_ic1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_close_ic1.xml",
+      "boyut": "120x140",
+      "viewBox": "0 0 120 140",
+      "yolSayisi": 18,
+      "bayt": 2004
+    },
+    {
+      "ad": "new_chest_close_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_close_ic2.xml",
+      "boyut": "120x140",
+      "viewBox": "0 0 120 140",
+      "yolSayisi": 40,
+      "bayt": 4546
+    },
+    {
+      "ad": "new_chest_close_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_close_ic3.xml",
+      "boyut": "120x140",
+      "viewBox": "0 0 120 140",
+      "yolSayisi": 18,
+      "bayt": 2812
+    },
+    {
+      "ad": "new_chest_close_ic4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_close_ic4.xml",
+      "boyut": "120x140",
+      "viewBox": "0 0 120 140",
+      "yolSayisi": 9,
+      "bayt": 1305
+    },
+    {
+      "ad": "new_chest_ic1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_ic1.xml",
+      "boyut": "500x500",
+      "viewBox": "0 0 500 500",
+      "yolSayisi": 264,
+      "bayt": 32449
+    },
+    {
+      "ad": "new_chest_open_ic1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_open_ic1.xml",
+      "boyut": "120x140",
+      "viewBox": "0 0 120 140",
+      "yolSayisi": 26,
+      "bayt": 2496
+    },
+    {
+      "ad": "new_chest_open_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_open_ic2.xml",
+      "boyut": "120x140",
+      "viewBox": "0 0 120 140",
+      "yolSayisi": 49,
+      "bayt": 4853
+    },
+    {
+      "ad": "new_chest_open_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_open_ic3.xml",
+      "boyut": "120x140",
+      "viewBox": "0 0 120 140",
+      "yolSayisi": 30,
+      "bayt": 3481
+    },
+    {
+      "ad": "new_chest_open_ic4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/new_chest_open_ic4.xml",
+      "boyut": "120x140",
+      "viewBox": "0 0 120 140",
+      "yolSayisi": 18,
+      "bayt": 1957
+    },
+    {
+      "ad": "no_wifi_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/no_wifi_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 4,
+      "bayt": 6474
+    },
+    {
+      "ad": "non_user",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/non_user.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 2903
+    },
+    {
+      "ad": "notification",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/mipmap-mdpi/notification.png",
+      "olcekler": [
+        "1x",
+        "2x",
+        "3x"
+      ],
+      "boyut": "144x144px@3x",
+      "bayt": 5201
+    },
+    {
+      "ad": "notification_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/notification_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 5611
+    },
+    {
+      "ad": "open_chest",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/open_chest.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 28,
+      "bayt": 10200
+    },
+    {
+      "ad": "pause_video_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/pause_video_ic.xml",
+      "boyut": "20x20",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 5241
+    },
+    {
+      "ad": "pen_panel_drawer_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/pen_panel_drawer_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 1124
+    },
+    {
+      "ad": "play_video_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/play_video_ic.xml",
+      "boyut": "20x20",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 2219
+    },
+    {
+      "ad": "profile_book_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/profile_book_ic3.xml",
+      "boyut": "28x28",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 8,
+      "bayt": 11501
+    },
+    {
+      "ad": "profile_clock_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/profile_clock_ic2.xml",
+      "boyut": "28x28",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 7,
+      "bayt": 6047
+    },
+    {
+      "ad": "profile_crown_ic4",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/profile_crown_ic4.xml",
+      "boyut": "28x28",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 11,
+      "bayt": 6560
+    },
+    {
+      "ad": "profile_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/profile_ic2.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 3879
+    },
+    {
+      "ad": "question_camera_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/question_camera_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 3,
+      "bayt": 9126
+    },
+    {
+      "ad": "question_pencil_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/question_pencil_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 6347
+    },
+    {
+      "ad": "question_video_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/question_video_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 6295
+    },
+    {
+      "ad": "quit_ic",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/mipmap-mdpi/quit_ic.png",
+      "olcekler": [
+        "1x",
+        "2x",
+        "3x"
+      ],
+      "boyut": "144x144px@3x",
+      "bayt": 2540
+    },
+    {
+      "ad": "request",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/request.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 3,
+      "bayt": 2273
+    },
+    {
+      "ad": "reset",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/reset.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "512x512px@1x",
+      "bayt": 31033
+    },
+    {
+      "ad": "reset1",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/reset1.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "512x512px@1x",
+      "bayt": 17072
+    },
+    {
+      "ad": "reset_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/reset_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 1518
+    },
+    {
+      "ad": "rules_book_image",
+      "tur": "bitmap",
+      "bicim": "jpg",
+      "kaynak": "app/src/main/res/drawable/rules_book_image.jpg",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": null,
+      "bayt": 61994
+    },
+    {
+      "ad": "send_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/send_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 3893
+    },
+    {
+      "ad": "setting_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/setting_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 2,
+      "bayt": 3531
+    },
+    {
+      "ad": "shop_coin_ic1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/shop_coin_ic1.xml",
+      "boyut": "500x500",
+      "viewBox": "0 0 500 500",
+      "yolSayisi": 12,
+      "bayt": 3218
+    },
+    {
+      "ad": "shop_coin_ic2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/shop_coin_ic2.xml",
+      "boyut": "500x500",
+      "viewBox": "0 0 500 500",
+      "yolSayisi": 62,
+      "bayt": 18247
+    },
+    {
+      "ad": "shop_coin_ic3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/shop_coin_ic3.xml",
+      "boyut": "500x500",
+      "viewBox": "0 0 500 500",
+      "yolSayisi": 120,
+      "bayt": 37073
+    },
+    {
+      "ad": "shop_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/shop_ic.xml",
+      "boyut": "64x64",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 3,
+      "bayt": 776
+    },
+    {
+      "ad": "solved",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/solved.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 8014
+    },
+    {
+      "ad": "soroban_bead",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 3,
+      "bayt": 500
+    },
+    {
+      "ad": "soroban_bead2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead2.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 2,
+      "bayt": 713
+    },
+    {
+      "ad": "soroban_bead2_selected",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead2_selected.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 2,
+      "bayt": 713
+    },
+    {
+      "ad": "soroban_bead6",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead6.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 4,
+      "bayt": 1176
+    },
+    {
+      "ad": "soroban_bead6_selected",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead6_selected.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 4,
+      "bayt": 1186
+    },
+    {
+      "ad": "soroban_bead_layer1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead_layer1.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 1,
+      "bayt": 260
+    },
+    {
+      "ad": "soroban_bead_layer2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead_layer2.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 1,
+      "bayt": 264
+    },
+    {
+      "ad": "soroban_bead_layer3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead_layer3.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 1,
+      "bayt": 238
+    },
+    {
+      "ad": "soroban_bead_selected",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead_selected.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 3,
+      "bayt": 500
+    },
+    {
+      "ad": "soroban_bead_selected_layer1",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead_selected_layer1.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 1,
+      "bayt": 260
+    },
+    {
+      "ad": "soroban_bead_selected_layer2",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead_selected_layer2.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 1,
+      "bayt": 264
+    },
+    {
+      "ad": "soroban_bead_selected_layer3",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/soroban_bead_selected_layer3.xml",
+      "boyut": "120x92",
+      "viewBox": "0 0 120 72",
+      "yolSayisi": 1,
+      "bayt": 238
+    },
+    {
+      "ad": "spam_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/spam_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 3,
+      "bayt": 3462
+    },
+    {
+      "ad": "special_reset_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/special_reset_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 6,
+      "bayt": 3802
+    },
+    {
+      "ad": "star_off_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/star_off_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 9387
+    },
+    {
+      "ad": "star_on_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/star_on_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 47.94 47.94",
+      "yolSayisi": 1,
+      "bayt": 739
+    },
+    {
+      "ad": "switch_thumb_custom",
+      "tur": "layer-list",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/switch_thumb_custom.xml",
+      "boyut": "28x28",
+      "viewBox": "0 0 28 28",
+      "yolSayisi": 0,
+      "bayt": 220
+    },
+    {
+      "ad": "target_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/target_ic.xml",
+      "boyut": "36x36",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 18,
+      "bayt": 34634
+    },
+    {
+      "ad": "tasks",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/mipmap-mdpi/tasks.png",
+      "olcekler": [
+        "1x",
+        "2x",
+        "3x"
+      ],
+      "boyut": "144x144px@3x",
+      "bayt": 12177
+    },
+    {
+      "ad": "tasks_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/tasks_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 3,
+      "bayt": 2547
+    },
+    {
+      "ad": "teacher_ask_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/teacher_ask_ic.xml",
+      "boyut": "32x32",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 8,
+      "bayt": 3522
+    },
+    {
+      "ad": "teacher_emotes_gpt3",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/teacher_emotes_gpt3.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "1024x1024px@1x",
+      "bayt": 1593874
+    },
+    {
+      "ad": "teacher_emotes_gpt4",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/teacher_emotes_gpt4.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "1024x1024px@1x",
+      "bayt": 1580062
+    },
+    {
+      "ad": "teacher_emotes_stick",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/drawable/teacher_emotes_stick.png",
+      "olcekler": [
+        "1x"
+      ],
+      "boyut": "1024x1536px@1x",
+      "bayt": 1964984
+    },
+    {
+      "ad": "tutorial_option_indicator_off",
+      "tur": "shape",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/tutorial_option_indicator_off.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 0,
+      "bayt": 225
+    },
+    {
+      "ad": "tutorial_option_indicator_on",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/tutorial_option_indicator_on.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 960 960",
+      "yolSayisi": 1,
+      "bayt": 588
+    },
+    {
+      "ad": "undo_drawing_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/undo_drawing_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 4298
+    },
+    {
+      "ad": "unlock_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/unlock_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 512 512",
+      "yolSayisi": 1,
+      "bayt": 5506
+    },
+    {
+      "ad": "user",
+      "tur": "bitmap",
+      "bicim": "png",
+      "kaynak": "app/src/main/res/mipmap-mdpi/user.png",
+      "olcekler": [
+        "1x",
+        "2x",
+        "3x"
+      ],
+      "boyut": "144x144px@3x",
+      "bayt": 8904
+    },
+    {
+      "ad": "volume_up_ic",
+      "tur": "vector",
+      "bicim": "svg",
+      "kaynak": "app/src/main/res/drawable/volume_up_ic.xml",
+      "boyut": "24x24",
+      "viewBox": "0 0 24 24",
+      "yolSayisi": 1,
+      "bayt": 401
+    }
+  ]
+}
