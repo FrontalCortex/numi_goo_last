@@ -207,7 +207,7 @@ Aşağıdakiler öneridir; hiçbirine başlanmadı.
 
 ### Codemagic
 
-**Durum (26.11.2026):** depo kökündeki `codemagic.yaml` içinde `ios-shared-test` iş akışı hazır; henüz hiç çalıştırılmadı (Codemagic hesabı bağlanmadı). Yaptıkları: JVM testleri → `:shared:iosSimulatorArm64Test` → `:shared:linkDebugFrameworkIosArm64`. İmzalama ve Apple hesabı gerektirmez. `claude/sorobit-ios-*` dallarına push'ta, yalnızca `ios/` ya da `codemagic.yaml` değişmişse tetiklenir.
+**Durum (26.11.2026):** depo kökündeki `codemagic.yaml` içinde `ios-shared-test` iş akışı hazır. İlk çalıştırma (commit `d90149c`, Mac mini M2, 10 dk 4 sn) yeşil bitti: ortak kod gerçek iOS hedefinde derlendi, simülatör testleri geçti, cihaz framework'ü bağlandı. Webhook henüz eklenmedi; derlemeler elle başlatılıyor. Yaptıkları: JVM testleri → `:shared:iosSimulatorArm64Test` → `:shared:linkDebugFrameworkIosArm64`. İmzalama ve Apple hesabı gerektirmez. `claude/sorobit-ios-*` dallarına push'ta, yalnızca `ios/` ya da `codemagic.yaml` değişmişse tetiklenir.
 
 Kurulum (bir kez, hesap sahibi yapar):
 
