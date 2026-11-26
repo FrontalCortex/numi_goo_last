@@ -11,10 +11,7 @@ workflows:
     environment:
       xcode: latest
       java: 17
-    cache:
-      cache_paths:
-        - ~/.gradle/caches
-        - ~/.konan                  # Kotlin/Native derleyicisi ve bağımlılıkları
+    # Önbellek bilerek yok: kapanışta yüklenmesi 4-5 dakika sürüyor, kazandırdığından fazlasını harcıyor.
     triggering:
       events:
         - push
@@ -50,10 +47,7 @@ workflows:
     environment:
       xcode: latest
       java: 17
-    cache:
-      cache_paths:
-        - ~/.gradle/caches
-        - ~/.konan
+    # Önbellek bilerek yok: kapanışta yüklenmesi 4-5 dakika sürüyor, kazandırdığından fazlasını harcıyor.
     # Tetikleyici yok: dakika harcamamak için yalnızca elle başlatılır.
     scripts:
       - name: Gradle sarmalayıcısına çalıştırma izni
