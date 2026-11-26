@@ -1,0 +1,468 @@
+import SwiftUI
+
+// Profil sayfası: kendi profili (hedefUid nil) ya da başkasının profili.
+// Android: ProfileFragment + res/layout/fragment_profile.xml, item_profile_cup_card.xml.
+// Ölçüler layout'tan birebir (dp → pt).
+
+struct ProfilSayfasi: View {
+    @ObservedObject var gezinme: ProfilGezinme
+    @StateObject private var model: ProfilSayfaModeli
+
+    init(hedefUid: String?, gezinme: ProfilGezinme) {
+        self.gezinme = gezinme
+        _model = StateObject(wrappedValue: ProfilSayfaModeli(depo: gezinme.depo, hedefUid: hedefUid))
+    }
+
+    var body: some View {
+        ZStack {
+            VStack(spacing: 0) {
+                if model.baskasi {
+                    // otherUserProfileTopBar: geri + bakılan kullanıcının adı.
+                    ProfilUstCubuk(baslik: model.ad, geri: { gezinme.geri() })
+                }
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 0) {
+                        ProfilBaslikKarti(model: model, gezinme: gezinme)
+                        ProfilIlerlemeKarti(model: model, gezinme: gezinme)
+                            .padding(.bottom, 16)
+                        if model.rozetKartiGorunur {
+                            ProfilRozetKarti(model: model, ac: { gezinme.rozetlerAc?() })
+                        }
+                    }
+                    .padding(16)
+                }
+            }
+            .background(Color("background_color"))
+            panelKatmani
+        }
+        .onAppear { model.gorundu() }
+        .onChange(of: gezinme.yenilemeSayaci) { _ in
+            if !model.baskasi {
+                model.yenile()
+            }
+        }
+        .sheet(isPresented: $model.avatarSeciciAcik) {
+            ProfilAvatarSecici(sec: { avatar in model.avatarSecildi(avatar) })
+        }
+        .animation(.easeInOut(duration: 0.2), value: model.abakusPaneliAcik)
+    }
+
+    /// Android: Dialog (dışına dokununca kapanır, ekranın %92'si genişliğinde).
+    @ViewBuilder
+    private var panelKatmani: some View {
+        if model.abakusPaneliAcik {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture { model.abakusPaneliAcik = false }
+                .transition(.opacity)
+            ProfilAbakusPaneli(model: model, bildir: { metin in gezinme.bildir(metin) })
+                .transition(.opacity)
+        }
+    }
+}
+
+// MARK: - 1. kart: avatar, ad, sayaçlar, düğme
+
+struct ProfilBaslikKarti: View {
+    @ObservedObject var model: ProfilSayfaModeli
+    @ObservedObject var gezinme: ProfilGezinme
+
+    var body: some View {
+        ZStack(alignment: .top) {
+            orta
+            ustSatir
+        }
+    }
+
+    private var orta: some View {
+        VStack(spacing: 0) {
+            avatar
+            Text(model.kullaniciSatiri)
+                .font(ProfilStil.yazi(14))
+                .foregroundColor(ProfilStil.soluk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            HStack(spacing: 0) {
+                ProfilSayac(sayi: model.takipSayisi, etiket: "Takip edilen") {
+                    if !model.baskasi { gezinme.ac(.takipListesi(0)) }
+                }
+                ProfilSayac(sayi: model.takipciSayisi, etiket: "Takipçi") {
+                    if !model.baskasi { gezinme.ac(.takipListesi(1)) }
+                }
+            }
+            dugme
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 14)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    /// imgProfilePhoto: 300x300; dar ekranda kartın genişliğine sığar.
+    private var avatar: some View {
+        Button(action: { if !model.baskasi { model.avatarSeciciAcik = true } }) {
+            Image(model.avatarAdi)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 300, maxHeight: 300)
+                .aspectRatio(1, contentMode: .fit)
+        }
+        .buttonStyle(.plain)
+        .disabled(model.baskasi)
+        .accessibilityLabel(Text("Profil Fotoğrafı"))
+    }
+
+    @ViewBuilder
+    private var dugme: some View {
+        if model.baskasi {
+            ProfilCerceveliDugme(
+                metin: model.takipDugmesiMetni,
+                simge: "ic_person_add",
+                etkin: model.takipDugmesiEtkin,
+                opaklik: model.takipDugmesiOpaklik,
+                eylem: { model.takipEt(bildir: { metin in gezinme.bildir(metin) }) }
+            )
+        } else {
+            ProfilCerceveliDugme(
+                metin: "ARKADAŞ EKLE",
+                simge: "ic_person_add",
+                eylem: { gezinme.ac(.arkadasAra) }
+            )
+        }
+    }
+
+    /// tvTopLeftName (sol üst) ve btnAccountSettings (sağ üst, yalnızca kendi profilinde).
+    private var ustSatir: some View {
+        HStack(alignment: .top, spacing: 0) {
+            Text(model.ad)
+                .font(ProfilStil.yazi(20))
+                .foregroundColor(Color.white)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+            if !model.baskasi {
+                Button(action: { gezinme.ac(.hesapAyarlari) }) {
+                    Image("setting_ic")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(Color.white)
+                        .frame(width: 24, height: 24)
+                        .frame(width: 40, height: 40)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Ayarlar"))
+            }
+        }
+    }
+}
+
+/// Sayaç sütunu: sayı (20) + etiket (14, üstten 4).
+struct ProfilSayac: View {
+    let sayi: String
+    let etiket: String
+    let eylem: () -> Void
+
+    var body: some View {
+        Button(action: eylem) {
+            VStack(spacing: 4) {
+                Text(sayi)
+                    .font(ProfilStil.yazi(20))
+                    .foregroundColor(Color.white)
+                Text(etiket)
+                    .font(ProfilStil.yazi(14))
+                    .foregroundColor(ProfilStil.soluk)
+            }
+            .frame(maxWidth: .infinity)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - 2. kart: ilerleme, abaküs önizlemesi, kupa yolu
+
+struct ProfilIlerlemeKarti: View {
+    @ObservedObject var model: ProfilSayfaModeli
+    @ObservedObject var gezinme: ProfilGezinme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 0) {
+                ilerleme
+                Spacer(minLength: 8)
+                abakus
+            }
+            Text("Kupa yolu")
+                .font(ProfilStil.yazi(16))
+                .foregroundColor(ProfilStil.soluk)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+            kupaSeridi
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var ilerleme: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Kullanıcı İlerlemesi")
+                .font(ProfilStil.yazi(16))
+                .foregroundColor(ProfilStil.soluk)
+                .padding(.bottom, 14)
+            if model.ilerlemeGorunur {
+                ProfilIlerlemeSatiri(simge: "profile_book_ic3", metin: model.tamamlanma)
+                    .padding(.bottom, 12)
+                ProfilIlerlemeSatiri(simge: "profile_clock_ic2", metin: model.toplamSure)
+                    .padding(.bottom, 12)
+                ProfilIlerlemeSatiri(simge: "profile_crown_ic4", metin: model.abonelik)
+            }
+        }
+    }
+
+    private var abakus: some View {
+        VStack(spacing: 0) {
+            Text("Kullanıcı Abaküsü")
+                .font(ProfilStil.yazi(16))
+                .foregroundColor(ProfilStil.soluk)
+                .padding(.bottom, 14)
+            Button(action: { if model.boncukTipi != nil { model.abakusPaneliAcik = true } }) {
+                ProfilBoncukKarti(tip: model.boncukTipi)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var kupaSeridi: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                ForEach(model.kupalar) { kart in
+                    Button(action: {
+                        if let secim = model.kupaSecimi(kart) {
+                            gezinme.kupaAc?(secim)
+                        }
+                    }) {
+                        ProfilKupaKartGorunumu(kart: kart)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.trailing, 16)
+        }
+    }
+}
+
+/// Simge (28) + 8 + metin (16, beyaz). Android: drawableStartCompat + drawablePadding.
+struct ProfilIlerlemeSatiri: View {
+    let simge: String
+    let metin: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(simge)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
+            Text(metin)
+                .font(ProfilStil.yazi(16))
+                .foregroundColor(Color.white)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// 90x90, 12 pt köşeli boncuk kartı (abacusPreviewCard / previewBeadCard), görsel 14 pt içeride.
+/// Android boncuğu AbacusBeadRenderer ile kullanıcının renkleriyle çizer; çizim Abakus klasörünün
+/// işidir. Burada tipin adına göre yaklaşık bir sabit görsel gösterilir.
+struct ProfilBoncukKarti: View {
+    let tip: String?
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12).fill(ProfilStil.onizlemeKarti)
+            if let tipAdi = tip {
+                Image(ProfilBoncukKarti.gorselAdi(tipAdi))
+                    .resizable()
+                    .scaledToFit()
+                    .padding(14)
+            }
+        }
+        .frame(width: 90, height: 90)
+    }
+
+    /// BeadType adı → Assets içindeki sabit görsel (renk özelleştirmesi uygulanmaz).
+    static func gorselAdi(_ tip: String) -> String {
+        if tip.hasPrefix("BALL") {
+            return "abacus_bead_ball" + String(tip.dropFirst(4))
+        }
+        if tip == "BOWLING" {
+            return "bowling_ball_ic"
+        }
+        if tip == "ANIMAL" {
+            return "animal_head_ic1"
+        }
+        if tip.hasPrefix("ANIMAL") {
+            return "animal_head_ic" + String(tip.dropFirst(6))
+        }
+        if tip == "SOROBAN2" {
+            return "soroban_bead2"
+        }
+        return "soroban_bead"
+    }
+}
+
+/// item_profile_cup_card.xml: 110x130, 12 pt köşe, zemin bright_background_color.
+struct ProfilKupaKartGorunumu: View {
+    let kart: ProfilKupaKarti
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 4) {
+                Text(kart.tanim.baslik)
+                    .font(ProfilStil.yazi(14))
+                    .foregroundColor(ProfilStil.soluk)
+                    .lineLimit(1)
+                if kart.tanim.yasakSimgesi {
+                    Image("forbidden_abacus_ic")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
+                }
+            }
+            Spacer(minLength: 4)
+            ProfilAnimasyonGorunumu(
+                istek: ProfilAnimasyonIstegi(dosya: kart.tanim.animasyonDosyasi, oynat: true, kare: 0, renk: nil),
+                yerTutucuGorsel: "cup_ic"
+            )
+            .frame(width: 60, height: 60)
+            Spacer(minLength: 4)
+            Text(kart.skor)
+                .font(ProfilStil.yazi(18))
+                .foregroundColor(Color.white)
+                .lineLimit(1)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
+        .frame(width: 110, height: 130)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color("bright_background_color")))
+        .contentShape(Rectangle())
+    }
+}
+
+// MARK: - 3. kart: rozetler
+
+struct ProfilRozetKarti: View {
+    @ObservedObject var model: ProfilSayfaModeli
+    let ac: () -> Void
+
+    var body: some View {
+        Button(action: ac) {
+            VStack(spacing: 12) {
+                HStack(spacing: 0) {
+                    Text("Rozetler")
+                        .font(ProfilStil.yazi(16))
+                        .foregroundColor(ProfilStil.soluk)
+                    Spacer(minLength: 0)
+                    Image("dualingo_arrow_ic")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(ProfilStil.soluk)
+                        .frame(width: 22, height: 22)
+                        .frame(width: 32, height: 32)
+                }
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(model.rozetler) { yuva in
+                        ProfilRozetGorunumu(yuva: yuva)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Rozetler"))
+    }
+}
+
+/// Tek rozet: 72x72 alan; alt katman 150x150 (taşar), üst katman ölçekli; değer metni 25 pt yukarı biner.
+/// Android: bindSingleProfileBadge. Kilitli rozette katmanlar düz griye boyanır
+/// (alt: badge_locked_base, üst: badge_locked_top); açık rozette alt katman kademe tonunu alır.
+struct ProfilRozetGorunumu: View {
+    let yuva: ProfilRozetYuvasi
+
+    var body: some View {
+        VStack(spacing: -25) {
+            ZStack {
+                if !yuva.altDosya.isEmpty {
+                    ProfilAnimasyonGorunumu(
+                        istek: ProfilAnimasyonIstegi(dosya: yuva.altDosya, oynat: false, kare: 9999, renk: altRenk)
+                    )
+                    .frame(width: 150, height: 150)
+                }
+                ProfilAnimasyonGorunumu(
+                    istek: ProfilAnimasyonIstegi(dosya: yuva.ustDosya, oynat: false, kare: yuva.ustKare, renk: ustRenk)
+                )
+                .frame(width: 72, height: 72)
+                .scaleEffect(yuva.ustOlcek)
+                .offset(y: -1)
+            }
+            .frame(width: 72, height: 72)
+            if yuva.degerGorunur {
+                ProfilCizgiliMetin(
+                    metin: yuva.deger,
+                    boyut: 22,
+                    renk: yuva.acik ? Color.white : Color("badge_locked_base"),
+                    cizgi: yuva.acik ? ProfilStil.rozetDegerCizgisi : Color("badge_locked_top")
+                )
+            }
+        }
+    }
+
+    private var altRenk: Color? {
+        if !yuva.acik {
+            return Color("badge_locked_base")
+        }
+        switch yuva.ton {
+        case "BRONZE": return Color("badge_tone_bronze_filter")
+        case "SILVER": return Color("badge_tone_silver_filter")
+        case "RED": return Color("badge_tone_red_filter")
+        case "PURPLE": return Color("badge_tone_purple_filter")
+        default: return nil
+        }
+    }
+
+    private var ustRenk: Color? {
+        return yuva.acik ? nil : Color("badge_locked_top")
+    }
+}
+
+/// Dış çizgili metin (Android: BadgeRewardTextView). Çizgi, metnin sekiz yöne kaydırılmış
+/// kopyalarıyla yaklaşık olarak çizilir.
+struct ProfilCizgiliMetin: View {
+    let metin: String
+    let boyut: CGFloat
+    let renk: Color
+    let cizgi: Color
+
+    private static let kaymalar: [CGSize] = [
+        CGSize(width: -1.5, height: 0), CGSize(width: 1.5, height: 0),
+        CGSize(width: 0, height: -1.5), CGSize(width: 0, height: 1.5),
+        CGSize(width: -1, height: -1), CGSize(width: 1, height: -1),
+        CGSize(width: -1, height: 1), CGSize(width: 1, height: 1)
+    ]
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<ProfilCizgiliMetin.kaymalar.count, id: \.self) { sira in
+                Text(metin)
+                    .font(ProfilStil.yazi(boyut))
+                    .foregroundColor(cizgi)
+                    .offset(ProfilCizgiliMetin.kaymalar[sira])
+            }
+            Text(metin)
+                .font(ProfilStil.yazi(boyut))
+                .foregroundColor(renk)
+        }
+    }
+}
