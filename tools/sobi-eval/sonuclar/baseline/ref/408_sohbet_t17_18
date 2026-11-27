@@ -1,0 +1,5 @@
+Cevabı hemen vermeyeyim, kendin bulabilirsin. Şu an abaküsünde birler sütununda 3 var, ama bu adımda birler sütununun 4 olması gerekiyordu. Birler sütunundaki boncukları bir daha say: hangi boncuk fazla gitti ya da eksik kaldı?
+---
+Bu adımda abaküsün 464 olması gerekiyor. Şu an birler sütununda 3 birlik boncuk gelmiş, bir tanesi fazla gitmiş. Birler sütunundaki birlik boncuklardan birini geri koyup 4 yaptığında onlar basamağındaki adımı yeniden kontrol edebilirsin.
+---
+Güzel. Şimdi birler sütununda kaç birlik boncuk gelmiş, bir bak. 4 olduysa 'Kontrol Et' butonuna basabilirsin.

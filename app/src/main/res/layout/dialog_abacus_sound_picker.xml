@@ -29,7 +29,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:layout_marginEnd="48dp"
-        android:text="Abaküs Sesi Seç"
+        android:text="@string/dialog_abacus_sound_picker_abacus_sound_picker_title"
         android:textColor="#FFFFFF"
         android:textSize="17sp"
         android:textStyle="bold"
@@ -72,7 +72,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
-                    android:text="Ses 1"
+                    android:text="@string/dialog_abacus_sound_picker_text"
                     android:textColor="@color/dark_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/font_regular" />
@@ -117,7 +117,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
-                    android:text="Ses 2"
+                    android:text="@string/dialog_abacus_sound_picker_text_2"
                     android:textColor="@color/dark_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/font_regular" />
@@ -162,7 +162,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
-                    android:text="Ses 3"
+                    android:text="@string/dialog_abacus_sound_picker_text_3"
                     android:textColor="@color/dark_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/font_regular" />
@@ -207,7 +207,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
-                    android:text="Ses 4"
+                    android:text="@string/dialog_abacus_sound_picker_text_4"
                     android:textColor="@color/dark_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/font_regular" />
@@ -251,7 +251,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="12dp"
-                    android:text="Ses 5"
+                    android:text="@string/dialog_abacus_sound_picker_text_5"
                     android:textColor="@color/dark_text"
                     android:textSize="16sp"
                     android:fontFamily="@font/font_regular" />

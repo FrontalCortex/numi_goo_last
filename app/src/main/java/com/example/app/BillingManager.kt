@@ -54,6 +54,13 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
     /** Kullanıcıya gösterilecek hata mesajı. İptal edilen satın almalarda çağrılmaz. */
     var onError: ((message: String) -> Unit)? = null
 
+    /**
+     * Satın alma akışı bitti (sonuç geldi ya da akış hiç açılamadı). MainActivity ders sonrası
+     * kuyruğunu dürtmek için kuruyor; ekranlara göre değişen geri çağrılardan değil, bir kez
+     * kuruluyor ([installDefaultBillingCallbacks] buna dokunmuyor).
+     */
+    var onPurchaseFlowEnded: (() -> Unit)? = null
+
     private val billingClient = BillingClient.newBuilder(appContext)
         .setListener(this)
         .enablePendingPurchases(
@@ -124,6 +131,9 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
             if (unfetched.isNotEmpty()) {
                 Log.w(TAG, "Play'de bulunamayan ürünler ($type): ${unfetched.joinToString { it.productId }}")
             }
+            details.productDetailsList
+                .filter { it.productType == BillingClient.ProductType.SUBS }
+                .forEach { logSubscriptionOffers(it) }
             main.post {
                 details.productDetailsList.forEach { productDetails[it.productId] = it }
                 onPricesReady?.invoke()
@@ -132,64 +142,316 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
     }
 
     /**
+     * Play'in bu kullanıcı için hangi abonelik tekliflerini gönderdiğini Logcat'e yazar.
+     *
+     * Ücretsiz deneme teklifi eklendiğinde "geldi mi gelmedi mi" sorusunun arayüzden
+     * cevabı yok: teklif hiç ulaşmamışsa da kullanıcı uygun değilse de düğmede aynı metin
+     * çıkıyor. Bu log ikisini ayırıyor — teklif listesi boşsa/tek elemanlıysa deneme
+     * ulaşmamış, iki elemanlıysa ulaşmış ve kullanıcı uygun demektir.
+     *
+     * Filtre: `adb logcat -s BillingManager`
+     */
+    private fun logSubscriptionOffers(details: ProductDetails) {
+        val offers = details.subscriptionOfferDetails
+        if (offers.isNullOrEmpty()) {
+            Log.d(TAG, "OFFERS ${details.productId}: teklif YOK")
+            return
+        }
+        val summary = offers.joinToString(" | ") { offer ->
+            val phases = offer.pricingPhases.pricingPhaseList.joinToString(",") { phase ->
+                "${phase.formattedPrice}/${phase.billingPeriod}"
+            }
+            "offerId=${offer.offerId ?: "(temel plan)"} basePlan=${offer.basePlanId} [$phases]"
+        }
+        Log.d(TAG, "OFFERS ${details.productId} (${offers.size} adet): $summary")
+    }
+
+    /**
+     * Kullanıcı için geçerli abonelik teklifini seçer.
+     *
+     * Play, `subscriptionOfferDetails` içinde kullanıcının UYGUN OLDUĞU teklifleri döndürür
+     * ve sıralarını garanti ETMEZ. Ücretsiz deneme teklifi eklendiğinde liste iki elemanlı
+     * olur (deneme + temel plan); `first()` almak, denemeye hak kazanmış kullanıcıdan ilk gün
+     * para çekilmesine yol açabilir. Bu yüzden ilk fiyat aşaması en ucuz olan teklif seçilir:
+     * deneme (0) ya da tanıtım indirimi varsa o, yoksa temel plan.
+     *
+     * Uygun olmayan kullanıcıya Play deneme teklifini zaten hiç göndermediği için ters yönde
+     * ("herkese bedava") bir risk yoktur.
+     */
+    private fun bestOffer(details: ProductDetails): ProductDetails.SubscriptionOfferDetails? {
+        val offers = details.subscriptionOfferDetails ?: return null
+        return offers.minByOrNull { offer ->
+            offer.pricingPhases.pricingPhaseList.firstOrNull()?.priceAmountMicros ?: Long.MAX_VALUE
+        }
+    }
+
+    /**
      * Play'in yerelleştirdiği fiyat etiketi (ör. "₺20,99"). Ürün bilgisi henüz gelmediyse
      * veya ürün Play Console'da tanımlı değilse null döner — arayüz bu durumda kendi
      * yedek metnini göstermelidir.
+     *
+     * Aboneliklerde SON fiyat aşaması okunur: deneme/tanıtım aşamalarından sonraki, kullanıcının
+     * asıl ödeyeceği tutar budur.
      */
+    /**
+     * Ürünün ham fiyatı (mikro cinsinden) ve para birimi; ölçümde `value`/`currency` için.
+     *
+     * [formattedPrice] ile aynı yapıyı izler: tek seferlik ürünlerde
+     * `oneTimePurchaseOfferDetails`, aboneliklerde [bestOffer]'ın SON fiyat aşaması — ücretsiz
+     * deneme ilk aşamada 0 olduğu için ilk aşamayı almak aboneliği bedava göstermiş olurdu.
+     */
+    private fun priceAmountOf(productId: String): Pair<Long, String>? {
+        val details = productDetails[productId] ?: return null
+        details.oneTimePurchaseOfferDetails?.let {
+            return it.priceAmountMicros to it.priceCurrencyCode
+        }
+        val phase = bestOffer(details)
+            ?.pricingPhases
+            ?.pricingPhaseList
+            ?.lastOrNull() ?: return null
+        return phase.priceAmountMicros to phase.priceCurrencyCode
+    }
+
+    /** Analytics'in beklediği birim: mikro değil, para biriminin kendisi. */
+    private fun microsToUnits(micros: Long): Double = micros / 1_000_000.0
+
     fun formattedPrice(productId: String): String? {
         val details = productDetails[productId] ?: return null
         details.oneTimePurchaseOfferDetails?.let { return it.formattedPrice }
-        return details.subscriptionOfferDetails
-            ?.firstOrNull()
+        return bestOffer(details)
             ?.pricingPhases
             ?.pricingPhaseList
             ?.lastOrNull()
             ?.formattedPrice
     }
 
+    /**
+     * Bu kullanıcı bu abonelikte ücretsiz denemeye uygunsa denemenin gün sayısı, değilse null.
+     *
+     * Play uygun olmayan kullanıcıya deneme teklifini hiç göndermediği için, "teklifte ilk
+     * aşama bedava mı" sorusu aynı zamanda "bu kullanıcı denemeye uygun mu" sorusunun da
+     * cevabıdır. Arayüz, uygun OLMAYAN kullanıcıya "1 hafta ücretsiz" yazmamalıdır.
+     */
+    fun freeTrialDays(productId: String): Int? {
+        val details = productDetails[productId] ?: return null
+        val firstPhase = bestOffer(details)?.pricingPhases?.pricingPhaseList?.firstOrNull()
+            ?: return null
+        if (firstPhase.priceAmountMicros != 0L) return null
+        return isoPeriodToDays(firstPhase.billingPeriod)
+    }
+
+    /**
+     * ISO-8601 süre metnini (Play "P1W", "P7D", "P1M" gibi verir) gün sayısına çevirir.
+     * Ay/yıl yaklaşık alınır; burada amaç takvim hesabı değil, "7 gün ücretsiz" etiketi.
+     */
+    private fun isoPeriodToDays(period: String?): Int? {
+        val match = Regex("^P(?:(\\d+)Y)?(?:(\\d+)M)?(?:(\\d+)W)?(?:(\\d+)D)?$")
+            .find(period.orEmpty()) ?: return null
+        val (y, mo, w, d) = match.destructured
+        val days = (y.toIntOrNull() ?: 0) * 365 +
+            (mo.toIntOrNull() ?: 0) * 30 +
+            (w.toIntOrNull() ?: 0) * 7 +
+            (d.toIntOrNull() ?: 0)
+        return days.takeIf { it > 0 }
+    }
+
+    /**
+     * Aboneliğin dönem tutarı (mikro birim) ve para birimi kodu.
+     *
+     * Yıllık karşılık gibi türetilmiş rakamları biçimlenmiş metni ayrıştırarak hesaplamak
+     * ülkeden ülkeye kırılır (ondalık ayracı, sembol konumu); bu yüzden ham değer verilir.
+     */
+    fun subscriptionPriceAmount(productId: String): Pair<Long, String>? {
+        val details = productDetails[productId] ?: return null
+        val phase = bestOffer(details)
+            ?.pricingPhases
+            ?.pricingPhaseList
+            ?.lastOrNull() ?: return null
+        return phase.priceAmountMicros to phase.priceCurrencyCode
+    }
+
     fun isReady(): Boolean = billingClient.isReady
 
     // ── Satın alma başlatma ─────────────────────────────────────────────────
 
+    /**
+     * Satın alma akışının başladığı an (monoton saat); 0 = akış yok.
+     *
+     * Ders sonrası ekran kuyruğu (rozet, yeni seri…) bunu soruyor ([isPurchaseFlowActive]).
+     * Plan ekranı satın almayı başlatıp HEMEN kapanıyor, Play'in ödeme penceresi ise
+     * asenkron geliyor (önce mevcut abonelik sorgusu). Aradaki boşlukta uygulama hâlâ önde
+     * olduğu için kuyruk "engel yok" deyip rozeti açıyor, ödeme penceresi onun üstüne
+     * geliyordu; kullanıcı dönünce kutlamayı yarısından görüyordu.
+     */
+    @Volatile private var purchaseFlowStartedAtMs = 0L
+
+    /**
+     * Satın alma akışı sürüyor mu: başlatıldı, sonucu ([onPurchasesUpdated]) henüz gelmedi.
+     *
+     * Süre sınırı yalnızca güvenlik ağı: sonuç bir sebeple hiç gelmezse kuyruk sonsuza kadar
+     * kilitli kalmasın. Ödeme penceresi açıkken uygulama zaten arka planda (kuyruk o sırada
+     * kendiliğinden bekliyor), yani sınır pratikte yalnızca pencere açılana kadarki boşluğu
+     * ve dönüşteki kısa anı kapsıyor.
+     */
+    fun isPurchaseFlowActive(): Boolean {
+        val startedAt = purchaseFlowStartedAtMs
+        return startedAt != 0L &&
+            android.os.SystemClock.elapsedRealtime() - startedAt < PURCHASE_FLOW_MAX_MS
+    }
+
+    private fun endPurchaseFlow() {
+        if (purchaseFlowStartedAtMs == 0L) return
+        purchaseFlowStartedAtMs = 0L
+        main.post { onPurchaseFlowEnded?.invoke() }
+    }
+
     fun launchPurchase(activity: Activity, productId: String) {
+        // Mağaza öğretmene zaten açılmıyor; bu, mağaza dışındaki girişler için (Pro tanıtımı →
+        // plan ekranı) son kapı.
+        if (TeacherApprovalGate.blockPurchasesForTeacher(activity)) return
+        purchaseFlowStartedAtMs = android.os.SystemClock.elapsedRealtime()
         val details = productDetails[productId]
         if (details == null) {
-            onError?.invoke("Ürün şu anda alınamıyor. Daha sonra tekrar deneyin.")
+            endPurchaseFlow()
+            onError?.invoke(appString(R.string.ui_urun_su_anda_alinamiyor_daha_sonra))
             // Ürün bilgisi eksikse bağlantı kopmuş olabilir; sessizce tazele.
             start()
             return
         }
 
+        if (details.productType != BillingClient.ProductType.SUBS) {
+            startFlow(activity, details, existingSubscription = null)
+            return
+        }
+
+        // Abonelikte, kullanıcının BAŞKA bir aboneliği varsa satın alma değil GEÇİŞ
+        // yapılmalı. Bu sorgu asenkron olduğu için akış ikiye bölünüyor.
+        findOtherActiveSubscription(productId) { existing ->
+            startFlow(activity, details, existing)
+        }
+    }
+
+    /**
+     * Kullanıcının [excludingProductId] dışındaki aktif aboneliğini bulur.
+     *
+     * Sorgu başarısız olursa null döner ve akış normal satın alma olarak devam eder:
+     * geçiş yapılamaması, satın almanın hiç açılmamasından iyidir.
+     */
+    private fun findOtherActiveSubscription(
+        excludingProductId: String,
+        onResult: (Purchase?) -> Unit,
+    ) {
+        if (!billingClient.isReady) {
+            onResult(null)
+            return
+        }
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+        billingClient.queryPurchasesAsync(params) { result, purchases ->
+            val existing = if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                purchases.firstOrNull { purchase ->
+                    purchase.purchaseState == Purchase.PurchaseState.PURCHASED &&
+                        purchase.products.none { it == excludingProductId } &&
+                        purchase.products.any { it in BillingCatalog.subscriptions }
+                }
+            } else {
+                Log.w(TAG, "Mevcut abonelikler sorgulanamadı: ${result.debugMessage}")
+                null
+            }
+            main.post { onResult(existing) }
+        }
+    }
+
+    /**
+     * Satın alma / geçiş ekranını açar.
+     *
+     * [existingSubscription] doluysa Play, YENİ bir abonelik açmak yerine mevcut olanı
+     * değiştirir. Bu parametre olmadan kullanıcı iki aboneliğe birden para öder — Lite
+     * abonesi Pro'ya bastığında Lite'ı olduğu yerde kalıyordu.
+     */
+    private fun startFlow(
+        activity: Activity,
+        details: ProductDetails,
+        existingSubscription: Purchase?,
+    ) {
         val paramsBuilder = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(details)
 
-        // Abonelikler için teklif (offer) token'ı zorunludur.
+        // Abonelikler için teklif (offer) token'ı zorunludur. Hangi teklif seçileceği
+        // önemlidir; bkz. [bestOffer].
         if (details.productType == BillingClient.ProductType.SUBS) {
-            val offerToken = details.subscriptionOfferDetails?.firstOrNull()?.offerToken
+            val offerToken = bestOffer(details)?.offerToken
             if (offerToken == null) {
-                onError?.invoke("Abonelik teklifi bulunamadı.")
+                endPurchaseFlow()
+                onError?.invoke(appString(R.string.ui_abonelik_teklifi_bulunamadi))
                 return
             }
             paramsBuilder.setOfferToken(offerToken)
         }
 
-        val flowParams = BillingFlowParams.newBuilder()
+        val flowBuilder = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(listOf(paramsBuilder.build()))
-            .build()
 
-        val result = billingClient.launchBillingFlow(activity, flowParams)
-        if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-            Log.w(TAG, "Satın alma ekranı açılamadı: ${result.debugMessage}")
-            onError?.invoke("Satın alma başlatılamadı.")
+        if (existingSubscription != null) {
+            val oldProductId = existingSubscription.products
+                .firstOrNull { it in BillingCatalog.subscriptions }
+            val newRank = BillingCatalog.subscriptionRank(details.productId)
+            val oldRank = BillingCatalog.subscriptionRank(oldProductId.orEmpty())
+
+            // YÜKSELTME (Lite → Pro): anında geçer, kalan gün için farkı öder, fatura
+            // tarihi değişmez. DÜŞÜRME (Pro → Lite): ödediği dönemi sonuna kadar kullanır,
+            // Lite bir sonraki yenilemede başlar — böylece iade/kredi hesabı gerekmiyor.
+            //
+            // Mod seçimi tercih değil zorunluluk: CHARGE_PRORATED_PRICE yalnızca yükseltmede
+            // geçerli, düşürmede Play çağrıyı hata ile reddediyor.
+            val replacementMode = if (newRank > oldRank) {
+                BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE
+            } else {
+                BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.DEFERRED
+            }
+            Log.d(
+                TAG,
+                "Abonelik geçişi: $oldProductId(rank=$oldRank) → ${details.productId}" +
+                    "(rank=$newRank) mode=$replacementMode",
+            )
+            flowBuilder.setSubscriptionUpdateParams(
+                BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                    .setOldPurchaseToken(existingSubscription.purchaseToken)
+                    .setSubscriptionReplacementMode(replacementMode)
+                    .build()
+            )
         }
+
+        val result = billingClient.launchBillingFlow(activity, flowBuilder.build())
+        if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+            endPurchaseFlow()
+            Log.w(TAG, "Satın alma ekranı açılamadı: ${result.debugMessage}")
+            onError?.invoke(appString(R.string.ui_satin_alma_baslatilamadi))
+            return
+        }
+        // Ölçüm, ekranın gerçekten açıldığı yerde: yukarıdaki erken çıkışlar (ürün bilgisi yok,
+        // teklif token'ı yok, Play akışı reddetti) "vazgeçti" sayılmamalı, hiç başlamadılar.
+        val price = priceAmountOf(details.productId)
+        AnalyticsLogger.logPurchaseStarted(
+            productId = details.productId,
+            value = price?.first?.let { microsToUnits(it) },
+            currency = price?.second,
+        )
     }
 
     // ── Satın alma sonuçları ────────────────────────────────────────────────
 
     override fun onPurchasesUpdated(result: BillingResult, purchases: MutableList<Purchase>?) {
+        // Akış bitti (satın aldı, vazgeçti ya da hata): bekleyen ders sonrası ekranları
+        // artık gösterilebilir; kuyruk dönüşteki onResume'da ya da bekçisinin turunda soruyor.
+        endPurchaseFlow()
         when (result.responseCode) {
             BillingClient.BillingResponseCode.OK -> {
-                purchases?.forEach { processPurchase(it) }
+                purchases?.forEach { purchase ->
+                    logPurchaseToAnalytics(purchase)
+                    processPurchase(purchase)
+                }
             }
             BillingClient.BillingResponseCode.USER_CANCELED -> Unit // sessiz
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> {
@@ -198,9 +460,30 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
             }
             else -> {
                 Log.w(TAG, "Satın alma hatası: ${result.responseCode} ${result.debugMessage}")
-                onError?.invoke("Satın alma tamamlanamadı.")
+                onError?.invoke(appString(R.string.ui_satin_alma_tamamlanamadi))
             }
         }
+    }
+
+    /**
+     * Satın almayı ölçüme bildirir.
+     *
+     * **Yalnızca [onPurchasesUpdated]'dan çağrılır, [processPurchase]'tan DEĞİL.**
+     * [refreshPurchases] uygulama her açıldığında Play'de duran aktif aboneliği tekrar
+     * `processPurchase`'a sokuyor; ölçüm oraya konsaydı tek bir aboneden ayda otuz satın alma
+     * kaydedilirdi. `queryPurchasesAsync` bu geri çağırımı tetiklemez, `launchBillingFlow`
+     * tetikler — yani burası "az önce ödeme yapıldı" anlamına gelen tek yer.
+     */
+    private fun logPurchaseToAnalytics(purchase: Purchase) {
+        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
+        val productId = purchase.products.firstOrNull() ?: return
+        val price = priceAmountOf(productId)
+        AnalyticsLogger.logPurchase(
+            productId = productId,
+            transactionId = purchase.orderId,
+            value = price?.first?.let { microsToUnits(it) },
+            currency = price?.second,
+        )
     }
 
     /**
@@ -219,6 +502,24 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         }
     }
 
+    /**
+     * Hoş geldin kredisinin cihaz başına bir kez verilmesi için kullanılan tanımlayıcı.
+     *
+     * ANDROID_ID, Android 8'den beri (imza anahtarı + kullanıcı + cihaz) üçlüsüne özeldir ve
+     * uygulama silinip yeniden kurulsa da DEĞİŞMEZ — yalnızca fabrika ayarlarına dönüşte
+     * sıfırlanır. Uygulama verisini temizlemek de değiştirmez, bu yüzden istismarın ucuz
+     * yollarını (yeni hesap, veri temizleme) kapatır.
+     *
+     * Ham değer yalnızca bu tek çağrıda gönderilir; sunucu salt'layıp özetler, ham hâlini
+     * saklamaz ve loglamaz. Reklam kimliğiyle ilişkilendirilmez.
+     */
+    private fun deviceKeyForWelcomeCredit(): String? = runCatching {
+        android.provider.Settings.Secure.getString(
+            appContext.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID,
+        )
+    }.getOrNull()?.takeIf { it.isNotBlank() }
+
     private fun processPurchase(purchase: Purchase) {
         if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) return
         if (FirebaseAuth.getInstance().currentUser == null) {
@@ -232,14 +533,21 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         val isSubscription = productId in BillingCatalog.subscriptions
         val callable = if (isSubscription) FN_SUBSCRIPTION else FN_PRODUCT
 
+        val payload = hashMapOf<String, Any>(
+            "productId" to productId,
+            "purchaseToken" to purchase.purchaseToken,
+        )
+        // Pro hoş geldin kredisi cihaz başına bir kez verilir; aksi halde aynı telefonda
+        // yeni Google + yeni uygulama hesabı açarak ücretsiz deneme hediyesi tekrar tekrar
+        // alınabiliyor. Ham değer sunucuda saklanmaz; salt'lanıp özetleniyor (bkz.
+        // functions/index.js → welcomeCreditGrants). Yalnızca abonelik yolunda gönderilir.
+        if (isSubscription) {
+            deviceKeyForWelcomeCredit()?.let { payload["deviceKey"] = it }
+        }
+
         FirebaseFunctions.getInstance()
             .getHttpsCallable(callable)
-            .call(
-                hashMapOf(
-                    "productId" to productId,
-                    "purchaseToken" to purchase.purchaseToken,
-                )
-            )
+            .call(payload)
             .addOnSuccessListener {
                 if (isSubscription) {
                     acknowledgeSubscription(purchase)
@@ -256,9 +564,29 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
                     else consumeProduct(purchase, productId)
                     return@addOnFailureListener
                 }
+                // Abonelik cihazdaki Play hesabına aittir, uygulama hesabına değil. Başka bir
+                // uygulama hesabı aynı aboneliği doğrulatmaya çalışırsa sunucu permission-denied
+                // döner. Bu kalıcı bir durumdur: "tekrar denenecek" demek yanlış olur, çünkü
+                // kullanıcı uygulamayı her açtığında aynı mesajı görürdü.
+                if (isBoundToAnotherAccount(e)) {
+                    Log.w(TAG, "Abonelik başka bir hesaba tanımlı: $productId")
+                    main.post {
+                        onError?.invoke(
+                            appString(R.string.ui_bu_abonelik_bu_cihazdaki_google_play) +
+                                appString(R.string.ui_hesabina_tanimli_aboneligi_o_hesapla_kullana)
+                        )
+                    }
+                    return@addOnFailureListener
+                }
                 Log.e(TAG, "Satın alma sunucuda işlenemedi: $productId", e)
-                main.post { onError?.invoke("Satın alma doğrulanamadı. Uygulamayı tekrar açtığınızda denenecek.") }
+                main.post { onError?.invoke(appString(R.string.ui_satin_alma_dogrulanamadi_uygulamayi_tekrar_a)) }
             }
+    }
+
+    /** Abonelik bu cihazın Play hesabında var ama başka bir uygulama hesabına bağlı. */
+    private fun isBoundToAnotherAccount(e: Exception): Boolean {
+        val ffe = e as? com.google.firebase.functions.FirebaseFunctionsException ?: return false
+        return ffe.code == com.google.firebase.functions.FirebaseFunctionsException.Code.PERMISSION_DENIED
     }
 
     private fun isAlreadyProcessed(e: Exception): Boolean {
@@ -296,5 +624,8 @@ class BillingManager(context: Context) : PurchasesUpdatedListener {
         private const val FN_SUBSCRIPTION = "redeemGooglePlaySubscription"
         private const val MAX_RECONNECT_ATTEMPTS = 5
         private const val RECONNECT_BASE_DELAY_MS = 1000L
+
+        /** [isPurchaseFlowActive]'in güvenlik sınırı. */
+        private const val PURCHASE_FLOW_MAX_MS = 120_000L
     }
 }

@@ -9,7 +9,6 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.bumptech.glide.Glide
 import com.example.app.databinding.FragmentRecordBinding
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.ListenerRegistration
@@ -37,21 +36,34 @@ class RecordFragment : Fragment() {
         val main = activity as? MainActivity
         if (isAdded && parentFragmentManager.backStackEntryCount > 0) {
             parentFragmentManager.popBackStack()
-            parentFragmentManager.executePendingTransactions()
         } else if (isAdded) {
             requireActivity().supportFragmentManager.beginTransaction()
                 .remove(this@RecordFragment)
                 .commitNowAllowingStateLoss()
         }
-        main?.prepareMapReturnAfterLessonClaim()
-        main?.finalizeMapReturnAfterLessonClaim("RecordFragment.back")
+        // popExit animasyonu (slide_out_left, 300ms) oynarken abacusFragmentContainer'ı
+        // hemen GONE'a çekmeyelim — prepareMapReturnAfterLessonClaim (purgeAbacusOverlayHosts
+        // üzerinden) bunu senkron yapıyordu, konteyner kaybolunca animasyon hiç görünmüyordu.
+        // executePendingTransactions() de kaldırıldı: pop'u zorla senkronlaştırmak yerine
+        // FragmentManager'ın kendi zamanlamasına (bir sonraki frame) bırakıyoruz.
+        Handler(Looper.getMainLooper()).postDelayed({
+            main?.prepareMapReturnAfterLessonClaim()
+            // fromLessonFinish = false: burada bir ders bitmedi, kullanıcı yalnızca
+            // liderlik tablosunu kapattı. True kalsaydı "ders bitti" kuyruğu (yeni seri
+            // sorusu vb.) tabloya bakıp çıkan herkese açılırdı.
+            main?.finalizeMapReturnAfterLessonClaim(
+                "RecordFragment.back",
+                fromLessonFinish = false,
+            )
+        }, 300L)
     }
 
     private val partId: Int
         get() = requireArguments().getInt(ARG_PART_ID)
 
-    private val lessonIndex: Int
-        get() = requireArguments().getInt(ARG_LESSON_INDEX)
+    /** Tahta anahtarı: liste konumu değil dersin kalıcı kimliği (bkz. LessonItem.stableId). */
+    private val lessonKey: String
+        get() = requireArguments().getString(ARG_LESSON_KEY).orEmpty()
 
     private val lessonTitle: String
         get() = requireArguments().getString(ARG_LESSON_TITLE).orEmpty()
@@ -87,6 +99,9 @@ class RecordFragment : Fragment() {
 
         bindLeaderboardListener(SeasonClock.currentSeason())
         SeasonClock.addSeasonChangeListener(onSeasonAdvanced)
+        // Sezonun doğruluğu asıl burada önemli: yanlış sezon = başka tahta = boş liste.
+        // Sapma düzelince sezon değişirse yukarıdaki dinleyici doğru tahtaya yeniden bağlar.
+        SeasonClock.refreshFromServer()
         startCountdownTicker()
     }
 
@@ -95,8 +110,10 @@ class RecordFragment : Fragment() {
         boundLeaderboardSeason = season
         leaderboardListener = LessonLeaderboardRepository.listenLeaderboard(
             partId = partId,
-            lessonIndex = lessonIndex,
+            lessonKey = lessonKey,
             season = season,
+            ownAvatarConfig = AvatarStore.loadActive(requireContext())
+                .takeIf { AvatarStore.hasSaved(requireContext()) }?.encode(),
             onUpdate = { entries ->
                 if (!isAdded) return@listenLeaderboard
                 bindLeaderboard(entries)
@@ -169,13 +186,11 @@ class RecordFragment : Fragment() {
         binding.firstPlaceSection.visibility = View.VISIBLE
         binding.firstPlaceName.text = first.displayName.ifBlank { getString(R.string.record_leaderboard_title) }
         binding.firstPlaceTime.text = first.recordLabel
-        val url = first.photoUrl
-        if (!url.isNullOrBlank()) {
-            Glide.with(binding.firstPlaceAvatar).load(url).fitCenter().into(binding.firstPlaceAvatar)
-        } else {
-            Glide.with(binding.firstPlaceAvatar).clear(binding.firstPlaceAvatar)
-            binding.firstPlaceAvatar.setImageResource(android.R.drawable.sym_def_app_icon)
-        }
+        binding.firstPlaceAvatar.setImageBitmap(
+            RecordLeaderboardAdapter.leaderboardAvatarBitmap(
+                requireContext(), first.avatarConfig, binding.firstPlaceAvatar.layoutParams.width,
+            )
+        )
 
         val rest = entries.drop(1)
         if (rest.isEmpty()) {
@@ -209,14 +224,14 @@ class RecordFragment : Fragment() {
 
     companion object {
         private const val ARG_PART_ID = "partId"
-        private const val ARG_LESSON_INDEX = "lessonIndex"
+        private const val ARG_LESSON_KEY = "lessonKey"
         private const val ARG_LESSON_TITLE = "lessonTitle"
 
-        fun newInstance(partId: Int, lessonIndex: Int, lessonTitle: String): RecordFragment {
+        fun newInstance(partId: Int, lessonKey: String, lessonTitle: String): RecordFragment {
             val f = RecordFragment()
             f.arguments = Bundle().apply {
                 putInt(ARG_PART_ID, partId)
-                putInt(ARG_LESSON_INDEX, lessonIndex)
+                putString(ARG_LESSON_KEY, lessonKey)
                 putString(ARG_LESSON_TITLE, lessonTitle)
             }
             return f

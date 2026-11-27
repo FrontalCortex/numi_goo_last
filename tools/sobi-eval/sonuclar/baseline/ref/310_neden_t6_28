@@ -1,0 +1,1 @@
+Birler sütununda 8 var ve 2 eklediğimizde 10 olması gerekiyor, sütun ise en fazla 9 tutabiliyor. Bu yüzden 2 eklemek, 10 eklemek ile 8 çıkarmak aynı şey oluyor. Önce 10 gelir, sonra 2'nin büyük kardeşi olan 8 gider.

@@ -45,9 +45,9 @@ class StudentEmailVerificationFragment : Fragment() {
         authManager.resendStudentVerificationCode(email) { success, error ->
             binding.btnResend.isEnabled = true
             if (success) {
-                Toast.makeText(requireContext(), "Kod tekrar gonderildi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_kod_tekrar_gonderildi_2), Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(requireContext(), error ?: "Kod gonderilemedi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_gonderilemedi_2), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -58,20 +58,20 @@ class StudentEmailVerificationFragment : Fragment() {
         val password = binding.etPassword.text?.toString().orEmpty()
 
         if (code.length != 6) {
-            Toast.makeText(requireContext(), "Kod 6 haneli olmalidir", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_kod_6_haneli_olmalidir_2), Toast.LENGTH_SHORT).show()
             return
         }
         if (name.isEmpty()) {
-            Toast.makeText(requireContext(), "Lutfen ad soyad girin", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_lutfen_ad_soyad_girin), Toast.LENGTH_SHORT).show()
             return
         }
         if (password.length < 6) {
-            Toast.makeText(requireContext(), "Sifre en az 6 karakter olmali", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_sifre_en_az_6_karakter_olmali_2), Toast.LENGTH_SHORT).show()
             return
         }
 
         binding.btnVerify.isEnabled = false
-        binding.btnVerify.text = "Dogrulaniyor..."
+        binding.btnVerify.text = appString(R.string.ui_dogrulaniyor_2)
 
         // Kayıt bilgisi artık Firestore'a YAZILMIYOR (eskiden pendingRegistrations/{email}
         // dokümanına düz metin şifre yazılıyordu). Bellekte tutulup verifyStudentCode
@@ -86,8 +86,8 @@ class StudentEmailVerificationFragment : Fragment() {
         authManager.verifyStudentCode(email, code, autoLogin = true) { success, error ->
             if (!success) {
                 binding.btnVerify.isEnabled = true
-                binding.btnVerify.text = "Dogrula ve Giris Yap"
-                Toast.makeText(requireContext(), error ?: "Kod dogrulanamadi", Toast.LENGTH_LONG).show()
+                binding.btnVerify.text = appString(R.string.ui_dogrula_ve_giris_yap)
+                Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_dogrulanamadi_2), Toast.LENGTH_LONG).show()
                 return@verifyStudentCode
             }
 
@@ -98,8 +98,8 @@ class StudentEmailVerificationFragment : Fragment() {
                         goToMain()
                     } else {
                         binding.btnVerify.isEnabled = true
-                        binding.btnVerify.text = "Dogrula ve Giris Yap"
-                        Toast.makeText(requireContext(), loginError ?: "Giris basarisiz", Toast.LENGTH_LONG).show()
+                        binding.btnVerify.text = appString(R.string.ui_dogrula_ve_giris_yap)
+                        Toast.makeText(requireContext(), loginError ?: appString(R.string.ui_giris_basarisiz), Toast.LENGTH_LONG).show()
                     }
                 }
             } else {

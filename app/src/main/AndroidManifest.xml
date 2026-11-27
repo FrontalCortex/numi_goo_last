@@ -4,9 +4,13 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- Medya izinleri bilerek YOK: soru sohbetinde ve Hata Avcısı'nda görsel Android fotoğraf
+         seçicisiyle (PickVisualMedia) seçiliyor, seçici izin istemez. Play, medya ana işlev
+         değilse READ_MEDIA_IMAGES/READ_MEDIA_VIDEO'yu reddediyor; bir kitaplık bunları manifest
+         birleştirmesinde geri getirmesin diye açıkça çıkarılıyor. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" android:minSdkVersion="33" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" android:minSdkVersion="34" />
@@ -18,6 +22,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" android:minSdkVersion="34" />
 
     <application
+        android:name=".NumiGooApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -43,14 +48,47 @@
         <meta-data
             android:name="com.google.firebase.analytics.collection_enabled"
             android:value="true" />
+        <!-- Reklam verisi (consent mode) varsayılan olarak KAPALI: hedef kitle çocuk olduğu için
+             Aileler politikası çocuklardan ve yaşı bilinmeyenlerden reklam kimliği gönderilmesini
+             yasaklıyor. Yaşı rıza yaşının üstünde çıkan kullanıcıda AgeConsentManager bunları
+             setConsent ile açıyor. analytics_storage'a dokunulmuyor, GA4 ölçümü sürmeli.
+             `google_analytics_adid_collection_enabled=false` BİLEREK kullanılmadı: o çalışma
+             anında geri açılamıyor, yetişkinlerde de reklam ölçümünü kalıcı kapatırdı. -->
+        <meta-data
+            android:name="google_analytics_default_allow_ad_storage"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_user_data"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_personalization_signals"
+            android:value="false" />
+        <!-- FCM, uygulama arka plandayken "notification" yüklü mesajları kendisi gösteriyor; küçük
+             ikon verilmezse uygulama ikonunu kullanıyor (durum çubuğunda düz leke olur). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.NumiGoo"
+            android:theme="@style/Theme.App.Starting"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- App Links: davet bağlantısı (haftalık kart paylaşımı) uygulama yüklüyse doğrudan uygulamayı
+                 açar; doğrulama public/.well-known/assetlinks.json (Play imzalama + debug anahtarı). Yüklü
+                 değilse aynı adres public/d.html'i açıp Play'e yönlendirir. Açılış SplashActivity'de
+                 `ref_link_open` olarak sayılıyor. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="numigo-new.web.app"
+                    android:pathPrefix="/d/" />
             </intent-filter>
         </activity>
         
@@ -135,6 +173,24 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <!-- Haftalık kart paylaşımında hangi uygulamanın seçildiği (EXTRA_CHOSEN_COMPONENT → GA4). -->
+        <receiver
+            android:name=".WeeklyCardShare$ChosenReceiver"
+            android:exported="false" />
+        <!-- Açık kaynak lisansları (Ayarlar → Kaynaklar ve lisanslar); koyu tema. -->
+        <activity
+            android:name="com.google.android.gms.oss.licenses.OssLicensesMenuActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.NumiGoo.Licenses"
+            tools:replace="android:theme" />
+        <activity
+            android:name="com.google.android.gms.oss.licenses.OssLicensesActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.NumiGoo.Licenses"
+            tools:replace="android:theme" />
     </application>
 
 </manifest>

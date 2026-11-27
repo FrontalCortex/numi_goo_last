@@ -7,23 +7,30 @@
     android:background="@color/background_color"
     android:orientation="vertical">
 
-    <!-- Başkasının profiline bakılırken görünen üst panel (fragment_followers_following'teki toolbar ile aynı) -->
-    <LinearLayout
+    <!--
+      Başkasının profiline bakılırken görünen üst panel (fragment_followers_following'teki toolbar ile
+      aynı). Altındaki çizgi, kendi profildeki profileTopDivider gibi yalnızca kaydırılmışken görünür.
+    -->
+    <FrameLayout
         android:id="@+id/otherUserProfileTopBar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
+        android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="4dp"
-        android:paddingEnd="16dp"
-        android:visibility="gone">
+        android:paddingEnd="16dp">
 
         <ImageButton
             android:id="@+id/btnOtherUserProfileBack"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/fragment_profile_btn_other_user_profile_back_desc"
             android:padding="12dp"
             android:src="@drawable/ic_back_arrow"
             app:tint="@android:color/white" />
@@ -41,13 +48,78 @@
             android:textSize="18sp"
             android:textStyle="bold" />
 
-        <View
+        <!--
+          Kurs öğretmeni kendi öğrencisinin profilinde: öğrencinin ilerleme raporu (veli paneli).
+          Görünmezken de yer tutuyor (invisible): adın ortada kalması için geri düğmesinin
+          karşılığı olan 48dp'lik boşluk bu.
+        -->
+        <ImageButton
+            android:id="@+id/btnStudentProgress"
             android:layout_width="48dp"
-            android:layout_height="48dp" />
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/class_student_progress_desc"
+            android:padding="12dp"
+            android:src="@drawable/ic_student_progress"
+            android:visibility="invisible"
+            app:tint="@android:color/white" />
 
     </LinearLayout>
 
+        <View
+            android:id="@+id/otherUserTopDivider"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_gravity="bottom"
+            android:alpha="0" />
+    </FrameLayout>
+
+    <!--
+      Kendi profilimizde sabit üst panel: ad ve ayarlar. Kaydırınca yerinde kalıyor; rengi avatarın
+      arka planı (kodda), telefonun durum çubuğu da aynı renge boyanıyor. Alttaki çizgi yalnızca
+      içerik aşağı kaydırılmışken görünüyor (Duolingo gibi). Başkasının profilinde gizli.
+    -->
+    <FrameLayout
+        android:id="@+id/profileTopPanel"
+        android:layout_width="match_parent"
+        android:layout_height="56dp">
+
+        <TextView
+            android:id="@+id/tvTopLeftName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="64dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="@string/fragment_profile_tv_top_left_name"
+            android:textColor="@android:color/white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <ImageButton
+            android:id="@+id/btnAccountSettings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/fragment_profile_btn_account_settings_desc"
+            android:padding="10dp"
+            android:src="@drawable/setting_ic"
+            android:tint="@color/white" />
+
+        <View
+            android:id="@+id/profileTopDivider"
+            android:layout_width="match_parent"
+            android:layout_height="2dp"
+            android:layout_gravity="bottom"
+            android:alpha="0" />
+    </FrameLayout>
+
     <ScrollView
+        android:id="@+id/profileScroll"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
@@ -58,7 +130,36 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="16dp"
+        android:clipToPadding="false">
+
+        <!--
+          Avatar alanı: ekran genişliğinde (kenar boşluğunu negatif marjla aşıyor; bunun için üstteki
+          LinearLayout clipToPadding=false, yoksa kenar boşluğunda kırpılıyordu), arka planı
+          avatarın arka plan rengi (kodda). Avatar alt kenara oturuyor; gövdesi kesilmiş gibi durmasın.
+        -->
+        <FrameLayout
+            android:id="@+id/avatarHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="-16dp"
+            android:layout_marginEnd="-16dp"
+            android:layout_marginBottom="16dp"
+            android:foreground="?attr/selectableItemBackground">
+
+            <!-- Tıklama avatarHeader'da: renkli alanın neresine dokunulsa düzenleme ekranı açılıyor. -->
+            <ImageView
+                android:id="@+id/imgProfilePhoto"
+                android:layout_width="240dp"
+                android:layout_height="240dp"
+                android:layout_gravity="bottom|center_horizontal"
+                android:layout_marginTop="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/non_user"
+                android:contentDescription="@string/fragment_profile_img_profile_photo_desc" />
+        </FrameLayout>
 
         <!-- 1. Üst Alan - Kullanıcı Bilgileri -->
         <androidx.cardview.widget.CardView
@@ -80,24 +181,12 @@
                     android:gravity="center"
                     android:orientation="vertical">
 
-                <!-- Profil Fotoğrafı (Avatar) -->
-                <ImageView
-                    android:id="@+id/imgProfilePhoto"
-                    android:layout_width="300dp"
-                    android:layout_height="300dp"
-                    android:scaleType="fitCenter"
-                    android:src="@drawable/non_user"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:foreground="?android:attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Profil Fotoğrafı" />
-
                 <!-- Kullanıcı Adı ve Katılım Tarihi -->
                 <TextView
                     android:id="@+id/tvUsernameAndDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="\@BAAR461745 • 2022 YILINDA KATILDI"
+                    android:text="@string/fragment_profile_tv_username_and_date"
                     android:textColor="#93A5B3"
                     android:textSize="14sp"
                     android:textStyle="bold" />
@@ -130,8 +219,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Takip edilen"
+                            android:text="@string/fragment_profile_text"
                             android:textColor="#93A5B3"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -158,8 +246,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:text="Takipçi"
+                            android:text="@string/fragment_profile_text_2"
                             android:textColor="#93A5B3"
                             android:textSize="14sp"
                             android:textStyle="bold" />
@@ -174,7 +261,7 @@
                     android:layout_marginBottom="8dp"
                     android:layout_marginStart="16dp"
                     android:layout_marginEnd="16dp"
-                    android:text="ARKADAŞ EKLE"
+                    android:text="@string/fragment_profile_btn_add_friend"
                     android:textColor="@android:color/white"
                     android:textSize="16sp"
                     android:textStyle="bold"
@@ -189,26 +276,6 @@
 
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvTopLeftName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|start"
-                    android:text="Kullanıcı Adı"
-                    android:textColor="@android:color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <ImageButton
-                    android:id="@+id/btnAccountSettings"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:layout_gravity="top|end"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Ayarlar"
-                    android:padding="8dp"
-                    android:src="@drawable/setting_ic"
-                    android:tint="@color/white" />
             </FrameLayout>
         </androidx.cardview.widget.CardView>
 
@@ -247,7 +314,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="14dp"
-                            android:text="Kullanıcı İlerlemesi"
+                            android:text="@string/fragment_profile_tv_user_progress_title"
                             android:textColor="#93A5B3"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -277,15 +344,16 @@
                             android:visibility="gone" />
 
                         <TextView
-                            android:id="@+id/tvSubscriptionInfo"
+                            android:id="@+id/tvLongestStreak"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text=""
                             android:textSize="16sp"
                             android:textColor="@color/white"
-                            app:drawableStartCompat="@drawable/profile_crown_ic4"
+                            app:drawableStartCompat="@drawable/streak_flame_ic"
                             android:drawablePadding="8dp"
-                            android:visibility="gone" />
+                            android:visibility="gone"
+                            tools:text="En uzun seri: 7 gün" />
 
                     </LinearLayout>
 
@@ -300,7 +368,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="14dp"
-                            android:text="Kullanıcı Abaküsü"
+                            android:text="@string/fragment_profile_text_3"
                             android:textColor="#93A5B3"
                             android:textSize="16sp"
                             android:textStyle="bold" />
@@ -333,7 +401,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:layout_marginBottom="12dp"
-                    android:text="Kupa yolu"
+                    android:text="@string/fragment_profile_text_4"
                     android:textColor="#93A5B3"
                     android:textSize="16sp"
                     android:textStyle="bold" />
@@ -405,7 +473,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Rozetler"
+                        android:text="@string/fragment_profile_tv_profile_badges_title"
                         android:textColor="#93A5B3"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -415,7 +483,7 @@
                         android:layout_width="32dp"
                         android:layout_height="32dp"
                         android:background="@null"
-                        android:contentDescription="Rozetler"
+                        android:contentDescription="@string/fragment_profile_btn_profile_badges_arrow_desc"
                         android:padding="5dp"
                         android:src="@drawable/dualingo_arrow_ic"
                         app:tint="#93A5B3" />

@@ -55,10 +55,10 @@ class ReportAdapter(
             val hours = TimeUnit.MILLISECONDS.toHours(diff)
             val days = TimeUnit.MILLISECONDS.toDays(diff)
             return when {
-                minutes < 1 -> "Az önce"
-                minutes < 60 -> "${minutes} dakika önce"
-                hours < 24 -> "${hours} saat önce"
-                else -> "${days} gün önce"
+                minutes < 1 -> appString(R.string.ui_az_once)
+                minutes < 60 -> appPlural(R.plurals.ui_x_dakika_once, minutes, minutes)
+                hours < 24 -> appPlural(R.plurals.ui_x_saat_once, hours, hours)
+                else -> appPlural(R.plurals.ui_x_gun_once, days, days)
             }
         }
     }

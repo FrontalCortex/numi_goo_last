@@ -8,6 +8,9 @@ import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.RequestConfiguration
 import com.google.android.ump.ConsentRequestParameters
 import com.google.android.ump.UserMessagingPlatform
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.FirebaseAnalytics.ConsentStatus
+import com.google.firebase.analytics.FirebaseAnalytics.ConsentType
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.util.Calendar
@@ -32,6 +35,56 @@ object AgeConsentManager {
     /** MobileAds yalnızca bir kez başlatılmalı (activity yeniden yaratılabilir). */
     @Volatile
     private var adsInitialized = false
+
+    /**
+     * Analytics reklam izninin (AD_STORAGE vb.) verildiği hesabın uid'i; izin yoksa null.
+     *
+     * `setConsent` ile verilen izin uygulama kapanıp açılsa da kalıyor (Firebase belgesi).
+     * Yetişkin hesaptan çıkılıp çocuk hesabıyla girilirse ya da girişsiz kalınırsa eski
+     * GRANTED sürmesin diye hesap değişimini [watchAccountChangesForAnalyticsConsent] izliyor.
+     */
+    @Volatile
+    private var analyticsAdConsentUid: String? = null
+
+    /**
+     * Hesap değişince Analytics reklam iznini kapatır. [NumiGooApplication.onCreate]'ten bir kez
+     * çağrılır.
+     *
+     * Çıkış uygulamada pek çok yerden yapılıyor (profil, oturum cihaz kontrolü, kayıt akışı…);
+     * hepsine ayrı satır eklemek yerine FirebaseAuth dinleyicisi tek kapı. Yeni hesabın izni
+     * MainActivity'deki [initializeAdMobWithAgeConsent] yaşı okuyunca yeniden veriliyor.
+     * Dinleyici kaydedildiği an da bir kez çalışır: süreç yeniden başladığında diskte önceki
+     * oturumdan kalan GRANTED, yaş yeniden okunana kadar kapalı kalır — güvenli taraf.
+     */
+    fun watchAccountChangesForAnalyticsConsent(context: Context) {
+        val appContext = context.applicationContext
+        FirebaseAuth.getInstance().addAuthStateListener { auth ->
+            val uid = auth.currentUser?.uid
+            if (uid == null || uid != analyticsAdConsentUid) {
+                setAnalyticsAdConsent(appContext, granted = false, uid = null)
+            }
+        }
+    }
+
+    /**
+     * Firebase Analytics'in reklam kimliği ve reklam verisi kullanımını açar/kapatır.
+     *
+     * Aileler politikası: çocuklardan ve yaşı bilinmeyenlerden reklam kimliği gönderilmemeli.
+     * Manifest'te varsayılan kapalı; yalnızca yaşı rıza yaşının üstündeki kullanıcıda açılıyor.
+     * ANALYTICS_STORAGE'a bilerek dokunulmuyor: GA4 ölçümü herkeste çalışmaya devam etmeli.
+     */
+    private fun setAnalyticsAdConsent(context: Context, granted: Boolean, uid: String?) {
+        val status = if (granted) ConsentStatus.GRANTED else ConsentStatus.DENIED
+        FirebaseAnalytics.getInstance(context).setConsent(
+            mapOf(
+                ConsentType.AD_STORAGE to status,
+                ConsentType.AD_USER_DATA to status,
+                ConsentType.AD_PERSONALIZATION to status,
+            )
+        )
+        analyticsAdConsentUid = if (granted) uid else null
+        Log.d(TAG, "Analytics ad consent=${status.name} uid=$uid")
+    }
 
     /**
      * Firestore'dan kullanıcının birthYear'ını asenkron olarak çeker.
@@ -89,6 +142,14 @@ object AgeConsentManager {
     ) {
         val context: Context = activity
         Log.d(TAG, "Applying AdMob treatment: $treatment")
+
+        // Analytics reklam izni AdMob etiketleriyle aynı yaş kararına bağlı. CHILD/UNSPECIFIED'da
+        // da açıkça DENIED yazılıyor: izin diskte kalıcı, önceki yetişkin oturumundan kalmasın.
+        setAnalyticsAdConsent(
+            context,
+            granted = treatment == AgeTreatment.TEEN,
+            uid = FirebaseAuth.getInstance().currentUser?.uid
+        )
 
         val builder = RequestConfiguration.Builder()
 

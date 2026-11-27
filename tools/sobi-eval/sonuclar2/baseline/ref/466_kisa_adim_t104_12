@@ -1,0 +1,1 @@
+Sayıyı doğrudan eklemek yerine 10 ekleyip 5 çıkarıyoruz. 49'a 10 eklenince önce 59 olur, çünkü onlar basamağına 1 gelir. Sonra 5 çıkarılır ve sonuç 54 olur.

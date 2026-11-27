@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -24,14 +25,13 @@ class GuidePanelView @JvmOverloads constructor(
     private lateinit var guidePanelRoot: View
     private lateinit var panelContent: ConstraintLayout
     private lateinit var stepDotsContainer: LinearLayout
-    private lateinit var ivGuideImage: ImageView
+    private lateinit var guideMascot: BunnyMascotView
     private lateinit var tvGuideText: TextView
     private lateinit var btnBack: ImageButton
     private lateinit var btnForward: ImageButton
 
     private var currentIndex = 0
     private var guideDataList: List<GuidePanelData> = emptyList()
-    private var onBackClickListener: (() -> Unit)? = null
     private var onPanelClickListener: (() -> Unit)? = null
     private var onPanelHideListener: (() -> Unit)? = null
     private var onLastStepReachedListener: (() -> Unit)? = null
@@ -50,20 +50,18 @@ class GuidePanelView @JvmOverloads constructor(
         guidePanelRoot = view.findViewById(R.id.guidePanelRoot)
         panelContent = view.findViewById(R.id.panelContent)
         stepDotsContainer = view.findViewById(R.id.stepDotsContainer)
-        ivGuideImage = view.findViewById(R.id.ivGuideImage)
+        guideMascot = view.findViewById(R.id.guideMascot)
         tvGuideText = view.findViewById(R.id.tvGuideText)
         btnBack = view.findViewById(R.id.btnBack)
         btnForward = view.findViewById(R.id.btnForward)
 
         guidePanelRoot.setOnTouchListener { _, _ -> true }
 
+        // Geri yalnızca önceki adıma döner; ilk adımda işlevsiz. Eskiden ilk adımda paneli
+        // kapatıyordu, rehber okunmadan geçilebiliyordu.
         btnBack.setOnClickListener {
             if (isAnimating) return@setOnClickListener
-            if (currentIndex == 0) {
-                onBackClickListener?.invoke()
-            } else {
-                showPreviousContent()
-            }
+            showPreviousContent()
         }
 
         btnForward.setOnClickListener {
@@ -79,10 +77,6 @@ class GuidePanelView @JvmOverloads constructor(
         if (dataList.isNotEmpty()) {
             post { updateContent() }
         }
-    }
-
-    fun setOnBackClickListener(listener: () -> Unit) {
-        onBackClickListener = listener
     }
 
     fun setOnPanelClickListener(listener: () -> Unit) {
@@ -144,7 +138,7 @@ class GuidePanelView @JvmOverloads constructor(
 
         val currentData = guideDataList[currentIndex]
 
-        ivGuideImage.setImageResource(currentData.imageResId)
+        guideMascot.play(currentData.emote)
         tvGuideText.text = currentData.text
         tvGuideText.visibility = View.VISIBLE
 
@@ -193,7 +187,19 @@ class GuidePanelView @JvmOverloads constructor(
     private fun Int.dpToPx(): Int = (this * resources.displayMetrics.density).toInt()
 
     fun show() {
+        prepareShow()
+        slideIn()
+    }
+
+    /**
+     * Paneli görünür yapar (karartma açılır) ama ekranın sağında, dışarıda bekletir; [slideIn]
+     * çağrılınca içeri kayar. Arada balon [placeBalloonTop] ile yerleştirilebilir, böylece ekranda
+     * bir yerde görünüp sonra yer değiştirmez.
+     */
+    fun prepareShow() {
         visibility = View.VISIBLE
+        translationX = resources.displayMetrics.widthPixels.toFloat() * RtlSupport.endSign(this)
+        translationY = 0f
 
         dimCoordinatorLayout(true)
 
@@ -203,9 +209,18 @@ class GuidePanelView @JvmOverloads constructor(
 
         isAnimating = true
         setNavButtonsEnabled(false)
+    }
 
+    /** Balonun (panelContent) üst kenarını ebeveyndeki [top] konumuna getirir. */
+    fun placeBalloonTop(top: Float) {
+        translationY = top - this.top - panelContent.top
+    }
+
+    fun balloonHeight(): Int = panelContent.height
+
+    fun slideIn() {
         val screenWidth = resources.displayMetrics.widthPixels
-        val translateX = ObjectAnimator.ofFloat(this, "translationX", screenWidth.toFloat(), 0f)
+        val translateX = ObjectAnimator.ofFloat(this, "translationX", screenWidth * RtlSupport.endSign(this), 0f)
         translateX.duration = 500
         translateX.interpolator = AccelerateDecelerateInterpolator()
 
@@ -226,7 +241,7 @@ class GuidePanelView @JvmOverloads constructor(
         setNavButtonsEnabled(false)
 
         val screenWidth = resources.displayMetrics.widthPixels
-        val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, screenWidth.toFloat())
+        val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, screenWidth * RtlSupport.endSign(this))
         translateX.duration = 500
         translateX.interpolator = AccelerateDecelerateInterpolator()
 
@@ -248,7 +263,7 @@ class GuidePanelView @JvmOverloads constructor(
         setNavButtonsEnabled(false)
 
         val screenWidth = resources.displayMetrics.widthPixels
-        val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, -screenWidth.toFloat())
+        val translateX = ObjectAnimator.ofFloat(this, "translationX", 0f, -screenWidth * RtlSupport.endSign(this))
         translateX.duration = 300
         translateX.interpolator = AccelerateDecelerateInterpolator()
 
@@ -272,14 +287,45 @@ class GuidePanelView @JvmOverloads constructor(
         btnForward.isClickable = enabled
     }
 
+    private var scrim: View? = null
+
+    /**
+     * Rehberin hemen arkasına (aynı ebeveyn, daha düşük elevation) siyah bir karartma koyar.
+     * Eskiden yalnızca ebeveynin zemin rengi değiştiriliyordu; ders kartları zeminin önünde
+     * çizildiği için hiçbiri kararmıyordu, ekranda karartma görünmüyordu. Ders paneli aktivitenin
+     * koordinatöründe (bu fragment'in üstünde) durduğu için karartmanın altında kalmıyor.
+     */
     private fun dimCoordinatorLayout(dim: Boolean) {
-        val parent = parent as? ConstraintLayout
-        parent?.let { coordinatorLayout ->
-            if (dim) {
-                coordinatorLayout.setBackgroundColor(0xFF1A1F23.toInt())
-            } else {
-                coordinatorLayout.setBackgroundColor(context.getColor(R.color.background_color))
+        val parentGroup = parent as? ViewGroup ?: return
+        if (dim) {
+            val view = scrim ?: View(context).apply {
+                setBackgroundColor(Color.BLACK)
+                // Rehberin (100dp) altında, haritadaki soru düğmesinin (1dp) üstünde.
+                elevation = 50f * resources.displayMetrics.density
+                outlineProvider = null
+                isClickable = true
+            }.also { scrim = it }
+            if (view.parent == null) {
+                parentGroup.addView(
+                    view,
+                    parentGroup.indexOfChild(this),
+                    ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+                )
+                view.alpha = 0f
             }
+            view.animate().cancel()
+            view.animate().alpha(DIM_ALPHA).setDuration(200L).start()
+        } else {
+            val view = scrim ?: return
+            view.animate().cancel()
+            view.animate().alpha(0f).setDuration(200L)
+                .withEndAction { (view.parent as? ViewGroup)?.removeView(view) }
+                .start()
         }
+    }
+
+    private companion object {
+        // Ders panelinin karartmasıyla (LessonAdapter.LESSON_PANEL_DIM_ALPHA) aynı oran.
+        const val DIM_ALPHA = 0.7f
     }
 }

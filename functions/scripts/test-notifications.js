@@ -1,0 +1,756 @@
+/**
+ * Bildirim çekirdeğinin karar mantığı testi.
+ *
+ * NEDEN VAR
+ *   Karar dört kuralın kesişimi (tercih, sessiz saat, tavan, açılmayan konu) ve yanlış
+ *   davranışı sahada GÖRÜNMÜYOR: gitmeyen bildirim hata üretmiyor, yalnızca eksik kalıyor.
+ *   Sessiz saat ve tavan senaryolarını cihazda denemek için günlerce beklemek ya da saat
+ *   dilimi değiştirmek gerekir; burada hepsi saniyeler içinde koşuyor.
+ *
+ * ÇALIŞTIRMA: cd functions && npm run test:notifications
+ */
+const {
+  DAILY_CAP,
+  WEEKLY_CAP,
+  RESERVED_FOR_PRIORITY,
+  UNOPENED_MUTE_AFTER,
+  dayKey,
+  isQuietHour,
+  localHourOf,
+  normalizeOffset,
+  notificationPrefsFor,
+  recentCounts,
+  notificationDecision,
+  ledgerPatch,
+  openPatch,
+} = require('../notifications');
+
+// index.js'teki saf fonksiyonlar KAYNAKTAN çekiliyor, kopyaları test edilmiyor: index.js'i
+// require etmek admin.initializeApp() çağırır ve emülatör ister. Aynı desen
+// test-streak-freeze.js'te.
+const fs = require('fs');
+const path = require('path');
+const { arCount } = require('../arabic');
+const indexSrc = fs.readFileSync(path.join(__dirname, '..', 'index.js'), 'utf8');
+
+function grabFunction(name) {
+  const marker = `function ${name}(`;
+  const i = indexSrc.indexOf(marker);
+  if (i < 0) throw new Error(`kaynakta bulunamadı: ${name}`);
+
+  // DİKKAT: parametre listesi önce dengeli parantezle atlanıyor. Destructuring parametresi
+  // (`function f({ a, b }, c)`) gövdenin ilk süslü parantezi sanılırsa fonksiyon parametre
+  // listesinin ortasında kesiliyor ve eval "Unexpected token" veriyor. (Aynı yardımcının
+  // test-streak-freeze.js'teki kopyasında bu düzeltme yok; orada destructuring'li bir
+  // fonksiyon çekilirse aynı tuzağa düşer.)
+  let p = i + marker.length - 1;
+  let paren = 0;
+  for (; p < indexSrc.length; p++) {
+    if (indexSrc[p] === '(') paren++;
+    else if (indexSrc[p] === ')') {
+      paren--;
+      if (paren === 0) { p++; break; }
+    }
+  }
+
+  let depth = 0;
+  let started = false;
+  for (let j = p; j < indexSrc.length; j++) {
+    if (indexSrc[j] === '{') { depth++; started = true; }
+    else if (indexSrc[j] === '}') { depth--; if (started && depth === 0) return indexSrc.slice(i, j + 1); }
+  }
+  throw new Error(`kapanmadı: ${name}`);
+}
+
+/**
+ * Kaynaktan bir sabit tanımını çeker — çok satırlı dizi/nesne dahil.
+ *
+ * Tek satırlık bir regex yetmiyordu: `const CUP_PATH_FIELDS = [` ile başlayıp satırlar
+ * sonra kapanan tanımlar sahada çoğunlukta. Parantez dengesi takip ediliyor ve derinlik
+ * sıfıra döndüğünde ilk `;` sonu kabul ediliyor.
+ */
+function grabConst(name) {
+  const marker = `\nconst ${name} = `;
+  const at = indexSrc.indexOf(marker);
+  if (at < 0) throw new Error(`kaynakta bulunamadı: const ${name}`);
+  const start = at + 1;
+  let depth = 0;
+  for (let j = start; j < indexSrc.length; j++) {
+    const c = indexSrc[j];
+    if (c === '[' || c === '{' || c === '(') depth++;
+    else if (c === ']' || c === '}' || c === ')') depth--;
+    else if (c === ';' && depth === 0) return indexSrc.slice(start, j + 1);
+  }
+  throw new Error(`kapanmadı: const ${name}`);
+}
+
+/**
+ * Kaynaktan bir fonksiyon (ve ihtiyaç duyduğu yardımcılar/sabitler) çekip çalıştırılabilir
+ * hale getirir. notifications.js'ten gelen yardımcılar parametre olarak enjekte ediliyor —
+ * index.js onları require ile alıyor, burada aynısını elle veriyoruz.
+ */
+function evalFromIndex(name, extraFns = [], consts = []) {
+  const body = [
+    ...consts.map(grabConst),
+    ...extraFns.map(grabFunction),
+    grabFunction(name),
+    `return ${name};`,
+  ].join('\n\n');
+  return new Function('normalizeOffset', 'localHourOf', 'arCount', body)(normalizeOffset, localHourOf, arCount);
+}
+
+let pass = 0;
+let fail = 0;
+function check(name, actual, expected) {
+  const ok = actual === expected;
+  if (ok) pass++;
+  else fail++;
+  console.log(`${ok ? 'OK  ' : 'HATA'} ${name}${ok ? '' : ` (beklenen ${expected}, gelen ${actual})`}`);
+}
+
+/** 2026-10-05, 12:00 UTC — sessiz saatlerin dışında bir öğle vakti. */
+const NOON = Date.UTC(2026, 9, 5, 12, 0, 0);
+/** 2026-10-05, 23:00 UTC — UTC kullanıcısı için gece. */
+const NIGHT = Date.UTC(2026, 9, 5, 23, 0, 0);
+
+function decide(type, state, nowMs = NOON, topic = null) {
+  return notificationDecision({ type, topic, state }, nowMs);
+}
+
+console.log('=== YEREL SAAT VE SESSİZ SAAT ===');
+check('UTC öğlen', localHourOf(NOON, 0), 12);
+check('Türkiye +3 öğlen UTC → 15', localHourOf(NOON, 180), 15);
+check('Endonezya +7 gece 23 UTC → 6 (ertesi sabah)', localHourOf(NIGHT, 420), 6);
+check('20:00 sessiz değil', isQuietHour(20), false);
+check('21:00 sessiz', isQuietHour(21), true);
+check('03:00 sessiz', isQuietHour(3), true);
+check('08:00 sessiz değil', isQuietHour(8), false);
+check('07:00 sessiz', isQuietHour(7), true);
+
+console.log('\n=== TERCİHLER (geriye dönük uyum) ===');
+check('alan hiç yok → sohbet açık', notificationPrefsFor({}).chat, true);
+check(
+  'eski tek anahtar kapalı → ödül kapalı',
+  notificationPrefsFor({ notificationsEnabled: false }).reward,
+  false
+);
+check(
+  'eski anahtar kapalı ama yeni tercih açık → yeni kazanır',
+  notificationPrefsFor({ notificationsEnabled: false, notificationPrefs: { chat: true } }).chat,
+  true
+);
+check(
+  'eski anahtar açık ama yeni tercih kapalı → yeni kazanır',
+  notificationPrefsFor({ notificationsEnabled: true, notificationPrefs: { chat: false } }).chat,
+  false
+);
+check(
+  'kısmi tercih: belirtilmeyen tür eski anahtara düşer',
+  notificationPrefsFor({ notificationsEnabled: false, notificationPrefs: { chat: true } }).reward,
+  false
+);
+
+console.log('\n=== TÜR BAZLI TERCİH ===');
+const allOn = { prefs: notificationPrefsFor({}), utcOffsetMinutes: 0 };
+check('sohbet açıkken gider', decide('chat', allOn).send, true);
+check('bilinmeyen tür', decide('gibberish', allOn).reason, 'unknown_type');
+check(
+  'ödül kapalıyken ödül gitmez',
+  decide('reward', { ...allOn, prefs: { ...allOn.prefs, reward: false } }).reason,
+  'pref_off'
+);
+check(
+  'ödül kapalı sohbeti ETKİLEMEZ — asıl mesele bu',
+  decide('chat', { ...allOn, prefs: { ...allOn.prefs, reward: false } }).send,
+  true
+);
+check(
+  'hesap bildirimi uygulama içinden kapatılamıyor',
+  decide('account', { ...allOn, prefs: { chat: false, streak: false, reward: false } }).send,
+  true
+);
+
+console.log('\n=== SESSİZ SAATLER ===');
+// UTC kullanıcısı için 23:00 gece.
+const atNight = { prefs: notificationPrefsFor({}), utcOffsetMinutes: 0 };
+check('gece sohbet gider', decide('chat', atNight, NIGHT).send, true);
+check('ama sessiz kanala düşer', decide('chat', atNight, NIGHT).channel, 'messages_quiet');
+check('gündüz normal kanal', decide('chat', atNight, NOON).channel, 'messages');
+check('gece ödül düşer', decide('reward', atNight, NIGHT).reason, 'quiet_hours');
+check('gece seri hatırlatması gider (saati kullanıcı seçti)', decide('streak', atNight, NIGHT).send, true);
+check('gece hesap bildirimi gider', decide('account', atNight, NIGHT).send, true);
+// Endonezya (+7) için aynı UTC anı sabah 06:00 → hâlâ sessiz saat (08:00'den önce).
+check(
+  'saat dilimi dikkate alınıyor: +7 için 06:00 hâlâ sessiz',
+  decide('reward', { ...atNight, utcOffsetMinutes: 420 }, NIGHT).reason,
+  'quiet_hours'
+);
+// +9 için aynı an 08:00 → sessiz saat bitti.
+check(
+  '+9 için 08:00 sessiz değil',
+  decide('reward', { ...atNight, utcOffsetMinutes: 540 }, NIGHT).send,
+  true
+);
+// `Number(null) === 0` tuzağı: farkı bilinmeyen kullanıcı UTC sanılırsa gece bildirimi
+// düşürülür. İkisi zıt davranmalı.
+check(
+  'saat dilimi null → bildirim düşmez',
+  decide('reward', { prefs: notificationPrefsFor({}), utcOffsetMinutes: null }, NIGHT).send,
+  true
+);
+check(
+  'saat dilimi alanı hiç yok → bildirim düşmez',
+  decide('reward', { prefs: notificationPrefsFor({}) }, NIGHT).send,
+  true
+);
+check(
+  'saat dilimi boş metin → bildirim düşmez',
+  decide('reward', { prefs: notificationPrefsFor({}), utcOffsetMinutes: '' }, NIGHT).send,
+  true
+);
+check(
+  'ama GERÇEKTEN UTC olan (0) kullanıcıya sessiz saat uygulanır',
+  decide('reward', { prefs: notificationPrefsFor({}), utcOffsetMinutes: 0 }, NIGHT).reason,
+  'quiet_hours'
+);
+
+console.log('\n=== GÜNLÜK VE HAFTALIK TAVAN ===');
+const today = dayKey(NOON);
+const fullDay = {};
+fullDay[today] = DAILY_CAP;
+check('günlük tavan dolu', decide('reward', { ...allOn, history: fullDay }).reason, 'daily_cap');
+check(
+  'tavan dolu olsa bile sohbet gider (işlemsel)',
+  decide('chat', { ...allOn, history: fullDay }).send,
+  true
+);
+check(
+  'tavan dolu olsa bile hesap bildirimi gider',
+  decide('account', { ...allOn, history: fullDay }).send,
+  true
+);
+check(
+  'tavan dolu olsa bile seri hatırlatması gider (kullanıcının kurduğu alarm)',
+  decide('streak', { ...allOn, history: fullDay }).send,
+  true
+);
+
+// Haftalık tavanı günlük tavana takılmadan test et: bugüne hiç bildirim koymadan geçmiş
+// günlere yay. Yani günlük tavan boşken haftalık dolu.
+const spread = {};
+spread[dayKey(NOON - 86400000)] = 2;
+for (let i = 2; i <= WEEKLY_CAP - 1; i++) spread[dayKey(NOON - i * 86400000)] = 1;
+check('haftalık sayım doğru', recentCounts(spread, NOON).week, WEEKLY_CAP);
+check('bugün boş', recentCounts(spread, NOON).day, 0);
+check('haftalık tavan dolu', decide('reward', { ...allOn, history: spread }).reason, 'weekly_cap');
+check(
+  'haftalık tavan dolu olsa bile sohbet gider',
+  decide('chat', { ...allOn, history: spread }).send,
+  true
+);
+
+console.log('\n=== ÖNCELİK: REZERVE SLOT ===');
+// Normal öncelikli bir ödül bildirimi tavanın SON slotunu kullanamıyor; o slot
+// `season_ending` gibi öncelikli konulara ayrılmış.
+const oneUsed = {};
+oneUsed[today] = DAILY_CAP - RESERVED_FOR_PRIORITY;
+check(
+  'normal ödül bildirimi rezerve slotu kullanamaz',
+  decide('reward', { ...allOn, history: oneUsed }, NOON, 'chest_waiting').reason,
+  'daily_cap'
+);
+check(
+  'öncelikli konu rezerve slotu kullanır',
+  decide('reward', { ...allOn, history: oneUsed }, NOON, 'season_ending').send,
+  true
+);
+check(
+  'öncelikli konu da tavanın TAMAMINI aşamaz',
+  decide('reward', { ...allOn, history: fullDay }, NOON, 'season_ending').reason,
+  'daily_cap'
+);
+
+// KULLANICI KARARI (05.10.2026): sezonun son günü "sezon bitiyor" ve seri hatırlatması
+// geçecek, madalya bildirimi düşecek. Günün gerçek sırasıyla kurulan senaryo.
+console.log('\n--- sezonun son günü, gerçek sırayla ---');
+let ledger = {};
+const seasonDay = decide('reward', { ...allOn, history: ledger.history }, NOON, 'season_ending');
+check('08:05 "sezon bitiyor" geçer', seasonDay.send, true);
+ledger = ledgerPatch(ledger, seasonDay, NOON);
+
+const medals = decide('reward', { ...allOn, history: ledger.history }, NOON, 'season_medals');
+check('12:05 "madalyan hazır" DÜŞER (rezerve slot)', medals.reason, 'daily_cap');
+
+const evening = decide('streak', { ...allOn, history: ledger.history }, NOON);
+check('akşam seri hatırlatması geçer (tavansız)', evening.send, true);
+
+// Ters sıra: madalya sabah gelse bile sezon bildirimi rezerve slota giriyor.
+console.log('--- ters sıra: madalya önce ---');
+let ledger2 = ledgerPatch({}, decide('reward', allOn, NOON, 'season_medals'), NOON);
+check(
+  'madalya önce gittiyse "sezon bitiyor" yine geçer',
+  decide('reward', { ...allOn, history: ledger2.history }, NOON, 'season_ending').send,
+  true
+);
+check(
+  've seri hatırlatması yine geçer',
+  decide('streak', { ...allOn, history: ledger2.history }, NOON).send,
+  true
+);
+// Sekiz gün öncesi pencerenin dışında kalmalı.
+const old = {};
+old[dayKey(NOON - 8 * 86400000)] = 99;
+check('sekiz gün öncesi sayılmaz', recentCounts(old, NOON).week, 0);
+
+console.log('\n=== AÇILMAYAN KONU KENDİLİĞİNDEN SUSAR ===');
+const muted = { ...allOn, unopened: { season_ending: UNOPENED_MUTE_AFTER } };
+check(
+  `${UNOPENED_MUTE_AFTER} kez açılmayan konu susar`,
+  decide('reward', muted, NOON, 'season_ending').reason,
+  'topic_muted'
+);
+check(
+  'bir altı hâlâ gönderilir',
+  decide('reward', { ...allOn, unopened: { season_ending: UNOPENED_MUTE_AFTER - 1 } }, NOON, 'season_ending').send,
+  true
+);
+check(
+  'susan konu ÖTEKİ konuyu etkilemez — tür değil konu bazında',
+  decide('reward', muted, NOON, 'chest_waiting').send,
+  true
+);
+// Susturma yalnızca `reward`'da. Ötekilerde "dokunulmadı" ile "işe yaramadı" aynı şey değil:
+// bildirimi görüp uygulamayı kendi açan kullanıcı hiç dokunmamış sayılıyor.
+check(
+  'seri hatırlatması susturulamaz — işini yaptığı için kapanmasın',
+  decide('streak', { ...allOn, unopened: { streak_reminder: 99 } }, NOON, 'streak_reminder').send,
+  true
+);
+check(
+  'sohbet bildirimi susturulamaz',
+  decide('chat', { ...allOn, unopened: { chat: 99 } }, NOON, 'chat').send,
+  true
+);
+check(
+  'hesap bildirimi susturulamaz',
+  decide('account', { ...allOn, unopened: { trial_ending: 99 } }, NOON, 'trial_ending').send,
+  true
+);
+
+console.log('\n=== DEFTER ===');
+const d1 = decide('reward', allOn, NOON, 'chest_waiting');
+const p1 = ledgerPatch({}, d1, NOON);
+check('gönderim bugüne sayılır', p1.history[today], 1);
+check('konu gönderim sayacı', p1.sent.chest_waiting, 1);
+check('açılmadı sayacı artar', p1.unopened.chest_waiting, 1);
+
+const p2 = ledgerPatch(p1, d1, NOON);
+check('ikinci gönderim birikir', p2.history[today], 2);
+check('açılmadı birikir', p2.unopened.chest_waiting, 2);
+
+// Sohbet gibi tavansız tür güne SAYILMAMALI, yoksa öğretmenle yoğun bir sohbet akşamın
+// hatırlatmasını yutardı.
+const chatPatch = ledgerPatch(p1, decide('chat', allOn), NOON);
+check('tavansız tür güne sayılmaz', chatPatch.history[today], 1);
+check('ama gönderim sayacı yine tutulur', chatPatch.sent.chat, 1);
+
+const stale = { history: { '2020-01-01': 5 }, sent: {}, unopened: {} };
+check('eski gün anahtarı defterden düşer', ledgerPatch(stale, d1, NOON)['history']['2020-01-01'], undefined);
+
+const afterOpen = openPatch(p2, 'chest_waiting');
+check('açılma sayılır', afterOpen.opened.chest_waiting, 1);
+check('açılmadı sayacı sıfırlanır', afterOpen.unopened.chest_waiting, 0);
+check(
+  'sıfırlanan konu yeniden gönderilebilir',
+  decide('reward', { ...allOn, unopened: afterOpen.unopened }, NOON, 'chest_waiting').send,
+  true
+);
+
+console.log('\n=== ÖĞRETMEN HAVUZU METNİ ===');
+const teacherPoolText = evalFromIndex('teacherPoolText');
+
+check('tek yeni soru tekil yazılıyor', teacherPoolText(1, 1).title, 'Havuzda yeni bir soru var');
+check('birden fazla yeni soru', teacherPoolText(3, 3).title, 'Havuzda 3 yeni soru var');
+// Toplam yeniye eşitken "1 yeni soru geldi, havuzda 1 soru bekliyor" demek aynı şeyi iki kez
+// söylemek olurdu; onun yerine iade penceresi hatırlatılıyor.
+check(
+  'toplam yeniye eşitse tekrar etmiyor',
+  teacherPoolText(2, 2).body,
+  'Cevaplanmayan soru 48 saat sonra öğrenciye iade ediliyor.'
+);
+check(
+  'havuzda birikmiş soru varsa toplam söyleniyor',
+  teacherPoolText(2, 7).body,
+  'Havuzda toplam 7 soru cevap bekliyor.'
+);
+
+console.log('\n=== DENEME BİTİŞİ: TESPİT ===');
+const isTrialPeriod = evalFromIndex('isTrialPeriod');
+check('teklif yok → deneme değil', isTrialPeriod({ lineItems: [{ productId: 'p' }] }), false);
+check(
+  'teklif uygulanmış → deneme',
+  isTrialPeriod({ lineItems: [{ offerDetails: { offerId: 'trial-7day' } }] }),
+  true
+);
+check('boş offerId deneme sayılmıyor', isTrialPeriod({ lineItems: [{ offerDetails: { offerId: '  ' } }] }), false);
+check('lineItems hiç yok', isTrialPeriod({}), false);
+check('yanıt boş', isTrialPeriod(null), false);
+
+console.log('\n=== DENEME BİTİŞİ: KARAR ===');
+const trialNoticeDecision = evalFromIndex(
+  'trialNoticeDecision',
+  ['trialNoticeText'],
+  ['TRIAL_NOTICE_DAYS', 'TRIAL_NOTICE_LOCAL_HOURS']
+);
+const DAY = 86400000;
+// Yerel saat 12:00 olacak şekilde: NOON zaten 12:00 UTC, offset 0.
+const inWindow = { utcOffsetMinutes: 0 };
+
+check(
+  'deneme yok → bildirim yok',
+  trialNoticeDecision({ trialEndsAt: 0, ...inWindow }, NOON),
+  null
+);
+check(
+  'deneme geçmişte → bildirim yok',
+  trialNoticeDecision({ trialEndsAt: NOON - DAY, ...inWindow }, NOON),
+  null
+);
+check(
+  '3 gün kaldı → 3 eşiği',
+  trialNoticeDecision({ trialEndsAt: NOON + 3 * DAY - 1000, ...inWindow }, NOON).days,
+  3
+);
+check(
+  '2.5 gün kaldı → hâlâ 3 eşiği (pencere bir gün geniş)',
+  trialNoticeDecision({ trialEndsAt: NOON + 2.5 * DAY, ...inWindow }, NOON).days,
+  3
+);
+check(
+  '1.5 gün kaldı → hiçbir eşik (3 geçti, 1 gelmedi)',
+  trialNoticeDecision({ trialEndsAt: NOON + 1.5 * DAY, ...inWindow }, NOON),
+  null
+);
+check(
+  '12 saat kaldı → 1 eşiği',
+  trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).days,
+  1
+);
+check(
+  '5 gün kaldı → henüz bildirim yok',
+  trialNoticeDecision({ trialEndsAt: NOON + 5 * DAY, ...inWindow }, NOON),
+  null
+);
+check('1 gün metni "yarın" diyor', trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).text.title, 'Deneme süren yarın bitiyor');
+
+// Tekrar engelleme: aynı deneme için ikinci kez gitmiyor, ama YENİ bir deneme için gidiyor.
+const ends = NOON + 2.5 * DAY;
+check(
+  'aynı deneme için ikinci kez gitmiyor',
+  trialNoticeDecision({ trialEndsAt: ends, sentFor: { '3': ends }, ...inWindow }, NOON),
+  null
+);
+check(
+  'başka bir denemenin kaydı engellemiyor',
+  trialNoticeDecision({ trialEndsAt: ends, sentFor: { '3': ends - 999 }, ...inWindow }, NOON).days,
+  3
+);
+check(
+  '3 gönderilmiş olsa bile 1 eşiği ayrı',
+  trialNoticeDecision(
+    { trialEndsAt: NOON + 0.5 * DAY, sentFor: { '3': NOON + 0.5 * DAY }, ...inWindow },
+    NOON
+  ).days,
+  1
+);
+
+// Yerel saat penceresi: gece gelen "denemen bitiyor" bildirimin kendisini zararlı yapar.
+check(
+  'yerel saat 03:00 → gönderilmiyor',
+  trialNoticeDecision({ trialEndsAt: ends, utcOffsetMinutes: -540 }, NOON), // 12-9 = 03:00
+  null
+);
+check(
+  'yerel saat 22:00 → gönderilmiyor',
+  trialNoticeDecision({ trialEndsAt: ends, utcOffsetMinutes: 600 }, NOON), // 12+10 = 22:00
+  null
+);
+check(
+  'yerel saat 10:00 → sınır dahil',
+  trialNoticeDecision({ trialEndsAt: ends, utcOffsetMinutes: -120 }, NOON).days,
+  3
+);
+check(
+  'saat dilimi bilinmiyorsa gönderilmiyor',
+  trialNoticeDecision({ trialEndsAt: ends, utcOffsetMinutes: null }, NOON),
+  null
+);
+
+console.log('\n=== SORU DURUMU BİLDİRİMLERİ ===');
+const questionStatusNotice = evalFromIndex(
+  'questionStatusNotice',
+  ['timestampMillis'],
+  ['RESOLVED_NOTICE_QUIET_MS']
+);
+const topicOf = (b, a, now = NOON) => {
+  const r = questionStatusNotice(b, a, now);
+  return r ? r.topic : null;
+};
+
+check(
+  'öğretmen soruyu aldı',
+  topicOf({ status: 'pending' }, { status: 'claimed' }),
+  'question_claimed'
+);
+check('durum değişmediyse bildirim yok', topicOf({ status: 'claimed' }, { status: 'claimed' }), null);
+check(
+  'sahiplenme dışı geçişler sessiz (örn. claimed → pending)',
+  topicOf({ status: 'claimed' }, { status: 'pending' }),
+  null
+);
+
+// Çözüldü: öğretmen son mesajını yazıp hemen kapattıysa o mesajın bildirimi zaten gitti.
+check(
+  'çözüldü — son mesajdan uzun süre sonra kapatıldı',
+  topicOf({ status: 'claimed' }, { status: 'resolved', lastMessageAt: NOON - 20 * 60000 }),
+  'question_resolved'
+);
+check(
+  'çözüldü — son mesajdan hemen sonra kapatıldı, bildirim YOK',
+  topicOf({ status: 'claimed' }, { status: 'resolved', lastMessageAt: NOON - 60000 }),
+  null
+);
+check(
+  'çözüldü — hiç mesaj yoksa gönderiliyor',
+  topicOf({ status: 'claimed' }, { status: 'resolved' }),
+  'question_resolved'
+);
+// Firestore Timestamp nesnesi de kabul edilmeli (sahada gelen biçim bu).
+check(
+  'çözüldü — Timestamp nesnesi okunuyor',
+  topicOf({ status: 'claimed' }, { status: 'resolved', lastMessageAt: { toMillis: () => NOON - 60000 } }),
+  null
+);
+
+check(
+  'kredi iade edildi',
+  topicOf({ status: 'pending' }, { status: 'expired', creditRefunded: true }),
+  'credit_refunded'
+);
+// `expired` tek başına yetmiyor: kredi harcanmadan oluşmuş eski sorular iade edilmeden
+// kapanabiliyor ve onlar için söylenecek bir şey yok.
+check(
+  'iade edilmeden kapanan soru sessiz',
+  topicOf({ status: 'pending' }, { status: 'expired' }),
+  null
+);
+check(
+  'iade bayrağı false ise sessiz',
+  topicOf({ status: 'pending' }, { status: 'expired', creditRefunded: false }),
+  null
+);
+
+check(
+  'metin iade edilen kredi sayısını söylüyor',
+  questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).body,
+  '1 danışma kredin geri verildi. Dilediğin zaman yeniden sorabilirsin.'
+);
+
+console.log('\n=== SEZON BİTİŞİ ===');
+const seasonNoticeDecision = evalFromIndex(
+  'seasonNoticeDecision',
+  ['seasonNoticeText'],
+  ['SEASON_NOTICE_WINDOW_HOURS', 'SEASON_NOTICE_LOCAL_HOURS']
+);
+const HOUR = 3600000;
+const seasonBase = { season: 7, msLeft: 4 * HOUR, sentSeason: null, utcOffsetMinutes: 0 };
+const seasonOf = (patch) => seasonNoticeDecision({ ...seasonBase, ...patch }, NOON);
+
+check('4 saat kaldı → gönderiliyor', seasonOf({}) !== null, true);
+check('1 saat kaldı → pencere geçti', seasonOf({ msLeft: 1 * HOUR }), null);
+check('20 saat kaldı → pencere gelmedi', seasonOf({ msLeft: 20 * HOUR }), null);
+check('12 saat sınırı dahil', seasonOf({ msLeft: 12 * HOUR }) !== null, true);
+// Sezon numarası karşılaştırılıyor, bayrak değil: bir sonraki sezonda bildirim yeniden gider.
+check('bu sezon için gönderilmiş', seasonOf({ sentSeason: 7 }), null);
+check('önceki sezonun kaydı engellemiyor', seasonOf({ sentSeason: 6 }) !== null, true);
+// Gece bildirimi bu özelliğin amacını bozar; ertelemek de işe yaramaz, sezon bitiyor.
+check('yerel saat 03:00 → gönderilmiyor', seasonOf({ utcOffsetMinutes: -540 }), null);
+check('yerel saat 22:00 → gönderilmiyor', seasonOf({ utcOffsetMinutes: 600 }), null);
+check('saat dilimi bilinmiyorsa gönderilmiyor', seasonOf({ utcOffsetMinutes: null }), null);
+
+// Metin kalan süreyi söylüyor ama GÜN adı söylemiyor: aynı UTC anı bazı dilimlerde bugün,
+// bazılarında yarın oluyor.
+check('metin kalan saati söylüyor', seasonOf({ msLeft: 4 * HOUR }).text.title, 'Sezon 4 saat sonra bitiyor');
+check('tekil saat', seasonOf({ msLeft: 2.4 * HOUR }).text.title, 'Sezon 2 saat sonra bitiyor');
+check('metinde gün adı yok', /yarın|bugün/i.test(seasonOf({}).text.title), false);
+
+console.log('\n=== ENERJİ DOLDU ===');
+const energyNoticeDecision = evalFromIndex(
+  'energyNoticeDecision',
+  [],
+  ['ENERGY_NOTICE_LOCAL_HOURS']
+);
+const energyOf = (patch) =>
+  energyNoticeDecision({ infiniteEnergy: false, utcOffsetMinutes: 180, ...patch }, NOON);
+
+// NOON = 12:00 UTC; +180 → yerel 15:00, okul sonrası penceresinin başı.
+check('yerel 15:00 → gönderiliyor', energyOf({}) !== null, true);
+// Okul saatinde çocuğun telefonunu titretmek savunulamaz (kitle 7–10 yaş, Play Families).
+check('yerel 12:00 (okul saati) → gönderilmiyor', energyOf({ utcOffsetMinutes: 0 }), null);
+check('yerel 09:00 → gönderilmiyor', energyOf({ utcOffsetMinutes: -180 }), null);
+check('yerel 21:00 → gönderilmiyor', energyOf({ utcOffsetMinutes: 540 }), null);
+check('yerel 20:00 → gönderiliyor', energyOf({ utcOffsetMinutes: 480 }) !== null, true);
+// Sonsuz enerjisi olanda dolum diye bir şey yok, alan anlamsız.
+check('sonsuz enerji → gönderilmiyor', energyOf({ infiniteEnergy: true }), null);
+check('saat dilimi bilinmiyorsa gönderilmiyor', energyOf({ utcOffsetMinutes: null }), null);
+
+console.log('\n=== BEKLEYEN SANDIK ===');
+const pendingChestCount = evalFromIndex(
+  'pendingChestCount',
+  ['readCupPathEntry', 'nextCupPathMilestone', 'isCupPathMilestone'],
+  ['CUP_PATH_FIELDS', 'CUP_PATH_START', 'CUP_PATH_STEP', 'CUP_PATH_MAX']
+);
+const chestNoticeText = evalFromIndex('chestNoticeText');
+
+check('puan yok → sandık yok', pendingChestCount({}, {}), 0);
+check(
+  'puan başlangıçta → sandık yok',
+  pendingChestCount({ addition_abacus_cup: 200 }, {}),
+  0
+);
+// İlk eşik 300 (CUP_PATH_START 200 + STEP 100); defter boşken lastClaimed 200 sayılıyor.
+check(
+  'ilk eşiği geçmiş, hiç açmamış → 1 sandık',
+  pendingChestCount({ addition_abacus_cup: 300 }, {}),
+  1
+);
+check(
+  'eşiğin bir altı → sandık yok',
+  pendingChestCount({ addition_abacus_cup: 299 }, {}),
+  0
+);
+check(
+  'açılmışsa sayılmıyor',
+  pendingChestCount({ addition_abacus_cup: 300 }, { addition_abacus_cup: { lastClaimed: 300 } }),
+  0
+);
+check(
+  'iki ayrı kupada bekleyen sandık',
+  pendingChestCount({ addition_abacus_cup: 400, impact_abacus_cup: 500 }, {}),
+  2
+);
+check('tekil metin', chestNoticeText(1).title, 'Seni bekleyen bir sandık var');
+check('çoğul metin', chestNoticeText(3).title, 'Seni bekleyen 3 sandık var');
+
+console.log('\n=== İNGİLİZCE METİNLER (kullanıcının lang: en) ===');
+const TR_LETTERS = /[çğıöşüÇĞİÖŞÜ]/;
+const enTexts = [
+  chestNoticeText(1, 'en'), chestNoticeText(3, 'en'),
+  teacherPoolText(1, 1, 'en'), teacherPoolText(2, 7, 'en'),
+  seasonOf({ msLeft: 4 * HOUR }).textEn,
+  trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textEn,
+  questionStatusNotice({ status: 'pending' }, { status: 'claimed' }, NOON).en,
+  questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).en,
+];
+enTexts.forEach((t, i) => check(`İngilizce metin ${i + 1} dolu ve Türkçe harfsiz`, Boolean(t && t.title && t.body && !TR_LETTERS.test(t.title + t.body)), true));
+check('İngilizce çoğul', chestNoticeText(3, 'en').title, '3 chests are waiting for you');
+check('İngilizce sezon saati', seasonOf({ msLeft: 4 * HOUR }).textEn.title, 'The season ends in 4 hours');
+check('Türkçe metin değişmedi', chestNoticeText(3).title, 'Seni bekleyen 3 sandık var');
+
+console.log('\n=== ENDONEZCE METİNLER (kullanıcının lang: id) ===');
+// İngilizce sözler Endonezce metne sızmasın diye birkaç belirgin kelime de aranıyor.
+const EN_WORDS = /\b(the|your|you|is|are|waiting)\b/i;
+const idTexts = [
+  chestNoticeText(1, 'id'), chestNoticeText(3, 'id'),
+  teacherPoolText(1, 1, 'id'), teacherPoolText(2, 7, 'id'),
+  seasonOf({ msLeft: 4 * HOUR }).textId,
+  trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textId,
+  questionStatusNotice({ status: 'pending' }, { status: 'claimed' }, NOON).id,
+  questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).id,
+];
+idTexts.forEach((t, i) => check(`Endonezce metin ${i + 1} dolu, Türkçe harfsiz, İngilizcesiz`, Boolean(t && t.title && t.body && !TR_LETTERS.test(t.title + t.body) && !EN_WORDS.test(t.title + t.body)), true));
+check('Endonezce tekil', chestNoticeText(1, 'id').title, 'Ada peti yang menunggumu');
+check('Endonezce sayılı', chestNoticeText(3, 'id').title, 'Ada 3 peti yang menunggumu');
+check('Endonezce sezon saati', seasonOf({ msLeft: 4 * HOUR }).textId.title, 'Musim berakhir 4 jam lagi');
+check('Endonezce sezon tek saat', evalFromIndex('seasonNoticeText', [], [])(1, 'id').title, 'Musim berakhir satu jam lagi');
+check('Endonezce deneme yarın', trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textId.title, 'Uji coba gratismu berakhir besok');
+check('Endonezce havuz toplamı', teacherPoolText(2, 7, 'id').body, '7 pertanyaan di kumpulan soal menunggu jawaban.');
+check('İngilizce metin değişmedi', chestNoticeText(3, 'en').title, '3 chests are waiting for you');
+check('İngilizce sezon değişmedi', seasonOf({ msLeft: 4 * HOUR }).textEn.title, 'The season ends in 4 hours');
+
+console.log('\n=== ARAPÇA METİNLER (kullanıcının lang: ar) ===');
+// Latin harf ve Doğu Arap rakamı (٠–٩) olmamalı: sözlük Batı rakamı diyor.
+const NOT_AR = /[A-Za-z٠-٩çğıöşüÇĞİÖŞÜ]/;
+const arTexts = [
+  chestNoticeText(1, 'ar'), chestNoticeText(3, 'ar'), chestNoticeText(11, 'ar'),
+  teacherPoolText(1, 1, 'ar'), teacherPoolText(2, 7, 'ar'),
+  seasonOf({ msLeft: 4 * HOUR }).textAr,
+  trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textAr,
+  questionStatusNotice({ status: 'pending' }, { status: 'claimed' }, NOON).ar,
+  questionStatusNotice({ status: 'pending' }, { status: 'expired', creditRefunded: true }, NOON).ar,
+];
+arTexts.forEach((t, i) => check(`Arapça metin ${i + 1} dolu, Latin harfsiz, Doğu rakamsız`, Boolean(t && t.title && t.body && !NOT_AR.test(t.title + t.body)), true));
+check('Arapça tekil', chestNoticeText(1, 'ar').title, 'هناك صندوق ينتظرك');
+check('Arapça ikil', chestNoticeText(2, 'ar').title, 'هناك صندوقان ينتظرانك');
+check('Arapça 3–10 çoğul', chestNoticeText(3, 'ar').title, 'هناك 3 صناديق تنتظرك');
+check('Arapça 11–99 tekil', chestNoticeText(11, 'ar').title, 'هناك 11 صندوقًا ينتظرك');
+check('Arapça 100', chestNoticeText(100, 'ar').title, 'هناك 100 صندوق ينتظرك');
+check('Arapça 103 çoğul', chestNoticeText(103, 'ar').title, 'هناك 103 صناديق تنتظرك');
+check('Arapça sezon saati', seasonOf({ msLeft: 4 * HOUR }).textAr.title, 'ينتهي الموسم بعد 4 ساعات');
+check('Arapça sezon tek saat', evalFromIndex('seasonNoticeText', [], [])(1, 'ar').title, 'ينتهي الموسم بعد ساعة واحدة');
+check('Arapça deneme yarın', trialNoticeDecision({ trialEndsAt: NOON + 0.5 * DAY, ...inWindow }, NOON).textAr.title, 'تنتهي فترتك التجريبية المجانية غدًا');
+check('Arapça havuz toplamı', teacherPoolText(2, 7, 'ar').body, 'الأسئلة التي تنتظر الإجابة في بنك الأسئلة: 7');
+check('Endonezce metin değişmedi', chestNoticeText(3, 'id').title, 'Ada 3 peti yang menunggumu');
+check('Türkçe metin Arapçadan sonra da aynı', chestNoticeText(3).title, 'Seni bekleyen 3 sandık var');
+
+console.log('\n=== DİL SEÇİMİ (sendUserNotification) ===');
+// Gövde Firestore istiyor; seçim satırı kaynaktan çekilip aynı ifadeyle sınanıyor.
+const pickLine = indexSrc.match(/const translated = (.+);\n/);
+check('sendUserNotification dil seçimi kaynakta', Boolean(pickLine), true);
+// eslint-disable-next-line no-new-func
+const pick = new Function('user', 'en', 'id', 'ar', `return ${pickLine[1]};`);
+const EN = { title: 'en' };
+const ID = { title: 'id' };
+const AR = { title: 'ar' };
+check('lang: en → en', pick({ lang: 'en' }, EN, ID), EN);
+check('lang: id → id', pick({ lang: 'id' }, EN, ID), ID);
+check('lang: id ama karşılık yok → Türkçe', pick({ lang: 'id' }, EN, null), null);
+check('lang: ar → ar', pick({ lang: 'ar' }, EN, ID, AR), AR);
+check('lang: ar ama karşılık yok → Türkçe', pick({ lang: 'ar' }, EN, ID, null), null);
+check('lang: en, ar verilmiş → en', pick({ lang: 'en' }, EN, ID, AR), EN);
+check('lang yok (eski sürüm) → Türkçe', pick({}, EN, ID), null);
+check('lang: tr → Türkçe', pick({ lang: 'tr' }, EN, ID), null);
+check('lang: constructor → Türkçe', pick({ lang: 'constructor' }, EN, ID), null);
+
+// İngilizcesi verilen her bildirim çağrısında Endonezcesi de olmalı: yeni bir bildirime yalnızca
+// `en:` eklenip `id:` unutulursa Endonezce kullanıcıya Türkçe giderdi.
+function callBlocks(src, marker) {
+  const out = [];
+  let at = src.indexOf(marker);
+  while (at >= 0) {
+    let depth = 0;
+    let j = src.indexOf('(', at);
+    for (; j < src.length; j++) {
+      if (src[j] === '(') depth++;
+      else if (src[j] === ')') { depth--; if (depth === 0) break; }
+    }
+    out.push(src.slice(at, j + 1));
+    at = src.indexOf(marker, j);
+  }
+  return out;
+}
+const finalizeSrc = fs.readFileSync(path.join(__dirname, '..', 'seasonLeaderboardFinalize.js'), 'utf8');
+const calls = [
+  ...callBlocks(indexSrc, 'await sendUserNotification(').concat(callBlocks(indexSrc, '    sendUserNotification(')),
+  ...callBlocks(finalizeSrc, 'await notify('),
+].filter((b) => /\n\s+en: /.test(b));
+check('İngilizceli bildirim çağrısı bulundu', calls.length >= 13, true);
+calls.forEach((b) => check(`Endonezcesi de var: ${b.match(/topic: ([^,\n]+)/)?.[1] || b.slice(0, 40)}`, /\n\s+id: /.test(b), true));
+// Arapçası da: yalnızca `en:` / `id:` eklenip `ar:` unutulursa Arapça kullanıcıya Türkçe giderdi.
+calls.forEach((b) => check(`Arapçası da var: ${b.match(/topic: ([^,\n]+)/)?.[1] || b.slice(0, 40)}`, /\n\s+ar: /.test(b), true));
+// Soru durumu bildirimlerinin üçü de Endonezceli (çağrı notice.id'yi geçiriyor).
+check('soru durumu: üç Endonezce karşılık', (grabFunction('questionStatusNotice').match(/\n\s+id: \{/g) || []).length, 3);
+check('soru durumu: üç Arapça karşılık', (grabFunction('questionStatusNotice').match(/\n\s+ar: \{/g) || []).length, 3);
+
+console.log(`\n${fail === 0 ? 'TÜMÜ GEÇTİ' : 'BAŞARISIZ'} — ${pass} geçti, ${fail} hata`);
+process.exit(fail === 0 ? 0 : 1);

@@ -31,7 +31,7 @@
                 android:id="@+id/cardTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Title"
+                android:text="@string/item_profile_cup_card_card_title"
                 android:textColor="#93A5B3"
                 android:textSize="14sp"
                 android:textStyle="bold" />

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oturumsuz kullanıcıya Sobi notları. Ayrı dosya: strings_sobi.xml'e aynı anda başka oturumlar da yazıyor. -->
+<resources>
+    <!-- Öğreticideki Sobi ekranında yazma çubuğunun yerinde (MistakeReviewDialog, reviewLoginNote). -->
+    <string name="sobi_chat_needs_account">تحتاج إلى حساب لتكتب أسئلتك الخاصة إلى Sobi.</string>
+</resources>

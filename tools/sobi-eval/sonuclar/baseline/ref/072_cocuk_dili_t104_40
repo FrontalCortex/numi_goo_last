@@ -1,0 +1,1 @@
+Şimdi 98'e 4 ekleyeceğiz, ama birler sütununda 8 var ve 8 + 4 = 12 olduğu için 4'ü doğrudan ekleyemiyoruz. Bunun yerine 10 ekleyip 4'ün büyük kardeşi olan 6'yı çıkarıyoruz, çünkü 4 eklemek ile 10 ekleyip 6 çıkarmak aynı sonucu verir. Yani 10 gelir, 6 gider ve sonuç 102 olur.

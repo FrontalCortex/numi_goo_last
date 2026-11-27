@@ -1,0 +1,381 @@
+package com.example.app
+
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.RecyclerView
+import com.example.app.ParentReportRepository.LessonRow
+import com.example.app.ParentReportRepository.PartGroup
+import com.example.app.ParentReportRepository.Report
+import com.example.app.ParentReportRepository.SectionGroup
+import com.example.app.ParentReportRepository.StepRow
+import com.example.app.ParentReportRepository.StepState
+import com.example.app.databinding.ItemParentDayBarBinding
+import com.example.app.databinding.ItemParentLessonBinding
+import com.example.app.databinding.ItemParentPartBinding
+import com.example.app.databinding.ItemParentSectionBinding
+import com.example.app.databinding.ItemParentStepBinding
+import com.example.app.databinding.ItemParentSummaryBinding
+
+/**
+ * Veli panelinin listesi.
+ *
+ * ## Üç seviye, hepsi kapalı başlar
+ *
+ *     Bölüm 1                    9/18 ders   ›
+ *       KURALSIZ TOPLAMA         4/4 ders    ›
+ *         ● Kuralsız Toplama - 1 Basamaklı   ›
+ *             Adım 1        İlk denemede geçti
+ *
+ * Panel açıldığında yalnızca bölüm satırları görünür; veli ilgilendiği yere doğru iniyor.
+ * Kapalı satır da bilgi taşısın diye her başlıkta "biten/toplam ders" yazıyor — açmadan da
+ * nerede olunduğu okunuyor.
+ *
+ * ## Neden ExpandableListView değil
+ * `ExpandableListView` iki seviyeyle sınırlı, `RecyclerView` ekosisteminin dışında ve özet kartı
+ * gibi ekstra satır tiplerini taşıyamıyor. Bunun yerine ağaç **düz bir listeye** açılır ve satır
+ * tipi `viewType` ile ayrılır. Yeni bir satır tipi eklemek tek bir `when` dalı demek.
+ *
+ * ## Yeni ders eklendiğinde
+ * Burada hiçbir şey değişmez. Adapter yalnızca [ParentReportRepository]'nin verdiği satırları
+ * çizer; müfredata ders eklemek o listeyi otomatik büyütür.
+ */
+class ParentReportAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+
+    private companion object {
+        const val TYPE_SUMMARY = 0
+        const val TYPE_PART = 1
+        const val TYPE_SECTION = 2
+        const val TYPE_LESSON = 3
+        const val TYPE_STEP = 4
+    }
+
+    /** Ekrana çizilen düz satır listesi; [rebuild] ile üretilir. */
+    private sealed class Row {
+        data class Summary(val report: Report) : Row()
+        data class Part(val part: PartGroup, val expanded: Boolean) : Row()
+        data class Section(val partId: Int, val section: SectionGroup, val expanded: Boolean) : Row()
+        data class Lesson(val lesson: LessonRow, val expanded: Boolean) : Row()
+        data class Step(val step: StepRow) : Row()
+    }
+
+    private var report: Report? = null
+
+    // Açık satırlar kimlikle tutuluyor, konumla değil: liste yeniden kurulunca kayma olmuyor
+    // ve bir bölüm kapatılıp açıldığında içindeki açık dersler aynen geri geliyor.
+    private val expandedParts = HashSet<Int>()
+    private val expandedSections = HashSet<String>()
+    private val expandedLessons = HashSet<String>()
+
+    private var rows: List<Row> = emptyList()
+
+    fun submit(report: Report) {
+        this.report = report
+        // Her şey kapalı başlar.
+        expandedParts.clear()
+        expandedSections.clear()
+        expandedLessons.clear()
+        rebuild()
+        notifyDataSetChanged()
+    }
+
+    private fun rebuild() {
+        val r = report
+        if (r == null) {
+            rows = emptyList()
+            return
+        }
+        val out = ArrayList<Row>(r.parts.size + 8)
+        out += Row.Summary(r)
+        r.parts.forEach { part ->
+            val partOpen = part.partId in expandedParts
+            out += Row.Part(part, partOpen)
+            if (!partOpen) return@forEach
+
+            part.sections.forEach { section ->
+                // Başlıksız ünite için boş satır basmanın anlamı yok; o grup hep açık sayılır,
+                // yoksa dersleri açılamaz bir satırın altında kalırdı.
+                val hasTitle = !section.title.isNullOrBlank()
+                val sectionOpen = !hasTitle || sectionKey(part.partId, section) in expandedSections
+                if (hasTitle) out += Row.Section(part.partId, section, sectionOpen)
+                if (!sectionOpen) return@forEach
+
+                section.lessons.forEach { lesson ->
+                    val lessonOpen = lesson.stableId in expandedLessons
+                    out += Row.Lesson(lesson, lessonOpen)
+                    if (lessonOpen) lesson.steps.forEach { out += Row.Step(it) }
+                }
+            }
+        }
+        rows = out
+    }
+
+    /**
+     * Ünitenin açık/kapalı kimliği. Başlık metni DEĞİL ilk dersinin [LessonRow.stableId]'si
+     * kullanılıyor: başlık metni bir gün tekrar edebilir ya da değiştirilebilir, stableId ise
+     * kalıcı ve benzersiz. ([SectionGroup] hiçbir zaman boş ders listesiyle kurulmuyor.)
+     */
+    private fun sectionKey(partId: Int, section: SectionGroup): String =
+        section.lessons.firstOrNull()?.stableId ?: "$partId|${section.title}"
+
+    /**
+     * Üç seviyenin tamamı için tek geçit. Bir satırı açmak/kapamak YALNIZCA onun altındaki
+     * satırları değiştirdiği için, listeyi yeniden kurup boy farkını bildirmek her seviye
+     * için doğru sonucu veriyor — seviye başına ayrı aralık hesabı gerekmiyor.
+     */
+    private fun toggleAt(position: Int) {
+        if (position !in rows.indices) return
+        when (val row = rows[position]) {
+            is Row.Part -> flip(expandedParts, row.part.partId)
+            is Row.Section -> flip(expandedSections, sectionKey(row.partId, row.section))
+            is Row.Lesson -> flip(expandedLessons, row.lesson.stableId)
+            else -> return
+        }
+        val before = rows.size
+        rebuild()
+        val delta = rows.size - before
+
+        notifyItemChanged(position) // ok yönü
+        when {
+            delta > 0 -> notifyItemRangeInserted(position + 1, delta)
+            delta < 0 -> notifyItemRangeRemoved(position + 1, -delta)
+        }
+    }
+
+    private fun <T> flip(set: MutableSet<T>, key: T) {
+        if (!set.remove(key)) set.add(key)
+    }
+
+    override fun getItemCount(): Int = rows.size
+
+    override fun getItemViewType(position: Int): Int = when (rows[position]) {
+        is Row.Summary -> TYPE_SUMMARY
+        is Row.Part -> TYPE_PART
+        is Row.Section -> TYPE_SECTION
+        is Row.Lesson -> TYPE_LESSON
+        is Row.Step -> TYPE_STEP
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        return when (viewType) {
+            TYPE_SUMMARY -> SummaryHolder(ItemParentSummaryBinding.inflate(inflater, parent, false))
+            TYPE_PART -> PartHolder(ItemParentPartBinding.inflate(inflater, parent, false))
+            TYPE_SECTION -> SectionHolder(ItemParentSectionBinding.inflate(inflater, parent, false))
+            TYPE_LESSON -> LessonHolder(ItemParentLessonBinding.inflate(inflater, parent, false))
+            else -> StepHolder(ItemParentStepBinding.inflate(inflater, parent, false))
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (val row = rows[position]) {
+            is Row.Summary -> (holder as SummaryHolder).bind(row.report)
+            is Row.Part -> (holder as PartHolder).bind(row.part, row.expanded)
+            is Row.Section -> (holder as SectionHolder).bind(row.section, row.expanded)
+            is Row.Lesson -> (holder as LessonHolder).bind(row.lesson, row.expanded)
+            is Row.Step -> (holder as StepHolder).bind(row.step)
+        }
+    }
+
+    // ── ViewHolder'lar ──────────────────────────────────────────────────────
+
+    private class SummaryHolder(val b: ItemParentSummaryBinding) : RecyclerView.ViewHolder(b.root) {
+        fun bind(report: Report) {
+            val s = report.summary
+            b.summaryFinishedValue.text = s.finishedLessons.toString()
+            b.summaryTimeValue.text = formatDuration(s.todaySeconds)
+            b.summaryStreakValue.text = s.streakDays.toString()
+
+            bindWeekStrip(s.lastWeek)
+
+            val note = buildString {
+                append(appString(R.string.ui_mufredattaki_x_dersten_x_tanesi_tamamlandi, s.totalLessons, s.finishedLessons))
+                append(appString(R.string.ui_toplam_calisma_suresi_x, formatDuration(s.totalTimeSeconds)))
+                s.hardestLesson?.let {
+                    append(appString(R.string.ui_en_cok_denemeyi_gerektiren_ders_x, it.title, it.totalKnownAttempts))
+                }
+            }
+            b.summaryNote.text = note
+        }
+
+        /**
+         * 7 sütunu tek tek kurar. Sütunlar `layout_weight` ile eşit paylaşıldığı için genişlik
+         * ekrana göre kendini ayarlar; yükseklik o haftanın EN YÜKSEK gününe göre ölçeklenir —
+         * mutlak bir eksen olmadığı için "az mı çok mu" değil, "hangi gün daha çok" okunur.
+         */
+        private fun bindWeekStrip(week: List<ParentReportRepository.DayTime>) {
+            val strip = b.summaryWeekStrip
+            val inflater = LayoutInflater.from(strip.context)
+            strip.removeAllViews()
+            if (week.isEmpty()) return
+
+            val maxSeconds = week.maxOf { it.seconds }
+            val density = strip.resources.displayMetrics.density
+            val trackPx = (TRACK_HEIGHT_DP * density).toInt()
+            val minPx = (MIN_BAR_HEIGHT_DP * density).toInt()
+
+            week.forEachIndexed { index, day ->
+                val bar = ItemParentDayBarBinding.inflate(inflater, strip, false)
+                bar.dayBarLabel.text = day.label
+                // 60 saniyenin altındaki bir gün "0dk" yazmasın: kısa da olsa çalışılmış.
+                bar.dayBarValue.text =
+                    if (day.seconds > 0) "${(day.seconds / 60).coerceAtLeast(1L)}dk" else ""
+
+                val fillParams = bar.dayBarFill.layoutParams
+                fillParams.height = when {
+                    day.seconds <= 0L || maxSeconds <= 0L -> minPx
+                    else -> minPx + ((trackPx - minPx) * day.seconds / maxSeconds).toInt()
+                }
+                bar.dayBarFill.layoutParams = fillParams
+
+                val ctx = strip.context
+                val isToday = index == week.lastIndex
+                val colorRes = when {
+                    day.seconds <= 0L -> R.color.parent_step_not_reached
+                    isToday -> R.color.lesson_header_blue
+                    else -> R.color.parent_step_passed
+                }
+                bar.dayBarFill.setBackgroundColor(ContextCompat.getColor(ctx, colorRes))
+
+                strip.addView(
+                    bar.root,
+                    LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
+                )
+            }
+        }
+    }
+
+    private inner class PartHolder(val b: ItemParentPartBinding) : RecyclerView.ViewHolder(b.root) {
+        init {
+            b.root.setOnClickListener { toggleAt(bindingAdapterPosition) }
+        }
+
+        fun bind(part: PartGroup, isExpanded: Boolean) {
+            // Adı tanımsız bir part için "Bölüm 7 - null" yazmaktansa sade başlık.
+            b.partTitle.text =
+                if (part.name.isNullOrBlank()) appString(R.string.ui_bolum_x, part.partId)
+                else appString(R.string.ui_bolum_x_x, part.partId, part.name)
+            b.partProgress.text = appString(R.string.ui_x_x_ders_bitti, part.finishedLessons, part.totalLessons)
+            b.partChevron.rotation = if (isExpanded) 90f * RtlSupport.endSign(b.partChevron) else 0f // aynalı okta (Arapça) ters dönüş de aşağı bakar
+        }
+    }
+
+    private inner class SectionHolder(val b: ItemParentSectionBinding) : RecyclerView.ViewHolder(b.root) {
+        init {
+            b.root.setOnClickListener { toggleAt(bindingAdapterPosition) }
+        }
+
+        fun bind(section: SectionGroup, isExpanded: Boolean) {
+            b.sectionTitle.text = section.title.orEmpty().uppercase(LOCALE)
+            b.sectionProgress.text = appString(R.string.ui_x_x_ders, section.finishedLessons, section.totalLessons)
+            b.sectionChevron.rotation = if (isExpanded) 90f * RtlSupport.endSign(b.sectionChevron) else 0f // aynalı okta (Arapça) ters dönüş de aşağı bakar
+        }
+    }
+
+    private inner class LessonHolder(val b: ItemParentLessonBinding) : RecyclerView.ViewHolder(b.root) {
+        init {
+            b.root.setOnClickListener { toggleAt(bindingAdapterPosition) }
+        }
+
+        fun bind(lesson: LessonRow, isExpanded: Boolean) {
+            b.lessonTitle.text = lesson.title
+            b.lessonSubtitle.text = lessonSubtitle(lesson)
+
+            val dotColor = if (lesson.isFinished) R.color.parent_step_passed else R.color.parent_step_in_progress
+            tintDot(b.lessonStatusDot, ContextCompat.getColor(b.root.context, dotColor))
+
+            // Kapalıyken sağa, açıkken aşağı bakar: durum tek bakışta anlaşılsın.
+            b.lessonChevron.rotation = if (isExpanded) 90f * RtlSupport.endSign(b.lessonChevron) else 0f // aynalı okta (Arapça) ters dönüş de aşağı bakar
+        }
+
+        private fun lessonSubtitle(lesson: LessonRow): String {
+            val stepWord = appPlural(R.plurals.ui_x_adim, lesson.stepCount, lesson.stepCount)
+            if (!lesson.isFinished) {
+                return appString(R.string.ui_devam_ediyor_x_x_adim_gecildi, lesson.passedSteps, lesson.stepCount)
+            }
+            val known = lesson.steps.count { it.attempts != null }
+            return when {
+                // Adımlardan biri bile ölçümsüzse toplam deneme sayısı eksik kalır; eksik bir
+                // sayı söylemektense hiç söylememek daha dürüst.
+                known < lesson.stepCount -> appString(R.string.ui_bitti_x, stepWord)
+                lesson.totalKnownAttempts == lesson.stepCount ->
+                    appString(R.string.ui_bitti_x_hepsi_ilk_denemede, stepWord)
+                else -> appPlural(
+                    R.plurals.ui_bitti_x_toplam_x_deneme,
+                    lesson.totalKnownAttempts,
+                    stepWord,
+                    lesson.totalKnownAttempts,
+                )
+            }
+        }
+    }
+
+    private class StepHolder(val b: ItemParentStepBinding) : RecyclerView.ViewHolder(b.root) {
+        fun bind(step: StepRow) {
+            val ctx = b.root.context
+            b.stepLabel.text = appString(R.string.ui_adim_x, step.step)
+
+            val colorRes = when (step.state) {
+                StepState.PASSED -> R.color.parent_step_passed
+                StepState.IN_PROGRESS -> R.color.parent_step_in_progress
+                StepState.NOT_REACHED -> R.color.parent_step_not_reached
+            }
+            val color = ContextCompat.getColor(ctx, colorRes)
+            tintDot(b.stepDot, color)
+            b.stepDetail.setTextColor(color)
+            b.stepDetail.text = stepDetail(step)
+
+            // Ulaşılmamış adım soluk: "yapılmadı" değil, "sırası gelmedi".
+            val reached = step.state != StepState.NOT_REACHED
+            b.stepLabel.alpha = if (reached) 1f else 0.55f
+            b.root.alpha = if (reached) 1f else 0.75f
+        }
+
+        private fun stepDetail(step: StepRow): String = when (step.state) {
+            StepState.PASSED -> when (step.attempts) {
+                null -> appString(R.string.ui_tamamlandi_2)
+                1 -> appString(R.string.ui_ilk_denemede_gecti)
+                else -> appString(R.string.ui_x_denemede_gecti, step.attempts)
+            }
+            StepState.IN_PROGRESS -> when {
+                step.attempts == null || step.attempts == 0 -> appString(R.string.ui_baslandi)
+                else -> appPlural(R.plurals.ui_deniyor_x_basarisiz_deneme, step.attempts, step.attempts)
+            }
+            StepState.NOT_REACHED -> appString(R.string.ui_sirasi_gelmedi)
+        }
+    }
+}
+
+/** Gün sütununun ray yüksekliği; item_parent_day_bar.xml ile aynı olmalı. */
+private const val TRACK_HEIGHT_DP = 52
+
+/** Sıfır dakikalık gün de görünsün diye taban yükseklik. */
+private const val MIN_BAR_HEIGHT_DP = 4
+
+/** Büyük harf dönüşümü uygulamanın dilinde (Türkçede I/İ; İngilizcede "i" → "I"). */
+private val LOCALE: java.util.Locale get() = java.util.Locale.getDefault()
+
+/**
+ * Ortak durum noktasını renklendirir. Drawable [android.graphics.drawable.Drawable.mutate] ile
+ * kopyalanır; aksi halde tüm satırlar aynı sabit durumu paylaşır ve son renk hepsine yayılır.
+ */
+private fun tintDot(view: View, color: Int) {
+    val d = view.background?.mutate() ?: return
+    d.setTint(color)
+    view.background = d
+}
+
+/** `12345 sn` → `3s 25dk`. Veli için saat/dakika tek başına yeterli; saniye gürültü. */
+private fun formatDuration(totalSeconds: Long): String {
+    if (totalSeconds <= 0L) return "0dk"
+    val minutes = totalSeconds / 60
+    val hours = minutes / 60
+    val rem = minutes % 60
+    return when {
+        hours <= 0L -> "${minutes}dk"
+        rem == 0L -> "${hours}s"
+        else -> "${hours}s ${rem}dk"
+    }
+}

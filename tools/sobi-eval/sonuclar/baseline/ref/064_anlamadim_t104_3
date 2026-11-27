@@ -1,0 +1,1 @@
+Ön sayıyı düşünelim: 49'da birler sütununda 9 var ve bir sütun en fazla 9 tutabilir. 9 üstüne 5 eklersek 14 olur, bu da sütuna sığmaz. Bu yüzden 5'i doğrudan eklemek yerine 10 ekleyip büyük kardeşi olan 5'i çıkarıyoruz: onlara 1 gelir (49 → 59), sonra birlerden 5 gider (59 → 54).

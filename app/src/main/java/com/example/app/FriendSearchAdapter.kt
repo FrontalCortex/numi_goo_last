@@ -13,8 +13,8 @@ data class FriendSearchResult(
     val firebaseUid: String,
     val name: String,
     val userId: String,
-    /** 1–12 → show avatar_ic{N} drawable; 0 → show letter circle */
-    val selectedAvatar: Int = 0,
+    /** publicProfiles.avatarConfig; null → harfli daire. */
+    val avatarConfig: String? = null,
     var requestSent: Boolean = false
 )
 
@@ -40,19 +40,13 @@ class FriendSearchAdapter(
 
         fun bind(item: FriendSearchResult, position: Int) {
             binding.root.setOnClickListener { onItemClick(item) }
-            // Avatar: real icon or letter fallback
-            if (item.selectedAvatar in 1..12) {
-                val resId = binding.root.context.resources.getIdentifier(
-                    "avatar_ic${item.selectedAvatar}", "drawable",
-                    binding.root.context.packageName
-                )
-                if (resId != 0) {
-                    binding.tvAvatarLetter.text = ""
-                    binding.tvAvatarLetter.background = null
-                    binding.tvAvatarLetter.setBackgroundResource(resId)
-                } else {
-                    showLetter(item, position)
-                }
+            // Avatar: kullanıcının avatarı ya da harfli daire
+            val avatar = AvatarView.drawableFor(
+                binding.root.context, item.avatarConfig, binding.tvAvatarLetter.layoutParams.width,
+            )
+            if (avatar != null) {
+                binding.tvAvatarLetter.text = ""
+                binding.tvAvatarLetter.background = avatar
             } else {
                 showLetter(item, position)
             }

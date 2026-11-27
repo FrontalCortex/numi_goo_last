@@ -15,6 +15,10 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
+
     private lateinit var binding: ActivityLoginBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null
@@ -80,17 +84,19 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             }
         }
 
+        DepthButtons.primary(binding.btnContinue)
+        DepthButtons.google(binding.btnGoogleSignIn)
         binding.btnContinue.setOnClickListener {
             requireOnlineOrShowOffline {
                 if (isGoogleFlowInProgress) return@requireOnlineOrShowOffline
                 val email = binding.etEmail.text?.toString()?.trim() ?: ""
 
                 if (email.isEmpty()) {
-                    showError("Lütfen e-posta girin")
+                    showError(appString(R.string.ui_lutfen_e_posta_girin))
                     return@requireOnlineOrShowOffline
                 }
                 if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    showError("Geçerli bir e-posta adresi girin")
+                    showError(appString(R.string.ui_gecerli_bir_e_posta_adresi_girin))
                     return@requireOnlineOrShowOffline
                 }
 
@@ -141,12 +147,12 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 override fun onFinish() {
                     resendCooldownTimer = null
                     binding.btnContinue.isEnabled = true
-                    binding.btnContinue.text = "Devam Et"
+                    binding.btnContinue.text = appString(R.string.ui_devam_et_2)
                 }
             }.start()
         } else {
             binding.btnContinue.isEnabled = true
-            binding.btnContinue.text = "Devam Et"
+            binding.btnContinue.text = appString(R.string.ui_devam_et_2)
         }
     }
 
@@ -167,12 +173,10 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         binding.btnGoogleSignIn.visibility = View.GONE
         binding.btnBack.visibility = View.GONE
 
+        // Kap artık kökteki dolgunun dışında ve XML'de zaten match_parent; boyutu elle
+        // ayarlamaya gerek yok (eski kod ConstraintLayout.LayoutParams'a cast ediyordu,
+        // yeni kökte o cast çalışmaz).
         binding.userInfoFragmentContainer.visibility = View.VISIBLE
-        binding.userInfoFragmentContainer.layoutParams =
-            (binding.userInfoFragmentContainer.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams).also {
-                it.width = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
-                it.height = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_CONSTRAINT
-            }
 
         val fragment = UserInfoFragment.newInstance(
             forceTeacher = false,
@@ -217,13 +221,13 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         }
 
         binding.btnContinue.isEnabled = false
-        binding.btnContinue.text = "Gönderiliyor..."
+        binding.btnContinue.text = appString(R.string.ui_gonderiliyor)
         binding.btnBack.isEnabled = false
         binding.btnGoogleSignIn.isEnabled = false
 
         authManager.sendLoginCodeOnly(email) { success, error ->
             binding.btnContinue.isEnabled = true
-            binding.btnContinue.text = "Devam Et"
+            binding.btnContinue.text = appString(R.string.ui_devam_et_2)
             binding.btnBack.isEnabled = true
             binding.btnGoogleSignIn.isEnabled = true
 
@@ -236,10 +240,10 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     .addToBackStack("otp")
                     .commit()
             } else {
-                if (error == "Kullanıcı bulunamadı") {
+                if (error == appString(R.string.ui_kullanici_bulunamadi)) {
                     showUserInfoFragment(prefillEmail = email)
                 } else {
-                    showError(error ?: "Kod gönderilemedi")
+                    showError(error ?: appString(R.string.ui_kod_gonderilemedi))
                 }
             }
         }
@@ -255,12 +259,12 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     } else {
                         setScreenEnabled(true)
                         isGoogleFlowInProgress = false
-                        showError("Google girişi başlatılamadı")
+                        showError(appString(R.string.ui_google_girisi_baslatilamadi))
                     }
                 } catch (e: Exception) {
                     setScreenEnabled(true)
                     isGoogleFlowInProgress = false
-                    showError("Google girişi başlatılamadı: ${e.localizedMessage}")
+                    showError(appString(R.string.ui_google_girisi_baslatilamadi_x, e.localizedMessage))
                 }
             }
     }
@@ -280,12 +284,18 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 // Play Services, imza/paket uyuşmazlığında da "iptal" gibi döner. Gerçek nedeni
                 // ApiException'ın durum kodundan oku: 10 = DEVELOPER_ERROR (SHA-1 eşleşmiyor),
                 // 12501 = kullanıcı gerçekten iptal etti, 7 = ağ hatası.
+                val reason = googleSignInFailureReason(data)
                 android.util.Log.w(
                     "LoginActivity",
-                    "Google Sign-In tamamlanmadı: ${googleSignInFailureReason(data)}"
+                    "Google Sign-In tamamlanmadı: $reason"
                 )
                 setScreenEnabled(true)
                 isGoogleFlowInProgress = false
+                if (!reason.contains("kullanıcı geri tuşuna basmış olabilir")
+                    && !reason.contains("statusCode=12501")
+                ) {
+                    showError(appString(R.string.ui_google_girisi_basarisiz_x, reason))
+                }
                 return
             }
 
@@ -316,8 +326,8 @@ class LoginActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                             googleEmail = googleEmail,
                             googleName = googleName
                         )
-                    } else if (error != "Kullanıcı girişi iptal edildi") {
-                        showError(error ?: "Google girişi başarısız")
+                    } else if (error != appString(R.string.ui_kullanici_girisi_iptal_edildi)) {
+                        showError(error ?: appString(R.string.ui_google_girisi_basarisiz))
                     }
                 }
             }

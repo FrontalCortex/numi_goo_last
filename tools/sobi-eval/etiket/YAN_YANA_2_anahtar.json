@@ -1,0 +1,106 @@
+{
+ "a": "baseline",
+ "b": "v2",
+ "items": [
+  {
+   "no": 1,
+   "id": "483_neden_boncuk_t8_27",
+   "A": "v2",
+   "B": "baseline",
+   "hakem": {
+    "baseline": 1,
+    "v2": 1
+   }
+  },
+  {
+   "no": 2,
+   "id": "490_neden_boncuk_t17_9",
+   "A": "v2",
+   "B": "baseline",
+   "hakem": {
+    "baseline": 1,
+    "v2": 1
+   }
+  },
+  {
+   "no": 3,
+   "id": "488_neden_boncuk_t16_9",
+   "A": "v2",
+   "B": "baseline",
+   "hakem": {
+    "baseline": 1,
+    "v2": 1
+   }
+  },
+  {
+   "no": 4,
+   "id": "482_neden_boncuk_t8_20",
+   "A": "v2",
+   "B": "baseline",
+   "hakem": {
+    "baseline": 1,
+    "v2": 1
+   }
+  },
+  {
+   "no": 5,
+   "id": "485_neden_boncuk_t9_10",
+   "A": "baseline",
+   "B": "v2",
+   "hakem": {
+    "baseline": 1,
+    "v2": 1
+   }
+  },
+  {
+   "no": 6,
+   "id": "489_neden_boncuk_t17_5",
+   "A": "v2",
+   "B": "baseline",
+   "hakem": {
+    "baseline": 0,
+    "v2": 1
+   }
+  },
+  {
+   "no": 7,
+   "id": "481_neden_boncuk_t8_13",
+   "A": "baseline",
+   "B": "v2",
+   "hakem": {
+    "baseline": 0,
+    "v2": 1
+   }
+  },
+  {
+   "no": 8,
+   "id": "484_neden_boncuk_t9_7",
+   "A": "v2",
+   "B": "baseline",
+   "hakem": {
+    "baseline": 1,
+    "v2": 1
+   }
+  },
+  {
+   "no": 9,
+   "id": "487_neden_boncuk_t16_6",
+   "A": "baseline",
+   "B": "v2",
+   "hakem": {
+    "baseline": 1,
+    "v2": 1
+   }
+  },
+  {
+   "no": 10,
+   "id": "486_neden_boncuk_t16_5",
+   "A": "v2",
+   "B": "baseline",
+   "hakem": {
+    "baseline": 1,
+    "v2": 1
+   }
+  }
+ ]
+}

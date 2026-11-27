@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@drawable/bg_panel_daily_question_continue"
+    android:backgroundTint="@color/background_color"
     android:clipToOutline="true"
     android:padding="20dp">
 
@@ -27,6 +28,7 @@
 
     <FrameLayout
         android:id="@+id/profileAbacusPanelContainer"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
@@ -53,7 +55,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
-            android:text="Profil ikonunu değiştir"
+            android:text="@string/panel_profile_abacus_text"
             android:textColor="#93A5B3"
             android:textSize="14sp"
             android:textStyle="bold" />

@@ -1,0 +1,5 @@
+Çünkü 500'den 4'ü doğrudan çıkaramıyoruz, onun yerine 10 gideriyoruz. 10 gidince 4'ten 6 fazla çıkmış oluyor, çünkü 10 - 4 = 6. Bu yüzden 6'yı geri getiriyoruz ve 4'ün kardeşi 6 gelir.
+---
+Bu adımda önce 10 gidiyor ve 500 sayısı 490 oluyor. Sonra 4'ü çıkarmak için fazla götürdüğümüz 6'yı geri getiriyoruz, yani 6 gelir ve 490 + 6 = 496 oluyor. Böylece 500 - 4 = 496 sonucuna ulaşıyoruz.
+---
+Bu ekranda alıştırma hazırlayamıyorum, ama sorun değil. Kendin deneyebilirsin: 20'den 10 gider, sonra 4'ün kardeşi 6 gelirse sonuç ne olur?

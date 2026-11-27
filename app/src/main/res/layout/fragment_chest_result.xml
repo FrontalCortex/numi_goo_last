@@ -5,9 +5,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:background="#101820"
     android:clickable="true"
     android:focusable="true"
+    android:background="@color/background_color"
     android:clipChildren="false"
     android:clipToPadding="false">
 
@@ -23,23 +23,19 @@
         android:clipChildren="false"
         android:clipToPadding="false">
 
-    <!-- Karakter ve animasyonlar için bir ImageView -->
-    <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/lottieView"
+    <!-- Sobi: başarı sahnesi (LessonEndMascot torbasından; dersle aynı torba) -->
+    <com.example.app.BunnyMascotView
+        android:id="@+id/mascotView"
         android:layout_width="200dp"
         android:layout_height="200dp"
-        android:layout_gravity="center"
-        tools:visibility="gone"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
-        app:lottie_fileName="animation_one.json" />
+        android:layout_gravity="center" />
 
     <!-- Başlık -->
     <TextView
         android:id="@+id/resultTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ders Bitti!"
+        android:text="@string/fragment_chest_result_result_title"
         android:textColor="#FFF200"
         android:layout_marginBottom="50dp"
         android:textSize="28sp"
@@ -69,7 +65,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Süre"
+                android:text="@string/fragment_chest_result_text"
                 android:textColor="#FFD600"
                 android:textStyle="bold"
                 android:textSize="16sp"/>
@@ -95,7 +91,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="BAŞARI"
+                android:text="@string/fragment_chest_result_text_2"
                 android:textColor="#7ED321"
                 android:textStyle="bold"
                 android:textSize="14sp"/>
@@ -200,15 +196,20 @@
             android:layout_width="match_parent"
             android:layout_height="60dp"
             android:layout_marginTop="16dp"
-            android:backgroundTint="#8CC63F"
-            android:text="Devam et"
+            android:background="@drawable/bg_depth_result_continue"
+            app:backgroundTint="@null"
+            android:stateListAnimator="@null"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingTop="0dp"
+            android:paddingBottom="4dp"
+            android:text="@string/fragment_chest_result_claim_button"
             android:layout_marginHorizontal="10dp"
             android:textAllCaps="false"
             android:textColor="#000000"
             android:layout_marginBottom="20dp"
             android:textSize="18sp"
-            android:textStyle="bold"
-            app:cornerRadius="15dp"/>
+            android:textStyle="bold"/>
     </LinearLayout>
 
     <LinearLayout
@@ -228,7 +229,7 @@
             android:id="@+id/multiplierText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="x0.00"
+            android:text="@string/fragment_chest_result_multiplier_text"
             android:textColor="#FFD600"
             android:textSize="16sp"
             android:textStyle="bold" />

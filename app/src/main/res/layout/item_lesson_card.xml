@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Haritada ders ve sandık kartı (LessonAdapter.LessonViewHolder). Kartlar alt alta diziliyor
+  (eski kaydırmalı daire yolunun yerine).
+   - Sol: kitap ikonu (ders ve sandıkta şimdilik aynı).
+   - Orta: başlık; altında derste adım dilimleri ve "2/5", sandıkta (hep tek adımlı) kazanılan
+     yıldızlar.
+   - Sağ: durum ikonu (açıksa ok, bitmişse onay, kilitliyse kilit).
+  Renkler ve kenar durumlara göre kodda veriliyor.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:paddingHorizontal="@dimen/map_lesson_card_margin_horizontal"
+    android:paddingVertical="@dimen/map_lesson_card_margin_vertical">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/lessonCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:foreground="?attr/selectableItemBackground"
+        android:stateListAnimator="@animator/lesson_card_press_animator"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="@color/lesson_center_blue"
+        app:strokeColor="@android:color/transparent"
+        app:strokeWidth="2dp">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="12dp">
+
+                <ImageView
+                    android:id="@+id/lessonIcon"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:contentDescription="@null"
+                    android:src="@drawable/profile_book_ic3" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginEnd="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/lessonTitle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="@android:color/white"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <!-- Ders: adım dilimleri ve sayı -->
+                    <LinearLayout
+                        android:id="@+id/lessonStepRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.example.app.SegmentBarView
+                            android:id="@+id/lessonStepBar"
+                            android:layout_width="0dp"
+                            android:layout_height="10dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            android:id="@+id/lessonStepText"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:gravity="end"
+                            android:minWidth="26dp"
+                            android:textColor="@android:color/white"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Sandık: kazanılan yıldızlar (adım çubuğunun yerinde) -->
+                    <LinearLayout
+                        android:id="@+id/chestStarsRow"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:id="@+id/chestStar1"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_marginEnd="4dp"
+                            android:contentDescription="@null" />
+
+                        <ImageView
+                            android:id="@+id/chestStar2"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_marginEnd="4dp"
+                            android:contentDescription="@null" />
+
+                        <ImageView
+                            android:id="@+id/chestStar3"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:contentDescription="@null" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <ImageView
+                    android:id="@+id/lessonStateIcon"
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:contentDescription="@null" />
+            </LinearLayout>
+
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

@@ -178,6 +178,9 @@ object AccountDeletionHelper {
         // Çok dokümanlı düz (leaf) alt koleksiyonlar
         deleteAllDocsInCollection(firestore, userDoc.collection("cupHistory"))
         deleteAllDocsInCollection(firestore, userDoc.collection("lessonSuccessRateState"))
+        // Haftalık ilerleme kartının verisi (sunucunun anlık kayıtları ve ders kilometre taşları).
+        deleteAllDocsInCollection(firestore, userDoc.collection("weeklyStats"))
+        deleteAllDocsInCollection(firestore, userDoc.collection("lessonMilestones"))
     }
 
     private suspend fun deleteAllDocsInCollection(firestore: FirebaseFirestore, collection: CollectionReference) {

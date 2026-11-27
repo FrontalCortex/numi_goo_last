@@ -1,0 +1,1 @@
+Bu adımda sonucu birlere değil, onlar basamağına ekliyoruz. Çünkü çarptığımız sayılardan biri olan 2, onlar basamağında duruyor ve sonucun yeri de bu basamağa göre belirleniyor. Birler basamağına yazarsak sayının değeri değişir, bu yüzden dersin dediği gibi onlar basamağına ekleyelim.

@@ -25,7 +25,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Avatar Önizleme"
+            android:text="@string/dialog_avatar_customization_text"
             android:textColor="@color/white"
             android:textSize="16sp"
             android:textAlignment="center" />
@@ -53,7 +53,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Saç Stili"
+                    android:text="@string/dialog_avatar_customization_text_2"
                     android:textColor="@color/white"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -89,7 +89,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Göz Stili"
+                    android:text="@string/dialog_avatar_customization_text_3"
                     android:textColor="@color/white"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -125,7 +125,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Cilt Rengi"
+                    android:text="@string/dialog_avatar_customization_text_4"
                     android:textColor="@color/white"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -161,7 +161,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Kıyafet Rengi"
+                    android:text="@string/dialog_avatar_customization_text_5"
                     android:textColor="@color/white"
                     android:textSize="18sp"
                     android:textStyle="bold"
@@ -203,7 +203,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="İPTAL"
+            android:text="@string/dialog_avatar_customization_btn_cancel"
             android:textColor="@color/white"
             android:background="@drawable/cancel_button_background"
             android:layout_marginEnd="8dp"
@@ -214,7 +214,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="KAYDET"
+            android:text="@string/dialog_avatar_customization_btn_save"
             android:textColor="@color/white"
             android:background="@drawable/save_button_background"
             android:layout_marginStart="8dp"

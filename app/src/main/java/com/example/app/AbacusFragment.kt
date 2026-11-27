@@ -43,16 +43,27 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.AbacusSideButtonFit
 import com.example.app.abacus.AbacusBeadMetrics
 import com.example.app.abacus.AbacusBeadRenderer
 import kotlin.math.log
 
+/**
+ * Boncuk animasyonunun süresi; her ders türünde aynı.
+ *
+ * Eskiden türü sandık (CHEST) olan derslerde 50 ms'ydi: boncuklar diğer derslerdekinden
+ * altı kat hızlı hareket ediyor, aynı abaküs iki ayrı şekilde davranıyordu.
+ */
+private const val BEAD_ANIMATION_MS = 300L
+
 class AbacusFragment : Fragment() {
     /** Quit: girişteki slide_in_left ile uyumlu sağa kayma süresi (slide_out_right). */
-    private val abacusDismissSlideMs = 300L
+    private val abacusDismissSlideMs = 400L
     private var isAbacusSettingsPanelOpen = false
     private var savedAbacusScaleX = 1.0f
     private var savedAbacusScaleY = 1.0f
+    // Abaküs sağdaki düğme sütununa sığmazsa küçültür; görünen ölçek = kullanıcı ölçeği × sığdırma payı.
+    private var abacusSideFit: AbacusSideButtonFit? = null
     private var savedAbacusMarginBottomDp = 0f
     private var savedBeadScaleX = 1.0f
     private var savedBeadScaleY = 1.0f
@@ -62,6 +73,9 @@ class AbacusFragment : Fragment() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var learningSessionStartMs: Long? = null
+    /** lessonSuccessRate telemetrisi için: bu soru ekranına giriş anı ve en az bir cevap verilip verilmediği. */
+    private var questionSessionStartMs: Long = 0L
+    private var hasSubmittedAnyAnswer: Boolean = false
 
     private var operations: List<MathOperation> = emptyList()
     private var currentIndex = 0
@@ -74,7 +88,8 @@ class AbacusFragment : Fragment() {
 
     // --- Teşhis: fragment_lesson_result'a giden akışın hızlı çoklu tıklamayla iki kez tetiklenip
     // tetiklenmediğini görmek için ---
-    private var questionPanelShown = false
+    /** Teşhisin yanında kapı da: [finishLesson] ikinci kez sonuç ekranı açmasın. */
+    private var lessonFinishStarted = false
     private var lessonResultShown = false
     private lateinit var firstNumberText: TextView
     private lateinit var operatorText: TextView
@@ -83,6 +98,8 @@ class AbacusFragment : Fragment() {
     private lateinit var correctAnswerLabel: TextView
     private lateinit var controlButton: Button
     private lateinit var incorrectPanel: View
+    // Sonuç panellerini gezinme çubuğunun arkasına kadar uzatır (ekranın en altından kayarak gelsin)
+    private var navBarPanelExtension: NavBarPanelExtension? = null
     private lateinit var correctPanel: View
     private lateinit var lottieView: LottieAnimationView
 
@@ -197,7 +214,6 @@ class AbacusFragment : Fragment() {
     private val guideContentList = mutableListOf<GuideContent>()
     private var currentGuideIndex = 0
     private lateinit var panelContent: View
-    private lateinit var ivGuideImage: ImageView
     private lateinit var tvGuideText: TextView
     private lateinit var stepDotsContainer: LinearLayout
     private var currentBubbleAnimator: android.animation.ValueAnimator? = null // Mevcut baloncuk animasyonu
@@ -214,15 +230,46 @@ class AbacusFragment : Fragment() {
     private val binding get() = _binding!!
     private var resultDialog: Dialog? = null
     private lateinit var abacusController: AbacusBeadController
+    /**
+     * Bu sorudaki abaküs değerleri, sırayla (0'dan başlar). Yanlış cevapta MistakeAnalyzer çocuğun
+     * nerede yanıldığını bununla buluyor. Sıfırlama sırasındaki ara değerler alınmıyor. Üst sınır:
+     * dokunuş başına bir değer; fazlası teşhise gerekmez.
+     */
+    private val mistakeLog = ArrayList<Int>()
+    private val mistakeLogMax = 400
     private var abacusMetricsInitialized = false
+    /** true: onCreate'te ders bilgisi bulunamadı; ekran kurulmadan kapatılacak. */
+    private var lessonMissing = false
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         GlobalValues.shouldShowAdOnReturn = true
-        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        // Android süreci öldürüp activity'yi geri yükleyince fragment yeniden yaratılıyor ama
+        // LessonManager/GlobalLessonData belleği boş geliyor (Play vitals NPE). Çökmek yerine
+        // ekranı kurmadan haritaya dönüyoruz (bkz. [exitBecauseLessonMissing]).
+        val restoredItem = LessonManager.getLessonItem(mapFragmentStepIndex)
+        if (restoredItem == null) {
+            lessonMissing = true
+            android.util.Log.w("AbacusFragment", "onCreate: lessonItem yok (index=$mapFragmentStepIndex), ders kapatılıyor")
+            return
+        }
+        lessonItem = restoredItem
 
+        questionSessionStartMs = System.currentTimeMillis()
+        hasSubmittedAnyAnswer = false
+        if (isLessonSuccessRateScope()) {
+            LessonSuccessRateRepository.recordQuestionEntry(
+                GlobalLessonData.globalPartId,
+                mapFragmentStepIndex,
+                lessonItem.currentStep,
+            )
+        }
 
         uploadLessonData()
     }
+
+    /** bkz. [LessonSuccessRateRepository] — sadece TYPE_LESSON/TYPE_CHEST adımları kapsar. */
+    private fun isLessonSuccessRateScope(): Boolean =
+        lessonItem.type == LessonItem.TYPE_LESSON || lessonItem.type == LessonItem.TYPE_CHEST
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -235,6 +282,10 @@ class AbacusFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (lessonMissing) {
+            exitBecauseLessonMissing(view)
+            return
+        }
         abacusMetricsInitialized = false
         findIDs()
         
@@ -258,6 +309,7 @@ class AbacusFragment : Fragment() {
         correctAnswerLabel = binding.correctAnswerLabel
         incorrectPanel = binding.incorrectPanel
         correctPanel = binding.correctPanel
+        navBarPanelExtension = NavBarPanelExtension(binding.root, correctPanel, incorrectPanel).also { it.attach() }
         firstNumberText = binding.firstNumberText
         operatorText = binding.operator
         secondNumberText = binding.secondNumberText
@@ -268,9 +320,15 @@ class AbacusFragment : Fragment() {
         abacusController = AbacusBeadController(
             context = requireContext(),
             root = binding.root,
-            animationDurationMs = if (lessonItem.type == 2) 50L else 300L
+            animationDurationMs = BEAD_ANIMATION_MS
         )
         abacusController.setup()
+        abacusController.onValueChanged = {
+            if (!abacusController.isResetInProgress()) {
+                val v = abacusController.getCurrentValue()
+                if (mistakeLog.lastOrNull() != v && mistakeLog.size < mistakeLogMax) mistakeLog += v
+            }
+        }
         ensureAbacusMetricsIfVisible()
         FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
             val ctx = requireContext().applicationContext
@@ -293,6 +351,8 @@ class AbacusFragment : Fragment() {
         val backCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if ((activity as? MainActivity)?.isTeacherSelectingQuestionToSend() == true) return
+                // İlk açılış akışında (hesap yok) haritaya dönülemez; bkz. [setupQuitButton].
+                if (isFirstRunLesson()) return
 
                 val rulesFragment = childFragmentManager.findFragmentByTag("rules_fragment")
                 if (rulesFragment is RulesFragment && rulesFragment.isVisible) {
@@ -333,6 +393,7 @@ class AbacusFragment : Fragment() {
         startButton?.visibility = android.view.View.VISIBLE
         binding.kontrolButton.visibility = android.view.View.INVISIBLE
         
+        startButton?.let { com.example.app.homework.DepthPress.attach(it) }
         startButton?.setOnClickListener {
             if (lessonStarted) return@setOnClickListener
             lessonStarted = true
@@ -360,7 +421,6 @@ class AbacusFragment : Fragment() {
      */
     private fun setupGuidePanel() {
         panelContent = binding.panelContent
-        ivGuideImage = binding.ivGuideImage
         tvGuideText = binding.tvGuideText
         stepDotsContainer = binding.stepDotsContainer
         
@@ -857,8 +917,8 @@ class AbacusFragment : Fragment() {
         
         val content = guideContentList[index]
         
-        // ImageView ve TextView içeriğini güncelle
-        ivGuideImage.setImageResource(content.imageResource)
+        // Sobi'nin hâli ve yazıyı güncelle
+        binding.guideMascot.play(content.emote)
         applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle
@@ -899,8 +959,8 @@ class AbacusFragment : Fragment() {
         
         val content = guideContentList[index]
         
-        // ImageView ve TextView içeriğini güncelle
-        ivGuideImage.setImageResource(content.imageResource)
+        // Sobi'nin hâli ve yazıyı güncelle
+        binding.guideMascot.play(content.emote)
         applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle
@@ -1137,7 +1197,7 @@ class AbacusFragment : Fragment() {
             val widthToUse = if (panelWidth > 0) panelWidth else panelContent.rootView.width
             
             // Panel'i ekranın soluna taşı (genişliği kadar sola)
-            panelContent.translationX = -widthToUse.toFloat()
+            panelContent.translationX = -widthToUse.toFloat() * RtlSupport.endSign(panelContent)
             
             // Şimdi panel'i görünür yap
             panelContent.visibility = View.VISIBLE
@@ -1168,7 +1228,7 @@ class AbacusFragment : Fragment() {
         
         // Sola kayarak gizle
         panelContent.animate()
-            .translationX(-panelWidth.toFloat())
+            .translationX(-panelWidth.toFloat() * RtlSupport.endSign(panelContent))
             .setDuration(300)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .withEndAction {
@@ -1293,12 +1353,12 @@ class AbacusFragment : Fragment() {
 
     private fun applyRulesPanelFiveText() {
         if ((globalPartId == 2 && lessonItem.mapFragmentIndex!! > 5) || globalPartId == 5) {
-            binding.fiveText.text = "Çıkarılacak Sayı"
-            binding.fiveRuleDescriptionText.text = "5 gider. Kardeş gelir."
+            binding.fiveText.text = appString(R.string.ui_cikarilacak_sayi)
+            binding.fiveRuleDescriptionText.text = appString(R.string.ui_5_gider_kardes_gelir)
 
         }else{
-            binding.fiveText.text = "Eklenecek sayı"
-            binding.fiveRuleDescriptionText.text = "5 gelir. Kardeş gider."
+            binding.fiveText.text = appString(R.string.ui_eklenecek_sayi)
+            binding.fiveRuleDescriptionText.text = appString(R.string.ui_5_gelir_kardes_gider)
         }
     }
 
@@ -1400,7 +1460,7 @@ class AbacusFragment : Fragment() {
         if(lessonItem.mapFragmentIndex!! > 10 && globalPartId == 2){
             rulesFragment?.updateTenRuleExtractionTableLayout(View.VISIBLE)
         }
-        if(lessonItem.mapFragmentIndex!! > 16 && globalPartId == 2){
+        if(lessonItem.mapFragmentIndex!! > 15 && globalPartId == 2){
             rulesFragment?.updateBeadRuleExtractionTableLayout(View.VISIBLE)
         }
         if(globalPartId == 3){
@@ -1522,21 +1582,21 @@ class AbacusFragment : Fragment() {
         fabHint.playAnimation()
         fabHint.setFrame(25)
 
-        // Show and animate TextView
+        // Balon ampulün yanından, kuyruğundan büyüyerek açılır
         tvHint.visibility = View.VISIBLE
-        tvHint.startAnimation(AnimationUtils.loadAnimation(context, R.anim.slide_in_right))
+        tvHint.startAnimation(AnimationUtils.loadAnimation(context, R.anim.hint_bubble_in))
 
         isHintVisible = true
     }
     private fun hideHint() {
-        // Sağa kayma animasyonunu başlat
+        // Balon ampule doğru küçülerek kapanır
         fabHint.cancelAnimation()
         fabHint.setFrame(0)
 
-        val slideOutAnimation = AnimationUtils.loadAnimation(context, R.anim.slide_out_right_hint)
+        val closeAnimation = AnimationUtils.loadAnimation(context, R.anim.hint_bubble_out)
 
         // Animasyon bittiğinde TextView'ı gizle
-        slideOutAnimation.setAnimationListener(object : Animation.AnimationListener {
+        closeAnimation.setAnimationListener(object : Animation.AnimationListener {
             override fun onAnimationStart(animation: Animation?) {}
 
             override fun onAnimationEnd(animation: Animation?) {
@@ -1547,7 +1607,7 @@ class AbacusFragment : Fragment() {
         })
 
         // Animasyonu başlat
-        tvHint.startAnimation(slideOutAnimation)
+        tvHint.startAnimation(closeAnimation)
         isHintVisible = false
     }
     private fun uploadLessonData(){
@@ -1657,31 +1717,29 @@ class AbacusFragment : Fragment() {
         controlButtonListener = View.OnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    v.animate()
-                        .scaleX(0.85f)
-                        .scaleY(0.85f)
-                        .setDuration(100)
-                        .setInterpolator(AccelerateDecelerateInterpolator())
-                        .start()
+                    com.example.app.homework.DepthPress.down(v)
+                    true
+                }
+
+                // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                MotionEvent.ACTION_MOVE -> {
+                    com.example.app.homework.DepthPress.move(v, event)
                     true
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    // Önce çıksın: hızlı çift dokunuşta ve çevrimdışıyken de düğme aşağıda kalmasın.
+                    com.example.app.homework.DepthPress.up(v)
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastClickTime >= 100) {
                         lastClickTime = currentTime
 
                         val ctx = context
                         if (ctx != null && isDeviceOnline(ctx)) {
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
-
                             // Tıklama işlemini gerçekleştir
+                            hasSubmittedAnyAnswer = true
                             val isCorrect = stepAnswerAlgorithm()
+                            recordRuleStats(isCorrect)
                             if (currentIndex == operations.size - 1 && isTimerStarted) {
                                 // Son soruda panel butonunu beklemeden süreyi anında durdur.
                                 stopTimer()
@@ -1691,7 +1749,7 @@ class AbacusFragment : Fragment() {
                             controlNumber = 0
                         } else if (ctx != null) {
                             (activity as? MainActivity)?.showOfflineFragment()
-                                ?: android.widget.Toast.makeText(ctx, "İnternet bağlantınız yok.", android.widget.Toast.LENGTH_SHORT).show()
+                                ?: android.widget.Toast.makeText(ctx, appString(R.string.ui_internet_baglantiniz_yok), android.widget.Toast.LENGTH_SHORT).show()
                         }
                     }
                     true
@@ -1748,6 +1806,9 @@ class AbacusFragment : Fragment() {
         }
 
         if (currentIndex < operations.size) {
+            // Yeni soru: abaküs sıfırdan başlıyor (resetAbacus), kayıt da.
+            mistakeLog.clear()
+            mistakeLog += 0
             val currentOperation = operations[currentIndex]
             currentOperation.firstNumber?.let { number ->
                 firstNumberText.text = number.toString()
@@ -1768,6 +1829,8 @@ class AbacusFragment : Fragment() {
             Log.e("AbacusFragment", "Operations list is empty")
             return false
         }
+        // Son sorudan sonra gelen dokunuş (BlindingLessonFragment'te bu yüzden çöktü, sürüm 21).
+        if (currentIndex !in operations.indices) return false
 
         if (operations[currentIndex].secondNumber == null && operations[currentIndex].firstNumber == null) {
             answerNumber = operations[currentIndex].operator?.toInt() ?: 0
@@ -1792,16 +1855,86 @@ class AbacusFragment : Fragment() {
         }
     }
 
+    /**
+     * Yanlış cevap panelindeki "Sobi ile analiz et": hatayı Sobi anlatır, soru adım adım yeniden
+     * çözülür ([MistakeReviewDialog]). Teşhis paneli kalabalık gösterdiği için ekranda (kullanıcı
+     * kararı 31.10.2026). Yalnızca toplama/çıkarmada; cevap ve değer kaydı bu anki hâliyle gider.
+     */
+    private fun bindReviewButton() {
+        val button = incorrectPanel.findViewById<View>(R.id.incorrectSobiAnalyze) ?: return
+        val op = operations.getOrNull(currentIndex)
+        val first = op?.firstNumber
+        val second = op?.secondNumber
+        val sign = op?.operator
+        val numbers = if (first != null && second != null && (sign == "+" || sign == "-")) {
+            listOf(first, if (sign == "-") -second else second)
+        } else null
+        if (!MistakeReviewDialog.canReview(numbers) || !SobiAccess.isAllowed(requireContext())) {
+            button.visibility = View.GONE
+            return
+        }
+        val answer = abacusController.getCurrentValue()
+        val log = mistakeLog.toList()
+        button.visibility = View.VISIBLE
+        com.example.app.homework.DepthPress.attach(button)
+        // Sandık dersi süreli: analiz ekranı açıkken süre durur, kapanınca kaldığı yerden devam eder
+        // (süre sandık puanına giriyor; analize bakmak çocuğu cezalandırmasın).
+        childFragmentManager.setFragmentResultListener(MistakeReviewDialog.RESULT_CLOSED, viewLifecycleOwner) { _, _ ->
+            if (isTimerStarted && _binding != null) {
+                handler.removeCallbacks(runnable)
+                handler.postDelayed(runnable, 1000)
+            }
+        }
+        button.setOnClickListener {
+            if (childFragmentManager.findFragmentByTag(MistakeReviewDialog.TAG) != null) return@setOnClickListener
+            if (isTimerStarted) handler.removeCallbacks(runnable)
+            MistakeReviewDialog.newInstance(numbers!!, answer, log, lessonItem.title)
+                .show(childFragmentManager, MistakeReviewDialog.TAG)
+        }
+    }
+
+    /**
+     * Sobi'nin kural hafızası ([SobiRuleStats]): toplama/çıkarma sorusunun kuralları; çarpmada (Part 3,
+     * abaküslü) basamak çifti, soru başına (08.11.2026; eskiden çarpma hiç yazılmıyordu).
+     */
+    private fun recordRuleStats(isCorrect: Boolean) {
+        val op = operations.getOrNull(currentIndex) ?: return
+        val first = op.firstNumber ?: return
+        val second = op.secondNumber ?: return
+        val sign = op.operator
+        // Haftalık kartın "çözdüğü bir işlem"i: bellekte, ders bitince LessonMilestones yazar.
+        if (isCorrect) {
+            LessonMilestones.noteCorrect(
+                globalPartId, lessonItem.stableId, lessonItem.currentStep,
+                LessonMilestoneRules.binary(first, sign, second),
+            )
+        }
+        if (sign == "x") {
+            SobiRuleStats.recordMultiplication(requireContext(), first, second, isCorrect, withAbacus = true)
+            return
+        }
+        if (sign != "+" && sign != "-") return
+        SobiRuleStats.recordAnswer(
+            requireContext(), listOf(first, if (sign == "-") -second else second), isCorrect,
+            mistakeLog.toList(), abacusController.getCurrentValue(),
+        )
+    }
+
     private fun incorrectText() {
-        correctAnswerText.text = "Senin cevabın $controlNumber"
-        correctAnswerLabel.text = "Doğru cevap $answerNumber"
+        correctAnswerText.text = appString(R.string.ui_senin_cevabin_x, controlNumber)
+        correctAnswerLabel.text = appString(R.string.ui_dogru_cevap_x, answerNumber)
     }
 
     private fun setupQuitButton() {
         binding.quitButton.setOnClickListener {
             closeFragment()
         }
+        // Hesapsız kullanıcı yalnızca ilk açılıştaki zorunlu akışta derse girebiliyor; orada
+        // yanlışlıkla çıkıp akışı yarıda bırakmasın diye çıkış butonu gizli.
+        if (isFirstRunLesson()) binding.quitButton.visibility = View.INVISIBLE
     }
+
+    private fun isFirstRunLesson(): Boolean = FirebaseAuth.getInstance().currentUser == null
 
     private fun closeFragment() {
         if (!isAdded || isAbacusClosing) return
@@ -1812,7 +1945,9 @@ class AbacusFragment : Fragment() {
         }
         isAbacusClosing = true
         binding.quitButton.isEnabled = false
-        val slideDistance = resources.displayMetrics.widthPixels.toFloat()
+        // Sola: ders akışındaki bütün ekranlar gibi. Sağa kayıyordu, yani altından
+        // çıkan haritayla ters yönde.
+        val slideDistance = -resources.displayMetrics.widthPixels.toFloat() * RtlSupport.endSign(rootView)
         rootView.animate().cancel()
         rootView.animate()
             .translationX(slideDistance)
@@ -1826,6 +1961,19 @@ class AbacusFragment : Fragment() {
             .start()
     }
 
+    /**
+     * Ders bilgisi bellekte yokken (süreç yeniden başlatıldı) ekranı kurmadan kapatır.
+     * Yaşam döngüsü geri çağrısı içinde fragment işlemi yürütülemediği için bir sonraki
+     * kareye erteleniyor.
+     */
+    private fun exitBecauseLessonMissing(view: View) {
+        view.post {
+            if (!isAdded || isAbacusClosing || parentFragmentManager.isStateSaved) return@post
+            isAbacusClosing = true
+            performAbacusDismiss()
+        }
+    }
+
     /** [closeFragment] kayma animasyonu bittikten sonra: mevcut haritaya dönüş akışı. */
     private fun performAbacusDismiss() {
         val main = activity as? MainActivity
@@ -1836,12 +1984,21 @@ class AbacusFragment : Fragment() {
             fm.executePendingTransactions()
         } else if (isAdded) {
             fm.beginTransaction()
-                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left)
+                .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
                 .remove(this@AbacusFragment)
                 .commitNowAllowingStateLoss()
         }
         main?.prepareMapReturnAfterLessonClaim()
-        main?.finalizeMapReturnAfterLessonClaim("AbacusFragment.quit")
+        // Yarıda bırakma da türü LESSON olan bir item'dan haritaya dönüş sayılır.
+        // Derse girerken yakalanan lessonItem kullanılıyor (global index aramasına güvenilmiyor).
+        main?.finalizeMapReturnAfterLessonClaim(
+            "AbacusFragment.quit",
+            isLessonTypeReturn = ::lessonItem.isInitialized &&
+                lessonItem.type == LessonItem.TYPE_LESSON,
+            // Ders yarıda bırakıldı: ardından rozet/sandık gelmeyecek, zemin reklam
+            // kontrolü için boşuna kalkmasın.
+            rewardScreensPossible = false,
+        )
     }
 
     private fun abacusNumberReturn() {
@@ -2612,7 +2769,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun animateBeadsUp(vararg beads: ImageView) {
-        val animationDuration = if (lessonItem.type == 2) 50L else 300L // milisaniye cinsinden
+        val animationDuration = BEAD_ANIMATION_MS
         val moveDistance = if (::abacusController.isInitialized && abacusController.getBottomMoveDistancePx() > 0f) abacusController.getBottomMoveDistancePx().toInt() else AbacusBeadMetrics.bottomStepPxInt(requireContext())
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
@@ -2638,7 +2795,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun animateBeadDown(bead: ImageView) {
-        val animationDuration = if (lessonItem.type == 2) 50L else 300L
+        val animationDuration = BEAD_ANIMATION_MS
         val moveDistance = if (::abacusController.isInitialized && abacusController.getTopMoveDistancePx() > 0f) abacusController.getTopMoveDistancePx().toInt() else AbacusBeadMetrics.topStepPxInt(requireContext())
         animatingBeads.add(bead)
         bead.animate()
@@ -2655,7 +2812,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun animateBeadUp(bead: ImageView) {
-        val animationDuration = if (lessonItem.type == 2) 50L else 300L
+        val animationDuration = BEAD_ANIMATION_MS
         animatingBeads.add(bead)
         bead.animate()
             .setDuration(animationDuration)
@@ -2671,7 +2828,7 @@ class AbacusFragment : Fragment() {
     }
 
     private fun animateBeadsDown(vararg beads: ImageView) {
-        val animationDuration = if (lessonItem.type == 2) 50L else 300L
+        val animationDuration = BEAD_ANIMATION_MS
         val moveDistance = if (::abacusController.isInitialized && abacusController.getBottomMoveDistancePx() > 0f) abacusController.getBottomMoveDistancePx().toInt() else AbacusBeadMetrics.bottomStepPxInt(requireContext())
         beads.forEach { animatingBeads.add(it) }
         beads.forEach { bead ->
@@ -2843,16 +3000,31 @@ class AbacusFragment : Fragment() {
      * when the user navigates back to this fragment.
      */
     private fun applyCustomization() {
-        if (_binding == null) return
+        if (_binding == null || lessonMissing || !::abacusController.isInitialized) return
         val ctx = requireContext()
         binding.abacusContainer.background =
             com.example.app.abacus.AbacusFrameRenderer.buildFrameDrawable(ctx)
         abacusController.refreshAll()
     }
 
+    /** Sonuç panelinin gizliyken durduğu öteleme: gezinme çubuğunun da altında. */
+    private fun resultPanelHiddenY(panel: View): Float =
+        navBarPanelExtension?.hiddenTranslation(panel) ?: panel.height.toFloat()
+
     override fun onDestroyView() {
+        navBarPanelExtension?.detach()
+        navBarPanelExtension = null
+        if (!hasSubmittedAnyAnswer && ::lessonItem.isInitialized && isLessonSuccessRateScope()) {
+            LessonSuccessRateRepository.recordAbandonWithoutAnswer(
+                GlobalLessonData.globalPartId,
+                mapFragmentStepIndex,
+                lessonItem.currentStep,
+            )
+        }
         stopLearningSessionTracking()
         stopGuideTypewriter()
+        abacusSideFit?.detach()
+        abacusSideFit = null
         super.onDestroyView()
         // Bellek sızıntısı olmaması için bırak
         mediaPlayer?.stop()
@@ -2892,7 +3064,7 @@ class AbacusFragment : Fragment() {
                 lottieView.visibility=View.VISIBLE
                 lottieView.playAnimation() // Animasyonu başlat
             }
-            correctPanel.translationY = correctPanel.height.toFloat()
+            correctPanel.translationY = resultPanelHiddenY(correctPanel)
             correctPanel.visibility = View.VISIBLE
             correctPanel.alpha = 0f
 
@@ -2923,12 +3095,18 @@ class AbacusFragment : Fragment() {
                     if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
+                            true
+                        }
+
+                        // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            com.example.app.homework.DepthPress.up(v)
                             true
                         }
 
@@ -2936,12 +3114,7 @@ class AbacusFragment : Fragment() {
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
                             currentIndex++
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                             
@@ -2957,7 +3130,7 @@ class AbacusFragment : Fragment() {
                             }, 200)
                             
                             correctPanel.animate()
-                                .translationY(correctPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(correctPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -2968,8 +3141,7 @@ class AbacusFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                //ders sonu soru paneli burada gelecek.
-                                showQuestionPanel()
+                                finishLesson()
                             }
                             true
                         }
@@ -2991,9 +3163,10 @@ class AbacusFragment : Fragment() {
             // Yanlış cevap durumu
             playSound(R.raw.incorrect_answer_sound)
 
-            incorrectPanel.translationY = incorrectPanel.height.toFloat()
+            incorrectPanel.translationY = resultPanelHiddenY(incorrectPanel)
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
+            bindReviewButton()
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
             
             // Control button'u devre dışı bırak
@@ -3019,12 +3192,18 @@ class AbacusFragment : Fragment() {
                     if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
+                            true
+                        }
+
+                        // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            com.example.app.homework.DepthPress.up(v)
                             true
                         }
 
@@ -3032,12 +3211,7 @@ class AbacusFragment : Fragment() {
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
                             currentIndex++
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             resetAbacus()
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                             
@@ -3053,7 +3227,7 @@ class AbacusFragment : Fragment() {
                             }, 700)
                             
                             incorrectPanel.animate()
-                                .translationY(incorrectPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(incorrectPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -3064,8 +3238,7 @@ class AbacusFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                //ders sonu soru paneli burada gelecek.
-                                showQuestionPanel()
+                                finishLesson()
                             }
                             true
                         }
@@ -3110,6 +3283,10 @@ class AbacusFragment : Fragment() {
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
+            putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
+            // Tip bilgisi burada kesin; sonuç ekranında GlobalLessonData listesi asenkron
+            // yenilenmiş olabildiği için indeks aramasına güvenilmiyor.
+            putBoolean("isLessonTypeItem", lessonItem.type == LessonItem.TYPE_LESSON)
         }
         lessonResultFragment.arguments = args
         val argsFalse = Bundle().apply {
@@ -3117,73 +3294,60 @@ class AbacusFragment : Fragment() {
             putInt("totalQuestions", totalQuestions)
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
+            putBoolean("isLessonTypeItem", lessonItem.type == LessonItem.TYPE_LESSON)
         }
         lessonResultFalse.arguments = argsFalse
 
         // Yeni fragment'ı abacus container'a ekle
-        if(successRate < 10) {
+        if (successRate < 75f) {
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out
                 )
                 .replace(R.id.abacusFragmentContainer, lessonResultFalse)
                 .commit()
         } else {
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_right
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out
                 )
                 .replace(R.id.abacusFragmentContainer, lessonResultFragment)
                 .commit()
         }
     }
 
-    /** Ders sonu soru panelini açar; geçiş mantığı FragmentResult API ile AbacusFragment'e geri döner. */
-    private fun showQuestionPanel() {
+    /**
+     * Son soru bitince sonuç ekranına geçer.
+     *
+     * Eskiden önce ders sonu anketi ([QuestionPanelFragment]) açılıyor, sonuç ekranı anket
+     * kapanınca geliyordu. Anket artık yalnızca tutorial sonunda var
+     * ([TutorialQuestionPanelFragment]); buradan doğrudan sonuca geçiliyor.
+     *
+     * Anket araya girerken bu fragment gizleniyordu, ikinci bir dokunma buraya ulaşamıyordu.
+     * Artık öyle bir kalkan yok; ikinci çağrı ikinci bir sonuç ekranı açmasın diye kapı var.
+     */
+    private fun finishLesson() {
         LessonProgressDiag.log(
-            "AbacusFragment.showQuestionPanel",
-            "CALLED alreadyShown=$questionPanelShown mapIdx=$mapFragmentStepIndex " +
+            "AbacusFragment.finishLesson",
+            "CALLED alreadyFinished=$lessonFinishStarted mapIdx=$mapFragmentStepIndex " +
                 "part=${GlobalLessonData.globalPartId} currentIndex=$currentIndex totalQuestions=$totalQuestions" +
-                if (questionPanelShown) " -> DUPLICATE CALL (şüpheli, muhtemelen hızlı çift tıklama)" else "",
+                if (lessonFinishStarted) " -> DUPLICATE CALL (şüpheli, muhtemelen hızlı çift tıklama)" else "",
         )
-        questionPanelShown = true
-        stopTimer() // Soru panelindeyken timer çalışmasın diye durduruyoruz.
-        val successRate = currentSuccessRate()
-        val dersPuani = (successRate * 5f).toInt()
-        val (carpan, toplamPuan) = calculateChestScore(successRate, currentTime)
-        val worstCupTime = resolveWorstCupTimeFallback()
-        val fragment = QuestionPanelFragment.newInstance(
-            correctAnswers = correctAnswer,
-            totalQuestions = totalQuestions,
-            successRate = successRate,
-            dersPuani = dersPuani,
-            globalPartId = GlobalLessonData.globalPartId,
-            mapFragmentIndex = mapFragmentStepIndex,
-            lessonType = lessonItem.type,
-            currentTime = currentTime,
-            worstCupTime = worstCupTime
-        )
-
-        parentFragmentManager.setFragmentResultListener("questionPanelResult", viewLifecycleOwner) { _, _ ->
-            // Soru paneli bittiğinde çalışacak orijinal kod:
-            if (lessonItem.type == LessonItem.TYPE_CHEST) {
-                if (toplamPuan < 500) { 
-                    showLessonResultFalseOnly(true)
-                } else {
-                    showChestResult(carpan, toplamPuan)
-                }
+        if (lessonFinishStarted) return
+        lessonFinishStarted = true
+        stopTimer() // Sonuç ekranındayken timer çalışmasın diye durduruyoruz.
+        if (lessonItem.type == LessonItem.TYPE_CHEST) {
+            val (carpan, toplamPuan) = calculateChestScore(currentSuccessRate(), currentTime)
+            if (toplamPuan < 500) {
+                showLessonResultFalseOnly(true)
             } else {
-                showLessonResult()
+                showChestResult(carpan, toplamPuan)
             }
+        } else {
+            showLessonResult()
         }
-
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
-            .add(R.id.abacusFragmentContainer, fragment)
-            .hide(this)
-            .commit()
     }
 
     private fun currentSuccessRate(): Float {
@@ -3204,13 +3368,14 @@ class AbacusFragment : Fragment() {
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
             putBoolean("isChestFailure", isChestFailure)
+            putBoolean("isLessonTypeItem", lessonItem.type == LessonItem.TYPE_LESSON)
         }
         lessonResultFalse.arguments = argsFalse
 
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out
             )
             .replace(R.id.abacusFragmentContainer, lessonResultFalse)
             .commit()
@@ -3232,6 +3397,7 @@ class AbacusFragment : Fragment() {
             putInt("worstCupTime", worstCupTime)
             putFloat("carpan", carpan)
             putInt("toplamPuan", toplamPuan)
+            putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
         }
         chestResultFragment.arguments = args
         stopTimer()
@@ -3239,8 +3405,8 @@ class AbacusFragment : Fragment() {
         // Yeni fragment'ı abacus container'a ekle
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out
             )
             .replace(R.id.abacusFragmentContainer, chestResultFragment)
             .commit()
@@ -3328,22 +3494,13 @@ class AbacusFragment : Fragment() {
         resetAbacus()
         abacusController.setEnabled(false)
         isAbacusSettingsPanelOpen = true
-        binding.abacusSettingsPanel.animate()
-            .translationX(0f)
-            .setDuration(300)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
-            .start()
+        com.example.app.abacus.AbacusSettingsPanel.slideIn(binding.abacusSettingsPanel)
     }
 
     private fun hideAbacusSettingsPanel() {
         abacusController.setEnabled(true)
         isAbacusSettingsPanelOpen = false
-        val offset = binding.abacusSettingsPanel.width.toFloat() + (100f * resources.displayMetrics.density)
-        binding.abacusSettingsPanel.animate()
-            .translationX(offset)
-            .setDuration(300)
-            .setInterpolator(android.view.animation.AccelerateInterpolator())
-            .start()
+        com.example.app.abacus.AbacusSettingsPanel.slideOut(binding.abacusSettingsPanel)
     }
 
     private fun setAllBeadsScale(scaleX: Float?, scaleY: Float?) {
@@ -3455,8 +3612,15 @@ class AbacusFragment : Fragment() {
 
         val density = resources.displayMetrics.density
 
-        binding.abacusContainer.scaleX = savedAbacusScaleX
-        binding.abacusContainer.scaleY = savedAbacusScaleY
+        abacusSideFit?.detach()
+        abacusSideFit = AbacusSideButtonFit(
+            abacus = binding.abacusContainer,
+            sideButtons = listOf(binding.fabHint, binding.askQuestionButton, binding.rulesPanelButton, binding.abacusModeButton),
+            gapPx = 6f * density,
+        ).also {
+            it.attach()
+            it.setUserScale(savedAbacusScaleX, savedAbacusScaleY)
+        }
         val initParams = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
         if (savedAbacusMarginBottomDp > 0f) {
             initParams?.bottomMargin = (savedAbacusMarginBottomDp * density).toInt()
@@ -3487,7 +3651,7 @@ class AbacusFragment : Fragment() {
         binding.seekBarScaleX.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 val scale = 0.5f + (progress / 100f) * 1.5f
-                binding.abacusContainer.scaleX = scale
+                abacusSideFit?.setUserScaleX(scale)
             }
             override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
@@ -3496,7 +3660,7 @@ class AbacusFragment : Fragment() {
         binding.seekBarScaleY.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
                 val scale = 0.5f + (progress / 100f) * 1.5f
-                binding.abacusContainer.scaleY = scale
+                abacusSideFit?.setUserScaleY(scale)
             }
             override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
             override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
@@ -3582,8 +3746,7 @@ class AbacusFragment : Fragment() {
             binding.seekBarBeadMarginTop.progress = 0
             binding.seekBarBeadMarginBottom.progress = 0
             
-            binding.abacusContainer.scaleX = 1.0f
-            binding.abacusContainer.scaleY = 1.0f
+            abacusSideFit?.setUserScale(1.0f, 1.0f)
             
             val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
             params?.bottomMargin = defaultMarginPx
@@ -3604,8 +3767,9 @@ class AbacusFragment : Fragment() {
 
         binding.abacusSettingsSaveButton.setOnClickListener {
             // Mevcut degerleri kaydet
-            savedAbacusScaleX = binding.abacusContainer.scaleX
-            savedAbacusScaleY = binding.abacusContainer.scaleY
+            // Görünen ölçek değil kullanıcının seçtiği ölçek kaydedilir (sığdırma payı ekrana göre değişir).
+            savedAbacusScaleX = abacusSideFit?.userScaleX ?: binding.abacusContainer.scaleX
+            savedAbacusScaleY = abacusSideFit?.userScaleY ?: binding.abacusContainer.scaleY
             val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
             savedAbacusMarginBottomDp = ((params?.bottomMargin ?: 0) / density)
             

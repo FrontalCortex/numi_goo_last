@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ayarlar → Kaynaklar ve lisanslar; ayrıntı values/strings_credits.xml. -->
+<resources>
+    <string name="credits_title">Sumber dan lisensi</string>
+    <string name="credits_intro">Sorobit juga memuat ilustrasi, animasi, dan suara buatan orang lain. Terima kasih untuk mereka semua.</string>
+    <string name="credits_mascot">Ilustrasi maskot Sobi</string>
+    <string name="credits_avatars">Avatar</string>
+    <string name="credits_emoji">Emoji animasi</string>
+    <string name="credits_icons">Ikon dan gambar</string>
+    <string name="credits_sounds">Efek suara</string>
+    <string name="credits_animations">Animasi</string>
+    <string name="credits_font">Font</string>
+    <string name="credits_modified">Digunakan dengan perubahan.</string>
+    <string name="credits_open_source">Lisensi sumber terbuka</string>
+    <string name="credits_open_source_desc">Pustaka perangkat lunak yang digunakan di aplikasi</string>
+</resources>

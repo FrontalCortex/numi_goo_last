@@ -169,7 +169,7 @@ class AddFriendFragment : Fragment() {
             binding.btnLoadMore.visibility = View.GONE
         } else {
             binding.btnLoadMore.isEnabled = false
-            binding.btnLoadMore.text = "YÜKLENİYOR..."
+            binding.btnLoadMore.text = appString(R.string.ui_yukleniyor)
         }
 
         val queryEnd = query + "\uF8FF"
@@ -184,7 +184,7 @@ class AddFriendFragment : Fragment() {
             isSearching = false
             binding.progressBar.visibility = View.GONE
             binding.btnLoadMore.isEnabled = true
-            binding.btnLoadMore.text = "DAHA FAZLA YÜKLE"
+            binding.btnLoadMore.text = appString(R.string.ui_daha_fazla_yukle)
 
             // Add new batch to accumulated
             accumulatedResults.addAll(batchResults)
@@ -193,13 +193,17 @@ class AddFriendFragment : Fragment() {
             val seen = mutableSetOf<String>()
             val finalResults = accumulatedResults.filter { seen.add(it.firebaseUid) }
 
+            // Yalnızca ilk arama ölçülür; "daha fazla yükle" ayrı bir arama değildir ve
+            // biriken sonuç listesi yüzünden her zaman "sonuç var" görünürdü.
+            if (!isLoadMore) AnalyticsLogger.logFriendSearchResult(finalResults.isNotEmpty())
+
             if (finalResults.isEmpty()) {
                 binding.layoutEmptyState.visibility = View.VISIBLE
                 binding.rvFriendResults.visibility = View.GONE
                 binding.tvResultCount.visibility = View.GONE
                 binding.btnLoadMore.visibility = View.GONE
             } else {
-                binding.tvResultCount.text = "${finalResults.size} sonuç gösteriliyor"
+                binding.tvResultCount.text = appPlural(R.plurals.ui_x_sonuc_gosteriliyor, finalResults.size, finalResults.size)
                 binding.tvResultCount.visibility = View.VISIBLE
                 binding.layoutEmptyState.visibility = View.GONE
                 binding.rvFriendResults.visibility = View.VISIBLE
@@ -213,12 +217,12 @@ class AddFriendFragment : Fragment() {
                 val name = doc.getString("name") ?: return@mapNotNull null
                 val userId = doc.getString("userId") ?: return@mapNotNull null
                 if (userId == currentUserId) return@mapNotNull null
-                val selectedAvatar = doc.getLong("selectedAvatar")?.toInt() ?: 0
+                val avatarConfig = doc.getString(AvatarStore.FIRESTORE_FIELD)
                 FriendSearchResult(
                     firebaseUid = doc.id,
                     name = name,
                     userId = userId,
-                    selectedAvatar = selectedAvatar
+                    avatarConfig = avatarConfig
                 )
             }
         }
@@ -239,7 +243,7 @@ class AddFriendFragment : Fragment() {
                     lastVisibleName = snapshot.documents[snapshot.size() - 1]
                     batchResults.addAll(parseSnapshot(snapshot))
                 }
-                // If we got exactly limitSize, there might be more. 
+                // If we got exactly limitSize, there might be more.
                 // If less, there are definitely no more for this specific query.
                 // We'll just assume there's no more if both queries return empty.
                 completedQueries++
@@ -283,7 +287,7 @@ class AddFriendFragment : Fragment() {
 
     private fun followUser(result: FriendSearchResult) {
         if (myFirebaseUid.isEmpty()) {
-            Toast.makeText(requireContext(), "Oturum bilgisi alınamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_oturum_bilgisi_alinamadi), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -297,7 +301,7 @@ class AddFriendFragment : Fragment() {
                 if (!isAdded) return@addOnSuccessListener
 
                 if (doc.exists()) {
-                    Toast.makeText(requireContext(), "Zaten takip ediyorsunuz.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), appString(R.string.ui_zaten_takip_ediyorsunuz), Toast.LENGTH_SHORT).show()
                     return@addOnSuccessListener
                 }
 
@@ -326,10 +330,12 @@ class AddFriendFragment : Fragment() {
 
                 batch.commit()
                     .addOnSuccessListener {
+                        // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip gerçekleşti.
+                        AnalyticsLogger.logFriendAddedFromSearch()
                         if (!isAdded) return@addOnSuccessListener
                         Toast.makeText(
                             requireContext(),
-                            "${result.name} takip edildi.",
+                            appString(R.string.ui_x_takip_edildi, result.name),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -337,14 +343,14 @@ class AddFriendFragment : Fragment() {
                         if (!isAdded) return@addOnFailureListener
                         Toast.makeText(
                             requireContext(),
-                            "Takip edilemedi: ${e.localizedMessage}",
+                            appString(R.string.ui_takip_edilemedi_x, e.localizedMessage),
                             Toast.LENGTH_SHORT
                         ).show()
                     }
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
-                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
 

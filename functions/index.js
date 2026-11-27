@@ -1,6 +1,8 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
+const mailTexts = require('./mailTexts');
+const { arCount } = require('./arabic');
 
 // Load environment variables from .env file (for local testing)
 // In production, use Firebase Secret Manager or environment variables
@@ -10,17 +12,87 @@ admin.initializeApp();
 const db = admin.firestore();
 
 const seasonLeaderboardFinalize = require('./seasonLeaderboardFinalize');
-exports.finalizeSeasonLeaderboardMedals =
-  seasonLeaderboardFinalize.scheduleFinalize(functions, admin, db);
+const {
+  STREAK_REMINDER_LOCAL_HOUR,
+  SECOND_CHANCE_LOCAL_HOUR,
+  normalizeReminderHour,
+  reminderHourUtc,
+  streakReminderDecision,
+  secondChanceDecision,
+} = require('./streakReminder');
+const {
+  notificationDecision,
+  notificationPrefsFor,
+  ledgerPatch,
+  openPatch,
+  localHourOf,
+  normalizeOffset,
+} = require('./notifications');
+const {
+  currentSeason,
+  millisUntilCurrentSeasonEnds,
+} = require('./seasonCalendar');
+// Kurs sınıfları ve soru havuzu ayrımı; karar mantığı orada, Firestore işi "Kurs sınıfları"
+// bölümünde.
+const classes = require('./classes');
+// Ödevler (kurs öğretmeninin sınıfına verdiği); doğrulama orada, Firestore işi "Ödevler" bölümünde.
+const homework = require('./homework');
+// Yayın hediyesi: ilk 100 öğrenciye 1 ay Pro (bkz. launchGift.js).
+const launchGift = require('./launchGift');
+// Davet döngüsü: kod, atıf, ders 2 ödülü (bkz. referrals.js).
+const referrals = require('./referrals');
+// `sendUserNotification` bir fonksiyon bildirimi (hoisted), yani burada tanımından önce
+// geçirilebiliyor; çağrı zaten çalışma anında, sezon bitince oluyor.
+exports.finalizeSeasonLeaderboardMedals = seasonLeaderboardFinalize.scheduleFinalize(
+  functions,
+  admin,
+  db,
+  (uid, options) => sendUserNotification(uid, options),
+);
 
 // Config yükleme kontrolü için
 
 function generateCode(length = 6) {
-  // Sadece sayılar kullan (0-9) - daha kullanıcı dostu ve standart OTP formatı
-  const digits = '0123456789';
+  // Sadece sayılar kullan (0-9) - daha kullanıcı dostu ve standart OTP formatı.
+  // Math.random tahmin edilebilir bir üreteç; giriş kodu için kriptografik üreteç şart.
+  const crypto = require('crypto');
   let code = '';
-  for (let i = 0; i < length; i++) code += digits[Math.floor(Math.random() * digits.length)];
+  for (let i = 0; i < length; i++) code += String(crypto.randomInt(10));
   return code;
+}
+
+// Öğrenci kodu eskiden 2 dakikaydı; Gmail teslimi bazen bir dakikayı geçiyor ve kodu
+// bekleyen kullanıcı tekrar isteyerek saatlik hakkını kendisi bitiriyordu. Yanlış deneme
+// sınırı (5 / 15 dk) varken 10 dakikada kodu tahmin etmek hâlâ pratikte imkânsız.
+const STUDENT_CODE_TTL_MS = 10 * 60 * 1000;
+// Firestore'un "belge zaten var" hata kodu (gRPC ALREADY_EXISTS).
+const FIRESTORE_ALREADY_EXISTS = 6;
+
+/**
+ * Yeni bir doğrulama kodu üretip `studentVerificationCodes/{kod}` olarak kaydeder.
+ * Belge kimliği kodun kendisi; eskiden `set` ile yazıldığı için aynı kod iki kişiye
+ * düşünce ilk kişinin kodu sessizce eziliyordu. `create` çakışmada hata verir, yeni kod
+ * denenir (süresi dolmuş ama henüz silinmemiş kodlarla çakışma da böyle atlanır).
+ */
+async function createVerificationCode(fields, ttlMs) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateCode(6);
+    const now = admin.firestore.Timestamp.now();
+    const ref = db.collection('studentVerificationCodes').doc(code);
+    try {
+      await ref.create({
+        code,
+        ...fields,
+        createdAt: now,
+        expiresAt: admin.firestore.Timestamp.fromMillis(now.toMillis() + ttlMs),
+        used: false,
+      });
+      return { code, ref };
+    } catch (err) {
+      if (err.code !== FIRESTORE_ALREADY_EXISTS) throw err;
+    }
+  }
+  throw new functions.https.HttpsError('internal', 'Doğrulama kodu oluşturulamadı.');
 }
 
 // E-posta kayıtlı mı kontrolü (Giriş / Kayıt öncesi güvenli kontrol)
@@ -68,109 +140,149 @@ exports.findTeacherEmailByUserId = functions.https.onCall(async (data, context) 
 
 const OTP_EMAIL_PER_HOUR = 5;
 const OTP_EMAIL_PER_DAY = 20;
-const OTP_IP_PER_HOUR = 10;
+// Okul Wi-Fi'ında bir sınıf, mobil operatörde (CGNAT) yüzlerce kullanıcı aynı IP'yi paylaşıyor;
+// eskiden 10'du ve 11. öğrencinin kaydı duruyordu. Asıl koruma e-posta ve toplam sınırlar.
+const OTP_IP_PER_HOUR = 40;
+// Aynı adrese iki kod arasında en az bu kadar. Uygulama 45 sn bekletiyor ama o yalnızca
+// istemcide; fonksiyonu doğrudan çağıran biri saatlik hakkı aynı saniyede gönderebiliyordu.
+// İstemciden kısa tutuldu ki saat farkı yüzünden uygulamanın izin verdiği istek reddedilmesin.
+const OTP_EMAIL_COOLDOWN_MS = 30 * 1000;
+// Bütün uygulama için günlük e-posta tavanı. Kodlar kişisel Gmail hesabıyla gidiyor (günde
+// ~500 e-posta); o dolarsa o gün kimseye kod gitmez ve hesap spam diye kapatılabilir.
+// Tavan onun altında kalıyor. Dolunca log'a `OTP_GLOBAL_LIMIT` yazılır (uyarı kuralı için).
+const OTP_GLOBAL_PER_DAY = 400;
+// Geçerli App Check jetonu olmayan istekler için ayrı, küçük kova (toplamın içinden sayılır).
+// Uygulama dışından gelen script jeton üretemez; en fazla bu kovayı doldurur, uygulamadan
+// gelen kullanıcılar kod almaya devam eder. Jetonsuz istemciler (App Check'ten önceki sürüm,
+// konsolda kayıtlı olmayan debug kurulumu) bu kovayı paylaşır; bkz. docs/APP_CHECK.md.
+const OTP_UNVERIFIED_PER_DAY = 100;
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
+// Sayaç belgelerinin silinme zamanı (TTL alanı `expireAt`). Eskiden TTL `updatedAt`
+// üzerindeydi: TTL alandaki zaman geçince siler, yani sayaç yazıldığı an silinmeye aday
+// oluyordu ve günlük sınır erken sıfırlanabiliyordu.
+const OTP_LIMIT_DOC_TTL_MS = 2 * DAY_MS;
 
+// x-forwarded-for'u istemci de yazabiliyor: Google'ın ön ucu gördüğü adresi listenin SONUNA
+// ekliyor, öndeki değerler uydurma olabilir. Eskiden ilk değer alınıyordu; her istekte başka
+// bir sahte IP yazarak IP sınırı tamamen atlanabiliyordu. Uygulama bu başlığı göndermediği
+// için normalde tek değer gelir.
 function getClientIp(context) {
   if (!context.rawRequest) return null;
   const forwarded = context.rawRequest.headers['x-forwarded-for'];
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return context.rawRequest.connection?.remoteAddress || null;
+  if (forwarded) {
+    const parts = String(forwarded).split(',').map((s) => s.trim()).filter(Boolean);
+    // Doğrulama için: uygulamanın normal isteklerinde bu satır görünüyorsa Google sona kendi
+    // adresini de ekliyor demektir ve buradaki seçim yeniden düşünülmeli. IP yazılmıyor.
+    if (parts.length > 1) console.log('x-forwarded-for birden fazla değer', { count: parts.length });
+    if (parts.length) return parts[parts.length - 1];
   }
+  return context.rawRequest.connection?.remoteAddress || null;
+}
 
 function getWindowStart(nowMs, windowMs) {
   return Math.floor(nowMs / windowMs) * windowMs;
 }
 
-async function checkOtpRateLimits(email, ip) {
-  const normalizedEmail = (email || '').trim().toLowerCase();
-  if (!normalizedEmail) return { ok: true };
+/**
+ * Kod e-postası göndermeden önce bütün sınırları tek transaction'da kontrol edip sayar;
+ * herhangi biri aşılırsa hiçbir sayaç artmaz.
+ *   recipient   kodun gittiği adres: saatlik/günlük sınır + iki gönderim arası bekleme
+ *   alsoCount   kodun ilgili olduğu ama gitmediği adresler (veli akışında çocuğun adresi):
+ *               yalnızca saatlik/günlük sınır. Bekleme yok, çünkü çocuk kendi kodunu doğrulayıp
+ *               hemen ardından veli kodunu istiyor.
+ *   ip          null ise IP sınırı uygulanmaz
+ *   appVerified istek geçerli bir App Check jetonu taşıyor mu (`Boolean(context.app)`)
+ */
+async function checkOtpRateLimits({ recipient, alsoCount = [], ip, appVerified }) {
+  const normalize = (e) => String(e || '').trim().toLowerCase();
+  const recipientEmail = normalize(recipient);
+  if (!recipientEmail) return;
+  const emails = [...new Set([recipientEmail, ...alsoCount.map(normalize)].filter(Boolean))];
 
-  const emailDocId = 'email:' + normalizedEmail.replace(/\//g, '_');
-  const emailRef = db.collection('otpRateLimits').doc(emailDocId);
+  const limits = db.collection('otpRateLimits');
+  const emailRefs = emails.map((e) => limits.doc('email:' + e.replace(/\//g, '_')));
+  const ipRef = ip
+    ? limits.doc('ip:' + String(ip).replace(/[^a-fA-F0-9.:]/g, '_').slice(0, 64))
+    : null;
+  const globalRef = limits.doc('global:all');
+  const unverifiedRef = appVerified ? null : limits.doc('global:unverified');
 
-  let ipRef = null;
-  if (ip) {
-    const safeIp = String(ip).replace(/[^a-fA-F0-9.:]/g, '_').slice(0, 64);
-    const ipDocId = 'ip:' + safeIp;
-    ipRef = db.collection('otpRateLimits').doc(ipDocId);
-  }
+  // Aynı anda gelen istekler sınırı delmesin diye okuma, kontrol ve yazma tek transaction'da.
+  await db.runTransaction(async (tx) => {
+    const refs = [...emailRefs, ipRef, globalRef, unverifiedRef].filter(Boolean);
+    const snaps = await tx.getAll(...refs);
+    const dataByPath = new Map(snaps.map((s) => [s.ref.path, s.exists ? s.data() : {}]));
+    const dataOf = (ref) => dataByPath.get(ref.path) || {};
 
-  // Tüm okuma ve yazma işlemlerini tek bir Atomik Transaction (İşlem) içine alıyoruz.
-  // Bu, aynı anda gelen yüzlerce isteğin (Race Condition) sistemi delmesini imkansız hale getirir.
-  await db.runTransaction(async (transaction) => {
-    // 1. Transaction Kuralları: Önce tüm OKUMA (get) işlemleri yapılmalı
-    const emailSnap = await transaction.get(emailRef);
-    let ipSnap = null;
-    if (ipRef) {
-      ipSnap = await transaction.get(ipRef);
-    }
-
-    const now = admin.firestore.Timestamp.now();
-    const nowMs = now.toMillis();
+    const nowMs = admin.firestore.Timestamp.now().toMillis();
     const hourStart = getWindowStart(nowMs, HOUR_MS);
     const dayStart = getWindowStart(nowMs, DAY_MS);
+    const hourCount = (d) => (d.lastHourStart === hourStart ? d.hourCount : 0) || 0;
+    const dayCount = (d) => (d.lastDayStart === dayStart ? d.dayCount : 0) || 0;
+    const waitMin = (untilMs) => Math.max(1, Math.ceil((untilMs - nowMs) / 60000));
+    const exhausted = (message) => new functions.https.HttpsError('resource-exhausted', message);
 
-    // 2. E-posta limitlerini kontrol et
-    const emailData = emailSnap.exists ? emailSnap.data() : {};
-    let emailHourCount = (emailData.lastHourStart === hourStart ? emailData.hourCount : 0) || 0;
-    let emailDayCount = (emailData.lastDayStart === dayStart ? emailData.dayCount : 0) || 0;
-
-    if (emailHourCount >= OTP_EMAIL_PER_HOUR) {
-      const nextHourMs = hourStart + HOUR_MS;
-      const waitMin = Math.ceil((nextHourMs - nowMs) / 60000);
-      throw new functions.https.HttpsError(
-        'resource-exhausted',
-        `E-posta başına saatte en fazla ${OTP_EMAIL_PER_HOUR} kod gönderebilirsiniz. ${waitMin} dakika sonra tekrar deneyin.`
-      );
-    }
-    if (emailDayCount >= OTP_EMAIL_PER_DAY) {
-      const nextDayMs = dayStart + DAY_MS;
-      const waitMin = Math.ceil((nextDayMs - nowMs) / 60000);
-      throw new functions.https.HttpsError(
-        'resource-exhausted',
-        `Günlük kod limiti (${OTP_EMAIL_PER_DAY}) aşıldı. ${Math.ceil(waitMin / 60)} saat sonra tekrar deneyin.`
-      );
-    }
-
-    // 3. IP limitlerini kontrol et
-    let ipHourCount = 0;
-    const ipHourStart = getWindowStart(nowMs, HOUR_MS);
-    
-    if (ipSnap) {
-      const ipData = ipSnap.exists ? ipSnap.data() : {};
-      ipHourCount = (ipData.lastHourStart === ipHourStart ? ipData.hourCount : 0) || 0;
-
-      if (ipHourCount >= OTP_IP_PER_HOUR) {
-        const nextHourMs = ipHourStart + HOUR_MS;
-        const waitMin = Math.ceil((nextHourMs - nowMs) / 60000);
-        throw new functions.https.HttpsError(
-          'resource-exhausted',
-          `Bu cihazdan saatte en fazla ${OTP_IP_PER_HOUR} kod gönderilebilir. ${waitMin} dakika sonra tekrar deneyin.`
+    for (let i = 0; i < emails.length; i++) {
+      const d = dataOf(emailRefs[i]);
+      if (emails[i] === recipientEmail) {
+        const sinceLastMs = nowMs - (Number(d.lastSentAtMs) || 0);
+        if (sinceLastMs < OTP_EMAIL_COOLDOWN_MS) {
+          const waitSec = Math.ceil((OTP_EMAIL_COOLDOWN_MS - sinceLastMs) / 1000);
+          throw exhausted(`Yeni kod istemeden önce ${waitSec} saniye bekleyin.`);
+        }
+      }
+      if (hourCount(d) >= OTP_EMAIL_PER_HOUR) {
+        throw exhausted(
+          `E-posta başına saatte en fazla ${OTP_EMAIL_PER_HOUR} kod gönderebilirsiniz. ${waitMin(hourStart + HOUR_MS)} dakika sonra tekrar deneyin.`
+        );
+      }
+      if (dayCount(d) >= OTP_EMAIL_PER_DAY) {
+        throw exhausted(
+          `Günlük kod limiti (${OTP_EMAIL_PER_DAY}) aşıldı. ${Math.ceil(waitMin(dayStart + DAY_MS) / 60)} saat sonra tekrar deneyin.`
         );
       }
     }
 
-    // 4. Transaction Kuralları: Okumalar ve kontroller bittikten sonra YAZMA (set) işlemleri
-    transaction.set(emailRef, {
-      lastHourStart: hourStart,
-      hourCount: emailHourCount + 1,
-      lastDayStart: dayStart,
-      dayCount: emailDayCount + 1,
-      updatedAt: now
-    }, { merge: true });
-
-    if (ipRef) {
-      transaction.set(ipRef, {
-        lastHourStart: ipHourStart,
-        hourCount: ipHourCount + 1,
-        updatedAt: now
-      }, { merge: true });
+    if (ipRef && hourCount(dataOf(ipRef)) >= OTP_IP_PER_HOUR) {
+      throw exhausted(
+        `Bu ağdan saatte en fazla ${OTP_IP_PER_HOUR} kod gönderilebilir. ${waitMin(hourStart + HOUR_MS)} dakika sonra tekrar deneyin.`
+      );
     }
-  });
 
-  return { ok: true };
+    const globalCount = dayCount(dataOf(globalRef));
+    const unverifiedCount = unverifiedRef ? dayCount(dataOf(unverifiedRef)) : 0;
+    if (globalCount >= OTP_GLOBAL_PER_DAY || (unverifiedRef && unverifiedCount >= OTP_UNVERIFIED_PER_DAY)) {
+      console.error('OTP_GLOBAL_LIMIT günlük kod tavanı doldu', {
+        globalCount,
+        unverifiedCount,
+        appVerified: Boolean(appVerified),
+      });
+      throw exhausted('Şu anda doğrulama kodu gönderilemiyor. Lütfen birkaç saat sonra tekrar deneyin.');
+    }
+    if (globalCount + 1 === Math.floor(OTP_GLOBAL_PER_DAY * 0.8)) {
+      console.warn('OTP_GLOBAL_LIMIT günlük kod tavanının %80\'i kullanıldı', { globalCount: globalCount + 1 });
+    }
+
+    const expireAt = admin.firestore.Timestamp.fromMillis(nowMs + OTP_LIMIT_DOC_TTL_MS);
+    const bump = (ref, extra = {}) => {
+      const d = dataOf(ref);
+      tx.set(ref, {
+        lastHourStart: hourStart,
+        hourCount: hourCount(d) + 1,
+        lastDayStart: dayStart,
+        dayCount: dayCount(d) + 1,
+        expireAt,
+        // Eski TTL alanı; kalırsa eski politika belgeyi yine erken silebilir.
+        updatedAt: admin.firestore.FieldValue.delete(),
+        ...extra,
+      }, { merge: true });
+    };
+    emailRefs.forEach((ref, i) => bump(ref, emails[i] === recipientEmail ? { lastSentAtMs: nowMs } : {}));
+    if (ipRef) bump(ipRef);
+    bump(globalRef);
+    if (unverifiedRef) bump(unverifiedRef);
+  });
 }
 
 // ─── OTP gönderimi ──────────────────────────────────────────────────────────
@@ -187,6 +299,8 @@ async function checkOtpRateLimits(email, ip) {
 //       register      → e-posta KAYITLI OLMAMALI
 //       login         → kayıtlı olmalı ve rolü STUDENT olmalı
 //       teacher_reset → kayıtlı olmalı ve rolü TEACHER olmalı
+//       register_parental → kayıtlı olmamalı ve doğum yılı veli onayı gerektirmeli;
+//                       kod çocuğa değil VELİYE gider (bkz. "Veli onayı" bölümü)
 
 /** E-postaya karşılık gelen users dokümanını döndürür (yoksa null). */
 async function findUserByEmail(email) {
@@ -208,12 +322,17 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
   if (!email) {
     throw new functions.https.HttpsError('invalid-argument', 'email required');
   }
-  if (!['register', 'login', 'teacher_reset'].includes(purpose)) {
+  if (!['register', 'login', 'teacher_reset', 'register_parental'].includes(purpose)) {
     throw new functions.https.HttpsError('invalid-argument', 'geçersiz purpose');
   }
-
-  const ip = getClientIp(context);
-  await checkOtpRateLimits(email, ip);
+  if (purpose === 'register_parental') {
+    // Google yolu da buradan geçiyor (bkz. sendGoogleParentalCode): e-posta hesabının
+    // bilgileri yalnızca bu fonksiyonun ortamında tanımlı.
+    if (data && data.google === true) {
+      return sendGoogleParentalCode(data, context);
+    }
+    return sendParentalRegistrationCode(email, data, context);
+  }
 
   // uid'i SUNUCUDA çöz — istemcinin gönderdiği değere asla güvenme.
   const existing = await findUserByEmail(email);
@@ -237,19 +356,13 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
     uid = existing.uid;
   }
 
-  const code = generateCode(6);
-  const now = admin.firestore.Timestamp.now();
-  const expiresAt = admin.firestore.Timestamp.fromMillis(now.toMillis() + 2 * 60 * 1000); // 2 dk
+  // Sınırlar hesap kontrollerinden SONRA sayılıyor: yalnızca gerçekten giden e-posta sayılsın.
+  // Önce sayılınca "zaten kayıtlı" uyarısı alıp hemen giriş ekranından kod isteyen kullanıcı
+  // iki gönderim arası beklemeye takılırdı. (Kayıtlı mı sorusu checkEmailRegistered ile zaten
+  // sınırsız; o sınırlanırsa buradaki not-found yanıtı da sınırlanmalı.)
+  await checkOtpRateLimits({ recipient: email, ip: getClientIp(context), appVerified: Boolean(context.app) });
 
-  // Firestore'a kodu kaydet
-  await db.collection('studentVerificationCodes').doc(code).set({
-    code,
-    email,
-    uid,
-    createdAt: now,
-    expiresAt,
-    used: false
-  });
+  const { code } = await createVerificationCode({ email, uid }, STUDENT_CODE_TTL_MS);
 
   // Try to get email config from environment variables first, then fallback to functions.config()
   const user = process.env.EMAIL_USER || functions.config()?.email?.user;
@@ -276,20 +389,11 @@ exports.sendStudentVerificationCode = functions.https.onCall(async (data, contex
     auth: { user, pass }
   });
 
+  // Uygulamanın dili (AuthManager `lang` gönderiyor); eski sürümler Türkçe alır.
   const mailOptions = {
     from: `Sorobit <${user}>`,
     to: email,
-    subject: 'Sorobit - E-posta Doğrulama Kodu',
-    html: `
-      <h2>Sorobit E-posta Doğrulama</h2>
-      <p>Merhaba,</p>
-      <p>Sorobit hesabınızı doğrulamak için aşağıdaki kodu kullanın:</p>
-      <h1 style="color: #4CAF50; font-size: 32px; letter-spacing: 5px; text-align: center;">${code}</h1>
-        <p>Bu kod 2 dakika içinde geçerlidir.</p>
-      <p>Eğer bu işlemi siz yapmadıysanız, bu e-postayı görmezden gelebilirsiniz.</p>
-      <p>İyi çalışmalar,<br>Sorobit Ekibi</p>
-    `,
-      text: `Sorobit E-posta Doğrulama\n\nDoğrulama kodunuz: ${code}\nBu kod 2 dakika içinde geçerlidir.`
+    ...mailTexts.verificationEmail(code, mailTexts.mailLang(data && data.lang)),
   };
 
     console.log('Attempting to send email to:', email);
@@ -369,10 +473,13 @@ async function recordWrongAttempt(email) {
       count = 1;
     }
     
-    transaction.set(ref, { 
-      count, 
-      windowStart: admin.firestore.Timestamp.fromMillis(windowStart), 
-      updatedAt: now 
+    transaction.set(ref, {
+      count,
+      windowStart: admin.firestore.Timestamp.fromMillis(windowStart),
+      // TTL alanı. Eskiden TTL `updatedAt` üzerindeydi; kilit belgesi yazıldığı an silinmeye
+      // aday oluyor, 15 dakikalık kilit erken kalkabiliyordu (bkz. OTP_LIMIT_DOC_TTL_MS).
+      expireAt: admin.firestore.Timestamp.fromMillis(nowMs + DAY_MS),
+      updatedAt: admin.firestore.FieldValue.delete(),
     }, { merge: true });
   });
 }
@@ -385,6 +492,41 @@ async function clearWrongAttempts(email) {
 }
 
 // OTP ile giriş: kodu doğrula ve custom token döndür
+// ─── Play inceleme hesabı ───────────────────────────────────────────────────
+//
+// Öğrenci girişi yalnızca Google hesabıyla ya da e-postaya giden kodla yapılıyor; Play
+// inceleyicisinin ikisine de erişimi yok (Google, kod/iki adımlı doğrulama isteyen giriş
+// bilgilerini kabul etmiyor). Bu yüzden TEK bir inceleme hesabı için sabit bir kod kabul
+// ediliyor; Play Console → Uygulama erişimi formunda "şifre" olarak bu kod veriliyor.
+//
+// GÜVENLİK
+//   • Ayar `serverConfig/reviewLogin` dokümanında (alanlar: `email`, `codeSha256`). Kural
+//     dosyasındaki son eşleşme bu yolu istemcilere kapatıyor; yalnızca Admin SDK okur.
+//     Kodun kendisi hiçbir yerde durmuyor, yalnızca SHA-256 özeti; doküman sızsa da kod çıkmaz.
+//     Ayar .env'de değil, çünkü CI deploy'u .env görmüyor ve her push'ta silinirdi.
+//   • Yalnızca o e-postanın, zaten var olan bir STUDENT hesabı için token üretir: hesap
+//     açılmaz, rol yükseltilmez. Doküman yoksa ya da silinirse istisna tamamen kapanır.
+//   • Yanlış kod normal akışa düşer; orada yanlış deneme sayılıyor ve bekleme süresi
+//     (checkWrongAttemptCooldown) bu e-posta için de geçerli, kaba kuvvet denemesi yavaşlıyor.
+async function tryReviewLogin(email, code) {
+  const snap = await db.collection('serverConfig').doc('reviewLogin').get();
+  if (!snap.exists) return null;
+  const reviewEmail = String(snap.get('email') || '').trim().toLowerCase();
+  const expected = String(snap.get('codeSha256') || '').trim().toLowerCase();
+  if (!reviewEmail || !/^[0-9a-f]{64}$/.test(expected) || email !== reviewEmail) return null;
+
+  const crypto = require('crypto');
+  const actual = crypto.createHash('sha256').update(String(code)).digest();
+  if (!crypto.timingSafeEqual(actual, Buffer.from(expected, 'hex'))) return null;
+
+  const existing = await findUserByEmail(email);
+  if (!existing || existing.role !== 'STUDENT') {
+    throw new functions.https.HttpsError('not-found', 'İnceleme hesabı bulunamadı');
+  }
+  console.log('Review account login', { uid: existing.uid });
+  return admin.auth().createCustomToken(existing.uid);
+}
+
 exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
   const rawEmail = (data && data.email) || '';
   const email = String(rawEmail).trim().toLowerCase();
@@ -395,6 +537,12 @@ exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
   }
 
   await checkWrongAttemptCooldown(email);
+
+  const reviewToken = await tryReviewLogin(email, code);
+  if (reviewToken) {
+    await clearWrongAttempts(email);
+    return { token: reviewToken };
+  }
 
   const codeRef = db.collection('studentVerificationCodes').doc(code);
   const codeDoc = await codeRef.get();
@@ -417,7 +565,10 @@ exports.verifyLoginCode = functions.https.onCall(async (data, context) => {
 
   await clearWrongAttempts(email);
 
-  if (uid.startsWith('pending_')) {
+  // Veli onay kodu giriş kodu değildir. Google ile kayıt bekleyen çocuğun kodu gerçek bir
+  // uid taşıdığı için aşağıdaki pending_ kontrolüne takılmaz; burada ayrıca reddedilmezse
+  // onay ekranını atlayıp o hesaba token almak mümkün olurdu.
+  if (uid.startsWith('pending_') || d.kind === 'parental') {
     throw new functions.https.HttpsError('invalid-argument', 'Bu kod kayıt için. Giriş için e-postanıza gelen kodu kullanın.');
   }
 
@@ -526,6 +677,37 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
     throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
   }
 
+  // Veli onayı (bkz. "Veli onayı" bölümü). Google ile kayıt bekleyen çocuğun kodu gerçek
+  // bir uid taşır ve yalnızca confirmParentalConsent ile kullanılır.
+  const isParental = d.kind === 'parental';
+  if (isParental && !docUid.startsWith('pending_')) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kod');
+  }
+  // Onaysız 13 yaş altı hesap AÇILMAZ. Eski sürümler doğum yılını normal kayıt koduyla
+  // gönderiyor; onları burada durduruyoruz ki güncellemeyen istemci de onayı atlayamasın.
+  if (!isParental && docUid.startsWith('pending_') && requiresParentalConsent(reqBirthYear)) {
+    // Yeni istemci: çocuğun KENDİ e-postasını doğrulama adımı (veli e-postası farklıysa).
+    // Hesap açılmaz; yalnızca adresin çocuğa ait olduğu kısa süreliğine kaydedilir ve veli
+    // kodu bu kayıt varsa gönderilir (sendParentalRegistrationCode). Eskiden çocuğun adresi
+    // hiç doğrulanmıyordu: yanlış yazılan adresle açılan hesaba bir daha girilemiyordu.
+    if (data && data.parentalStep === true) {
+      await clearWrongAttempts(email);
+      const now = admin.firestore.Timestamp.now();
+      await codeRef.update({ used: true, verifiedAt: now });
+      await verifiedChildEmailRef(email).set({
+        email,
+        birthYear: reqBirthYear,
+        verifiedAt: now,
+        expiresAt: admin.firestore.Timestamp.fromMillis(now.toMillis() + PARENTAL_CODE_TTL_MS),
+      });
+      return { emailVerified: true };
+    }
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      '13 yaşından küçükler için veli onayı gerekiyor. Lütfen uygulamayı güncelleyin.'
+    );
+  }
+
   await clearWrongAttempts(email);
 
   await codeRef.update({
@@ -537,7 +719,8 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 
   if (docUid.startsWith('pending_')) {
     const name = reqName;
-    const roleForUser = reqRole;
+    // Veli koduyla açılan hesap her zaman öğrenci; rolü istemciye bırakmıyoruz.
+    const roleForUser = isParental ? 'STUDENT' : reqRole;
     // Şifre verilmediyse (OTP-only öğrenci kaydı) sunucu rastgele üretir; kullanıcı zaten
     // her girişte OTP kullanacak. Şifre hiçbir zaman Firestore'a yazılmaz.
     const password = reqPassword || require('crypto').randomUUID().replace(/-/g, '').slice(0, 16);
@@ -595,18 +778,24 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
         role: roleForUser,
         first_tutorial_shown: false,
         createdAt: admin.firestore.Timestamp.now(),
-        keys: 1,
+        // Öğretmen onaysız açılıyor ve onaysız öğretmen harcama yapamıyor
+        // (assertNotUnapprovedTeacher); hoş geldin anahtarı yalnızca öğrenciye.
+        keys: roleForUser === 'TEACHER' ? 0 : 1,
         currency: 0
       };
 
       // birthYear artık SUNUCUDA yazılıyor. Eskiden kayıt sonrası istemci kendi
       // dokümanına update atıyordu; bu alan reklam yaş korumasını (TFCD/TFUA) belirlediği
       // için istemci yazımına kapatıldı (bkz. firestore.rules).
-      if (Number.isFinite(reqBirthYear) && reqBirthYear > 1900 && reqBirthYear <= new Date().getFullYear()) {
-        baseData.birthYear = reqBirthYear;
+      // Veli onaylı kayıtta doğum yılı ve kaynak, kod istenirken kod dokümanına yazılanlardır:
+      // veli o yılı gören e-postayı onayladı, çocuk sonradan değiştiremesin.
+      const birthYearForUser = isParental ? d.birthYear : reqBirthYear;
+      const sourceForUser = isParental ? (d.acquisitionSource || '') : reqAcquisitionSource;
+      if (Number.isFinite(birthYearForUser) && birthYearForUser > 1900 && birthYearForUser <= new Date().getFullYear()) {
+        baseData.birthYear = birthYearForUser;
       }
-      if (reqAcquisitionSource) {
-        baseData.acquisitionSource = reqAcquisitionSource;
+      if (sourceForUser) {
+        baseData.acquisitionSource = sourceForUser;
       }
 
       if (roleForUser === 'STUDENT') {
@@ -615,7 +804,16 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
         baseData.teacherApproved = false;
       }
 
-      await userRef.set(baseData);
+      if (isParental) {
+        const batch = db.batch();
+        writeParentalConsent(batch, tokenUid, d, baseData);
+        batch.set(userRef, baseData);
+        // Amacı bitti: hesap açıldı.
+        batch.delete(verifiedChildEmailRef(email));
+        await batch.commit();
+      } else {
+        await userRef.set(baseData);
+      }
     }
 
     // Eski sürümlerden kalmış olabilecek düz metin şifreli kayıt dokümanını temizle.
@@ -631,6 +829,382 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
   const token = await admin.auth().createCustomToken(tokenUid);
   return { token };
 });
+
+// ─── Veli onayı (13 yaş altı) ───────────────────────────────────────────────
+//
+// COPPA / GDPR / KVKK: 13 yaşından küçük çocuğun hesabı, VELİSİNİN doğrulanabilir onayı
+// olmadan açılmaz. Yöntem "e-posta + kod": kayıt kodu çocuğa değil veliye gider, e-postada
+// uygulamanın ne topladığı yazar; veli kodu çocuğa verdiğinde (ya da kendisi girdiğinde)
+// onay verilmiş olur. Kod girilmeden HİÇBİR hesap açılmaz.
+//
+// İKİ YOL
+//   • E-posta ile kayıt: sendStudentVerificationCode(purpose = register_parental) kodu
+//     üretir; verifyRegistrationCode hesabı açar. Onaya kadar Auth kaydı bile yoktur.
+//   • Google ile kayıt: Google girişi Firebase Auth kaydını kendiliğinden açar ama `users`
+//     dokümanı yazılmaz. Kodu sendStudentVerificationCode (register_parental, google = true)
+//     üretir, confirmParentalConsent dokümanı
+//     sunucuda yazar. (Family Link'in Google'a verdiği izin bizim uygulamamız için onay
+//     sayılmaz; bu yüzden Google yolunda da aynı adım var.)
+//
+// GÜVENLİK
+//   • Onaysız 13 yaş altı `users` dokümanı istemciden yazılamaz (firestore.rules,
+//     `noUnconsentedChild`); verifyRegistrationCode da veli kodu olmayan 13 yaş altı
+//     kaydı reddeder. Yani hesap yalnızca bu bölümdeki yollarla açılabilir.
+//   • Doğum yılı kod dokümanından okunur, hesap açılırken istemciden alınmaz: veli e-postada
+//     hangi yılı gördüyse hesap o yılla açılır.
+//   • Veli onay kodu giriş kodu olarak kullanılamaz (verifyLoginCode `kind` kontrolü).
+//
+// SAKLAMA
+//   • Onay kaydı `parentalConsents/{uid}` dokümanında: veli e-postası, metin sürümü, zaman.
+//     `users` dokümanına veli e-postası YAZILMAZ, çünkü onu onaylı öğretmenler de okuyabiliyor.
+//   • Onay gelmezse: kod 30 dk sonra geçersiz olur, cleanupExpiredVerificationCodes onu
+//     (ve Google yolunda yarım kalan Auth kaydını) bir saat içinde siler.
+
+// Yalnızca doğum yılını biliyoruz. "Bu yıl − doğum yılı ≤ 13" olan çocuk yılın bir kısmında
+// hâlâ 12 yaşında olabilir; temkinli tarafta kalıp onu da onaya sokuyoruz. Uygulamadaki
+// ParentalConsentPolicy ve firestore.rules aynı formülü (UTC yılıyla) kullanıyor — biri
+// değişirse üçü birlikte değişmeli.
+const PARENTAL_CONSENT_MAX_AGE_DIFF = 13;
+// E-postadaki onay metni değişince bu sürüm de değişmeli; her onay kaydı hangi metni
+// onayladığını bu alanla taşıyor.
+// 2026-11-03.1: metin üç dilde (mailTexts.js, kayıtta consentLang), Türkçesi privacy-policy-tr.html'e bağlanıyor.
+// 2026-11-03.2: Arapça metin eklendi (privacy-policy-ar.html); diğer üç dilin metni aynı.
+// 2026-11-03.3: öğretmene danışma maddesi yerine Sobi (Anthropic'e giden mesajlar) maddesi; danışma
+//   kapalı (TeacherQuestionsFeature.ENABLED = false). Danışma açılırsa madde geri gelmeli.
+const PARENTAL_CONSENT_VERSION = '2026-11-03.3';
+// Veli e-postasını hemen göremeyebilir (başka cihaz, iş yeri); öğrenci kodunun 10 dakikası
+// burada yetmiyor.
+const PARENTAL_CODE_TTL_MS = 30 * 60 * 1000;
+// Velinin hak talepleri (görme, silme, onayı geri alma) için; gizlilik politikasındaki adres.
+const SUPPORT_EMAIL = 'sorobit.support@gmail.com';
+
+function requiresParentalConsent(birthYear) {
+  if (!Number.isFinite(birthYear)) return false;
+  return new Date().getUTCFullYear() - birthYear <= PARENTAL_CONSENT_MAX_AGE_DIFF;
+}
+
+/** İstemciden gelen doğum yılını doğrular; geçersizse null. */
+function parseBirthYear(raw) {
+  const year = Number.parseInt(raw, 10);
+  if (!Number.isFinite(year) || year <= 1900 || year > new Date().getUTCFullYear()) return null;
+  return year;
+}
+
+function normalizeEmailInput(raw) {
+  const email = String(raw || '').trim().toLowerCase();
+  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return '';
+  return email;
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Veliye giden onay e-postası: metinler üç dilde mailTexts.js'te (Türkçesi eskisiyle aynı). */
+function parentalConsentEmail(code, childEmail, parentEmail, lang = 'tr') {
+  return mailTexts.parentalConsentEmail(code, childEmail, parentEmail, SUPPORT_EMAIL, lang);
+}
+
+/**
+ * Veli onay kodunu üretip veliye gönderir. [uid] e-posta yolunda `pending_…`, Google
+ * yolunda çocuğun gerçek Auth uid'idir.
+ */
+async function issueParentalConsentCode({ uid, childEmail, parentEmail, birthYear, acquisitionSource, ip, appVerified, lang = 'tr' }) {
+  // Sınır hem çocuğun hem velinin e-postasına işler: biri başkasının adresini sınırsız
+  // e-postayla dolduramasın. Kod veliye gittiği için gönderim arası bekleme veli adresinde;
+  // adresler aynıysa bir kez sayılır.
+  await checkOtpRateLimits({ recipient: parentEmail, alsoCount: [childEmail], ip, appVerified });
+
+  const mailUser = process.env.EMAIL_USER || functions.config()?.email?.user;
+  const mailPass = process.env.EMAIL_PASS || functions.config()?.email?.pass;
+  if (!mailUser || !mailPass) {
+    console.error('Email credentials not set; cannot deliver parental consent code.');
+    throw new functions.https.HttpsError('internal', 'Doğrulama kodu gönderilemedi.');
+  }
+
+  const { code, ref: codeRef } = await createVerificationCode({
+    email: childEmail,
+    uid,
+    kind: 'parental',
+    parentEmail,
+    birthYear,
+    acquisitionSource: acquisitionSource || '',
+    consentVersion: PARENTAL_CONSENT_VERSION,
+    // Veli onayı metni hangi dilde gönderildi (aynı sürümün üç dili aynı maddeleri söylüyor).
+    consentLang: lang,
+  }, PARENTAL_CODE_TTL_MS);
+
+  try {
+    const transporter = nodemailer.createTransport({ service: 'gmail', auth: { user: mailUser, pass: mailPass } });
+    const mail = parentalConsentEmail(code, childEmail, parentEmail, lang);
+    await transporter.sendMail({ from: `Sorobit <${mailUser}>`, to: parentEmail, ...mail });
+  } catch (error) {
+    console.error('Error sending parental consent email:', { message: error.message, code: error.code });
+    // Kod yalnızca e-postayla ulaşır; gidemediyse kullanılamaz, bekletmeden silinir.
+    await codeRef.delete().catch(() => {});
+    throw new functions.https.HttpsError('internal', 'Doğrulama kodu gönderilemedi.');
+  }
+  return { emailed: true };
+}
+
+/** Veli onayı istenecek kayıt için ortak giriş kontrolü; doğrulanmış değerleri döndürür. */
+function validateParentalRequest(childEmail, data) {
+  const parentEmail = normalizeEmailInput(data && data.parentEmail);
+  if (!parentEmail) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçerli bir veli e-postası girin.');
+  }
+  // Veli e-postası çocuğunkiyle AYNI olabilir: küçük çocukların çoğunun kendi e-postası
+  // yok, hesabı veli kendi adresiyle açıyor. Kod iki durumda da o adrese gidiyor; farklı
+  // adres zorunluluğu yalnızca bu aileleri takıyordu (isteyen çocuk ikinci bir adres
+  // açarak onu zaten aşabilirdi).
+  const birthYear = parseBirthYear(data && data.birthYear);
+  // Yaş eşiğinin üstündeki biri bu yolu kullanamaz; kullanabilseydi onay kaydı anlamsızlaşırdı.
+  if (birthYear === null || !requiresParentalConsent(birthYear)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz doğum yılı.');
+  }
+  const acquisitionSource =
+    typeof (data && data.acquisitionSource) === 'string' ? data.acquisitionSource.trim().slice(0, 64) : '';
+  return { parentEmail, birthYear, acquisitionSource };
+}
+
+/** sendStudentVerificationCode(purpose = register_parental): e-posta ile kayıt yolu. */
+async function sendParentalRegistrationCode(childEmail, data, context) {
+  const { parentEmail, birthYear, acquisitionSource } = validateParentalRequest(childEmail, data);
+  if (await findUserByEmail(childEmail)) {
+    throw new functions.https.HttpsError('already-exists', 'Bu e-posta zaten kayıtlı. Lütfen giriş yapın.');
+  }
+  // Veli adresi farklıysa çocuğun kendi adresi önce doğrulanmış olmalı (verifyRegistrationCode,
+  // parentalStep). Aynıysa veli kodu o adrese gittiği için adresi de doğrular; ayrı adım yok.
+  if (parentEmail !== childEmail) {
+    const snap = await verifiedChildEmailRef(childEmail).get();
+    const exp = snap.exists ? snap.get('expiresAt') : null;
+    if (!exp || exp.toMillis() < Date.now()) {
+      // `details.reason` ile uygulama bunu tanıyıp çocuğun adresine kod gönderiyor.
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Önce kendi e-postanı doğrula.',
+        { reason: 'child_email_unverified' }
+      );
+    }
+  }
+  return issueParentalConsentCode({
+    uid: 'pending_' + require('crypto').randomUUID(),
+    childEmail,
+    parentEmail,
+    birthYear,
+    acquisitionSource,
+    ip: getClientIp(context),
+    lang: mailTexts.mailLang(data && data.lang),
+    appVerified: Boolean(context.app),
+  });
+}
+
+/**
+ * 13 yaş altı kayıtta çocuğun kendi e-postasının doğrulandığı kısa süreli kayıt
+ * (PARENTAL_CODE_TTL_MS). Hesap açılınca ya da temizlik görevinde silinir; istemci erişemez.
+ */
+function verifiedChildEmailRef(email) {
+  return db.collection('verifiedChildEmails').doc(String(email).replace(/\//g, '_'));
+}
+
+/** Onay kaydını ve `users` dokümanındaki onay işaretlerini aynı batch'e ekler. */
+function writeParentalConsent(batch, uid, codeData, userData) {
+  const now = admin.firestore.Timestamp.now();
+  userData.parentalConsentAt = now;
+  userData.parentalConsentVersion = codeData.consentVersion || PARENTAL_CONSENT_VERSION;
+  batch.set(db.collection('parentalConsents').doc(uid), {
+    uid,
+    childEmail: codeData.email || '',
+    parentEmail: codeData.parentEmail || '',
+    birthYear: codeData.birthYear,
+    consentVersion: userData.parentalConsentVersion,
+    // Velinin okuduğu onay metninin dili (mailTexts.js); eski kodlarda yok → Türkçe.
+    consentLang: codeData.consentLang || 'tr',
+    method: 'email_code',
+    requestedAt: codeData.createdAt || now,
+    grantedAt: now,
+  });
+}
+
+/** Google ile kayıt: oturum açmış ama henüz `users` dokümanı olmayan çocuk için kod ister. */
+//
+// Uygulama bunu artık `sendStudentVerificationCode(purpose = register_parental, google = true)`
+// üzerinden çağırıyor. Ayrı fonksiyon olarak çağrılınca kod e-postası gitmedi ("Doğrulama
+// kodu gönderilemedi"): EMAIL_USER / EMAIL_PASS depoda değil, eski fonksiyonun ortamına elle
+// tanımlanmış; bu yeni fonksiyonda yoklar. Dışa aktarım kalıyor, çünkü silinirse CI deploy'u
+// --force olmadan durur.
+exports.requestParentalConsent = functions.https.onCall((data, context) => sendGoogleParentalCode(data, context));
+
+async function sendGoogleParentalCode(data, context) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum gerekli');
+  }
+  const uid = context.auth.uid;
+  const childEmail = String(context.auth.token.email || '').trim().toLowerCase();
+  if (!childEmail) {
+    throw new functions.https.HttpsError('failed-precondition', 'Hesapta e-posta yok');
+  }
+  const { parentEmail, birthYear, acquisitionSource } = validateParentalRequest(childEmail, data);
+  if ((await db.collection('users').doc(uid).get()).exists) {
+    throw new functions.https.HttpsError('already-exists', 'Bu hesap zaten açılmış.');
+  }
+  return issueParentalConsentCode({
+    uid,
+    childEmail,
+    parentEmail,
+    birthYear,
+    acquisitionSource,
+    ip: getClientIp(context),
+    lang: mailTexts.mailLang(data && data.lang),
+    appVerified: Boolean(context.app),
+  });
+}
+
+/** Google ile kayıt: veli kodunu doğrular, `users` dokümanını SUNUCUDA oluşturur. */
+exports.confirmParentalConsent = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum gerekli');
+  }
+  const uid = context.auth.uid;
+  const childEmail = String(context.auth.token.email || '').trim().toLowerCase();
+  const code = String((data && data.code) || '').trim();
+  if (!childEmail || !code) {
+    throw new functions.https.HttpsError('invalid-argument', 'code required');
+  }
+
+  await checkWrongAttemptCooldown(childEmail);
+
+  const codeRef = db.collection('studentVerificationCodes').doc(code);
+  const userRef = db.collection('users').doc(uid);
+  const codeDoc = await codeRef.get();
+  const d = codeDoc.exists ? codeDoc.data() : null;
+  const expiresAt = d && d.expiresAt && d.expiresAt.toMillis ? d.expiresAt.toMillis() : 0;
+  if (!d || d.used === true || expiresAt < Date.now() || d.kind !== 'parental'
+      || d.uid !== uid || d.email !== childEmail) {
+    await recordWrongAttempt(childEmail);
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
+  }
+  await clearWrongAttempts(childEmail);
+
+  let displayName = '';
+  try {
+    displayName = (await admin.auth().getUser(uid)).displayName || '';
+  } catch (err) {
+    // Temizlik görevi yarım kaydı silmiş olabilir; hayalet doküman yazmayalım.
+    throw new functions.https.HttpsError('failed-precondition', 'Kayıt süresi doldu. Lütfen baştan başlayın.');
+  }
+
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const userId = `${Math.floor(100000 + Math.random() * 900000)}`
+    + letters[Math.floor(Math.random() * 26)] + letters[Math.floor(Math.random() * 26)];
+
+  // Alanlar istemcinin Google kaydında yazdıklarının aynısı (AuthManager.signInWithGoogle).
+  const userData = {
+    uid,
+    userId,
+    email: childEmail,
+    name: displayName.slice(0, 80) || userId,
+    role: 'STUDENT',
+    verified: true,
+    first_tutorial_shown: (data && data.firstTutorialShown) === true,
+    createdAt: admin.firestore.Timestamp.now(),
+    birthYear: d.birthYear,
+    keys: 1,
+    currency: 0,
+  };
+  if (d.acquisitionSource) userData.acquisitionSource = d.acquisitionSource;
+
+  // Kod iki kez kullanılamasın ve doküman iki kez yazılmasın diye tek transaction.
+  await db.runTransaction(async (tx) => {
+    const [freshCode, existingUser] = await Promise.all([tx.get(codeRef), tx.get(userRef)]);
+    if (!freshCode.exists || freshCode.get('used') === true) {
+      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz veya süresi dolmuş kod');
+    }
+    if (existingUser.exists) {
+      throw new functions.https.HttpsError('already-exists', 'Bu hesap zaten açılmış.');
+    }
+    writeParentalConsent(tx, uid, d, userData);
+    tx.set(userRef, userData);
+    tx.update(codeRef, { used: true, verifiedAt: admin.firestore.Timestamp.now() });
+  });
+  return { ok: true };
+});
+
+/**
+ * Süresi dolmuş doğrulama kodlarını siler. Eskiden kodlar hiç silinmiyordu; her doküman bir
+ * e-posta adresi taşıdığı için süresiz saklanıyordu.
+ *
+ * Google yolunda onay gelmeden süresi dolan veli kodu, arkasında yarım bir Auth kaydı
+ * (çocuğun Google e-postası ve adı) bırakır; `users` dokümanı yoksa o kayıt da silinir.
+ * Aynı uid için hâlâ geçerli bir kod varsa (veli kodu yeniden istendi) dokunulmaz.
+ */
+async function runExpiredCodeCleanup(nowMs = Date.now()) {
+  // Süresi yeni dolan kod bir süre daha dursun: "süresi dolmuş" hatası doğru mesajla dönsün.
+  const cutoff = admin.firestore.Timestamp.fromMillis(nowMs - HOUR_MS);
+  let deletedCodes = 0;
+  let deletedAuthUsers = 0;
+  for (;;) {
+    const snap = await db.collection('studentVerificationCodes')
+      .where('expiresAt', '<', cutoff)
+      .limit(300)
+      .get();
+    if (snap.empty) break;
+
+    for (const doc of snap.docs) {
+      const d = doc.data();
+      const uid = String(d.uid || '');
+      if (d.kind !== 'parental' || d.used === true || !uid || uid.startsWith('pending_')) continue;
+      try {
+        if ((await db.collection('users').doc(uid).get()).exists) continue;
+        const siblings = await db.collection('studentVerificationCodes').where('uid', '==', uid).get();
+        const stillPending = siblings.docs.some((s) => {
+          const exp = s.get('expiresAt');
+          return s.id !== doc.id && exp && exp.toMillis() > nowMs;
+        });
+        if (stillPending) continue;
+        await admin.auth().deleteUser(uid);
+        deletedAuthUsers++;
+      } catch (err) {
+        if (err.code !== 'auth/user-not-found') {
+          console.error('Yarım veli onayı kaydı silinemedi', { uid, message: err.message });
+        }
+      }
+    }
+
+    const batch = db.batch();
+    snap.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    deletedCodes += snap.size;
+    if (snap.size < 300) break;
+  }
+
+  // Çocuk e-postası doğrulandı ama veli onayı gelmedi: adres kaydı da kalmasın.
+  for (;;) {
+    const snap = await db.collection('verifiedChildEmails')
+      .where('expiresAt', '<', cutoff)
+      .limit(300)
+      .get();
+    if (snap.empty) break;
+    const batch = db.batch();
+    snap.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    deletedCodes += snap.size;
+    if (snap.size < 300) break;
+  }
+  console.log('Süresi dolmuş doğrulama kodları temizlendi', { deletedCodes, deletedAuthUsers });
+  return { deletedCodes, deletedAuthUsers };
+}
+
+exports.cleanupExpiredVerificationCodes = functions.pubsub
+  .schedule('every 1 hours')
+  .onRun(() => runExpiredCodeCleanup());
+
+exports._requiresParentalConsent = requiresParentalConsent;
+exports._parentalConsentEmail = parentalConsentEmail;
 
 // Öğretmen şifre sıfırlama: kodu sadece doğrula, used işaretleme (sonra resetTeacherPassword kullanılacak)
 exports.verifyTeacherPasswordResetCode = functions.https.onCall(async (data, context) => {
@@ -767,25 +1341,8 @@ exports.onMessageCreated = functions.firestore
     const recipientSnap = await db.collection('users').doc(recipientUid).get();
     if (!recipientSnap.exists) return null;
     const recipientData = recipientSnap.data() || {};
-    let tokens = [];
-
-    // Yeni yapı: fcmDevices (her eleman { deviceId, token, updatedAt })
-    if (Array.isArray(recipientData.fcmDevices)) {
-      tokens = recipientData.fcmDevices
-        .map((d) => d && typeof d.token === 'string' ? d.token.trim() : '')
-        .filter((t) => t.length > 0);
-    } else if (Array.isArray(recipientData.fcmTokens)) {
-      // Geriye dönük uyumluluk: eski dizi alanı
-      tokens = recipientData.fcmTokens.filter((t) => typeof t === 'string' && t.trim().length > 0);
-    } else if (recipientData.fcmToken) {
-      // Tekil alan (en son token)
-      tokens = [recipientData.fcmToken];
-    }
+    const tokens = fcmTokensFor(recipientData);
     if (!tokens.length) return null;
-    // Güvenlik için: her hesap en fazla 2 cihaz - sadece son 2 token'a gönder.
-    if (tokens.length > 2) {
-      tokens = tokens.slice(-2);
-    }
 
     let senderName = 'Kullanıcı';
     try {
@@ -808,35 +1365,46 @@ exports.onMessageCreated = functions.firestore
     else if (type === 'video') body = 'Video';
     else if (type === 'image') body = 'Görsel';
     else body = 'Yeni mesaj';
+    // İngilizcesi: yazılı mesaj kendisi (kullanıcının metni), türler çevriliyor.
+    const bodyEn = type === 'text' && textContent ? body
+      : ({ audio: 'Voice message', video: 'Video', image: 'Image' })[type] || 'New message';
+    const bodyId = type === 'text' && textContent ? body
+      : ({ audio: 'Pesan suara', video: 'Video', image: 'Gambar' })[type] || 'Pesan baru';
+    const bodyAr = type === 'text' && textContent ? body
+      : ({ audio: 'رسالة صوتية', video: 'فيديو', image: 'صورة' })[type] || 'رسالة جديدة';
 
     // Bildirim başlığı artık öğrenci adı yerine soru başlığı olsun.
     // HeaderInput CreateQuestion'da StudentQuestion.message / previewText'e yazılıyor.
-    const questionTitle =
-      (question && (question.previewText || question.message)) || 'Yeni soru';
+    const askedTitle = question && (question.previewText || question.message);
+    const questionTitle = askedTitle || 'Yeni soru';
 
     // Data-only FCM mesajı gönderiyoruz. Böylece Android tarafında
     // MyFirebaseMessagingService.onMessageReceived HER zaman çağrılır
     // (uygulama arka planda / kapalı olsa bile) ve kendi PendingIntent'imizle
     // doğru sohbete yönlendirebiliriz.
-    const baseData = {
-      questionId: String(questionId),
-      messageId: String(messageId),
-      recipientUid: String(recipientUid),
-      // Bildirim kanalları soru başlığı altında gruplanabilsin diye title'a soru başlığını yaz.
-      title: String(questionTitle),
+    //
+    // Tek bildirim kapısından geçiyor: tür `chat`, yani tavana tabi değil (öğretmenin
+    // cevabını duymamak doğrudan kullanıcının aleyhine) ama sessiz saatte sessiz kanala
+    // düşüyor — gece 03:00'te gelen bir mesaj çocuğun telefonunu çaldırmamalı.
+    await sendUserNotification(recipientUid, {
+      type: 'chat',
+      // Konu soru başına değil tür başına: amaç sohbet bildirimlerinin açılma oranını
+      // ölçmek, tek tek soruları değil.
+      topic: 'chat',
+      // Bildirimler soru başlığı altında gruplanabilsin diye title'a soru başlığını yaz.
+      title: questionTitle,
       body,
-      // İstersen istemci tarafında kullanabilmek için göndericinin adını da ayrıca data'ya ekleyelim.
-      senderName,
-    };
-
-    // Her token için ayrı bir data-only FCM gönder.
-    const sendPromises = tokens.map((token) =>
-      admin.messaging().send({
-        data: baseData,
-        token,
-      })
-    );
-    await Promise.all(sendPromises);
+      en: { title: askedTitle || 'New question', body: bodyEn },
+      id: { title: askedTitle || 'Pertanyaan baru', body: bodyId },
+      ar: { title: askedTitle || 'سؤال جديد', body: bodyAr },
+      data: {
+        questionId: String(questionId),
+        messageId: String(messageId),
+        // İstemci tarafında kullanabilmek için göndericinin adı da data'da.
+        senderName,
+      },
+      userData: recipientData,
+    });
 
     // Mesaj sunucuya ulaştıktan sonra, bildirimi FCM'e başarıyla verdiysek deliveredAt alanını işaretle.
     // Böylece gönderici tarafta "çift tik gri" durumu (telefona gönderildi ama okunmadı) gösterilebilir.
@@ -860,12 +1428,145 @@ exports.onMessageCreated = functions.firestore
     return null;
   });
 
-// Çözüldü soruda hem öğrenci hem öğretmen "listeden sil" derse soru + mesajları kalıcı sil
+// Storage'daki soru medyasını (ekran görüntüsü/video/sohbet eki) sonsuza kadar biriktirmemek
+// için Firestore dokümanlarıyla birlikte siliyoruz — aksi halde bucket hiç küçülmüyor.
+async function deleteStorageFiles(paths) {
+  const bucket = admin.storage().bucket();
+  await Promise.all(
+    paths.filter(Boolean).map((path) =>
+      bucket
+        .file(path)
+        .delete()
+        .catch((err) => {
+          if (err.code !== 404) {
+            console.error(`Storage dosyası silinemedi: ${path}`, err.message);
+          }
+        }),
+    ),
+  );
+}
+
+// ─── SORU DURUMU BİLDİRİMLERİ ───────────────────────────────────────────────
+//
+// NEDEN
+//   Öğrenci sorusunun ne olduğunu yalnızca uygulamayı açarsa öğreniyordu. Üç geçişin üçü de
+//   onun için bir haber ve üçü de sessizdi:
+//
+//     • Öğretmen soruyu aldı — bekleyiş bitti, cevap yolda.
+//     • Soru çözüldü — sohbet kapandı, artık mesaj yazamıyor.
+//     • Cevap gelmedi, kredi iade edildi — PARA. Haber verilmeyen iade, kullanıcı tarafında
+//       "param gitti" olarak kalıyor ve hiçbir yerde karşılığı görünmüyor.
+//
+//   Üçü de `account` türü: tavansız ve uygulama içinden kapatılamaz. Kaçırmak kullanıcının
+//   aleyhine ve yerine geçecek başka bir kanal yok.
+//
+// ÇÖZÜLDÜ BİLDİRİMİNDE BİR İNCELİK
+//   Öğretmen çoğunlukla son cevabını yazıp hemen ardından soruyu kapatıyor. O mesaj için
+//   sohbet bildirimi ZATEN gitti; peşine "çözüldü" göndermek aynı olayı iki kez haber
+//   vermek olurdu. Bu yüzden son mesajın üstünden [RESOLVED_NOTICE_QUIET_MS] geçmediyse
+//   bildirim gönderilmiyor.
+
+/** Son mesajdan bu süre içinde kapatılan soru için "çözüldü" bildirimi gönderilmiyor. */
+const RESOLVED_NOTICE_QUIET_MS = 5 * 60 * 1000;
+
+/** Firestore Timestamp → ms; alan yoksa ya da beklenen biçimde değilse null. */
+function timestampMillis(value) {
+  if (value && typeof value.toMillis === 'function') return value.toMillis();
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Soru dokümanındaki durum değişimi öğrenciye bir bildirim gerektiriyor mu.
+ *
+ * Saf: üç geçiş ve "çözüldü" susturması emülatör olmadan test edilebilsin diye
+ * (bkz. scripts/test-notifications.js).
+ *
+ * @returns `{ topic, title, body }` ya da null.
+ */
+function questionStatusNotice(before, after, nowMs) {
+  const from = (before && before.status) || '';
+  const to = (after && after.status) || '';
+  if (!to || from === to) return null;
+
+  if (from === 'pending' && to === 'claimed') {
+    return {
+      topic: 'question_claimed',
+      title: 'Öğretmenin sorunu aldı',
+      body: 'Cevap geldiğinde haber vereceğiz.',
+      en: { title: 'Your teacher took your question', body: "We'll let you know when the answer arrives." },
+      id: { title: 'Gurumu mengambil pertanyaanmu', body: 'Kami akan kabari kalau jawabannya sudah datang.' },
+      ar: { title: 'استلم المعلّم سؤالك', body: 'سنخبرك عندما تصل الإجابة.' },
+    };
+  }
+
+  if (to === 'resolved') {
+    // Öğretmen son mesajını yazıp hemen kapattıysa o mesajın bildirimi zaten gitti.
+    const lastMessageMs = timestampMillis(after && after.lastMessageAt);
+    if (lastMessageMs && nowMs - lastMessageMs < RESOLVED_NOTICE_QUIET_MS) return null;
+    return {
+      topic: 'question_resolved',
+      title: 'Sorun çözüldü olarak işaretlendi',
+      body: 'Öğretmenin cevabını sohbette okuyabilirsin.',
+      en: { title: 'Your question was marked as solved', body: "You can read your teacher's answer in the chat." },
+      id: { title: 'Pertanyaanmu ditandai selesai', body: 'Kamu bisa membaca jawaban gurumu di obrolan.' },
+      ar: { title: 'أصبح سؤالك محلولًا', body: 'إجابة المعلّم موجودة في المحادثة.' },
+    };
+  }
+
+  // Kredi gerçekten iade edildiyse (bkz. runUnansweredQuestionRefund). `expired` durumu
+  // tek başına yetmiyor: kredi harcanmadan oluşmuş eski sorular da iade edilmeden
+  // kapanabiliyor ve onlar için söylenecek bir şey yok.
+  if (to === 'expired' && after && after.creditRefunded === true) {
+    return {
+      topic: 'credit_refunded',
+      title: 'Soruna cevap gelemedi',
+      body: '1 danışma kredin geri verildi. Dilediğin zaman yeniden sorabilirsin.',
+      en: { title: "Your question couldn't be answered", body: 'Your 1 tutor credit was refunded. You can ask again anytime.' },
+      id: { title: 'Pertanyaanmu belum bisa dijawab', body: '1 kredit tutormu sudah dikembalikan. Kamu bisa bertanya lagi kapan saja.' },
+      ar: { title: 'تعذّرت الإجابة عن سؤالك', body: 'أُعيد إليك رصيد سؤال واحد للمعلّم. يمكن السؤال من جديد في أي وقت.' },
+    };
+  }
+
+  return null;
+}
+
+/** Durum değişimi bildirimini öğrenciye gönderir. Hata hiçbir koşulda trigger'ı düşürmüyor. */
+async function notifyQuestionStatusChange(before, after, questionId) {
+  try {
+    const notice = questionStatusNotice(before, after, Date.now());
+    if (!notice) return;
+    const studentUid = (after && after.studentUid) || '';
+    if (!studentUid) return;
+
+    await sendUserNotification(studentUid, {
+      type: 'account',
+      topic: notice.topic,
+      title: notice.title,
+      body: notice.body,
+      en: notice.en,
+      id: notice.id,
+      ar: notice.ar,
+      // Bildirime dokunan öğrenci doğrudan sorusuna gitsin.
+      data: { questionId: String(questionId) },
+    });
+  } catch (error) {
+    console.error('notifyQuestionStatusChange başarısız', { questionId, error: error.message });
+  }
+}
+
+// Çözüldü soruda hem öğrenci hem öğretmen "listeden sil" derse soru + mesajları + Storage
+// medyasını kalıcı sil
 exports.onQuestionUpdated = functions.firestore
   .document('questions/{questionId}')
   .onUpdate(async (change, context) => {
     const after = change.after.data();
     const questionId = context.params.questionId;
+
+    // Durum değişimi bildirimi — aşağıdaki silme mantığından önce ve ondan tamamen bağımsız.
+    // Silme yolu erken dönüşlerle dolu (yalnızca iki taraf da sildiyse çalışıyor); bildirim
+    // oraya karışsa geçişlerin çoğunda hiç çalışmazdı.
+    await notifyQuestionStatusChange(change.before.data(), after, questionId);
     const deletedForUids = Array.isArray(after.deletedForUids) ? after.deletedForUids : [];
     const studentUid = after.studentUid || '';
     const claimedByTeacherUid = after.claimedByTeacherUid || '';
@@ -874,6 +1575,12 @@ exports.onQuestionUpdated = functions.firestore
     const bothDeleted =
       deletedForUids.includes(studentUid) && deletedForUids.includes(claimedByTeacherUid);
     if (!bothDeleted) return null;
+
+    const messagesSnap = await db.collection(`questions/${questionId}/messages`).get();
+    const storagePaths = messagesSnap.docs
+      .map((doc) => doc.data().mediaStoragePath)
+      .concat([after.videoStoragePath, after.screenshotStoragePath]);
+    await deleteStorageFiles(storagePaths);
 
     await deleteCollection(`questions/${questionId}/messages`);
     await change.after.ref.delete();
@@ -896,10 +1603,13 @@ const PUBLIC_PROFILE_FIELDS = [
   'uid',
   'name',
   'userId',
-  'selectedAvatar',
+  // Avatar: seçilen parça adları ve renkler (AvatarConfig.encode). Eski 12'li avatarın
+  // 'selectedAvatar' alanı artık okunmuyor, aynalanmıyor.
+  'avatarConfig',
   'plan',
   'createdAt',
   'totalTimeSpent',
+  'longestStreak',
   'followersCount',
   'followingCount',
 ];
@@ -941,6 +1651,59 @@ exports.mirrorPublicProfile = functions.firestore
     return null;
   });
 
+// Storage Rules, öğretmen kontrolü için Firestore'a cross-service `firestore.get()` ile
+// bakıyordu; bu servisler-arası çağrı güvenilir çalışmadı (öğretmen kendi onaylı
+// olduğunu doğrulayamıyor, başka öğrencinin soru medyasını indiremiyordu). Storage
+// Rules'ın doğrudan ve güvenilir okuyabildiği tek yer ID token'ın kendisi olduğu için
+// `teacherApproved`'ı buraya bir custom claim olarak da yazıyoruz.
+//
+// `admin` da aynı yoldan: Console'da users/{uid} dokümanına `admin: true` eklemek hesabı
+// admin yapıyor (hata bildirimi paneli; bkz. bugReports.js). Yetkinin kendisi yine claim —
+// kurallar ve reviewBugReport ona bakıyor; alan yalnızca Console'dan yönetmeyi kolaylaştırıyor.
+// İkisi de firestore.rules'ta sunucu alanı: istemci kendine yazamıyor.
+// Fonksiyonun adı geriye dönük uyum için değişmedi (yeniden adlandırmak sil + yeniden oluştur
+// demek, arada tetiklenmeyen yazımlar kaçardı).
+// Yayın hediyesi: hesap dokümanı ilk kez oluşunca sayaca bakar (bkz. launchGift.js).
+exports.grantLaunchGiftOnSignup = launchGift.createLaunchGiftTrigger({ functions, admin, db });
+
+// Davet döngüsü: haftalık kart paylaşımının kodu, davetle gelen kaydı ve ders 2 ödülü (bkz. referrals.js).
+// Her biri ayrı export ifadesi (launchGift kalıbı): yükleme anındaki tek bir ortak çağrı
+// deploy-plan'da bütün fonksiyonların parmak izine karışıp "hepsini deploy et" diyordu.
+exports.getReferralCode = referrals.createGetReferralCode({ functions, admin, db });
+exports.claimReferral = referrals.createClaimReferral({ functions, admin, db });
+exports.grantReferralRewardOnLesson = referrals.createRewardTrigger({ functions, admin, db });
+
+exports.syncTeacherClaim = functions.firestore
+  .document('users/{uid}')
+  .onWrite(async (change, context) => {
+    const uid = context.params.uid;
+    if (!change.after.exists) return null;
+
+    const beforeData = change.before.exists ? change.before.data() : null;
+    const afterData = change.after.data();
+    const updates = {};
+
+    // Öğretmen: doküman ilk oluştuğunda da (before yokken) claim yazılıyor — eski davranış.
+    const teacherBefore = beforeData ? beforeData.teacherApproved === true : null;
+    const teacherAfter = afterData.teacherApproved === true;
+    if (teacherBefore !== teacherAfter) updates.teacherApproved = teacherAfter;
+
+    // Admin: alan yokken "false" sayılıyor; yoksa her yeni kayıtta boşuna claim yazılırdı.
+    const adminBefore = !!beforeData && beforeData.admin === true;
+    const adminAfter = afterData.admin === true;
+    if (adminBefore !== adminAfter) updates.admin = adminAfter;
+
+    if (!Object.keys(updates).length) return null;
+
+    // setCustomUserClaims claim'lerin TAMAMINI değiştiriyor; değişmeyenler korunmazsa
+    // öğretmen onayı değişince admin'lik (ya da tersi) silinirdi.
+    const record = await admin.auth().getUser(uid);
+    const claims = Object.assign({}, record.customClaims || {}, updates);
+    if (claims.admin === false) delete claims.admin;
+    await admin.auth().setCustomUserClaims(uid, claims);
+    return null;
+  });
+
 // ─── Takip sayaçları ────────────────────────────────────────────────────────
 //
 // `followersCount` / `followingCount` artık İSTEMCİ TARAFINDAN YAZILMIYOR. Eskiden
@@ -976,6 +1739,94 @@ exports.onFollowingDeleted = functions.firestore
   .document('users/{ownerUserId}/following/{followingUid}')
   .onDelete((snap, context) => adjustCounter(context.params.ownerUserId, 'followingCount', -1));
 
+/**
+ * Silinen kullanıcının öğretmen danışma sorularını, mesajlarını ve medyasını siler.
+ *
+ * NEDEN AYRI BİR ADIM
+ *   `questions` ÜST SEVİYE bir koleksiyon ve kullanıcıya `studentUid` alanıyla bağlı; yani
+ *   `recursiveDelete(users/{uid})` ona hiç dokunmuyordu. Gizlilik politikası silmenin
+ *   mesajları da kaldırdığını söylüyor, kod bunu yapmıyordu — öğrencinin ödev fotoğrafları
+ *   ve videoları Storage'da süresiz kalıyordu. (Kapanan sorular ayrıca 30 gün sonra
+ *   runClosedQuestionCleanup ile tamamen siliniyor; bu adım hesap silinince HEMEN siler.)
+ *
+ * AÇIK MODERASYON RAPORU OLANLAR ATLANIR
+ *   Bekleyen bir `messageReports` kaydı varsa soru korunur: rapor incelenmeden kanıtın
+ *   silinmemesi gerekiyor. Aynı kural runClosedQuestionCleanup'ta da uygulanıyor.
+ *   Bu istisna gizlilik politikasında beyan edilmiştir.
+ *
+ * Sorgu tek eşitlik filtresi kullanıyor (studentUid), yani bileşik indeks gerekmiyor.
+ */
+async function deleteUserQuestions(uid) {
+  const snapshot = await db.collection('questions').where('studentUid', '==', uid).get();
+  const counts = { deleted: 0, skippedForReport: 0, failed: 0, mediaFailed: 0 };
+
+  for (const doc of snapshot.docs) {
+    try {
+      if (await hasPendingQuestionReport(doc.id)) {
+        counts.skippedForReport++;
+        continue;
+      }
+      const { mediaFailed } = await deleteQuestionCompletely(doc, 'Silinen kullanıcının');
+      if (mediaFailed) counts.mediaFailed++;
+      counts.deleted++;
+    } catch (error) {
+      console.error('Silinen kullanıcının sorusu temizlenemedi', {
+        uid,
+        questionId: doc.id,
+        error: error.message,
+      });
+      counts.failed++;
+    }
+  }
+
+  return counts;
+}
+
+/** Soruda incelenmemiş (`pending`) bir şikâyet var mı; varsa soru kanıt olarak korunur. */
+async function hasPendingQuestionReport(questionId) {
+  const pendingReport = await db
+    .collection('messageReports')
+    .where('questionId', '==', questionId)
+    .where('status', '==', 'pending')
+    .limit(1)
+    .get();
+  return !pendingReport.empty;
+}
+
+/**
+ * Soruyu mesajları ve Storage'daki medyasıyla (video, ekran görüntüsü, mesaj ekleri)
+ * birlikte siler. Hesap silmede ve kapanan soruların süre dolunca silinmesinde ortak.
+ *
+ * @param logLabel Log satırının başı ("Silinen kullanıcının", "Kapanan" …).
+ * @returns `mediaFailed`: Storage silmesi hata verdi mi (Firestore silmesi yine yapıldı).
+ */
+async function deleteQuestionCompletely(doc, logLabel) {
+  const data = doc.data();
+  const messagesSnap = await doc.ref.collection('messages').get();
+  const storagePaths = messagesSnap.docs
+    .map((m) => m.data().mediaStoragePath)
+    .concat([data.videoStoragePath, data.screenshotStoragePath]);
+
+  // Önce Storage denenmeli: doküman silindikten sonra dosya yollarını öğrenmenin yolu
+  // kalmaz. Ama AYRI bir try içinde — Storage tarafındaki bir sorun (bucket
+  // yapılandırması, izin, kesinti) verinin silinmesini ENGELLEMEMELİ.
+  // Öncelik sırası: veri silme bir yükümlülük, artakalan medya dosyası ise
+  // temizlenebilir bir kalıntı.
+  let mediaFailed = false;
+  try {
+    await deleteStorageFiles(storagePaths);
+  } catch (error) {
+    mediaFailed = true;
+    console.error(`${logLabel} soru medyası silinemedi (Firestore silme devam ediyor)`, {
+      questionId: doc.id,
+      error: error.message,
+    });
+  }
+
+  await db.recursiveDelete(doc.ref);
+  return { mediaFailed };
+}
+
 // Auth 'onDelete' trigger to recursively delete user data in Firestore
 exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   const uid = user.uid;
@@ -987,6 +1838,13 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
     console.log(`Successfully deleted users/${uid} and all subcollections.`);
   } catch (error) {
     console.error(`Error deleting user data for ${uid}:`, error);
+  }
+
+  // Veli onayı kaydı üst seviyede; hesapla birlikte amacı bitiyor, veli e-postası kalmasın.
+  try {
+    await db.collection('parentalConsents').doc(uid).delete();
+  } catch (error) {
+    console.error(`Error deleting parental consent for ${uid}:`, error);
   }
 
   // Aktif (henüz finalize edilmemiş) lessonLeaderboards tahtalarındaki entries/{uid} kaydı
@@ -1010,7 +1868,58 @@ exports.cleanupUserOnDelete = functions.auth.user().onDelete(async (user) => {
   } catch (error) {
     console.error(`Error removing leaderboard entries for ${uid}:`, error);
   }
+
+  // Danışma soruları users/{uid} altında DEĞİL, üst seviye `questions` koleksiyonunda;
+  // yukarıdaki recursiveDelete onlara ulaşmıyor.
+  try {
+    const counts = await deleteUserQuestions(uid);
+    console.log('Silinen kullanıcının danışma soruları temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing questions for ${uid}:`, error);
+  }
+
+  // Hata bildirimleri de üst seviyede (`bugReports`), ekran görüntüleri Storage'da.
+  try {
+    const counts = await deleteUserBugReports(uid);
+    console.log('Silinen kullanıcının hata bildirimleri temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing bug reports for ${uid}:`, error);
+  }
+
+  // Kurs sınıfı üyeliği, davetler ve (öğretmense) sınıflardaki yeri — hepsi üst seviyede.
+  try {
+    const counts = await removeDeletedUserFromClasses(uid);
+    console.log('Silinen kullanıcının sınıf kayıtları temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing class records for ${uid}:`, error);
+  }
+
+  // Ödev ilerlemeleri öğretmenin ödev dokümanlarının altında.
+  try {
+    const removed = await removeDeletedUserHomeworkProgress(uid);
+    console.log('Silinen kullanıcının ödev ilerlemeleri temizlendi', { uid, removed });
+  } catch (error) {
+    console.error(`Error removing homework progress for ${uid}:`, error);
+  }
+
+  // Sobi sohbetleri üst seviyede (`sobiChats/{uid}` + `sessions`); çocuğun yazdıkları kalmasın.
+  try {
+    await db.recursiveDelete(db.collection('sobiChats').doc(uid));
+  } catch (error) {
+    console.error(`Error removing Sobi chats for ${uid}:`, error);
+  }
+
+  // Davet verisi üst seviyede (referrals, referralCodes, referralRewardCounts); bkz. referrals.js.
+  try {
+    const counts = await referrals.deleteReferralData({ db, uid });
+    console.log('Silinen kullanıcının davet verisi temizlendi', { uid, ...counts });
+  } catch (error) {
+    console.error(`Error removing referral data for ${uid}:`, error);
+  }
 });
+
+// Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.
+exports._deleteUserQuestions = deleteUserQuestions;
 // ─── Cüzdan (altın / anahtar) güncelleme ────────────────────────────────────
 //
 // GÜVENLİK MODELİ
@@ -1119,8 +2028,22 @@ exports.updateUserWallet = functions.https.onCall(async (data, context) => {
       }
 
       const userData = doc.data();
+      // Yalnızca harcama: artırma yalnızca bir harcamanın geri alınması olabiliyor ve
+      // harcaması reddedilen hesabın geri alacağı bir şey olmuyor.
+      if (!isCredit) assertNotUnapprovedTeacher(userData);
       const currentKeys = Number.parseInt(userData.keys, 10) || 0;
       const currentCurrency = Number.parseInt(userData.currency, 10) || 0;
+
+      // Onaylı öğretmen: harcama da geri alma da bakiyeye dokunmaz. İstemcinin geri alma
+      // akışı jeton beklediği için harcamada yine bir jeton dönüyor; hiçbir yere
+      // kaydedilmediğinden geri alma çağrısı da aynı no-op'a düşüyor.
+      if (isApprovedTeacher(userData)) {
+        return {
+          keys: currentKeys,
+          currency: currentCurrency,
+          rollbackToken: isCredit ? null : require('crypto').randomUUID(),
+        };
+      }
 
       const newKeys = currentKeys + deltaKeys;
       const newCurrency = currentCurrency + deltaCurrency;
@@ -1227,9 +2150,38 @@ exports.updateUserWallet = functions.https.onCall(async (data, context) => {
   }
 });
 
+/**
+ * Sunucu saatine göre sezon bilgisi.
+ *
+ * NEDEN VAR
+ *   Skor yazılırken sezonu sunucu hesaplıyor, ama liderlik tablosu OKUNURKEN sezon
+ *   istemcide hesaplanıyor ve tahta kimliğine giriyor. Cihazın tarihi yanlışsa kullanıcı
+ *   yazdığından başka bir tahtayı okur; ekran sonsuza kadar boş kalır ve hiçbir hata
+ *   görünmez. İstemci ([SeasonClock]) buradan öğrendiği anla kendi saatini düzeltiyor.
+ *
+ * Okuma yapmaz, yazma yapmaz — yalnızca saati söyler. İstemci saatte bir defadan sık
+ * çağırmaz.
+ */
+exports.getSeasonInfo = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const {
+    currentSeason,
+    millisUntilCurrentSeasonEnds,
+  } = require('./seasonCalendar');
+  const now = Date.now();
+  return {
+    serverNowMs: now,
+    season: currentSeason(now),
+    millisUntilSeasonEnds: millisUntilCurrentSeasonEnds(now),
+  };
+});
+
 // Liderlik Tablosu Skor Gönderme Fonksiyonu
 // İstemciden gelen season parametresi tamamen görmezden gelinir.
 // Sunucu kendi saat/tarihine göre doğru sezonu hesaplar → cihaz saati manipülasyonuna karşı koruma.
+// İsim ve avatar da istemciden ALINMAZ (bkz. aşağısı).
 exports.submitLeaderboardScore = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
@@ -1237,23 +2189,60 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
 
   const uid = context.auth.uid;
   const partId = parseInt(data.partId);
+  // Tahta anahtarı artık dersin kalıcı kimliği (LessonItem.stableId). Eskiden liste konumuydu;
+  // müfredata araya ders eklemek tahtayı ikiye bölüyordu. Eski sürüm istemciler hâlâ
+  // lessonIndex gönderebilir, o yüzden sayısal biçim geriye dönük kabul ediliyor.
+  const lessonKeyRaw = typeof data.lessonKey === 'string' ? data.lessonKey.trim() : '';
+  // Doküman kimliğine giriyor: "/", ".", ".." ve "__x__" gibi biçimleri tamamen dışarıda bırakır.
+  const lessonKey = /^[a-z0-9_]{1,120}$/.test(lessonKeyRaw) ? lessonKeyRaw : null;
   const lessonIndex = parseInt(data.lessonIndex);
   const recordScore = parseInt(data.recordScore);
-  const displayName = typeof data.displayName === 'string' ? data.displayName.trim().slice(0, 127) || 'Kullanıcı' : 'Kullanıcı';
-  const photoUrl = typeof data.photoUrl === 'string' ? data.photoUrl.slice(0, 511) : '';
   const titleUnit = typeof data.titleUnit === 'string' ? data.titleUnit.trim().slice(0, 127) || null : null;
 
-  if (!Number.isFinite(partId) || !Number.isFinite(lessonIndex)) {
-    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz partId veya lessonIndex.');
+  if (!Number.isFinite(partId)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz partId.');
+  }
+  if (lessonKey === null && !Number.isFinite(lessonIndex)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz lessonKey veya lessonIndex.');
   }
   if (!Number.isFinite(recordScore) || recordScore <= 0 || recordScore > 2000) {
     throw new functions.https.HttpsError('invalid-argument', 'Geçersiz recordScore (1-2000 aralığında olmalı).');
   }
 
+  // Öğretmen tahtaya girmez: tahta çocukların yarıştığı yer ve sezon sonu madalyası
+  // (seasonLeaderboardFinalize) buradan dağıtılıyor. Onaylı öğretmenin bütün dersleri açık ve
+  // canı sınırsız; sınırsız denemeyle ilk sıraları ve o madalyaları çocukların elinden
+  // alırdı. Hata değil başarı dönüyor: istemci için "rekor kırılmadı" ile aynı sonuç.
+  const submitterSnap = await db.collection('users').doc(uid).get();
+  if (submitterSnap.exists && submitterSnap.get('role') === 'TEACHER') {
+    return { success: true, skipped: 'teacher' };
+  }
+
+  // İSİM VE AVATAR İSTEMCİDEN ALINMAZ.
+  //
+  // İkisi de başka çocukların ekranında gösteriliyor. Eskiden ikisi de istek gövdesinden
+  // geliyordu; yani kullanıcı kendi profiliyle hiç ilgisi olmayan bir ad ve istediği bir
+  // adresi tahtaya yazdırabiliyordu.
+  //
+  // Ad, sunucunun yazdığı publicProfiles aynasından okunuyor (istemci yazımı kapalı,
+  // bkz. mirrorPublicProfile). Ayna henüz oluşmamışsa kimlik jetonundaki ada düşülüyor.
+  //
+  // Fotoğraf hiç yazılmıyor. Eskiden kimlik jetonundaki Google hesap fotoğrafı (`photoUrl`)
+  // girişe konuyordu; giriş yapmış herkesin okuyabildiği bir yerde çocuğun gerçek fotoğrafı
+  // duruyordu. Tablo artık uygulama avatarını publicProfiles.avatarConfig'ten çiziyor.
+  const publicSnap = await db.collection('publicProfiles').doc(uid).get();
+  const publicData = publicSnap.exists ? publicSnap.data() || {} : {};
+  const authToken = context.auth.token || {};
+  const nameFromProfile = typeof publicData.name === 'string' ? publicData.name.trim() : '';
+  const nameFromToken = typeof authToken.name === 'string' ? authToken.name.trim() : '';
+  const displayName =
+    nameFromProfile.slice(0, 127) || nameFromToken.slice(0, 127) || 'Kullanıcı';
+
   // Sezonu SUNUCU saatine göre hesapla — istemciye güvenilmez.
   const { currentSeason } = require('./seasonCalendar');
   const season = currentSeason(Date.now());
-  const boardId = `part_${partId}_lesson_${lessonIndex}_season_${season}`;
+  const lessonRef = lessonKey !== null ? lessonKey : String(lessonIndex);
+  const boardId = `part_${partId}_lesson_${lessonRef}_season_${season}`;
 
   const boardRef = db.collection('lessonLeaderboards').doc(boardId);
   const entryRef = boardRef.collection('entries').doc(uid);
@@ -1273,7 +2262,9 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
         recordScore,
         recordLabel: String(recordScore),
         displayName,
-        photoUrl,
+        // merge:true eski alanı korurdu; önceki sürümün yazdığı fotoğraf adresi rekor
+        // kırıldığında siliniyor. Kalanları scripts/strip-leaderboard-photo-urls.js temizler.
+        photoUrl: admin.firestore.FieldValue.delete(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
       if (titleUnit) entryData.titleUnit = titleUnit;
@@ -1283,10 +2274,12 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
       if (!boardSnap.exists) {
         const boardMeta = {
           partId,
-          lessonIndex,
+          lessonKey: lessonRef,
           season,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         };
+        // Eski sürüm istemciden geldiyse konumu da sakla (NaN yazılmasın).
+        if (Number.isFinite(lessonIndex)) boardMeta.lessonIndex = lessonIndex;
         if (titleUnit) boardMeta.titleUnit = titleUnit;
         transaction.set(boardRef, boardMeta);
       }
@@ -1313,7 +2306,10 @@ exports.submitLeaderboardScore = functions.https.onCall(async (data, context) =>
 //     çağırdığı, gerekçe kataloğuyla sınırlanmış ayrı bir yoldur.
 //
 // Kurulum: docs/SATIN_ALMA_ENTEGRASYONU.md
-const { google } = require('googleapis');
+// NOT: `googleapis` modülü ~yüzlerce API yüzeyi içerir ve yüklenmesi saniyeler sürer.
+// Modül seviyesinde require edilirse `firebase deploy` sırasındaki fonksiyon keşfi
+// (10 sn'lik analiz penceresi) zaman aşımına uğrayabiliyor. Bu yüzden sadece Play
+// Developer API'ye gerçekten ihtiyaç duyan yerde, tembel olarak yükleniyor.
 
 // Play Console'daki paket adı. `com.example.*` Play tarafından reddedilir;
 // gerçek paket adına geçildiğinde ortam değişkeni olarak set edilmelidir:
@@ -1323,19 +2319,387 @@ const ANDROID_PACKAGE_NAME = process.env.ANDROID_PACKAGE_NAME || '';
 // Tüketilebilir ürünler: productId -> verilecek miktar.
 // Play Console'daki ürün kimlikleriyle ve istemcideki BillingCatalog ile birebir aynı olmalı.
 const PLAY_PRODUCT_CATALOG = {
-  gold_1200: { currency: 1200, keys: 0 },
-  gold_7000: { currency: 7000, keys: 0 },
-  gold_15000: { currency: 15000, keys: 0 },
-  keys_10: { currency: 0, keys: 10 },
-  keys_50: { currency: 0, keys: 50 },
-  keys_100: { currency: 0, keys: 100 },
+  gold_small: { currency: 5000, keys: 0, credits: 0 },
+  gold_medium: { currency: 20000, keys: 0, credits: 0 },
+  gold_large: { currency: 100000, keys: 0, credits: 0 },
+  keys_small: { currency: 0, keys: 10, credits: 0 },
+  keys_medium: { currency: 0, keys: 50, credits: 0 },
+  keys_large: { currency: 0, keys: 200, credits: 0 },
+  // Öğretmen danışma kredileri. Her kredi bir soru hakkıdır ve cevaplandığında
+  // öğretmene ödenen ücret kadar gerçek maliyet doğurur — bu yüzden bedava
+  // dağıtılmaz, yalnızca satın alma ve Pro deneme hediyesiyle verilir.
+  credits_small: { currency: 0, keys: 0, credits: 1 },
+  credits_medium: { currency: 0, keys: 0, credits: 5 },
+  credits_large: { currency: 0, keys: 0, credits: 10 },
+  // Sobi (yapay zekâ) mesaj kredisi: sobiChats/{uid}.credits (sobi/wallet.js). Öğretmen kredisinden
+  // ayrı; süresiz. Fiyatlar Play Console'da: 12,99 / 24,99 / 49,99 TL (kullanıcı kararı 01.11.2026).
+  sobi_credits_20: { currency: 0, keys: 0, credits: 0, sobiCredits: 20 },
+  sobi_credits_50: { currency: 0, keys: 0, credits: 0, sobiCredits: 50 },
+  sobi_credits_120: { currency: 0, keys: 0, credits: 0, sobiCredits: 120 },
 };
+
+/**
+ * Pro abonelerine kredi paketlerinde verilen bonus kredi.
+ *
+ * Tek kredilik pakette bonus YOKTUR: ₺39'luk satıştan KDV ve Play komisyonundan
+ * sonra kalan (~₺27,6) tek bir kredinin maliyetini (₺15) ancak karşılar; bonus
+ * verilirse paket zarara geçer. Büyük paketlerde marj bonusu absorbe eder.
+ */
+const PRO_CREDIT_BONUS = {
+  credits_medium: 1,
+  credits_large: 2,
+};
+
+/**
+ * Pro'ya ilk geçişte verilen hoş geldin hediyesi: SOBİ kredisi (sobiChats/{uid}.credits).
+ *
+ * 01.11.2026'ya kadar 1 öğretmen danışma kredisiydi (questionCredits); "Öğretmene sor"
+ * gizlenince (TeacherQuestionsFeature) Sobi kredisine çevrildi. Daha önce danışma kredisi
+ * almış abonelik/cihaz yeniden hediye ALMAZ — aynı iki kapı geçerli.
+ *
+ * Denemeyle mi doğrudan mı abone olunduğu fark etmez; aksi halde ücretsiz denemeyi
+ * başlatan kullanıcı hediye alırken doğrudan ödeme yapan hiç alamıyordu.
+ *
+ * İKİ KAPI birden geçilmeli:
+ *   1. processedPurchases/{token}.welcomeCreditGranted — aynı abonelik iki kez vermesin.
+ *      İşaretçi kullanıcı dokümanında DEĞİL burada: kullanıcı kendi dokümanını silip
+ *      yeniden oluşturabildiği için (bkz. firestore.rules) orada tutulsaydı sil-yarat
+ *      döngüsüyle sınırsız kredi üretilebilirdi.
+ *   2. welcomeCreditGrants/{deviceHash} — aynı CİHAZ iki kez almasın. Birincisi tek başına
+ *      yetmiyordu: yeni Google hesabı + yeni uygulama hesabı = yeni token, yani her turda
+ *      bir kredi daha. Cihaz kapısı bunun ucuz yollarını (yeni hesap, uygulama verisini
+ *      temizleme, yeniden kurulum) kapatıyor; fabrika ayarları, ikinci cihaz ve ikincil
+ *      kullanıcı profili açık kalıyor — bilinçli kabul.
+ */
+const PRO_WELCOME_SOBI_CREDITS = 20;
+
+/**
+ * Hoş geldin kredisinin CİHAZ başına da bir kez verilmesi için kullanılan gizli salt.
+ *
+ * Ham ANDROID_ID asla saklanmaz ve loglanmaz; yalnızca bu salt ile HMAC'lenmiş özeti
+ * `welcomeCreditGrants/{hash}` doküman kimliği olarak tutulur.
+ */
+const WELCOME_CREDIT_SALT = process.env.WELCOME_CREDIT_SALT || '';
+
+/**
+ * İstemciden gelen cihaz tanımlayıcısını saklanabilir bir özete çevirir.
+ *
+ * Salt tanımlı değilse null döner ve arayan taraf cihaz kontrolünü ATLAR (yalnızca token
+ * kontrolü kalır). Bilinçli bir tercih: eksik yapılandırma yüzünden gerçek kullanıcıların
+ * hediyesini kesmek, istismarı bir süre açık bırakmaktan daha kötü. Durum loglanıyor.
+ */
+function hashDeviceKey(rawDeviceKey) {
+  if (!WELCOME_CREDIT_SALT) {
+    console.warn('WELCOME_CREDIT_SALT tanımlı değil — hoş geldin kredisi cihaz kontrolü atlanıyor.');
+    return null;
+  }
+  if (typeof rawDeviceKey !== 'string') return null;
+  const trimmed = rawDeviceKey.trim();
+  if (!trimmed) return null;
+  return require('crypto')
+    .createHmac('sha256', WELCOME_CREDIT_SALT)
+    .update(trimmed)
+    .digest('hex');
+}
+
+/** Pro/Premium abonelerine bonus uygulanır (istemcideki plan kontrolüyle aynı). */
+function creditBonusFor(userData, productId) {
+  const plan = effectivePlan(userData);
+  const isPro = plan === 'Pro' || plan === 'Premium';
+  return isPro ? (PRO_CREDIT_BONUS[productId] || 0) : 0;
+}
 
 // Abonelikler: productId -> users/{uid}.plan değeri.
 const PLAY_SUBSCRIPTION_CATALOG = {
   pro_monthly: { plan: 'Pro' },
   lite_monthly: { plan: 'Lite' },
 };
+
+/**
+ * Plan rütbesi. Yüksek olan daha kapsamlı plandır.
+ * İstemcideki BillingCatalog.subscriptionRank ile birlikte güncellenmelidir.
+ */
+const PLAN_RANK = { Free: 0, Lite: 1, Pro: 2, Premium: 3 };
+
+function planRank(plan) {
+  return PLAN_RANK[plan] || 0;
+}
+
+/**
+ * Bu token'ın senkronu `plan` alanlarını yazmalı mı?
+ *
+ * SORUN
+ *   Aynı anda iki aktif aboneliği olan kullanıcıda (Lite + Pro) her token ayrı ayrı
+ *   senkron ediliyor ve her senkron `plan`'ı KOŞULSUZ yazıyordu. refreshPurchases
+ *   satın almaları asenkron işlediği için tamamlanma sırası belirsiz: Lite senkronu
+ *   Pro'dan sonra biterse kullanıcı Pro'ya para ödediği hâlde Lite görünüyordu.
+ *   RTDN'de de aynısı — hangi aboneliğin bildirimi gelirse onun planı yazılıyordu.
+ *
+ * KURAL
+ *   Yaz  ⟺  bu token mevcut planın sahibiyse (o zaman düşürme/sona erme meşrudur)
+ *           VEYA yeni plan mevcut plandan düşük değilse.
+ *
+ * Saf fonksiyon: Play API'sine dokunmaz, bu yüzden gerçek abonelik olmadan test
+ * edilebilir (bkz. scripts/test-plan-resolution.js).
+ */
+/**
+ * Auth kaydı hâlâ duruyor mu?
+ *
+ * AccountDeletionHelper hesabı silerken hem `users/{uid}` dokümanını hem Auth kaydını
+ * siliyor. Firestore dokümanı kullanıcı tarafından tek başına da silinebildiği için
+ * (bkz. firestore.rules) daha güçlü sinyal olan Auth kaydına bakılıyor.
+ */
+async function firebaseUserExists(uid) {
+  try {
+    await admin.auth().getUser(uid);
+    return true;
+  } catch (error) {
+    if (error && error.code === 'auth/user-not-found') return false;
+    // Geçici bir hata olabilir; kararı arayan tarafa bırakma, yukarı fırlat.
+    throw error;
+  }
+}
+
+/**
+ * Bu token başka bir uid'ye bağlıyken yeni uid'ye devredilebilir mi?
+ *
+ * SORUN
+ *   Token sahipliği kontrolü, tek bir aboneliğin birden fazla hesaba Pro vermesini
+ *   engelliyor — gerçek bir koruma, kaldırılamaz. Ama yan etkisi ağırdı: uygulama
+ *   hesabını silip yeniden kaydolan kullanıcının aboneliği Play'de aktif kalmaya ve
+ *   parası çekilmeye devam ederken, uygulama her açılışta 'permission-denied' alıp
+ *   kullanıcıyı Free'de bırakıyordu. Kendi başına düzeltemiyordu.
+ *
+ * KURAL
+ *   Devret ⟺ eski uid'nin Auth kaydı artık yok (hesap gerçekten silinmiş).
+ *
+ * NEDEN GÜVENLİ
+ *   Token paylaşımı senaryosunda eski hesap DURUYOR, dolayısıyla istisna hiç devreye
+ *   girmiyor. Girmesi için orijinal sahibin hesabını tamamen silmesi gerekiyor; yani
+ *   "aktarım" ona tüm hesabına mal oluyor ve her an en fazla tek yararlanıcı kalıyor.
+ *
+ * Saf fonksiyon (varlık sorgusunun SONUCUNU alır, kendisi sorgulamaz) — böylece Auth'a
+ * ya da Play'e dokunmadan test edilebiliyor.
+ */
+function resolveTokenRebind(storedUid, requestingUid, storedUidStillExists) {
+  if (!storedUid || storedUid === requestingUid) {
+    return { allowed: true, rebind: false, reason: 'same_owner' };
+  }
+  if (storedUidStillExists) {
+    return { allowed: false, rebind: false, reason: 'other_account_active' };
+  }
+  return { allowed: true, rebind: true, reason: 'previous_account_deleted' };
+}
+
+/**
+ * Aboneliğe hak veren Play durumları.
+ *
+ * SUBSCRIPTION_STATE_CANCELED buraya DAHİL: Play'de bu durum "kullanıcı otomatik
+ * yenilemeyi kapattı ama süresi henüz dolmadı" demektir; kişinin ödediği döneme kadar
+ * hakkı devam eder. Listeden çıkarıldığında, iptal bildirimi (RTDN) geldiği anda plan
+ * Free'ye çekiliyordu — yani 1 Ekim'de abone olup 3 Ekim'de iptal eden kullanıcı ödediği
+ * 28 günü anında kaybediyordu. Ücretsiz denemede daha da ağır: denemeyi 2. günde iptal
+ * etmek (çok yaygın bir davranış) haftanın kalanını da götürüyordu.
+ *
+ * PAUSED ve ON_HOLD bilinçli olarak DIŞARIDA: ilkinde kullanıcı aboneliği kendisi
+ * duraklatmıştır, ikincisinde ödeme alınamamış ve Play hakkı zaten askıya almıştır.
+ * PENDING de dışarıda — ilk ödeme henüz tamamlanmamıştır.
+ */
+const ENTITLING_SUBSCRIPTION_STATES = [
+  'SUBSCRIPTION_STATE_ACTIVE',
+  'SUBSCRIPTION_STATE_IN_GRACE_PERIOD',
+  'SUBSCRIPTION_STATE_CANCELED',
+];
+
+/**
+ * Play'in döndürdüğü abonelik kaydından "şu an hak veriyor mu" sorusunu cevaplar.
+ *
+ * Durum tek başına yetmiyor: CANCELED hakkı sürdürür ama yalnızca `expiryTime`'a kadar.
+ * Bu yüzden karar her zaman (durum ∈ hak veren durumlar) VE (bitiş tarihi gelecekte)
+ * bileşimidir.
+ *
+ * Saf fonksiyon — gerçek bir token olmadan test edilebilir (bkz.
+ * scripts/test-subscription-verification.js).
+ */
+function subscriptionEntitlement(subscription, nowMs) {
+  const state = (subscription && subscription.subscriptionState) || '';
+  const items = (subscription && subscription.lineItems) || [];
+  // Bitiş tarihi, ürün kimliğiyle AYNI satır öğesinden okunuyor (bkz.
+  // subscriptionProductIds); ikisinin farklı öğelerden gelmesi tutarsızlık üretir.
+  const expiryRaw = (items.length > 0 ? items[items.length - 1].expiryTime : null) || null;
+  const expiryMs = expiryRaw ? Date.parse(expiryRaw) : 0;
+  const stillValid =
+    ENTITLING_SUBSCRIPTION_STATES.includes(state) &&
+    Number.isFinite(expiryMs) &&
+    expiryMs > nowMs;
+  return { stillValid, expiryRaw, expiryMs };
+}
+
+/**
+ * Bu abonelik dönemi ÜCRETSİZ DENEME mi?
+ *
+ * NEDEN BU KADAR DOLAYLI
+ *   Play Developer API v2 (`purchases.subscriptionsv2.get`) denemeyi söyleyen bir alan
+ *   döndürmüyor — v1'deki `paymentState: 2` karşılığı yok. Elde olan tek sinyal
+ *   `lineItems[].offerDetails`: bir TEKLİF uygulanmışsa `offerId` dolu geliyor.
+ *
+ * VARSAYIM — kırılganlığı burada yazılı olmak zorunda
+ *   Play Console'da Pro aboneliğinde ücretsiz deneme DIŞINDA teklif olmadığı için
+ *   "teklif uygulanmış = deneme" kabul ediliyor (kullanıcı kararı, 06.10.2026).
+ *   İleride indirimli ilk ay / tanıtım fiyatı gibi bir teklif eklenirse bu fonksiyon
+ *   onları da deneme sayar ve o kullanıcılara yanlış bildirim gider. O gün yapılacak şey:
+ *   deneme teklifine Console'da bir etiket vermek ve burada `offerTags`'e bakmak.
+ *
+ * Saf fonksiyon.
+ */
+function isTrialPeriod(subscription) {
+  const items = (subscription && subscription.lineItems) || [];
+  return items.some(
+    (item) =>
+      item &&
+      item.offerDetails &&
+      typeof item.offerDetails.offerId === 'string' &&
+      item.offerDetails.offerId.trim().length > 0
+  );
+}
+
+/** Play'in döndürdüğü teklif kimlikleri. Yalnızca teşhis/log için. */
+function subscriptionOfferIds(subscription) {
+  const items = (subscription && subscription.lineItems) || [];
+  return items
+    .map((item) =>
+      item && item.offerDetails && typeof item.offerDetails.offerId === 'string'
+        ? item.offerDetails.offerId.trim()
+        : ''
+    )
+    .filter((id) => !!id);
+}
+
+/** Play'in döndürdüğü abonelikteki ürün kimlikleri (satır öğesi sırasıyla). */
+function subscriptionProductIds(subscription) {
+  const items = (subscription && subscription.lineItems) || [];
+  return items
+    .map((item) => (item && typeof item.productId === 'string' ? item.productId : ''))
+    .filter((id) => !!id);
+}
+
+/**
+ * Bu token GERÇEKTEN hangi ürüne ait?
+ *
+ * SORUN
+ *   Tüketilebilir üründe `productId`, doğrulama çağrısının İÇİNE giriyor
+ *   (purchases.products.get({packageName, productId, token})) — eşleşmezse Play'in
+ *   kendisi reddediyor. Abonelikte ise çağrı yalnızca token alıyor
+ *   (purchases.subscriptionsv2.get({token})) ve plan, istemcinin bildirdiği üründen
+ *   okunuyordu. Yani geçerli bir `lite_monthly` token'ıyla `productId: "pro_monthly"`
+ *   göndermek Pro planını (ve hoş geldin kredisini) veriyordu; değiştirilmiş bir APK
+ *   bile gerekmiyor, callable'ı doğrudan çağırmak yetiyordu.
+ *
+ * KURAL
+ *   Play ürün bilgisi verdiyse GERÇEK odur. İstemcinin iddiası satır öğelerinden
+ *   birinde geçiyorsa aynen kullanılır; geçmiyorsa yok sayılır ve bitiş tarihiyle aynı
+ *   satır öğesinin ürünü esas alınır.
+ *
+ * NEDEN REDDETMEK YERİNE DÜZELTMEK
+ *   Uyuşmazlık her zaman saldırı değil: ertelenmiş düşürme (Pro → Lite) yenilemede
+ *   ürünü değiştirdiği için istemcinin elindeki Purchase nesnesi bir süre eski ürünü
+ *   bildirir. Reddetmek o kullanıcının planını senkronsuz bırakırdı. Play'in gerçeğini
+ *   yazmak iki durumu birden doğru çözüyor — sahtekârlık iddiası boşa düşer, gecikmiş
+ *   istemci de doğru plana oturur.
+ *
+ * Saf fonksiyon.
+ */
+function resolveVerifiedProductId(claimedProductId, playProductIds) {
+  const ids = playProductIds || [];
+  if (ids.length === 0) {
+    // Play satır öğesi döndürmedi (beklenmeyen cevap şekli). İddiaya güvenmek zorundayız;
+    // yine de katalog kontrolünden geçiyor ve durum loglanıyor.
+    return { productId: claimedProductId, verified: false, mismatch: false };
+  }
+  if (ids.includes(claimedProductId)) {
+    return { productId: claimedProductId, verified: true, mismatch: false };
+  }
+  return { productId: ids[ids.length - 1], verified: true, mismatch: true };
+}
+
+/**
+ * Satın alma token'ının kısa, saklanabilir kimliği.
+ *
+ * Token'ın HAM hâli `users/{uid}` dokümanına yazılmıyor: o dokümanı kullanıcının kendisi
+ * ve onaylı öğretmenler okuyabiliyor (bkz. firestore.rules). Token'ı ele geçirmek tek
+ * başına aboneliği devralmaya yetmiyor — sunucu başka bir uid'ye bağlı token'ı reddediyor —
+ * ama hesap silindiğinde devir yolu açıldığı için gereksiz bir maruziyet. Karşılaştırma
+ * için özet yeterli; token'ın kendisi zaten yüksek entropili, bu yüzden salt gerekmiyor.
+ *
+ * Destek tarafında ham token'a ihtiyaç duyulursa kaynak `processedPurchases/{token}`.
+ */
+function purchaseTokenFingerprint(purchaseToken) {
+  if (typeof purchaseToken !== 'string' || !purchaseToken) return null;
+  return require('crypto').createHash('sha256').update(purchaseToken).digest('hex');
+}
+
+/**
+ * Kullanıcının ŞU ANDAKİ planını veren kayıt bu mu?
+ *
+ * NEDEN TOKEN, NEDEN ÜRÜN DEĞİL
+ *   Sahiplik önce yalnızca `planProductId` ile ölçülüyordu ve bu iki yerde yanlış cevap
+ *   veriyordu:
+ *
+ *   • Ertelenmiş düşürme (Pro → Lite): Play aynı token'ı sürdürüp yenilemede ürünü
+ *     değiştiriyor. O an `planProductId` hâlâ pro_monthly olduğu için sahiplik tutmuyor,
+ *     Lite yazımı rütbe kuralına takılıyor ve para ödeyen abone eski `planExpiresAt`
+ *     geçene kadar Pro, sonra da uygulamayı yeniden açana kadar Free görünüyordu.
+ *
+ *   • İade geri alımı: kullanıcı Pro alıp (token A) iade edip yeniden abone olduğunda
+ *     (token B, aktif), A'nın iadesi ürün eşleştiği için B'nin planını siliyordu.
+ *
+ *   Token bazlı sahiplik ikisini de doğru çözüyor ve korumayı GENİŞLETMİYOR, daraltıyor:
+ *   farklı token hâlâ rütbe kuralına tabi, yani çift abonelikte Lite senkronu aktif
+ *   Pro'yu ezemiyor.
+ *
+ * ESKİ KAYITLAR
+ *   `planPurchaseTokenHash` bu değişiklikten önce yazılmadığı için mevcut abonelerde yok.
+ *   O durumda eski kurala (ürün eşleşmesi) düşülüyor — aksi halde mevcut bir Pro abonesinin
+ *   süresi dolduğunda kendi token'ı bile Free yazamazdı. İlk senkronda alan yazılıyor ve
+ *   kayıt kendiliğinden yeni kurala geçiyor.
+ *
+ * Saf fonksiyon.
+ */
+function ownsStoredPlan(userData, purchaseToken, productId, linkedPurchaseToken) {
+  const stored = userData || {};
+  const storedHash = stored.planPurchaseTokenHash || null;
+  if (storedHash) {
+    if (storedHash === purchaseTokenFingerprint(purchaseToken)) return true;
+    // DEVRALMA: plan/ürün değişikliğinde Play yeni bir token üretip `linkedPurchaseToken`
+    // ile eskisini işaret ediyor. Yeni abonelik, eskisinin DEVAMI — dolayısıyla planın
+    // sahipliğini de devralması gerekiyor.
+    //
+    // Bu olmadan ertelenmiş düşürme (Pro → Lite) yine takılabiliyordu: yeni token'ın
+    // özeti kayıtlıyla eşleşmiyor, rütbe kuralına düşülüyor ve Lite < Pro olduğu için
+    // yazım reddediliyordu. Eski dönemin bitişi ile bildirimin gelişi saniyeler
+    // farkında olduğu için sonuç zamanlamaya kalıyordu — kabul edilemez bir yarış.
+    //
+    // Korumayı zayıflatmıyor: bağı istemci değil PLAY kuruyor ve bağ, eski aboneliğin
+    // yerini yenisinin aldığı anlamına geliyor; yani eski abonelik artık aktif değil.
+    if (linkedPurchaseToken && storedHash === purchaseTokenFingerprint(linkedPurchaseToken)) {
+      return true;
+    }
+    return false;
+  }
+  const storedProductId = stored.planProductId || null;
+  return !!storedProductId && storedProductId === (productId || null);
+}
+
+function resolvePlanUpdate(userData, productId, newPlan, purchaseToken, linkedPurchaseToken) {
+  const storedPlan = subscriptionPlan(userData || {});
+  if (ownsStoredPlan(userData, purchaseToken, productId, linkedPurchaseToken)) {
+    return { write: true, reason: 'own_token' };
+  }
+  if (planRank(newPlan) >= planRank(storedPlan)) {
+    return { write: true, reason: 'rank_not_lower' };
+  }
+  return { write: false, reason: 'lower_than_active_plan' };
+}
 
 let androidPublisherClient = null;
 
@@ -1346,6 +2710,7 @@ let androidPublisherClient = null;
  */
 async function getAndroidPublisher() {
   if (androidPublisherClient) return androidPublisherClient;
+  const { google } = require('googleapis');
   const auth = new google.auth.GoogleAuth({
     scopes: ['https://www.googleapis.com/auth/androidpublisher'],
   });
@@ -1370,7 +2735,10 @@ function readPurchaseArgs(data) {
   if (!productId || !purchaseToken) {
     throw new functions.https.HttpsError('invalid-argument', 'productId ve purchaseToken zorunludur.');
   }
-  return { productId, purchaseToken };
+  // Yalnızca abonelik yolunda gönderilir; hoş geldin kredisinin cihaz kontrolü için.
+  const deviceKey =
+    typeof payload.deviceKey === 'string' ? payload.deviceKey.trim().slice(0, 256) : '';
+  return { productId, purchaseToken, deviceKey };
 }
 
 /**
@@ -1416,12 +2784,15 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
   // 2) Token'ı bir kez bozdur ve bakiyeyi aynı transaction'da yaz.
   const userRef = db.collection('users').doc(uid);
   const purchaseRef = db.collection('processedPurchases').doc(purchaseToken);
+  const sobiRef = db.collection('sobiChats').doc(uid);
+  const grantedSobiCredits = reward.sobiCredits || 0;
 
   try {
     const result = await db.runTransaction(async (transaction) => {
-      const [userDoc, purchaseDoc] = await Promise.all([
+      const [userDoc, purchaseDoc, sobiDoc] = await Promise.all([
         transaction.get(userRef),
         transaction.get(purchaseRef),
+        grantedSobiCredits > 0 ? transaction.get(sobiRef) : Promise.resolve(null),
       ]);
 
       if (purchaseDoc.exists) {
@@ -1434,6 +2805,8 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
       const userData = userDoc.data();
       const newKeys = (Number.parseInt(userData.keys, 10) || 0) + reward.keys;
       const newCurrency = (Number.parseInt(userData.currency, 10) || 0) + reward.currency;
+      const grantedCredits = reward.credits + creditBonusFor(userData, productId);
+      const newCredits = (Number.parseInt(userData.questionCredits, 10) || 0) + grantedCredits;
 
       transaction.set(purchaseRef, {
         uid,
@@ -1442,15 +2815,31 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
         orderId: purchase.orderId || null,
         grantedKeys: reward.keys,
         grantedCurrency: reward.currency,
+        grantedCredits,
+        grantedSobiCredits,
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
       });
-      transaction.update(userRef, { keys: newKeys, currency: newCurrency });
+      let sobiCredits = null;
+      if (grantedSobiCredits > 0) {
+        sobiCredits = (sobiDoc.exists ? Number(sobiDoc.get('credits')) || 0 : 0) + grantedSobiCredits;
+        transaction.set(sobiRef, { credits: sobiCredits }, { merge: true });
+      }
+      transaction.update(userRef, {
+        keys: newKeys,
+        currency: newCurrency,
+        questionCredits: newCredits,
+        // Üst para paneli users belgesini dinliyor, sobiChats'i okuyamıyor: yalnızca gösterim
+        // kopyası. Asıl bakiye sobiChats/{uid}.credits; harcama kararı hep oradan.
+        ...(sobiCredits != null ? { sobiCredits } : {}),
+      });
 
-      return { keys: newKeys, currency: newCurrency };
+      return { keys: newKeys, currency: newCurrency, credits: newCredits, sobiCredits };
     });
 
     console.log('Satın alma işlendi', { uid, productId, orderId: purchase.orderId });
-    return { success: true, keys: result.keys, currency: result.currency };
+    return {
+      success: true, keys: result.keys, currency: result.currency, credits: result.credits, sobiCredits: result.sobiCredits,
+    };
   } catch (error) {
     if (error instanceof functions.https.HttpsError) throw error;
     console.error('Satın alma işlenemedi', { uid, productId, error });
@@ -1459,24 +2848,2081 @@ exports.redeemGooglePlayPurchase = functions.https.onCall(async (data, context) 
 });
 
 /**
+ * Süresi dolmuş (`expired`) bir soruyu yeni bir kredi harcayarak tekrar kuyruğa alır.
+ *
+ * Kullanıcı sorusunu ve yüklediği medyayı kaybetmez; tek dokunuşla yeniden sorabilir.
+ * 48 saatlik iade sayacı da sıfırlanır, yani tekrar cevapsız kalırsa kredi yine iade edilir.
+ */
+exports.resendTeacherQuestion = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+  const questionId = readText((data || {}).questionId, 128);
+  if (!questionId) {
+    throw new functions.https.HttpsError('invalid-argument', 'questionId zorunludur.');
+  }
+
+  const questionRef = db.collection('questions').doc(questionId);
+  const userRef = db.collection('users').doc(uid);
+
+  const remaining = await db.runTransaction(async (transaction) => {
+    const [questionDoc, userDoc] = await Promise.all([
+      transaction.get(questionRef),
+      transaction.get(userRef),
+    ]);
+
+    if (!questionDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Soru bulunamadı.');
+    }
+    if (questionDoc.data().studentUid !== uid) {
+      throw new functions.https.HttpsError('permission-denied', 'Bu soru size ait değil.');
+    }
+    if (questionDoc.data().status !== 'expired') {
+      throw new functions.https.HttpsError('failed-precondition', 'Bu soru zaten kuyrukta.');
+    }
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+
+    const userData = userDoc.data();
+    if (isAskQuestionRestricted(userData)) {
+      throw new functions.https.HttpsError('permission-denied', 'Hesabınız kısıtlanmış.');
+    }
+
+    const credits = Number.parseInt(userData.questionCredits, 10) || 0;
+    if (credits < 1) {
+      throw new functions.https.HttpsError('failed-precondition', 'Yeterli danışma krediniz yok.');
+    }
+
+    // Havuz İLK sorulduğu andan değil, şimdiki üyelikten: öğrenci o arada bir sınıfa
+    // katıldıysa (ya da çıktıysa) tekrar sorduğu soru yeni yerine gitmeli.
+    const poolFields = await questionPoolFieldsInTransaction(transaction, userData);
+
+    transaction.update(userRef, { questionCredits: credits - 1 });
+    transaction.update(questionRef, {
+      status: 'pending',
+      creditSpent: true,
+      creditRefunded: false,
+      // 48 saatlik iade sayacı baştan başlar.
+      createdAtMs: Date.now(),
+      lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+      resentAt: admin.firestore.FieldValue.serverTimestamp(),
+      ...poolFields,
+    });
+
+    return credits - 1;
+  });
+
+  console.log('Soru tekrar kuyruğa alındı', { uid, questionId, remaining });
+  return { success: true, credits: remaining };
+});
+
+/**
+ * 48 saat boyunca hiçbir öğretmenin almadığı soruların kredisini iade eder.
+ *
+ * Yalnızca `pending` (kimsenin üstlenmediği) sorular iade edilir. İade edilen soru
+ * `expired` durumuna geçer ve öğretmen kuyruğundan çıkar — aksi halde kredi iade
+ * edilmiş bir soru sonradan cevaplanıp bize bedava iş maliyeti çıkarırdı. Soru
+ * öğrencinin geçmişinde durmaya devam eder; "Tekrar sor" ile yeni bir kredi
+ * harcayarak kuyruğa geri gönderilebilir.
+ */
+async function runUnansweredQuestionRefund() {
+  const cutoff = Date.now() - QUESTION_REFUND_AFTER_MS;
+  const snapshot = await db
+    .collection('questions')
+    .where('status', '==', 'pending')
+    .where('createdAtMs', '<', cutoff)
+    .limit(300)
+    .get();
+
+  const counts = { scanned: snapshot.size, refunded: 0, skipped: 0, failed: 0 };
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    // Kredi harcanmadan oluşmuş (eski) veya zaten iade edilmiş kayıtlara dokunma.
+    if (data.creditSpent !== true || data.creditRefunded === true || !data.studentUid) {
+      counts.skipped++;
+      continue;
+    }
+    try {
+      await db.runTransaction(async (transaction) => {
+        const questionRef = doc.ref;
+        const userRef = db.collection('users').doc(data.studentUid);
+        const [questionDoc, userDoc] = await Promise.all([
+          transaction.get(questionRef),
+          transaction.get(userRef),
+        ]);
+
+        // Tarama ile transaction arasında öğretmen üstlenmiş olabilir.
+        const fresh = questionDoc.data();
+        if (!questionDoc.exists || fresh.status !== 'pending' || fresh.creditRefunded === true) {
+          return;
+        }
+
+        if (userDoc.exists) {
+          const credits = Number.parseInt(userDoc.data().questionCredits, 10) || 0;
+          transaction.update(userRef, { questionCredits: credits + 1 });
+        }
+        transaction.update(questionRef, {
+          status: 'expired',
+          creditRefunded: true,
+          creditRefundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      });
+      counts.refunded++;
+    } catch (error) {
+      console.error('Soru kredisi iade edilemedi', { questionId: doc.id, error: error.message });
+      counts.failed++;
+    }
+  }
+
+  console.log('runUnansweredQuestionRefund tamamlandı', counts);
+  return counts;
+}
+
+exports.reconcileUnansweredQuestions = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runUnansweredQuestionRefund();
+    return null;
+  });
+
+// ─── BEKLEYEN KUPA YOLU SANDIĞI ─────────────────────────────────────────────
+//
+// NEDEN
+//   Kupa puanı bir eşiği geçtiğinde sandık hak ediliyor ama AÇILMASI kullanıcının elinde
+//   (`claimCupPathChest`). Eşiği geçip sandığını hiç açmamış kullanıcının elinde duran bir
+//   ödül var ve bunu bilmiyor. Toplanmamış ödül hatırlatması, kataloğun en zararsız bildirim
+//   türü: yeni bir iş istemiyor, zaten kazanılmış bir şeyi hatırlatıyor.
+//
+// NEDEN GÜNDE BİR, SAATTE BİR DEĞİL
+//   Bu tarama kullanıcı başına İKİ alt koleksiyon okuması gerektiriyor (kupa puanı +
+//   sandık defteri). Saatlik çalışsa aynı okumalar günde 24 kez yapılırdı; bildirimin
+//   değeri bu maliyeti karşılamıyor. Günde bir kez, UTC 14:00'te çalışıyor.
+//
+//   Yerel saat filtresi YOK ve gerekmiyor: tür `reward`, yani sessiz saate denk gelen
+//   kullanıcıda bildirim kendiliğinden düşüyor (bkz. notifications.js → quiet: 'drop').
+
+/** Tek taramada en fazla kaç kullanıcı. */
+const CHEST_NOTICE_SCAN_LIMIT = 2000;
+
+/** Aynı anda kaç kullanıcı incelensin. */
+const CHEST_NOTICE_CONCURRENCY = 20;
+
+/**
+ * Kupa puanları ve sandık defterine bakıp açılmamış sandık sayısını bulur.
+ *
+ * Saf: altı kupa alanının hepsi ayrı ayrı eşik tutuyor ve mantık emülatör olmadan test
+ * edilebilsin diye (bkz. scripts/test-notifications.js).
+ *
+ * @param cupData    `cupWayProgress/progress` dokümanı.
+ * @param ledgerData `cupPathRewards/progress` dokümanı.
+ * @returns Açılmayı bekleyen sandık sayısı.
+ */
+function pendingChestCount(cupData, ledgerData) {
+  let pending = 0;
+  for (const cupField of CUP_PATH_FIELDS) {
+    const score = Math.trunc(Number((cupData && cupData[cupField]) || 0));
+    if (!Number.isFinite(score) || score <= CUP_PATH_START) continue;
+    const entry = readCupPathEntry(ledgerData || {}, cupField);
+    const next = nextCupPathMilestone(entry.lastClaimed);
+    // `next === 0` yol bitti demek; o alanda açılacak sandık kalmamış.
+    if (next > 0 && score >= next) pending++;
+  }
+  return pending;
+}
+
+/** Bekleyen sandık bildiriminin metni. */
+function chestNoticeText(count, lang = 'tr') {
+  if (lang === 'en') {
+    return {
+      title: count === 1 ? 'A chest is waiting for you' : `${count} chests are waiting for you`,
+      body: 'You forgot to open the reward you earned on the Trophy Road.',
+    };
+  }
+  if (lang === 'id') {
+    return {
+      title: count === 1 ? 'Ada peti yang menunggumu' : `Ada ${count} peti yang menunggumu`,
+      body: 'Kamu lupa membuka hadiah yang kamu dapat di Jalur Piala.',
+    };
+  }
+  if (lang === 'ar') {
+    return {
+      title: arCount(count, {
+        one: 'هناك صندوق ينتظرك', two: 'هناك صندوقان ينتظرانك', few: 'هناك %d صناديق تنتظرك',
+        many: 'هناك %d صندوقًا ينتظرك', other: 'هناك %d صندوق ينتظرك',
+      }),
+      body: 'نسيت فتح المكافأة التي ربحتها في طريق الكأس.',
+    };
+  }
+  return {
+    title: count === 1 ? 'Seni bekleyen bir sandık var' : `Seni bekleyen ${count} sandık var`,
+    body: 'Kupa yolunda hak ettiğin ödülü açmayı unutmuşsun.',
+  };
+}
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runPendingChestNotices() {
+  // Kupa puanı olan kullanıcılar: puanı hiç olmayanda açılacak sandık da olamaz.
+  const snap = await db
+    .collectionGroup('cupWayProgress')
+    .limit(CHEST_NOTICE_SCAN_LIMIT)
+    .get();
+
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, failed: 0 };
+  const docs = snap.docs;
+
+  for (let i = 0; i < docs.length; i += CHEST_NOTICE_CONCURRENCY) {
+    const chunk = docs.slice(i, i + CHEST_NOTICE_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (doc) => {
+        const uid = doc.ref.parent.parent && doc.ref.parent.parent.id;
+        if (!uid) return;
+        try {
+          const ledgerSnap = await db
+            .collection('users')
+            .doc(uid)
+            .collection('cupPathRewards')
+            .doc('progress')
+            .get();
+
+          const pending = pendingChestCount(
+            doc.data() || {},
+            ledgerSnap.exists ? ledgerSnap.data() || {} : {}
+          );
+          if (pending <= 0) {
+            counts.skipped++;
+            return;
+          }
+
+          const text = chestNoticeText(pending);
+          const result = await sendUserNotification(uid, {
+            type: 'reward',
+            topic: 'chest_waiting',
+            title: text.title,
+            body: text.body,
+            en: chestNoticeText(pending, 'en'),
+            id: chestNoticeText(pending, 'id'),
+            ar: chestNoticeText(pending, 'ar'),
+          });
+          if (result.sent) counts.sent++;
+          else counts.skipped++;
+        } catch (e) {
+          counts.failed++;
+          console.error('runPendingChestNotices: hata', { uid, error: e.message });
+        }
+      })
+    );
+  }
+
+  console.log('runPendingChestNotices tamamlandı', counts);
+  return counts;
+}
+
+exports.sendPendingChestNotices = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('0 14 * * *')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runPendingChestNotices();
+    return null;
+  });
+
+// Testler için.
+exports._pendingChestCount = pendingChestCount;
+exports._chestNoticeText = chestNoticeText;
+exports._runPendingChestNotices = runPendingChestNotices;
+
+// ─── ENERJİ DOLDU BİLDİRİMİ ─────────────────────────────────────────────────
+//
+// NEDEN
+//   Enerjisi bitip oyundan çıkan kullanıcı, enerjinin dolduğunu ancak uygulamayı açarsa
+//   öğreniyor. Dolum zamanı sunucuda zaten tutuluyor (`energy_full_time`), yani bildirim
+//   için yeni bir veri gerekmiyordu.
+//
+// OKUL SAATLERİ — bu bildirimin en önemli kısıtı
+//   Bu, kataloğun en açık "geri dön ve oyna" bildirimi ve kitle 7–10 yaş. Okul saatinde
+//   çocuğun telefonunu titretmek savunulamaz; mağaza politikası (Play Families) tarafında da
+//   risk. Bu yüzden yalnızca [ENERGY_NOTICE_LOCAL_HOURS] penceresinde, yani okul sonrası
+//   gönderiliyor. Tavan ve kendiliğinden susma da bunun üstüne geliyor: ilgilenmeyen
+//   kullanıcıda beş gönderimde kapanıyor.
+//
+// KİME GİTMİYOR
+//   Sonsuz enerjisi olanlara (Pro, Premium, onaylı öğretmen) — onlar için dolum diye bir şey
+//   yok, `energy_full_time` alanı anlamsız.
+
+/** Enerjisi bu süre içinde dolmuş kullanıcılara bildirim gönderilir. */
+const ENERGY_NOTICE_WINDOW_MS = 70 * 60 * 1000;
+
+/** Bildirimin gönderilebileceği yerel saat aralığı: okul sonrası (dahil–dışında). */
+const ENERGY_NOTICE_LOCAL_HOURS = { from: 15, to: 21 };
+
+/** Tek taramada en fazla kaç kullanıcı. */
+const ENERGY_NOTICE_SCAN_LIMIT = 1000;
+
+/** Aynı anda kaç kullanıcıya gönderilsin. */
+const ENERGY_NOTICE_CONCURRENCY = 25;
+
+/**
+ * Bu kullanıcıya enerji bildirimi gönderilmeli mi.
+ *
+ * Saf: okul saati penceresi ve sonsuz enerji muafiyeti emülatör olmadan test edilebilsin
+ * diye (bkz. scripts/test-notifications.js).
+ *
+ * @param infiniteEnergy `hasInfiniteEnergy(userData)` sonucu.
+ */
+function energyNoticeDecision({ infiniteEnergy, utcOffsetMinutes }, nowMs) {
+  if (infiniteEnergy) return null;
+
+  const offset = normalizeOffset(utcOffsetMinutes);
+  if (offset === null) return null;
+  const localHour = localHourOf(nowMs, offset);
+  if (localHour < ENERGY_NOTICE_LOCAL_HOURS.from || localHour >= ENERGY_NOTICE_LOCAL_HOURS.to) {
+    return null;
+  }
+
+  return {
+    text: {
+      title: 'Enerjin doldu',
+      body: 'Kaldığın yerden devam edebilirsin.',
+    },
+    textEn: { title: 'Your lives are full', body: 'You can pick up where you left off.' },
+    textId: { title: 'Nyawamu sudah penuh', body: 'Kamu bisa lanjut dari tempat terakhir.' },
+    textAr: { title: 'اكتملت قلوبك', body: 'يمكن المتابعة من حيث توقفت.' },
+  };
+}
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runEnergyFullNotices(nowMs) {
+  // Enerjisi SON BİR SAAT İÇİNDE dolmuş olanlar. Tek alan aralık sorgusu, yeni indeks
+  // gerekmiyor. "Dolu olan herkes" sorgulanamazdı: çoğu kullanıcının enerjisi dolu ve
+  // onlara her saat bildirim gitmesi anlamsız olurdu.
+  const snap = await db
+    .collection('users')
+    .where(ENERGY_FIELD, '>', nowMs - ENERGY_NOTICE_WINDOW_MS)
+    .where(ENERGY_FIELD, '<=', nowMs)
+    .limit(ENERGY_NOTICE_SCAN_LIMIT)
+    .get();
+
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, failed: 0 };
+  const docs = snap.docs;
+
+  for (let i = 0; i < docs.length; i += ENERGY_NOTICE_CONCURRENCY) {
+    const chunk = docs.slice(i, i + ENERGY_NOTICE_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (doc) => {
+        try {
+          const userData = doc.data() || {};
+          const decision = energyNoticeDecision(
+            {
+              infiniteEnergy: hasInfiniteEnergy(userData),
+              utcOffsetMinutes: userData.utcOffsetMinutes,
+            },
+            nowMs
+          );
+          if (!decision) {
+            counts.skipped++;
+            return;
+          }
+
+          const result = await sendUserNotification(doc.id, {
+            type: 'reward',
+            topic: 'energy_full',
+            title: decision.text.title,
+            body: decision.text.body,
+            en: decision.textEn,
+            id: decision.textId,
+        ar: decision.textAr,
+            ar: decision.textAr,
+            userData,
+          });
+          if (result.sent) counts.sent++;
+          else counts.skipped++;
+        } catch (e) {
+          counts.failed++;
+          console.error('runEnergyFullNotices: hata', { uid: doc.id, error: e.message });
+        }
+      })
+    );
+  }
+
+  console.log('runEnergyFullNotices tamamlandı', counts);
+  return counts;
+}
+
+exports.sendEnergyFullNotices = functions
+  .runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runEnergyFullNotices(Date.now());
+    return null;
+  });
+
+// Testler için.
+exports._energyNoticeDecision = energyNoticeDecision;
+exports._runEnergyFullNotices = runEnergyFullNotices;
+
+// ─── SEZON BİTİŞ BİLDİRİMİ ──────────────────────────────────────────────────
+//
+// KULLANICI TASARIMI (05.10.2026)
+//   "Sezonun bitmesine 4 saat kala herkese: Sezon 4 saat sonra bitecek, liderlik tablo
+//   sıranı gözden geçir."
+//
+// NEDEN METİNDE SABİT "4 SAAT" YOK
+//   Sezon bitişi sabit bir UTC anı (`SEASON_ANCHOR_UTC_MS`, haftalık), yani "4 saat kala"
+//   herkes için AYNI an. O an bazı saat dilimlerinde gecenin bir yarısı: Endonezya (+7) için
+//   15.05, Türkiye (+3) için 11.05, ama ABD batı yakası (-7) için 01.05. Gece bildirimi
+//   göndermek bu özelliğin amacını bozar; ertelemek de işe yaramaz, çünkü sezon bitiyor.
+//
+//   Çözüm: bildirim kullanıcının yerel saatine göre uygun bir pencerede gönderiliyor ve
+//   metin O ANDA kalan gerçek süreyi söylüyor. Böylece kullanıcının istediği bilgi (kaç saat
+//   kaldı) korunuyor ama saate çivilenmiş olmuyoruz.
+//
+// KİME
+//   Herkese (kullanıcı kararı). Tavana tabi ve öncelikli konu: tavanın son slotu bunun için
+//   ayrılmış (bkz. notifications.js → PRIORITY_TOPICS), yani sezonun son günü sandık
+//   bildirimi bunu düşüremiyor. İlgilenmeyen kullanıcıda kendiliğinden susuyor — üst üste
+//   beş sezon açılmazsa konu kapanıyor.
+
+/** Sezon bitişine bu aralıkta kalanlara bildirim gönderilebilir (saat). */
+const SEASON_NOTICE_WINDOW_HOURS = { min: 2, max: 12 };
+
+/** Bildirimin gönderilebileceği yerel saat aralığı (dahil–dışında). */
+const SEASON_NOTICE_LOCAL_HOURS = { from: 10, to: 21 };
+
+/** Tek taramada en fazla kaç kullanıcı. */
+const SEASON_NOTICE_SCAN_LIMIT = 5000;
+
+/** Aynı anda kaç kullanıcıya gönderilsin. */
+const SEASON_NOTICE_CONCURRENCY = 25;
+
+/**
+ * Sezon bitiş bildiriminin metni.
+ *
+ * Kalan süre metne giriyor ama GÜN adı girmiyor ("yarın" / "bugün"): aynı UTC anı bazı
+ * dilimlerde bugün, bazılarında yarın oluyor ve gün adı o kullanıcılarda yanlış olurdu.
+ * Saat sayısı her dilimde doğru.
+ */
+function seasonNoticeText(hoursLeft, lang = 'tr') {
+  const h = Math.max(1, Math.round(hoursLeft));
+  if (lang === 'en') {
+    return {
+      title: h === 1 ? 'The season ends in one hour' : `The season ends in ${h} hours`,
+      body: 'Check your rank on the leaderboard.',
+    };
+  }
+  if (lang === 'id') {
+    return {
+      title: h === 1 ? 'Musim berakhir satu jam lagi' : `Musim berakhir ${h} jam lagi`,
+      body: 'Cek peringkatmu di papan peringkat.',
+    };
+  }
+  if (lang === 'ar') {
+    return {
+      title: arCount(h, {
+        one: 'ينتهي الموسم بعد ساعة واحدة', two: 'ينتهي الموسم بعد ساعتين', few: 'ينتهي الموسم بعد %d ساعات',
+        many: 'ينتهي الموسم بعد %d ساعة', other: 'ينتهي الموسم بعد %d ساعة',
+      }),
+      body: 'ترتيبك في لوحة المتصدّرين بانتظارك.',
+    };
+  }
+  const title = h === 1 ? 'Sezon bir saat sonra bitiyor' : `Sezon ${h} saat sonra bitiyor`;
+  return { title, body: 'Liderlik tablosundaki sıranı gözden geçir.' };
+}
+
+/**
+ * Bu kullanıcıya sezon bitiş bildirimi gönderilmeli mi.
+ *
+ * Saf: pencere, yerel saat ve sezon başına tek gönderim emülatör olmadan test edilebilsin
+ * diye (bkz. scripts/test-notifications.js).
+ *
+ * @param season       Bitmekte olan sezon numarası.
+ * @param msLeft       Sezon bitişine kalan süre (ms).
+ * @param sentSeason   Defterdeki `seasonNotice` — en son hangi sezon için gönderildiği.
+ */
+function seasonNoticeDecision({ season, msLeft, sentSeason, utcOffsetMinutes }, nowMs) {
+  const hoursLeft = msLeft / 3600000;
+  if (hoursLeft <= SEASON_NOTICE_WINDOW_HOURS.min) return null;
+  if (hoursLeft > SEASON_NOTICE_WINDOW_HOURS.max) return null;
+
+  // Bu sezon için zaten gönderilmiş. Sezon numarası karşılaştırılıyor, bayrak değil:
+  // bir sonraki sezonda bildirim yeniden gidiyor.
+  if (Number(sentSeason) === season) return null;
+
+  const offset = normalizeOffset(utcOffsetMinutes);
+  if (offset === null) return null;
+  const localHour = localHourOf(nowMs, offset);
+  if (localHour < SEASON_NOTICE_LOCAL_HOURS.from || localHour >= SEASON_NOTICE_LOCAL_HOURS.to) {
+    return null;
+  }
+
+  return {
+    season,
+    text: seasonNoticeText(hoursLeft),
+    textEn: seasonNoticeText(hoursLeft, 'en'),
+    textId: seasonNoticeText(hoursLeft, 'id'),
+    textAr: seasonNoticeText(hoursLeft, 'ar'),
+  };
+}
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runSeasonEndingNotices(nowMs) {
+  const msLeft = millisUntilCurrentSeasonEnds(nowMs);
+  const hoursLeft = msLeft / 3600000;
+
+  // Pencere dışındaysa HİÇ OKUMA YAPILMIYOR. Bu tarama bütün kullanıcıları gezmek zorunda
+  // (bildirim herkese gidiyor ve "yerel saati uygun olanlar" diye sorgulanamıyor), yani
+  // saatlik çalışmanın her turunda okumak pahalıya gelirdi. Sezon haftalık, pencere ~10
+  // saat: okuma haftada bir, o pencerede yapılıyor.
+  if (hoursLeft <= SEASON_NOTICE_WINDOW_HOURS.min || hoursLeft > SEASON_NOTICE_WINDOW_HOURS.max) {
+    return { skipped: 'out_of_window', hoursLeft: Math.round(hoursLeft) };
+  }
+
+  const season = currentSeason(nowMs);
+  const snap = await db.collection('users').limit(SEASON_NOTICE_SCAN_LIMIT).get();
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, failed: 0, season };
+  const docs = snap.docs;
+
+  for (let i = 0; i < docs.length; i += SEASON_NOTICE_CONCURRENCY) {
+    const chunk = docs.slice(i, i + SEASON_NOTICE_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (doc) => {
+        try {
+          const ledgerSnap = await notifyLedgerRef(doc.id).get();
+          const ledger = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
+          const decision = seasonNoticeDecision(
+            {
+              season,
+              msLeft,
+              sentSeason: ledger.seasonNotice,
+              utcOffsetMinutes: doc.get('utcOffsetMinutes'),
+            },
+            nowMs
+          );
+          if (!decision) {
+            counts.skipped++;
+            return;
+          }
+
+          const result = await sendUserNotification(doc.id, {
+            type: 'reward',
+            topic: 'season_ending',
+            title: decision.text.title,
+            body: decision.text.body,
+            en: decision.textEn,
+            id: decision.textId,
+        ar: decision.textAr,
+            ar: decision.textAr,
+            userData: doc.data(),
+          });
+          if (!result.sent) {
+            counts.skipped++;
+            return;
+          }
+          await notifyLedgerRef(doc.id).set({ seasonNotice: season }, { merge: true });
+          counts.sent++;
+        } catch (e) {
+          counts.failed++;
+          console.error('runSeasonEndingNotices: hata', { uid: doc.id, error: e.message });
+        }
+      })
+    );
+  }
+
+  console.log('runSeasonEndingNotices tamamlandı', counts);
+  return counts;
+}
+
+exports.sendSeasonEndingNotices = functions
+  .runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runSeasonEndingNotices(Date.now());
+    return null;
+  });
+
+// Testler için.
+exports._seasonNoticeText = seasonNoticeText;
+exports._seasonNoticeDecision = seasonNoticeDecision;
+exports._runSeasonEndingNotices = runSeasonEndingNotices;
+
+// ─── DENEME SÜRESİ BİTİŞ BİLDİRİMİ ─────────────────────────────────────────
+//
+// NEDEN
+//   Bu bir büyüme fikri değil, KAPATILMASI GEREKEN BİR AÇIK. Reklam atlama panelinde
+//   kullanıcıya açıkça "Deneme süren sona ermeden önce bildirim alacaksın" deniyor
+//   (AdSkipFragment, deneme hakkı olan sürüm). Söz veriliyor ama hiçbir bildirim
+//   gönderilmiyordu: `playSubscriptionNotification` planı güncelliyor, kullanıcıya hiçbir
+//   şey söylemiyor.
+//
+//   Kitle çocuk, ödeyen ebeveyn. Haber verilmeden başlayan ilk ödeme, iade talebi ve mağaza
+//   yorumu üretir; verilmiş bir sözü tutmamak ayrıca Play politikası tarafında da risktir.
+//
+// KİME GİTMİYOR
+//   • Denemede OLMAYAN abonelere (kullanıcı kararı, 06.10.2026): Play yenileme e-postasını
+//     zaten atıyor ve aylık abonede dönem başına iki bildirim değerli bir şey söylemiyor.
+//     Ayrım `planTrialEndsAt` alanının dolu olmasıyla yapılıyor (bkz. isTrialPeriod).
+//   • Aynı deneme için ikinci kez: gönderilen eşik, o denemenin bitiş zamanıyla birlikte
+//     deftere yazılıyor. Zaman karşılaştırması yeterli — kullanıcı aboneliği iptal edip
+//     yeni bir deneme alırsa (farklı bitiş zamanı) bildirim yeniden gidiyor.
+//
+// NEDEN SAATTE BİR, GÜNDE BİR DEĞİL
+//   Bildirim kullanıcının yerel saatine göre gönderiliyor: gece yarısı "denemen bitiyor"
+//   demek, bildirimin kendisini zararlı yapar. Saatlik tarama "şu anda yerel saati uygun
+//   olanlar" sorusunu sorabiliyor; günlük tarama sorasaydı tek bir UTC anında herkese
+//   gönderirdi.
+
+/** Deneme bitişine kaç gün kalanlara bildirim gider. Büyükten küçüğe. */
+const TRIAL_NOTICE_DAYS = [3, 1];
+
+/** Bildirimin gönderilebileceği yerel saat aralığı (dahil–dışında). */
+const TRIAL_NOTICE_LOCAL_HOURS = { from: 10, to: 21 };
+
+/** Tek taramada en fazla kaç kullanıcı. */
+const TRIAL_NOTICE_SCAN_LIMIT = 500;
+
+/**
+ * Deneme bitişine [days] gün kalan kullanıcıya gönderilecek metin.
+ *
+ * TON
+ *   Dürüst ve sakin. Ödeyen taraf ebeveyn ve asıl mesele güven: ne olacağını ("ücretli
+ *   devam eder") ve çıkış yolunu ("istediğin zaman iptal") aynı bildirimde söylemek,
+ *   kullanıcıyı şaşırtmamanın tek yolu. Aciliyet dili ("SON ŞANS!") burada satış değil
+ *   şikâyet üretir.
+ */
+function trialNoticeText(days, lang = 'tr') {
+  if (lang === 'en') {
+    return {
+      title: days === 1 ? 'Your free trial ends tomorrow' : `Your free trial ends in ${days} days`,
+      body: 'After that, your subscription continues as paid. You can cancel anytime.',
+    };
+  }
+  if (lang === 'id') {
+    return {
+      title: days === 1 ? 'Uji coba gratismu berakhir besok' : `Uji coba gratismu berakhir ${days} hari lagi`,
+      body: 'Setelah itu, langgananmu berlanjut dengan berbayar. Kamu bisa membatalkannya kapan saja.',
+    };
+  }
+  if (lang === 'ar') {
+    return {
+      title: arCount(days, {
+        one: 'تنتهي فترتك التجريبية المجانية غدًا', two: 'تنتهي فترتك التجريبية المجانية بعد يومين',
+        few: 'تنتهي فترتك التجريبية المجانية بعد %d أيام', many: 'تنتهي فترتك التجريبية المجانية بعد %d يومًا',
+        other: 'تنتهي فترتك التجريبية المجانية بعد %d يوم',
+      }),
+      body: 'بعدها يستمر اشتراكك مدفوعًا. يمكن الإلغاء في أي وقت.',
+    };
+  }
+  const title = days === 1 ? 'Deneme süren yarın bitiyor' : `Deneme süren ${days} gün sonra bitiyor`;
+  return {
+    title,
+    body: 'Sonrasında aboneliğin ücretli olarak devam eder. İstediğin zaman iptal edebilirsin.',
+  };
+}
+
+/**
+ * Bu kullanıcıya hangi eşik için bildirim gönderilmeli; gönderilmeyecekse null.
+ *
+ * Saf: eşik seçimi, yerel saat penceresi ve tekrar engelleme emülatör olmadan test
+ * edilebilsin diye (bkz. scripts/test-notifications.js).
+ *
+ * @param trialEndsAt  `planTrialEndsAt` (ms). Yoksa/geçmişse bildirim yok.
+ * @param sentFor      Defterdeki `trialNotice`: eşik → o denemenin bitiş zamanı.
+ * @param utcOffsetMinutes Kullanıcının saat dilimi farkı; bilinmiyorsa null.
+ */
+function trialNoticeDecision({ trialEndsAt, sentFor, utcOffsetMinutes }, nowMs) {
+  const endsAt = Number(trialEndsAt) || 0;
+  if (!endsAt || endsAt <= nowMs) return null;
+
+  // Saat dilimi bilinmiyorsa gönderilmiyor: bu bildirimin günün rastgele bir saatinde
+  // düşmesi, bir gün gecikmesinden kötü. Alan kullanıcı uygulamayı bir kez açtığında
+  // doluyor (token kaydıyla birlikte).
+  const offset = normalizeOffset(utcOffsetMinutes);
+  if (offset === null) return null;
+  const localHour = localHourOf(nowMs, offset);
+  if (localHour < TRIAL_NOTICE_LOCAL_HOURS.from || localHour >= TRIAL_NOTICE_LOCAL_HOURS.to) {
+    return null;
+  }
+
+  const msLeft = endsAt - nowMs;
+  const sent = sentFor && typeof sentFor === 'object' ? sentFor : {};
+
+  // Büyük eşikten küçüğe: 3 günlük pencere kaçırıldıysa 1 günlük yine yakalıyor.
+  for (const days of TRIAL_NOTICE_DAYS) {
+    // Pencere eşiğin kendisi kadar geniş değil, bir GÜN: "3 gün kaldı" bildirimi
+    // 3–2 gün arasında bir kez gidiyor. Saatlik tarama bu pencereyi kaçırmıyor.
+    const upper = days * 86400000;
+    const lower = (days - 1) * 86400000;
+    if (msLeft > upper || msLeft <= lower) continue;
+    // Bu eşik BU deneme için gönderilmiş mi? Bitiş zamanı karşılaştırılıyor, bayrak değil:
+    // kullanıcı yeni bir deneme alırsa (farklı bitiş) bildirim yeniden gitmeli.
+    if (Number(sent[String(days)]) === endsAt) return null;
+    return { days, endsAt, text: trialNoticeText(days), textEn: trialNoticeText(days, 'en'), textId: trialNoticeText(days, 'id'), textAr: trialNoticeText(days, 'ar') };
+  }
+  return null;
+}
+
+/** Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı. */
+async function runTrialEndingNotices(nowMs) {
+  // Yalnızca denemesi SÜREN kullanıcılar: alan deneme bitince kendiliğinden null oluyor
+  // (syncSubscriptionForToken). Tek alan indeksi yeterli, bileşik indeks gerekmiyor.
+  const snap = await db
+    .collection('users')
+    .where('planTrialEndsAt', '>', nowMs)
+    .limit(TRIAL_NOTICE_SCAN_LIMIT)
+    .get();
+
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, failed: 0 };
+
+  for (const doc of snap.docs) {
+    try {
+      const ledgerSnap = await notifyLedgerRef(doc.id).get();
+      const ledger = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
+      const decision = trialNoticeDecision(
+        {
+          trialEndsAt: doc.get('planTrialEndsAt'),
+          sentFor: ledger.trialNotice,
+          utcOffsetMinutes: doc.get('utcOffsetMinutes'),
+        },
+        nowMs
+      );
+      if (!decision) {
+        counts.skipped++;
+        continue;
+      }
+
+      const result = await sendUserNotification(doc.id, {
+        type: 'account',
+        topic: 'trial_ending',
+        title: decision.text.title,
+        body: decision.text.body,
+        en: decision.textEn,
+        id: decision.textId,
+        ar: decision.textAr,
+        userData: doc.data(),
+      });
+      if (!result.sent) {
+        counts.skipped++;
+        continue;
+      }
+      // Gönderim başarılıysa işaretle: başarısızsa bir sonraki saatte yeniden denenir.
+      await notifyLedgerRef(doc.id).set(
+        { trialNotice: { [String(decision.days)]: decision.endsAt } },
+        { merge: true }
+      );
+      counts.sent++;
+    } catch (e) {
+      counts.failed++;
+      console.error('runTrialEndingNotices: hata', { uid: doc.id, error: e.message });
+    }
+  }
+
+  console.log('runTrialEndingNotices tamamlandı', counts);
+  return counts;
+}
+
+exports.sendTrialEndingNotices = functions
+  .runWith({ timeoutSeconds: 300, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runTrialEndingNotices(Date.now());
+    return null;
+  });
+
+// Testler için.
+exports._trialNoticeText = trialNoticeText;
+exports._trialNoticeDecision = trialNoticeDecision;
+exports._isTrialPeriod = isTrialPeriod;
+exports._runTrialEndingNotices = runTrialEndingNotices;
+
+// ─── ÖĞRETMEN HAVUZU BİLDİRİMİ ─────────────────────────────────────────────
+//
+// NEDEN
+//   Öğretmen tarafı bu taramaya kadar tamamen sessizdi: soruyu SAHİPLENDİKTEN sonraki
+//   mesajları duyuyor (onMessageCreated), havuza düşen soruyu duymuyordu. Öğretmenin havuzu
+//   görmesinin tek yolu uygulamayı açıp Havuz sekmesine bakmaktı.
+//
+//   Bu boşluk doğrudan paraya dokunuyor: 48 saat içinde cevaplanmayan soru öğrencinin
+//   kredisini iade ediyor (runUnansweredQuestionRefund). Yani kaçan her soru hem gelir hem
+//   güven kaybı, ve hiçbir hata üretmediği için şikâyet gelene kadar görünmüyor.
+//
+// NEDEN TETİKLEYİCİ DEĞİL, TARAMA
+//   Soru başına bir bildirim göndermek (askTeacherQuestion içinden) daha basit olurdu ama
+//   bir sınıfın aynı akşam soru sorması öğretmene üst üste bildirim yığardı. Tarama
+//   toplulaştırıyor: aradaki bütün yeni sorular tek bildirimde.
+//
+// İLK ÇALIŞTIRMA
+//   İmleç yoksa hiç bildirim gönderilmiyor, yalnızca imleç kuruluyor. Aksi halde ilk tarama
+//   havuzda birikmiş bütün eski soruları "yeni" sayıp bildirim gönderirdi.
+
+/** Havuz taramasının nereye kadar baktığını tutan doküman (istemciye kapalı, bkz. firestore.rules). */
+const POOL_NOTIFY_CURSOR = 'system/teacherPoolNotify';
+
+/** Tek taramada en fazla kaç yeni soru sayılır; metinde "N+" demek için yeter. */
+const POOL_NOTIFY_SCAN_LIMIT = 50;
+
+/**
+ * Havuz bildiriminin metni.
+ *
+ * Saf: tekil/çoğul ve "yeni" ile "bekleyen" ayrımı test edilebilsin diye (bkz.
+ * scripts/test-notifications.js).
+ *
+ * @param newCount     Son taramadan bu yana düşen soru sayısı (>0 olmalı).
+ * @param totalPending Havuzda şu an cevap bekleyen toplam soru.
+ */
+function teacherPoolText(newCount, totalPending, lang = 'tr') {
+  if (lang === 'en') {
+    return {
+      title: newCount === 1 ? 'There is a new question in the pool' : `There are ${newCount} new questions in the pool`,
+      body: totalPending > newCount
+        ? `${totalPending} questions in the pool are waiting for an answer.`
+        : 'Unanswered questions are refunded to the student after 48 hours.',
+    };
+  }
+  if (lang === 'id') {
+    return {
+      title: newCount === 1 ? 'Ada pertanyaan baru di kumpulan soal' : `Ada ${newCount} pertanyaan baru di kumpulan soal`,
+      body: totalPending > newCount
+        ? `${totalPending} pertanyaan di kumpulan soal menunggu jawaban.`
+        : 'Pertanyaan yang tidak dijawab dikembalikan ke murid setelah 48 jam.',
+    };
+  }
+  if (lang === 'ar') {
+    // Başlıkta sayı-ad uyumu; gövdede "etiket: sayı" (sözlük: sayı değişince dil bozulmasın).
+    return {
+      title: arCount(newCount, {
+        one: 'هناك سؤال جديد في بنك الأسئلة', two: 'هناك سؤالان جديدان في بنك الأسئلة',
+        few: 'هناك %d أسئلة جديدة في بنك الأسئلة', many: 'هناك %d سؤالًا جديدًا في بنك الأسئلة',
+        other: 'هناك %d سؤال جديد في بنك الأسئلة',
+      }),
+      body: totalPending > newCount
+        ? `الأسئلة التي تنتظر الإجابة في بنك الأسئلة: ${totalPending}`
+        : 'تُعاد الأسئلة التي لم يُجَب عنها إلى الطالب بعد 48 ساعة.',
+    };
+  }
+  const title = newCount === 1 ? 'Havuzda yeni bir soru var' : `Havuzda ${newCount} yeni soru var`;
+  // Toplam yeniye eşitse tekrar etmiyor: "1 yeni soru geldi, havuzda 1 soru bekliyor"
+  // aynı şeyi iki kez söylemek olurdu.
+  const body =
+    totalPending > newCount
+      ? `Havuzda toplam ${totalPending} soru cevap bekliyor.`
+      : 'Cevaplanmayan soru 48 saat sonra öğrenciye iade ediliyor.';
+  return { title, body };
+}
+
+/**
+ * Havuza yeni soru düştüyse onaylı öğretmenlere haber verir.
+ *
+ * Zamanlayıcıyı beklemeden test/elle çalıştırılabilsin diye gövde ayrı.
+ */
+async function runTeacherPoolNotify(nowMs) {
+  const cursorRef = db.doc(POOL_NOTIFY_CURSOR);
+  const cursorSnap = await cursorRef.get();
+  const lastScanMs = cursorSnap.exists ? Number(cursorSnap.get('lastScanMs')) || 0 : 0;
+
+  if (!lastScanMs) {
+    await cursorRef.set({ lastScanMs: nowMs }, { merge: true });
+    console.log('runTeacherPoolNotify: imleç kuruldu, ilk taramada bildirim gönderilmiyor');
+    return { sent: 0, newCount: 0, reason: 'cursor_init' };
+  }
+
+  // (status, createdAtMs) indeksi zaten var — iade taraması da onu kullanıyor.
+  const newSnap = await db
+    .collection('questions')
+    .where('status', '==', 'pending')
+    .where('createdAtMs', '>', lastScanMs)
+    .limit(POOL_NOTIFY_SCAN_LIMIT)
+    .get();
+
+  const newCount = newSnap.size;
+  if (!newCount) {
+    await cursorRef.set({ lastScanMs: nowMs }, { merge: true });
+    return { sent: 0, newCount: 0, reason: 'no_new' };
+  }
+
+  // Sayılar ÖĞRETMEN BAŞINA: kurs öğretmeni yalnızca kendi sınıflarının sorularını, genel
+  // öğretmen yalnızca genel havuzu görüyor (classes.poolVisibility). Herkese aynı "havuzda N
+  // soru" demek, göremeyeceği soru için öğretmeni uygulamaya çağırmak olurdu.
+  const newQuestions = newSnap.docs.map((d) => d.data());
+
+  // Sayım başarısız olursa bildirim yine gidiyor, yalnızca metin "yeni" sayısına düşüyor.
+  const countOrNull = async (query) => {
+    try {
+      return (await query.count().get()).data().count;
+    } catch (e) {
+      console.warn('runTeacherPoolNotify: sayım başarısız', e.message);
+      return null;
+    }
+  };
+  const pendingQuery = db.collection('questions').where('status', '==', 'pending');
+  // Genel havuz = bütün bekleyenler − sınıf soruları. `pool == general` sayılmıyor, çünkü
+  // bu özellikten önceki sorularda `pool` alanı yok (kurallarda da genel sayılıyorlar).
+  let generalTotal;
+  const generalPendingTotal = async () => {
+    if (generalTotal !== undefined) return generalTotal;
+    const [all, inClasses] = await Promise.all([
+      countOrNull(pendingQuery),
+      countOrNull(pendingQuery.where('pool', '==', classes.POOL_CLASS)),
+    ]);
+    generalTotal = all === null || inClasses === null ? null : Math.max(0, all - inClasses);
+    return generalTotal;
+  };
+
+  // İki eşitlik filtresi yerine tek sorgu + kod filtresi: öğretmen sayısı küçük ve bu yol
+  // yeni bir bileşik indeks gerektirmiyor.
+  const teachersSnap = await db.collection('users').where('role', '==', 'TEACHER').get();
+  const teachers = teachersSnap.docs.filter((d) => d.get('teacherApproved') === true);
+
+  const counts = { sent: 0, skipped: 0, notMine: 0, newCount, teachers: teachers.length };
+
+  for (const doc of teachers) {
+    try {
+      const visibility = classes.poolVisibility(doc.data());
+      const mineNew = newQuestions.filter((q) => classes.questionVisibleTo(q, doc.id, visibility)).length;
+      if (!mineNew) {
+        counts.notMine++;
+        continue;
+      }
+      let total = 0;
+      if (visibility.generalPool) {
+        const general = await generalPendingTotal();
+        total = general === null ? null : total + general;
+      }
+      if (visibility.classPool && total !== null) {
+        const mine = await countOrNull(pendingQuery.where('classTeacherUids', 'array-contains', doc.id));
+        total = mine === null ? null : total + mine;
+      }
+      const text = teacherPoolText(mineNew, total === null ? mineNew : total);
+      const result = await sendUserNotification(doc.id, {
+        type: 'pool',
+        topic: 'teacher_pool',
+        title: text.title,
+        body: text.body,
+        en: teacherPoolText(mineNew, total === null ? mineNew : total, 'en'),
+        id: teacherPoolText(mineNew, total === null ? mineNew : total, 'id'),
+        ar: teacherPoolText(mineNew, total === null ? mineNew : total, 'ar'),
+        userData: doc.data(),
+      });
+      if (result.sent) counts.sent++;
+      else counts.skipped++;
+    } catch (e) {
+      counts.skipped++;
+      console.error('runTeacherPoolNotify: gönderilemedi', { uid: doc.id, error: e.message });
+    }
+  }
+
+  // İmleç gönderimden SONRA ilerliyor: tarama yarıda düşerse aynı sorular bir sonraki turda
+  // yine sayılır. Tekrar bildirim, hiç bildirim gelmemesinden iyi.
+  await cursorRef.set({ lastScanMs: nowMs }, { merge: true });
+  console.log('runTeacherPoolNotify tamamlandı', counts);
+  return counts;
+}
+
+exports.notifyTeacherPool = functions
+  .runWith({ timeoutSeconds: 120, memory: '256MB' })
+  .pubsub.schedule('every 10 minutes')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runTeacherPoolNotify(Date.now());
+    return null;
+  });
+
+// Testler için.
+exports._teacherPoolText = teacherPoolText;
+exports._runTeacherPoolNotify = runTeacherPoolNotify;
+exports._questionStatusNotice = questionStatusNotice;
+
+/** Kapanan (çözülen ya da cevapsız kalıp iade edilen) bir soru bu süre sonunda silinir. */
+const CLOSED_QUESTION_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/** Bir taramada tür başına en fazla bu kadar soru; kalanı ertesi günün taramasına kalır. */
+const CLOSED_QUESTION_SCAN_LIMIT = 300;
+
+/**
+ * Kapanan soruları 30 gün sonra medyası, mesajları ve kendisiyle birlikte siler.
+ *
+ * NEDEN
+ *   Soru medyası eskiden yalnızca hem öğrenci hem öğretmen elle "listeden sil" dediğinde
+ *   siliniyordu (bkz. onQuestionUpdated) — pratikte neredeyse hiç; bucket sınırsız
+ *   büyüyordu. İlk çözüm yalnızca MEDYAYI 30 gün sonra siliyor, soru ve mesaj metinlerini
+ *   bırakıyordu (`mediaPurged`). 03.10.2026'da kullanıcı kararıyla metin de siliniyor: bir
+ *   çocuğun özel sohbeti süresiz saklanmamalı ve kapanmış bir soru 30 gün sonra kimsenin
+ *   işine yaramıyor (kredi iadesi 48 saat içinde, ödeme hesabı soru belgelerine dayanmıyor).
+ *
+ * HANGİ SORULAR
+ *   - `resolved`: `resolvedAt` 30 günden eski. Daha önce yalnızca medyası silinmiş
+ *     (`mediaPurged == true`) eski sorular da dahil — iki sorgu, ikisi de mevcut
+ *     (status, mediaPurged, resolvedAt) indeksini kullanıyor.
+ *   - `expired` (cevapsız kalıp kredisi iade edilen): `creditRefundedAt` 30 günden eski.
+ *     İndeksi firestore.indexes.json'da (status, creditRefundedAt).
+ *   Açık sorulara (`pending`, `claimed`) dokunulmuyor.
+ *
+ *   Bekleyen (pending) bir şikâyeti olan soru korunuyor: moderasyon incelemesi bitmeden
+ *   kanıt silinmesin. Bir sonraki günlük taramada tekrar deneniyor.
+ */
+async function runClosedQuestionCleanup() {
+  const cutoff = admin.firestore.Timestamp.fromMillis(Date.now() - CLOSED_QUESTION_RETENTION_MS);
+  const questions = db.collection('questions');
+  const queries = {
+    resolved: questions
+      .where('status', '==', 'resolved')
+      .where('mediaPurged', '==', false)
+      .where('resolvedAt', '<', cutoff),
+    resolvedMediaPurged: questions
+      .where('status', '==', 'resolved')
+      .where('mediaPurged', '==', true)
+      .where('resolvedAt', '<', cutoff),
+    expired: questions
+      .where('status', '==', 'expired')
+      .where('creditRefundedAt', '<', cutoff),
+  };
+  // Sorgular birbirinden bağımsız: biri düşerse ötekiler yine çalışıyor. Özellikle ilk
+  // deploy'da (status, creditRefundedAt) indeksi henüz oluşmamışsa `expired` sorgusu
+  // FAILED_PRECONDITION veriyor; Promise.all o gün çözülenleri de silmeden bırakırdı.
+  const results = await Promise.allSettled(
+    Object.values(queries).map((q) => q.limit(CLOSED_QUESTION_SCAN_LIMIT).get()),
+  );
+  const docs = [];
+  Object.keys(queries).forEach((name, i) => {
+    const result = results[i];
+    if (result.status === 'fulfilled') {
+      docs.push(...result.value.docs);
+    } else {
+      console.error('runClosedQuestionCleanup: sorgu başarısız', { name, error: result.reason.message });
+    }
+  });
+
+  const counts = {
+    scanned: docs.length,
+    deleted: 0,
+    skippedForReport: 0,
+    failed: 0,
+    mediaFailed: 0,
+    queryFailed: results.filter((r) => r.status === 'rejected').length,
+  };
+
+  for (const doc of docs) {
+    try {
+      if (await hasPendingQuestionReport(doc.id)) {
+        counts.skippedForReport++;
+        continue;
+      }
+      const { mediaFailed } = await deleteQuestionCompletely(doc, 'Kapanan');
+      if (mediaFailed) counts.mediaFailed++;
+      counts.deleted++;
+    } catch (error) {
+      console.error('Kapanan soru silinemedi', { questionId: doc.id, error: error.message });
+      counts.failed++;
+    }
+  }
+
+  console.log('runClosedQuestionCleanup tamamlandı', counts);
+  return counts;
+}
+
+// Adı eski görevinden kalma (yalnızca medyayı siliyordu). Değiştirilmedi: deploy iş akışı
+// etkileşimsiz çalışıyor ve adı değişen bir fonksiyonun eskisini silmek onay istiyor, yani
+// deploy yarıda kalırdı.
+exports.cleanupResolvedQuestionMedia = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('every 24 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    await runClosedQuestionCleanup();
+    return null;
+  });
+
+// Testlerin zamanlayıcıyı beklemeden taramayı çalıştırabilmesi için.
+exports._runClosedQuestionCleanup = runClosedQuestionCleanup;
+
+// ─── Öğretmen danışma soruları — sunucu taraflı ─────────────────────────────
+//
+// NEDEN
+//   Soru dokümanları eskiden doğrudan istemciden yazılıyordu (firestore.rules:
+//   `allow create: if isSignedIn()`). Yani değiştirilmiş bir istemci kredi harcamadan
+//   sınırsız soru gönderebilirdi ve cevaplanan her soru gerçek para maliyeti doğurur.
+//   Artık soru YALNIZCA burada oluşturulur; kredi düşümü ve doküman yazımı aynı
+//   transaction'da yapılır, böylece "kredi gitti soru gelmedi" durumu da oluşamaz.
+
+/** Cevapsız soru bu süre sonunda krediyi iade eder ve öğretmen kuyruğundan çıkar. */
+const QUESTION_REFUND_AFTER_MS = 48 * 60 * 60 * 1000;
+
+/** UserAskQuestionRestriction.kt ile aynı kural. */
+function isAskQuestionRestricted(userData) {
+  if (userData.banned === true) return true;
+  const until = userData.restrictedUntil;
+  const untilMs = until && typeof until.toMillis === 'function' ? until.toMillis() : 0;
+  return untilMs > Date.now();
+}
+
+function readText(value, maxLength) {
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+}
+
+/**
+ * Sorunun havuz alanlarını transaction içinde belirler: öğrenci bir sınıftaysa sınıf
+ * dokümanını da okur. Sınıfın öğretmen listesi öğrencinin dokümanındaki kopyadan değil
+ * sınıftan alınıyor — sınıf kapandıysa soru genel havuza düşsün diye.
+ *
+ * Okuma yaptığı için transaction'daki bütün yazımlardan ÖNCE çağrılmalı.
+ */
+async function questionPoolFieldsInTransaction(transaction, userData) {
+  const classId = typeof userData.classId === 'string' && userData.classId ? userData.classId : null;
+  if (!classId) return classes.questionPoolFields(userData, null);
+  const classSnap = await transaction.get(db.collection('classes').doc(classId));
+  return classes.questionPoolFields(userData, classSnap.exists ? classSnap.data() : null);
+}
+
+/**
+ * Öğretmene soru gönderir: 1 danışma kredisi düşer ve soruyu oluşturur.
+ *
+ * Medya (görsel/video) istemci tarafından Storage'a yüklenir; buraya yalnızca yolu
+ * ve indirme adresi gelir. Kredi kontrolü, düşümü ve soru yazımı atomiktir.
+ */
+exports.askTeacherQuestion = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+  const payload = data || {};
+
+  const isVideo = payload.mediaType === 'video';
+  const storagePath = readText(payload.storagePath, 512);
+  const mediaUrl = readText(payload.mediaUrl, 2048);
+  const message = readText(payload.message, 500);
+  const previewText = readText(payload.previewText, 500);
+  const description = readText(payload.description, 2000);
+  const videoDurationSec = Number.parseInt(payload.videoDurationSec, 10) || 0;
+
+  if (!storagePath || !mediaUrl) {
+    throw new functions.https.HttpsError('invalid-argument', 'Medya bilgisi eksik.');
+  }
+
+  const userRef = db.collection('users').doc(uid);
+  const questionRef = db.collection('questions').doc();
+  const messageRef = questionRef.collection('messages').doc();
+  const now = admin.firestore.FieldValue.serverTimestamp();
+
+  const remaining = await db.runTransaction(async (transaction) => {
+    const userDoc = await transaction.get(userRef);
+    if (!userDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const userData = userDoc.data();
+
+    if (isAskQuestionRestricted(userData)) {
+      throw new functions.https.HttpsError('permission-denied', 'Hesabınız kısıtlanmış.');
+    }
+
+    const credits = Number.parseInt(userData.questionCredits, 10) || 0;
+    if (credits < 1) {
+      throw new functions.https.HttpsError(
+        'failed-precondition',
+        'Yeterli danışma krediniz yok.'
+      );
+    }
+
+    // Kredi kontrolünden sonra: krediyi olmayan öğrenci için boşuna bir okuma yapılmasın.
+    const poolFields = await questionPoolFieldsInTransaction(transaction, userData);
+
+    const questionData = {
+      studentUid: uid,
+      studentEmail: context.auth.token.email || null,
+      message,
+      previewText,
+      status: 'pending',
+      createdAt: now,
+      lastMessageAt: now,
+      createdAtMs: Date.now(),
+      // İade takibi: cevapsız kalırsa reconcileUnansweredQuestions krediyi geri verir.
+      creditSpent: true,
+      creditRefunded: false,
+      // Hangi öğretmenlerin göreceği: kurs sınıfı ya da genel havuz (bkz. classes.js).
+      ...poolFields,
+    };
+    if (isVideo) {
+      questionData.mediaType = 'video';
+      questionData.videoStoragePath = storagePath;
+      questionData.videoUrl = mediaUrl;
+      questionData.videoDurationSec = videoDurationSec;
+    } else {
+      questionData.screenshotStoragePath = storagePath;
+      questionData.screenshotUrl = mediaUrl;
+    }
+
+    transaction.update(userRef, { questionCredits: credits - 1 });
+    transaction.set(questionRef, questionData);
+    transaction.set(messageRef, {
+      senderUid: uid,
+      senderRole: 'student',
+      type: isVideo ? 'video' : 'image',
+      mediaStoragePath: storagePath,
+      mediaUrl,
+      textContent: description || null,
+      createdAt: now,
+    });
+
+    return credits - 1;
+  });
+
+  console.log('Soru oluşturuldu', { uid, questionId: questionRef.id, remaining });
+  return { success: true, questionId: questionRef.id, credits: remaining };
+});
+
+// ─── Kurs sınıfları ─────────────────────────────────────────────────────────
+//
+// Kurs öğretmeni uygulamadan sınıf açar; öğrenci sınıf koduyla ya da öğretmenin kullanıcı
+// adıyla gönderdiği daveti kabul ederek katılır. Bundan sonra öğrencinin soruları yalnızca
+// sınıfının öğretmenlerine düşer (askTeacherQuestion → questionPoolFieldsInTransaction).
+// Model ve kararlar için classes.js'in başlık yorumuna bakın; burada yalnızca Firestore işi.
+//
+// Bütün yazımlar burada, istemci sınıf/üyelik dokümanlarına hiç yazamıyor (firestore.rules).
+// Üyelik iki yerde birden tutuluyor — öğrencinin kullanıcı dokümanında (havuz kararı ve
+// kurallar için) ve sınıfın `members` alt koleksiyonunda (öğretmen paneli için) — ve ikisi
+// her zaman aynı transaction'da değişiyor.
+
+/** Kod çakışmasında kaç kez yeni kod denenir. 1 milyar olasılıkta pratikte hiç çakışmaz. */
+const JOIN_CODE_ATTEMPTS = 5;
+
+/** Aynı öğrenciye aynı sınıftan bu süre içinde ikinci davet bildirimi gitmez. */
+const CLASS_INVITE_RENOTIFY_MS = 24 * 60 * 60 * 1000;
+
+function classRefOf(classId) {
+  return db.collection('classes').doc(classId);
+}
+
+function classMemberRef(classId, uid) {
+  return classRefOf(classId).collection('members').doc(uid);
+}
+
+/** İstemciden gelen doküman kimliği; yol kaçışını (`/`) ve boşu reddeder. */
+function readDocId(value, label) {
+  const id = readText(value, 128);
+  if (!id || id.includes('/')) {
+    throw new functions.https.HttpsError('invalid-argument', `Geçersiz ${label}.`);
+  }
+  return id;
+}
+
+/** Firestore'un "zaten var" hatası (create çakışması). Admin SDK sayısal gRPC kodu veriyor. */
+function isAlreadyExistsError(e) {
+  return !!e && (e.code === 6 || e.code === 'already-exists');
+}
+
+/**
+ * Yeni bir katılma kodu ayırıp `writeExtra(batch, code)` ile aynı batch'te yazar.
+ * `create` kullanıldığı için başka bir sınıfın kodunun üstüne yazılamaz; çakışırsa yeni kod.
+ */
+async function commitWithNewJoinCode(classId, writeExtra) {
+  for (let attempt = 0; attempt < JOIN_CODE_ATTEMPTS; attempt++) {
+    const code = classes.generateJoinCode();
+    const batch = db.batch();
+    batch.create(db.collection('classJoinCodes').doc(code), { classId, createdAtMs: Date.now() });
+    writeExtra(batch, code);
+    try {
+      await batch.commit();
+      return code;
+    } catch (e) {
+      if (!isAlreadyExistsError(e)) throw e;
+    }
+  }
+  throw new functions.https.HttpsError('unavailable', 'Kod oluşturulamadı, tekrar dene.');
+}
+
+/** Öğrenciyi sınıftan çıkaran yazımlar. Okuma yapmaz; çağıran okumaları önce yapmış olmalı. */
+function writeClassLeave(transaction, uid, classId, { clearUser }) {
+  transaction.delete(classMemberRef(classId, uid));
+  transaction.update(classRefOf(classId), {
+    studentCount: admin.firestore.FieldValue.increment(-1),
+  });
+  if (clearUser) {
+    const cleared = {};
+    classes.MEMBERSHIP_FIELDS.forEach((f) => { cleared[f] = admin.firestore.FieldValue.delete(); });
+    transaction.update(db.collection('users').doc(uid), cleared);
+  }
+}
+
+/**
+ * Öğrencinin bekleyen (kimsenin almadığı) sorularını yeni havuzuna taşır. Sahiplenilmiş
+ * sorulara dokunmuyor: o sohbet zaten bir öğretmende ve onda kalmalı.
+ *
+ * Transaction dışında, en iyi çabayla: yarıda kalırsa soru eski havuzunda bekler, 48 saatte
+ * iade edilir. Üyeliği bunun için geri almak daha kötü olurdu.
+ */
+async function retagPendingQuestions(studentUid, poolFields) {
+  try {
+    const snap = await db
+      .collection('questions')
+      .where('studentUid', '==', studentUid)
+      .where('status', '==', 'pending')
+      .get();
+    if (snap.empty) return 0;
+    const batch = db.batch();
+    snap.docs.forEach((d) => batch.update(d.ref, poolFields));
+    await batch.commit();
+    return snap.size;
+  } catch (e) {
+    console.error('retagPendingQuestions: taşınamadı', { studentUid, error: e.message });
+    return 0;
+  }
+}
+
+/**
+ * Öğrenciyi sınıfa yazar (kodla ya da davetle). Başka bir sınıftaysa önce oradan çıkar.
+ *
+ * @param inviteRef Davetle katılımda davet dokümanı: aynı transaction'da yeniden okunup
+ *   "accepted" yapılıyor, böylece süresi dolmuş ya da reddedilmiş bir davetle girilemiyor.
+ */
+async function joinClass(uid, classId, via, inviteRef = null) {
+  const userRef = db.collection('users').doc(uid);
+  const classRef = classRefOf(classId);
+
+  const outcome = await db.runTransaction(async (transaction) => {
+    const [userSnap, classSnap, inviteSnap] = await Promise.all([
+      transaction.get(userRef),
+      transaction.get(classRef),
+      inviteRef ? transaction.get(inviteRef) : Promise.resolve(null),
+    ]);
+    if (!userSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const nowMs = Date.now();
+    if (inviteRef) {
+      throwIfFailed(classes.respondDecision(inviteSnap.exists ? inviteSnap.data() : null, uid, nowMs));
+    }
+    const userData = userSnap.data();
+    const classData = classSnap.exists ? classSnap.data() : null;
+    const decision = throwIfFailed(classes.joinDecision(userData, classId, classData));
+
+    if (!decision.alreadyMember) {
+      if (decision.previousClassId) {
+        writeClassLeave(transaction, uid, decision.previousClassId, { clearUser: false });
+      }
+      transaction.update(userRef, classes.membershipFields(classId, classData, nowMs));
+      transaction.set(classMemberRef(classId, uid), {
+        uid,
+        userId: userData.userId || null,
+        name: userData.name || null,
+        joinedAtMs: nowMs,
+        via,
+      });
+      transaction.update(classRef, { studentCount: admin.firestore.FieldValue.increment(1) });
+    }
+    if (inviteRef) {
+      transaction.update(inviteRef, { status: 'accepted', respondedAtMs: nowMs });
+    }
+    return { alreadyMember: decision.alreadyMember, classData };
+  });
+
+  if (!outcome.alreadyMember) {
+    await retagPendingQuestions(uid, classes.questionPoolFields({ classId }, outcome.classData));
+  }
+  console.log('Sınıfa katıldı', { uid, classId, via, alreadyMember: outcome.alreadyMember });
+  return {
+    success: true,
+    classId,
+    className: outcome.classData.name || '',
+    courseName: outcome.classData.courseName || '',
+    alreadyMember: outcome.alreadyMember,
+  };
+}
+
+/** Öğrenciyi sınıfından çıkarır; `actorUid` öğretmense sınıfın öğretmeni olmalı. */
+async function leaveClass(studentUid, { classId = null, actorUid = null } = {}) {
+  const userRef = db.collection('users').doc(studentUid);
+  const left = await db.runTransaction(async (transaction) => {
+    const [userSnap, classSnap] = await Promise.all([
+      transaction.get(userRef),
+      classId ? transaction.get(classRefOf(classId)) : Promise.resolve(null),
+    ]);
+    if (actorUid && !classes.isTeacherOfClass(classSnap && classSnap.exists ? classSnap.data() : null, actorUid)) {
+      throw new functions.https.HttpsError('permission-denied', 'Bu sınıf senin değil.');
+    }
+    const current = userSnap.exists ? userSnap.get('classId') || null : null;
+    if (!current || (classId && current !== classId)) return null;
+    writeClassLeave(transaction, studentUid, current, { clearUser: true });
+    return current;
+  });
+
+  if (left) {
+    await retagPendingQuestions(studentUid, classes.questionPoolFields({}, null));
+    console.log('Sınıftan çıktı', { studentUid, classId: left, byTeacher: actorUid || null });
+  }
+  return { success: true, left: !!left };
+}
+
+/**
+ * Kurs öğretmeni yeni bir sınıf açar. Yanıtta katılma kodu var; öğretmen bunu öğrencilerine
+ * verir (tahta, WhatsApp grubu).
+ */
+exports.createClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const { name } = throwIfFailed(classes.normalizeClassName(data && data.name));
+
+  const [teacherSnap, ownedSnap] = await Promise.all([
+    db.collection('users').doc(uid).get(),
+    db.collection('classes').where('ownerUid', '==', uid).where('archived', '==', false).count().get(),
+  ]);
+  const teacher = teacherSnap.exists ? teacherSnap.data() : null;
+  const { courseId } = throwIfFailed(classes.createClassDecision(teacher, ownedSnap.data().count));
+
+  const courseSnap = await db.collection('courses').doc(courseId).get();
+  if (!courseSnap.exists) {
+    throw new functions.https.HttpsError('failed-precondition', 'Kursun kaydı bulunamadı. Bize haber ver.');
+  }
+
+  const classRef = db.collection('classes').doc();
+  const nowMs = Date.now();
+  const joinCode = await commitWithNewJoinCode(classRef.id, (batch, code) => {
+    batch.create(classRef, {
+      courseId,
+      courseName: courseSnap.get('name') || '',
+      name,
+      ownerUid: uid,
+      ownerName: teacher.name || '',
+      // Dizi: sınıfa ileride ikinci bir öğretmen (yardımcı) eklenebilsin diye. Şimdilik
+      // yalnızca açan öğretmen.
+      teacherUids: [uid],
+      joinCode: code,
+      studentCount: 0,
+      archived: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAtMs: nowMs,
+    });
+  });
+
+  console.log('Sınıf açıldı', { uid, classId: classRef.id, courseId });
+  return { success: true, classId: classRef.id, name, joinCode };
+});
+
+/**
+ * Sınıfın katılma kodunu değiştirir; eski kod hemen geçersiz olur. Kod yanlış bir gruba
+ * sızdığında öğretmenin elindeki tek araç bu. İçerideki öğrencilere dokunulmuyor.
+ */
+exports.regenerateClassCode = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const classRef = classRefOf(classId);
+  const classSnap = await classRef.get();
+  const classData = classSnap.exists ? classSnap.data() : null;
+  if (!classes.isTeacherOfClass(classData, uid) || !classes.classIsActive(classData)) {
+    throw new functions.https.HttpsError('permission-denied', 'Bu sınıf senin değil.');
+  }
+
+  const joinCode = await commitWithNewJoinCode(classId, (batch, code) => {
+    if (classData.joinCode) batch.delete(db.collection('classJoinCodes').doc(classData.joinCode));
+    batch.update(classRef, { joinCode: code });
+  });
+  return { success: true, joinCode };
+});
+
+/** Öğrenci sınıf koduyla katılır. */
+exports.joinClassByCode = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const { code } = throwIfFailed(classes.normalizeJoinCode(data && data.code));
+
+  // Yanlış kod sınırı: kodlar tahmin edilerek başkasının sınıfına girilmesin. Sayaç
+  // transaction'da değil — iki eşzamanlı yanlış denemenin biri sayılmasa zarar yok.
+  const guardRef = db.collection('classJoinGuards').doc(uid);
+  const nowMs = Date.now();
+  const guardSnap = await guardRef.get();
+  const guard = guardSnap.exists ? guardSnap.data() : null;
+  throwIfFailed(classes.joinGuardCheck(guard, nowMs));
+
+  const codeSnap = await db.collection('classJoinCodes').doc(code).get();
+  if (!codeSnap.exists) {
+    await guardRef.set(classes.joinGuardAfterWrong(guard, nowMs));
+    throw new functions.https.HttpsError('not-found', 'Bu kodla bir sınıf bulunamadı.');
+  }
+  return joinClass(uid, codeSnap.get('classId'), 'code');
+});
+
+/**
+ * Öğretmen, öğrencinin kullanıcı adıyla davet gönderir. Öğrenci kabul edene kadar hiçbir
+ * şey değişmez: davetsiz eklemek, adını bilen her kurs öğretmeninin bir çocuğun ilerlemesini
+ * görebilmesi demek olurdu.
+ */
+exports.inviteStudentToClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const candidates = classes.userIdCandidates(data && data.userId);
+  if (!candidates.length) {
+    throw new functions.https.HttpsError('invalid-argument', 'Kullanıcı adı boş.');
+  }
+
+  const [classSnap, teacherSnap, usersSnap] = await Promise.all([
+    classRefOf(classId).get(),
+    db.collection('users').doc(uid).get(),
+    db.collection('users').where('userId', 'in', candidates).limit(5).get(),
+  ]);
+  // Önce yazıldığı gibi eşleşen; yoksa harf farkıyla eşleşen TEK hesap. Birden fazla hesap
+  // yalnızca harf farkıyla eşleşiyorsa hangisi olduğunu tahmin etmiyoruz.
+  const exact = usersSnap.docs.filter((d) => d.get('userId') === candidates[0]);
+  const matches = exact.length ? exact : usersSnap.docs;
+  if (!matches.length) {
+    throw new functions.https.HttpsError('not-found', 'Bu kullanıcı adıyla bir hesap bulunamadı.');
+  }
+  if (matches.length > 1) {
+    throw new functions.https.HttpsError('failed-precondition', 'Bu ad birden fazla hesapta var; büyük/küçük harfiyle tam yaz.');
+  }
+  const studentSnap = matches[0];
+  const student = studentSnap.data();
+  const classData = classSnap.exists ? classSnap.data() : null;
+  throwIfFailed(classes.inviteDecision(uid, classData, student));
+
+  const studentName = student.name || student.userId || '';
+  if (student.classId === classId) {
+    return { success: true, alreadyMember: true, studentUid: studentSnap.id, studentName };
+  }
+
+  const inviteId = classes.inviteIdOf(classId, studentSnap.id);
+  const inviteRef = db.collection('classInvites').doc(inviteId);
+  const nowMs = Date.now();
+  const previous = await inviteRef.get();
+  const recentlyNotified = previous.exists
+    && previous.get('status') === 'pending'
+    && nowMs - (Number(previous.get('createdAtMs')) || 0) < CLASS_INVITE_RENOTIFY_MS;
+
+  if (!recentlyNotified) {
+    const teacherName = (teacherSnap.exists && teacherSnap.get('name')) || 'Öğretmenin';
+    await inviteRef.set({
+      classId,
+      className: classData.name || '',
+      courseName: classData.courseName || '',
+      teacherUid: uid,
+      teacherName,
+      studentUid: studentSnap.id,
+      studentUserId: student.userId || null,
+      studentName,
+      status: 'pending',
+      createdAtMs: nowMs,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    try {
+      await sendUserNotification(studentSnap.id, {
+        // `account`: uygulamadan kapatılamayan tür. Davet çocuğun kendi öğretmeninden geliyor
+        // ve kaçırılırsa öğretmen öğrencisini göremiyor; ödül bildirimi gibi tavana girmemeli.
+        type: 'account',
+        topic: 'class_invite',
+        title: 'Sınıf daveti',
+        body: `${teacherName} seni "${classData.name || ''}" sınıfına davet etti.`,
+        en: { title: 'Class invite', body: `${teacherName} invited you to the "${classData.name || ''}" class.` },
+        id: { title: 'Undangan kelas', body: `${teacherName} mengundangmu ke kelas "${classData.name || ''}".` },
+        // Öğretmenin cinsiyeti bilinmiyor (يدعوك / تدعوك): fiilsiz cümle.
+        ar: { title: 'دعوة إلى صف', body: `دعوة من ${teacherName} للانضمام إلى صف "${classData.name || ''}".` },
+        data: { inviteId },
+        userData: student,
+      });
+    } catch (e) {
+      // Davet yazıldı; öğrenci uygulamayı açınca görür. Bildirim hatası daveti düşürmemeli.
+      console.error('inviteStudentToClass: bildirim gönderilemedi', { inviteId, error: e.message });
+    }
+  }
+
+  return { success: true, alreadyMember: false, inviteId, studentUid: studentSnap.id, studentName };
+});
+
+/** Öğrenci daveti kabul eder ya da reddeder. */
+exports.respondClassInvite = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const inviteId = readDocId(data && data.inviteId, 'davet');
+  const inviteRef = db.collection('classInvites').doc(inviteId);
+  const snap = await inviteRef.get();
+  throwIfFailed(classes.respondDecision(snap.exists ? snap.data() : null, uid, Date.now()));
+
+  if (!(data && data.accept === true)) {
+    await inviteRef.update({ status: 'declined', respondedAtMs: Date.now() });
+    return { success: true, accepted: false };
+  }
+  const result = await joinClass(uid, snap.get('classId'), 'invite', inviteRef);
+  return Object.assign({ accepted: true }, result);
+});
+
+/** Öğretmen bir öğrenciyi sınıfından çıkarır. */
+exports.removeStudentFromClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const studentUid = readDocId(data && data.studentUid, 'öğrenci');
+  return leaveClass(studentUid, { classId, actorUid: uid });
+});
+
+/** Öğrenci kendi isteğiyle sınıfından ayrılır. Çocuğun verisi; çıkış yolu ondan da olmalı. */
+exports.leaveMyClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  return leaveClass(uid);
+});
+
+/** Bir toplu yazımdaki en fazla işlem: Firestore sınırı 500, pay bırakılıyor. */
+const CLASS_DELETE_BATCH = 400;
+
+/** Dokümanlara aynı işlemi [CLASS_DELETE_BATCH]'lik toplu yazımlarla uygular. */
+async function commitInChunks(docs, apply) {
+  for (let i = 0; i < docs.length; i += CLASS_DELETE_BATCH) {
+    const batch = db.batch();
+    docs.slice(i, i + CLASS_DELETE_BATCH).forEach((d) => apply(batch, d));
+    await batch.commit();
+  }
+}
+
+/**
+ * Sınıfı ve ona bağlı her şeyi siler (deleteClass). Sıra bilerek böyle:
+ *
+ *   1. `archived: true` — silme sürerken kimse katılamasın, davet ya da ödev verilemesin
+ *      (joinDecision / inviteDecision / createHomework classIsActive'e bakıyor). Yarıda kalırsa
+ *      sınıf öğretmenin listesinden düşer ama deleteClass yeniden çağrılabilir (kapanmış sınıf
+ *      da silinebiliyor).
+ *   2. Katılma kodu.
+ *   3. Öğrencilerin üyeliği: `users.classId` bu sınıfı gösteriyorsa alanlar siliniyor, böylece
+ *      uygulama (Ayarlar → Kurs, sınıf ekranı) yeniden "Sınıfa katıl" gösteriyor. Öğrenci listesi
+ *      `members`'tan VE `users.classId` sorgusundan birleştiriliyor; iki kopya bir yerde ayrışmış
+ *      olsa da kimse yarım kalmasın. Her öğrenci kendi transaction'ında: tam o anda başka sınıfa
+ *      geçen öğrencinin yeni üyeliği silinmesin.
+ *   4. Bekleyen (kimsenin almadığı) sorular genel havuza. Sahiplenilmiş sohbetler öğretmende kalıyor.
+ *   5. Davetler (her durumda), ödevler ve ilerlemeleri, en son sınıf dokümanı ve `members`.
+ *
+ * Öğrencinin kural başarısı (homeworkRuleStats/{uid}) öğrencinin; ödev silinince düşürülmüyor
+ * (onHomeworkProgressWritten silinen ilerlemede hiçbir şey yapmıyor).
+ */
+async function deleteClassData(classId, classData) {
+  const classRef = classRefOf(classId);
+  const counts = { students: 0, questions: 0, invites: 0, homeworks: 0 };
+
+  await classRef.update({ archived: true });
+
+  if (classData.joinCode) {
+    const codeRef = db.collection('classJoinCodes').doc(classData.joinCode);
+    const codeSnap = await codeRef.get();
+    if (codeSnap.exists && codeSnap.get('classId') === classId) await codeRef.delete();
+  }
+
+  const [memberSnap, userSnap] = await Promise.all([
+    classRef.collection('members').get(),
+    db.collection('users').where('classId', '==', classId).get(),
+  ]);
+  const studentUids = [...new Set([...memberSnap.docs.map((d) => d.id), ...userSnap.docs.map((d) => d.id)])];
+  const cleared = {};
+  classes.MEMBERSHIP_FIELDS.forEach((f) => { cleared[f] = admin.firestore.FieldValue.delete(); });
+  for (const studentUid of studentUids) {
+    const userRef = db.collection('users').doc(studentUid);
+    const wasMember = await db.runTransaction(async (transaction) => {
+      const s = await transaction.get(userRef);
+      if (!s.exists || s.get('classId') !== classId) return false;
+      transaction.update(userRef, cleared);
+      return true;
+    });
+    if (wasMember) {
+      counts.students++;
+      await retagPendingQuestions(studentUid, classes.questionPoolFields({}, null));
+    }
+  }
+
+  // Öğrenci başka sınıfa geçmiş ama sorusu hâlâ bu sınıfta bekliyorsa (taşıma yarıda kaldıysa).
+  const pendingSnap = await db.collection('questions')
+    .where('classId', '==', classId)
+    .where('status', '==', 'pending')
+    .get();
+  const general = classes.questionPoolFields({}, null);
+  await commitInChunks(pendingSnap.docs, (batch, d) => batch.update(d.ref, general));
+  counts.questions = pendingSnap.size;
+
+  const inviteSnap = await db.collection('classInvites').where('classId', '==', classId).get();
+  await commitInChunks(inviteSnap.docs, (batch, d) => batch.delete(d.ref));
+  counts.invites = inviteSnap.size;
+
+  // recursiveDelete toplu yazım sınırına takılmıyor (BulkWriter); ilerlemeler alt koleksiyonda.
+  const homeworkSnap = await db.collection('homeworks').where('classId', '==', classId).get();
+  for (const d of homeworkSnap.docs) await db.recursiveDelete(d.ref);
+  counts.homeworks = homeworkSnap.size;
+
+  await db.recursiveDelete(classRef);
+  return counts;
+}
+
+/**
+ * Öğretmen kendi sınıfını siler. Geri alınamaz; uygulama önce onay soruyor
+ * (TeacherClassDetailFragment). Yalnızca sınıfın öğretmeni (classes.deleteClassDecision).
+ * Sınıf zaten yoksa başarı dönüyor: iki kez basılan düğme hata göstermesin.
+ */
+exports.deleteClass = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const snap = await classRefOf(classId).get();
+  if (!snap.exists) return { success: true, deleted: false };
+  throwIfFailed(classes.deleteClassDecision(snap.data(), uid));
+
+  const counts = await deleteClassData(classId, snap.data());
+  console.log('Sınıf silindi', { uid, classId, ...counts });
+  return { success: true, deleted: true, ...counts };
+});
+
+/**
+ * Silinen hesabın sınıf izlerini temizler (cleanupUserOnDelete). Kullanıcı dokümanına
+ * bakmıyor, çünkü istemci (AccountDeletionHelper) onu Auth kaydından ÖNCE siliyor; üyelik
+ * `members` alt koleksiyonundan bulunuyor (collection group, bkz. firestore.indexes.json).
+ *
+ * Öğretmen silindiyse sınıflarından çıkarılıyor; öğretmensiz kalan sınıf kapanıyor ve
+ * öğrencilerin yeni soruları genel havuza düşüyor (classIsActive).
+ */
+async function removeDeletedUserFromClasses(uid) {
+  const counts = { memberships: 0, invites: 0, teacherClasses: 0 };
+
+  const memberSnap = await db.collectionGroup('members').where('uid', '==', uid).get();
+  for (const doc of memberSnap.docs) {
+    const classRef = doc.ref.parent.parent;
+    const batch = db.batch();
+    batch.delete(doc.ref);
+    batch.update(classRef, { studentCount: admin.firestore.FieldValue.increment(-1) });
+    await batch.commit().catch((e) => console.error('üyelik silinemedi', { uid, error: e.message }));
+    counts.memberships++;
+  }
+
+  const inviteSnap = await db.collection('classInvites').where('studentUid', '==', uid).get();
+  for (const doc of inviteSnap.docs) {
+    await doc.ref.delete();
+    counts.invites++;
+  }
+
+  const teacherSnap = await db.collection('classes').where('teacherUids', 'array-contains', uid).get();
+  for (const doc of teacherSnap.docs) {
+    const remaining = (doc.get('teacherUids') || []).filter((t) => t !== uid);
+    await doc.ref.update({
+      teacherUids: remaining,
+      ...(remaining.length ? {} : { archived: true }),
+    });
+    counts.teacherClasses++;
+  }
+  return counts;
+}
+
+// Testlerin Auth tetikleyicisini beklemeden çalıştırabilmesi için.
+exports._removeDeletedUserFromClasses = removeDeletedUserFromClasses;
+
+// ─── Ödevler ────────────────────────────────────────────────────────────────
+//
+// Kurs öğretmeni sınıfının tamamına ya da seçtiği öğrencilere ödev verir. Ödevde yalnızca
+// ayarlar saklanıyor; soruları öğrencinin telefonu her adımda üretiyor (HomeworkEngine.kt).
+// Model ve doğrulama için homework.js'in başlık yorumuna bakın.
+//
+// Ödevi yalnızca bu fonksiyon yazıyor (kurallarda istemciye kapalı): sınıfın öğretmeni olmak,
+// öğrencilerin gerçekten sınıfta olması ve aralıklar burada denetleniyor. İlerlemeyi ise
+// öğrenci kendisi yazıyor; kurallar yalnızca "bir adım ileri" yazımına izin veriyor.
+
+exports.createHomework = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const classId = readDocId(data && data.classId, 'sınıf');
+  const { config } = throwIfFailed(homework.normalizeConfig(data && data.config));
+  const target = throwIfFailed(homework.normalizeTarget(data && data.target));
+
+  const [classSnap, teacherSnap, countSnap] = await Promise.all([
+    classRefOf(classId).get(),
+    db.collection('users').doc(uid).get(),
+    db.collection('homeworks').where('classId', '==', classId).count().get(),
+  ]);
+  const classData = classSnap.exists ? classSnap.data() : null;
+  const teacher = teacherSnap.exists ? teacherSnap.data() : null;
+  if (!classes.isApprovedTeacher(teacher) || !classes.isTeacherOfClass(classData, uid) || !classes.classIsActive(classData)) {
+    throw new functions.https.HttpsError('permission-denied', 'Bu sınıf senin değil.');
+  }
+  if (countSnap.data().count >= homework.MAX_HOMEWORKS_PER_CLASS) {
+    throw new functions.https.HttpsError(
+      'resource-exhausted',
+      `Bir sınıfta en fazla ${homework.MAX_HOMEWORKS_PER_CLASS} ödev olabilir. Eskilerden birini silin.`
+    );
+  }
+
+  let recipients;
+  if (target.wholeClass) {
+    const members = await classRefOf(classId).collection('members').get();
+    recipients = members.docs.map((d) => d.id);
+  } else {
+    const snaps = await Promise.all(target.studentUids.map((sid) => classMemberRef(classId, sid).get()));
+    if (snaps.some((s) => !s.exists)) {
+      throw new functions.https.HttpsError('failed-precondition', 'Seçilen öğrencilerden biri artık sınıfta değil.');
+    }
+    recipients = target.studentUids;
+  }
+
+  const teacherName = teacher.name || 'Öğretmenin';
+  const ref = db.collection('homeworks').doc();
+  await ref.set({
+    classId,
+    courseId: classData.courseId || null,
+    className: classData.name || '',
+    teacherUid: uid,
+    teacherName,
+    config,
+    blockCount: homework.blockCount(config.questionCount),
+    // Sınıfa verilen ödevde liste boş: sınıfa sonradan katılan da görsün diye kurallar
+    // sınıfa bakıyor (firestore.rules, homeworkVisibleToMe).
+    wholeClass: target.wholeClass,
+    assignedUids: target.wholeClass ? [] : recipients,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    createdAtMs: Date.now(),
+  });
+
+  // Bildirim en iyi çabayla: gitmeyen bildirim ödevi düşürmesin, öğrenci Görevler'de görür.
+  const body = `${teacherName}: ${homework.homeworkSummary(config)}, ${config.questionCount} soru`;
+  await Promise.all(recipients.map((sid) =>
+    sendUserNotification(sid, {
+      type: 'homework',
+      topic: 'homework',
+      title: 'Yeni ödev',
+      body,
+      en: {
+        title: 'New homework',
+        body: `${teacherName}: ${homework.homeworkSummary(config, 'en')}, ${config.questionCount} ${config.questionCount === 1 ? 'question' : 'questions'}`,
+      },
+      // Endonezcede ad çoğul almıyor: "1 soal", "10 soal".
+      id: { title: 'PR baru', body: `${teacherName}: ${homework.homeworkSummary(config, 'id')}, ${config.questionCount} soal` },
+      // Arapçada sayı "etiket: sayı" biçiminde (docs/CEVIRI_SOZLUGU_AR.md).
+      ar: { title: 'واجب جديد', body: `${teacherName}: ${homework.homeworkSummary(config, 'ar')}، الأسئلة: ${config.questionCount}` },
+      data: { homeworkId: ref.id },
+    }).catch((e) => console.error('createHomework: bildirim gönderilemedi', { sid, error: e.message }))
+  ));
+
+  console.log('Ödev verildi', { uid, classId, homeworkId: ref.id, recipients: recipients.length });
+  return { success: true, homeworkId: ref.id, recipients: recipients.length };
+});
+
+/**
+ * Kural sayımını öğrencinin toplamına (homeworkRuleStats/{uid}), son ~50 işlem penceresine, ustalık
+ * aşamasına ve günlük kayda (months/{yyyy-mm}.days.{gg}) ekler. Ödevler ve dersler/Sobi aynı yoldan.
+ * [beforeWrite]: işlem içinde önceki belgeye bakıp yazımı reddedebilir (sıklık sınırı).
+ */
+async function writeRuleTally(studentUid, tally, questions, { extraFields = {}, beforeWrite = null } = {}) {
+  const now = Date.now();
+  const statsRef = db.collection('homeworkRuleStats').doc(studentUid);
+  const { month, day } = homework.trDayKey(now);
+  const inc = admin.firestore.FieldValue.increment;
+  const t = {};
+  for (const { key, c, w } of tally) t[key] = { c: inc(c), w: inc(w) };
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(statsRef);
+    const prev = snap.exists ? snap.data() : {};
+    if (beforeWrite) beforeWrite(prev, now);
+    // Boş harita yazılmamalı: merge'de Firestore boş haritayı yaprak sayıp alanın tamamını boşaltıyor.
+    // Kurala bağlanamayan soru (yalnızca soru sayısı) gelince öğrencinin bütün kural geçmişi
+    // siliniyordu (hata 02.11.2026). Dolu haritalar kural kural birleşiyor, öteki kurallar duruyor.
+    const next = Object.fromEntries(Object.entries(homework.applyBlockToStats(prev, tally))
+      .filter(([, v]) => Object.keys(v).length));
+    tx.set(statsRef, { ...next, ...extraFields, updatedAtMs: now }, { merge: true });
+    tx.set(statsRef.collection('months').doc(month), {
+      days: { [day]: { q: { c: inc(questions.c), w: inc(questions.w) }, t } },
+      updatedAtMs: now,
+    }, { merge: true });
+  });
+}
+
+/**
+ * Derslerden ve Sobi ile çalışmadan gelen kural sayımı (uygulama biriktirip gönderiyor; SobiRuleStats).
+ * Ödevlerle aynı toplama eklenir: veli panelindeki "Kural başarısı" ve sınıf öğretmeni hepsini görür
+ * (kullanıcı kararı 01.11.2026). Sınırlar homework.sanitizeExtraTally'de; en sık 3 sn'de bir
+ * (uygulama ~4 sn biriktiriyor; reddedilen sayım uygulamada bekler, sonra yeniden gönderilir).
+ */
+exports.recordRuleTally = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const { tally, questions } = homework.sanitizeExtraTally(data);
+  if (!tally.length && questions.c + questions.w === 0) return { success: true, written: false };
+  await writeRuleTally(uid, tally, questions, {
+    extraFields: { extraTallyAtMs: Date.now() },
+    beforeWrite: (prev, now) => {
+      const last = Number(prev.extraTallyAtMs) || 0;
+      if (now - last < 3000) throw new functions.https.HttpsError('resource-exhausted', 'Çok sık gönderildi.');
+    },
+  });
+  return { success: true, written: true };
+});
+
+/**
+ * Sobi testinin kural seviyeleri (uygulama: SobiDailyTest.saveLevels). Kural başarısıyla aynı belgede
+ * (homeworkRuleStats/{uid}.sobiLevel): telefon değişince kaybolmuyor, veli panelindeki "Kural başarısı"
+ * ve sınıf öğretmeni görüyor. Sınırlar homework.sanitizeSobiLevels'ta; en sık 3 sn'de bir.
+ */
+exports.recordSobiLevels = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const ref = db.collection('homeworkRuleStats').doc(uid);
+  let written = {};
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref);
+    const prev = snap.exists ? snap.data() : {};
+    const now = Date.now();
+    if (now - (Number(prev.sobiLevelAtMs) || 0) < 3000) {
+      throw new functions.https.HttpsError('resource-exhausted', 'Çok sık gönderildi.');
+    }
+    written = homework.sanitizeSobiLevels(data, prev.sobiLevel);
+    if (!Object.keys(written).length) return;
+    tx.set(ref, { sobiLevel: written, sobiLevelAtMs: now }, { merge: true });
+  });
+  return { success: true, levels: written };
+});
+
+/** Öğretmen ödevi siler; öğrencilerin ilerlemesi de gider. */
+exports.deleteHomework = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const homeworkId = readDocId(data && data.homeworkId, 'ödev');
+  const ref = db.collection('homeworks').doc(homeworkId);
+  const snap = await ref.get();
+  if (!snap.exists) return { success: true, deleted: false };
+  const classSnap = await classRefOf(snap.get('classId')).get();
+  // Ödevi veren öğretmen ya da sınıfın (şu anki) öğretmenlerinden biri.
+  if (snap.get('teacherUid') !== uid && !classes.isTeacherOfClass(classSnap.exists ? classSnap.data() : null, uid)) {
+    throw new functions.https.HttpsError('permission-denied', 'Bu ödev senin değil.');
+  }
+  await db.recursiveDelete(ref);
+  return { success: true, deleted: true };
+});
+
+/**
+ * Öğrenci ödevin son adımını bitirdi: ödevin `doneUids` listesine eklenir (öğretmenin listesindeki
+ * "12 öğrenciden 8'i bitirdi" özeti buradan) ve sınıfın öğretmenlerine bildirim gider.
+ *
+ * Tetikleyici, çünkü ilerlemeyi öğrenci kendisi yazıyor (kurallar bir adım ileriye izin
+ * veriyor); bitişi istemciye bırakmak, `doneUids`'i istemciye açmak demek olurdu. Bitiş YALNIZCA
+ * eşiğin geçildiği yazımda işleniyor: aynı doküman sonradan bir daha yazılmıyor (kurallar son
+ * adımdan ötesini reddediyor) ama tetikleyici iki kez çalışsa da arrayUnion aynı sonucu verir.
+ */
+exports.onHomeworkProgressWritten = functions.firestore
+  .document('homeworks/{homeworkId}/studentProgress/{studentUid}')
+  .onWrite(async (change, context) => {
+    if (!change.after.exists) return null;
+    const { homeworkId, studentUid } = context.params;
+    const after = change.after.data() || {};
+    const before = change.before.exists ? change.before.data() || {} : {};
+
+    const hwRef = db.collection('homeworks').doc(homeworkId);
+    const hwSnap = await hwRef.get();
+    if (!hwSnap.exists) return null;
+    const hw = hwSnap.data();
+
+    // Kural kural başarı: adımın sayımı öğrencinin toplamına (homeworkRuleStats/{uid}), son ~50
+    // işlem penceresine ve ustalık aşamasına (homework.applyBlockToStats; pencere okuyup yazdığı
+    // için işlem içinde). Ayrıca günlük kayıt (months/{yyyy-mm}.days.{gg}): soru ve kural sayımı,
+    // ödev başarısı grafiği buradan. Yalnızca yeni adım yazıldığında; istatistiği yalnızca sunucu
+    // yazıyor (kurallarda yazım kapalı).
+    const newBlock = (Number(after.completedBlocks) || 0) > (Number(before.completedBlocks) || 0);
+    const tally = newBlock ? homework.sanitizeRuleTally(after.ruleTally) : [];
+    const questions = newBlock ? homework.blockQuestionCounts(before, after) : { c: 0, w: 0 };
+    if (tally.length || questions.c + questions.w > 0) {
+      await writeRuleTally(studentUid, tally, questions)
+        .catch((e) => console.error('onHomeworkProgressWritten: kural sayımı yazılamadı', { studentUid, error: e.message }));
+    }
+
+    const total = Number(hw.blockCount) || 0;
+    const isDone = (Number(after.completedBlocks) || 0) >= total;
+    const wasDone = (Number(before.completedBlocks) || 0) >= total;
+    if (!total || !isDone || wasDone) return null;
+
+    await hwRef.update({ doneUids: admin.firestore.FieldValue.arrayUnion(studentUid) });
+
+    // "8/12": hedef, sınıfa verilen ödevde sınıfın ŞU ANKİ öğrencileri, seçilerek verilende
+    // seçilenler. Bitirenlerden yalnızca hâlâ hedefte olanlar sayılıyor; sınıftan ayrılan biri
+    // sayıyı şişirmesin (öğretmenin listesi de aynı hesabı yapıyor, TeacherHomeworkListFragment).
+    const doneUids = [...new Set([...(hw.doneUids || []), studentUid])];
+    const [classSnap, membersSnap] = await Promise.all([
+      classRefOf(hw.classId).get(),
+      classRefOf(hw.classId).collection('members').get(),
+    ]);
+    const classData = classSnap.exists ? classSnap.data() : {};
+    const memberNames = new Map(membersSnap.docs.map((d) => [d.id, d.get('name') || d.get('userId') || '']));
+    const targetUids = hw.wholeClass === true ? [...memberNames.keys()] : (hw.assignedUids || []);
+    const doneParams = {
+      studentName: memberNames.get(studentUid) || 'Bir öğrenci',
+      summary: homework.homeworkSummary(hw.config),
+      correct: Number(after.correct) || 0,
+      answered: Number(after.answered) || 0,
+      doneCount: homework.countDone(doneUids, targetUids),
+      targetCount: targetUids.length,
+    };
+    const text = homework.doneNoticeText(doneParams);
+
+    const teacherUids = Array.isArray(classData.teacherUids) && classData.teacherUids.length
+      ? classData.teacherUids
+      : [hw.teacherUid].filter(Boolean);
+    await Promise.all(teacherUids.map((tid) =>
+      sendUserNotification(tid, {
+        type: 'homework_done',
+        topic: 'homework_done',
+        title: text.title,
+        body: text.body,
+        en: homework.doneNoticeText({
+          ...doneParams, studentName: memberNames.get(studentUid) || 'A student', summary: homework.homeworkSummary(hw.config, 'en'),
+        }, 'en'),
+        id: homework.doneNoticeText({
+          ...doneParams, studentName: memberNames.get(studentUid) || 'Seorang murid', summary: homework.homeworkSummary(hw.config, 'id'),
+        }, 'id'),
+        ar: homework.doneNoticeText({
+          ...doneParams, studentName: memberNames.get(studentUid) || 'طالب', summary: homework.homeworkSummary(hw.config, 'ar'),
+        }, 'ar'),
+        data: { homeworkId, classId: hw.classId },
+      }).catch((e) => console.error('onHomeworkProgressWritten: bildirim gönderilemedi', { tid, error: e.message }))
+    ));
+    console.log('Ödev bitti', { homeworkId, studentUid, body: text.body });
+    return null;
+  });
+
+/**
+ * Silinen öğrencinin ödev ilerlemeleri (cleanupUserOnDelete). Ödev dokümanları öğretmenin;
+ * yalnızca öğrencinin `studentProgress` kayıtları siliniyor (collection group, bkz.
+ * firestore.indexes.json).
+ */
+async function removeDeletedUserHomeworkProgress(uid) {
+  // Günlük kayıtlar (months alt koleksiyonu) da gitsin.
+  await db.recursiveDelete(db.collection('homeworkRuleStats').doc(uid));
+  const snap = await db.collectionGroup('studentProgress').where('uid', '==', uid).get();
+  for (let i = 0; i < snap.docs.length; i += 400) {
+    const batch = db.batch();
+    snap.docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  return snap.size;
+}
+
+exports._removeDeletedUserHomeworkProgress = removeDeletedUserHomeworkProgress;
+
+/**
  * Abonelik (Pro / Lite) doğrulama ve yenileme.
  *
  * Tüketilebilirlerden farklı olarak TEKRAR TEKRAR çağrılabilir: uygulama her açıldığında
  * istemci elindeki aboneliği yeniden doğrulatır, sunucu da `plan` ve `planExpiresAt`
  * alanlarını günceller. Böylece iptal eden kullanıcı, süresi dolduğunda Pro olmaktan çıkar.
  */
-exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
-  }
+/**
+ * Bir abonelik token'ını Play'e doğrulatır ve kullanıcının planını günceller.
+ *
+ * İKİ ÇAĞIRAN
+ *   1. redeemGooglePlaySubscription — istemci uygulamayı her açtığında doğrulatır.
+ *   2. playSubscriptionNotification — Google, yenileme/iptal/süre dolumu olduğunda
+ *      istemciden bağımsız olarak haber verir.
+ *
+ * İkincisi olmadan, aboneliğini iptal eden kullanıcının `plan` alanı Firestore'da
+ * kalıcı olarak eski değerinde donar (gönderilecek token kalmadığı için istemci de
+ * doğrulatamaz); ayrıca aboneliği aldığı Play hesabından farklı bir cihazda uygulamayı
+ * kullanan kişi, ödemeye devam etmesine rağmen yenilemesi kaydedilmediği için Free'ye
+ * düşerdi.
+ */
+async function syncSubscriptionForToken(uid, claimedProductId, purchaseToken, welcomeOptions) {
   assertBillingConfigured();
 
-  const uid = context.auth.uid;
-  const { productId, purchaseToken } = readPurchaseArgs(data);
+  // Hoş geldin kredisi YALNIZCA istemci yolundan verilir (bkz. redeemGooglePlaySubscription).
+  // RTDN'de istemci yok, dolayısıyla cihaz bilgisi de yok; oradan kredi verilseydi cihaz
+  // kontrolü, bildirim istemciden önce geldiğinde sessizce delinirdi. İstemci uygulama her
+  // açılışta aboneliği yeniden doğrulattığı için kredi saniyeler içinde düşüyor.
+  const allowWelcomeCredit = !!(welcomeOptions && welcomeOptions.allowWelcomeCredit);
+  const deviceHash = allowWelcomeCredit ? hashDeviceKey(welcomeOptions.deviceKey) : null;
 
-  const entry = PLAY_SUBSCRIPTION_CATALOG[productId];
-  if (!entry) {
-    throw new functions.https.HttpsError('invalid-argument', 'Tanımsız abonelik: ' + productId);
+  // Ön kontrol: istemcinin bildirdiği ürün katalogda bile yoksa Play'e sormaya değmez.
+  // Asıl ürün kararı doğrulamadan SONRA veriliyor (bkz. resolveVerifiedProductId).
+  if (!PLAY_SUBSCRIPTION_CATALOG[claimedProductId]) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'Tanımsız abonelik: ' + claimedProductId
+    );
   }
 
   let subscription;
@@ -1488,21 +4934,70 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
     });
     subscription = response.data;
   } catch (error) {
-    console.error('Abonelik doğrulaması başarısız', { uid, productId, error: error.message });
+    console.error('Abonelik doğrulaması başarısız', {
+      uid,
+      productId: claimedProductId,
+      error: error.message,
+    });
     throw new functions.https.HttpsError('permission-denied', 'Abonelik doğrulanamadı.');
   }
 
-  // Yalnızca gerçekten aktif durumlar plan verir. Ödemesi bekleyen / askıya alınmış /
-  // iptal edilip süresi dolmuş abonelikler Free'ye düşer.
-  const activeStates = ['SUBSCRIPTION_STATE_ACTIVE', 'SUBSCRIPTION_STATE_IN_GRACE_PERIOD'];
-  const isActive = activeStates.includes(subscription.subscriptionState);
+  // Ürün, istemcinin iddiasından DEĞİL Play'in cevabından belirlenir.
+  const verifiedProduct = resolveVerifiedProductId(
+    claimedProductId,
+    subscriptionProductIds(subscription)
+  );
+  const productId = verifiedProduct.productId;
+  if (verifiedProduct.mismatch) {
+    console.warn('Abonelik ürünü istemcinin bildirdiğinden farklı — Play esas alındı', {
+      uid,
+      claimed: claimedProductId,
+      actual: productId,
+    });
+  } else if (!verifiedProduct.verified) {
+    console.warn('Play abonelik cevabında ürün bilgisi yok — istemcinin bildirdiği kullanıldı', {
+      uid,
+      productId,
+    });
+  }
 
-  const expiryRaw =
-    (subscription.lineItems && subscription.lineItems.length > 0
-      ? subscription.lineItems[subscription.lineItems.length - 1].expiryTime
-      : null) || null;
-  const expiryMs = expiryRaw ? Date.parse(expiryRaw) : 0;
-  const stillValid = isActive && Number.isFinite(expiryMs) && expiryMs > Date.now();
+  const entry = PLAY_SUBSCRIPTION_CATALOG[productId];
+  if (!entry) {
+    throw new functions.https.HttpsError('invalid-argument', 'Tanımsız abonelik: ' + productId);
+  }
+
+  // Hak veren durumlar + bitiş tarihi kontrolü tek yerde (bkz. subscriptionEntitlement).
+  const { stillValid, expiryRaw, expiryMs } = subscriptionEntitlement(subscription, Date.now());
+
+  // Play'in NE dediğini her senkronda yaz.
+  //
+  // Bu satır olmadan "abonelik iptal edildi ve plan Free'ye düştü" gözlemi teşhis
+  // edilemiyordu: sonucun sebebi Play'in durumu mu (gerçekten süresi dolmuş), lisans
+  // testçisinde dönemlerin dakikalara sıkışması mı, yoksa bizim kararımız mı ayırt
+  // edilemiyordu. Başarılı senkronda hiç log yoktu; yalnızca hata ve istisna yolları
+  // loglanıyordu.
+  //
+  // console.log DEĞİL functions.logger: `console.log('mesaj', {nesne})` biçimi nesneyi
+  // util.inspect ile yazıyor ve nesne bir satıra sığmayınca satır satır bölünüyor.
+  // Cloud Logging her satırı AYRI bir kayıt yaptığı için log okunamaz hale geliyordu —
+  // ilk kayıtta yalnızca "Abonelik senkronu {" görünüyor, alanlar alttaki kayıtlara
+  // dağılıyordu. functions.logger tek bir yapılandırılmış kayıt üretiyor ve alanlar
+  // jsonPayload altında sorgulanabilir oluyor (ör. jsonPayload.state="...").
+  functions.logger.log('Abonelik senkronu', {
+    uid,
+    productId,
+    state: subscription.subscriptionState || null,
+    expiry: expiryRaw,
+    // `|| 0`, Math.round'un negatif sıfır üretmesini engelliyor (logda "-0" görünüyordu).
+    expiresInMinutes: expiryMs ? Math.round((expiryMs - Date.now()) / 60000) || 0 : null,
+    plan: stillValid ? entry.plan : 'Free',
+    // Deneme tespiti sahada doğrulanabilsin diye loglanıyor: `isTrialPeriod` dolaylı bir
+    // sinyale bakıyor (offerDetails.offerId) ve yanlış sonuç hiçbir hata üretmiyor —
+    // deneme bitiş bildirimi yalnızca sessizce hiç gitmiyor. Teklifin kimliği de yazılıyor,
+    // çünkü ileride birden fazla teklif olursa ayrımı o yapacak.
+    trial: isTrialPeriod(subscription),
+    offerId: subscriptionOfferIds(subscription).join(',') || null,
+  });
 
   const userRef = db.collection('users').doc(uid);
 
@@ -1510,14 +5005,46 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
   // işlendiyse reddet. (Aynı uid tekrar doğrulatabilir — yenileme akışı bunu gerektirir.)
   const purchaseRef = db.collection('processedPurchases').doc(purchaseToken);
 
+  const deviceGrantRef = deviceHash
+    ? db.collection('welcomeCreditGrants').doc(deviceHash)
+    : null;
+  const sobiRef = db.collection('sobiChats').doc(uid);
+
+  // Devir kararı transaction'dan ÖNCE veriliyor: Auth sorgusu bir yan etkili okuma ve
+  // transaction içinde yapılmamalı. Uid'ler yeniden kullanılmadığı için araya girme
+  // (silinen hesabın geri gelmesi) pratikte imkânsız.
+  let rebindDecision = { allowed: true, rebind: false, reason: 'no_existing_record' };
+  const existingPurchaseSnap = await purchaseRef.get();
+  const storedUid = existingPurchaseSnap.exists ? existingPurchaseSnap.data().uid : null;
+  if (storedUid && storedUid !== uid) {
+    let storedUidStillExists = true;
+    try {
+      storedUidStillExists = await firebaseUserExists(storedUid);
+    } catch (error) {
+      // Auth'a ulaşılamadı: devri VARSAYMA, güvenli yön reddetmek.
+      console.error('Token sahibi kontrol edilemedi', { uid, storedUid, error: error.message });
+      storedUidStillExists = true;
+    }
+    rebindDecision = resolveTokenRebind(storedUid, uid, storedUidStillExists);
+    if (rebindDecision.rebind) {
+      console.log('Abonelik token\'ı yeni hesaba devrediliyor', { from: storedUid, to: uid, productId });
+    }
+  }
+
   try {
     await db.runTransaction(async (transaction) => {
-      const [userDoc, purchaseDoc] = await Promise.all([
+      // sobiChats her seferinde okunuyor: hediye kararı okumalardan sonra veriliyor ve
+      // transaction'da yazmadan sonra okuma yapılamıyor. Tek belge, ucuz.
+      const [userDoc, purchaseDoc, deviceGrantDoc, sobiDoc] = await Promise.all([
         transaction.get(userRef),
         transaction.get(purchaseRef),
+        deviceGrantRef ? transaction.get(deviceGrantRef) : Promise.resolve(null),
+        transaction.get(sobiRef),
       ]);
 
-      if (purchaseDoc.exists && purchaseDoc.data().uid !== uid) {
+      // Sahiplik: tek bir aboneliğin birden fazla hesaba Pro vermesini engeller.
+      // Tek istisna, sahibinin hesabı silinmiş token'ın devri (bkz. resolveTokenRebind).
+      if (purchaseDoc.exists && purchaseDoc.data().uid !== uid && !rebindDecision.rebind) {
         throw new functions.https.HttpsError(
           'permission-denied',
           'Bu abonelik başka bir hesaba tanımlı.'
@@ -1526,6 +5053,22 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
       if (!userDoc.exists) {
         throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
       }
+
+      // Hoş geldin kredisi yalnızca ilk Pro aktivasyonunda verilir. İşaretçi KULLANICI
+      // dokümanında değil burada tutulur: kullanıcı kendi dokümanını silip yeniden
+      // oluşturabildiği için (bkz. firestore.rules) orada tutulsaydı sil-yarat döngüsüyle
+      // sınırsız kredi üretilebilirdi. processedPurchases istemciye tamamen kapalıdır.
+      const alreadyWelcomed = purchaseDoc.exists && purchaseDoc.data().welcomeCreditGranted === true;
+      // Cihaz kapısı: aynı telefonda yeni Google + yeni uygulama hesabı açarak ücretsiz
+      // deneme hediyesini tekrar tekrar almayı engeller. Token kapısı (yukarıdaki
+      // alreadyWelcomed) yalnızca AYNI aboneliği koruyor; yeni abonelik yeni token demek.
+      const alreadyWelcomedOnDevice = !!(deviceGrantDoc && deviceGrantDoc.exists);
+      const grantWelcome =
+        stillValid &&
+        entry.plan === 'Pro' &&
+        allowWelcomeCredit &&
+        !alreadyWelcomed &&
+        !alreadyWelcomedOnDevice;
 
       transaction.set(
         purchaseRef,
@@ -1536,15 +5079,83 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
           subscriptionState: subscription.subscriptionState || null,
           expiryTime: expiryRaw,
           processedAt: admin.firestore.FieldValue.serverTimestamp(),
+          welcomeCreditGranted: alreadyWelcomed || grantWelcome,
+          // Devir izi: destek talebinde "abonelik neden başka hesapta" sorusu
+          // cevaplanabilsin diye. Hoş geldin kredisi devirde TEKRAR VERİLMEZ —
+          // welcomeCreditGranted token'da kalıyor, cihaz kapısı da ayrıca duruyor.
+          ...(rebindDecision.rebind
+            ? {
+                previousUids: admin.firestore.FieldValue.arrayUnion(storedUid),
+                rebindAt: admin.firestore.FieldValue.serverTimestamp(),
+              }
+            : {}),
         },
         { merge: true }
       );
 
-      transaction.update(userRef, {
-        plan: stillValid ? entry.plan : 'Free',
-        planExpiresAt: stillValid ? expiryMs : null,
-        planProductId: stillValid ? productId : null,
-      });
+      const newPlan = stillValid ? entry.plan : 'Free';
+      const planDecision = resolvePlanUpdate(
+        userDoc.data(),
+        productId,
+        newPlan,
+        purchaseToken,
+        subscription.linkedPurchaseToken || null
+      );
+      const planUpdate = {};
+      if (planDecision.write) {
+        planUpdate.plan = newPlan;
+        planUpdate.planExpiresAt = stillValid ? expiryMs : null;
+        planUpdate.planProductId = stillValid ? productId : null;
+        // Deneme bitiş zamanı: deneme bitiş bildirimi (sendTrialEndingNotices) buna bakıyor.
+        // Deneme bitip ilk ödeme alındığında Play artık teklif döndürmüyor, yani bu alan
+        // kendiliğinden null'a dönüyor — temizlemeyi ayrıca hatırlamak gerekmiyor.
+        planUpdate.planTrialEndsAt = stillValid && isTrialPeriod(subscription) ? expiryMs : null;
+        // Planı HANGİ aboneliğin verdiği kaydediliyor; sahiplik kararı buna dayanıyor
+        // (bkz. ownsStoredPlan). Ham token değil, özeti.
+        planUpdate.planPurchaseTokenHash = stillValid
+          ? purchaseTokenFingerprint(purchaseToken)
+          : null;
+      } else {
+        // Daha yüksek rütbeli bir abonelik aktif; bu token onu ezmemeli.
+        console.log('Plan yazılmadı', {
+          uid,
+          productId,
+          newPlan,
+          reason: planDecision.reason,
+          activePlan: effectivePlan(userDoc.data()),
+        });
+      }
+
+      if (grantWelcome) {
+        const sobiCredits =
+          (sobiDoc.exists ? Number(sobiDoc.get('credits')) || 0 : 0) + PRO_WELCOME_SOBI_CREDITS;
+        transaction.set(sobiRef, { credits: sobiCredits }, { merge: true });
+        // Üst para paneli users belgesini dinliyor, sobiChats'i okuyamıyor: yalnızca gösterim
+        // kopyası (bkz. redeemGooglePlayPurchase).
+        planUpdate.sobiCredits = sobiCredits;
+        if (deviceGrantRef) {
+          // Yalnızca özet + zaman damgası; ham cihaz kimliği hiçbir yerde tutulmuyor.
+          transaction.set(deviceGrantRef, {
+            grantedAt: admin.firestore.FieldValue.serverTimestamp(),
+            uid,
+            productId,
+          });
+        }
+        console.log('Pro hoş geldin Sobi kredisi verildi', {
+          uid,
+          productId,
+          sobiCredits: PRO_WELCOME_SOBI_CREDITS,
+          deviceChecked: !!deviceGrantRef,
+        });
+      } else if (stillValid && entry.plan === 'Pro' && allowWelcomeCredit && alreadyWelcomedOnDevice) {
+        console.log('Hoş geldin kredisi verilmedi: bu cihaza daha önce verilmiş', { uid, productId });
+      }
+
+      // planUpdate boş kalabilir (plan yazılmadı ve kredi verilmedi); Firestore boş
+      // update'i reddediyor.
+      if (Object.keys(planUpdate).length > 0) {
+        transaction.update(userRef, planUpdate);
+      }
     });
 
     return {
@@ -1557,7 +5168,198 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
     console.error('Abonelik işlenemedi', { uid, productId, error });
     throw new functions.https.HttpsError('internal', 'Abonelik işlenemedi.');
   }
+}
+
+/**
+ * Bu cihaz Pro hoş geldin kredisini daha önce aldı mı?
+ *
+ * NEDEN GEREKLİ
+ *   AskQuestionOpenFragment'ın vaadi "öğretmene soru sor". Cihaz hoş geldin kredisini
+ *   daha önce tükettiyse (aynı telefonda ikinci uygulama hesabı), kullanıcı denemeyi
+ *   başlatsa bile kredi ALMAZ — Pro olur ama soru soramaz. O kullanıcıya bu tanıtımı
+ *   göstermek, ekranın tek işlevini teslim etmemek demek.
+ *
+ *   İstemci bu kontrolü kendisi yapamıyor: doküman kimliği gizli salt ile HMAC'lenmiş ve
+ *   koleksiyon istemciye kapalı. Bu yüzden ayrı bir uç.
+ *
+ * Salt tanımlı değilse cihaz kapısı zaten uygulanmıyor, dolayısıyla eligible=true döner —
+ * sunucunun kendi davranışıyla tutarlı.
+ */
+exports.checkWelcomeCreditEligibility = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const rawDeviceKey = typeof (data || {}).deviceKey === 'string' ? data.deviceKey : '';
+  const deviceHash = hashDeviceKey(rawDeviceKey);
+  if (!deviceHash) return { eligible: true, checked: false };
+
+  const snap = await db.collection('welcomeCreditGrants').doc(deviceHash).get();
+  return { eligible: !snap.exists, checked: true };
 });
+
+exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const { productId, purchaseToken, deviceKey } = readPurchaseArgs(data);
+  // İstemci yolu: hoş geldin kredisi burada verilebilir, cihaz bilgisi elimizde.
+  return syncSubscriptionForToken(context.auth.uid, productId, purchaseToken, {
+    allowWelcomeCredit: true,
+    deviceKey,
+  });
+});
+
+// ─── Google Play gerçek zamanlı abonelik bildirimleri (RTDN) ────────────────
+//
+// Google, abonelik durumu değiştiğinde (yenileme, iptal, süre dolumu, ödeme sorunu,
+// duraklatma, iade) bu Pub/Sub konusuna mesaj bırakır. İstemciye hiç bağımlı değildir.
+//
+// KURULUM
+//   1. Google Cloud → Pub/Sub → PLAY_RTDN_TOPIC adıyla konu oluşturulur.
+//   2. google-play-developer-notifications@system.gserviceaccount.com hesabına o konu
+//      üzerinde "Pub/Sub Publisher" rolü verilir.
+//   3. Play Console → Para kazanma kurulumu → konu tam adı yapıştırılır.
+
+/**
+ * RTDN'de gelen token'ın hangi hesaba ait olduğunu bulur.
+ *
+ * SORUN
+ *   Token'ı hesaba bağlayan tek kayıt `processedPurchases`. Ama plan değişikliğinde
+ *   (özellikle ertelenmiş düşürme) Play YENİ bir purchase token üretiyor; o token
+ *   henüz hiçbir kayıtta olmadığı için bildirim "hesaba bağlı değil" diye atlanıyordu.
+ *   Gözlenen sonuç: Pro → Lite geçişinde yeni dönem hiç yazılmıyor, eski `planExpiresAt`
+ *   geçince kullanıcı Lite aboneliği aktifken FREE görünüyor ve ancak uygulamayı
+ *   açtığında düzeliyordu.
+ *
+ * ÇÖZÜM
+ *   Play'in cevabındaki `linkedPurchaseToken`, yeni token'ın hangi token'ın devamı
+ *   olduğunu söylüyor. Zincir geriye doğru izlenip kayıtlı bir token bulunuyor ve uid
+ *   oradan alınıyor. Sonraki senkron yeni token'ı da kaydettiği için bir sonraki
+ *   bildirim doğrudan çözülüyor.
+ *
+ * NEDEN GÜVENLİ
+ *   Bağı istemci değil Play kuruyor; uid'i uyduran bir taraf yok.
+ *
+ * Bağımlılıklar (Firestore okuması ve Play çağrısı) DIŞARIDAN veriliyor; böylece zincir
+ * yürüyüşü gerçek abonelik olmadan test edilebiliyor.
+ * Bkz. scripts/test-subscription-verification.js
+ */
+const MAX_LINKED_TOKEN_HOPS = 5;
+
+async function resolveUidForSubscriptionToken(purchaseToken, deps) {
+  let token = purchaseToken;
+  const seen = new Set();
+
+  for (let hop = 0; hop <= MAX_LINKED_TOKEN_HOPS; hop++) {
+    // Play teoride döngüsel bir bağ vermemeli; vermesi halinde sonsuz döngüye girmeyelim.
+    if (!token || seen.has(token)) break;
+    seen.add(token);
+
+    const record = await deps.readPurchaseRecord(token);
+    if (record && record.uid) {
+      return { uid: record.uid, hops: hop, via: hop === 0 ? 'direct' : 'linked' };
+    }
+    token = await deps.readLinkedToken(token);
+  }
+
+  return { uid: null, hops: seen.size, via: 'unresolved' };
+}
+
+const PLAY_RTDN_TOPIC = 'play-rtdn';
+
+exports.playSubscriptionNotification = functions.pubsub
+  .topic(PLAY_RTDN_TOPIC)
+  .onPublish(async (message) => {
+    let payload;
+    try {
+      payload = message.json;
+    } catch (error) {
+      console.error('RTDN mesajı çözümlenemedi', error);
+      return null;
+    }
+    if (!payload) return null;
+
+    // Play Console'daki "test bildirimi gönder" düğmesi bunu üretir; kurulumun
+    // doğruluğunu anlamak için loglanır, başka işlem gerektirmez.
+    if (payload.testNotification) {
+      console.log('RTDN test bildirimi alındı', { packageName: payload.packageName });
+      return null;
+    }
+
+    const notification = payload.subscriptionNotification;
+    if (!notification) {
+      // Tek seferlik ürün ve iade bildirimleri burada işlenmiyor; iadeleri
+      // reconcileVoidedPurchases günlük taramayla ele alıyor.
+      return null;
+    }
+
+    const purchaseToken = notification.purchaseToken;
+    const productId = notification.subscriptionId;
+    if (!purchaseToken || !productId) {
+      console.warn('RTDN: eksik token/ürün', notification);
+      return null;
+    }
+
+    // Token'ı kullanıcıya bağlayan kayıt processedPurchases'tır; bulunamazsa Play'in
+    // `linkedPurchaseToken` zinciri geriye doğru izlenir (bkz.
+    // resolveUidForSubscriptionToken). İlk satın almada bildirim istemcinin
+    // doğrulamasından ÖNCE gelebilir; o durumda zincirde de kayıt yoktur ve işlem
+    // atlanır — istemci saniyeler içinde kendi doğrulamasını yapar.
+    const resolution = await resolveUidForSubscriptionToken(purchaseToken, {
+      readPurchaseRecord: async (token) => {
+        const snap = await db.collection('processedPurchases').doc(token).get();
+        return snap.exists ? snap.data() : null;
+      },
+      readLinkedToken: async (token) => {
+        try {
+          const publisher = await getAndroidPublisher();
+          const response = await publisher.purchases.subscriptionsv2.get({
+            packageName: ANDROID_PACKAGE_NAME,
+            token,
+          });
+          return (response.data && response.data.linkedPurchaseToken) || null;
+        } catch (error) {
+          // Zincir okunamadıysa eski davranışa dön: bildirimi atla.
+          console.warn('RTDN: bağlı token okunamadı', { error: error.message });
+          return null;
+        }
+      },
+    });
+
+    if (!resolution.uid) {
+      console.log('RTDN: token henüz bir hesaba bağlı değil, atlandı', {
+        productId,
+        notificationType: notification.notificationType,
+        checkedTokens: resolution.hops,
+      });
+      return null;
+    }
+
+    const uid = resolution.uid;
+    if (resolution.via === 'linked') {
+      console.log('RTDN: token bağlı token zinciriyle çözüldü', {
+        uid,
+        productId,
+        hops: resolution.hops,
+      });
+    }
+    try {
+      // RTDN: yalnızca plan senkronu. Hoş geldin kredisi bilinçli olarak VERİLMEZ —
+      // burada istemci yok, dolayısıyla cihaz kontrolü yapılamaz.
+      const result = await syncSubscriptionForToken(uid, productId, purchaseToken, {
+        allowWelcomeCredit: false,
+      });
+      console.log('RTDN işlendi', {
+        uid,
+        productId,
+        notificationType: notification.notificationType,
+        plan: result.plan,
+      });
+    } catch (error) {
+      console.error('RTDN işlenemedi', { uid, productId, error: error.message });
+    }
+    return null;
+  });
 
 // ─── Google Play para iadelerini geri alma ──────────────────────────────────
 //
@@ -1583,10 +5385,16 @@ exports.redeemGooglePlaySubscription = functions.https.onCall(async (data, conte
 // bu yüzden ayrıca imleç (cursor) tutmaya gerek yoktur.
 const MAX_VOIDED_PAGES = 20;
 
-/** Tek bir iade kaydını işler. Zaten işlenmişse hiçbir şey yapmaz. */
+/**
+ * Tek bir iade kaydını işler. Zaten işlenmişse hiçbir şey yapmaz.
+ *
+ * `{ outcome, uid, revokedCredits }` döndürür: çağıran, kredi geri alındığında
+ * [cancelPendingQuestionsForCreditDebt] ile bekleyen soruları da iptal edebilsin diye
+ * sadece sonuç etiketi yetmiyor.
+ */
 async function reverseVoidedPurchase(voided) {
   const purchaseToken = voided.purchaseToken;
-  if (!purchaseToken) return 'skipped';
+  if (!purchaseToken) return { outcome: 'skipped', uid: null, revokedCredits: 0 };
 
   const purchaseRef = db.collection('processedPurchases').doc(purchaseToken);
 
@@ -1594,16 +5402,20 @@ async function reverseVoidedPurchase(voided) {
     const purchaseDoc = await transaction.get(purchaseRef);
 
     // Bu token'la hiç ödül vermediysek geri alacak bir şey yok.
-    if (!purchaseDoc.exists) return 'unknown';
+    if (!purchaseDoc.exists) return { outcome: 'unknown', uid: null, revokedCredits: 0 };
 
     const record = purchaseDoc.data();
-    if (record.voided === true) return 'already';
+    if (record.voided === true) return { outcome: 'already', uid: null, revokedCredits: 0 };
 
     const uid = record.uid;
-    if (!uid) return 'skipped';
+    if (!uid) return { outcome: 'skipped', uid: null, revokedCredits: 0 };
 
     const userRef = db.collection('users').doc(uid);
     const userDoc = await transaction.get(userRef);
+    // Sobi kredisi ayrı belgede; işlemde okumalar yazmalardan önce olmalı.
+    const revokedSobiCredits = record.type === 'subscription' ? 0 : Number.parseInt(record.grantedSobiCredits, 10) || 0;
+    const sobiRef = db.collection('sobiChats').doc(uid);
+    const sobiDoc = revokedSobiCredits > 0 ? await transaction.get(sobiRef) : null;
     if (!userDoc.exists) {
       // Hesap silinmiş; kaydı yine de işaretle ki tekrar tekrar denenmesin.
       transaction.set(
@@ -1611,26 +5423,92 @@ async function reverseVoidedPurchase(voided) {
         { voided: true, voidedAt: admin.firestore.FieldValue.serverTimestamp(), voidedNote: 'user-missing' },
         { merge: true }
       );
-      return 'user-missing';
+      return { outcome: 'user-missing', uid, revokedCredits: 0 };
     }
 
     const userData = userDoc.data();
     const update = {};
+    let revokedCredits = 0;
 
     if (record.type === 'subscription') {
-      // İade edilen abonelik: plan hemen düşer.
-      update.plan = 'Free';
-      update.planExpiresAt = null;
-      update.planProductId = null;
+      // İade edilen abonelik: plan hemen düşer — AMA yalnızca planı veren abonelik buysa.
+      // Koşulsuz düşürmek, arada yeniden abone olmuş kullanıcının (yeni token, aktif
+      // abonelik) planını siliyordu; iade eski kaydın iadesi olsa bile.
+      if (ownsStoredPlan(userData, purchaseToken, record.productId)) {
+        update.plan = 'Free';
+        update.planExpiresAt = null;
+        update.planProductId = null;
+        update.planPurchaseTokenHash = null;
+      } else {
+        console.log('İade edilen abonelik mevcut planı vermiyor, plan korunuyor', {
+          uid,
+          refundedProductId: record.productId || null,
+          activePlan: effectivePlan(userData),
+        });
+      }
+      // NOT: Pro hoş geldin Sobi kredisi (PRO_WELCOME_SOBI_CREDITS) bilinçli olarak geri ALINMIYOR.
+      // Ücretsiz deneme akışı henüz kurulmadı; hoş geldin kredisinin iade/yeniden abonelik
+      // davranışı o iş yapılırken birlikte ele alınacak.
     } else {
       // Tüketilebilir ürün: verilen miktar geri alınır, bakiye eksiye düşebilir.
       const grantedKeys = Number.parseInt(record.grantedKeys, 10) || 0;
       const grantedCurrency = Number.parseInt(record.grantedCurrency, 10) || 0;
       update.keys = (Number.parseInt(userData.keys, 10) || 0) - grantedKeys;
       update.currency = (Number.parseInt(userData.currency, 10) || 0) - grantedCurrency;
+      // Sobi kredisi de aynı politika: harcanmışsa eksiye düşer, yeni mesaj ancak yeni paketle.
+      if (revokedSobiCredits > 0) {
+        const sobiBefore = sobiDoc.exists ? Number(sobiDoc.get('credits')) || 0 : 0;
+        transaction.set(sobiRef, { credits: sobiBefore - revokedSobiCredits }, { merge: true });
+        update.sobiCredits = sobiBefore - revokedSobiCredits; // üst paneldeki gösterim kopyası
+      }
+      // Danışma kredisi de geri alınmalı. Bu satırlar olmadan "kredi paketi al → hepsini
+      // harca → 48 saat içinde iade al" döngüsü tamamen bedavaydı: grantedCredits kayda
+      // yazılıyor ama hiç okunmuyordu. Altın/anahtardaki politikanın aynısı geçerli —
+      // bakiye eksiye düşebilir, yoksa "hepsini harca sonra iade al" açık kalır.
+      revokedCredits = Number.parseInt(record.grantedCredits, 10) || 0;
+      if (revokedCredits > 0) {
+        const creditsBefore = Number.parseInt(userData.questionCredits, 10) || 0;
+        update.questionCredits = creditsBefore - revokedCredits;
+
+        // DENETİM DEFTERİ — bir koruma değil, ölçüm.
+        //
+        // Faz 1 döngüyü hesap seviyesinde kârsız hale getirdi, ama istismarcı her turda
+        // YENİ uygulama hesabı açarsa hesap başına bir kez kâr edebiliyor. Bunu cihaz
+        // bazlı bir sayaçla kapatmak mümkün; ne var ki bugün ortada bu istismarın
+        // gerçekleştiğine dair hiçbir veri yok ve yanlış pozitifi gerçek kullanıcıyı
+        // (yanlışlıkla satın alıp iade eden ebeveyn gibi) cezalandırır. Karar tahmine
+        // değil bu deftere dayansın diye önce yalnızca kayıt tutuluyor.
+        //
+        // Doküman kimliği purchaseToken: tarama tekrarlansa da kayıt çoğalmaz.
+        // firestore.rules'daki varsayılan reddetme kuralı gereği istemciye kapalıdır.
+        const accountCreatedAt = userData.createdAt || null;
+        const accountAgeDays =
+          accountCreatedAt && typeof accountCreatedAt.toMillis === 'function'
+            ? Math.floor((Date.now() - accountCreatedAt.toMillis()) / (24 * 60 * 60 * 1000))
+            : null;
+        transaction.set(db.collection('creditRefundAudit').doc(purchaseToken), {
+          uid,
+          productId: record.productId || null,
+          orderId: record.orderId || null,
+          revokedCredits,
+          creditsBefore,
+          creditsAfter: creditsBefore - revokedCredits,
+          // Hesap satın almadan hemen önce mi açılmış? Farming örüntüsünün en ucuz
+          // göstergesi bu; yeni bir kişisel veri toplamayı gerektirmiyor.
+          accountCreatedAt,
+          accountAgeDaysAtRefund: accountAgeDays,
+          voidedReason: voided.voidedReason != null ? voided.voidedReason : null,
+          voidedSource: voided.voidedSource != null ? voided.voidedSource : null,
+          refundedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+      }
     }
 
-    transaction.update(userRef, update);
+    // Abonelik dalı, iade mevcut planı vermeyen bir kayda aitse hiç alan yazmaz;
+    // Firestore boş update'i reddediyor.
+    if (Object.keys(update).length > 0) {
+      transaction.update(userRef, update);
+    }
     transaction.set(
       purchaseRef,
       {
@@ -1642,8 +5520,108 @@ async function reverseVoidedPurchase(voided) {
       { merge: true }
     );
 
-    return 'reversed';
+    return { outcome: 'reversed', uid, revokedCredits };
   });
+}
+
+/**
+ * Kredi bakiyesi iade sonrası eksiye düştüyse, kullanıcının HENÜZ ÜSTLENİLMEMİŞ
+ * (pending) sorularını iptal edip kredilerini borca mahsup eder.
+ *
+ * NEDEN
+ *   Cevaplanmış bir soru batık maliyettir — öğretmen zamanını verdi, geri alınamaz ve
+ *   öğrencinin elindeki cevabı silmek kimseye bir şey kazandırmaz. Ama kuyrukta bekleyen
+ *   soru HENÜZ maliyet doğurmadı: iptal edilirse hem gelecekteki öğretmen ücreti hiç
+ *   doğmaz hem borç azalır. Geri kazanılabilir tek maliyet kalemi budur.
+ *
+ * SADECE BORÇ KAPANANA KADAR
+ *   Bakiye sıfıra ulaştığı anda durur. Kalan bekleyen sorular gerçekten ödenmiş
+ *   kredilerle sorulmuş demektir; onlara dokunmak kullanıcıyı haksız cezalandırır.
+ *   Bu kural transaction İÇİNDE (`credits >= 0`) tekrar doğrulanıyor, dıştaki sayaç
+ *   yalnızca döngü sınırı.
+ *
+ * YENİDEN ÇALIŞTIRILABİLİR
+ *   `creditRefunded` bayrağı ve transaction içindeki durum kontrolü, runUnansweredQuestion
+ *   Refund ile aynı korumayı sağlar: aynı soru iki kez iade edilemez, tarama çakışsa bile.
+ *
+ * İNDEKS
+ *   Mevcut (studentUid ASC, createdAt DESC) bileşik indeksi kullanılıyor; `status` filtresi
+ *   bellekte uygulanıyor. Böylece yeni bir indeks (ve onu deploy etme zorunluluğu) gerekmiyor
+ *   — indeks eksikse sorgu FAILED_PRECONDITION atar ve kredi geri alımını da götürürdü.
+ *   İstismar senaryosunda iptal edilecek sorular zaten en yeniler olduğu için tarama
+ *   penceresi bilinçli olarak sınırlı.
+ */
+const REFUND_PENDING_SCAN_LIMIT = 100;
+
+async function cancelPendingQuestionsForCreditDebt(uid) {
+  const userRef = db.collection('users').doc(uid);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) return 0;
+
+  let debt = -(Number.parseInt(userSnap.data().questionCredits, 10) || 0);
+  if (debt <= 0) return 0;
+
+  // En yeniden başla: en son sorulan soru, öğretmenin en az yatırım yaptığı sorudur.
+  const snapshot = await db
+    .collection('questions')
+    .where('studentUid', '==', uid)
+    .orderBy('createdAt', 'desc')
+    .limit(REFUND_PENDING_SCAN_LIMIT)
+    .get();
+
+  let canceled = 0;
+  for (const doc of snapshot.docs) {
+    if (debt <= 0) break;
+    const data = doc.data();
+    if (data.status !== 'pending' || data.creditSpent !== true || data.creditRefunded === true) {
+      continue;
+    }
+
+    try {
+      const applied = await db.runTransaction(async (transaction) => {
+        const [questionDoc, freshUserDoc] = await Promise.all([
+          transaction.get(doc.ref),
+          transaction.get(userRef),
+        ]);
+        if (!questionDoc.exists || !freshUserDoc.exists) return false;
+
+        // Tarama ile transaction arasında öğretmen üstlenmiş ya da saatlik iade taraması
+        // aynı soruyu işlemiş olabilir.
+        const fresh = questionDoc.data();
+        if (fresh.status !== 'pending' || fresh.creditRefunded === true) return false;
+
+        // Borç kapandıysa dur — kalan bekleyen sorular ödenmiş kredilerle sorulmuş.
+        const credits = Number.parseInt(freshUserDoc.data().questionCredits, 10) || 0;
+        if (credits >= 0) return false;
+
+        transaction.update(userRef, { questionCredits: credits + 1 });
+        transaction.update(doc.ref, {
+          status: 'expired',
+          creditRefunded: true,
+          creditRefundedAt: admin.firestore.FieldValue.serverTimestamp(),
+          // İade yüzünden iptal edildiğini ayırt edebilmek için (48 saatlik cevapsızlık
+          // iadesiyle karışmasın).
+          canceledForVoidedPurchase: true,
+        });
+        return true;
+      });
+      if (applied) {
+        canceled++;
+        debt--;
+      }
+    } catch (error) {
+      console.error('İade sonrası bekleyen soru iptal edilemedi', {
+        uid,
+        questionId: doc.id,
+        error: error.message,
+      });
+    }
+  }
+
+  if (canceled > 0) {
+    console.log('İade sonrası bekleyen sorular iptal edildi', { uid, canceled, remainingDebt: debt });
+  }
+  return canceled;
 }
 
 async function runVoidedPurchaseScan() {
@@ -1653,14 +5631,17 @@ async function runVoidedPurchaseScan() {
   }
 
   const publisher = await getAndroidPublisher();
-  const counts = { reversed: 0, already: 0, unknown: 0, skipped: 0, 'user-missing': 0 };
+  const counts = { reversed: 0, already: 0, unknown: 0, skipped: 0, 'user-missing': 0, canceledQuestions: 0 };
   let pageToken;
   let pages = 0;
 
   do {
     const response = await publisher.purchases.voidedpurchases.list({
       packageName: ANDROID_PACKAGE_NAME,
-      // type: 1 → tüketilebilir ürünlerin yanında iptal edilen abonelikleri de getirir.
+      // type: 1 → tüketilebilir ürünlerin yanında iade/geri alınmış abonelikleri de getirir.
+      // "Voided" iade veya geri alma demek; kullanıcının otomatik yenilemeyi KAPATMASI buna
+      // girmez (o abonelik süresi dolunca EXPIRED olur ve syncSubscriptionForToken planı
+      // Free'ye çeker). Deneme iptali bu taramaya hiç düşmez.
       type: 1,
       maxResults: 1000,
       token: pageToken,
@@ -1669,8 +5650,27 @@ async function runVoidedPurchaseScan() {
     const rows = response.data.voidedPurchases || [];
     for (const voided of rows) {
       try {
-        const outcome = await reverseVoidedPurchase(voided);
-        counts[outcome] = (counts[outcome] || 0) + 1;
+        const result = await reverseVoidedPurchase(voided);
+        counts[result.outcome] = (counts[result.outcome] || 0) + 1;
+
+        // Kredi geri alındıysa bekleyen soruları da iptal et. AYRI bir try içinde:
+        // buradaki bir hata (indeks, kota, çakışma) yukarıda tamamlanmış olan geri
+        // alımı geçersiz kılmamalı — kayıt zaten `voided` işaretlendiği için tarama
+        // tekrarlansa bile kredi ikinci kez düşülmez.
+        if (result.outcome === 'reversed' && result.revokedCredits > 0 && result.uid) {
+          try {
+            const canceled = await cancelPendingQuestionsForCreditDebt(result.uid);
+            counts.canceledQuestions = (counts.canceledQuestions || 0) + canceled;
+            // Defteri tamamla: kaç bekleyen soru iptal edildiği ancak bu adımdan sonra
+            // biliniyor. Kayıt zaten transaction'da oluşturuldu, burada sadece merge.
+            await db
+              .collection('creditRefundAudit')
+              .doc(voided.purchaseToken)
+              .set({ canceledPendingQuestions: canceled }, { merge: true });
+          } catch (error) {
+            console.error('İade sonrası soru iptali başarısız', { uid: result.uid, error });
+          }
+        }
       } catch (error) {
         // Tek bir kaydın hatası taramanın tamamını düşürmesin.
         console.error('İade geri alınamadı', { purchaseToken: voided.purchaseToken, error });
@@ -1695,6 +5695,23 @@ exports.reconcileVoidedPurchases = functions
 
 // Testlerin zamanlayıcıyı beklemeden taramayı çalıştırabilmesi için.
 exports._runVoidedPurchaseScan = runVoidedPurchaseScan;
+// Bu ikisi Play API'sine HİÇ dokunmaz, yalnızca Firestore'la çalışır — dolayısıyla
+// gerçek bir satın alma/iade olmadan, sahte bir processedPurchases kaydıyla test
+// edilebilirler. Bkz. scripts/test-credit-refund-clawback.js
+exports._resolvePlanUpdate = resolvePlanUpdate;
+exports._effectivePlan = effectivePlan;
+exports._subscriptionPlan = subscriptionPlan;
+exports._ownsStoredPlan = ownsStoredPlan;
+exports._resolveUidForSubscriptionToken = resolveUidForSubscriptionToken;
+exports._purchaseTokenFingerprint = purchaseTokenFingerprint;
+exports._resolveTokenRebind = resolveTokenRebind;
+// Abonelik doğrulamasının saf parçaları: Play'e hiç dokunmadan test edilebilirler.
+// Bkz. scripts/test-subscription-verification.js
+exports._subscriptionEntitlement = subscriptionEntitlement;
+exports._subscriptionProductIds = subscriptionProductIds;
+exports._resolveVerifiedProductId = resolveVerifiedProductId;
+exports._reverseVoidedPurchase = reverseVoidedPurchase;
+exports._cancelPendingQuestionsForCreditDebt = cancelPendingQuestionsForCreditDebt;
 
 // ─── Sunucu taraflı ödül çekilişi ───────────────────────────────────────────
 //
@@ -1737,30 +5754,57 @@ function rollInt(min, max) {
 }
 
 /**
- * NewChestFragment.rollRarity ile aynı olasılıklar.
+ * Tek bir dokunuşun nadirlik yükseltme zarı — ödülün TEK kaynağı.
  *
- * DİKKAT: Kotlin tarafındaki yüzde yorumları koda uymuyor (ör. COMMON için "%15 RARE,
- * %80 COMMON" yazıyor ama eşikler %20/%75 veriyor). Buradaki eşikler istemcinin GERÇEK
- * davranışını birebir yansıtır; denge değiştirilmek istenirse iki taraf birlikte
- * güncellenmelidir.
+ * İstemci artık kendi zarını atmıyor: sunucunun attığı yolu (`rarityPath`) oynatıyor
+ * (bkz. NewChestFragment.requestOutcomeFromServer). Yani bu tablo hem ödülü hem de
+ * ekranda görünen yükseltmeleri belirliyor.
  *
- *   COMMON -> %5 EPIC, %20 RARE, %75 COMMON
- *   RARE   -> %10 LEGENDARY, %20 EPIC, %70 RARE
- *   EPIC   -> %10 LEGENDARY, %90 EPIC
+ * ## Tek dokunuş: mevcut nadirlikten SIRADAKİ nadirliğe
+ *
+ *   SIRADAN   ->  %80 SIRADAN   |  %15 ENDER     |   %5 DESTANSI
+ *   ENDER     ->  %80 ENDER     |  %15 DESTANSI  |   %5 EFSANEVİ
+ *   DESTANSI  ->  %95 DESTANSI  |   %5 EFSANEVİ
+ *   EFSANEVİ  -> %100 EFSANEVİ                                     (tavan)
+ *
+ * Nadirlik hiç DÜŞMÜYOR; her dokunuş ya yerinde bırakıyor ya yukarı taşıyor. SIRADAN'dan
+ * tek dokunuşta EFSANEVİ'ye atlanamıyor: iki basamak birden çıkış yok.
+ *
+ * ## [CHEST_TAP_COUNT] dokunuşun sonunda: BAŞLANGIÇ nadirliğine göre
+ *
+ *   SIRADAN başlar   -> SIRADAN %51.2 | ENDER %28.8 | DESTANSI %17.25 | EFSANEVİ  %2.75
+ *   ENDER başlar     ->                 ENDER %51.2 | DESTANSI %34.54 | EFSANEVİ %14.26
+ *   DESTANSI başlar  ->                               DESTANSI %85.74 | EFSANEVİ %14.26
+ *   EFSANEVİ başlar  ->                                                EFSANEVİ %100
+ *
+ * Başlangıç nadirliği artık sabit değil: kupa yolunda eşik belirliyor
+ * ([cupPathChestRarity]). 500'ün katları ENDER, 1000'in katları DESTANSI başlıyor — yani
+ * 1000'lik bir eşikte sandığın EFSANEVİ bitme şansı %14.26, sıradan bir sandıkta ise
+ * %2.75. Aradaki fark beş kat; ödül tablosunu ([rollChestReward]) değiştirirken bunu
+ * hesaba kat.
+ *
+ * ## Tabloyu değiştirirken
+ * Buradaki yüzdeler dokunuş BAŞINA; bileşik etki doğrusal değil. Yükseltme olasılığını
+ * iki katına çıkarmak, sondaki destansı+efsanevi payını iki katından FAZLA artırıyor.
+ *
+ * Yukarıdaki iki tablo `functions/scripts/test-chest-rarity-table.js` ile doğrulanıyor:
+ * test tabloları bu dosyadaki koddan türetiyor ve yorumla karşılaştırıyor. Eşikleri
+ * değiştirip yorumu güncellemezsen test düşer — bu yorum bir kez koddan ayrı düştü
+ * (EFSANEVİ şansı %10 yazıyordu, kod %5 veriyordu) ve fark aylarca görülmedi.
  */
 function rollRarityUpgrade(current) {
   const rand = rollInt(1, 100);
   switch (current) {
     case 'COMMON':
       if (rand <= 5) return 'EPIC';
-      if (rand <= 25) return 'RARE';
+      if (rand <= 20) return 'RARE';
       return 'COMMON';
     case 'RARE':
-      if (rand <= 10) return 'LEGENDARY';
-      if (rand <= 30) return 'EPIC';
+      if (rand <= 5) return 'LEGENDARY';
+      if (rand <= 20) return 'EPIC';
       return 'RARE';
     case 'EPIC':
-      if (rand <= 10) return 'LEGENDARY';
+      if (rand <= 5) return 'LEGENDARY';
       return 'EPIC';
     default:
       return 'LEGENDARY';
@@ -1772,19 +5816,21 @@ function rollChestReward(rarity) {
   const rand = rollInt(1, 100);
   switch (rarity) {
     case 'COMMON':
-      return { type: 'GOLD', amount: rollInt(50, 100) };
+      return { type: 'GOLD', amount: rollInt(150, 300) };
     case 'RARE':
-      return { type: 'GOLD', amount: rollInt(150, 200) };
+      return rand <= 20
+        ? { type: 'KEY', amount: 1 }
+        : { type: 'GOLD', amount: rollInt(450, 600) };
     case 'EPIC':
       return rand <= 50
-        ? { type: 'GOLD', amount: rollInt(500, 700) }
+        ? { type: 'GOLD', amount: rollInt(1500, 2100) }
         : { type: 'KEY', amount: 3 };
     case 'LEGENDARY':
       return rand <= 50
-        ? { type: 'GOLD', amount: rollInt(2000, 3000) }
+        ? { type: 'GOLD', amount: rollInt(6000, 9000) }
         : { type: 'KEY', amount: 5 };
     default:
-      return { type: 'GOLD', amount: rollInt(50, 100) };
+      return { type: 'GOLD', amount: rollInt(150, 300) };
   }
 }
 
@@ -1839,6 +5885,231 @@ function rollCrystalReward(videoName) {
   return { type: 'GOLD', amount: rollInt(range[0], range[1]) };
 }
 
+/**
+ * Hesap başına kaç cihaza bildirim gönderilir.
+ *
+ * NEDEN 3 (05.10.2026, kullanıcı kararı — eskiden 2)
+ *   Tipik kurulum ailede tablet + çocuğun telefonu + ebeveyn telefonu. 2 sınırıyla en eski
+ *   cihaz listeden sessizce düşüyor ve o cihaz bildirim almayı tamamen kesiyordu — hiçbir
+ *   hata üretmeden, yani şikâyet gelene kadar görünmeyen bir kayıp.
+ *
+ *   Sınırsız değil çünkü her bildirim cihaz başına bir FCM gönderimi; ölü token da
+ *   biriktiriyor (temizliği `pruneDeadToken` yapıyor).
+ */
+const FCM_MAX_DEVICES = 3;
+
+/**
+ * Bir kullanıcı dokümanından bildirim gönderilecek token'lar.
+ *
+ * Üç biçim birden destekleniyor çünkü alan zaman içinde değişti: güncel yapı `fcmDevices`,
+ * öncesinde `fcmTokens` dizisi, en eskisinde tekil `fcmToken`. Eski cihazlar güncellenene
+ * kadar üçü de sahada.
+ *
+ * Hesap başına en fazla [FCM_MAX_DEVICES] cihaz: istemci de aynı sınırı uyguluyor
+ * (MyFirebaseMessagingService.MAX_FCM_DEVICES). İkisi birlikte değişmeli — sunucu daha azını
+ * okursa istemcinin kaydettiği cihaz sessizce bildirim almaz.
+ */
+function fcmTokensFor(userData) {
+  const d = userData || {};
+  let tokens = [];
+  if (Array.isArray(d.fcmDevices)) {
+    tokens = d.fcmDevices
+      .map((x) => (x && typeof x.token === 'string' ? x.token.trim() : ''))
+      .filter((t) => t.length > 0);
+  } else if (Array.isArray(d.fcmTokens)) {
+    tokens = d.fcmTokens.filter((t) => typeof t === 'string' && t.trim().length > 0);
+  } else if (typeof d.fcmToken === 'string' && d.fcmToken.trim()) {
+    tokens = [d.fcmToken.trim()];
+  }
+  return tokens.length > FCM_MAX_DEVICES ? tokens.slice(-FCM_MAX_DEVICES) : tokens;
+}
+
+// ─── BİLDİRİM GÖNDERİM YOLU ────────────────────────────────────────────────
+//
+// NEDEN TEK KAPI
+//   Bildirim türleri çoğalırken her çağıranın kendi kararını vermesi iki şeyi imkânsız
+//   kılıyor: kullanıcının türe göre tercihine saygı duymak ve toplam sayıya bir tavan
+//   koymak. Kararın tamamı [notifications.js] içinde, saf ve test edilebilir; buradaki iş
+//   yalnızca Firestore'u okuyup FCM'e vermek.
+//
+//   Yeni bir bildirim eklemek isteyen kod bu fonksiyonu çağırıyor; doğrudan
+//   `admin.messaging()` çağırmıyor. Aksi halde tercih ve tavan sessizce atlanır.
+
+/** Bildirim defteri: gönderim/açılma sayaçları. Yalnızca sunucu yazar (bkz. firestore.rules). */
+function notifyLedgerRef(uid) {
+  return db.collection('users').doc(uid).collection('notifyLedger').doc('state');
+}
+
+/**
+ * Geçersiz hale gelmiş FCM token'ını kullanıcı dokümanından çıkarır.
+ *
+ * NEDEN
+ *   Uygulama kaldırıldığında ya da veri temizlendiğinde token ölüyor ve FCM
+ *   `registration-token-not-registered` dönüyor. Bu token Firestore'da kalırsa iki zarar
+ *   veriyor: her gönderim denemesi boşa gidiyor, ve taramaların `failed` sayısı şişip
+ *   gerçek hataları görünmez yapıyor — yani ölçüm de yalan söylüyor.
+ */
+async function pruneDeadToken(uid, token) {
+  try {
+    const userRef = db.collection('users').doc(uid);
+    const snap = await userRef.get();
+    if (!snap.exists) return;
+    const devices = Array.isArray(snap.get('fcmDevices')) ? snap.get('fcmDevices') : null;
+    if (!devices) return;
+    const kept = devices.filter((x) => !(x && x.token === token));
+    if (kept.length === devices.length) return;
+    const lastToken = (kept.length ? kept[kept.length - 1].token : null) || null;
+    await userRef.set({ fcmDevices: kept, fcmToken: lastToken }, { merge: true });
+    console.log('pruneDeadToken: ölü token çıkarıldı', { uid, kalan: kept.length });
+  } catch (e) {
+    console.error('pruneDeadToken başarısız', { uid, error: e.message });
+  }
+}
+
+/** FCM hatası token'ın kalıcı olarak geçersiz olduğunu mu söylüyor. */
+function isDeadTokenError(error) {
+  const code = (error && error.errorInfo && error.errorInfo.code) || (error && error.code) || '';
+  return (
+    code === 'messaging/registration-token-not-registered' ||
+    code === 'messaging/invalid-registration-token'
+  );
+}
+
+/**
+ * Kullanıcıya bildirim gönderir — tercih, sessiz saat ve tavan kontrolünden geçirerek.
+ *
+ * Data-only gönderiyor; gösterme kararının son adımı istemcide (oturumdaki hesap bu mu,
+ * kullanıcı o ekranda mı). Kanal adı da data içinde gidiyor: sessiz saatte sohbet bildirimi
+ * sessiz varyant kanalına düşüyor ve bunu sunucu belirliyor.
+ *
+ * @param uid     Alıcı.
+ * @param type    [NOTIFICATION_TYPES] anahtarı.
+ * @param topic   Sayaç etiketi (örn. `season_ending`). Verilmezse tür adı kullanılıyor.
+ * @param title   Bildirim başlığı.
+ * @param body    Bildirim gövdesi.
+ * @param data    İstemciye geçecek ek alanlar (örn. questionId).
+ * @param userData Çağıran taraf kullanıcı dokümanını zaten okuduysa — fazladan okuma olmasın.
+ * @returns `{ sent: boolean, reason?: string }`
+ */
+/** Öğretmene gidebilen bildirim konuları: öğrenci mesajı, havuza düşen soru, ödevi bitiren öğrenci. */
+const TEACHER_NOTIFICATION_TOPICS = new Set(['chat', 'teacher_pool', 'homework_done']);
+
+async function sendUserNotification(uid, { type, topic, title, body, en = null, id = null, ar = null, data = {}, userData = null }) {
+  if (!uid) return { sent: false, reason: 'no_uid' };
+  const nowMs = Date.now();
+
+  let user = userData;
+  if (!user) {
+    const snap = await db.collection('users').doc(uid).get();
+    if (!snap.exists) return { sent: false, reason: 'no_user' };
+    user = snap.data() || {};
+  }
+
+  // Alıcının uygulama dili: istemci token kaydıyla `lang` yazıyor (MyFirebaseMessagingService).
+  // Çağıran kullanıcının dilinde karşılık (`en` / `id` / `ar`: { title, body }) verdiyse o gider; dil
+  // yoksa (eski sürüm) ya da o dilde karşılık verilmediyse Türkçe.
+  const translated = user.lang === 'en' ? en : user.lang === 'id' ? id : user.lang === 'ar' ? ar : null;
+  if (translated) {
+    title = translated.title;
+    body = translated.body;
+  }
+
+  // Öğretmen yalnızca öğretmenlik işinin bildirimlerini alır. Seri, can, sandık, sezon ve
+  // deneme bildirimleri çocuğa yazılmış; onaylı öğretmenin canı sınırsız, serisi panelde bile
+  // yok. Engel listesi değil İZİN listesi: yeni bir öğrenci bildirimi eklenip burası
+  // unutulursa öğretmene garip bir bildirim gitmesin, en kötü ihtimalle yeni bir öğretmen
+  // bildirimi test sırasında gelmez ve fark edilir.
+  if (user.role === 'TEACHER' && !TEACHER_NOTIFICATION_TOPICS.has(topic)) {
+    return { sent: false, reason: 'teacher_topic' };
+  }
+
+  const tokens = fcmTokensFor(user);
+  if (!tokens.length) return { sent: false, reason: 'no_token' };
+
+  const ledgerSnap = await notifyLedgerRef(uid).get();
+  const ledger = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
+
+  const decision = notificationDecision(
+    {
+      type,
+      topic,
+      state: {
+        prefs: notificationPrefsFor(user),
+        history: ledger.history,
+        unopened: ledger.unopened,
+        // İstemci her token kaydında yazıyor (MyFirebaseMessagingService); eksikse sessiz
+        // saat uygulanmıyor, bildirim yine gidiyor.
+        utcOffsetMinutes: user.utcOffsetMinutes,
+      },
+    },
+    nowMs
+  );
+  if (!decision.send) return { sent: false, reason: decision.reason };
+
+  // `notifyType` yeni, katalog türü. Eski `type` alanına DOKUNULMUYOR ve çağıran taraf onu
+  // kendi `data`'sında gönderiyor — sahadaki eski istemci sürümleri ayrıştırmayı ona göre
+  // yapıyor (`type == 'streak_reminder'`), adı burada ezilse seri hatırlatması o cihazlarda
+  // sessizce düşerdi.
+  const payload = {
+    notifyType: String(type),
+    topic: String(decision.topic),
+    channel: String(decision.channel),
+    recipientUid: String(uid),
+    title: String(title || ''),
+    body: String(body || ''),
+    ...data,
+  };
+
+  let delivered = 0;
+  await Promise.all(
+    tokens.map(async (token) => {
+      try {
+        await admin.messaging().send({ data: payload, token });
+        delivered++;
+      } catch (e) {
+        if (isDeadTokenError(e)) await pruneDeadToken(uid, token);
+        else console.error('sendUserNotification: gönderilemedi', { uid, type, error: e.message });
+      }
+    })
+  );
+  if (!delivered) return { sent: false, reason: 'delivery_failed' };
+
+  // Defter yalnızca gerçekten gönderildiğinde güncelleniyor: başarısız denemenin tavandan
+  // bir hak yemesi, kullanıcının hiç almadığı bir bildirim yüzünden ötekini kaçırması olurdu.
+  try {
+    await notifyLedgerRef(uid).set(ledgerPatch(ledger, decision, nowMs), { merge: true });
+  } catch (e) {
+    console.error('sendUserNotification: defter yazılamadı', { uid, type, error: e.message });
+  }
+
+  return { sent: true, topic: decision.topic, silent: decision.silent };
+}
+
+/**
+ * Kullanıcı bir bildirime dokundu — istemci bunu bildiriyor.
+ *
+ * NEDEN SUNUCUDA TUTULUYOR
+ *   İki ayrı işe yarıyor. Birincisi ölçüm: hangi bildirim türünün gerçekten açıldığını
+ *   bilmeden yeni bildirim eklemek körlemesine gidiyor. İkincisi karar: üst üste
+ *   açılmayan bir konu kendiliğinden susuyor ([UNOPENED_MUTE_AFTER]) — bu sayaç istemcide
+ *   tutulamaz, çünkü kullanıcının öteki cihazı onu bilmezdi.
+ *
+ *   Defteri istemciye açmak yerine callable olmasının sebebi: istemci yazabilseydi tavan
+ *   sayaçları da onun elinde olurdu.
+ */
+exports.recordNotificationOpen = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const topic = String((data && data.topic) || '').trim().slice(0, 64);
+  if (!topic) throw new functions.https.HttpsError('invalid-argument', 'Konu gerekli.');
+
+  const ref = notifyLedgerRef(context.auth.uid);
+  const snap = await ref.get();
+  await ref.set(openPatch(snap.exists ? snap.data() : {}, topic), { merge: true });
+  return { ok: true };
+});
+
 /** UTC gün anahtarı — günlük tavan sayacı için. */
 function utcDayKey(nowMs) {
   return new Date(nowMs).toISOString().slice(0, 10);
@@ -1847,8 +6118,36 @@ function utcDayKey(nowMs) {
 /**
  * Ödülü kullanıcının bakiyesine yazar ve günlük sayacı aynı transaction'da artırır.
  * Tavan aşılmışsa ödül verilmez.
+ *
+ * Sandıklar tek tip ödül veriyor (ya anahtar ya altın); seri kilometre taşları ikisini
+ * birden verebiliyor. Bu yüzden asıl iş [grantWalletDelta] içinde ve bu fonksiyon onun
+ * "tek tip ödül" kabuğu — cüzdana yazan tek bir yol kalsın diye.
  */
 async function grantRolledReward(uid, reward, counterField, dailyLimit, beforeGrant) {
+  return grantWalletDelta(
+    uid,
+    {
+      keys: reward.type === 'KEY' ? reward.amount : 0,
+      gold: reward.type === 'GOLD' ? reward.amount : 0,
+    },
+    counterField,
+    dailyLimit,
+    beforeGrant
+  );
+}
+
+/**
+ * Cüzdana anahtar ve/veya altın ekler; günlük tavan sayacını aynı transaction'da artırır.
+ *
+ * @param delta {{keys: number, gold: number}} Eklenecek miktarlar (negatif olamaz).
+ * @param counterField `rewardGuard` içindeki günlük sayaç alanı.
+ * @param dailyLimit null ise tavan yok.
+ * @param beforeGrant Aynı transaction içinde ek doğrulama; YALNIZCA okur ve yazma işini
+ *   döndürdüğü fonksiyonla yapar (Firestore: tüm okumalar yazmalardan önce).
+ * @param resolveDelta Verilirse nihai miktar `delta` yerine bundan alınır; miktarı ancak
+ *   `beforeGrant` okuduktan sonra bilinen ödüller için (ör. meydan okuma).
+ */
+async function grantWalletDelta(uid, delta, counterField, dailyLimit, beforeGrant, resolveDelta) {
   const userRef = db.collection('users').doc(uid);
   const now = Date.now();
   const dayKey = utcDayKey(now);
@@ -1857,6 +6156,13 @@ async function grantRolledReward(uid, reward, counterField, dailyLimit, beforeGr
     // Ek doğrulama (ör. reklam hakkını tüket) bakiye yazımıyla AYNI transaction icinde olmalı.
     // beforeGrant yalnızca OKUR ve doğrular; yazma işini döndürdüğü fonksiyon yapar.
     const commitBeforeGrant = beforeGrant ? await beforeGrant(transaction) : null;
+
+    // Miktar bazı ödüllerde ancak transaction içinde okunabiliyor (meydan okuma ödülü
+    // sunucudaki kayıtlı güne bağlı). resolveDelta verildiyse nihai miktar ondan alınıyor;
+    // transaction yeniden çalışırsa beforeGrant da yeniden çalıştığı için değer tazeleniyor.
+    const finalDelta = resolveDelta ? resolveDelta() : delta;
+    const addKeys = Math.max(0, Math.trunc(Number(finalDelta && finalDelta.keys) || 0));
+    const addGold = Math.max(0, Math.trunc(Number(finalDelta && finalDelta.gold) || 0));
 
     const doc = await transaction.get(userRef);
     if (!doc.exists) {
@@ -1880,9 +6186,8 @@ async function grantRolledReward(uid, reward, counterField, dailyLimit, beforeGr
     nextGuard.dayKey = dayKey;
     nextGuard[counterField] = used;
 
-    const keys = (Number.parseInt(userData.keys, 10) || 0) + (reward.type === 'KEY' ? reward.amount : 0);
-    const currency =
-      (Number.parseInt(userData.currency, 10) || 0) + (reward.type === 'GOLD' ? reward.amount : 0);
+    const keys = (Number.parseInt(userData.keys, 10) || 0) + addKeys;
+    const currency = (Number.parseInt(userData.currency, 10) || 0) + addGold;
 
     if (commitBeforeGrant) commitBeforeGrant(transaction);
     transaction.update(userRef, { keys, currency, rewardGuard: nextGuard });
@@ -1938,6 +6243,422 @@ exports.openChest = functions.https.onCall(async (data, context) => {
   };
 });
 
+// ─── Kupa Yolu sandıkları (Trophy Road) ──────────────────────────────────────
+//
+// Kullanıcı kupa biriktirdikçe belirli eşiklerde sandık kazanır. Altı kupa yolunun her
+// birinin kendi eşik dizisi ve kendi defteri var.
+//
+// GÜVENLİK NOTU
+//   Kupa puanı (`cupWayProgress/progress`) şu an İSTEMCİDEN yazılabiliyor. Bu yüzden
+//   "hangi eşiğin alındığı" defteri istemciye kapalı ayrı bir koleksiyonda tutuluyor
+//   (`cupPathRewards`, bkz. firestore.rules) ve ilerletilmesi ile sandığın verilmesi AYNI
+//   transaction içinde oluyor. Böylece aynı eşik iki kez ödetilemiyor.
+//
+//   Defter güvenli ama dayandığı kupa puanı henüz değil: puanını yükselten biri hak
+//   etmediği eşikleri geçebilir. Kupa yazımını sunucuya taşımak ayrı bir iş; o yapılana
+//   kadar tek fren günlük sandık tavanı (CHEST_DAILY_LIMIT).
+
+/** Kupa yolu alanları. İstemcideki altı repository ile birebir aynı olmalı. */
+const CUP_PATH_FIELDS = [
+  'addition_abacus_cup',
+  'extraction_abacus_cup',
+  'impact_abacus_cup',
+  'blinding_addition_abacus_cup',
+  'blinding_extraction_abacus_cup',
+  'blinding_impact_abacus_cup',
+];
+
+/** Kupa yollarının başlangıç puanı (istemcideki DEFAULT_CUP_SCORE ile aynı). */
+const CUP_PATH_START = 200;
+
+/** Her kaç kupada bir sandık. */
+const CUP_PATH_STEP = 100;
+
+/**
+ * Kupa yolunun son eşiği. Buradan sonra kupa artmaya devam eder ama sandık verilmez.
+ *
+ * İstemcideki CupPathRewardRepository.MAX ile birebir aynı olmak zorunda: ekranda eşik
+ * gösterip sunucunun reddetmesi (ya da tersi) kullanıcı için anlaşılmaz olur.
+ */
+const CUP_PATH_MAX = 10000;
+
+/**
+ * Bir eşiğin sandık nadirliği — SUNUCUNUN kararı.
+ *
+ *   1000'in katları -> DESTANSI   (1000, 2000, ... 10000)
+ *   500'ün katları  -> ENDER      (500, 1500, 2500, ...)
+ *   diğerleri       -> SIRADAN    (300, 400, 600, 700, ...)
+ *
+ * Sıra önemli: 1000 hem 500'ün hem 1000'in katı, destansı kazanmalı.
+ *
+ * Bu değer sandığın BAŞLANGIÇ nadirliği; kullanıcının dokunuşları onu yükseltmeye devam
+ * ediyor (bkz. [CHEST_TAP_COUNT]). Yani destansı başlayan bir sandık efsaneviye çıkabilir.
+ *
+ * İstemcideki CupPathRewardRepository.rarityOf ile birebir aynı olmak zorunda; istemci
+ * yalnızca DOĞRU İKONU seçmek için kullanıyor, ödülü buradaki değer belirliyor.
+ */
+function cupPathChestRarity(milestone) {
+  if (!Number.isFinite(milestone)) return 'COMMON';
+  if (milestone % 1000 === 0) return 'EPIC';
+  if (milestone % 500 === 0) return 'RARE';
+  return 'COMMON';
+}
+
+/**
+ * [lastClaimed]'den sonraki eşik.
+ *
+ * Başlangıç puanı 200 olduğu için ilk eşik 300'dür: 100 ve 200 hiç oynamadan geçilmiş
+ * sayılırdı ve ilk açılışta iki bedava sandık demek olurdu.
+ */
+function nextCupPathMilestone(lastClaimed) {
+  const base =
+    Number.isFinite(lastClaimed) && lastClaimed > CUP_PATH_START ? lastClaimed : CUP_PATH_START;
+  const next = base + CUP_PATH_STEP;
+  // Yol bitti: 0 döndürülüyor ki çağıran taraf "sıradaki eşik yok" durumunu ayırt edebilsin.
+  return next > CUP_PATH_MAX ? 0 : next;
+}
+
+/**
+ * Kupa dersi sonucunun kupa puanına etkisi — CupRuleEngine.buildLessonItem ile BİREBİR aynı.
+ *
+ * Zorluk yükseldikçe kazanç artıyor, kayıp azalıyor: daha zor soru daha çok ödül, daha az ceza.
+ * Kullanıcı zorluğu kendisi seçtiği için istemcinin kademe bildirmesi bir açık değil; buradaki
+ * asıl mesele MİKTARIN istemcide hesaplanmaması.
+ */
+const CUP_WIN_BY_LEVEL = [10, 17, 24, 31, 38];
+const CUP_LOSS_BY_LEVEL = [30, 25, 20, 15, 10];
+
+/** Çarpma kupa modu kademesiz: TasksFragment.launchCupModeLesson ile aynı. */
+const CUP_MULTIPLICATION_WIN = 30;
+const CUP_MULTIPLICATION_LOSS = 20;
+
+/**
+ * İki kupa KAZANCI arasındaki en kısa süre.
+ *
+ * Kazanılan kupa dersi enerji harcamıyor (enerji yalnızca kaybedince ve terk edince gidiyor),
+ * yani ekonomi tarafında bir fren yok. Soruyu gerçekten cevaplamak saniyeler sürdüğü için bu
+ * eşik insan hızının çok altında kalıyor ama betiği saniyede bir çağrıdan alıkoyuyor.
+ */
+const CUP_RESULT_MIN_GAP_MS = 3000;
+
+/** Günlük kupa KAZANCI tavanı. En hevesli kullanıcının çok üstünde, betiğin çok altında. */
+const CUP_RESULT_DAILY_LIMIT = 300;
+
+/** Sayı gerçek bir eşik mi (300, 400, 500, ...). */
+function isCupPathMilestone(value) {
+  return (
+    Number.isFinite(value) &&
+    Number.isInteger(value) &&
+    value > CUP_PATH_START &&
+    value <= CUP_PATH_MAX &&
+    (value - CUP_PATH_START) % CUP_PATH_STEP === 0
+  );
+}
+
+/**
+ * Bir kupa yolunun defter kaydını okunabilir hâle getirir.
+ *
+ * Defter iki parçadan oluşuyor:
+ * - `lastClaimed`: bu değere kadarki BÜTÜN eşikler alınmış (su seviyesi).
+ * - `claimed`: su seviyesinin üstünde, tek tek alınmış eşikler.
+ *
+ * İkili yapının sebebi: kullanıcı biriken sandıkları sırayla almak zorunda değil. 300, 400
+ * ve 500 birikmişken 500'ü açabiliyor; o zaman su seviyesi 200'de kalır, 500 listeye girer.
+ * Liste şişmesin diye, su seviyesinin hemen üstü dolduğunda seviye yükseltilip o eşikler
+ * listeden çıkarılıyor (bkz. [compactCupPathEntry]).
+ *
+ * Eski kayıtlarda yalnızca `lastClaimed` vardı; o biçim olduğu gibi okunuyor.
+ */
+function readCupPathEntry(ledgerData, cupField) {
+  const raw = (ledgerData && ledgerData[cupField]) || {};
+  const rawLast = Number(raw.lastClaimed);
+  const lastClaimed = Number.isFinite(rawLast) ? Math.trunc(rawLast) : CUP_PATH_START;
+  const claimed = Array.isArray(raw.claimed)
+    ? raw.claimed.map((v) => Math.trunc(Number(v))).filter((v) => isCupPathMilestone(v))
+    : [];
+  return { lastClaimed, claimed };
+}
+
+/** Su seviyesinin hemen üstündeki ardışık eşikleri seviyeye katar. */
+function compactCupPathEntry(entry) {
+  const set = new Set(entry.claimed);
+  let lastClaimed = entry.lastClaimed;
+  while (set.has(nextCupPathMilestone(lastClaimed))) {
+    const next = nextCupPathMilestone(lastClaimed);
+    set.delete(next);
+    lastClaimed = next;
+  }
+  return { lastClaimed, claimed: Array.from(set).sort((a, b) => a - b) };
+}
+
+/**
+ * Kupa yolunda hak edilmiş BİR sandığı açar.
+ *
+ * İstemci hangi eşiği açtığını `milestone` ile söyler; o eşik alınır. Kullanıcı biriken
+ * sandıkları sırayla almak zorunda değil — ekranda 500'e dokunduysa 500 açılır, 300 değil.
+ * `milestone` gelmezse sıradaki eşik alınır (eski istemciler için).
+ *
+ * Sandık openChest ile aynı yoldan çekilir (COMMON başlar, nadirlik ve ödül sunucuda
+ * yuvarlanır), cevap biçimi de aynıdır — istemci aynı sandık animasyonunu oynatır.
+ */
+exports.claimCupPathChest = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  const cupField = typeof (data && data.cupField) === 'string' ? data.cupField.trim() : '';
+  if (!CUP_PATH_FIELDS.includes(cupField)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kupa yolu.');
+  }
+
+  const rawMilestone = data && data.milestone;
+  const requestedMilestone =
+    rawMilestone === undefined || rawMilestone === null ? null : Math.trunc(Number(rawMilestone));
+  if (requestedMilestone !== null && !isCupPathMilestone(requestedMilestone)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kupa eşiği.');
+  }
+
+  const cupRef = db.collection('users').doc(uid).collection('cupWayProgress').doc('progress');
+  const ledgerRef = db.collection('users').doc(uid).collection('cupPathRewards').doc('progress');
+
+  // Sandığın BAŞLANGIÇ nadirliği eşikten geliyor ([cupPathChestRarity]); yükseltme
+  // dokunuşları onun üstüne biniyor. Eşiği bilmek için önce hangi eşiğin alınacağını
+  // bilmek gerekiyor.
+  //
+  // İstemci eşik gönderdiyse onu kullanıyoruz — ama GÜVENDİĞİMİZ için değil: transaction
+  // içinde defterle ve kupa puanıyla yeniden doğrulanıyor, uymuyorsa hiçbir şey verilmiyor.
+  // Göndermediyse defteri bir kez okuyup sıradakini buluyoruz; o okuma ile transaction
+  // arasında defter değişirse aşağıdaki eşitlik kontrolü çağrıyı iptal ediyor.
+  let rarityMilestone = requestedMilestone;
+  if (rarityMilestone === null) {
+    const preSnap = await ledgerRef.get();
+    const preEntry = readCupPathEntry(preSnap.exists ? preSnap.data() || {} : {}, cupField);
+    rarityMilestone = nextCupPathMilestone(preEntry.lastClaimed);
+  }
+  if (!isCupPathMilestone(rarityMilestone)) {
+    throw new functions.https.HttpsError(
+      'failed-precondition',
+      'Bu kupa yolunun bütün sandıkları alındı.'
+    );
+  }
+
+  // Ödül transaction'dan ÖNCE yuvarlanıyor: transaction yeniden çalıştırılırsa kullanıcı
+  // aynı çağrıda ikinci bir şans kazanmasın. Zarlar da burada atılıyor ki nadirlik tek
+  // bir yerde, eşikten türeyerek hesaplansın.
+  const startRarity = cupPathChestRarity(rarityMilestone);
+  const rarityPath = [];
+  let rarity = startRarity;
+  for (let i = 0; i < CHEST_TAP_COUNT; i++) {
+    rarity = rollRarityUpgrade(rarity);
+    rarityPath.push(rarity);
+  }
+  const reward = rollChestReward(rarity);
+
+  let claimedMilestone = 0;
+
+  const balances = await grantRolledReward(
+    uid,
+    reward,
+    'chests',
+    CHEST_DAILY_LIMIT,
+    async (transaction) => {
+      const cupSnap = await transaction.get(cupRef);
+      const ledgerSnap = await transaction.get(ledgerRef);
+
+      const cupData = cupSnap.exists ? cupSnap.data() || {} : {};
+      const rawScore = Number(cupData[cupField]);
+      const cupScore = Number.isFinite(rawScore) ? Math.trunc(rawScore) : CUP_PATH_START;
+
+      const ledgerData = ledgerSnap.exists ? ledgerSnap.data() || {} : {};
+      const entry = readCupPathEntry(ledgerData, cupField);
+
+      const milestone =
+        requestedMilestone === null ? nextCupPathMilestone(entry.lastClaimed) : requestedMilestone;
+
+      // Ödül yukarıda [rarityMilestone]'a göre yuvarlandı. Defter o okumadan sonra
+      // değiştiyse (başka cihazdan sandık alındı) burada durulur: yanlış nadirlikte bir
+      // sandık vermektense çağrıyı iptal etmek doğru. İstemci yeniden dener.
+      if (milestone !== rarityMilestone) {
+        throw new functions.https.HttpsError(
+          'aborted',
+          'Kupa yolu bu sırada değişti, tekrar dene.'
+        );
+      }
+      if (!isCupPathMilestone(milestone)) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Bu kupa yolunun bütün sandıkları alındı.'
+        );
+      }
+
+      if (milestone <= entry.lastClaimed || entry.claimed.includes(milestone)) {
+        throw new functions.https.HttpsError(
+          'already-exists',
+          'Bu sandığı zaten aldın.'
+        );
+      }
+      if (cupScore < milestone) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Bu sandık için yeterli kupan yok.'
+        );
+      }
+      claimedMilestone = milestone;
+
+      const updated = compactCupPathEntry({
+        lastClaimed: entry.lastClaimed,
+        claimed: entry.claimed.concat([milestone]),
+      });
+
+      // Firestore transaction'larında tüm okumalar yazmalardan önce gelmeli; yazmayı
+      // grantRolledReward kendi okumalarını bitirdikten sonra bu fonksiyonla yapıyor.
+      //
+      // merge yalnızca bu kupa yolunun iki alanını değiştiriyor, diğer yollara dokunmuyor.
+      // Dizi alanları merge'de birleştirilmez, olduğu gibi yazılır — sıkıştırma sonrası
+      // listeden eleman çıktığı için bize gereken de bu.
+      return (writeTransaction) => {
+        writeTransaction.set(
+          ledgerRef,
+          { [cupField]: { lastClaimed: updated.lastClaimed, claimed: updated.claimed } },
+          { merge: true }
+        );
+      };
+    }
+  );
+
+  return {
+    success: true,
+    cupField,
+    milestone: claimedMilestone,
+    startRarity,
+    rarityPath,
+    finalRarity: rarity,
+    rewardType: reward.type,
+    rewardAmount: reward.amount,
+    keys: balances.keys,
+    currency: balances.currency,
+  };
+});
+
+/**
+ * Bir kupa dersinin sonucunu işler: kupa puanını günceller ve günlük geçmişe yazar.
+ *
+ * ## Neden sunucuda
+ * Kupa puanı yalnızca bir skor değil, bir MUSLUK: kupa yolu sandıkları (claimCupPathChest)
+ * ve kupa rozetleri ona bakıyor. İstemci doğrudan yazabildiği sürece "kupamı 999999 yap"
+ * demek bedava sandık demekti. Artık koleksiyon istemciye kapalı; puan yalnızca buradan
+ * değişiyor ve DEĞİŞİM MİKTARINI sunucu kendi tablosundan hesaplıyor.
+ *
+ * ## Neyi korumuyor
+ * Dersin gerçekten kazanılıp kazanılmadığını sunucu bilmiyor; soru istemcide üretiliyor ve
+ * cevap istemcide doğrulanıyor. Yani hile hâlâ mümkün ama artık "tek çağrıda sınırsız kupa"
+ * değil, "insan hızında, adım adım, günlük tavanla sınırlı". Tam koruma sorunun sunucuda
+ * üretilip cevabın sunucuda doğrulanmasını gerektirir; bu ayrı ve büyük bir iş.
+ */
+exports.submitCupResult = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  const cupField = typeof (data && data.cupField) === 'string' ? data.cupField.trim() : '';
+  if (!CUP_PATH_FIELDS.includes(cupField)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kupa yolu.');
+  }
+
+  const won = !!(data && data.won);
+  const isMultiplication = !!(data && data.isMultiplication);
+  const rawLevel = Math.trunc(Number(data && data.difficultyLevel));
+  const level = Number.isFinite(rawLevel) ? Math.min(4, Math.max(0, rawLevel)) : 0;
+
+  const delta = isMultiplication
+    ? (won ? CUP_MULTIPLICATION_WIN : -CUP_MULTIPLICATION_LOSS)
+    : (won ? CUP_WIN_BY_LEVEL[level] : -CUP_LOSS_BY_LEVEL[level]);
+
+  // Geçmiş grafiğinin günü istemcinin YEREL tarihinden geliyor: sunucu UTC kullansaydı
+  // Türkiye'de gece yarısından sonraki dersler bir önceki güne yazılırdı. Uydurulması
+  // hâlinde zarar kullanıcının kendi grafiğiyle sınırlı, o yüzden biçim kontrolü yeterli.
+  const rawDayId = typeof (data && data.dayId) === 'string' ? data.dayId.trim() : '';
+  const dayId = /^\d{4}-\d{2}-\d{2}$/.test(rawDayId)
+    ? rawDayId
+    : new Date().toISOString().slice(0, 10);
+
+  const progressRef = db.collection('users').doc(uid).collection('cupWayProgress').doc('progress');
+  const historyRef = db.collection('users').doc(uid).collection('cupHistory').doc(dayId);
+
+  const result = await db.runTransaction(async (t) => {
+    const snap = await t.get(progressRef);
+    const d = snap.exists ? snap.data() || {} : {};
+    const now = Date.now();
+
+    // Frenler YALNIZCA KAZANCA uygulanıyor.
+    //
+    // Korumanın amacı kupa şişirmek; kayıp zaten kullanıcının aleyhine, hızlıca art arda
+    // kaybetmenin kötüye kullanımı yok. Dahası kaybı reddetmek TERS etki yapıyordu: dersi
+    // başlatıp hemen çıkan kullanıcı, iki çıkışı arka arkaya yaptığında ikinci cezadan
+    // muaf kalıyordu. Kaybın hızlı gelmesi de doğal — çıkmak bir saniye sürüyor, oysa
+    // kazanmak için soruyu cevaplamak gerekiyor.
+    const isGain = delta > 0;
+    const countedDay = typeof d.resultDayId === 'string' ? d.resultDayId : '';
+    const dayCount = countedDay === dayId ? Math.trunc(Number(d.resultDayCount)) || 0 : 0;
+
+    if (isGain) {
+      const lastMs = Number(d.lastResultMs);
+      const sinceLast = Number.isFinite(lastMs) ? now - lastMs : Number.MAX_SAFE_INTEGER;
+      // Negatif fark = sunucu saati değil, bozuk kayıt. Kilitlememek için geçerli sayılıyor.
+      if (sinceLast >= 0 && sinceLast < CUP_RESULT_MIN_GAP_MS) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Çok hızlı gönderildi.');
+      }
+      if (dayCount >= CUP_RESULT_DAILY_LIMIT) {
+        throw new functions.https.HttpsError('resource-exhausted', 'Günlük kupa sınırına ulaşıldı.');
+      }
+    }
+
+    const rawCurrent = Number(d[cupField]);
+    const current = Number.isFinite(rawCurrent) ? Math.trunc(rawCurrent) : CUP_PATH_START;
+    const updated = Math.max(0, current + delta);
+
+    // Tüm zamanların zirvesi.
+    //
+    // NEDEN
+    //   Kupa tabanlı rozetler (dino, timsah, keçi, kartal, sinek, kaplumbağa) kupa puanının
+    //   EN YÜKSEK değerini saklıyor; kupa puanı ise kayıplarla düşebiliyor. Yani rozetin
+    //   güncel puandan büyük olması meşru ve "rozet <= güncel puan" diye bir kural
+    //   yazılamıyor. Zirve burada tutulunca kural tam olarak yazılabiliyor
+    //   (bkz. firestore.rules, badgeProgress): rozet zirveyi AŞAMAZ.
+    //
+    //   Alanı olmayan eski kullanıcılarda zirve güncel puandan başlıyor. Bu kimseyi
+    //   engellemiyor: istemci rozete her zaman bu fonksiyonun döndürdüğü yeni puanı yazıyor
+    //   ve zirve tanımı gereği ondan küçük olamıyor.
+    const peakField = `max_${cupField}`;
+    const rawPeak = Number(d[peakField]);
+    const peak = Math.max(Number.isFinite(rawPeak) ? Math.trunc(rawPeak) : current, updated);
+
+    // Sayaçlar da yalnızca kazançla ilerliyor: kaybın sayacı ileri itmesi, hemen ardından
+    // gelen meşru bir kazancı sebepsiz reddettirirdi.
+    const gates = isGain
+      ? { lastResultMs: now, resultDayId: dayId, resultDayCount: dayCount + 1 }
+      : {};
+
+    t.set(
+      progressRef,
+      {
+        [cupField]: updated,
+        [peakField]: peak,
+        ...gates,
+      },
+      { merge: true }
+    );
+    // Geçmiş aynı transaction'da yazılıyor: puan ilerleyip grafik geride kalmasın.
+    t.set(historyRef, { [cupField]: updated }, { merge: true });
+
+    return { oldScore: current, newScore: updated };
+  });
+
+  return { success: true, cupField, delta, oldScore: result.oldScore, newScore: result.newScore };
+});
+
 /**
  * Kristal (günlük soru / görev) ödülü açar. Hangi videonun oynayacağını ve ödülü
  * sunucu çeker.
@@ -1968,6 +6689,917 @@ exports._rollChestReward = rollChestReward;
 exports._rollCrystalVideo = rollCrystalVideo;
 exports._rollCrystalReward = rollCrystalReward;
 
+// ─── Günlük seri (streak) — sunucu taraflı ──────────────────────────────────
+//
+// NEDEN SUNUCUDA
+//   Seri artık ödül dağıtıyor. Seri istemcide tutulsaydı "serim 30 oldu" demek on anahtar
+//   demek olurdu; cüzdan alanları (`keys`, `currency`) kurallarda sunucuya özel olduğu için
+//   ödülü zaten yalnızca bir fonksiyon yazabilir, ama fonksiyonun da DOĞRULAYACAK bir şeye
+//   ihtiyacı var. Bu yüzden seri sayacı buraya taşındı: istemci yalnızca "bugün hedefimi
+//   tutturdum" diyebiliyor, sayacı sunucu kendisi ilerletiyor.
+//
+// NEYİ KORUMUYOR
+//   Çocuğun gerçekten çalışıp çalışmadığını sunucu bilmiyor; çalışma süresi cihazda
+//   ölçülüyor. Yani "hiç çalışmadan gün bildirmek" hâlâ mümkün. Ama artık tek çağrıda
+//   sıçramak mümkün değil: otuz günlük ödül için otuz ayrı GÜN boyunca, günde bir kez
+//   bildirmek gerekiyor. Bu da günde beş dakika çalışmakla aşağı yukarı aynı emek.
+//
+// YEREL GÜN, UTC DEĞİL
+//   Seri kullanıcının takvim gününe göre işliyor (bkz. StudyTimeTracker.dayId). Sunucu UTC
+//   çalıştığı için gün kimliği istemciden geliyor ve sunucunun UTC gününe ±1 gün uzaklıkta
+//   olmak zorunda: bütün saat dilimlerini kapsar, ama ileriye zıplamaya izin vermez.
+
+/** Gün kimliği biçimi: yyyy-MM-dd. */
+const STREAK_DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** İstemcinin yerel günü sunucunun UTC gününden en fazla bu kadar sapabilir. */
+const STREAK_DAY_TOLERANCE_DAYS = 1;
+
+/** Tek çağrıda bildirilebilecek en fazla gün (çevrimdışı birikmiş günler için). */
+const STREAK_MAX_DAYS_PER_CALL = 7;
+
+/** Günde en fazla kaç kilometre taşı toplanabilir; birikmiş taşları toplamaya yeter. */
+const STREAK_CLAIM_DAILY_LIMIT = 10;
+
+/**
+ * Sunucuda saklanan "tutturulmuş gün" sayısı.
+ *
+ * Seri sayısı tek başına yetmiyor: cihaz değiştiren kullanıcının hafta şeridi bomboş
+ * çıkıyordu — alev "30 gün" derken şeritte tek bir gün işaretli değildi. İstemcideki
+ * arşivle aynı uzunluk (StreakRepository.ACHIEVED_HISTORY_DAYS).
+ */
+const STREAK_RECENT_DAYS_KEPT = 21;
+
+/**
+ * Sabit kilometre taşları. Sonrası 30'un katlarında devam ediyor.
+ *
+ * DİKKAT: bu tablonun bir ikizi istemcide, `StreakMilestones.kt` içinde. Orası yalnızca
+ * GÖSTERİM için (kullanıcı toplamadan önce ne kazanacağını görsün); ödülü veren taraf
+ * burası. İkisi ayrılırsa kullanıcı bir şey görüp başka bir şey alır — biri değişirse
+ * diğeri de değişmeli.
+ */
+const STREAK_FIXED_REWARDS = {
+  3: { keys: 3, gold: 0 },
+  7: { keys: 0, gold: 2000 },
+  14: { keys: 5, gold: 0 },
+  30: { keys: 0, gold: 5000 },
+};
+
+/** Kilometre taşı olarak kabul edilen en büyük gün — sonsuz döngüye karşı üst sınır. */
+const STREAK_MAX_MILESTONE = 3600;
+
+/**
+ * Meydan okuma ödülleri (altın).
+ *
+ * Kilometre taşlarından AYRI: taşlar herkese aynı, meydan okuma ise kullanıcının kayıt
+ * sırasında kendi verdiği söz. Beş günlük sözün hiçbir taşa denk gelmemesi, tutulan bir
+ * taahhüdün karşılıksız kalması demekti.
+ *
+ * Bir kez alınıyor: meydan okuma da bir kez seçiliyor (bkz. challengeDays kilidi).
+ */
+const STREAK_CHALLENGE_REWARDS = { 3: 500, 5: 1000, 7: 1500 };
+
+/**
+ * Bir kilometre taşının ödülü; geçerli bir taş değilse null.
+ *
+ * 30'dan sonra her 30 günde bir ödül var ve sırayla dönüyor: 60 altın, 90 anahtar,
+ * 120 altın… Merdiven 30'da bitseydi altmışıncı günündeki çocuk için seri anlamsızlaşırdı.
+ */
+function streakRewardFor(milestone) {
+  if (!Number.isInteger(milestone) || milestone <= 0 || milestone > STREAK_MAX_MILESTONE) {
+    return null;
+  }
+  if (STREAK_FIXED_REWARDS[milestone]) return STREAK_FIXED_REWARDS[milestone];
+  if (milestone % 30 !== 0) return null;
+  // 30 altın (yukarıdaki sabit tabloda), 60 anahtar, 90 altın, 120 anahtar …
+  // Çift adım anahtar veriyor çünkü merdiven 30'da altınla bitiyor.
+  const step = milestone / 30; // 30 → 1, 60 → 2, 90 → 3 …
+  return step % 2 === 0 ? { keys: 10, gold: 0 } : { keys: 0, gold: 5000 };
+}
+
+/** `yyyy-MM-dd` → epoch gün sayısı. Geçersizse null. */
+function streakDayNumber(dayId) {
+  if (typeof dayId !== 'string' || !STREAK_DAY_RE.test(dayId)) return null;
+  const ms = Date.parse(`${dayId}T00:00:00Z`);
+  if (!Number.isFinite(ms)) return null;
+  return Math.floor(ms / 86400000);
+}
+
+/** Epoch gün sayısı → `yyyy-MM-dd`; [streakDayNumber]'ın tersi. */
+function streakDayId(dayNo) {
+  return new Date(dayNo * 86400000).toISOString().slice(0, 10);
+}
+
+// ─── Seri dondurma ──────────────────────────────────────────────────────────
+//
+// NE
+//   Mağazadan altınla alınan tek kullanımlık koruma: kaçırılan İLK günü kapatır, seri
+//   kırılmaz. Kapatılan gün seriye EKLENMEZ (5 günlük seri 5 kalır, ertesi gün çalışılınca
+//   6 olur) — eklenseydi altınla gün satın alınır, kilometre taşı ödülleri de onunla gelirdi.
+//
+// NASIL TEMSİL EDİLİYOR
+//   Kaçan gün "köprü" olarak `lastDay`'e yazılıyor ve `frozenDays`'e ekleniyor. Böylece
+//   ardışıklık kontrolünün (applyStreakDays, istemcide StreakRepository.refresh) hiçbir
+//   satırı değişmiyor: ertesi gün bildirildiğinde `lastDay + 1` şartı kendiliğinden tutuyor.
+//
+// NE ZAMAN HARCANIYOR
+//   Gün kaçtığı ANDA çalışan bir kodumuz yok, o yüzden — kırılma gibi — sonradan, bir
+//   "referans gün" görüldüğünde hesaplanıyor: istemcinin bildirdiği bugün ya da tutturulmuş
+//   bir gün. İki gün üst üste kaçtıysa dondurma yine harcanıyor ve seri yine kırılıyor
+//   (ürün kararı: dondurma kaçan ilk günün bedeli, serinin kurtulmasının garantisi değil).
+//
+// İKİZİ
+//   Aynı kural istemcide StreakFreezeRules.settle içinde. Çevrimdışıyken de çalışsın diye
+//   orada da var; ikisi aynı girdiyle aynı sonucu vermek ZORUNDA, yoksa çocuk "serin
+//   korundu" görüp eşitlemeden sonra kırık seriyle karşılaşır.
+
+/**
+ * Seri dondurmanın altın bedeli.
+ *
+ * DİKKAT: ikizi istemcide, `StreakRepository.FREEZE_COST_GOLD`. Orası yalnızca GÖSTERİM için
+ * (kartta yazan fiyat); düşülen miktarı burası belirliyor. Biri değişirse diğeri de değişmeli.
+ */
+const STREAK_FREEZE_COST = 4000;
+
+/** Aynı anda elde tutulabilecek dondurma sayısı; harcanınca yenisi alınabilir. */
+const STREAK_FREEZE_MAX_HELD = 1;
+
+/**
+ * Eldeki dondurmayı, kaçırılan ilk günü kapatmak için harcar.
+ *
+ * Değişiklik yoksa AYNI nesneyi döner; çağıranlar `settled !== state` ile "bir şey oldu mu"
+ * diye bakıyor.
+ *
+ * @param refDayNo Başladığı bilinen bir gün (epoch gün): istemcinin bugünü ya da bildirilen
+ *   bir gün. Kendisi henüz bitmediği için kaçmış sayılmaz; kaçan gün ondan ÖNCEKİ günlerdir.
+ */
+function settleStreakFreeze(state, refDayNo) {
+  const freezes = Math.max(0, Math.trunc(Number(state.freezes) || 0));
+  if (freezes <= 0 || !(state.current > 0) || refDayNo === null) return state;
+  const lastNo = streakDayNumber(state.lastDay);
+  if (lastNo === null) return state;
+  // Arada tam bir gün olmalı: lastDay dün ise henüz kaçan bir şey yok.
+  if (refDayNo - lastNo < 2) return state;
+  const missedNo = lastNo + 1;
+  // Dondurma, satın alındığı günden ÖNCESİNİ kurtarmaz. Bu şart olmasaydı dün kırılan seri
+  // bugün dondurma alınarak "onarılabilirdi": sunucuda kırılma yazılmıyor (`current` yeni bir
+  // gün bildirilene kadar eski değerinde duruyor), yani ölü seri burada hâlâ canlı görünür.
+  const boughtNo = streakDayNumber(state.freezeDay);
+  if (boughtNo !== null && missedNo < boughtNo) return state;
+
+  const missedDay = streakDayId(missedNo);
+  const frozenDays = Array.from(new Set((state.frozenDays || []).concat([missedDay])))
+    .sort()
+    .slice(-STREAK_RECENT_DAYS_KEPT);
+  return Object.assign({}, state, {
+    lastDay: missedDay,
+    freezes: freezes - 1,
+    freezeDay: '',
+    frozenDays,
+  });
+}
+
+/** Dondurma alanları değiştiyse yazılacak yama; değişmediyse boş (her çağrıda yazmayalım). */
+function freezePatch(before, after) {
+  if (
+    after.freezes === before.freezes &&
+    after.freezeDay === before.freezeDay &&
+    after.frozenDays.length === before.frozenDays.length
+  ) {
+    return {};
+  }
+  return { freezes: after.freezes, freezeDay: after.freezeDay, frozenDays: after.frozenDays };
+}
+
+/**
+ * İstemcinin bildirdiği yerel gün (epoch gün); geçersizse null.
+ *
+ * Gün bildirimindeki ile aynı pay: sunucunun UTC gününden en fazla ±1 gün sapabilir.
+ */
+function clientTodayNo(raw, serverDayNo) {
+  const dayNo = streakDayNumber(raw);
+  if (dayNo === null) return null;
+  if (Math.abs(dayNo - serverDayNo) > STREAK_DAY_TOLERANCE_DAYS) return null;
+  return dayNo;
+}
+
+/**
+ * Meydan okuma alanlarının yazılıp yazılmayacağı.
+ *
+ * ## Kural: tur başında serbest, tur içinde kilitli
+ * Meydan okuma ödül dağıtıyor. Seri YAŞARKEN değiştirilebilseydi kullanıcı üç
+ * günlüğün 500 altınını alır, aynı gün 7'ye çıkıp 1500'ü de alabilirdi. Bu yüzden
+ * yazma yalnızca serinin BAŞINDA (0 ya da 1. gün) serbest.
+ *
+ * Neden sonsuza kadar kilitli değil: seri kırıldığında kullanıcı ders sonunda yeni bir
+ * söz veriyor ve o sözün de bir karşılığı olmalı. Kilometre taşlarında da aynı kural
+ * işliyor (`claimed` seri kırılınca sıfırlanıyor): yeni seri, yeni merdiven.
+ *
+ * Sömürülemez, çünkü ödül en az 3 günlük seri istiyor: sıfırlamak için seriyi
+ * kaybetmek, yeniden almak için üç gün daha çalışmak gerekiyor.
+ *
+ * @param runDay Serinin bu çağrıdan SONRAKİ uzunluğu (günsüz çağrıda mevcut uzunluk).
+ */
+function challengePatch(runDay, challengeDays, state) {
+  if (!(challengeDays > 0) || challengeDays > 400) return {};
+  if (runDay > 1) return {};
+  // Aynı değer zaten yazılıysa ve ödül henüz alınmadıysa dokunma: değiştirmeyen
+  // bir yazımın bedelini ödemenin anlamı yok, her gün tekrarlanıyor.
+  if (state.challengeDays === challengeDays && state.challengeClaimed === 0) return {};
+  // Yeni tur, yeni ödül hakkı.
+  return { challengeDays, challengeClaimed: 0 };
+}
+
+/**
+ * Hatırlatma alanları: UTC saati, saat dilimi farkı, son görülme ve (gönderildiyse)
+ * kullanıcının seçtiği yerel saat.
+ *
+ * Fark gelmemişse null dönüyor — eski bir istemci sürümü alanı hiç göndermiyor olabilir ve
+ * o kullanıcının kaydını yanlış bir saatle bozmaktansa hiç dokunmamak doğru.
+ *
+ * Yerel saat önceliği: bu çağrıda seçilen > kayıtlı seçim > 19:00. İstemci saati yalnızca
+ * kullanıcı o cihazda seçtiğinde gönderiyor; eski sürümler hiç göndermiyor, onlar kayıtlı
+ * seçimle (yoksa 19:00 ile) devam ediyor.
+ *
+ * @param chosenHour Bu çağrıda gönderilen saat (normalizeReminderHour'dan), yoksa null.
+ * @param storedHour Kayıtlı seçim (readStreakState), yoksa null.
+ */
+function reminderPatch(utcOffsetMinutes, chosenHour, storedHour) {
+  if (utcOffsetMinutes === null) return null;
+  const localHour = chosenHour ?? storedHour ?? STREAK_REMINDER_LOCAL_HOUR;
+  const patch = {
+    reminderHourUtc: reminderHourUtc(utcOffsetMinutes, localHour),
+    // Kırılma öncesi ikinci hatırlatmanın UTC saati. Kullanıcının seçimine bağlı DEĞİL,
+    // sabit yerel 20:00 — sessiz saatlerin bir saat öncesi. Ayrı alan olması gerekiyordu:
+    // tarama kullanıcıları indeksli tek bir eşitlikle seçiyor.
+    secondReminderHourUtc: reminderHourUtc(utcOffsetMinutes, SECOND_CHANCE_LOCAL_HOUR),
+    utcOffsetMinutes,
+    lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  if (chosenHour !== null) patch.reminderLocalHour = chosenHour;
+  return patch;
+}
+
+function streakDocRef(uid) {
+  return db.collection('users').doc(uid).collection('streak').doc('state');
+}
+
+function readStreakState(snap) {
+  const data = snap && snap.exists ? snap.data() || {} : {};
+  const claimed = Array.isArray(data.claimed)
+    ? data.claimed.map((v) => Math.trunc(Number(v))).filter((v) => Number.isInteger(v) && v > 0)
+    : [];
+  const recentDays = Array.isArray(data.recentDays)
+    ? data.recentDays.filter((v) => typeof v === 'string' && STREAK_DAY_RE.test(v))
+    : [];
+  return {
+    current: Math.max(0, Math.trunc(Number(data.current) || 0)),
+    longest: Math.max(0, Math.trunc(Number(data.longest) || 0)),
+    lastDay: typeof data.lastDay === 'string' ? data.lastDay : '',
+    claimed,
+    recentDays,
+    goalMinutes: Math.trunc(Number(data.goalMinutes) || 0),
+    challengeDays: Math.trunc(Number(data.challengeDays) || 0),
+    challengeClaimed: Math.trunc(Number(data.challengeClaimed) || 0),
+    freezes: Math.min(
+      STREAK_FREEZE_MAX_HELD,
+      Math.max(0, Math.trunc(Number(data.freezes) || 0))
+    ),
+    freezeDay:
+      typeof data.freezeDay === 'string' && STREAK_DAY_RE.test(data.freezeDay)
+        ? data.freezeDay
+        : '',
+    frozenDays: Array.isArray(data.frozenDays)
+      ? data.frozenDays.filter((v) => typeof v === 'string' && STREAK_DAY_RE.test(v))
+      : [],
+    // Kullanıcının seçtiği hatırlatma saati (yerel); seçmediyse null → 19:00.
+    reminderLocalHour: normalizeReminderHour(data.reminderLocalHour),
+  };
+}
+
+/**
+ * Tutturulmuş günleri seri sayacına işler.
+ *
+ * Aynı gün ikinci kez bildirilirse hiçbir şey olmaz; ardışık olmayan bir gün seriyi
+ * bugünden yeniden başlatır ve toplanmış kilometre taşları sıfırlanır — yeni bir seri, yeni
+ * bir merdiven demek.
+ *
+ * Araya kaçan bir gün girdiyse ve elde seri dondurma varsa önce o devreye giriyor
+ * (bkz. settleStreakFreeze): kaçan gün köprülendiği için aşağıdaki ardışıklık kontrolü
+ * değişmeden çalışıyor.
+ */
+function applyStreakDays(state, days) {
+  let { current, longest, lastDay, claimed } = state;
+  let freeze = {
+    freezes: state.freezes || 0,
+    freezeDay: state.freezeDay || '',
+    frozenDays: state.frozenDays || [],
+  };
+  for (const day of days) {
+    if (lastDay === day) continue;
+    const dayNo = streakDayNumber(day);
+    const settled = settleStreakFreeze(Object.assign({ current, lastDay }, freeze), dayNo);
+    lastDay = settled.lastDay;
+    freeze = {
+      freezes: settled.freezes,
+      freezeDay: settled.freezeDay,
+      frozenDays: settled.frozenDays,
+    };
+    const lastNo = streakDayNumber(lastDay);
+    if (lastNo !== null && dayNo === lastNo + 1) {
+      current += 1;
+    } else if (lastNo !== null && dayNo <= lastNo) {
+      // Geçmiş bir gün sonradan bildirildi: seriyi geri almaz, ileri de götürmez.
+      continue;
+    } else {
+      current = 1;
+      claimed = [];
+    }
+    longest = Math.max(longest, current);
+    lastDay = day;
+  }
+  return Object.assign({ current, longest, lastDay, claimed }, freeze);
+}
+
+/**
+ * "Bugün hedefimi tutturdum" bildirimi.
+ *
+ * Birden çok gün kabul ediliyor: kullanıcı çevrimdışıyken de seri işliyor, bağlantı gelince
+ * biriken günler tek çağrıda kapanabilsin diye. Sunucu yine de her günü tek tek ve sırayla
+ * işliyor, yani yedi gün göndermek yedi günlük seri kazandırmıyor — günlerin ardışık olması
+ * gerekiyor.
+ */
+exports.submitStreakDay = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  const rawDays = Array.isArray(data && data.days) ? data.days : [];
+  const serverDayNo = Math.floor(Date.now() / 86400000);
+  const days = [];
+  for (const raw of rawDays) {
+    const dayNo = streakDayNumber(raw);
+    if (dayNo === null) {
+      throw new functions.https.HttpsError('invalid-argument', 'Geçersiz gün.');
+    }
+    // İleriye zıplama yok: istemci en fazla bir gün ileride olabilir (saat dilimi payı).
+    // Fazlası ELENİYOR, çağrıyı reddetmiyor: reddetseydik saati ileri alınmış bir cihazda
+    // kuyruktaki tek ileri tarihli gün, yanındaki geçerli günlerin de hiç işlenmemesine yol
+    // açardı — ve kuyruk boşalmadığı için bu durum kendiliğinden düzelmezdi.
+    if (dayNo > serverDayNo + STREAK_DAY_TOLERANCE_DAYS) continue;
+    // Çok eski günler seriye işlenmez; zaten kırılmış bir seriyi diriltemezler.
+    if (dayNo < serverDayNo - STREAK_MAX_DAYS_PER_CALL) continue;
+    days.push(raw);
+  }
+  if (days.length > STREAK_MAX_DAYS_PER_CALL) {
+    throw new functions.https.HttpsError('invalid-argument', 'Çok fazla gün.');
+  }
+  days.sort();
+
+  // DİKKAT — BU ÜÇ TANIM AŞAĞIDAKİ `days.length === 0` DALINDAN ÖNCE OLMAK ZORUNDA.
+  //
+  // Bir kez aşağıda duruyorlardı ve günsüz dal (günlük "buradayım" bildirimi) onlara
+  // erişiyordu. `const` tanımlandığı satıra kadar "geçici ölü bölge"de olduğu için erişim
+  // ReferenceError atıyor, Cloud Functions bunu INTERNAL diye döndürüyordu: günlük bildirim
+  // HER SEFERİNDE çöküyordu. Gün gönderen çağrılar çalıştığı için hata aylarca yalnızca
+  // "submitStreakDay başarısız" satırı olarak göründü.
+  //
+  // Hedef ve meydan okuma yalnızca taşınsın diye saklanıyor (cihaz değişince geri gelsin).
+  // Ödül hesabına girmiyorlar, o yüzden doğrulama basit bir aralık kontrolü.
+  const goalMinutes = Math.trunc(Number(data && data.goalMinutes) || 0);
+  const challengeDays = Math.trunc(Number(data && data.challengeDays) || 0);
+
+  // Hatırlatmanın saati. İstemci UTC farkını gönderiyor; sunucu ondan, kullanıcının yerel
+  // saatiyle seçtiği saate (seçmediyse 19:00'a) denk gelen UTC saatini hesaplıyor. Böylece
+  // saatlik tarama "şu anda yerel saati hatırlatma saati olanlar" sorgusunu indeksli tek bir
+  // eşitlikle yapabiliyor.
+  const rawOffset = Number(data && data.utcOffsetMinutes);
+  const utcOffsetMinutes =
+    Number.isFinite(rawOffset) && Math.abs(rawOffset) <= 14 * 60 ? Math.trunc(rawOffset) : null;
+  // Kullanıcının seçtiği hatırlatma saati (yerel, tam saat). İstemci yalnızca kullanıcı o
+  // cihazda seçtiğinde gönderiyor (kayıttaki soru ya da seri ekranı); yoksa null ve kayıtlı
+  // seçim (o da yoksa 19:00) geçerli. Bu tanım da günsüz daldan ÖNCE olmak zorunda (yukarıya bkz.).
+  const chosenReminderHour = normalizeReminderHour(data && data.reminderHour);
+
+  // İstemcinin yerel bugünü: seri dondurmanın "kaçan gün"ü buna göre belirleniyor. Sunucunun
+  // kendi saatinden türetilmiyor çünkü istemci de dondurmayı KENDİ gününe göre harcıyor
+  // (çevrimdışı çalışabilsin diye); iki taraf farklı güne bakarsa biri harcanmış derken
+  // öbürü durur der. Eski istemci sürümü alanı göndermiyor: o zaman null ve dondurma yalnızca
+  // gün bildirilirken hesaplanıyor. Bu tanım da günsüz daldan ÖNCE olmak zorunda (yukarıya bkz.).
+  const todayNo = clientTodayNo(data && data.today, serverDayNo);
+
+  // Gönderilen günlerin hepsi elendi (hepsi çok eski ya da ileri tarihli). Hata değil:
+  // istemci kuyruğu temizleyebilsin diye mevcut durum olduğu gibi dönülüyor. Hata
+  // dönseydi istemci aynı işe yaramaz günleri sonsuza kadar yeniden denerdi.
+  if (days.length === 0) {
+    // İstemci günlük "buradayım" bildirimini de bu çağrıyla yapıyor (bkz. StreakSyncService):
+    // hatırlatma saati ve son görülme böylece hedef tutturulmasa da güncel kalıyor.
+    const ref = streakDocRef(uid);
+    const snap = await ref.get();
+    const state = readStreakState(snap);
+    const patch = Object.assign(
+      {},
+      reminderPatch(utcOffsetMinutes, chosenReminderHour, state.reminderLocalHour) || {}
+    );
+    // Seri kırıldıktan sonra kullanıcı ders sonunda yeni bir meydan okuma seçiyor
+    // (bkz. NewStreakFragment) ve cevabı günün ilk bildiriminden SONRA gelebiliyor.
+    // Bu yüzden günsüz çağrı da yazabiliyor — aynı "tur başı" şartıyla.
+    Object.assign(patch, challengePatch(state.current, challengeDays, state));
+    // Doküman yoksa normalde yazılmıyor (hiç gün bildirmemiş kullanıcı için seri kaydı
+    // açılmıyor). İstisna: kullanıcı hatırlatma saati SEÇTİ — yeni kayıt olmuş, henüz hedef
+    // tutturmamış çocuk. Yazılmasaydı istemci "iletildi" deyip seçimi unutur ve hatırlatma
+    // ancak ilk tutturulan günden sonra, 19:00'da başlardı; oysa en çok ilk günlerde lazım.
+    if (Object.keys(patch).length > 0 && (snap.exists || patch.reminderLocalHour !== undefined)) {
+      await ref.set(patch, { merge: true });
+    }
+
+    // Dün kaçtıysa dondurma burada harcanıyor: istemci uygulama açılır açılmaz kendi
+    // tarafında harcadı, sunucu gün bildirilmesini bekleseydi mağaza "dondurman var" diye
+    // yeni alımı reddederdi (istemcide düğme açık, sunucuda kapalı).
+    //
+    // Transaction ŞART, yukarıdaki düz yazım gibi yapılamaz: aynı anda buyStreakFreeze
+    // çalışabiliyor. Düz yazım, burada okunan bayat duruma göre `freezes: 0` yazıp az önce
+    // satın alınan dondurmayı — yani 4000 altını — silerdi.
+    let frozen = state;
+    if (settleStreakFreeze(state, todayNo) !== state) {
+      frozen = await db.runTransaction(async (transaction) => {
+        const fresh = readStreakState(await transaction.get(ref));
+        const settled = settleStreakFreeze(fresh, todayNo);
+        if (settled !== fresh) {
+          transaction.set(
+            ref,
+            Object.assign({ lastDay: settled.lastDay }, freezePatch(fresh, settled)),
+            { merge: true }
+          );
+        }
+        return settled;
+      });
+    }
+    return {
+      success: true,
+      current: state.current,
+      longest: state.longest,
+      lastDay: frozen.lastDay,
+      claimed: state.claimed,
+      recentDays: state.recentDays,
+      goalMinutes: state.goalMinutes,
+      // Az önce YAZILAN değer dönüyor, okunan değil. Bayat değer dönseydi istemci
+      // kullanıcının yeni seçimini kendi üzerine yazdığımız eski değerle ezerdi
+      // (bkz. StreakRepository.adoptServerState).
+      challengeDays: patch.challengeDays ?? state.challengeDays,
+      challengeClaimed: patch.challengeClaimed ?? state.challengeClaimed,
+      freezes: frozen.freezes,
+      freezeDay: frozen.freezeDay,
+      frozenDays: frozen.frozenDays,
+      // Hatırlatma saati: başka cihazda seçilmişse bu cihaz da öğrensin.
+      reminderLocalHour: patch.reminderLocalHour ?? state.reminderLocalHour,
+    };
+  }
+
+  const ref = streakDocRef(uid);
+  const result = await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    const state = readStreakState(snap);
+    // Günler işlendikten sonra BUGÜNE göre de kapatılıyor: kuyruktan gelen günler eski
+    // olabilir (çevrimdışı geçen günler), yani son bildirilen gün ile bugün arasında da bir
+    // gün kaçmış olabilir. İstemci onu açılışta kendi tarafında zaten harcadı.
+    const next = settleStreakFreeze(applyStreakDays(state, days), todayNo);
+
+    // Tutturulmuş günler: hafta şeridi cihaz değişiminden sonra da dolu gelsin diye.
+    // Diziler merge'de birleştirilmediği için birleştirme burada yapılıyor.
+    const recentDays = Array.from(new Set(state.recentDays.concat(days)))
+      .sort()
+      .slice(-STREAK_RECENT_DAYS_KEPT);
+
+    const patch = {
+      current: next.current,
+      longest: next.longest,
+      lastDay: next.lastDay,
+      claimed: next.claimed,
+      recentDays,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    if (goalMinutes > 0 && goalMinutes <= 600) patch.goalMinutes = goalMinutes;
+    Object.assign(patch, challengePatch(next.current, challengeDays, state));
+    Object.assign(
+      patch,
+      reminderPatch(utcOffsetMinutes, chosenReminderHour, state.reminderLocalHour) || {}
+    );
+    Object.assign(patch, freezePatch(state, next));
+
+    transaction.set(ref, patch, { merge: true });
+
+    // En uzun seri profil kartında görünüyor ve o kart başkasının profilinde de
+    // açılıyor. Seri dokümanı yalnızca sahibine okunuyor, o yüzden değer buradan
+    // `users/{uid}`'e yazılıyor; mirrorPublicProfile onu aynaya taşıyor. Kurallarda
+    // sunucuya özel: başkasına görünen bir sayı istemciden yazılamaz.
+    //
+    // Her kabul edilen günde yazılıyor, yalnızca rekor kırıldığında değil: kullanıcı
+    // dokümanı bu transaction'da OKUNMUYOR, dolayısıyla oradaki değerin güncel olup
+    // olmadığı bilinemez. Günde en fazla bir kez oluyor ve ayna, izdüşüm değişmediyse
+    // zaten yazmıyor.
+    transaction.set(
+      db.collection('users').doc(uid),
+      { longestStreak: next.longest },
+      { merge: true }
+    );
+    // Hedef/meydan okuma da dönüyor: cihaz değiştiren kullanıcının istemcisi bunları
+    // buradan öğreniyor. Yazılan değer varsa o, yoksa kayıtlı olan — yani istemcinin
+    // gönderdiği meydan okuma kilitliyse geri gelen kayıtlı olanıdır.
+    return Object.assign({}, next, {
+      recentDays,
+      // Yazılan değer varsa o, yoksa kayıtlı olan. `??` kullanılıyor çünkü yeni turda
+      // yazılan challengeClaimed SIFIR ve `||` onu bayat değere düşürürdü.
+      goalMinutes: patch.goalMinutes ?? state.goalMinutes,
+      challengeDays: patch.challengeDays ?? state.challengeDays,
+      challengeClaimed: patch.challengeClaimed ?? state.challengeClaimed,
+      reminderLocalHour: patch.reminderLocalHour ?? state.reminderLocalHour,
+    });
+  });
+
+  return {
+    success: true,
+    current: result.current,
+    longest: result.longest,
+    lastDay: result.lastDay,
+    claimed: result.claimed,
+    recentDays: result.recentDays,
+    goalMinutes: result.goalMinutes,
+    challengeDays: result.challengeDays,
+    challengeClaimed: result.challengeClaimed,
+    freezes: result.freezes,
+    freezeDay: result.freezeDay,
+    frozenDays: result.frozenDays,
+    reminderLocalHour: result.reminderLocalHour,
+  };
+});
+
+/**
+ * Altın karşılığı seri dondurma satın alır.
+ *
+ * Altın düşümü ve dondurmanın yazılması AYNI transaction'da: iki adımlı olsaydı araya
+ * giren bir hata altını götürüp dondurmayı vermeyebilirdi (buyEnergyWithKeys ile aynı sebep).
+ *
+ * Önce bekleyen dondurma hesabı kapatılıyor: eldeki dondurma dün harcanmış ama sunucu bunu
+ * henüz işlememiş olabilir (istemci açılışta kendi tarafında harcıyor). Kapatılmasaydı
+ * "zaten bir dondurman var" diye reddederdik — istemcide düğme açıkken.
+ */
+exports.buyStreakFreeze = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  // Bugün zorunlu: dondurmanın hangi günden itibaren koruduğu buna göre yazılıyor
+  // (bkz. settleStreakFreeze — satın alındığı günden öncesini kurtarmaz).
+  const todayNo = clientTodayNo(data && data.today, Math.floor(Date.now() / 86400000));
+  if (todayNo === null) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz gün.');
+  }
+
+  const userRef = db.collection('users').doc(uid);
+  const ref = streakDocRef(uid);
+
+  const result = await db.runTransaction(async (transaction) => {
+    // Tüm okumalar yazmalardan önce.
+    const userSnap = await transaction.get(userRef);
+    const streakSnap = await transaction.get(ref);
+    if (!userSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const before = readStreakState(streakSnap);
+    const state = settleStreakFreeze(before, todayNo);
+
+    if (state.freezes >= STREAK_FREEZE_MAX_HELD) {
+      throw new functions.https.HttpsError('already-exists', 'Zaten bir seri dondurman var.');
+    }
+    assertNotUnapprovedTeacher(userSnap.data());
+    const currency = Number.parseInt(userSnap.data().currency, 10) || 0;
+    if (currency < STREAK_FREEZE_COST) {
+      throw new functions.https.HttpsError('failed-precondition', 'Yetersiz altın.');
+    }
+
+    const after = Object.assign({}, state, {
+      freezes: state.freezes + 1,
+      freezeDay: streakDayId(todayNo),
+    });
+    const patch = {
+      freezes: after.freezes,
+      freezeDay: after.freezeDay,
+      frozenDays: after.frozenDays,
+      freezeBoughtAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    // Eski dondurma bu çağrıda harcandıysa köprülenen gün de yazılmalı; harcanmadıysa
+    // `lastDay`'e dokunulmuyor (hiç gün bildirmemiş kullanıcıda boş bir alan yaratmayalım).
+    if (state !== before) patch.lastDay = state.lastDay;
+
+    transaction.update(userRef, { currency: currency - STREAK_FREEZE_COST });
+    transaction.set(ref, patch, { merge: true });
+    return {
+      currency: currency - STREAK_FREEZE_COST,
+      keys: Number.parseInt(userSnap.data().keys, 10) || 0,
+      freezes: after.freezes,
+      freezeDay: after.freezeDay,
+      frozenDays: after.frozenDays,
+      lastDay: after.lastDay,
+    };
+  });
+
+  return Object.assign({ success: true }, result);
+});
+
+/**
+ * Kilometre taşı ödülünü toplar.
+ *
+ * Toplananlar seri kırılınca sıfırlanıyor: yeni seri yeni merdiven. Yani aynı ödül tekrar
+ * alınabilir ama bunun için seriyi baştan kurmak gerekiyor — üç günlük ödülü ikinci kez
+ * almak üç gün daha demek.
+ */
+exports.claimStreakReward = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  const uid = context.auth.uid;
+
+  // İki ödül türü tek fonksiyonda: kilometre taşı (herkese aynı) ve meydan okuma
+  // (kullanıcının kendi verdiği söz). İkisi de aynı cüzdan yolundan ve aynı günlük
+  // tavandan geçsin diye ayrı bir callable açılmadı.
+  const isChallenge = data && data.kind === 'challenge';
+
+  const milestone = isChallenge ? 0 : Math.trunc(Number(data && data.milestone));
+  const reward = isChallenge ? null : streakRewardFor(milestone);
+  if (!isChallenge && !reward) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz kilometre taşı.');
+  }
+
+  const ref = streakDocRef(uid);
+  let grantedGold = 0;
+  let grantedKeys = 0;
+  let claimedChallenge = 0;
+
+  const balances = await grantWalletDelta(
+    uid,
+    // Meydan okuma ödülü sunucudaki kayıtlı güne göre belirleniyor; istemciden gün
+    // gelmiyor, dolayısıyla "7 günlük ödülü iste" diye bir istek de kurulamıyor.
+    // Miktar transaction içinde okunacağı için burada yer tutucu veriliyor ve
+    // beforeGrant'ten sonra gerçek değer yazılıyor.
+    reward || { keys: 0, gold: 0 },
+    'streakRewards',
+    STREAK_CLAIM_DAILY_LIMIT,
+    async (transaction) => {
+      const snap = await transaction.get(ref);
+      const state = readStreakState(snap);
+
+      if (isChallenge) {
+        const days = state.challengeDays;
+        const gold = STREAK_CHALLENGE_REWARDS[days];
+        if (!gold) {
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            'Meydan okuma seçilmemiş.'
+          );
+        }
+        if (state.current < days) {
+          throw new functions.https.HttpsError(
+            'failed-precondition',
+            'Meydan okuma henüz tamamlanmadı.'
+          );
+        }
+        if (state.challengeClaimed > 0) {
+          throw new functions.https.HttpsError('already-exists', 'Bu ödülü zaten aldın.');
+        }
+        grantedGold = gold;
+        claimedChallenge = days;
+        return (writeTransaction) => {
+          writeTransaction.set(ref, { challengeClaimed: days }, { merge: true });
+        };
+      }
+
+      if (state.current < milestone) {
+        throw new functions.https.HttpsError(
+          'failed-precondition',
+          'Bu ödül için serin yeterli değil.'
+        );
+      }
+      if (state.claimed.includes(milestone)) {
+        throw new functions.https.HttpsError('already-exists', 'Bu ödülü zaten aldın.');
+      }
+      grantedKeys = reward.keys;
+      grantedGold = reward.gold;
+
+      // Diziler merge'de birleştirilmiyor, olduğu gibi yazılıyor — istediğimiz de bu.
+      return (writeTransaction) => {
+        writeTransaction.set(
+          ref,
+          { claimed: state.claimed.concat([milestone]) },
+          { merge: true }
+        );
+      };
+    },
+    // Meydan okumada miktar ancak transaction içinde biliniyor.
+    () => ({ keys: grantedKeys, gold: grantedGold })
+  );
+
+  return {
+    success: true,
+    milestone,
+    challengeDays: claimedChallenge,
+    rewardKeys: grantedKeys,
+    rewardGold: grantedGold,
+    keys: balances.keys,
+    currency: balances.currency,
+  };
+});
+
+// Testler için.
+exports._streakRewardFor = streakRewardFor;
+exports._applyStreakDays = applyStreakDays;
+exports._settleStreakFreeze = settleStreakFreeze;
+
+// ─── Akşam hatırlatması ─────────────────────────────────────────────────────
+//
+// NEDEN
+//   Seri mekaniğini gerçekten çalıştıran şey hatırlatmadır: sayaç, kullanıcı o gün
+//   uygulamayı açmayı unuttuğunda kırılıyor ve kırılmanın ardından geri dönüş oranı düşük.
+//   Kırılmayı ONLEMEK, kırıldıktan sonra onarmaktan hem ucuz hem etkili.
+//
+// NASIL SEÇİLİYOR
+//   Saatte bir çalışıp "yerel saati şu anda hatırlatma saati olan" kullanıcıları buluyor
+//   (kullanıcının kayıtta/seri ekranında seçtiği saat, seçmediyse 19:00). Bunu tüm
+//   kullanıcıları tarayarak değil, submitStreakDay'in yazdığı `reminderHourUtc` alanına
+//   indeksli tek bir eşitlikle soruyor.
+//
+// KİME GÖNDERİLMİYOR
+//   • Bugün hedefini zaten tutturmuşlara — hatırlatmanın konusu kalmamış.
+//   • Bugün zaten hatırlatılmışlara — günde bir bildirim.
+//   • Bir haftadır uygulamayı hiç açmamışlara — giden kullanıcıyı dürtmek geri getirmiyor,
+//     kaldırtıyor. Bu sınır, bildirimi "faydalı" ile "rahatsız edici" arasındaki çizginin
+//     doğru tarafında tutuyor.
+//
+// TON
+//   Davet, korku değil: "bugün 5 dakikan var mı" / "SERİN BİTMEK ÜZERE!" değil. Kullanıcı
+//   kitlesi 7–10 yaş; kaygı üretmek bu yaşta motivasyondan çok bırakma üretiyor.
+
+/** Tek taramada işlenecek en fazla kullanıcı. */
+const STREAK_REMINDER_SCAN_LIMIT = 5000;
+
+/** Aynı anda kaç kullanıcıya gönderilsin. */
+const STREAK_REMINDER_CONCURRENCY = 25;
+
+/** Fonksiyonun kendine ayırdığı süre; aşarsa kalanları bir sonraki saate bırakıyor. */
+const STREAK_REMINDER_BUDGET_MS = 480_000;
+
+/**
+ * İki hatırlatma geçişinin tanımı.
+ *
+ * İkisi de aynı gövdeyi kullanıyor; yalnızca hangi alanla seçildikleri, hangi kararı
+ * sordukları ve gönderimi nereye işaretledikleri farklı. Ayrı iki tarama yazmak aynı
+ * token/gönderim/işaretleme mantığını kopyalamak olurdu.
+ *
+ * `data.type` ikisinde de `streak_reminder`: sahadaki eski istemci sürümleri ayrıştırmayı
+ * ona göre yapıyor. Aynı tür olduğu için ikisi aynı bildirim kimliğini de paylaşıyor, yani
+ * akşam gelen ikinci hatırlatma birincinin yerini alıyor — çekmecede iki seri bildirimi
+ * yığılmıyor.
+ */
+const STREAK_REMINDER_PASSES = [
+  {
+    name: 'first',
+    hourField: 'reminderHourUtc',
+    sentField: 'reminderSentDay',
+    topic: 'streak_reminder',
+    decide: streakReminderDecision,
+  },
+  {
+    name: 'second',
+    hourField: 'secondReminderHourUtc',
+    sentField: 'secondReminderSentDay',
+    topic: 'streak_second_chance',
+    decide: secondChanceDecision,
+  },
+];
+
+/** Bir geçişin gövdesi: seç, karar ver, gönder, işaretle. */
+async function runStreakReminderPass(pass, hourUtc, nowMs, deadline) {
+  const snap = await db
+    .collectionGroup('streak')
+    .where(pass.hourField, '==', hourUtc)
+    .limit(STREAK_REMINDER_SCAN_LIMIT)
+    .get();
+
+  const counts = { scanned: snap.size, sent: 0, skipped: 0, noToken: 0, failed: 0 };
+  const docs = snap.docs;
+
+  for (let i = 0; i < docs.length; i += STREAK_REMINDER_CONCURRENCY) {
+    if (Date.now() > deadline) {
+      console.warn('sendStreakReminders: süre doldu, kalanlar bir sonraki saate', {
+        pass: pass.name,
+        ...counts,
+      });
+      break;
+    }
+    const chunk = docs.slice(i, i + STREAK_REMINDER_CONCURRENCY);
+    await Promise.all(
+      chunk.map(async (doc) => {
+        const uid = doc.ref.parent.parent && doc.ref.parent.parent.id;
+        if (!uid) return;
+        const d = doc.data() || {};
+        const lastSeen = d.lastSeenAt && typeof d.lastSeenAt.toMillis === 'function'
+          ? d.lastSeenAt.toMillis()
+          : null;
+
+        const decision = pass.decide(
+          {
+            utcOffsetMinutes: d.utcOffsetMinutes,
+            lastDay: typeof d.lastDay === 'string' ? d.lastDay : '',
+            reminderSentDay: typeof d.reminderSentDay === 'string' ? d.reminderSentDay : '',
+            secondReminderSentDay:
+              typeof d.secondReminderSentDay === 'string' ? d.secondReminderSentDay : '',
+            lastSeenMs: lastSeen,
+            current: Math.max(0, Math.trunc(Number(d.current) || 0)),
+            goalMinutes: Math.trunc(Number(d.goalMinutes) || 0),
+            // Birinci hatırlatmanın metni dondurma varsa değişiyor, ikinci hatırlatma ise
+            // dondurması olana hiç gitmiyor.
+            freezes: Math.max(0, Math.trunc(Number(d.freezes) || 0)),
+            // Dondurmanın dünü kurtarıp kurtarmayacağı alındığı güne bağlı (bkz. liveStreak).
+            freezeDay: typeof d.freezeDay === 'string' ? d.freezeDay : '',
+          },
+          nowMs
+        );
+        if (!decision.send) {
+          counts.skipped++;
+          return;
+        }
+
+        try {
+          const userSnap = await db.collection('users').doc(uid).get();
+          if (!userSnap.exists) return;
+
+          // Data-only: istemci gösterip göstermeyeceğine kendisi karar veriyor (oturumdaki
+          // hesap kontrolü orada). `type: 'streak_reminder'` sahadaki eski sürümlerin
+          // ayrıştırma anahtarı, bu yüzden data'da elle veriliyor.
+          const result = await sendUserNotification(uid, {
+            type: 'streak',
+            topic: pass.topic,
+            title: decision.text.title,
+            body: decision.text.body,
+            en: decision.textEn,
+            id: decision.textId,
+        ar: decision.textAr,
+            ar: decision.textAr,
+            data: { type: 'streak_reminder' },
+            userData: userSnap.data(),
+          });
+          if (!result.sent) {
+            if (result.reason === 'no_token') counts.noToken++;
+            else if (result.reason === 'delivery_failed') counts.failed++;
+            else counts.skipped++;
+            // Gönderilmediyse gün işaretlenmiyor: tercihi kapalıysa yarın da gitmeyecek
+            // (zararsız), ama geçici bir aksaklıksa bir sonraki saatte denenir.
+            return;
+          }
+          counts.sent++;
+          await doc.ref.set({ [pass.sentField]: decision.today }, { merge: true });
+        } catch (e) {
+          counts.failed++;
+        }
+      })
+    );
+  }
+
+  return counts;
+}
+
+/**
+ * Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin diye ayrı.
+ *
+ * İki geçiş SIRAYLA çalışıyor, paralel değil: ikisinin de süre bütçesi ortak ve birinci
+ * geçiş (kullanıcının kendi seçtiği saat) ikinciden önce gelmeli.
+ */
+async function runStreakReminderScan(hourUtc, nowMs) {
+  const deadline = Date.now() + STREAK_REMINDER_BUDGET_MS;
+  const result = {};
+  for (const pass of STREAK_REMINDER_PASSES) {
+    result[pass.name] = await runStreakReminderPass(pass, hourUtc, nowMs, deadline);
+  }
+  console.log('sendStreakReminders tamamlandı', { hourUtc, ...result });
+  return result;
+}
+
+exports.sendStreakReminders = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('every 1 hours')
+  .timeZone('Etc/UTC')
+  .onRun(async () => {
+    const now = Date.now();
+    await runStreakReminderScan(new Date(now).getUTCHours(), now);
+    return null;
+  });
+
+// Testler için.
+exports._runStreakReminderScan = runStreakReminderScan;
+
+
 // ─── AdMob ödüllü reklam sunucu taraflı doğrulama (SSV) ─────────────────────
 //
 // NEDEN
@@ -1993,6 +7625,8 @@ const ADMOB_KEY_CACHE_MS = 24 * 60 * 60 * 1000;
 const ADMOB_CALLBACK_MAX_AGE_MS = 60 * 60 * 1000;
 // Kazanılan sandık hakkının kullanılmadan durabileceği süre.
 const AD_ENTITLEMENT_TTL_MS = 24 * 60 * 60 * 1000;
+/** `adRewards` kaydının Firestore TTL ile silinmesine kadar geçen süre; bkz. admobRewardCallback. */
+const AD_REWARD_RECORD_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
 let admobKeyCache = { keys: null, fetchedAt: 0 };
 
@@ -2037,9 +7671,27 @@ async function verifyAdmobSignature(rawQuery) {
     return false;
   }
 
-  const verifier = require('crypto').createVerify('sha256');
-  verifier.update(signedContent, 'utf8');
-  return verifier.verify(pem, Buffer.from(signature, 'base64url'));
+  const signatureBytes = Buffer.from(signature, 'base64url');
+
+  // AdMob imzayı, custom_data içindeki ":" gibi karakterleri KODLAMADAN oluşturduğu dize
+  // üzerinde hesaplar; ancak istek bize ulaşana kadar aradaki katmanlar bunları yüzde
+  // kodlayabiliyor (":" -> "%3A"). Bu yüzden önce geldiği hâliyle, tutmazsa yüzde
+  // kodlaması çözülmüş hâliyle doğruluyoruz. İmza her iki durumda da zorunlu olduğu
+  // için bu, güvenliği zayıflatmaz; yalnızca kodlama farkını tolere eder.
+  const candidates = [signedContent];
+  try {
+    const decoded = decodeURIComponent(signedContent);
+    if (decoded !== signedContent) candidates.push(decoded);
+  } catch (error) {
+    // Bozuk yüzde kodlaması: yalnızca ham hâliyle denenir.
+  }
+
+  for (const content of candidates) {
+    const verifier = require('crypto').createVerify('sha256');
+    verifier.update(content, 'utf8');
+    if (verifier.verify(pem, signatureBytes)) return true;
+  }
+  return false;
 }
 
 exports.admobRewardCallback = functions.https.onRequest(async (req, res) => {
@@ -2099,6 +7751,13 @@ exports.admobRewardCallback = functions.https.onRequest(async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       createdAtMs: Date.now(),
       consumed: false,
+      // Firestore TTL bu alana bakıp kaydı siliyor (firestore.indexes.json → adRewards).
+      // Kayıt sonsuza kadar kalsaydı izlenen her reklam bir belge daha demekti; en hızlı
+      // büyüyen koleksiyon buydu. Kaydın tek işi aynı ödülün iki kez alınmasını önlemek
+      // ve onun için gereken süre çok kısa: hak 24 saatte bozuluyor
+      // (AD_ENTITLEMENT_TTL_MS), 1 saatten eski callback zaten reddediliyor
+      // (ADMOB_CALLBACK_MAX_AGE_MS). 7 gün bol bir pay.
+      expireAt: admin.firestore.Timestamp.fromMillis(Date.now() + AD_REWARD_RECORD_RETENTION_MS),
     });
     console.log('AdMob SSV: sandık hakkı verildi', { uid, transactionId });
   } catch (error) {
@@ -2176,20 +7835,60 @@ function energyConfigForPlan(plan) {
 }
 
 /** Süresi geçmiş abonelik Free sayılır (MainActivity.checkSubscriptionAndUpdateEnergy ile aynı). */
-function effectivePlan(userData) {
+/** Yalnızca abonelikten gelen plan (süresi geçmişse Free). Hediye dahil değil. */
+function subscriptionPlan(userData) {
   const stored = userData.plan || 'Free';
   const expiresAt = Number(userData.planExpiresAt) || 0;
   if (expiresAt && expiresAt < Date.now()) return 'Free';
   return stored;
 }
 
+/**
+ * Kullanıcının şu an yararlandığı plan: abonelik ya da (daha yüksekse) yayın hediyesi
+ * (`giftProUntil`, bkz. launchGift.js). İstemcideki PlanStatus.effectivePlan ile aynı kural.
+ * Abonelik rütbe kararları (resolvePlanUpdate) bunu değil subscriptionPlan'i kullanır:
+ * hediyeli kullanıcının aldığı Lite, "aktif Pro var" diye reddedilmemeli.
+ */
+function effectivePlan(userData) {
+  const sub = subscriptionPlan(userData);
+  if (launchGift.hasActiveGift(userData) && planRank(sub) < planRank('Pro')) return 'Pro';
+  return sub;
+}
+
+/** Rolü öğretmen ama hesabı henüz onaylanmamış (istemcide MainActivity.isUnapprovedTeacher). */
+function isUnapprovedTeacher(userData) {
+  return (userData.role || '') === 'TEACHER' && userData.teacherApproved !== true;
+}
+
+/**
+ * Onaylı öğretmenin altını ve anahtarı sınırsız (istemcide UserWalletFirestore'un
+ * UNLIMITED kipi). Bakiyeye büyük bir sayı YAZILMIYOR: harcayınca azalırdı, onay geri
+ * alınınca elle silinmesi gerekirdi ve iade/tavan denetimlerine karışırdı. Bunun yerine
+ * harcama çağrıları bu hesapta bakiyeye dokunmadan başarılı döner.
+ */
+function isApprovedTeacher(userData) {
+  return (userData.role || '') === 'TEACHER' && userData.teacherApproved === true;
+}
+
+/**
+ * Onaysız öğretmen hiçbir şey yapamaz; harcama yapan çağrılar bununla başlar.
+ *
+ * İstemci bu hesapta bakiyeyi zaten 0 gösteriyor ve mağazayı açtırmıyor
+ * (UserWalletFirestore wallet kipi, TeacherApprovalGate). Ama sunucudaki gerçek bakiye
+ * duruyor — eski kayıtlarda herkese 1 anahtar verildi — ve eski bir sürüm ya da doğrudan
+ * çağrı onu harcayabilirdi. Asıl engel burası.
+ */
+function assertNotUnapprovedTeacher(userData) {
+  if (isUnapprovedTeacher(userData)) {
+    throw new functions.https.HttpsError('failed-precondition', 'Hesabınız henüz onaylanmadı.');
+  }
+}
+
 function hasInfiniteEnergy(userData) {
   const plan = effectivePlan(userData);
-  const role = userData.role || '';
-  const teacherApproved = userData.teacherApproved === true;
   // Onaysız öğretmen: enerji her zaman 0 (sonsuz değil).
-  if (role === 'TEACHER' && !teacherApproved) return false;
-  return teacherApproved || plan === 'Pro' || plan === 'Premium';
+  if (isUnapprovedTeacher(userData)) return false;
+  return userData.teacherApproved === true || plan === 'Pro' || plan === 'Premium';
 }
 
 function computeCurrentEnergy(fullTime, now, cfg) {
@@ -2309,13 +8008,29 @@ exports.buyEnergyWithKeys = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
   }
   const uid = context.auth.uid;
+  const dayKey = utcDayKey(Date.now());
 
   const result = await applyEnergyDelta(uid, +1, null, (userData) => {
+    assertNotUnapprovedTeacher(userData);
+
+    // Günlük tavan: sayaç diğer günlük sayaçlarla aynı `rewardGuard` içinde, gün
+    // değişince grantWalletDelta gibi sıfırlanıyor.
+    const guard = userData.rewardGuard || {};
+    const sameDay = guard.dayKey === dayKey;
+    const used = (sameDay ? Number(guard.energyKeyBuys) || 0 : 0) + 1;
+    if (used > ENERGY_KEY_BUY_DAILY_LIMIT) {
+      throw new functions.https.HttpsError('resource-exhausted', 'Günlük sınıra ulaşıldı.');
+    }
+
     const currentKeys = Number.parseInt(userData.keys, 10) || 0;
     if (currentKeys < ENERGY_KEY_COST) {
       throw new functions.https.HttpsError('failed-precondition', 'Yetersiz anahtar bakiyesi.');
     }
-    return { keys: currentKeys - ENERGY_KEY_COST };
+
+    const nextGuard = sameDay ? Object.assign({}, guard) : {};
+    nextGuard.dayKey = dayKey;
+    nextGuard.energyKeyBuys = used;
+    return { keys: currentKeys - ENERGY_KEY_COST, rewardGuard: nextGuard };
   });
 
   const snapshot = await db.collection('users').doc(uid).get();
@@ -2323,4 +8038,365 @@ exports.buyEnergyWithKeys = functions.https.onCall(async (data, context) => {
 });
 
 // ShopFragment.LIFE_KEY_COST ile aynı olmalı.
-const ENERGY_KEY_COST = 3;
+const ENERGY_KEY_COST = 1;
+// Bir hesabın bir günde (UTC) anahtarla alabileceği can sayısı. Aşılınca
+// 'resource-exhausted' dönüyor; ShopFragment bunu "günlük sınır" uyarısı olarak gösteriyor.
+const ENERGY_KEY_BUY_DAILY_LIMIT = 5;
+
+// ─── Hata bildirimi ─────────────────────────────────────────────────────────
+//
+// Kullanıcı uygulamada gördüğü bir hatayı ekran görüntüsüyle bildiriyor; admin onaylarsa
+// ödülü Görevler'deki karttan topluyor. Karar mantığı bugReports.js'te (saf, test edilebilir);
+// burada yalnızca Firestore/Storage işi. Akışın tamamı için oradaki başlık yorumuna bakın.
+
+const {
+  normalizeSubmission: normalizeBugReportSubmission,
+  submitDecision: bugReportSubmitDecision,
+  reviewDecision: bugReportReviewDecision,
+  claimDecision: bugReportClaimDecision,
+  decisionNoticeText: bugReportNoticeText,
+} = require('./bugReports');
+
+function requireAuth(context) {
+  if (!context.auth) {
+    throw new functions.https.HttpsError('unauthenticated', 'Oturum açmanız gerekiyor.');
+  }
+  return context.auth.uid;
+}
+
+/** Saf modülün `{ ok: false, code, message }` sonucunu HttpsError'a çevirir. */
+function throwIfFailed(result) {
+  if (!result.ok) throw new functions.https.HttpsError(result.code, result.message);
+  return result;
+}
+
+/**
+ * Yeni hata bildirimi. Görsel isteğe bağlı; verildiyse önceden yüklenmiş olmalı
+ * (`bug_reports/{uid}_{zaman}.jpg`).
+ *
+ * Doküman istemciden değil buradan yazılıyor: gönderim sınırları (aynı anda bekleyen ve
+ * günlük) kurallarla sayılamıyor, ve `status`/ödül alanlarını istemcinin hiç yazamaması
+ * en basit güvence.
+ */
+exports.submitBugReport = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const input = throwIfFailed(normalizeBugReportSubmission(data, uid));
+
+  // Yol uid'e bağlı olduğu için başkasının dosyası gösterilemez; yine de gerçekten yüklenmiş
+  // mi bakıyoruz — yoksa panelde görselsiz, incelenemeyen bir bildirim olurdu.
+  if (input.imagePath) {
+    const [exists] = await admin.storage().bucket().file(input.imagePath).exists();
+    if (!exists) {
+      throw new functions.https.HttpsError('failed-precondition', 'Ekran görüntüsü yüklenemedi.');
+    }
+  }
+
+  const guardRef = db.collection('bugReportGuards').doc(uid);
+  const reportRef = db.collection('bugReports').doc();
+  const pendingQuery = db
+    .collection('bugReports')
+    .where('uid', '==', uid)
+    .where('status', '==', 'pending');
+
+  await db.runTransaction(async (transaction) => {
+    const [guardSnap, pendingSnap] = await Promise.all([
+      transaction.get(guardRef),
+      transaction.get(pendingQuery),
+    ]);
+    const decision = throwIfFailed(
+      bugReportSubmitDecision(guardSnap.exists ? guardSnap.data() : {}, pendingSnap.size, utcDayKey(Date.now()))
+    );
+    transaction.set(guardRef, decision.nextGuard);
+    transaction.set(reportRef, {
+      uid,
+      text: input.text,
+      imagePath: input.imagePath,
+      device: input.device,
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  });
+
+  return { success: true, reportId: reportRef.id };
+});
+
+/**
+ * Admin kararı: onay (ödül kademesiyle) ya da ret (gerekçeyle).
+ *
+ * Yetki ID token'daki `admin` custom claim'inden geliyor (bkz. scripts/set-admin-claim.js);
+ * Firestore'daki bir alana bakılmıyor, çünkü istemcinin değiştirebileceği bir yere bağlı
+ * olmamalı. Ödül burada YAZILMIYOR — kullanıcı karttan topluyor (claimBugReportReward).
+ */
+exports.reviewBugReport = functions.https.onCall(async (data, context) => {
+  const adminUid = requireAuth(context);
+  if (context.auth.token.admin !== true) {
+    throw new functions.https.HttpsError('permission-denied', 'Bu işlem için yetkin yok.');
+  }
+  const reportId = typeof (data && data.reportId) === 'string' ? data.reportId.trim() : '';
+  if (!reportId || reportId.includes('/')) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz bildirim.');
+  }
+  const ref = db.collection('bugReports').doc(reportId);
+
+  const outcome = await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+    const report = snap.exists ? snap.data() : null;
+    const decision = throwIfFailed(bugReportReviewDecision(report, data));
+    transaction.update(
+      ref,
+      Object.assign({}, decision.patch, {
+        reviewedAt: admin.firestore.FieldValue.serverTimestamp(),
+        reviewedBy: adminUid,
+      })
+    );
+    return { uid: report.uid, status: decision.patch.status };
+  });
+
+  // Bildirim kararın parçası değil: gidemese de karar geçerli, kullanıcı kartta görüyor.
+  try {
+    const text = bugReportNoticeText(outcome.status);
+    await sendUserNotification(outcome.uid, {
+      type: 'account',
+      topic: 'bug_report',
+      title: text.title,
+      body: text.body,
+      en: bugReportNoticeText(outcome.status, 'en'),
+      id: bugReportNoticeText(outcome.status, 'id'),
+      ar: bugReportNoticeText(outcome.status, 'ar'),
+      data: { bugReportId: reportId },
+    });
+  } catch (e) {
+    console.error('reviewBugReport: bildirim gönderilemedi', { reportId, error: e.message });
+  }
+
+  return { success: true, status: outcome.status };
+});
+
+/**
+ * Onaylanan bildirimin ödülünü bakiyeye yazar. Bildirimdeki `rewardClaimed` işaretiyle aynı
+ * transaction'da: iki kez basılsa da ödül bir kez verilir.
+ */
+exports.claimBugReportReward = functions.https.onCall(async (data, context) => {
+  const uid = requireAuth(context);
+  const reportId = typeof (data && data.reportId) === 'string' ? data.reportId.trim() : '';
+  if (!reportId || reportId.includes('/')) {
+    throw new functions.https.HttpsError('invalid-argument', 'Geçersiz bildirim.');
+  }
+  const reportRef = db.collection('bugReports').doc(reportId);
+  const userRef = db.collection('users').doc(uid);
+  const sobiRef = db.collection('sobiChats').doc(uid);
+
+  return db.runTransaction(async (transaction) => {
+    // Okumalar yazmalardan önce (transaction kuralı); sobiChats ödülde Sobi kredisi yoksa da okunuyor.
+    const [reportSnap, userSnap, sobiSnap] = await Promise.all([
+      transaction.get(reportRef),
+      transaction.get(userRef),
+      transaction.get(sobiRef),
+    ]);
+    const { reward } = throwIfFailed(
+      bugReportClaimDecision(reportSnap.exists ? reportSnap.data() : null, uid)
+    );
+    if (!userSnap.exists) {
+      throw new functions.https.HttpsError('not-found', 'Kullanıcı bulunamadı.');
+    }
+    const user = userSnap.data();
+    const keys = (Number.parseInt(user.keys, 10) || 0) + reward.keys;
+    const currency = (Number.parseInt(user.currency, 10) || 0) + reward.gold;
+    const questionCredits = (Number.parseInt(user.questionCredits, 10) || 0) + reward.credits;
+
+    // Sobi kredisinin asıl bakiyesi sobiChats/{uid}.credits; users.sobiCredits üst panelin
+    // gösterim kopyası (mağaza satın alımıyla aynı kalıp, bkz. ürün teslimi).
+    let sobiCredits = null;
+    if (reward.sobiCredits > 0) {
+      sobiCredits = (sobiSnap.exists ? Number(sobiSnap.get('credits')) || 0 : 0) + reward.sobiCredits;
+      transaction.set(sobiRef, { credits: sobiCredits }, { merge: true });
+    }
+
+    transaction.update(userRef, {
+      keys,
+      currency,
+      questionCredits,
+      ...(sobiCredits != null ? { sobiCredits } : {}),
+    });
+    transaction.update(reportRef, {
+      rewardClaimed: true,
+      claimedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return {
+      success: true,
+      rewardGold: reward.gold,
+      rewardKeys: reward.keys,
+      rewardCredits: reward.credits,
+      rewardSobiCredits: reward.sobiCredits,
+      keys,
+      currency,
+      questionCredits,
+      sobiCredits,
+    };
+  });
+});
+
+/** Silinen kullanıcının hata bildirimleri ve ekran görüntüleri (cleanupUserOnDelete). */
+async function deleteUserBugReports(uid) {
+  const snap = await db.collection('bugReports').where('uid', '==', uid).get();
+  const bucket = admin.storage().bucket();
+  await Promise.all(
+    snap.docs.map(async (doc) => {
+      const imagePath = doc.get('imagePath');
+      if (typeof imagePath === 'string' && imagePath) {
+        await bucket.file(imagePath).delete({ ignoreNotFound: true });
+      }
+      await doc.ref.delete();
+    })
+  );
+  await db.collection('bugReportGuards').doc(uid).delete();
+  return { reports: snap.size };
+}
+
+// ─── Sobi'ye sor (yapay zekâ yardımcısı) ────────────────────────────────────
+// Ayrıntı ve gerekçe: sobi/callable.js, docs/ANLAMADIM_YARDIM_PLANI.md. ANTHROPIC_API_KEY
+// Secret Manager'da (28.10.2026 kuruldu); secret silinirse bu fonksiyonun deploy'u başarısız olur.
+exports.sobiChat = require('./sobi/callable')({ functions, admin, db, isAskQuestionRestricted, effectivePlan });
+const sobiWallet = require('./sobi/wallet')({ functions, db, effectivePlan, isApprovedTeacher });
+exports.sobiBalance = sobiWallet.sobiBalance;
+exports.startSobiExtraTest = sobiWallet.startSobiExtraTest;
+// Sobi ekranında yeni örnek: 1 ücretsiz hak ya da 1 kredi (sobi/wallet.js).
+exports.startSobiExample = sobiWallet.startSobiExample;
+// Sobi cevabına beğen / beğenme; haftalık iyileştirme döngüsünün verisi (sobi/feedback.js).
+exports.sobiFeedback = require('./sobi/feedback')({ functions, admin, db, promptVersion: require('./sobi/callable').PROMPT_VERSION });
+// Sobi sekmesindeki genel sohbetlerin listesi, açılması ve silinmesi (sobi/sessions.js).
+exports.sobiSessions = require('./sobi/sessions')({ functions, db });
+
+// ─── Haftalık ilerleme kartı: anlık kayıt ───────────────────────────────────
+// Kartın kendisi (ekran, paylaşım) sonraki iş; bu bölüm yalnızca "geçen hafta"nın kaybolmaması
+// için her Pazartesi kapanan haftanın fotoğrafını çekiyor. Gövde ve gerekçe: weeklyStats.js.
+// Tasarım: docs/BUYUME_DONGUSU_ARASTIRMASI.md (döngü 2).
+const weeklyStats = require('./weeklyStats');
+
+/** Aynı anda işlenen öğrenci: Firestore'u boğmadan 540 sn içinde binlerce kullanıcı. */
+const WEEKLY_STATS_CONCURRENCY = 20;
+const WEEKLY_STATS_PAGE = 300;
+/** Ders bölümleri (veli paneliyle aynı: 7-8 yarış, 9 kupa modu ders ilerlemesi taşımıyor). */
+const WEEKLY_STATS_LESSON_PARTS = [1, 2, 3, 4, 5, 6];
+
+/**
+ * Bir öğrencinin kaydını yazar. Okuma: kullanıcı, kupa, kural istatistiği (3 doküman) +
+ * 7 sayım sorgusu (her biri 1000 kayda kadar 1 okuma sayılıyor). Seri dokümanı taramadan geliyor.
+ *
+ * Biten ders/adım sayısı için dokümanların kendisi değil SAYIM okunuyor: bir öğrencinin
+ * lessonProgress altında yüzlerce dersi var ve hepsini okumak haftada yüzlerce okuma demekti.
+ *
+ * @returns 'written' | 'skipped' (öğretmen ya da kullanıcı dokümanı yok)
+ */
+async function writeWeeklySnapshot(uid, streakData, week, nowMs) {
+  const userRef = db.collection('users').doc(uid);
+  const [userSnap, cupSnap, ruleSnap, passedAgg, ...partAggs] = await Promise.all([
+    userRef.get(),
+    userRef.collection('cupWayProgress').doc('progress').get(),
+    db.collection('homeworkRuleStats').doc(uid).get(),
+    userRef.collection('lessonSuccessRateState').where('passed', '==', true).count().get(),
+    ...WEEKLY_STATS_LESSON_PARTS.map((p) =>
+      userRef.collection('lessonProgress').doc(String(p)).collection('items')
+        .where('stepIsFinish', '==', true).count().get()
+    ),
+  ]);
+  // Hesap silinmişse (seri dokümanı yetim kalmış olabilir) kayıt açıp ölü veri bırakmayalım.
+  if (!userSnap.exists) return 'skipped';
+  const user = userSnap.data() || {};
+  if (user.role === 'TEACHER') return 'skipped';
+
+  const body = weeklyStats.buildWeeklySnapshot({
+    week,
+    todayDay: weeklyStats.trDay(nowMs),
+    user,
+    cupProgress: cupSnap.exists ? cupSnap.data() || {} : {},
+    ruleStats: ruleSnap.exists ? ruleSnap.data() || {} : {},
+    streak: streakData,
+    finishedLessons: partAggs.reduce((s, a) => s + (a.data().count || 0), 0),
+    passedSteps: passedAgg.data().count || 0,
+  });
+  body.capturedAt = admin.firestore.FieldValue.serverTimestamp();
+  body.capturedAtMs = nowMs;
+  // Üzerine yazma bilerek: aynı hafta ikinci kez çekilirse (elle taban kaydı, sonra Pazartesi
+  // koşusu ya da yeniden deneme) son hâl geçerli.
+  await userRef.collection('weeklyStats').doc(week.id).set(body);
+  return 'written';
+}
+
+/**
+ * Tarama gövdesi; zamanlayıcıyı beklemeden test edilebilsin (ve deploy sonrası elle taban kaydı
+ * alınabilsin) diye ayrı.
+ *
+ * "Aktif öğrenci" = seri dokümanındaki `lastSeenAt` son 14 gün içinde. Uygulama bunu her gün ilk
+ * açılışta (submitStreakDay'in günsüz "buradayım" çağrısı) güncelliyor. Seri dokümanı hiç
+ * açılmamış kullanıcı (günlük hedefi hiç tutturmamış ve hatırlatma saati seçmemiş) taranmaz.
+ *
+ * @param week Verilmezse çalışma anından kapanan hafta (closingWeek).
+ */
+async function runWeeklyStatsSnapshot({ nowMs = Date.now(), week = null, deadlineMs = null } = {}) {
+  const targetWeek = week || weeklyStats.closingWeek(nowMs);
+  const cutoff = admin.firestore.Timestamp.fromMillis(
+    nowMs - weeklyStats.WEEKLY_STATS_ACTIVE_DAYS * 86400000
+  );
+  const counts = { week: targetWeek.id, scanned: 0, written: 0, skipped: 0, failed: 0, truncated: false };
+
+  let last = null;
+  for (;;) {
+    if (deadlineMs && Date.now() > deadlineMs) {
+      counts.truncated = true;
+      break;
+    }
+    let q = db.collectionGroup('streak')
+      .where('lastSeenAt', '>=', cutoff)
+      .orderBy('lastSeenAt')
+      .limit(WEEKLY_STATS_PAGE);
+    if (last) q = q.startAfter(last);
+    const snap = await q.get();
+    if (snap.empty) break;
+    last = snap.docs[snap.docs.length - 1];
+    counts.scanned += snap.size;
+
+    const docs = snap.docs.filter((d) => d.id === 'state' && d.ref.parent.parent);
+    counts.skipped += snap.size - docs.length;
+    for (let i = 0; i < docs.length; i += WEEKLY_STATS_CONCURRENCY) {
+      if (deadlineMs && Date.now() > deadlineMs) {
+        counts.truncated = true;
+        break;
+      }
+      await Promise.all(docs.slice(i, i + WEEKLY_STATS_CONCURRENCY).map(async (doc) => {
+        const uid = doc.ref.parent.parent.id;
+        try {
+          const r = await writeWeeklySnapshot(uid, doc.data() || {}, targetWeek, nowMs);
+          counts[r]++;
+        } catch (e) {
+          counts.failed++;
+          console.error('runWeeklyStatsSnapshot: hata', { uid, error: e.message });
+        }
+      }));
+    }
+    if (counts.truncated || snap.size < WEEKLY_STATS_PAGE) break;
+  }
+  if (counts.truncated) {
+    // Tek koşu 540 sn ile sınırlı. Buraya ulaşmak binlerce aktif öğrenci demek: o zaman tarama
+    // sayfalara bölünüp devam ettirilmeli (ör. Pub/Sub ile zincir). Şimdilik görünür bir uyarı.
+    console.warn('runWeeklyStatsSnapshot: süre doldu, kalan öğrenciler bu hafta kaydedilmedi', counts);
+  }
+  console.log('runWeeklyStatsSnapshot tamamlandı', counts);
+  return counts;
+}
+
+// Pazartesi 00:10 Türkiye saati: Pazar gece yarısı kapanan Pzt–Paz haftası (kullanıcı kararı
+// 08.11.2026). Hafta sınırı Türkiye saatiyle; başka ülkelerde yayına çıkılınca kullanıcının
+// saat dilimine göre ayrı koşular gerekebilir.
+exports.snapshotWeeklyStats = functions
+  .runWith({ timeoutSeconds: 540, memory: '256MB' })
+  .pubsub.schedule('10 0 * * 1')
+  .timeZone('Europe/Istanbul')
+  .onRun(async () => {
+    await runWeeklyStatsSnapshot({ deadlineMs: Date.now() + 500 * 1000 });
+    return null;
+  });
+
+// Testler için.
+exports._runWeeklyStatsSnapshot = runWeeklyStatsSnapshot;
+exports._writeWeeklySnapshot = writeWeeklySnapshot;

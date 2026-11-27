@@ -26,17 +26,22 @@ object ServerRewards {
         val rewardAmount: Int,
     )
 
-    /** [openCrystal] sonucu. [videoName] oynatılacak kristal videosudur. */
+    /**
+     * [openCrystal] sonucu.
+     *
+     * Sunucu yanıtında bir `videoName` alanı da var ama artık okunmuyor: kristal kırılma
+     * videosu akıştan kaldırıldı (ödül ekranları ödülü doğrudan gösteriyor). Sunucu tarafı
+     * değiştirilmediği için alan yanıtta durmaya devam eder, istemci yok sayar.
+     */
     data class CrystalOutcome(
-        val videoName: String,
         val rewardType: String,
         val rewardAmount: Int,
     )
 
     private const val TAG = "ServerRewards"
 
-    /** SSV callback'i gecikirse yeniden deneme sayisi ve araligi. */
-    private const val AD_VERIFY_MAX_ATTEMPTS = 4
+    /** SSV callback'i gecikirse yeniden deneme sayisi ve araligi (10 x 1.5 sn = ~15 sn). */
+    private const val AD_VERIFY_MAX_ATTEMPTS = 10
     private const val AD_VERIFY_RETRY_DELAY_MS = 1500L
 
     // Sandık ekranı (NewChestFragment) açılmadan hemen önce başlatılan istek burada bekler.
@@ -148,6 +153,50 @@ object ServerRewards {
             }
     }
 
+    /**
+     * Kupa yolunda hak edilmiş bir sandığı açar (`claimCupPathChest`).
+     *
+     * İstemci hangi yolun hangi eşiğini açtığını söyler; kupa puanını ve defteri sunucu
+     * kendisi okuyup doğrular. Sonuç biçimi [openChest] ile aynı, bu yüzden aynı sandık
+     * ekranı hiç değişmeden oynatılıyor.
+     *
+     * [milestone] tek tek gönderiliyor çünkü biriken sandıklar sırayla alınmak zorunda değil:
+     * ekranda 500'e dokunan kullanıcı 500'ü almalı, 300'ü değil.
+     *
+     * [prefetchChest] önbelleğine DOKUNMAZ: o önbellek ders/reklam sandığına ait ve bu çağrı
+     * onu tüketirse ders sandığı ikinci kez ağa gitmek zorunda kalırdı.
+     */
+    fun claimCupPathChest(
+        cupField: String,
+        milestone: Int,
+        onResult: (ChestOutcome) -> Unit,
+        onFailure: (Exception) -> Unit,
+    ) {
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("claimCupPathChest")
+            .call(hashMapOf("cupField" to cupField, "milestone" to milestone))
+            .addOnSuccessListener { result ->
+                val data = result.data as? Map<*, *>
+                if (data == null) {
+                    onFailure(IllegalStateException("claimCupPathChest boş yanıt döndürdü"))
+                    return@addOnSuccessListener
+                }
+                val path = (data["rarityPath"] as? List<*>)?.mapNotNull { it as? String }.orEmpty()
+                onResult(
+                    ChestOutcome(
+                        rarityPath = path,
+                        finalRarity = data["finalRarity"] as? String ?: "COMMON",
+                        rewardType = data["rewardType"] as? String ?: "GOLD",
+                        rewardAmount = (data["rewardAmount"] as? Number)?.toInt() ?: 0,
+                    )
+                )
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "claimCupPathChest başarısız", e)
+                onFailure(e)
+            }
+    }
+
     fun openCrystal(
         onResult: (CrystalOutcome) -> Unit,
         onFailure: (Exception) -> Unit,
@@ -163,7 +212,6 @@ object ServerRewards {
                 }
                 onResult(
                     CrystalOutcome(
-                        videoName = data["videoName"] as? String ?: ChestCrystalPolicy.FALLBACK_VIDEO,
                         rewardType = data["rewardType"] as? String ?: "GOLD",
                         rewardAmount = (data["rewardAmount"] as? Number)?.toInt() ?: 0,
                     )

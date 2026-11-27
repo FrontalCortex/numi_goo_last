@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Admin listesinde bekleyen bir bildirim: küçük görsel, metnin başı, tarih ve cihaz. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:background="@drawable/hint_background"
+    android:foreground="?attr/selectableItemBackground"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/adminThumb"
+        android:layout_width="72dp"
+        android:layout_height="128dp"
+        android:contentDescription="@string/bug_report_image_desc"
+        android:scaleType="centerCrop" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/adminDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fontFamily="@font/font_regular"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="12sp"
+            tools:text="15.10.2026 21:30" />
+
+        <TextView
+            android:id="@+id/adminText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:fontFamily="@font/font_regular"
+            android:maxLines="4"
+            android:textColor="@color/dark_text"
+            android:textSize="14sp"
+            tools:text="Dersin sonunda Devam düğmesine basınca ekran donuyor." />
+
+        <TextView
+            android:id="@+id/adminDevice"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:fontFamily="@font/font_regular"
+            android:textColor="@color/dark_text_secondary"
+            android:textSize="12sp"
+            tools:text="v1.0.8 (8) · samsung SM-A515F · SDK 33 · tr-TR" />
+    </LinearLayout>
+
+</LinearLayout>

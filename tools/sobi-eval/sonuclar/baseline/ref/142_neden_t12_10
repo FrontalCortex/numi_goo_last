@@ -1,0 +1,1 @@
+Çünkü abaküsünde 5'i gösteren beşlik boncuk var, ama birlik boncuklar henüz gelmemiş. 3'ü doğrudan çıkaramıyoruz, çünkü gidecek 3 birlik boncuk yok. Bu yüzden 5'lik kuralı kullanıyoruz: 5 gider, kardeşi olan 2 gelir, ve 5 − 3 = 2 olur.

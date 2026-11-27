@@ -1,0 +1,3 @@
+Çünkü 9 eklemek, 10 ekleyip 1 çıkarmakla aynı şey. Birler sütunu en fazla 9 tuttuğu için 4 ve 9'u doğrudan toplayamayız (4 + 9 = 13 olur).
+
+Bu yüzden önce 10 gelir, sonra 9'un büyük kardeşi olan 1 gider. Böylece 4 + 10 − 1 = 13 olur.

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Gelişmiş panelinde tek rakam düğmesi; açık hâli (mavi) kodda, formdaki seçeneklerle aynı. -->
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/HomeworkOption"
+    android:textSize="17sp" />

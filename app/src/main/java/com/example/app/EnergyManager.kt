@@ -22,6 +22,10 @@ class EnergyManager(private val context: Context) {
 
     companion object {
         private const val PREFS_NAME = "energy_prefs"
+        private const val KEY_MIGRATED = "migrated_from_shared"
+
+        /** Aynı dosya için taşımayı tekrar tekrar denememek adına süreç içi işaret. */
+        private val migratedPrefsNames = java.util.Collections.synchronizedSet(mutableSetOf<String>())
         private const val KEY_USER_PLAN = "user_plan"
         private const val KEY_USER_ROLE = "user_role"
         private const val KEY_TEACHER_APPROVED = "teacher_approved"
@@ -36,8 +40,55 @@ class EnergyManager(private val context: Context) {
         private const val LEGACY_FIELD_LAST_UPDATE = "last_energy_update"
     }
 
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    /**
+     * Plan, rol ve enerji durumu KULLANICIYA ÖZELDİR; dosya adı uid içerir.
+     *
+     * Eskiden tek bir "energy_prefs" dosyası vardı: aynı cihazda A hesabından çıkıp B ile
+     * girildiğinde A'nın planı (ör. Pro) B'ye sızıyor, Firestore okuması gelene kadar B
+     * sonsuz enerji görüyordu. GlobalLessonData ve MissionsProgressStore zaten uid'e ayrı
+     * dosya kullanıyor; burada da aynı desen uygulanıyor.
+     *
+     * Oturum uygulama çalışırken değişebildiği için bu bir val değil, her erişimde
+     * hesaplanan bir property. (getSharedPreferences Android tarafında zaten önbelleklidir.)
+     */
+    private val prefs: SharedPreferences
+        get() {
+            val name = currentPrefsName()
+            val p = context.getSharedPreferences(name, Context.MODE_PRIVATE)
+            migrateSharedFileOnce(name, p)
+            return p
+        }
+
+    private fun currentPrefsName(): String {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        return if (uid.isNullOrEmpty()) PREFS_NAME + "_guest" else PREFS_NAME + "_" + uid
+    }
+
+    /**
+     * Tek seferlik taşıma: eski ortak dosyadaki değerleri, o kullanıcının kendi dosyası
+     * henüz boşsa oraya kopyalar. Böylece güncellemeden sonra mevcut kullanıcı planını ve
+     * enerjisini bir anlığına kaybetmiş gibi görmez. Kopyalama yalnızca BİR kez olur;
+     * sonraki hesaplar temiz başlar.
+     */
+    private fun migrateSharedFileOnce(name: String, target: SharedPreferences) {
+        if (migratedPrefsNames.contains(name)) return
+        migratedPrefsNames.add(name)
+        if (target.contains(KEY_MIGRATED)) return
+        val legacy = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val editor = target.edit().putBoolean(KEY_MIGRATED, true)
+        if (legacy.all.isNotEmpty() && target.all.isEmpty()) {
+            legacy.all.forEach { (key, value) ->
+                when (value) {
+                    is String -> editor.putString(key, value)
+                    is Int -> editor.putInt(key, value)
+                    is Long -> editor.putLong(key, value)
+                    is Boolean -> editor.putBoolean(key, value)
+                    is Float -> editor.putFloat(key, value)
+                }
+            }
+        }
+        editor.apply()
+    }
     private val handler = Handler(Looper.getMainLooper())
     private var energyUpdateCallback: ((Int) -> Unit)? = null
     private val firestore = FirebaseFirestore.getInstance()
@@ -54,7 +105,21 @@ class EnergyManager(private val context: Context) {
         }
     }
 
+    /**
+     * Güvenilir saatin çapası değişince göstergeyi tazeler; bkz. [TrustedClock.addAnchorListener].
+     * Sunucu cevabı ana iş parçacığında geliyor, yine de `post` ile: dinleyici başka bir
+     * iş parçacığından çağrılırsa arayüze oradan dokunulmasın.
+     */
+    private val trustedClockListener: () -> Unit = {
+        handler.post {
+            energyUpdateCallback?.invoke(getCurrentEnergy())
+            scheduleNextTick()
+        }
+    }
+
     init {
+        TrustedClock.addAnchorListener(trustedClockListener)
+
         // Eğer bu cihazda Firestore henüz senkronize edilmediyse,
         // eski yerel veriden geçiş yap ya da boş başlat (FS sync gelene kadar).
         migrateLocalIfNeeded()
@@ -132,7 +197,7 @@ class EnergyManager(private val context: Context) {
     fun getCurrentEnergy(): Int {
         if (isEnergyBlocked()) return 0
 
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         val fullTime = getFullTime()
 
         if (fullTime <= now) return getMaxEnergy()
@@ -156,7 +221,7 @@ class EnergyManager(private val context: Context) {
         val currentEnergy = getCurrentEnergy()
         if (currentEnergy < amount) return false
 
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         val currentFullTime = getFullTime()
 
         // Eğer enerji zaten dolu (fullTime geçmişte), sayacı şimdiden başlat.
@@ -181,7 +246,7 @@ class EnergyManager(private val context: Context) {
         if (amount <= 0) return
         if (isEnergyBlocked() || isInfiniteEnergy()) return
 
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         val currentFullTime = getFullTime()
 
         if (currentFullTime <= now) {
@@ -212,7 +277,7 @@ class EnergyManager(private val context: Context) {
 
     /** Bir sonraki enerji tick'ine kaç ms kaldığını döndürür (0 = zaten dolu). */
     fun getTimeUntilNextEnergy(): Long {
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         val fullTime = getFullTime()
 
         if (fullTime <= now) return 0L
@@ -225,6 +290,7 @@ class EnergyManager(private val context: Context) {
     }
 
     fun destroy() {
+        TrustedClock.removeAnchorListener(trustedClockListener)
         handler.removeCallbacksAndMessages(null)
     }
 
@@ -232,9 +298,17 @@ class EnergyManager(private val context: Context) {
     // İç yardımcılar
     // ─────────────────────────────────────────────────────────────────────────
 
+    /**
+     * Can hesabındaki "şimdi". Cihazın duvar saati DEĞİL: çocuk saati ileri alınca
+     * `energy_full_time` geçmişte kalıyor, uygulama canı dolu sanıp dersi başlatıyordu
+     * (sunucu harcamayı reddediyor ama ders iyimser başladığı için iş işten geçiyordu).
+     * Bkz. [TrustedClock].
+     */
+    private fun trustedNow(): Long = TrustedClock.nowMs()
+
     private fun getFullTime(): Long {
-        val saved = prefs.getLong(KEY_ENERGY_FULL_TIME, System.currentTimeMillis())
-        val now = System.currentTimeMillis()
+        val saved = prefs.getLong(KEY_ENERGY_FULL_TIME, trustedNow())
+        val now = trustedNow()
         val maxAllowed = now + getMaxEnergy() * getEnergyRefreshMillis()
         if (saved > maxAllowed) {
             persistFullTime(maxAllowed)
@@ -335,7 +409,7 @@ class EnergyManager(private val context: Context) {
      * Eski sistem verisinden (energy int + last_update timestamp) yeni fullTime türetir.
      */
     private fun deriveFullTimeFromLegacy(legacyEnergy: Int?, legacyLastUpdate: Long?): Long {
-        val now = System.currentTimeMillis()
+        val now = trustedNow()
         if (legacyEnergy == null) return now // Veri yoksa şimdi full
 
         val lastUpdate = legacyLastUpdate ?: now
@@ -367,7 +441,7 @@ class EnergyManager(private val context: Context) {
         } else {
             // Hiç yerel geçmiş yok → Firestore sync gelene kadar full göster.
             // syncFromFirestore() doğru değeri üzerine yazacak.
-            System.currentTimeMillis()
+            trustedNow()
         }
 
         setFullTimeLocally(derivedFullTime)

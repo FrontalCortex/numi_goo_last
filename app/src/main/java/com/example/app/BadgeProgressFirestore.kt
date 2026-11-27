@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import java.util.concurrent.atomic.AtomicReference
 
 data class BadgeLevelUpPayload(
     val mode: BadgeFragment.BadgeAnimMode,
@@ -20,7 +21,6 @@ object BadgeProgressFirestore {
     /** `users/{uid}/badgeProgress/state` dokümanından tam rozet durumu (profil ve sezon ödül kapısı için). */
     fun userBadgeProgressFromStateSnapshot(doc: DocumentSnapshot): UserBadgeProgress {
         if (!doc.exists()) return UserBadgeProgress()
-        val abacusRank = (doc.get("abacusLeaderboardRank") as? Number)?.toInt() ?: Int.MAX_VALUE
         val progress = UserBadgeProgress(
             userDartProgress = (doc.get("userDartProgress") as? Number)?.toInt() ?: 0,
             userKarateProgress = (doc.get("userKarateProgress") as? Number)?.toInt() ?: 0,
@@ -40,7 +40,6 @@ object BadgeProgressFirestore {
             userGoatProgress = (doc.get("userGoatProgress") as? Number)?.toInt() ?: 0,
             userEagleProgress = (doc.get("userEagleProgress") as? Number)?.toInt() ?: 0,
             userFlyProgress = (doc.get("userFlyProgress") as? Number)?.toInt() ?: 0,
-            abacusLeaderboardRank = abacusRank,
             goldMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("goldMedalPiece")),
             silverMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("silverMedalPiece")),
             bronzeMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc.get("bronzeMedalPiece")),
@@ -79,20 +78,60 @@ object BadgeProgressFirestore {
     fun payloadToQueueItem(payload: BadgeLevelUpPayload): String =
         "${payload.mode.name}|${payload.fromProgress}|${payload.toProgress}|${payload.reachedTarget}"
 
+    /**
+     * Ölçümde kullanılan rozet kimliği.
+     *
+     * [BadgeFragment.BadgeAnimMode] adları arayüze ait ve yanıltıcı (`DAILY_ONLY` aslında Dart,
+     * `CUP_GOOGLE` aslında Kupa). Tabloda ürünün kendi sözlüğü görünsün diye [BadgeKind]
+     * üzerinden çevriliyor.
+     */
+    private fun badgeIdOf(mode: BadgeFragment.BadgeAnimMode): String =
+        (BadgeKind.fromMode(mode)?.name ?: mode.name).lowercase()
+
+    /** Kazanılan her kademeyi ayrı olay olarak ölçüme yazar. Boş listede hiçbir şey yapmaz. */
+    private fun logLevelUps(payloads: List<BadgeLevelUpPayload>) {
+        payloads.forEach { AnalyticsLogger.logBadgeLevelUp(badgeIdOf(it.mode), it.reachedTarget) }
+        // Başarı anı paylaşımı (09.11.2026): yalnızca KAYIT; panel ders sonu zinciri bittikten sonra
+        // ana ekranda açılıyor (ShareMoments). Rozet ekranlarına dokunulmuyor.
+        // Anahtar kademenin hedefiyle (reachedTarget): aynı kademe yeniden kutlanırsa (09.11.2026 cihazda son
+        // kademedeki Kusursuz Odak her sandık dersinde yeniden kutlandı) paylaşım bir kez önerilsin.
+        payloads.lastOrNull()?.let { p ->
+            runCatching {
+                ShareMoments.recordBadge(AppStrings.context(), BadgeKind.fromMode(p.mode)?.title.orEmpty(), p.reachedTarget)
+            }
+        }
+    }
+
+    /**
+     * Kademeleri ölçüme yazıp sonucu çağırana iletir.
+     *
+     * Rozet kademesi 7 ayrı işlemden çıkıyor (bir genel artırma + altı kupa rozeti senkronu);
+     * hepsi sonucu bu biçimde veriyor. Tek geçiş noktası olsun diye ölçüm buraya kondu.
+     */
+    private fun emitLevelUps(
+        payloads: List<BadgeLevelUpPayload>,
+        onDone: (List<BadgeLevelUpPayload>) -> Unit,
+    ) {
+        logLevelUps(payloads)
+        onDone(payloads)
+    }
+
     fun openBadgeCelebration(
         fm: FragmentManager,
         payloads: List<BadgeLevelUpPayload>,
         seasonLeaderboardAckAfterQueue: Int? = null,
     ) {
-        android.util.Log.d("DEBUG_BADGE", "BadgeProgressFirestore.openBadgeCelebration called. payloads=${payloads.size}")
-        android.util.Log.d("DEBUG_BADGE", "Trace:", java.lang.Exception("Stack trace"))
+        BadgeDiagnostics.log("BadgeProgressFirestore.openBadgeCelebration called. payloads=${payloads.size}")
         if (payloads.isEmpty()) return
         fm.beginTransaction()
+            // Rozet kutlaması ders sonrası kuyruğunda yeni seri ekranıyla art arda
+            // geliyor; ikisinin aynı süre ve eğriyle hareket etmesi gerekiyor. Aynı ekran
+            // başka yerlerden de açılıyor ve orada da tutarlı olması doğru.
             .setCustomAnimations(
-                R.anim.slide_in_right,
-                R.anim.slide_out_left,
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .replace(
                 R.id.badgeFragmentContainter,
@@ -127,12 +166,19 @@ object BadgeProgressFirestore {
         return after to currentPeriodKey
     }
 
+    /**
+     * Eşikler [BadgeProgressEngine.levelSpec]'ten okunur; çağıran taraf liste geçmez.
+     *
+     * Eskiden her çağrı eşik listesini kendisi yazıyordu. Rozet ekranının eşikleri
+     * değiştirilip burası unutulduğunda kutlama eskilere göre çalışıyor, fark da hiçbir
+     * yerde görünmüyordu — rozet "kazanıldı" görünüp kutlama oynamaması demek.
+     */
     private fun resolveLevelUpPayload(
         mode: BadgeFragment.BadgeAnimMode,
         before: Int,
         after: Int,
-        levels: List<Int>,
     ): BadgeLevelUpPayload? {
+        val levels = BadgeProgressEngine.levelSpec(mode)?.first ?: return null
         val nextTargetBefore = levels.firstOrNull { it > before } ?: return null
         if (nextTargetBefore > levels.last()) return null
         if (after < nextTargetBefore) return null
@@ -226,6 +272,12 @@ object BadgeProgressFirestore {
             .document(uid)
             .collection("badgeProgress")
             .document("state")
+
+        // Kademeler işlem (transaction) gövdesinde hesaplanıyor ama sonuç buradan, yani
+        // gövdenin DIŞINDAN veriliyor. Gövde yeniden çalıştırılabilir olduğu için her denemede
+        // üzerine yazılıyor; en son yazılan, gerçekten işlenen denemenin sonucudur.
+        // Yazım arka plandaki işlem iplikinden, okuma ana iplikten olduğu için AtomicReference.
+        val committedPayloads = AtomicReference<List<BadgeLevelUpPayload>>(emptyList())
 
         FirebaseFirestore.getInstance().runTransaction { transaction ->
             val snapshot = transaction.get(docRef)
@@ -387,7 +439,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.BOWLING_WITH_BASE,
                     beforeBowling,
                     afterBowling,
-                    listOf(5, 10, 20, 50, 100),
                 )?.let { payloads.add(it) }
             }
             if (incrementDart) {
@@ -395,7 +446,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.DAILY_ONLY,
                     beforeDart,
                     afterDart,
-                    listOf(3, 10, 20, 30, 50),
                 )?.let { payloads.add(it) }
             }
             if (incrementKarate) {
@@ -407,7 +457,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.GOLF_WITH_BASE,
                     beforeGolf,
                     afterGolf,
-                    listOf(5, 10, 20, 50, 100),
                 )?.let { payloads.add(it) }
             }
             if (incrementFishing) {
@@ -418,7 +467,6 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.TORNADO,
                     beforeTornado,
                     afterTornado,
-                    listOf(1, 3, 5, 10, 15),
                 )?.let { payloads.add(it) }
             }
             if (incrementVolcano) {
@@ -426,10 +474,21 @@ object BadgeProgressFirestore {
                     BadgeFragment.BadgeAnimMode.VOLCANO,
                     beforeVolcano,
                     afterVolcano,
-                    listOf(1, 3, 5, 10, 15),
                 )?.let { payloads.add(it) }
             }
-            onDone(payloads)
+            committedPayloads.set(payloads.toList())
+        }.addOnSuccessListener {
+            // Sonuç BURADAN veriliyor, transaction gövdesinin içinden DEĞİL. İki sebebi var:
+            //
+            // 1. Transaction gövdesi yeniden çalıştırılabilir. Aynı dokümana eş zamanlı başka bir
+            //    yazım gelirse (örn. kupa rozeti senkronu) Firestore bloğu baştan çalıştırır.
+            //    [onDone] içeride olsaydı kutlama ekranı iki kez açılır, kademe iki kez sayılırdı.
+            // 2. Transaction gövdesi ana iş parçacığında DEĞİL arka planda çalışır; [onDone]
+            //    ise fragment işlemi açıyor ve o ana iş parçacığı ister.
+            //
+            // addOnSuccessListener her ikisini de çözüyor: yazım gerçekten işlendikten sonra,
+            // bir kez, ana iş parçacığında. Aynı dosyadaki altı kupa rozeti senkronu da böyle.
+            emitLevelUps(committedPayloads.get(), onDone)
         }.addOnFailureListener { e ->
             Log.e(TAG, "badge progress update failed", e)
             onDone(emptyList())
@@ -487,7 +546,7 @@ object BadgeProgressFirestore {
             }.addOnSuccessListener { (beforeDino, afterDino) ->
                 if (afterDino > beforeDino) {
                     val payloads = resolveDinoLevelUpChain(beforeDino, afterDino)
-                    onDone(payloads)
+                    emitLevelUps(payloads, onDone)
                 } else {
                     onDone(emptyList())
                 }
@@ -547,7 +606,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveCrocodileLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
@@ -603,7 +662,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveGoatLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
@@ -659,7 +718,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveEagleLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
@@ -715,7 +774,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveFlyLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }
@@ -771,7 +830,7 @@ object BadgeProgressFirestore {
                 }
             }.addOnSuccessListener { (before, after) ->
                 val payloads = resolveTurtleLevelUpChain(before, after)
-                onDone(payloads)
+                emitLevelUps(payloads, onDone)
             }.addOnFailureListener {
                 onDone(emptyList())
             }

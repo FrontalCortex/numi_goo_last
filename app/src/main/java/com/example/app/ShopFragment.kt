@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.graphics.Color
+import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -9,11 +10,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
+import androidx.core.view.doOnLayout
 import androidx.fragment.app.Fragment
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.functions.FirebaseFunctionsException
 
 class ShopFragment : Fragment() {
 
@@ -21,8 +30,38 @@ class ShopFragment : Fragment() {
     private var keyText: TextView? = null
     private var energyText: TextView? = null
 
+    /**
+     * Altın/anahtar bakiyesinin CANLI dinleyicisi.
+     *
+     * Satın alma tamamlandığında ([BillingManager.onPurchaseGranted]) bakiyeyi SUNUCU yazıyor;
+     * yerel önbelleğe kimse dokunmuyor. Önbelleği ancak bir Firestore anlık görüntüsü tazeliyor
+     * (bkz. [UserWalletFirestore.listenToWallet] -> `cacheLocally`). Bu yüzden satın alma
+     * geri çağrısında önbellekten okumak yarış demek: Play'in "tüketildi" geri çağrısı
+     * anlık görüntüden önce gelirse başlıkta ESKİ sayı kalır ve onu tazeleyen başka bir şey
+     * olmaz. Dinleyici bu yarışı tamamen ortadan kaldırıyor.
+     */
+    private var walletListener: ListenerRegistration? = null
+
+    /** Canlı dinleyiciden en az bir değer geldi mi? Geç gelen tek seferlik okumayı eler. */
+    private var walletLiveValueSeen = false
+
     /** Anahtar karşılığı can alımı sürerken tekrar tıklamayı engeller. */
     private var buyLifeInProgress = false
+
+    /** Altın karşılığı seri dondurma alımı sürerken tekrar tıklamayı engeller. */
+    private var buyFreezeInProgress = false
+
+    /**
+     * Dondurma teklifi bu ekran ömründe ölçüme bildirildi mi.
+     *
+     * [renderStreakFreezeCard] her bakiye/dondurma değişiminde yeniden çalışıyor; olay
+     * her çizimde gönderilse "kaç kez görüldü" sayısı çizim sayısına dönüşür ve dönüşüm
+     * oranı anlamsızlaşırdı.
+     */
+    private var freezeOfferLogged = false
+
+    /** Ders/öğretici gibi üst katmandaki bir ekranın üstüne mi açıldı (bkz. MainActivity.openShopFragment). */
+    private val isOverTopLayer: Boolean get() = id == R.id.shopOverlayContainer
 
     // Timer properties for energy section
     private val handler = Handler(Looper.getMainLooper())
@@ -49,24 +88,47 @@ class ShopFragment : Fragment() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid != null) {
             UserWalletFirestore.loadWallet(ctx, uid, onResult = { wallet ->
+                if (walletLiveValueSeen) return@loadWallet
                 currencyText?.text = wallet.currency.toString()
                 keyText?.text = wallet.keys.toString()
             })
+            walletListener?.remove()
+            walletListener = UserWalletFirestore.listenToWallet(
+                context = ctx.applicationContext,
+                uid = uid,
+                onUpdate = { wallet ->
+                    walletLiveValueSeen = true
+                    currencyText?.text = wallet.currency.toString()
+                    keyText?.text = wallet.keys.toString()
+                },
+            )
         }
 
         // --- Can (Energy) Bölümü ---
+        // Pro kartı doğrudan satın alma başlatmaz; önce plan karşılaştırma ekranını açar
+        // (shopSuperCard ile aynı davranış). Kullanıcı neyi satın aldığını görmeden ödeme
+        // akışına girmemeli.
         v.findViewById<View>(R.id.shopProCard).setOnClickListener {
-            val mainActivity = activity as? MainActivity ?: return@setOnClickListener
-            mainActivity.billingManager.launchPurchase(mainActivity, BillingCatalog.SUB_PRO)
+            ProDiffirentFragment
+                .newInstance(AnalyticsLogger.PRO_ENTRY_SHOP)
+                .show(requireActivity().supportFragmentManager, "ProDiffirent")
         }
 
         val buyButton = v.findViewById<View>(R.id.shopBuyLifeButton)
         buyButton.setOnClickListener { buyLifeWithKeys(buyButton) }
 
         // --- SUPER CARD ---
-        val superCard = v.findViewById<View>(R.id.shopSuperCard)
-        superCard?.setOnClickListener {
-            ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")
+        val openProPlans = View.OnClickListener {
+            ProDiffirentFragment
+                .newInstance(AnalyticsLogger.PRO_ENTRY_SHOP)
+                .show(requireActivity().supportFragmentManager, "ProDiffirent")
+        }
+        v.findViewById<View>(R.id.shopSuperCard)?.setOnClickListener(openProPlans)
+        // "Pro'ya geç" içe göçen düğme; kendi tıklaması olmalı, yoksa dokunuşu kart alır ve
+        // düğme basılı kalır. Davranış kartla aynı.
+        v.findViewById<View>(R.id.superButton)?.let { btn ->
+            DepthButtons.style(btn, Color.WHITE, 16f, lip = Color.parseColor("#C7CCD1"))
+            btn.setOnClickListener(openProPlans)
         }
 
         // --- Özel Teklifler ---
@@ -78,7 +140,14 @@ class ShopFragment : Fragment() {
                 if (!isAdded) return@showRewardedAd
                 // Sunucu isteğini fragment eklenmeden önce başlat — ilk açılıştaki gecikmeyi gizler.
                 ServerRewards.prefetchChest(NewChestFragment.ChestRarity.COMMON.name, adNonce)
-                mainActivity.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.VISIBLE
+                // Mağaza dersin üstündeyse abaküs kabında ders duruyor: sandık oraya girerse
+                // mağazanın altında kalır, kapanırken de dersi kapatmaya çalışırdı. O durumda
+                // mağazanın kabında, kendi geri yığını girişiyle açılıyor; NewChestFragment
+                // "shop_chest" girişinde yalnızca kendini kaldırır.
+                val overTopLayer = isOverTopLayer
+                if (!overTopLayer) {
+                    mainActivity.findViewById<View>(R.id.abacusFragmentContainer)?.visibility = View.VISIBLE
+                }
 
                 // "chest_closed" anahtarını bu FragmentManager'da başka ekranlar da kullanıyor ve
                 // her biri tetiklenince dinleyicisini temizliyor (aynı anahtara yalnızca tek
@@ -88,12 +157,17 @@ class ShopFragment : Fragment() {
                     if (isAdded) refreshCurrencyUi()
                 }
 
-                parentFragmentManager.beginTransaction()
+                val tx = parentFragmentManager.beginTransaction()
                     .add(
-                        R.id.abacusFragmentContainer,
-                        NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON, adNonce),
+                        if (overTopLayer) R.id.shopOverlayContainer else R.id.abacusFragmentContainer,
+                        NewChestFragment.newInstance(
+                            NewChestFragment.ChestRarity.COMMON,
+                            adNonce,
+                            source = AnalyticsLogger.CHEST_SOURCE_SHOP_AD,
+                        ),
                     )
-                    .commit()
+                if (overTopLayer) tx.addToBackStack("shop_chest")
+                tx.commit()
             }
         }
 
@@ -106,17 +180,26 @@ class ShopFragment : Fragment() {
                     adNonce = adNonce,
                     onResult = { fullTime ->
                         mainActivity.getEnergyManager().adoptServerFullTime(fullTime)
+                        AnalyticsLogger.logEnergyRefill(
+                            refillSource = AnalyticsLogger.ENERGY_REFILL_AD,
+                            energyAfter = mainActivity.getEnergyManager().getCurrentEnergy(),
+                        )
                         if (!isAdded) return@claimAdEnergy
                         playHeartFlyAnimation(watchAdButton2)
                         updateEnergyUi()
                     },
                     onFailure = {
                         if (!isAdded) return@claimAdEnergy
-                        Toast.makeText(requireContext(), "Can alınamadı. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), appString(R.string.ui_can_alinamadi_tekrar_deneyin), Toast.LENGTH_SHORT).show()
                     },
                 )
             }
         }
+
+        // Seri dondurma: altınla alınır. Kartın görünümü (fiyat düğmesi / "HAZIR" rozeti)
+        // onViewCreated'da çiziliyor — burada `view` henüz yok.
+        val buyFreezeButton = v.findViewById<View>(R.id.shopBuyStreakFreezeButton)
+        buyFreezeButton.setOnClickListener { confirmBuyStreakFreeze(buyFreezeButton) }
 
         // --- Altın ve Anahtar Paketleri ---
         // Gerçek para ile satın alınır. Verilecek miktarı SUNUCU belirler; burada yalnızca
@@ -145,8 +228,11 @@ class ShopFragment : Fragment() {
             view.findViewById<TextView>(labelId)?.text = price
         }
         billing.formattedPrice(BillingCatalog.SUB_PRO)?.let { price ->
-            view.findViewById<TextView>(R.id.shopProPriceText)?.text = "aylık $price"
+            view.findViewById<TextView>(R.id.shopProPriceText)?.text = appString(R.string.ui_aylik_x, price)
         }
+        // "1 HAFTA ÜCRETSİZ DENE" layout'ta sabitti; denemeye uygun olmayan kullanıcıya
+        // yanlış vaat oluyordu.
+        SubscriptionCta.apply(billing, view.findViewById(R.id.superButton))
     }
 
     /**
@@ -163,7 +249,7 @@ class ShopFragment : Fragment() {
 
         val currentKey = keyText?.text?.toString()?.toIntOrNull() ?: UserWalletFirestore.getCachedKeys(ctx)
         if (currentKey < LIFE_KEY_COST) {
-            Toast.makeText(ctx, "Yetersiz anahtar!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, appString(R.string.ui_yetersiz_anahtar_2), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -177,28 +263,240 @@ class ShopFragment : Fragment() {
             onResult = { fullTime, keys ->
                 buyLifeInProgress = false
                 mainActivity.getEnergyManager().adoptServerFullTime(fullTime)
+                AnalyticsLogger.logEnergyRefill(
+                    refillSource = AnalyticsLogger.ENERGY_REFILL_KEYS,
+                    energyAfter = mainActivity.getEnergyManager().getCurrentEnergy(),
+                )
                 if (!isAdded) return@buyWithKeys
                 keyText?.text = keys.toString()
                 playHeartFlyAnimation(buyButton)
                 updateEnergyUi()
             },
-            onFailure = {
+            onFailure = { e ->
                 buyLifeInProgress = false
                 if (!isAdded) return@buyWithKeys
                 refreshCurrencyUi()
-                Toast.makeText(ctx, "İşlem tamamlanamadı. Tekrar deneyin.", Toast.LENGTH_SHORT).show()
+                // Sunucu bir hesaba günde en fazla 5 can satıyor (ENERGY_KEY_BUY_DAILY_LIMIT).
+                val dailyLimitReached = (e as? FirebaseFunctionsException)?.code ==
+                    FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED
+                val message = if (dailyLimitReached) {
+                    appString(R.string.ui_gunluk_sinira_ulasildi_yarin_tekrar_deneyin)
+                } else {
+                    appString(R.string.ui_islem_tamamlanamadi_tekrar_deneyin)
+                }
+                Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
             },
         )
     }
 
+    /**
+     * Mağazayı seri dondurma kartına kaydırılmış açar ve kartı bir kez vurgular.
+     *
+     * Seri ekranındaki "Seri dondurma: Yok" satırından gelindiğinde kullanılıyor: kart
+     * mağazanın ortalarında, tepeden açılsaydı çocuk gönderildiği şeyi aramak zorunda kalırdı.
+     *
+     * Kaydırma ANINDA (yumuşak değil): mağaza zaten kayarak açılıyor, üstüne ikinci bir
+     * hareket binince ekran çalkalanıyor. Vurgu ise açılış animasyonu bittikten sonra
+     * oynuyor, yoksa görülmeden biterdi.
+     */
+    private fun focusCard(root: View, cardId: Int) {
+        val scroll = root.findViewById<ScrollView>(R.id.shopScrollView) ?: return
+        val card = root.findViewById<View>(cardId) ?: return
+        // Kartın konumu ölçüm bitmeden bilinmiyor.
+        scroll.doOnLayout {
+            val bounds = Rect()
+            card.getDrawingRect(bounds)
+            scroll.offsetDescendantRectToMyCoords(card, bounds)
+            val gap = (FOCUS_TOP_GAP_DP * resources.displayMetrics.density).toInt()
+            scroll.scrollTo(0, (bounds.top - gap).coerceAtLeast(0))
+
+            card.postDelayed({
+                if (!isAdded) return@postDelayed
+                card.animate()
+                    .scaleX(FOCUS_PULSE_SCALE).scaleY(FOCUS_PULSE_SCALE)
+                    .setDuration(FOCUS_PULSE_HALF_MS)
+                    .withEndAction {
+                        card.animate().scaleX(1f).scaleY(1f).setDuration(FOCUS_PULSE_HALF_MS).start()
+                    }
+                    .start()
+            }, FOCUS_PULSE_DELAY_MS)
+        }
+    }
+
+    /**
+     * Seri dondurma kartını çizer: elde yoksa fiyat düğmesi, varsa "✓ HAZIR" rozeti.
+     *
+     * Dondurma eldeyken düğme griye boyanıp bırakılmıyor: gri bir fiyat düğmesi "altınım
+     * yetmiyor" ya da "bozuk" diye de okunuyor. Rozet ve değişen açıklama, bunun bir engel
+     * değil sahip olunan bir şey olduğunu söylüyor ve neden yenisinin alınamadığını da
+     * açıklıyor (aynı anda yalnızca bir tane tutulabiliyor).
+     */
+    private fun renderStreakFreezeCard() {
+        val view = view ?: return
+        val ctx = context ?: return
+        val held = StreakRepository.freezesHeld(ctx) > 0
+
+        val button = view.findViewById<CardView>(R.id.shopBuyStreakFreezeButton)
+        val icon = view.findViewById<ImageView>(R.id.shopBuyStreakFreezeIcon)
+        val text = view.findViewById<TextView>(R.id.shopBuyStreakFreezeText)
+        val desc = view.findViewById<TextView>(R.id.shopStreakFreezeDesc)
+
+        if (held) {
+            desc.text = appString(R.string.ui_serin_korunuyor_kullaninca_yenisini_alabilir)
+            // Hazır: düz (dudaksız) — basılacak bir şey yok.
+            DepthButtons.style(button, Color.parseColor("#17394B"), 8f)
+            button.isEnabled = false
+            icon.visibility = View.GONE
+            text.text = appString(R.string.ui_hazir)
+            text.setTextColor(Color.parseColor("#4FC3F7"))
+            button.isClickable = false
+        } else {
+            // Yalnızca ALINABİLİR hâl bir teklif; "✓ HAZIR" değil. Satın almanın paydası:
+            // streak_freeze_offer_shown → gold_spent[item_id=streak_freeze].
+            if (!freezeOfferLogged) {
+                freezeOfferLogged = true
+                AnalyticsLogger.logStreakFreezeOfferShown(
+                    canAfford = UserWalletFirestore.getCachedCurrency(ctx) >=
+                        StreakRepository.FREEZE_COST_GOLD,
+                )
+            }
+            desc.text = appString(R.string.ui_serini_1_gun_boyunca_korur_serin)
+            DepthButtons.style(button, Color.parseColor("#37474F"), 8f)
+            button.isEnabled = true
+            icon.visibility = View.VISIBLE
+            text.text = StreakRepository.FREEZE_COST_GOLD.toString()
+            text.setTextColor(Color.parseColor("#FFFFFF"))
+            button.isClickable = true
+        }
+    }
+
+    /**
+     * Seri dondurma için onay penceresi; onaylanırsa [buyStreakFreeze].
+     *
+     * Can alımında onay yok çünkü bedeli 1 anahtar. Bu ise 4000 altın — bir çocuğun günlerce
+     * biriktirdiği miktar — ve geri alınamıyor; kaydırırken yanlışlıkla dokunmak yeterli
+     * olmamalı. Pencere seri ekranındakiyle aynı ([StreakFragment] hedef seçimi), yeni bir
+     * görsel dil eklenmiyor.
+     */
+    private fun confirmBuyStreakFreeze(buyButton: View) {
+        if (buyFreezeInProgress) return
+        val ctx = context ?: return
+        if (StreakRepository.freezesHeld(ctx) > 0) return
+
+        val cost = StreakRepository.FREEZE_COST_GOLD
+        val gold = currencyText?.text?.toString()?.toIntOrNull()
+            ?: UserWalletFirestore.getCachedCurrency(ctx)
+        if (gold < cost) {
+            Toast.makeText(ctx, appString(R.string.ui_yetersiz_altin_2), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_streak_options, null)
+        val dialog = AlertDialog.Builder(ctx).setView(dialogView).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialogView.findViewById<TextView>(R.id.streakOptionsTitle).text = appString(R.string.ui_seri_dondurma)
+        dialogView.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
+            appString(R.string.ui_bir_gun_calisamazsan_serin_bozulmaz_x, cost)
+        StreakViews.buildOptionRows(
+            container = dialogView.findViewById(R.id.streakOptionsContainer),
+            values = listOf(CONFIRM_BUY, CONFIRM_CANCEL),
+            labels = listOf(appString(R.string.ui_satin_al), appString(R.string.ui_vazgec)),
+            trailing = listOf(appString(R.string.ui_x_altin, cost), ""),
+            selected = CONFIRM_BUY,
+            trailingColor = StreakViews.COLOR_GOLD,
+        ) { choice ->
+            dialog.dismiss()
+            if (choice == CONFIRM_BUY) buyStreakFreeze(buyButton)
+        }
+        dialog.show()
+    }
+
+    /**
+     * [StreakRepository.FREEZE_COST_GOLD] altın karşılığında bir seri dondurma alır.
+     *
+     * Bakiye iyimser düşülmüyor (can alımındaki gibi): rakam büyük, sunucu reddederse
+     * çocuk 4000 altınının bir an için gittiğini görmüş olur. Yeni bakiye yanıttan yazılıyor.
+     */
+    private fun buyStreakFreeze(buyButton: View) {
+        if (buyFreezeInProgress) return
+        val ctx = context ?: return
+        buyFreezeInProgress = true
+        val appContext = ctx.applicationContext
+        StreakSyncService.buyFreeze(appContext) { success, message, currency ->
+            buyFreezeInProgress = false
+            if (!isAdded) return@buyFreeze
+            if (success) {
+                currencyText?.text = currency.toString()
+                // Üst bar da aynı cüzdanı gösteriyor; mağaza kapanınca eski sayı kalmasın.
+                (activity as? MainActivity)?.refreshWalletUi()
+                playItemFlyAnimation(buyButton, 1, R.drawable.streak_freeze_ic)
+                renderStreakFreezeCard()
+                // Mağaza seri ekranının üstünde açılmış olabilir; o ekran kendiliğinden
+                // yeniden çizilmiyor (bkz. StreakFragment.onViewCreated).
+                parentFragmentManager.setFragmentResult(RESULT_STREAK_FREEZE_BOUGHT, Bundle())
+            } else {
+                Toast.makeText(ctx, message, Toast.LENGTH_SHORT).show()
+                // Reddin sebebi bayat önbellek olabilir (dondurma başka bir cihazda alınmış
+                // ya da araya eski bir okuma girmiş): doğrusu sunucudan çekilip kart ona göre
+                // çiziliyor, yoksa düğme açık kalır ve her dokunuş aynı hatayı verir.
+                StreakSyncService.refreshFromServer(appContext) {
+                    if (isAdded) renderStreakFreezeCard()
+                }
+            }
+        }
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        if (isOverTopLayer) {
+            // Alttaki ders/öğretici kendi geri tuşu geri çağrısını kaydetmiş ("dersten çık?").
+            // O, FragmentManager'ın geri yığını işleyicisinden önce çalışıyor; mağaza açıkken
+            // geri tuşu dersi kapatmaya kalkmasın, önce mağazayı (ya da üstündeki sandığı) kapatsın.
+            requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    parentFragmentManager.popBackStack()
+                }
+            })
+        }
+
+        // Davet: Pro kartının altında "ücretsiz yol" (InviteFragment). Mağazanın kendi kabına açılıyor,
+        // böylece mağaza üst katmandayken de görünür ve geri tuşu önce davet ekranını kapatır.
+        view.findViewById<View>(R.id.shopInviteCard)?.let { card ->
+            if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser == null) {
+                card.visibility = View.GONE
+            } else {
+                card.setOnClickListener {
+                    val containerId = (requireView().parent as? View)?.id ?: R.id.fragmentContainerID
+                    InviteFragment.open(parentFragmentManager, containerId, replace = false)
+                }
+            }
+        }
+
+        renderStreakFreezeCard()
+        // Kart yerel önbellekten çizildi; dondurma dün harcanmış ya da başka bir cihazda
+        // alınmış olabilir, o yüzden sunucudaki durum da okunup yeniden çiziliyor.
+        StreakSyncService.refreshFromServer(requireContext().applicationContext) {
+            if (isAdded) renderStreakFreezeCard()
+        }
+        // Yalnızca ilk açılışta: ekran yeniden kurulduğunda (döndürme, süreç ölümü) sistem
+        // kaydırma konumunu kendisi geri yüklüyor, bir daha karta sıçramak onu ezerdi.
+        if (savedInstanceState == null &&
+            arguments?.getBoolean(ARG_FOCUS_STREAK_FREEZE) == true
+        ) {
+            focusCard(view, R.id.shopStreakFreezeCard)
+        } else if (savedInstanceState == null && arguments?.getBoolean(ARG_FOCUS_SOBI_CREDITS) == true) {
+            // Sobi ekranında hak ve kredi bitince "Kredi al".
+            focusCard(view, R.id.shopSobiCreditSection)
+        }
 
         (activity as? MainActivity)?.billingManager?.let { billing ->
             billing.onPricesReady = { if (isAdded) applyStorePrices() }
             billing.onPurchaseGranted = { productId ->
                 if (isAdded) {
                     refreshCurrencyUi()
+                    refreshCreditBalance()
+                    refreshSobiCredits()
                     animatePurchasedItem(productId)
                 }
                 (activity as? MainActivity)?.refreshWalletUi()
@@ -219,10 +517,15 @@ class ShopFragment : Fragment() {
         }
         handler.post(updateRunnable!!)
         refreshCurrencyUi()
+        refreshCreditBalance()
+        refreshSobiCredits()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        walletListener?.remove()
+        walletListener = null
+        walletLiveValueSeen = false
         updateRunnable?.let { handler.removeCallbacks(it) }
         // Geri çağrıları MainActivity'ye devret; mağaza kapalıyken tamamlanan satın almalar
         // da işlensin ve bu fragment'e sızıntı kalmasın.
@@ -232,17 +535,38 @@ class ShopFragment : Fragment() {
     /** Satın alınan pakete uygun kutlama animasyonunu oynatır. */
     private fun animatePurchasedItem(productId: String) {
         val view = view ?: return
-        val (cardId, iconRes) = when (productId) {
-            BillingCatalog.GOLD_SMALL -> R.id.shopGoldCard1 to R.drawable.gold_ic
-            BillingCatalog.GOLD_MEDIUM -> R.id.shopGoldCard2 to R.drawable.gold_ic
-            BillingCatalog.GOLD_LARGE -> R.id.shopGoldCard3 to R.drawable.gold_ic
-            BillingCatalog.KEYS_SMALL -> R.id.shopKeyCard1 to R.drawable.key
-            BillingCatalog.KEYS_MEDIUM -> R.id.shopKeyCard2 to R.drawable.key
-            BillingCatalog.KEYS_LARGE -> R.id.shopKeyCard3 to R.drawable.key
+        // Kredi paketlerinde fırlatılan ikon sayısı verilen kredi adedini birebir yansıtır
+        // (1 / 5 / 10). Altın ve anahtarda adetler çok yüksek olduğu için orada sabit bir
+        // görsel yoğunluk (PURCHASE_ANIMATION_ITEM_COUNT) kullanılıyor.
+        val (cardId, iconRes, itemCount) = when (productId) {
+            BillingCatalog.GOLD_SMALL ->
+                Triple(R.id.shopGoldCard1, R.drawable.gold_ic, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.GOLD_MEDIUM ->
+                Triple(R.id.shopGoldCard2, R.drawable.gold_ic, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.GOLD_LARGE ->
+                Triple(R.id.shopGoldCard3, R.drawable.gold_ic, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.KEYS_SMALL ->
+                Triple(R.id.shopKeyCard1, R.drawable.key, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.KEYS_MEDIUM ->
+                Triple(R.id.shopKeyCard2, R.drawable.key, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.KEYS_LARGE ->
+                Triple(R.id.shopKeyCard3, R.drawable.key, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.CREDITS_SMALL ->
+                Triple(R.id.shopCreditCard1, R.drawable.chat_credit_ic3, 1)
+            BillingCatalog.CREDITS_MEDIUM ->
+                Triple(R.id.shopCreditCard2, R.drawable.chat_credit_ic3, 5)
+            BillingCatalog.CREDITS_LARGE ->
+                Triple(R.id.shopCreditCard3, R.drawable.chat_credit_ic3, 10)
+            BillingCatalog.SOBI_CREDITS_20 ->
+                Triple(R.id.shopSobiCreditCard1, R.drawable.chat_credit_ic3, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.SOBI_CREDITS_50 ->
+                Triple(R.id.shopSobiCreditCard2, R.drawable.chat_credit_ic3, PURCHASE_ANIMATION_ITEM_COUNT)
+            BillingCatalog.SOBI_CREDITS_120 ->
+                Triple(R.id.shopSobiCreditCard3, R.drawable.chat_credit_ic3, PURCHASE_ANIMATION_ITEM_COUNT)
             else -> return
         }
         val card = view.findViewById<View>(cardId) ?: return
-        playItemFlyAnimation(card, PURCHASE_ANIMATION_ITEM_COUNT, iconRes)
+        playItemFlyAnimation(card, itemCount, iconRes)
     }
 
     private fun updateEnergyUi() {
@@ -252,7 +576,14 @@ class ShopFragment : Fragment() {
         val isInfinite = activity.isInfiniteEnergy()
         
         val currentEnergy = em.getCurrentEnergy()
-        energyText?.text = if (isInfinite) "∞" else currentEnergy.toString()
+        EnergyDisplay.apply(
+            text = energyText,
+            infiniteBadge = view.findViewById(R.id.shopEnergyInfiniteBadge),
+            icon = view.findViewById(R.id.shopEnergyIcon),
+            isInfinite = isInfinite,
+            isPremium = PlanStatus.isProPlan(em.getUserPlan()),
+            value = currentEnergy.toString(),
+        )
         val maxEnergy = em.getMaxEnergy()
         
         val timerText = view.findViewById<TextView>(R.id.shopLifeTimerText)
@@ -263,11 +594,12 @@ class ShopFragment : Fragment() {
         buyText.text = LIFE_KEY_COST.toString()
 
         if (isInfinite || currentEnergy >= maxEnergy) {
-            timerText.text = "DOLU"
+            timerText.text = appString(R.string.fragment_shop_shop_life_timer_text)
             timerText.setTextColor(Color.parseColor("#78909C")) // Gri
             
             // Butonu gri yap
-            buyButton.setCardBackgroundColor(Color.parseColor("#1E2A30"))
+            DepthButtons.style(buyButton, Color.parseColor("#1E2A30"), 8f)
+            buyButton.isEnabled = false
             buyText.setTextColor(Color.parseColor("#78909C")) // Koyu gri metin
             buyIcon.alpha = 0.5f
             buyButton.isClickable = false
@@ -283,7 +615,8 @@ class ShopFragment : Fragment() {
             timerText.setTextColor(Color.parseColor("#29B6F6")) // Mavi
             
             // Butonu aktif yap
-            buyButton.setCardBackgroundColor(Color.parseColor("#37474F"))
+            DepthButtons.style(buyButton, Color.parseColor("#37474F"), 8f)
+            buyButton.isEnabled = true
             buyText.setTextColor(Color.parseColor("#FFFFFF"))
             buyIcon.alpha = 1.0f
             buyButton.isClickable = true
@@ -298,6 +631,60 @@ class ShopFragment : Fragment() {
         val ctx = context ?: return
         currencyText?.text = UserWalletFirestore.getCachedCurrency(ctx).toString()
         keyText?.text = UserWalletFirestore.getCachedKeys(ctx).toString()
+    }
+
+    /**
+     * Sobi kredisi sunucuda (sobiChats/{uid}, istemciye kapalı); bölümdeki bakiye satırı ve üst
+     * bakiye paneli sobiBalance'tan. users.sobiCredits kopyası yerine asıl bakiye: mağaza zaten
+     * bu çağrıyı yapıyor. İade sonrası eksi bakiye 0 görünüyor (üst para paneliyle aynı).
+     */
+    private fun refreshSobiCredits() {
+        if (FirebaseAuth.getInstance().currentUser == null) return
+        ServerSobi.balance({ b ->
+            if (!isAdded) return@balance
+            view?.findViewById<TextView>(R.id.shopSobiCreditBalanceText)?.text =
+                getString(R.string.shop_sobi_credit_balance, b.credits, b.freeLimit)
+            view?.findViewById<TextView>(R.id.shopCreditText)?.text = b.credits.coerceAtLeast(0).toString()
+        })
+    }
+
+    /**
+     * Öğretmen danışma kredisi kartlarındaki Pro bonusu. Kart bölümü şimdilik gizli; bakiye
+     * artık üst panelde gösterilmiyor (o yuva Sobi kredisinin, bkz. [refreshSobiCredits]).
+     */
+    private fun refreshCreditBalance() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        FirebaseFirestore.getInstance().collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                if (!isAdded) return@addOnSuccessListener
+                applyProCreditBonusUi(doc)
+            }
+    }
+
+    /**
+     * Kredi kartlarinda Pro bonusunu gosterir.
+     *
+     * Pro uyeye alacagi GERCEK adet yazilir (6 / 12) ve bonusun dahil oldugu belirtilir;
+     * digerlerine baz adet kalir ve Pro'ya gecince ne kazanacagi gosterilir. Boylece tek
+     * bir yerlesim hem odulu hem yukseltme gerekcesini anlatir.
+     *
+     * Buradaki bonus degerleri functions/index.js -> PRO_CREDIT_BONUS ile ayni olmalidir.
+     * 1'lik pakette bonus yoktur, o karta rozet konmaz.
+     */
+    private fun applyProCreditBonusUi(doc: DocumentSnapshot) {
+        val v = view ?: return
+        val isPro = PlanStatus.isPro(doc)
+
+        fun apply(amountId: Int, bonusId: Int, base: Int, bonus: Int) {
+            v.findViewById<TextView>(amountId)?.text =
+                (if (isPro) base + bonus else base).toString()
+            v.findViewById<TextView>(bonusId)?.apply {
+                text = if (isPro) appString(R.string.ui_bonus_dahil) else appString(R.string.ui_pro_da_x, bonus)
+                visibility = View.VISIBLE
+            }
+        }
+        apply(R.id.shopCreditAmount2, R.id.shopCreditBonus2, 5, 1)
+        apply(R.id.shopCreditAmount3, R.id.shopCreditBonus3, 10, 2)
     }
 
     private fun playHeartFlyAnimation(button: View) {
@@ -461,10 +848,41 @@ class ShopFragment : Fragment() {
 
     companion object {
         /** 1 can satın almanın anahtar bedeli. Arayüzdeki etiket de bu değerden yazılır. */
-        private const val LIFE_KEY_COST = 3
+        private const val LIFE_KEY_COST = 1
 
         /** Satın alma sonrası fırlatılan ikon sayısı (yalnızca görsel). */
         private const val PURCHASE_ANIMATION_ITEM_COUNT = 30
+
+        /** Seri dondurma onay penceresindeki iki satırın değerleri. */
+        private const val CONFIRM_BUY = 1
+        private const val CONFIRM_CANCEL = 0
+
+        /** Seri dondurma satın alındı; dinleyen: [StreakFragment]. */
+        const val RESULT_STREAK_FREEZE_BOUGHT = "streak_freeze_bought"
+
+        private const val ARG_FOCUS_STREAK_FREEZE = "focus_streak_freeze"
+        private const val ARG_FOCUS_SOBI_CREDITS = "focus_sobi_credits"
+
+        /** Karta kaydırıldığında kartın üstünde bırakılan boşluk; başlık kartın tepesine yapışmasın. */
+        private const val FOCUS_TOP_GAP_DP = 16
+
+        /** Vurgu, mağazanın kayarak açılması bittikten sonra başlıyor. */
+        private const val FOCUS_PULSE_DELAY_MS = 450L
+        private const val FOCUS_PULSE_HALF_MS = 160L
+        private const val FOCUS_PULSE_SCALE = 1.04f
+
+        /**
+         * @param focusStreakFreeze true ise mağaza seri dondurma kartında açılır
+         *   (bkz. [focusCard]).
+         * @param focusSobiCredits true ise Sobi kredisi paketlerinde açılır.
+         */
+        fun newInstance(focusStreakFreeze: Boolean = false, focusSobiCredits: Boolean = false): ShopFragment =
+            ShopFragment().apply {
+                arguments = Bundle().apply {
+                    putBoolean(ARG_FOCUS_STREAK_FREEZE, focusStreakFreeze)
+                    putBoolean(ARG_FOCUS_SOBI_CREDITS, focusSobiCredits)
+                }
+            }
 
         /** Kart -> Play ürün kimliği. */
         private val CARD_PRODUCTS = listOf(
@@ -474,6 +892,12 @@ class ShopFragment : Fragment() {
             R.id.shopKeyCard1 to BillingCatalog.KEYS_SMALL,
             R.id.shopKeyCard2 to BillingCatalog.KEYS_MEDIUM,
             R.id.shopKeyCard3 to BillingCatalog.KEYS_LARGE,
+            R.id.shopCreditCard1 to BillingCatalog.CREDITS_SMALL,
+            R.id.shopCreditCard2 to BillingCatalog.CREDITS_MEDIUM,
+            R.id.shopCreditCard3 to BillingCatalog.CREDITS_LARGE,
+            R.id.shopSobiCreditCard1 to BillingCatalog.SOBI_CREDITS_20,
+            R.id.shopSobiCreditCard2 to BillingCatalog.SOBI_CREDITS_50,
+            R.id.shopSobiCreditCard3 to BillingCatalog.SOBI_CREDITS_120,
         )
 
         /** Fiyat etiketi -> Play ürün kimliği. */
@@ -484,6 +908,12 @@ class ShopFragment : Fragment() {
             R.id.shopKeyPrice1 to BillingCatalog.KEYS_SMALL,
             R.id.shopKeyPrice2 to BillingCatalog.KEYS_MEDIUM,
             R.id.shopKeyPrice3 to BillingCatalog.KEYS_LARGE,
+            R.id.shopCreditPrice1 to BillingCatalog.CREDITS_SMALL,
+            R.id.shopCreditPrice2 to BillingCatalog.CREDITS_MEDIUM,
+            R.id.shopCreditPrice3 to BillingCatalog.CREDITS_LARGE,
+            R.id.shopSobiCreditPrice1 to BillingCatalog.SOBI_CREDITS_20,
+            R.id.shopSobiCreditPrice2 to BillingCatalog.SOBI_CREDITS_50,
+            R.id.shopSobiCreditPrice3 to BillingCatalog.SOBI_CREDITS_120,
         )
     }
 }

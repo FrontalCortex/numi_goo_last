@@ -1,34 +1,32 @@
 package com.example.app
 
-import android.util.Log
-import com.google.firebase.firestore.FieldValue
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
-
+/**
+ * Kullanıcının "bizi nereden duydunuz" cevabını Firebase Analytics'e bildirir.
+ *
+ * ## Taşıma notu (önceki mimari)
+ * Bu değer eskiden `appStatistics/acquisition_sources` dokümanında `FieldValue.increment(1)`
+ * ile tutulan bir sayaçtı. Güvenlik kuralı zaten `allow read: false` diyordu — yani veri
+ * tasarım gereği uygulamaya hiç geri dönmüyordu, tanımı gereği ölçüm verisiydi.
+ *
+ * Analytics iki sebeple daha iyi:
+ * - Sayaç manipüle edilebiliyordu (kural giriş yapmış herkese yazma izni veriyordu).
+ * - Tek bir toplam sayı, kaynağı kullanıcının geri kalan yolculuğuna bağlayamıyordu.
+ *   Kullanıcı özelliği olarak yazıldığında "Instagram'dan gelenlerin D7 retention'ı"
+ *   gibi sorular cevaplanabilir hâle geliyor.
+ *
+ * Kaynak değeri kullanıcının SERBEST YAZDIĞI bir metin değil, sabit bir listeden seçilen
+ * bir etikettir (bkz. [UserInfoFragment]); bu yüzden Analytics'e gönderilmesi güvenlidir.
+ */
 object AppStatisticsManager {
 
-    private const val TAG = "AppStatisticsManager"
-    private const val COLLECTION_APP_STATISTICS = "appStatistics"
-    private const val DOC_ACQUISITION_SOURCES = "acquisition_sources"
-
     /**
-     * Kullanıcının nereden geldiğini seçtiği kaynağın istatistiğini
-     * 'appStatistics/acquisition_sources' dokümanında atomik olarak 1 artırır.
-     * Doküman henüz yoksa otomatik oluşturur (SetOptions.merge).
+     * Kullanıcının seçtiği edinim kaynağını kaydeder.
+     *
+     * İmza korundu (nullable [String]) — üç çağrı noktası değişmedi:
+     * [UserInfoFragment], [com.example.app.auth.AuthManager], [OtpVerificationFragment].
      */
     fun incrementAcquisitionSource(source: String?) {
         if (source.isNullOrBlank()) return
-
-        val db = FirebaseFirestore.getInstance()
-        val statsRef = db.collection(COLLECTION_APP_STATISTICS).document(DOC_ACQUISITION_SOURCES)
-
-        statsRef.set(
-            mapOf(source to FieldValue.increment(1)),
-            SetOptions.merge()
-        ).addOnSuccessListener {
-            Log.d(TAG, "Acquisition source statistic incremented for: $source")
-        }.addOnFailureListener { e ->
-            Log.w(TAG, "Failed to increment acquisition source statistic for: $source", e)
-        }
+        AnalyticsLogger.logAcquisitionSource(source)
     }
 }

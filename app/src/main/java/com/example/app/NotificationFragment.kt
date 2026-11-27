@@ -35,6 +35,13 @@ class NotificationFragment : Fragment() {
     private enum class TeacherTab { POOL, CHATS, REPORTS }
     private enum class StudentTab { BEKLEYEN, COZULEN }
     private enum class ReportsSubTab { REPORTS, RESTRICTED }
+    /** Havuz: kurs öğretmeninin sınıflarının soruları ya da genel havuz (bkz. CourseClasses). */
+    private enum class PoolSubTab { MINE, GENERAL }
+    /**
+     * Sınıftaki öğrencinin ana sekmeleri: Sorularım (Bekleyen/Çözülen alt sekmeleriyle) |
+     * Ödevlerim | Sınıfım. Sınıfı olmayan öğrencide yalnızca sorular (ekran eskisi gibi).
+     */
+    private enum class StudentMainTab { QUESTIONS, CLASS }
 
     private var _binding: FragmentNotificationBinding? = null
     private val binding get() = _binding!!
@@ -47,6 +54,23 @@ class NotificationFragment : Fragment() {
     private var teacherTab = TeacherTab.POOL
     private var studentTab = StudentTab.BEKLEYEN
     private var reportsSubTab = ReportsSubTab.REPORTS
+    private var poolSubTab: PoolSubTab? = null
+    /**
+     * Öğretmenin gördüğü havuzlar; öğretmen dokümanı okununca dolar. Havuz sorgusu buna göre
+     * kuruluyor ve kurallarla birebir aynı olmalı: kurallar sorguyu süzmüyor, izinsiz bir
+     * dokümana çarpabilecek sorguyu (ör. kurs öğretmeninin genel havuz sorgusu) tamamen
+     * reddediyor ve liste hiçbir hata göstermeden boş kalıyor.
+     */
+    private var poolVisibility: CourseClasses.PoolVisibility? = null
+
+    // Öğrencinin sınıfı ve Sınıfım sekmesi (ödevler oradaki karttan açılıyor).
+    private var studentMainTab = StudentMainTab.QUESTIONS
+    private var myClass: CourseClasses.MyClass? = null
+    private var homeworkWatcher: com.example.app.homework.HomeworkCard.Watcher? = null
+    private var classmatesListener: ListenerRegistration? = null
+    private val classmateAvatars = HashMap<String, String?>()
+    /** Ödev bildiriminden gelindi: sınıf okununca ödev ekranı bir kez açılacak. */
+    private var openHomeworksWhenReady = false
 
     private val adapter = QuestionListAdapter(
         onItemClick = { question -> onQuestionClick(question) },
@@ -76,7 +100,16 @@ class NotificationFragment : Fragment() {
         private const val KEY_TEACHER_TAB = "teacher_tab"
         private const val KEY_STUDENT_TAB = "student_tab"
         private const val KEY_REPORTS_SUB_TAB = "reports_sub_tab"
+        private const val KEY_POOL_SUB_TAB = "pool_sub_tab"
+        private const val KEY_STUDENT_MAIN_TAB = "student_main_tab"
+        private const val ARG_FORCE_STUDENT_HOMEWORK = "force_student_homework"
+
+        /** Yeni ödev bildirimine dokunan öğrenci için: Sınıfım sekmesi ve üstünde ödev ekranı açılsın. */
+        fun newForStudentHomework(): NotificationFragment = NotificationFragment().apply {
+            arguments = Bundle().apply { putBoolean(ARG_FORCE_STUDENT_HOMEWORK, true) }
+        }
         private const val ARG_FORCE_TEACHER_CHATS = "force_teacher_chats"
+        private const val ARG_FORCE_TEACHER_POOL = "force_teacher_pool"
         private const val ARG_FORCE_STUDENT_BEKLEYEN = "force_student_bekleyen"
         private const val ARG_TEACHER_SELECTION_MODE = "teacher_selection_mode"
         private const val ARG_MEDIA_TYPE = "teacher_media_type"
@@ -93,6 +126,19 @@ class NotificationFragment : Fragment() {
                     putBoolean(ARG_FORCE_TEACHER_CHATS, fromTeacher)
                     putBoolean(ARG_FORCE_STUDENT_BEKLEYEN, !fromTeacher)
                 }
+            }
+        }
+
+        /**
+         * Havuz bildirimine dokunan öğretmen için: HAVUZ sekmesi zorla seçili açılsın.
+         *
+         * `teacherTab` varsayılanı zaten POOL ama bu yetmiyor — öğretmen son olarak Sohbetler
+         * sekmesinde kaldıysa kaydedilmiş durum onu geri getiriyor. Bildirim "havuzda yeni
+         * soru var" diyorsa açılan ekran havuz olmak zorunda.
+         */
+        fun newForTeacherPool(): NotificationFragment {
+            return NotificationFragment().apply {
+                arguments = Bundle().apply { putBoolean(ARG_FORCE_TEACHER_POOL, true) }
             }
         }
 
@@ -130,6 +176,8 @@ class NotificationFragment : Fragment() {
         outState.putString(KEY_TEACHER_TAB, teacherTab.name)
         outState.putString(KEY_STUDENT_TAB, studentTab.name)
         outState.putString(KEY_REPORTS_SUB_TAB, reportsSubTab.name)
+        poolSubTab?.let { outState.putString(KEY_POOL_SUB_TAB, it.name) }
+        outState.putString(KEY_STUDENT_MAIN_TAB, studentMainTab.name)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -138,6 +186,7 @@ class NotificationFragment : Fragment() {
         binding.questionsRecyclerView.adapter = adapter
 
         val forceTeacherChats = arguments?.getBoolean(ARG_FORCE_TEACHER_CHATS) == true
+        val forceTeacherPool = arguments?.getBoolean(ARG_FORCE_TEACHER_POOL) == true
         val forceStudentBekleyen = arguments?.getBoolean(ARG_FORCE_STUDENT_BEKLEYEN) == true
         val fromTeacherSelection = arguments?.getBoolean(ARG_TEACHER_SELECTION_MODE) == true
 
@@ -145,6 +194,10 @@ class NotificationFragment : Fragment() {
         if (fromTeacherSelection) {
             teacherSelectionMode = true
             teacherTab = TeacherTab.CHATS
+        } else if (forceTeacherPool) {
+            // Havuz bildiriminden gelindi: kaydedilmiş sekme yok sayılıyor, bildirimin
+            // söylediği ekran açılmalı.
+            teacherTab = TeacherTab.POOL
         } else if (savedInstanceState != null) {
             savedInstanceState.getString(KEY_TEACHER_TAB)?.let { name ->
                 kotlin.runCatching { teacherTab = TeacherTab.valueOf(name) }
@@ -155,9 +208,23 @@ class NotificationFragment : Fragment() {
             savedInstanceState.getString(KEY_REPORTS_SUB_TAB)?.let { name ->
                 kotlin.runCatching { reportsSubTab = ReportsSubTab.valueOf(name) }
             }
+            savedInstanceState.getString(KEY_POOL_SUB_TAB)?.let { name ->
+                kotlin.runCatching { poolSubTab = PoolSubTab.valueOf(name) }
+            }
+            savedInstanceState.getString(KEY_STUDENT_MAIN_TAB)?.let { name ->
+                kotlin.runCatching { studentMainTab = StudentMainTab.valueOf(name) }
+            }
         } else {
             if (forceTeacherChats) teacherTab = TeacherTab.CHATS
             if (forceStudentBekleyen) studentTab = StudentTab.BEKLEYEN
+        }
+
+        // Ödev bildiriminden gelindi. Argüman tüketiliyor: profilden geri dönüşte görünüm yeniden
+        // kurulduğunda öğrencinin seçtiği sekme ezilmesin.
+        if (arguments?.getBoolean(ARG_FORCE_STUDENT_HOMEWORK) == true) {
+            studentMainTab = StudentMainTab.CLASS
+            openHomeworksWhenReady = true
+            arguments?.putBoolean(ARG_FORCE_STUDENT_HOMEWORK, false)
         }
 
         isTeacher = authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER
@@ -183,6 +250,7 @@ class NotificationFragment : Fragment() {
                         binding.teacherApprovalPendingContainer.visibility = View.GONE
                         binding.notificationTitle.visibility = View.GONE
                         binding.teacherTabContainer.visibility = View.VISIBLE
+                        setupPoolVisibility(CourseClasses.poolVisibilityOf(userDoc))
                         teacherSelectionMode = fromTeacherSelection
                         if (teacherSelectionMode) {
                             binding.tabPool.visibility = View.GONE
@@ -217,14 +285,143 @@ class NotificationFragment : Fragment() {
                 }
         } else {
             binding.notificationTitle.visibility = View.VISIBLE
-            binding.notificationTitle.text = "Sorularım"
+            binding.notificationTitle.text = appString(R.string.ui_sorularim)
             binding.teacherTabContainer.visibility = View.GONE
             binding.studentTabContainer.visibility = View.VISIBLE
             updateStudentTabUi()
             binding.tabBekleyen.setOnClickListener { switchToStudentTab(StudentTab.BEKLEYEN) }
             binding.tabCozulen.setOnClickListener { switchToStudentTab(StudentTab.COZULEN) }
-            if (studentTab == StudentTab.BEKLEYEN) subscribeToStudentPending() else subscribeToStudentResolved()
+            binding.tabStudentQuestions.setOnClickListener { showStudentMainTab(StudentMainTab.QUESTIONS) }
+            binding.tabStudentClass.setOnClickListener { showStudentMainTab(StudentMainTab.CLASS) }
+            // Sorular sınıf beklenmeden açılıyor (sınıfı olmayan öğrencilerin çoğu için tek ekran);
+            // Sınıfım isteniyorsa sınıf okununca geçiliyor.
+            if (studentMainTab == StudentMainTab.QUESTIONS) {
+                if (studentTab == StudentTab.BEKLEYEN) subscribeToStudentPending() else subscribeToStudentResolved()
+            }
+            loadStudentClass()
         }
+    }
+
+    // ── Öğrenci: Sorularım | Sınıfım ──────────────────────────────────────
+
+    /**
+     * Öğrencinin sınıfını okur. Sınıfı varsa ana sekmeler açılıyor (başlık yerine, öğretmendeki
+     * gibi); yoksa ekran yalnızca sorular. Sınıfa katılma Ayarlar → Kurs'ta kalıyor.
+     */
+    private fun loadStudentClass() {
+        CourseClasses.loadMyClass { c, _ ->
+            val b = _binding ?: return@loadMyClass
+            myClass = c
+            if (c == null) {
+                b.studentMainTabContainer.visibility = View.GONE
+                b.studentClassInfo.visibility = View.GONE
+                b.notificationTitle.visibility = View.VISIBLE
+                openHomeworksWhenReady = false
+                if (studentMainTab != StudentMainTab.QUESTIONS) showStudentMainTab(StudentMainTab.QUESTIONS, force = true)
+                return@loadMyClass
+            }
+            b.notificationTitle.visibility = View.GONE
+            b.studentMainTabContainer.visibility = View.VISIBLE
+            if (studentMainTab == StudentMainTab.QUESTIONS) updateStudentMainTabUi()
+            else showStudentMainTab(studentMainTab, force = true)
+            if (openHomeworksWhenReady) {
+                openHomeworksWhenReady = false
+                openStudentScreen(com.example.app.homework.StudentHomeworkListFragment.newInstance(c.id))
+            }
+        }
+    }
+
+    private fun updateStudentMainTabUi() {
+        val selectedColor = android.graphics.Color.WHITE
+        val unselectedColor = requireContext().getColor(R.color.dark_text_secondary)
+        listOf(
+            StudentMainTab.QUESTIONS to binding.tabStudentQuestions,
+            StudentMainTab.CLASS to binding.tabStudentClass,
+        ).forEach { (tab, view) ->
+            view.setBackgroundResource(if (tab == studentMainTab) R.drawable.bg_segment_selected else 0)
+            view.setTextColor(if (tab == studentMainTab) selectedColor else unselectedColor)
+        }
+    }
+
+    private fun stopStudentClassListeners() {
+        homeworkWatcher?.stop()
+        homeworkWatcher = null
+        classmatesListener?.remove()
+        classmatesListener = null
+    }
+
+    private fun showStudentMainTab(tab: StudentMainTab, force: Boolean = false) {
+        val b = _binding ?: return
+        if (studentMainTab == tab && !force) return
+        studentMainTab = tab
+        updateStudentMainTabUi()
+        listener?.remove()
+        listener = null
+        removeAllMessageListeners()
+        stopStudentClassListeners()
+        b.studentTabContainer.visibility = if (tab == StudentMainTab.QUESTIONS) View.VISIBLE else View.GONE
+        b.studentClassInfo.visibility = if (tab == StudentMainTab.CLASS) View.VISIBLE else View.GONE
+        b.emptyText.visibility = View.GONE
+        val c = myClass
+        when {
+            tab == StudentMainTab.QUESTIONS || c == null -> {
+                b.questionsRecyclerView.adapter = adapter
+                if (studentTab == StudentTab.BEKLEYEN) subscribeToStudentPending() else subscribeToStudentResolved()
+            }
+            else -> {
+                // Sınıftakiler sınıf kartının açtığı ekranda (StudentClassFragment); burada yalnızca iki kart.
+                b.questionsRecyclerView.adapter = null
+                b.studentClassName.text = c.name
+                b.studentClassMeta.text = c.courseName
+                b.studentClassMeta.visibility = if (c.courseName.isBlank()) View.GONE else View.VISIBLE
+                ClassFaces.bind(b.studentClassFaces, List(minOf(c.studentCount, ClassFaces.MAX)) { null }, c.studentCount)
+                b.studentClassCard.setOnClickListener { openStudentScreen(StudentClassFragment()) }
+                b.studentHomeworkCard.setOnClickListener {
+                    openStudentScreen(com.example.app.homework.StudentHomeworkListFragment.newInstance(c.id))
+                }
+                com.example.app.homework.DepthPress.attach(b.studentClassCard, b.studentHomeworkCard)
+                b.studentHomeworkSubtitle.text = ""
+                homeworkWatcher = com.example.app.homework.HomeworkCard.Watcher(c.id) onItems@{ items ->
+                    val bb = _binding ?: return@onItems
+                    val pending = items.count { !it.done }
+                    bb.studentHomeworkSubtitle.text = when {
+                        items.isEmpty() -> appString(R.string.hw_student_card_none)
+                        pending == 0 -> appString(R.string.hw_student_card_all_done)
+                        else -> appPlural(R.plurals.hw_student_card_pending, pending, pending)
+                    }
+                }
+                classmatesListener = CourseClasses.listenMembers(c.id) { members -> showClassFaces(members.orEmpty()) }
+            }
+        }
+    }
+
+    /** Sınıf kartındaki avatarlar; avatarı bilinmeyenler bir kez okunuyor. */
+    private fun showClassFaces(members: List<CourseClasses.ClassMember>) {
+        if (_binding == null) return
+        bindClassFaces(members)
+        val missing = members.map { it.uid }.filterNot { classmateAvatars.containsKey(it) }
+        if (missing.isNotEmpty()) {
+            missing.forEach { classmateAvatars[it] = null } // okunurken yeniden istenmesin
+            CourseClasses.loadAvatars(missing) { avatars ->
+                classmateAvatars.putAll(avatars)
+                if (_binding != null && studentMainTab == StudentMainTab.CLASS) bindClassFaces(members)
+            }
+        }
+    }
+
+    /** Sınıf kartındaki avatar dizisi: avatarı olanlar önce, en fazla [ClassFaces.MAX]. */
+    private fun bindClassFaces(members: List<CourseClasses.ClassMember>) {
+        val b = _binding ?: return
+        val faces = members.sortedBy { classmateAvatars[it.uid] == null }.take(ClassFaces.MAX).map { classmateAvatars[it.uid] }
+        ClassFaces.bind(b.studentClassFaces, faces, members.size)
+    }
+
+    private fun openStudentScreen(fragment: Fragment) {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+            .replace(R.id.fragmentContainerID, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun setupTeacherApprovalPendingUi() {
@@ -287,6 +484,7 @@ class NotificationFragment : Fragment() {
         listener = null
         removeRestrictedUserListeners()
         binding.reportsSubTabContainer.visibility = if (tab == TeacherTab.REPORTS) View.VISIBLE else View.GONE
+        updatePoolOptionsRow()
         binding.questionsRecyclerView.adapter = adapterForTeacherTab(tab)
         when (tab) {
             TeacherTab.POOL -> subscribeToPool()
@@ -428,20 +626,89 @@ class NotificationFragment : Fragment() {
         if (_binding != null) {
             binding.tabPool.visibility = View.VISIBLE
             binding.tabReports.visibility = View.VISIBLE
+            updatePoolOptionsRow()
         }
+    }
+
+    /**
+     * Öğretmen dokümanından gelen havuz görünürlüğünü kurar: hangi alt sekme açık başlar,
+     * alt sekmeler ve "Sınıflarım" düğmesi görünür mü.
+     */
+    private fun setupPoolVisibility(visibility: CourseClasses.PoolVisibility) {
+        poolVisibility = visibility
+        // Kaydedilmiş sekme artık görülemeyen bir havuzu gösteriyorsa (öğretmen "genel havuza
+        // yardım"ı kapattı) görülebilene düşüyor.
+        poolSubTab = when {
+            poolSubTab == PoolSubTab.MINE && visibility.classPool -> PoolSubTab.MINE
+            poolSubTab == PoolSubTab.GENERAL && visibility.generalPool -> PoolSubTab.GENERAL
+            visibility.classPool -> PoolSubTab.MINE
+            else -> PoolSubTab.GENERAL
+        }
+        binding.poolSubTabMine.setOnClickListener { switchPoolSubTab(PoolSubTab.MINE) }
+        binding.poolSubTabGeneral.setOnClickListener { switchPoolSubTab(PoolSubTab.GENERAL) }
+        binding.btnTeacherClasses.setOnClickListener { openTeacherClasses() }
+        updatePoolSubTabUi()
+        updatePoolOptionsRow()
+    }
+
+    /** Alt sekmeler yalnızca iki havuzu da gören öğretmende ve Havuz sekmesinde; düğme her sekmede. */
+    private fun updatePoolOptionsRow() {
+        val v = poolVisibility ?: return
+        val showSubTabs = v.classPool && v.generalPool && teacherTab == TeacherTab.POOL && !teacherSelectionMode
+        val showClasses = v.isCourseTeacher && !teacherSelectionMode
+        binding.poolSubTabContainer.visibility = if (showSubTabs) View.VISIBLE else View.GONE
+        binding.btnTeacherClasses.visibility = if (showClasses) View.VISIBLE else View.GONE
+        binding.poolOptionsRow.visibility = if (showSubTabs || showClasses) View.VISIBLE else View.GONE
+    }
+
+    private fun updatePoolSubTabUi() {
+        val selectedBg = R.drawable.bg_segment_selected
+        val selectedColor = android.graphics.Color.WHITE
+        val unselectedColor = requireContext().getColor(R.color.dark_text_secondary)
+        listOf(PoolSubTab.MINE to binding.poolSubTabMine, PoolSubTab.GENERAL to binding.poolSubTabGeneral)
+            .forEach { (tab, view) ->
+                view.setBackgroundResource(if (tab == poolSubTab) selectedBg else 0)
+                view.setTextColor(if (tab == poolSubTab) selectedColor else unselectedColor)
+            }
+    }
+
+    private fun switchPoolSubTab(tab: PoolSubTab) {
+        if (poolSubTab == tab) return
+        poolSubTab = tab
+        updatePoolSubTabUi()
+        listener?.remove()
+        listener = null
+        subscribeToPool()
+    }
+
+    private fun openTeacherClasses() {
+        requireActivity().supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+            .replace(R.id.fragmentContainerID, TeacherClassesFragment())
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun subscribeToPool() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
-            binding.emptyText.text = "Giriş yapın."
+            binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = "Henüz soru yok"
-        val query = firestore.collection("questions")
+        val mine = poolSubTab == PoolSubTab.MINE && poolVisibility?.classPool == true
+        binding.emptyText.text = appString(if (mine) R.string.class_pool_empty_mine else R.string.ui_henuz_soru_yok)
+        // İki sorgu da kurallardaki `teacherReaches` ile birebir (bkz. [poolVisibility]):
+        // sınıf havuzu `classTeacherUids array-contains ben`, genel havuz `pool == general`.
+        // İkisinin de bileşik indeksi firestore.indexes.json'da.
+        val base = if (mine) {
+            firestore.collection("questions").whereArrayContains("classTeacherUids", uid)
+        } else {
+            firestore.collection("questions").whereEqualTo("pool", CourseClasses.POOL_GENERAL)
+        }
+        val query = base
             .whereEqualTo("status", StudentQuestion.STATUS_PENDING)
             // Soru havuzu: yalnızca oluşturulma zamanına göre sırala.
-            // Mevcut Firestore indeksini bozmayalım; DESC alıp client tarafında ASC'ye çeviriyoruz.
+            // DESC alıp client tarafında ASC'ye çeviriyoruz.
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
             if (e != null || _binding == null || !isAdded) return@addSnapshotListener
@@ -475,10 +742,10 @@ class NotificationFragment : Fragment() {
     private fun subscribeToChats() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
-            binding.emptyText.text = "Giriş yapın."
+            binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = "Henüz sohbet yok."
+        binding.emptyText.text = appString(R.string.ui_henuz_sohbet_yok)
         val query = firestore.collection("questions")
             .whereEqualTo("claimedByTeacherUid", uid)
             .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -508,7 +775,7 @@ class NotificationFragment : Fragment() {
     }
 
     private fun subscribeToReports() {
-        binding.emptyText.text = "Bekleyen rapor yok."
+        binding.emptyText.text = appString(R.string.ui_bekleyen_rapor_yok)
         val query = firestore.collection("messageReports")
             .whereEqualTo("status", MessageReport.STATUS_PENDING)
             .orderBy("reportedAt", Query.Direction.DESCENDING)
@@ -634,6 +901,7 @@ class NotificationFragment : Fragment() {
         val imageView = dialog.findViewById<ImageView>(R.id.dialogImageView)
         Glide.with(this).load(url).into(imageView)
         dialog.findViewById<View>(R.id.dialogImageClose).setOnClickListener { dialog.dismiss() }
+        PreviewSafeArea.apply(dialog.findViewById(R.id.dialogImageClose))
         dialog.show()
     }
 
@@ -664,10 +932,10 @@ class NotificationFragment : Fragment() {
             }
             setOnCompletionListener {
                 playPauseView.setImageResource(android.R.drawable.ic_media_play)
-                timeView.text = "Ses kaydını dinlemek için oynat"
+                timeView.text = appString(R.string.ui_ses_kaydini_dinlemek_icin_oynat)
             }
             setOnErrorListener { _, _, _ ->
-                Toast.makeText(requireContext(), "Ses oynatılamadı.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_ses_oynatilamadi), Toast.LENGTH_SHORT).show()
                 true
             }
             prepareAsync()
@@ -704,8 +972,8 @@ class NotificationFragment : Fragment() {
                     "handledAt" to Timestamp.now()
                 )
             )
-            .addOnSuccessListener { Toast.makeText(requireContext(), "Rapor reddedildi.", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { Toast.makeText(requireContext(), "İşlem başarısız.", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(requireContext(), appString(R.string.ui_rapor_reddedildi), Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { Toast.makeText(requireContext(), appString(R.string.ui_islem_basarisiz_2), Toast.LENGTH_SHORT).show() }
     }
 
     private fun restrictReportedUser(report: MessageReport, days: Int?) {
@@ -739,12 +1007,12 @@ class NotificationFragment : Fragment() {
             batch.update(userRef, restrictionContext + mapOf("restrictedUntil" to until, "banned" to false))
         }
         batch.commit()
-            .addOnSuccessListener { Toast.makeText(requireContext(), "Kullanıcı kısıtlandı.", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { e -> Toast.makeText(requireContext(), "İşlem başarısız: ${e.message}", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(requireContext(), appString(R.string.ui_kullanici_kisitlandi), Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { e -> Toast.makeText(requireContext(), appString(R.string.ui_islem_basarisiz_x, e.message), Toast.LENGTH_SHORT).show() }
     }
 
     private fun subscribeToRestrictedUsers() {
-        binding.emptyText.text = "Kısıtlı kullanıcı yok."
+        binding.emptyText.text = appString(R.string.ui_kisitli_kullanici_yok)
         bannedListener = firestore.collection("users")
             .whereEqualTo("banned", true)
             .addSnapshotListener { snap, e ->
@@ -795,10 +1063,10 @@ class NotificationFragment : Fragment() {
 
     private fun showUnbanConfirmDialog(user: RestrictedUser) {
         AlertDialog.Builder(requireContext())
-            .setTitle("Kısıtlamayı kaldır")
-            .setMessage("${user.name} kullanıcısının kısıtlaması kaldırılsın mı?")
-            .setPositiveButton("Kaldır") { _, _ -> removeRestriction(user.uid) }
-            .setNegativeButton("İptal", null)
+            .setTitle(appString(R.string.ui_kisitlamayi_kaldir))
+            .setMessage(appString(R.string.ui_x_kullanicisinin_kisitlamasi_kaldirilsin_mi, user.name))
+            .setPositiveButton(appString(R.string.ui_kaldir)) { _, _ -> removeRestriction(user.uid) }
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
 
@@ -817,8 +1085,8 @@ class NotificationFragment : Fragment() {
                     "restrictedByUid" to FieldValue.delete()
                 )
             )
-            .addOnSuccessListener { Toast.makeText(requireContext(), "Kısıtlama kaldırıldı.", Toast.LENGTH_SHORT).show() }
-            .addOnFailureListener { e -> Toast.makeText(requireContext(), "İşlem başarısız: ${e.message}", Toast.LENGTH_SHORT).show() }
+            .addOnSuccessListener { Toast.makeText(requireContext(), appString(R.string.ui_kisitlama_kaldirildi), Toast.LENGTH_SHORT).show() }
+            .addOnFailureListener { e -> Toast.makeText(requireContext(), appString(R.string.ui_islem_basarisiz_x, e.message), Toast.LENGTH_SHORT).show() }
     }
 
     private fun showRestrictionDetailDialog(user: RestrictedUser) {
@@ -830,7 +1098,7 @@ class NotificationFragment : Fragment() {
         view.findViewById<TextView>(R.id.restrictionDialogUserName).text = user.name
         val statusView = view.findViewById<TextView>(R.id.restrictionDialogStatus)
         if (user.banned) {
-            statusView.text = "Kalıcı ban"
+            statusView.text = appString(R.string.ui_kalici_ban)
             statusView.setBackgroundResource(R.drawable.bg_status_chip_error)
             statusView.setTextColor(requireContext().getColor(R.color.dark_error))
         } else {
@@ -849,7 +1117,7 @@ class NotificationFragment : Fragment() {
         }
 
         view.findViewById<TextView>(R.id.restrictionDialogMessagePreview).text =
-            user.restrictionMessagePreview?.ifBlank { null } ?: "Bu kısıtlamanın kaynağı hakkında bilgi yok."
+            user.restrictionMessagePreview?.ifBlank { null } ?: appString(R.string.ui_bu_kisitlamanin_kaynagi_hakkinda_bilgi_yok)
         bindMediaPreview(view, user.restrictionMessageType, user.restrictionMediaUrl, user.restrictionThumbnailUrl)
 
         val metaView = view.findViewById<TextView>(R.id.restrictionDialogMeta)
@@ -859,19 +1127,19 @@ class NotificationFragment : Fragment() {
         } else {
             metaView.visibility = View.VISIBLE
             val dateText = android.text.format.DateFormat.format("d MMM yyyy, HH:mm", restrictedAt.toDate())
-            metaView.text = "$dateText tarihinde kısıtlandı"
+            metaView.text = appString(R.string.ui_x_tarihinde_kisitlandi, dateText)
             val byUid = user.restrictedByUid
             if (!byUid.isNullOrBlank()) {
                 val cached = reportNameCache[byUid]
                 if (cached != null) {
-                    metaView.text = "$dateText tarihinde $cached tarafından kısıtlandı"
+                    metaView.text = appString(R.string.ui_x_tarihinde_x_tarafindan_kisitlandi, dateText, cached)
                 } else {
                     firestore.collection("users").document(byUid).get()
                         .addOnSuccessListener { doc ->
                             val teacherName = doc.getString("name")?.takeIf { it.isNotBlank() } ?: byUid.take(6)
                             reportNameCache[byUid] = teacherName
                             if (_binding != null && isAdded) {
-                                metaView.text = "$dateText tarihinde $teacherName tarafından kısıtlandı"
+                                metaView.text = appString(R.string.ui_x_tarihinde_x_tarafindan_kisitlandi, dateText, teacherName)
                             }
                         }
                 }
@@ -888,28 +1156,37 @@ class NotificationFragment : Fragment() {
     }
 
     private fun formatRestrictionUntil(until: Timestamp?): String {
-        if (until == null) return "Kısıtlı"
+        if (until == null) return appString(R.string.ui_kisitli)
         val diff = until.toDate().time - System.currentTimeMillis()
-        if (diff <= 0) return "Süresi doldu"
+        if (diff <= 0) return appString(R.string.ui_suresi_doldu)
         val days = java.util.concurrent.TimeUnit.MILLISECONDS.toDays(diff)
         val hours = java.util.concurrent.TimeUnit.MILLISECONDS.toHours(diff) % 24
         return when {
-            days >= 1 -> "$days gün kaldı"
-            hours >= 1 -> "$hours saat kaldı"
-            else -> "1 saatten az kaldı"
+            days >= 1 -> appPlural(R.plurals.ui_x_gun_kaldi, days, days)
+            hours >= 1 -> appPlural(R.plurals.ui_x_saat_kaldi, hours, hours)
+            else -> appString(R.string.ui_1_saatten_az_kaldi)
         }
     }
 
     private fun subscribeToStudentPending() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
-            binding.emptyText.text = "Giriş yapın."
+            binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = "Bekleyen soru yok."
+        binding.emptyText.text = appString(R.string.ui_bekleyen_soru_yok)
         val query = firestore.collection("questions")
             .whereEqualTo("studentUid", uid)
-            .whereIn("status", listOf(StudentQuestion.STATUS_PENDING, StudentQuestion.STATUS_CLAIMED))
+            // Süresi dolanlar da listede kalır: kullanıcı sorusunu ve yüklediği medyayı
+            // kaybetmesin, tek dokunuşla tekrar sorabilsin (bkz. showResendQuestionDialog).
+            .whereIn(
+                "status",
+                listOf(
+                    StudentQuestion.STATUS_PENDING,
+                    StudentQuestion.STATUS_CLAIMED,
+                    StudentQuestion.STATUS_EXPIRED,
+                )
+            )
             .orderBy("createdAt", Query.Direction.DESCENDING)
         listener = query.addSnapshotListener { snap, e ->
             if (e != null || _binding == null || !isAdded) return@addSnapshotListener
@@ -941,10 +1218,10 @@ class NotificationFragment : Fragment() {
     private fun subscribeToStudentResolved() {
         val uid = auth.currentUser?.uid ?: run {
             binding.emptyText.visibility = View.VISIBLE
-            binding.emptyText.text = "Giriş yapın."
+            binding.emptyText.text = appString(R.string.ui_giris_yapin)
             return
         }
-        binding.emptyText.text = "Çözülen soru yok."
+        binding.emptyText.text = appString(R.string.ui_cozulen_soru_yok)
         val query = firestore.collection("questions")
             .whereEqualTo("studentUid", uid)
             .whereEqualTo("status", StudentQuestion.STATUS_RESOLVED)
@@ -1008,56 +1285,98 @@ class NotificationFragment : Fragment() {
         val uid = auth.currentUser?.uid ?: return
         if (isTeacher) {
             if (question.status != StudentQuestion.STATUS_RESOLVED) {
-                Toast.makeText(requireContext(), "Çözüldü olarak işaretlenen soruları silebilirsin.", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_cozuldu_olarak_isaretlenen_sorulari_silebili), Toast.LENGTH_LONG).show()
                 return
             }
             AlertDialog.Builder(requireContext())
-                .setTitle("Soruyu silmek istediğine emin misin")
-                .setMessage("Bu işlem geri alınamaz.")
-                .setPositiveButton("Kaldır") { dialog, _ ->
+                .setTitle(appString(R.string.ui_soruyu_silmek_istedigine_emin_misin))
+                .setMessage(appString(R.string.ui_bu_islem_geri_alinamaz))
+                .setPositiveButton(appString(R.string.ui_kaldir)) { dialog, _ ->
                     dialog.dismiss()
                     firestore.collection("questions").document(question.id)
                         .update("deletedForUids", FieldValue.arrayUnion(uid))
                         .addOnSuccessListener {
-                            Toast.makeText(requireContext(), "Listeden kaldırıldı.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), appString(R.string.ui_listeden_kaldirildi), Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {
-                            Toast.makeText(requireContext(), "Kaldırılamadı.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), appString(R.string.ui_kaldirilamadi), Toast.LENGTH_SHORT).show()
                         }
                 }
-                .setNegativeButton("İptal") { dialog, _ -> dialog.dismiss() }
+                .setNegativeButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
                 .show()
         } else {
             AlertDialog.Builder(requireContext())
-                .setTitle("Soruyu silmek istediğine emin misin?")
-                .setMessage("Bu işlem geri alınamaz. Soruyu sildiğinde ona bir daha erişemezsin.")
-                .setPositiveButton("Sil") { dialog, _ ->
+                .setTitle(appString(R.string.ui_soruyu_silmek_istedigine_emin_misin_2))
+                .setMessage(appString(R.string.ui_bu_islem_geri_alinamaz_soruyu_sildiginde))
+                .setPositiveButton(appString(R.string.ui_sil_2)) { dialog, _ ->
                     dialog.dismiss()
                     firestore.collection("questions").document(question.id)
                         .delete()
                         .addOnSuccessListener {
-                            Toast.makeText(requireContext(), "Soru silindi.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), appString(R.string.ui_soru_silindi), Toast.LENGTH_SHORT).show()
                         }
                         .addOnFailureListener {
-                            Toast.makeText(requireContext(), "Silinemedi.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(requireContext(), appString(R.string.ui_silinemedi), Toast.LENGTH_SHORT).show()
                         }
                 }
-                .setNegativeButton("İptal") { dialog, _ -> dialog.dismiss() }
+                .setNegativeButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
                 .show()
         }
     }
 
+    /**
+     * 48 saat cevapsız kalıp kredisi iade edilmiş soruyu tekrar kuyruğa almayı önerir.
+     *
+     * Kredi iade edildiği için tekrar sormak yeni bir kredi harcar — aksi halde
+     * cevapsız kalan soru sonradan bedava cevaplanmış olurdu.
+     */
+    private fun showResendQuestionDialog(question: StudentQuestion) {
+        val ctx = context ?: return
+        androidx.appcompat.app.AlertDialog.Builder(ctx)
+            .setTitle(appString(R.string.ui_soru_cevaplanmadi))
+            .setMessage(appString(R.string.ui_bu_soru_48_saat_icinde_cevaplanmadi))
+            .setNegativeButton(appString(R.string.ui_vazgec), null)
+            .setPositiveButton(appString(R.string.ui_tekrar_sor)) { _, _ -> resendQuestion(question) }
+            .show()
+    }
+
+    private fun resendQuestion(question: StudentQuestion) {
+        com.google.firebase.functions.FirebaseFunctions.getInstance()
+            .getHttpsCallable("resendTeacherQuestion")
+            .call(hashMapOf("questionId" to question.id))
+            .addOnSuccessListener {
+                if (!isAdded) return@addOnSuccessListener
+                Toast.makeText(requireContext(), appString(R.string.ui_soru_tekrar_gonderildi), Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                if (!isAdded) return@addOnFailureListener
+                val insufficient = (e as? com.google.firebase.functions.FirebaseFunctionsException)?.code ==
+                    com.google.firebase.functions.FirebaseFunctionsException.Code.FAILED_PRECONDITION
+                val text = if (insufficient) {
+                    appString(R.string.ui_danisma_kredin_kalmadi_magazadan_kredi_alabi)
+                } else {
+                    serverDetailText(e, appString(R.string.ui_islem_tamamlanamadi_tekrar_deneyin), R.string.ui_gonderilemedi_x)
+                }
+                Toast.makeText(requireContext(), text, Toast.LENGTH_LONG).show()
+            }
+    }
+
     private fun onQuestionClick(question: StudentQuestion) {
         requireOnlineAndLoggedInOrLogin {
+            // Süresi dolmuş soru sohbete açılmaz; kullanıcıya tekrar sorma seçeneği sunulur.
+            if (!isTeacher && question.status == StudentQuestion.STATUS_EXPIRED) {
+                showResendQuestionDialog(question)
+                return@requireOnlineAndLoggedInOrLogin
+            }
             if (isTeacher) {
                 if (teacherSelectionMode && teacherTab == TeacherTab.CHATS) {
                     if (question.status == StudentQuestion.STATUS_RESOLVED) {
-                        Toast.makeText(requireContext(), "Çözülen sorulara mesaj gönderemezsin.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), appString(R.string.ui_cozulen_sorulara_mesaj_gonderemezsin), Toast.LENGTH_SHORT).show()
                         return@requireOnlineAndLoggedInOrLogin
                     }
                     val title = if (question.previewText.isNotEmpty()) question.previewText else question.message
                     adapter.setTeacherSelectionMode(true, question.id)
-                    (activity as? MainActivity)?.onTeacherChatSelectedFromNotification(question.id, title)
+                    (activity as? MainActivity)?.onTeacherChatSelectedFromNotification(question.id, title, question.studentUid)
                 } else {
                     openChatAfterPreload(question.id)
                 }
@@ -1070,6 +1389,7 @@ class NotificationFragment : Fragment() {
     override fun onDestroyView() {
         listener?.remove()
         listener = null
+        stopStudentClassListeners()
         removeRestrictedUserListeners()
         removeAllMessageListeners()
         releaseReportAudioPlayer()

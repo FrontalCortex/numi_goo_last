@@ -1,0 +1,2162 @@
+package com.example.app
+
+import android.util.Log
+import com.google.android.gms.ads.AdRequest
+import com.google.firebase.analytics.FirebaseAnalytics
+import com.google.firebase.analytics.ktx.analytics
+import com.google.firebase.analytics.ktx.logEvent
+import com.google.firebase.crashlytics.ktx.crashlytics
+import com.google.firebase.ktx.Firebase
+
+/**
+ * Firebase Analytics ve Crashlytics için tek giriş noktası.
+ *
+ * ## Neden merkezi bir sarmalayıcı
+ * Event isimleri ve parametre adları çağrı yerlerine dağılırsa, aynı olayın iki farklı
+ * isimle ("chest_opened" / "chest_open") kaydedilmesi kaçınılmaz olur ve raporlar sessizce
+ * bölünür. Buradaki tipli fonksiyonlar bunu derleme zamanında engeller.
+ *
+ * ## KİŞİSEL VERİ YASAK
+ * Uygulamayı çocuklar kullanıyor. Analytics'e **hiçbir koşulda** şunlar yazılmaz:
+ * e-posta, ad-soyad, Firebase uid, doğum tarihi, kullanıcının yazdığı serbest metin.
+ * Google'ın politikası bunu yasaklıyor; ihlali uygulamanın Play'den kaldırılmasına yol açar.
+ * Bu yüzden bu dosyada `String` alan tek parametre [sanitize]'dan geçer ve serbest metin
+ * kabul eden bir fonksiyon **bilerek** tanımlanmamıştır — kullanıcının yazdığı metin
+ * Firestore'da kalır (bkz. [QuestionPanelFragment]).
+ *
+ * Aynı sebeple [FirebaseAnalytics.setUserId] hiç çağrılmaz: retention zaten cihaz bazlı
+ * hesaplanır, kimliğe ihtiyacı yoktur.
+ *
+ * ## Hata davranışı
+ * Ölçüm hiçbir zaman uygulamayı çökertmemeli. Tüm çağrılar [safe] ile sarılıdır;
+ * Analytics bir sebeple kullanılamazsa (Play Services yok, init edilmemiş) olay
+ * sessizce düşer ve kullanıcı akışı etkilenmez.
+ */
+object AnalyticsLogger {
+
+    private const val TAG = "AnalyticsLogger"
+
+    // ── Event isimleri ──────────────────────────────────────────────────────
+    // Firebase kuralı: <=40 karakter, harfle başlar, harf/rakam/alt çizgi.
+    private const val EV_LESSON_STEP_PASS = "lesson_step_pass"
+    private const val EV_LESSON_STEP_FAIL = "lesson_step_fail"
+    private const val EV_LESSON_ITEM_FINISH = "lesson_item_finish"
+    private const val EV_LESSON_ITEM_REPLAY = "lesson_item_replay"
+    private const val EV_LESSON_UNLOCK_OFFER = "lesson_unlock_offer"
+    private const val EV_LESSON_UNLOCK_KEY = "lesson_unlock_key"
+    private const val EV_LESSON_UNLOCK_NO_KEYS = "lesson_unlock_no_keys"
+    private const val EV_LESSON_QUESTION_ENTRY = "lesson_question_entry"
+    private const val EV_LESSON_ABANDON_NO_ANSWER = "lesson_abandon_no_answer"
+    private const val EV_ACQUISITION_SOURCE = "acquisition_source"
+    private const val EV_SURVEY_CHOICE = "lesson_survey_choice"
+    private const val EV_SURVEY_TEXT = "lesson_survey_text"
+    private const val EV_SURVEY_SKIP = "lesson_survey_skip"
+    private const val EV_TUTORIAL_STUCK_REASON = "tutorial_stuck_reason"
+    private const val EV_CHEST_OPEN_START = "chest_open_start"
+    private const val EV_CHEST_OPEN_COMPLETE = "chest_open_complete"
+    private const val EV_CHEST_ABANDONED = "chest_abandoned"
+    /**
+     * DİKKAT: `app_background` KULLANILAMAZ — Firebase'in ayrılmış olay adlarından biridir ve
+     * SDK onu sessizce düşürür (hata yok, DebugView'da hiç görünmez). Aynı tuzak `app_update`,
+     * `app_remove`, `app_exception`, `first_open`, `session_start`, `screen_view` için de geçerli.
+     */
+    private const val EV_APP_EXIT_SCREEN = "app_exit_screen"
+    private const val EV_TUTORIAL_STEP_REACHED = "tutorial_step_reached"
+    private const val EV_TUTORIAL_STEP_ANSWER = "tutorial_step_answer"
+    private const val EV_TUTORIAL_STARTED = "tutorial_started"
+    private const val EV_ENERGY_BLOCKED = "energy_blocked"
+    private const val EV_ENERGY_SPENT = "energy_spent"
+    private const val EV_ENERGY_REFILL = "energy_refill"
+    private const val EV_AD_SKIP_SHOWN = "ad_skip_shown"
+    private const val EV_AD_SKIP_CLOSED = "ad_skip_closed"
+    private const val EV_ASK_QUESTION_PROMO_SHOWN = "ask_question_promo_shown"
+    private const val EV_ASK_QUESTION_PROMO_CLOSED = "ask_question_promo_closed"
+    private const val EV_PRO_PANEL_SHOWN = "pro_panel_shown"
+    private const val EV_PLAN_SHOWN = "plan_shown"
+    private const val EV_SIGNUP_STEP = "signup_step"
+    private const val EV_NOTIFICATION_OPENED = "notification_opened"
+    private const val EV_NOTIFICATION_SHOWN = "notification_shown"
+    private const val EV_NOTIFICATION_PREF_CHANGED = "notification_pref_changed"
+    private const val EV_QUESTION_ASKED = "question_asked"
+    private const val EV_QUESTION_ANSWERED = "question_answered"
+    private const val EV_QUESTION_CHAT_OPENED = "question_chat_opened"
+    private const val EV_DAILY_QUESTION_START = "daily_question_start"
+    private const val EV_DAILY_QUESTION_RESULT = "daily_question_result"
+    private const val EV_DAILY_QUESTION_CLAIM = "daily_question_claim"
+    private const val EV_CUP_RACE_RESULT = "cup_race_result"
+    private const val EV_AD_SHOWN = "ad_shown"
+    private const val EV_AD_LOAD_FAILED = "ad_load_failed"
+    private const val EV_AD_SHOW_FAILED = "ad_show_failed"
+    private const val EV_AD_NOT_READY = "ad_not_ready"
+    private const val EV_MISSION_CLAIMED = "mission_claimed"
+    private const val EV_GOLD_SPENT = "gold_spent"
+    private const val EV_KEY_SPENT = "key_spent"
+    private const val EV_BADGE_LEVEL_UP = "badge_level_up"
+    private const val EV_SOBI_TAB_OPEN = "sobi_tab_open"
+    private const val EV_SOBI_MESSAGE = "sobi_message_"
+    private const val EV_SOBI_EXAMPLE = "sobi_example_"
+    private const val EV_SOBI_LIMIT = "sobi_limit_"
+    private const val EV_SOBI_BUTTON = "sobi_btn_"
+    private const val EV_FRIEND_ADDED_SEARCH = "friend_added_search"
+    private const val EV_FRIEND_ADDED_LIST = "friend_added_list"
+    private const val EV_FRIEND_ADDED_PROFILE = "friend_added_profile"
+    private const val EV_FRIEND_SEARCH_HIT = "friend_search_hit"
+    private const val EV_FRIEND_SEARCH_EMPTY = "friend_search_empty"
+    private const val EV_FRIEND_REMOVED = "friend_removed"
+    private const val EV_PROFILE_OTHER_VIEWED = "profile_other_viewed"
+    /**
+     * DİKKAT: `purchase` GA4'ün STANDART olayıdır, ayrılmış adlardan biri değil. `value` ve
+     * `currency` ile birlikte gönderildiğinde Para Kazanma raporlarını kendiliğinden doldurur;
+     * bu yüzden özel bir ad uydurmuyoruz.
+     */
+    private const val EV_PURCHASE_STARTED = "purchase_started"
+    private const val EV_STREAK_SETUP_STEP = "streak_setup_step"
+    private const val EV_STREAK_GOAL_SET = "streak_goal_set"
+    private const val EV_STREAK_CHALLENGE_SET = "streak_challenge_set"
+    private const val EV_STREAK_REMINDER_SET = "streak_reminder_set"
+    private const val EV_STREAK_DAY_DONE = "streak_day_done"
+    private const val EV_STREAK_BROKEN = "streak_broken"
+    private const val EV_STREAK_CHALLENGE_DONE = "streak_challenge_done"
+    private const val EV_STREAK_FREEZE_USED = "streak_freeze_used"
+    private const val EV_STREAK_FREEZE_OFFER = "streak_freeze_offer_shown"
+    private const val EV_AVATAR_PART_CHANGED = "avatar_part_changed"
+    private const val EV_AVATAR_SAVED = "avatar_saved"
+    private const val EV_DEVICE_CLOCK_SKEW = "device_clock_skew"
+
+    // ── Parametre isimleri ──────────────────────────────────────────────────
+    //
+    // GA4'te ÖZEL BOYUT olarak kayıtlı parametreler METİN gönderilir, sayı değeri taşısalar bile
+    // (part_id, position, step, fail_streak, tutorial_no, question_no, choice, chest_stars, at_tap).
+    // Bu mülkte sayı gönderilen parametrelerin boyutu Explore'da hep "(not set)" çıktı (Ekim 2026):
+    // Ders (metin) doluydu, aynı olaydaki Part ve Deneme sayısı (sayı) boştu; Öğretici no da
+    // binlerce olaya rağmen boştu. Metne çevirmeden önceki olaylar boyutta boş kalmaya devam eder.
+    //
+    // Süre ve miktar gibi toplanacak değerler (elapsed_ms, duration_ms, reward_amount…) boyut değil
+    // metriktir; onlar sayı kalmalı.
+    private const val P_PART_ID = "part_id"
+    private const val P_POSITION = "position"
+    private const val P_STEP = "step"
+    private const val P_FAIL_STREAK = "fail_streak"
+    private const val P_CHEST_STARS = "chest_stars"
+    private const val P_ELAPSED_MS = "elapsed_ms"
+    private const val P_ANSWER_SUCCESS_RATE = "answer_success_rate"
+    private const val P_SOURCE = "source"
+    private const val P_SURVEY_TYPE = "survey_type"
+    /**
+     * Dersin kalıcı kimliği ([com.example.app.model.LessonItem.stableId]).
+     *
+     * [P_POSITION] ile birlikte gönderilir ama **kalıcı olan budur**: konum, müfredata araya
+     * ders eklendiğinde kayar ve aynı numara farklı tarihlerde farklı dersi gösterir. Kimlik
+     * kaymaz; ayrıca raporda numara yerine okunur bir ad verir.
+     */
+    private const val P_LESSON_ID = "lesson_id"
+    private const val P_QUESTION_NO = "question_no"
+    private const val P_CHOICE = "choice"
+    private const val P_RARITY_START = "rarity_start"
+    private const val P_RARITY_FINAL = "rarity_final"
+    private const val P_REWARD_TYPE = "reward_type"
+    private const val P_REWARD_AMOUNT = "reward_amount"
+    private const val P_DURATION_MS = "duration_ms"
+    private const val P_SERVER_WAIT_MS = "server_wait_ms"
+    private const val P_ANIMATION_MS = "animation_ms"
+    private const val P_AT_TAP = "at_tap"
+    private const val P_CHEST_SOURCE = "chest_source"
+    private const val P_EXIT_SCREEN = "exit_screen"
+    private const val P_TUTORIAL_NO = "tutorial_no"
+    private const val P_STEP_KEY = "step_key"
+    private const val P_STEP_TITLE = "step_title"
+    private const val P_STEP_KIND = "step_kind"
+    private const val P_QUESTION_TEXT = "question_text"
+    private const val P_ATTEMPT_NO = "attempt_no"
+    private const val P_ATTEMPT_BUCKET = "attempt_bucket"
+    private const val P_IS_CORRECT = "is_correct"
+    private const val P_WRONG_ANSWER = "wrong_answer"
+    private const val P_FIRST_TIME = "first_time"
+    private const val P_BLOCK_SOURCE = "block_source"
+    private const val P_SPEND_SOURCE = "spend_source"
+    private const val P_REFILL_SOURCE = "refill_source"
+    private const val P_WAIT_SECONDS = "wait_seconds"
+    private const val P_ENERGY_LEFT = "energy_left"
+    private const val P_ENERGY_AFTER = "energy_after"
+    private const val P_LESSONS_THIS_SESSION = "lessons_this_session"
+    private const val P_VIEW_NO = "view_no"
+    private const val P_TRIAL_OFFER = "trial_offer"
+    private const val P_DWELL_BUCKET = "dwell_bucket"
+    private const val P_DWELL_MS = "dwell_ms"
+    private const val P_OUTCOME = "outcome"
+    private const val P_PRODUCT_ID = "product_id"
+    private const val P_TRIGGER = "trigger"
+    private const val P_PRO_ENTRY_POINT = "pro_entry_point"
+    private const val P_WELCOME_CREDIT = "welcome_credit"
+    private const val P_SIGNUP_STAGE = "signup_stage"
+    private const val P_SIGNUP_ROLE = "signup_role"
+    private const val P_MEDIA_TYPE = "media_type"
+    private const val P_NOTIFY_TOPIC = "notify_topic"
+    private const val P_NOTIFY_ENABLED = "notify_enabled"
+    private const val P_WAIT_HOURS = "wait_hours"
+    private const val P_QUESTION_STATUS = "question_status"
+    private const val P_UNIT_TITLE = "unit_title"
+    private const val P_CUP_RESULT = "cup_result"
+    private const val P_CUP_MODE = "cup_mode"
+    private const val P_CUP_QUESTION = "cup_question"
+    private const val P_AD_TYPE = "ad_type"
+    private const val P_MISSION_ID = "mission_id"
+    /**
+     * DİKKAT: `item_id` DEĞİL. `item_id` Firebase'in önceden tanımlı e-ticaret parametresidir
+     * ve GA4'te ürün kapsamlı (item-scoped) yerleşik bir boyuta karşılık gelir; olay kapsamlı
+     * özel boyut olarak kaydedilmek istendiğinde çakışır. Kendi adımızı kullanıyoruz.
+     */
+    private const val P_SPEND_ITEM = "spend_item"
+    private const val P_AMOUNT = "amount"
+    private const val P_BADGE_ID = "badge_id"
+    private const val P_BADGE_LEVEL = "badge_level"
+    private const val P_STREAK_STAGE = "streak_stage"
+    private const val P_STREAK_DAYS = "streak_days"
+    private const val P_GOAL_MINUTES = "goal_minutes"
+    private const val P_CHALLENGE_DAYS = "challenge_days"
+    private const val P_REMINDER_HOUR = "reminder_hour"
+    private const val P_REMINDER_CHOICE = "reminder_choice"
+    private const val P_NOTIF_PERMISSION = "notif_permission"
+    private const val P_MISSED_DAYS = "missed_days"
+    private const val P_STREAK_SAVED = "streak_saved"
+    private const val P_CAN_AFFORD = "can_afford"
+    private const val P_AVATAR_PART = "avatar_part"
+    private const val P_AVATAR_STYLE = "avatar_style"
+    private const val P_CHANGED_PARTS = "changed_parts"
+    private const val P_USED_RANDOM = "used_random"
+    private const val P_SKEW_BUCKET = "skew_bucket"
+
+    // ── Harcama kalemleri ([logGoldSpent] / [logKeySpent]) ────────────────────
+    // Boncuk ve çerçeve kimlikleri değişken olduğu için çağıran tarafta üretilir
+    // (`bead_` + [AbacusPreferences.BeadType], `frame_` + [AbacusPreferences.FrameType]);
+    // sabit olanlar burada.
+
+    /** Ders yarışını anahtarla hızlandırma ([LessonAdapter]). */
+    const val ITEM_RACE_FAST_FORWARD = "race_fast_forward"
+    /** Günlük soruya anahtarla devam etme ([TasksFragment]). */
+    const val ITEM_DAILY_QUESTION_CONTINUE = "daily_question_continue"
+    /** Kilitli dersi anahtarla açma ([LessonAdapter]). */
+    const val ITEM_LESSON_UNLOCK = "lesson_unlock"
+    /** Mağazadan altınla seri dondurma ([ShopFragment]). */
+    const val ITEM_STREAK_FREEZE = "streak_freeze"
+
+    // ── Cihaz saati sapması ([logDeviceClockSkew]) ────────────────────────────
+    //
+    // Ham fark GÖNDERİLMİYOR, kova gönderiliyor: ham milisaniye her kullanıcıda farklı bir
+    // değer demek, yani raporda binlerce ayrı satır ve hiçbir soruya cevap vermeyen bir
+    // kardinalite. Soru "kaç kullanıcının saati ne kadar yanlış", cevabı kova veriyor.
+
+    /** 5 dakikanın altı hiç gönderilmiyor: ağ gecikmesi ve normal saat kayması bu aralıkta. */
+    const val SKEW_UNDER_5M = "under_5m"
+
+    /**
+     * Sapmayı YÖNÜYLE BİRLİKTE tek kovaya çevirir (`ahead_1h_6h`, `behind_5m_1h`, …);
+     * 5 dakikanın altı [SKEW_UNDER_5M] (gönderilmemeli).
+     *
+     * Yön neden ayrı parametre değil: GA4'ün ücretsiz sürümünde olay kapsamlı özel boyut
+     * yuvası 50 ile sınırlı ve bu projede dolmak üzere. İki ayrı boyut iki yuva yerdi;
+     * birleşik kovanın 8 ayrı değeri var, raporda tek tabloda okunuyor ve "ileri olanların
+     * toplamı" gerekiyorsa BigQuery'de prefix ile alınıyor.
+     *
+     * Burada duruyor ki eşik ve sınırlar tek yerde olsun: çağıran taraf ([TrustedClock])
+     * hangi sapmanın kaydedilmeye değdiğine de buna bakarak karar veriyor.
+     */
+    fun skewBucket(skewMs: Long): String {
+        val abs = kotlin.math.abs(skewMs)
+        val size = when {
+            abs < 5 * 60_000L -> return SKEW_UNDER_5M
+            abs < 60 * 60_000L -> "5m_1h"
+            abs < 6 * 60 * 60_000L -> "1h_6h"
+            abs < 24 * 60 * 60_000L -> "6h_1d"
+            else -> "1d_plus"
+        }
+        // İleri = canı/seriyi erken açmaya çalışan yön; geri = çoğunlukla dürüst bozulma.
+        return (if (skewMs > 0) "ahead_" else "behind_") + size
+    }
+
+    /**
+     * [notificationPrefChanged] ana anahtar değeri: kullanıcı üç türü birden değiştirdi.
+     * Tek tür değerleri [NotificationPrefs.ALL] kümesinden geliyor (chat, streak, reward).
+     */
+    const val NOTIFY_TYPE_ALL = "all"
+
+    /** [logSurveyChoice] / [logSurveyText] için anket türü. */
+    const val SURVEY_LESSON = "lesson"
+    const val SURVEY_TUTORIAL = "tutorial"
+    /**
+     * 08.11.2026'dan itibaren öğretici sonu anketi: tek soru, üç ifade. `choice` 1 = anlamadım,
+     * 2 = biraz, 3 = anladım. Eski 5'li ölçekle ([SURVEY_TUTORIAL]) karışmasın diye ayrı tür.
+     */
+    const val SURVEY_TUTORIAL_QUICK = "tutorial_quick"
+
+    /** [logTutorialStuckReason] için "ne zorladı?" cevapları (`choice` parametresine gider). */
+    const val STUCK_REASON_UNCLEAR = "unclear"
+    const val STUCK_REASON_RULE = "rule"
+    const val STUCK_REASON_MISTAP = "mistap"
+
+    // ── Öğretici soru adımı türleri ─────────────────────────────────────────
+    /** Kullanıcı abaküse sayıyı yazıp "Kontrol Et"e basıyor (`abacusClickable = true`). */
+    const val STEP_KIND_ABACUS = "abacus"
+    /** Kullanıcı çoktan seçmeli şıklardan seçiyor (`options` + `correctOptionIndex` dolu). */
+    const val STEP_KIND_OPTIONS = "options"
+
+    // ── Enerji (can) kaynakları ─────────────────────────────────────────────
+    /** Haritadan ders başlatılırken can yetmedi ([LessonAdapter]). */
+    const val ENERGY_BLOCK_LESSON = "lesson"
+    /** Kupa yarışı başlatılırken can yetmedi ([TasksFragment]). */
+    const val ENERGY_BLOCK_CUP = "cup"
+
+    /** Ders başlatıldı, 1 can gitti. */
+    const val ENERGY_SPEND_LESSON = "lesson"
+    /** Kupa modunda yanlış cevap verildi. */
+    const val ENERGY_SPEND_CUP_FAIL = "cup_fail"
+    /** Kupa yarışı yarıda bırakıldı (çıkış veya geri tuşu). */
+    const val ENERGY_SPEND_CUP_QUIT = "cup_quit"
+
+    /** Mağazada reklam izlenerek can alındı. */
+    const val ENERGY_REFILL_AD = "ad"
+    /** Mağazada anahtar harcanarak can alındı. */
+    const val ENERGY_REFILL_KEYS = "keys"
+
+    // ── Reklam sonrası Pro paneli ([AdSkipFragment]) çıkış yolları ──────────
+    /** "Ücretsiz dene" — huni [ProDiffirentFragment] ile sürüyor. */
+    const val AD_SKIP_TRY_FREE = "try_free"
+    /** "Hayır teşekkürler" düğmesi. */
+    const val AD_SKIP_NO_THANKS = "no_thanks"
+    /** Geri tuşu veya panel dışına dokunma. */
+    const val AD_SKIP_DISMISSED = "dismissed"
+
+    // ── Öğretmene sorma tanıtımı ([AskQuestionOpenFragment]) ────────────────
+    // Ekran iki bambaşka durumda çıkıyor ve "hayır teşekkürler" ikisinde zıt şey demek:
+    // otomatik tanıtımda reddetmek sıradan, kredisi bittiği için gelen kullanıcıda ise
+    // istediği şeyi önüne koyduğun hâlde almaması. Birleştirilirse oran anlamsızlaşır.
+    /** Ders dönüşü sayacı eşiğe ulaştı, ekran kendiliğinden açıldı. */
+    const val PROMO_TRIGGER_AUTO = "auto_promo"
+    /** Free kullanıcı "öğretmene sor"a bastı ama kredisi yoktu. */
+    const val PROMO_TRIGGER_OUT_OF_CREDITS = "out_of_credits"
+    /**
+     * PRO üyesi "öğretmene sor"a bastı ama kredisi yoktu.
+     *
+     * Ayrı bir değer çünkü bu kullanıcıya satılacak şey abonelik değil kredi; aynı kovaya
+     * konsaydı "tanıtımı görenlerin kaçı Pro'ya geçti" oranı, zaten Pro olanlarla sulanırdı.
+     * Bu durum şimdiye kadar düz bir AlertDialog'du ve hiçbir yere kaydedilmiyordu.
+     */
+    const val PROMO_TRIGGER_PRO_OUT_OF_CREDITS = "pro_out_of_credits"
+    /**
+     * Sobi'nin Pro deneme tanıtımı ([SobiProTrialFragment]) ders dönüşünde kendiliğinden açıldı.
+     * Aynı olaylara yazılıyor (GA4 boyut kotası dolu, yeni parametre açılamıyor); ekran farkı bu değerde.
+     */
+    const val PROMO_TRIGGER_SOBI_AUTO = "sobi_trial_auto"
+    /** Sobi ekranında ücretsiz mesaj ve kredi bitti, kullanıcı "Pro'yu ücretsiz dene"ye bastı. */
+    const val PROMO_TRIGGER_SOBI_LIMIT = "sobi_trial_limit"
+    /** Ek Sobi testine anahtar yetmedi, kullanıcı "Pro'da ek testler ücretsiz"e bastı. */
+    const val PROMO_TRIGGER_SOBI_KEYS = "sobi_trial_keys"
+
+    /** "1 hafta ücretsiz dene" — huni [ProDiffirentFragment] ile sürüyor. */
+    const val PROMO_TRY_FREE = "try_free"
+    /** "Bunun yerine kredi al" — abonelik değil, tek seferlik kredi isteniyor. */
+    const val PROMO_BUY_CREDITS = "buy_credits"
+    /** "Hayır teşekkürler" düğmesi. */
+    const val PROMO_NO_THANKS = "no_thanks"
+    /** Geri tuşu veya panel dışına dokunma. */
+    const val PROMO_DISMISSED = "dismissed"
+
+    // ── Kayıt hunisinin adımları ───────────────────────────────────────────
+    // Sıra: start -> intro (yalnızca öğrenci) -> age -> source -> email/teacher_form ->
+    // otp_sent -> completed.
+    // otp_wrong huninin bir adımı DEĞİL, sürtünme sinyali: aynı kullanıcıda hem otp_wrong
+    // hem completed olabilir.
+    /** Giriş/kayıt seçim ekranı açıldı — huninin paydası. */
+    const val SIGNUP_START = "start"
+    /**
+     * Maskotla tanışma ekranı açıldı (öğrenci, yaş sorusundan önce). Eklenmeden önce "age"
+     * kayıt ekranının açılması demekti; artık yaş sorusuna gerçekten varmak demek, aradaki
+     * fark tanışma ekranlarında kaybedilenler.
+     */
+    const val SIGNUP_INTRO = "intro"
+    /** Yaş soruldu. */
+    const val SIGNUP_AGE = "age"
+    /** "Bizi nereden duydun" soruldu. */
+    const val SIGNUP_SOURCE = "source"
+    /** "Abaküs kullanmayı biliyor musun" soruldu (yalnızca öğrenci). */
+    const val SIGNUP_SOROBAN = "soroban"
+    /** Öğrenci e-posta formu göründü. */
+    const val SIGNUP_EMAIL = "email"
+    /** Öğretmen kayıt formu göründü. */
+    const val SIGNUP_TEACHER_FORM = "teacher_form"
+    /**
+     * Veli e-postası ekranı göründü (13 yaş altı, e-posta veya Google yolu). Ardından gelen
+     * otp_sent kodun VELİYE gittiğini gösterir; bu adımla otp_sent arasındaki fark, veli
+     * e-postası veremeyen çocuklar.
+     */
+    const val SIGNUP_PARENT_CONSENT = "parent_consent"
+    /**
+     * Doğrulama kodu gönderildi.
+     *
+     * Yalnızca YENİ kayıtta gönderilir. Zaten kayıtlı bir e-posta yazılırsa aynı ekran koda
+     * geçer ama o bir GİRİŞ'tir; huniye katılsaydı payda şişer ve o kullanıcılar "completed"
+     * olmadığı için sahte bir terk oranı üretirdi.
+     */
+    const val SIGNUP_OTP_SENT = "otp_sent"
+    /** Yanlış kod girildi. Adım değil, sürtünme ölçüsü. */
+    const val SIGNUP_OTP_WRONG = "otp_wrong"
+    /** Hesap oluştu. */
+    const val SIGNUP_COMPLETED = "completed"
+
+    const val SIGNUP_ROLE_STUDENT = "student"
+    const val SIGNUP_ROLE_TEACHER = "teacher"
+
+    // ── Günlük seri ────────────────────────────────────────────────────────
+    /** Kayıt akışındaki seri adımları ([UserInfoFragment]); huni bunlarla kuruluyor. */
+    const val STREAK_STAGE_GOAL = "goal"
+    /** Hedeften sonraki ilerleme yolu ekranı; yeni bir ekran hunide kayıp yaratıyor mu diye. */
+    const val STREAK_STAGE_ROADMAP = "roadmap"
+    const val STREAK_STAGE_CHALLENGE_INTRO = "challenge_intro"
+    const val STREAK_STAGE_CHALLENGE = "challenge"
+    /** Kayıttaki son soru: hatırlatma saati ve bildirim izni. */
+    const val STREAK_STAGE_REMINDER = "reminder"
+
+    /**
+     * Seri kırıldıktan sonra ders dönüşünde açılan yeni tur ekranı
+     * ([NewStreakFragment]). Kayıt hunisinden AYRI sayılıyor: biri "başladı mı", diğeri
+     * "geri döndü mü" sorusunu ölçüyor ve ikisi tek sayaca karışırsa ikisi de okunmaz
+     * hale gelir.
+     */
+    const val STREAK_STAGE_NEW_RUN_INTRO = "new_run_intro"
+    const val STREAK_STAGE_NEW_RUN_CHALLENGE = "new_run_challenge"
+
+    /** Hedef ilk kez kurulum akışında seçildi. */
+    const val STREAK_SOURCE_ONBOARDING = "onboarding"
+    /** Hedef sonradan seri ekranından değiştirildi. */
+    const val STREAK_SOURCE_SETTINGS = "settings"
+    /** Seri kırıldıktan sonra ders dönüşünde yeni bir tur başlatıldı. */
+    const val STREAK_SOURCE_NEW_RUN = "new_run"
+
+    // ── Reklamlar ──────────────────────────────────────────────────────────
+    /** Ders/sandık arası geçiş reklamı; ardından bazen Pro paneli açılıyor. */
+    const val AD_TYPE_INTERSTITIAL = "interstitial"
+    /** Kullanıcının can veya sandık için izlediği ödüllü reklam. */
+    const val AD_TYPE_REWARDED = "rewarded"
+
+    // ── Kupa yarışı (bölüm 9) ──────────────────────────────────────────────
+    /** Doğru cevap: kupa puanı arttı. */
+    const val CUP_RESULT_WIN = "win"
+    /** Yanlış cevap: kupa puanı düştü. */
+    const val CUP_RESULT_LOSS = "loss"
+    /** Çıkış düğmesi veya geri tuşu: yarış bırakıldı, puan yine düşüyor. */
+    const val CUP_RESULT_QUIT = "quit"
+
+    // ── Öğretmene soru akışı ───────────────────────────────────────────────
+    const val QUESTION_MEDIA_IMAGE = "image"
+    const val QUESTION_MEDIA_VIDEO = "video"
+
+    // ── Pro akışının giriş kapıları ────────────────────────────────────────
+    /** Reklam sonrası panel ([AdSkipFragment]). */
+    const val PRO_ENTRY_AD_SKIP = "ad_skip"
+    /** Öğretmene sorma tanıtımı ([AskQuestionOpenFragment]). */
+    const val PRO_ENTRY_ASK_QUESTION = "ask_question"
+    /** Sobi'nin Pro deneme tanıtımı ([SobiProTrialFragment]). */
+    const val PRO_ENTRY_SOBI_TRIAL = "sobi_trial"
+    /** Mağaza ([ShopFragment]). */
+    const val PRO_ENTRY_SHOP = "shop"
+    /** Kapı belirlenemedi (süreç akışın ortasında yeniden başlamış olabilir). */
+    const val PRO_ENTRY_UNKNOWN = "unknown"
+
+    // ── Sandık kaynakları ───────────────────────────────────────────────────
+    // Uygulamadaki BÜTÜN sandık akışları tek bir ekrandan geçer ([NewChestFragment]),
+    // dolayısıyla hepsi aynı olaylarla ölçülür. Ayırt edilebilmeleri için her çağrı yeri
+    // kendi kaynağını bildirir; aksi halde "ders sandığı mı görev sandığı mı daha çok
+    // terk ediliyor" sorusu sorulamaz.
+    /** Ders sonu sandığı ([ChestFragment]). */
+    const val CHEST_SOURCE_LESSON = "lesson"
+    /** Günlük soru ödülü ([TasksFragment]). */
+    const val CHEST_SOURCE_DAILY_QUESTION = "daily_question"
+    /** Görev tamamlama ödülü ([MissionsSection], Görevler sekmesi). */
+    const val CHEST_SOURCE_MISSION = "mission"
+    /** Görev sandığı ([MissionChestRewardFragment]). */
+    const val CHEST_SOURCE_MISSION_CHEST = "mission_chest"
+    /** Mağazada reklam izleyerek açılan sandık ([ShopFragment]). */
+    const val CHEST_SOURCE_SHOP_AD = "shop_ad"
+    /** Bülten kartından açılan sandık ([TasksFragment]); prefetch YAPILMAZ. */
+    const val CHEST_SOURCE_BULLETIN = "bulletin"
+
+    /** Kupa yolu kartındaki sandık (Trophy Road). */
+    const val CHEST_SOURCE_CUP_PATH = "cup_path"
+
+    /** Sobi'nin günlük testi bitince (HomeworkPlayerFragment, Sobi testi kipi). */
+    const val CHEST_SOURCE_SOBI_TEST = "sobi_test"
+
+    /**
+     * Kullanıcı hayatında en az bir kez enerji duvarına çarptı. Bir kez "true" yazılır ve
+     * bir daha değişmez; Elde Tutma raporunda kırılım boyutu olarak kullanılır.
+     */
+    private const val USER_PROPERTY_ENERGY_WALL_HIT = "energy_wall_hit"
+
+    /** Kullanıcı en az bir dersi anahtarla açtı; bkz. [logLessonUnlockKey]. */
+    private const val USER_PROPERTY_KEY_UNLOCKER = "key_unlocker"
+
+    /** Bkz. [setBuildType]. */
+    private const val USER_PROPERTY_BUILD_TYPE = "build_type"
+
+    /** Bkz. [setTester]. */
+    private const val USER_PROPERTY_TESTER = "tester"
+
+    /** Bkz. [setAgeGroup]. */
+    private const val USER_PROPERTY_AGE_GROUP = "age_group"
+
+    /** Bkz. [setSorobanLevel]. */
+    private const val USER_PROPERTY_SOROBAN_LEVEL = "soroban_level"
+
+    /** Firebase kullanıcı özelliği: değer en fazla 36 karakter olabilir. */
+    private const val USER_PROPERTY_MAX = 36
+
+    /** Firebase string parametresi: değer en fazla 100 karakter olabilir. */
+    private const val PARAM_VALUE_MAX = 100
+
+    private val analytics: FirebaseAnalytics? by lazy {
+        try {
+            Firebase.analytics
+        } catch (e: Throwable) {
+            Log.w(TAG, "FirebaseAnalytics alınamadı; ölçüm devre dışı.", e)
+            null
+        }
+    }
+
+    /**
+     * Analytics çağrılarını yutan koruma. Ölçüm bir ürün özelliği değil; başarısız
+     * olduğunda kullanıcı akışını durdurmamalı.
+     */
+    private inline fun safe(block: (FirebaseAnalytics) -> Unit) {
+        val fa = analytics ?: return
+        try {
+            block(fa)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Analytics çağrısı başarısız", e)
+        }
+    }
+
+    /**
+     * Serbest metnin yanlışlıkla Analytics'e sızmasına karşı son savunma hattı.
+     * Uzunluğu sınırlar ve satır sonlarını temizler. Kişisel veri taşıyabilecek bir değeri
+     * buradan geçirmek onu güvenli YAPMAZ — çağıran taraf zaten göndermemelidir.
+     */
+    private fun sanitize(value: String): String =
+        value.replace(Regex("\\s+"), " ").trim().take(PARAM_VALUE_MAX)
+
+    // ── Ekran görüntüleme ───────────────────────────────────────────────────
+
+    /**
+     * Ekran görüntüleme kaydı.
+     *
+     * Firebase'in otomatik `screen_view` toplaması **Activity** adını kullanır. Bu uygulamada
+     * 8 Activity'ye karşılık 63 Fragment var ve neredeyse tüm gezinme MainActivity içindeki
+     * fragment değişimleriyle oluyor; otomatik kayıt bu yüzden yalnızca "MainActivity" der ve
+     * uygulama içi akış tamamen görünmez kalır. [NumiGooApplication] her fragment görünür olduğunda
+     * burayı çağırarak bu boşluğu kapatır.
+     */
+    fun logScreenView(screenName: String) = safe { fa ->
+        fa.logEvent(FirebaseAnalytics.Event.SCREEN_VIEW) {
+            param(FirebaseAnalytics.Param.SCREEN_NAME, sanitize(screenName))
+            param(FirebaseAnalytics.Param.SCREEN_CLASS, sanitize(screenName))
+        }
+    }
+
+    // ── Ders başarı istatistikleri ──────────────────────────────────────────
+    // Eskiden `successRate/lessonSuccessRate/**` altında küresel sayaç dokümanlarına
+    // yazılıyordu; bkz. [LessonSuccessRateRepository] başlığındaki taşıma notu.
+
+    /**
+     * Kullanıcı bir adımı ilk kez geçti.
+     *
+     * @param failStreak İlk başarıya kadar kaç kez başarısız olundu (0 = ilk denemede geçti).
+     *   Eski `passOnFirstTry` / `passOnSecondTry` / `passOnThirdPlusTry` sayaçları bu tek
+     *   parametreden türetilir.
+     * @param elapsedMs Soru ekranına girişten bitirmeye kadar geçen süre; bilinmiyorsa null.
+     *   **Ham değer gönderilir, kovalanmaz** — eski `finishTime0to30Count` gibi sabit dilimler
+     *   koda gömülüydü ve dilimleri değiştirmek uygulama güncellemesi gerektiriyordu. Analytics'te
+     *   dilimleri konsolda (veya BigQuery'de) sonradan istediğin gibi tanımlarsın.
+     */
+    fun logLessonStepPass(
+        partId: Int,
+        position: Int,
+        lessonId: String?,
+        step: Int,
+        failStreak: Long,
+        elapsedMs: Long?,
+    ) = safe { fa ->
+        fa.logEvent(EV_LESSON_STEP_PASS) {
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+            param(P_STEP, step.toString())
+            param(P_FAIL_STREAK, failStreak.toString())
+            if (elapsedMs != null) param(P_ELAPSED_MS, elapsedMs)
+        }
+    }
+
+    /**
+     * Kullanıcı adımı geçemeden dersten çıktı.
+     *
+     * @param answerSuccessRatePercent O başarısız denemedeki başarı oranı (0-100); bilinmiyorsa null.
+     *   [elapsedMs][logLessonStepPass] ile aynı gerekçeyle ham gönderilir: eski
+     *   `failRate100to80Count` gibi sabit dilimler yerine değerin kendisi.
+     */
+    fun logLessonStepFail(
+        partId: Int,
+        position: Int,
+        lessonId: String?,
+        step: Int,
+        failStreak: Long,
+        answerSuccessRatePercent: Float?,
+    ) = safe { fa ->
+        fa.logEvent(EV_LESSON_STEP_FAIL) {
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+            param(P_STEP, step.toString())
+            param(P_FAIL_STREAK, failStreak.toString())
+            if (answerSuccessRatePercent != null) {
+                param(P_ANSWER_SUCCESS_RATE, answerSuccessRatePercent.toDouble())
+            }
+        }
+    }
+
+    /**
+     * Kullanıcı bir adımın soru ekranına girdi (tekrarlar dahil, tekilleştirme yok).
+     * Eski `questionEntryCount` sayacının karşılığı.
+     */
+    fun logLessonQuestionEntry(partId: Int, position: Int, lessonId: String?, step: Int) = safe { fa ->
+        fa.logEvent(EV_LESSON_QUESTION_ENTRY) {
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+            param(P_STEP, step.toString())
+        }
+    }
+
+    /**
+     * Kullanıcı soru ekranını hiç cevap vermeden terk etti.
+     * Eski `abandonWithoutAnswerCount` sayacının karşılığı; [logLessonQuestionEntry] ile
+     * oranlanarak "girilen sorunun yüzde kaçı cevapsız bırakılıyor" elde edilir.
+     */
+    fun logLessonAbandonWithoutAnswer(partId: Int, position: Int, lessonId: String?, step: Int) = safe { fa ->
+        fa.logEvent(EV_LESSON_ABANDON_NO_ANSWER) {
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+            param(P_STEP, step.toString())
+        }
+    }
+
+    /**
+     * Ders/sandık item'ı (tüm adımlarıyla) ilk kez tamamlandı.
+     * @param chestStars Yalnızca TYPE_CHEST için 1–3; ders item'lerinde null.
+     */
+    fun logLessonItemFinish(partId: Int, position: Int, lessonId: String?, chestStars: Int?) = safe { fa ->
+        fa.logEvent(EV_LESSON_ITEM_FINISH) {
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+            if (chestStars != null) param(P_CHEST_STARS, chestStars.toString())
+        }
+    }
+
+    // ── Anahtarla ders kilidi açma ──────────────────────────────────────────
+    //
+    // "Kilitli dersi 1 anahtarla açmak doğru bir karar mı?" sorusunun üç yüzü var:
+    // 1. Talep: teklifi görenlerin (`lesson_unlock_offer`) yüzde kaçı açıyor (`lesson_unlock_key`)?
+    // 2. Gelir: anahtarı yetmeyenlerin (`lesson_unlock_no_keys`) yüzde kaçı mağazada
+    //    `purchase_started`'a gidiyor? Mağaza bu olaydan hemen sonra açılıyor.
+    // 3. Öğrenme: ders atlamak çocuğu zorluyor mu? `key_unlocker` kullanıcı özelliğiyle
+    //    `lesson_step_fail` / `lesson_item_finish` oranları atlayanlar ve atlamayanlar için
+    //    kıyaslanır. Olay kapsamlı boyut kotası dolu olduğu için yeni parametre eklenmedi;
+    //    yalnızca kayıtlı `part_id` ve `lesson_id` kullanılıyor.
+
+    /** Kilitli ders paneli "1 anahtarla kilidi aç" teklifiyle açıldı (huninin paydası). */
+    fun logLessonUnlockOffer(partId: Int, lessonId: String?) = safe { fa ->
+        fa.logEvent(EV_LESSON_UNLOCK_OFFER) {
+            param(P_PART_ID, partId.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
+     * Haftalık ilerleme kartı açıldı. Olay kapsamlı boyut kotası dolu (46/50): kırılım olay adında,
+     * parametresiz — `weekly_card_shown_{auto|hub}_{progress|empty}`. Paylaşım gelince "kart gösterildi →
+     * paylaşıldı" oranının paydası bu.
+     */
+    fun logWeeklyCardShown(auto: Boolean, hasProgress: Boolean) = safe { fa ->
+        val name = "weekly_card_shown_" + (if (auto) "auto" else "hub") + (if (hasProgress) "_progress" else "_empty")
+        fa.logEvent(name, null)
+    }
+
+    /**
+     * Davet döngüsünün parametresiz olayları (kota yüzünden kırılım adda): `share_card_shown_weekly`,
+     * `share_gate_pass`, `share_done_{whatsapp|instagram|other}`, `ref_install`, `ref_link_open`.
+     */
+    fun logSimpleEvent(name: String) = safe { fa -> fa.logEvent(name, null) }
+
+    /** Kullanıcı kapsamlı `ref_source` (weekly / badge / challenge / class): davetle gelenler ayrı kırılsın. */
+    fun setRefSource(source: String) = safe { fa -> fa.setUserProperty("ref_source", source.take(36)) }
+
+    /** Ders anahtarla açıldı; anahtar sunucuda düşüldükten SONRA çağrılır. */
+    fun logLessonUnlockKey(partId: Int, lessonId: String?) = safe { fa ->
+        fa.logEvent(EV_LESSON_UNLOCK_KEY) {
+            param(P_PART_ID, partId.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+        }
+        fa.setUserProperty(USER_PROPERTY_KEY_UNLOCKER, "true")
+    }
+
+    /** Kilidi açmak istedi ama anahtarı yetmedi; ardından mağaza açılıyor. */
+    fun logLessonUnlockNoKeys(partId: Int, lessonId: String?) = safe { fa ->
+        fa.logEvent(EV_LESSON_UNLOCK_NO_KEYS) {
+            param(P_PART_ID, partId.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /** Daha önce bitirilmiş bir item tekrar çözüldü. */
+    fun logLessonItemReplay(partId: Int, position: Int, lessonId: String?) = safe { fa ->
+        fa.logEvent(EV_LESSON_ITEM_REPLAY) {
+            param(P_PART_ID, partId.toString())
+            param(P_POSITION, position.toString())
+            if (lessonId != null) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    // ── Edinim kaynağı ──────────────────────────────────────────────────────
+
+    /**
+     * Kullanıcının "bizi nereden duydunuz" cevabı.
+     *
+     * Hem event hem kullanıcı özelliği olarak yazılır: event "bu ay kaç kişi Instagram
+     * dedi" sorusunu, kullanıcı özelliği ise "Instagram'dan gelenlerin retention'ı nedir"
+     * sorusunu cevaplar — ikincisi için tüm raporlar bu boyuta göre kırılabilir hale gelir.
+     */
+    fun logAcquisitionSource(source: String) = safe { fa ->
+        val clean = sanitize(source)
+        fa.logEvent(EV_ACQUISITION_SOURCE) {
+            param(P_SOURCE, clean)
+        }
+        fa.setUserProperty("acquisition_source", clean.take(USER_PROPERTY_MAX))
+    }
+
+    // ── Kullanıcı rolü ──────────────────────────────────────────────────────
+
+    const val USER_ROLE_STUDENT = "student"
+    const val USER_ROLE_TEACHER = "teacher"
+    const val USER_ROLE_TEACHER_PENDING = "teacher_pending"
+
+    /**
+     * Kullanıcının rolü: [USER_ROLE_STUDENT], [USER_ROLE_TEACHER] (onaylı) veya
+     * [USER_ROLE_TEACHER_PENDING] (onay bekliyor).
+     *
+     * Olaylar öğrenci ve öğretmen ayrımı yapmadan aynı yere gidiyordu. Onaylı öğretmenin
+     * bütün dersleri açık ve canı sınırsız; onun ders, can ve harcama olayları "çocuklar
+     * kaçıncı derste bırakıyor", "kaç çocuk can duvarına çarptı" gibi ölçümleri bozardı.
+     * Kullanıcı özelliği bütün raporlarda filtre olarak kullanılabiliyor — GA4'te
+     * `user_role` adıyla kullanıcı kapsamlı özel boyut tanımlanması gerekiyor.
+     *
+     * Her abonelik kontrolünde tekrar yazılıyor; Firebase aynı değeri yazmayı ucuza
+     * hallediyor ve onay oturum ortasında değişebiliyor.
+     */
+    fun setUserRole(role: String) = safe { fa ->
+        fa.setUserProperty("user_role", role)
+    }
+
+    /**
+     * Derleme türü: `debug` veya `release`. Geliştiricinin kendi denemelerini ayıklamak için.
+     *
+     * Geliştirici uygulamayı her yeniden kurduğunda ya da emülatörde açtığında GA4 onu yeni bir
+     * kullanıcı sayıyor; [TutorialStepAnalytics] defteri de cihazda tutulduğu için sıfırlanıyor.
+     * Yayından önce öğretici sekmelerindeki "kullanıcıların" çoğu bu yüzden tek bir kişiydi ve
+     * tarih aralığıyla ayıklamak yayından sonra işe yaramıyor (test sürmeye devam ediyor).
+     * Explore'da `Build type does not exactly match debug` süzgeci bunu tek adımda çözüyor;
+     * özelliği hiç almamış eski kullanıcılar `(not set)` olarak süzgeçten geçer.
+     *
+     * GA4'te `build_type` adıyla **kullanıcı kapsamlı** özel boyut tanımlanmalı.
+     *
+     * Sınır: Play'den kurulan release sürümüyle yapılan denemeler `release` görünür; onları
+     * ayırmaz.
+     */
+    fun setBuildType(isDebug: Boolean) = safe { fa ->
+        fa.setUserProperty(USER_PROPERTY_BUILD_TYPE, if (isDebug) "debug" else "release")
+    }
+
+    /**
+     * Hesap test hesabı mı: `true` / `false`. Geliştiricinin Play'den kurulan sürümle yaptığı
+     * denemeleri ayıklamak için — orada derleme `release` olduğu için [setBuildType] ayırmıyor.
+     *
+     * Kaynak, kullanıcı dokümanındaki `isTester` alanı. Firebase konsolundan **elle** yazılır;
+     * uygulama bu alanı hiç yazmaz, böylece Closed testing'e davet edilen kişiler kendiliğinden
+     * işaretlenmez ve verileri analizde kalır.
+     *
+     * Her okumada `false` da açıkça yazılıyor: kullanıcı özelliği cihazda kalıcı, test hesabından
+     * çıkıp başka bir hesapla girildiğinde eski `true` değeri o hesaba yapışmasın.
+     *
+     * GA4'te `tester` adıyla **kullanıcı kapsamlı** özel boyut tanımlanmalı. Explore'da
+     * `Tester does not exactly match true` ile süzülür; giriş yapmamış ve eski kullanıcılar
+     * `(not set)` olarak süzgeçten geçer.
+     */
+    fun setTester(isTester: Boolean) = safe { fa ->
+        fa.setUserProperty(USER_PROPERTY_TESTER, if (isTester) "true" else "false")
+    }
+
+    /**
+     * Yaş grubu, doğum yılından: [ageGroupFor]. Kapalı testin ilk sorusu "uygulama hangi yaşta
+     * tutuyor?"; yaş yalnızca Firestore'da (`birthYear`) duruyordu ve `setUserId` çağrılmadığı
+     * için Analytics verisiyle birleştirilemiyordu.
+     *
+     * Kayıtta (hesap açılmadan, kayıttan vazgeçenler de görünsün) ve her kullanıcı dokümanı
+     * okumasında yeniden yazılıyor: bu sürümden önce kaydolanlarda da dolsun, yaş grubu yıl
+     * dönünce değişsin, hesap değişince eski hesabın değeri yapışmasın. Doğum yılı yoksa
+     * özellik temizleniyor (null).
+     *
+     * Ham yaş değil grup gönderiliyor: çocuk verisini gereğinden ince göndermemek için, ve
+     * raporlar zaten bu dilimlerle okunacak. Metin, çünkü bu mülkte sayı gönderilen boyutlar
+     * "(not set)" çıkıyor.
+     *
+     * GA4'te `age_group` adıyla **kullanıcı kapsamlı** özel boyut tanımlanmalı.
+     */
+    fun setAgeGroup(birthYear: Int?) = safe { fa ->
+        fa.setUserProperty(USER_PROPERTY_AGE_GROUP, birthYear?.let(::ageGroupFor))
+    }
+
+    /**
+     * "UTC yılı − doğum yılı" ile yaş dilimi. Yalnızca yıl bilindiği için çocuk bir yaş küçük
+     * olabilir; dilimler kaba karşılaştırma için, kesin yaş için değil.
+     */
+    fun ageGroupFor(birthYear: Int): String {
+        val age = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
+            .get(java.util.Calendar.YEAR) - birthYear
+        return when {
+            age <= 3 -> "0-3"
+            age <= 6 -> "4-6"
+            age <= 8 -> "7-8"
+            age <= 10 -> "9-10"
+            age <= 14 -> "11-14"
+            age <= 17 -> "15-17"
+            else -> "18+"
+        }
+    }
+
+    /**
+     * Kayıtta sorulan "Abaküs kullanmayı biliyor musun?" cevabı: [SorobanLevel] değerleri.
+     * Abaküsü bilen ve bilmeyen çocuğun dersleri aynı hızda geçmesi beklenmez; bu kırılım
+     * olmadan "4. derste bırakıyorlar" gibi sonuçlar iki grubu karıştırıyor.
+     *
+     * [setAgeGroup] gibi her kullanıcı dokümanı okumasında yeniden yazılıyor; alanı olmayan
+     * hesapta (bu sürümden önce kaydolanlar, öğretmenler) temizleniyor.
+     *
+     * GA4'te `soroban_level` adıyla **kullanıcı kapsamlı** özel boyut tanımlanmalı.
+     */
+    fun setSorobanLevel(level: String?) = safe { fa ->
+        fa.setUserProperty(USER_PROPERTY_SOROBAN_LEVEL, level?.let { sanitize(it).take(USER_PROPERTY_MAX) })
+    }
+
+    // ── Ders sonu anketi ────────────────────────────────────────────────────
+    // Eskiden `questionPanel` / `questionPanelTutorial` altındaki choice{N} sayaçlarıydı.
+    // Kullanıcının yazdığı SERBEST METİN buraya gelmez, Firestore'da kalır.
+
+    /**
+     * Ankette bir şık seçildi.
+     * @param surveyType [SURVEY_LESSON] veya [SURVEY_TUTORIAL].
+     */
+    /**
+     * @param unitTitle Sorunun/dersin kartta görünen başlığı. Günlük soruda bu, kartın
+     *   üstündeki ünite adı ([DailyQuestionSlot.titleUnit]); o modda `lesson_id` tek başına
+     *   hangi soru olduğunu söylemiyordu. Normal derslerde gönderilmiyor — ders zaten
+     *   `lesson_id` ile tanımlı.
+     */
+    fun logSurveyChoice(
+        surveyType: String,
+        partId: Int,
+        lessonId: String,
+        questionNo: Int,
+        choice: Int,
+        unitTitle: String? = null,
+    ) = safe { fa ->
+        fa.logEvent(EV_SURVEY_CHOICE) {
+            param(P_SURVEY_TYPE, sanitize(surveyType))
+            param(P_PART_ID, partId.toString())
+            param(P_LESSON_ID, sanitize(lessonId))
+            param(P_QUESTION_NO, questionNo.toString())
+            param(P_CHOICE, choice.toString())
+            if (!unitTitle.isNullOrBlank()) param(P_UNIT_TITLE, sanitize(unitTitle))
+        }
+    }
+
+    /**
+     * Ankete serbest metin yazıldı — **metnin kendisi gönderilmez**, yalnızca "yazıldı"
+     * bilgisi. Metnin içeriği Firestore'da `questionPanel/.../text/{uid}` altındadır ve
+     * yalnızca Admin SDK ile okunur.
+     */
+    fun logSurveyText(
+        surveyType: String,
+        partId: Int,
+        lessonId: String,
+        questionNo: Int,
+        unitTitle: String? = null,
+    ) = safe { fa ->
+        fa.logEvent(EV_SURVEY_TEXT) {
+            param(P_SURVEY_TYPE, sanitize(surveyType))
+            param(P_PART_ID, partId.toString())
+            param(P_LESSON_ID, sanitize(lessonId))
+            param(P_QUESTION_NO, questionNo.toString())
+            if (!unitTitle.isNullOrBlank()) param(P_UNIT_TITLE, sanitize(unitTitle))
+        }
+    }
+
+    /**
+     * Anket hiçbir şey seçilmeden geçildi (Atla ya da geri). Anketin ne kadar atlandığı
+     * eskiden ölçülmüyordu; "anket sıkıyor mu?" sorusunun cevabı buradan okunur:
+     * gösterim ≈ seçim + atlama.
+     */
+    fun logSurveySkip(surveyType: String, partId: Int, lessonId: String) = safe { fa ->
+        fa.logEvent(EV_SURVEY_SKIP) {
+            param(P_SURVEY_TYPE, sanitize(surveyType))
+            param(P_PART_ID, partId.toString())
+            param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
+     * Öğreticide bir adımı ancak birkaç denemede geçen çocuğun "ne zorladı?" cevabı
+     * (bkz. [TutorialSurveyPolicy]). Yeni boyut açmamak için var olan parametreler
+     * kullanılıyor: adım `step_key`, cevap `choice` ([STUCK_REASON_UNCLEAR] vb.).
+     */
+    fun logTutorialStuckReason(
+        tutorialNumber: Int,
+        stepKey: String,
+        lessonId: String?,
+        attemptNo: Int,
+        reason: String,
+    ) = safe { fa ->
+        fa.logEvent(EV_TUTORIAL_STUCK_REASON) {
+            param(P_TUTORIAL_NO, tutorialNumber.toString())
+            param(P_STEP_KEY, sanitize(stepKey))
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+            param(P_ATTEMPT_BUCKET, TutorialStepAnalytics.bucketOf(attemptNo))
+            param(P_CHOICE, sanitize(reason))
+        }
+    }
+
+    // ── Sandık akışı ────────────────────────────────────────────────────────
+
+    /** Sandık ekranı açıldı ve sunucu sonucu hazır. */
+    fun logChestOpenStart(startRarity: String, finalRarity: String, chestSource: String) = safe { fa ->
+        fa.logEvent(EV_CHEST_OPEN_START) {
+            param(P_RARITY_START, sanitize(startRarity))
+            param(P_RARITY_FINAL, sanitize(finalRarity))
+            param(P_CHEST_SOURCE, sanitize(chestSource))
+        }
+    }
+
+    /**
+     * Kullanıcı sandığı açıp ödülü gördü.
+     *
+     * Toplam süre iki parçaya ayrılır, çünkü ikisinin çaresi farklıdır:
+     * - [serverWaitMs] uzunsa sorun Cloud Functions soğuk başlangıcındadır. Çağrı yerlerinin
+     *   çoğu ekranı açmadan önce [ServerRewards.prefetchChest] çağırıyor; bu parametre o
+     *   optimizasyonun gerçekten işe yarayıp yaramadığını ölçer (yarıyorsa ~0 olmalı).
+     * - [animationMs] uzunsa sorun animasyon tasarımındadır.
+     *
+     * [durationMs] ikisinin toplamıdır; tek başına "kullanıcı ne kadar bekledi" sorusunu
+     * cevapladığı için ayrıca gönderilir.
+     */
+    fun logChestOpenComplete(
+        finalRarity: String,
+        rewardType: String,
+        rewardAmount: Int,
+        durationMs: Long,
+        serverWaitMs: Long,
+        animationMs: Long,
+        chestSource: String,
+    ) = safe { fa ->
+        fa.logEvent(EV_CHEST_OPEN_COMPLETE) {
+            param(P_RARITY_FINAL, sanitize(finalRarity))
+            param(P_REWARD_TYPE, sanitize(rewardType))
+            param(P_REWARD_AMOUNT, rewardAmount.toLong())
+            param(P_DURATION_MS, durationMs)
+            param(P_SERVER_WAIT_MS, serverWaitMs)
+            param(P_ANIMATION_MS, animationMs)
+            param(P_CHEST_SOURCE, sanitize(chestSource))
+        }
+    }
+
+    /**
+     * Sandık ekranı, ödül görülmeden kapandı.
+     *
+     * @param atTap Kaçıncı dokunuşta bırakıldı (0 = hiç dokunmadan).
+     * @param serverWaitMs Sunucu cevabının gelmesi ne kadar sürdü; **null ise cevap hiç
+     *   gelmeden çıkıldı**. Bu ikisinin ayrımı kritik: `at_tap = 0` + `server_wait_ms` yok,
+     *   "kullanıcı beklerken sıkıldı" demektir ve çaresi animasyon değil, prefetch'tir.
+     */
+    fun logChestAbandoned(
+        atTap: Int,
+        durationMs: Long,
+        serverWaitMs: Long?,
+        chestSource: String,
+    ) = safe { fa ->
+        fa.logEvent(EV_CHEST_ABANDONED) {
+            param(P_AT_TAP, atTap.toString())
+            param(P_DURATION_MS, durationMs)
+            if (serverWaitMs != null) param(P_SERVER_WAIT_MS, serverWaitMs)
+            param(P_CHEST_SOURCE, sanitize(chestSource))
+        }
+    }
+
+    // ── Uygulamadan çıkış ───────────────────────────────────────────────────
+
+    /**
+     * Uygulama arka plana geçti — **hangi ekran açıkken** ve o ekranda ne kadar kalındıktan sonra.
+     *
+     * ## Bu olay olmadan da türetilebilirdi, neden yine de var
+     * Bir oturumun son `screen_view`'ı zaten çıkış ekranıdır ve BigQuery'de sorgulanabilir.
+     * Ama GA4 arayüzü bunu yapamıyor (uygulama raporlarında "exit rate" diye bir şey yok) ve
+     * BigQuery verisi günlük toplu geliyor. Açık bir olay DebugView'da anında, standart
+     * raporlarda doğrudan görünür.
+     *
+     * @param screenName Arka plana geçildiği anda görünen son fragment.
+     * @param durationMs O ekranda geçirilen süre. 3 saniyede bırakılan bir ders ile 5 dakika
+     *   sonra bırakılan ders aynı şey değil; ekran adı tek başına bunu ayırt etmiyor.
+     */
+    fun logAppExitScreen(screenName: String, durationMs: Long) = safe { fa ->
+        fa.logEvent(EV_APP_EXIT_SCREEN) {
+            param(P_EXIT_SCREEN, sanitize(screenName))
+            param(P_DURATION_MS, durationMs)
+        }
+    }
+
+    // ── Öğretici soru adımları ──────────────────────────────────────────────
+
+    /**
+     * Öğretici açıldı — ilk adım gösterilmeden önce.
+     *
+     * Öğretici hunisinin girişi budur. [logTutorialStepReached] yalnızca soru adımlarında
+     * gönderiliyor ve örneğin 16'nın ilk soru adımı otuz küsur anlatım adımından sonra geliyor;
+     * aradaki bırakmalar başka hiçbir olayda görünmüyordu.
+     *
+     * Öğretici içeriği değiştirilince önceki/sonraki karşılaştırması GA4'ün kendiliğinden
+     * eklediği `app_version` ile yapılır: öğreticiler kodda tanımlı, her değişiklik yeni sürümle
+     * çıkıyor. (Remote Config'ten gelen 1-5 bunun dışında; onlar sürüm değişmeden değişebilir.)
+     *
+     * @param firstTime Bu öğretici bu cihazda ilk kez mi açılıyor
+     *   ([TutorialStepAnalytics.markStartedOnce]). Tekrar oynamalar ayrılmazsa "yarıda bıraktı"
+     *   oranı dersi baştan geçen çocuklarla bozulur.
+     */
+    fun logTutorialStarted(
+        tutorialNumber: Int,
+        lessonId: String?,
+        firstTime: Boolean,
+    ) = safe { fa ->
+        fa.logEvent(EV_TUTORIAL_STARTED) {
+            param(P_TUTORIAL_NO, tutorialNumber.toString())
+            param(P_FIRST_TIME, if (firstTime) "true" else "false")
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
+     * Kullanıcı bir öğretici soru adımına **ilk kez** ulaştı.
+     *
+     * [logTutorialStepAnswer]'ın paydası budur: adıma ulaşıp hiç doğru cevaplayamadan bırakan
+     * kullanıcılar yalnızca bu iki olayın kullanıcı sayısı karşılaştırılarak görülebilir.
+     * Yalnız cevap olayına bakmak, en çok zorlanan adımı sistematik olarak gizler — çünkü
+     * orada takılıp uygulamayı kapatan çocuk hiçbir "doğru" olayı üretmez.
+     *
+     * "İlk kez" kararını [TutorialStepAnalytics.markReachedOnce] verir; geri tuşu ve dersi
+     * tekrar oynama bu sayıyı şişirmez.
+     */
+    fun logTutorialStepReached(
+        tutorialNumber: Int,
+        stepKey: String,
+        stepTitle: String,
+        stepKind: String,
+        lessonId: String?,
+    ) = safe { fa ->
+        fa.logEvent(EV_TUTORIAL_STEP_REACHED) {
+            param(P_TUTORIAL_NO, tutorialNumber.toString())
+            param(P_STEP_KEY, sanitize(stepKey))
+            param(P_STEP_TITLE, sanitize(stepTitle))
+            param(P_STEP_KIND, sanitize(stepKind))
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
+     * Öğretici soru adımında bir cevap gönderildi.
+     *
+     * Adım başına kullanıcı başına yalnızca **ilk geçişin** denemeleri gönderilir: adım bir kez
+     * doğru cevaplandıktan sonra aynı adıma geri dönülüp verilen cevaplar hiç ölçülmez
+     * (bkz. [TutorialStepAnalytics.recordAttempt]).
+     *
+     * ## Neden her deneme ayrı olay, neden tek bir "geçti" olayı değil
+     * Tek bir "geçti (n denemede)" olayı, adımı hiç geçemeyenleri tamamen görünmez bırakırdı.
+     * Her deneme ayrı gönderilince aynı veriden üç soru birden yanıtlanabiliyor:
+     * `is_correct = true` süzgeciyle "kaçıncı denemede geçti" dağılımı, süzgeçsiz haliyle
+     * "bu adımda toplam kaç yanlış verildi", [logTutorialStepReached] ile karşılaştırıldığında
+     * da "kaç kişi hiç geçemeden bıraktı".
+     *
+     * @param attemptNo Kaçıncı deneme (1'den başlar); [TutorialStepAnalytics.recordAttempt] verir.
+     * @param isCorrect Metin olarak gönderilir; GA4'te boole parametreler boyut olarak
+     *   süzülemiyor, `"true"` / `"false"` ise doğrudan süzgeç değeri oluyor.
+     * @param wrongAnswer Kullanıcının verdiği cevabın kendisi. **Yalnızca yanlış cevapta**
+     *   gönderilir: doğru cevapta bu değer zaten beklenen cevaba eşittir ve adımın kendisinden
+     *   bilindiği için boyutu gereksiz yere şişirir. Yanlış cevap ise soruyu anlatır — abaküs
+     *   adımında 4 yerine 40 yazılması çocuğun boncuğu yanlış çubuğa koyduğunu, şık adımında
+     *   hangi çeldiricinin seçildiği ise hangi kavramın karıştığını söyler.
+     *
+     *   İki adım türü de aynı parametreyi kullanır; hangisi olduğu `step_kind`'dan okunur. Ayrı
+     *   parametre açmak GA4'ün keşif başına 20 boyut bütçesinden ikinci bir slot yerdi ve
+     *   "verilen yanlış cevap" tablosunu iki ayrı tabloya bölerdi.
+     */
+    fun logTutorialStepAnswer(
+        tutorialNumber: Int,
+        stepKey: String,
+        stepTitle: String,
+        stepKind: String,
+        questionText: String?,
+        lessonId: String?,
+        attemptNo: Int,
+        isCorrect: Boolean,
+        wrongAnswer: String?,
+    ) = safe { fa ->
+        fa.logEvent(EV_TUTORIAL_STEP_ANSWER) {
+            param(P_TUTORIAL_NO, tutorialNumber.toString())
+            param(P_STEP_KEY, sanitize(stepKey))
+            param(P_STEP_TITLE, sanitize(stepTitle))
+            param(P_STEP_KIND, sanitize(stepKind))
+            param(P_ATTEMPT_NO, attemptNo.toLong())
+            param(P_ATTEMPT_BUCKET, TutorialStepAnalytics.bucketOf(attemptNo))
+            param(P_IS_CORRECT, if (isCorrect) "true" else "false")
+            if (!questionText.isNullOrBlank()) param(P_QUESTION_TEXT, sanitize(questionText))
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+            if (!isCorrect && !wrongAnswer.isNullOrBlank()) param(P_WRONG_ANSWER, sanitize(wrongAnswer))
+        }
+    }
+
+    // ── Enerji (can) sistemi ────────────────────────────────────────────────
+
+    /**
+     * Kullanıcı bir şey başlatmak istedi ama canı yetmedi — **duvara çarptı**.
+     *
+     * Enerji sisteminin kullanıcı kaybettirip kaybettirmediği sorusunun merkezinde bu olay
+     * var. Bugüne kadar bu an hiçbir yere kaydedilmiyordu: [LessonAdapter.showEnergyWarning]
+     * sessizce mağazayı açıyor ve çocuk ya reklam izliyor, ya anahtar harcıyor, ya da
+     * çıkıp gidiyor. Üçüncüsü, yani asıl önemli olan, tamamen görünmezdi.
+     *
+     * Ayrıca `energy_wall_hit` kullanıcı özelliğini yazar. Bu, Elde Tutma raporunda
+     * "duvara çarpanlar" ile "çarpmayanların" geri dönüş eğrilerini yan yana koymayı
+     * mümkün kılıyor — enerji sisteminin gerçek maliyeti oradan okunur.
+     *
+     * @param waitSeconds Sıradaki canın gelmesine kaç saniye kaldığı. Ekran adı tek başına
+     *   yetmiyor: 7 yaşındaki bir çocuk için 10 dakika beklemek ile 45 dakika beklemek
+     *   aynı şey değil, ikincisinde o gün geri gelmiyor.
+     * @param lessonsThisSession Duvara çarpmadan önce o oturumda kaç ders başlatmıştı
+     *   (kova: "0", "1-2", "3-4", "5+"). Bkz. [EnergySessionCounter].
+     */
+    fun logEnergyBlocked(
+        blockSource: String,
+        waitSeconds: Long,
+        lessonsThisSession: String,
+        partId: Int?,
+        lessonId: String?,
+    ) = safe { fa ->
+        fa.logEvent(EV_ENERGY_BLOCKED) {
+            param(P_BLOCK_SOURCE, sanitize(blockSource))
+            param(P_WAIT_SECONDS, waitSeconds.coerceAtLeast(0L))
+            param(P_LESSONS_THIS_SESSION, sanitize(lessonsThisSession))
+            if (partId != null) param(P_PART_ID, partId.toString())
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+        }
+        fa.setUserProperty(USER_PROPERTY_ENERGY_WALL_HIT, "true")
+    }
+
+    /**
+     * Can harcandı.
+     *
+     * [logEnergyBlocked]'ın paydası: kaç harcamaya karşılık kaç blok düştüğü, duvarın ne
+     * sıklıkta bağladığını söyler. Hiç blok yoksa enerji sistemi hiçbir şey yapmıyor
+     * demektir — ne gelir getiriyor ne tempo kuruyor, sadece kod ve arayüz karmaşıklığı.
+     *
+     * @param spendSource [ENERGY_SPEND_LESSON], [ENERGY_SPEND_CUP_FAIL] veya
+     *   [ENERGY_SPEND_CUP_QUIT]. Ayrımı önemli: canların çoğu `cup_fail`'den gidiyorsa
+     *   sistem canı en kötü yerden alıyor — çocuk zaten yarışı kaybetmiş, üstüne bir de
+     *   cezalandırılıyor.
+     * @param energyLeft Harcamadan SONRA kalan can.
+     */
+    fun logEnergySpent(
+        spendSource: String,
+        energyLeft: Int,
+        lessonsThisSession: String,
+        partId: Int?,
+        lessonId: String?,
+    ) = safe { fa ->
+        fa.logEvent(EV_ENERGY_SPENT) {
+            param(P_SPEND_SOURCE, sanitize(spendSource))
+            param(P_ENERGY_LEFT, energyLeft.toLong())
+            param(P_LESSONS_THIS_SESSION, sanitize(lessonsThisSession))
+            if (partId != null) param(P_PART_ID, partId.toString())
+            if (!lessonId.isNullOrBlank()) param(P_LESSON_ID, sanitize(lessonId))
+        }
+    }
+
+    /**
+     * Can kazanıldı (reklam veya anahtar).
+     *
+     * [logEnergyBlocked] ile birlikte huni kurar: duvara çarpanların yüzde kaçı can almaya
+     * gitti? Bu oran duvarın gelir verimidir. Çok düşükse duvar para kazandırmıyor, sadece
+     * kullanıcı kaçırıyor demektir.
+     */
+    fun logEnergyRefill(refillSource: String, energyAfter: Int) = safe { fa ->
+        fa.logEvent(EV_ENERGY_REFILL) {
+            param(P_REFILL_SOURCE, sanitize(refillSource))
+            param(P_ENERGY_AFTER, energyAfter.toLong())
+        }
+    }
+
+    // ── Reklam sonrası Pro paneli ──────────────────────────────────────────
+
+    /**
+     * Reklam kapandıktan sonra çıkan Pro paneli ([AdSkipFragment]) gösterildi.
+     *
+     * [logAdSkipClosed]'ın paydası. İkisinin kullanıcı sayısı arasındaki fark, paneli görüp
+     * kapatmadan uygulamadan çıkanlardır — panel açıkken arka plana geçen kullanıcıda kapanış
+     * olayı hiç tetiklenmez.
+     *
+     * @param viewNo Kullanıcının bu paneli kaçıncı görüşü, kova hâlinde ("01"…"09", "10+").
+     *   Kalıcı sayaçtan gelir; bkz. [AdSkipStats].
+     * @param trialOffer Panelin hangi sürümü gösterildi: ücretsiz deneme teklifi (true) ya da
+     *   denemesini kullanmış kullanıcıya Pro aboneliği (false). İkisinin dönüşümü ayrı okunmalı.
+     */
+    fun logAdSkipShown(viewNo: String, trialOffer: Boolean) = safe { fa ->
+        fa.logEvent(EV_AD_SKIP_SHOWN) {
+            param(P_VIEW_NO, sanitize(viewNo))
+            param(P_TRIAL_OFFER, if (trialOffer) "yes" else "no")
+        }
+    }
+
+    /**
+     * Pro paneli kullanıcı tarafından kapatıldı.
+     *
+     * ## Neden tek olay, neden ayrı "süre" ve "tıklama" olayları değil
+     * Ekranda kalma süresi ile çıkış yolu aynı anın iki yüzü: "3 saniye bakıp Ücretsiz Dene'ye
+     * bastı" ile "3 saniye bakıp kapattı" bambaşka şeyler. İki ayrı olay gönderilseydi GA4'te
+     * bunları aynı görüşe ait diye birleştirmenin yolu olmazdı.
+     *
+     * ## Neden onDismiss değil de düğmeler + onCancel
+     * `onDismiss` yapılandırma değişikliğinde ve uygulama öldürülürken de tetikleniyor; o
+     * durumlarda sahte bir "kapattı" kaydı düşerdi. `onCancel` ise yalnızca geri tuşu ve panel
+     * dışına dokunmada çalışır, yani gerçek kullanıcı hareketidir.
+     *
+     * @param dwellMs Panelin açık kaldığı ham süre; ortalama alınabilsin diye kovanın yanında
+     *   ayrıca gönderilir (GA4 metin boyutunu ortalayamıyor).
+     * @param outcome [AD_SKIP_TRY_FREE], [AD_SKIP_NO_THANKS] veya [AD_SKIP_DISMISSED].
+     */
+    fun logAdSkipClosed(
+        viewNo: String,
+        dwellBucket: String,
+        dwellMs: Long,
+        outcome: String,
+    ) = safe { fa ->
+        fa.logEvent(EV_AD_SKIP_CLOSED) {
+            param(P_VIEW_NO, sanitize(viewNo))
+            param(P_DWELL_BUCKET, sanitize(dwellBucket))
+            param(P_DWELL_MS, dwellMs.coerceAtLeast(0L))
+            param(P_OUTCOME, sanitize(outcome))
+        }
+    }
+
+    // ── Satın alma ──────────────────────────────────────────────────────────
+
+    /**
+     * Görev ödülü alındı.
+     *
+     * ## Neden yalnızca "alındı", "tamamlandı" değil
+     * Ödül alma, görevin tamamlandığının gözlenebilir kanıtı ve tek bir yerden geçiyor
+     * ([MissionsProgressStore.markMissionRewardClaimed]) — tamamlanma anını yakalamak için
+     * her sayaç artışını izlemek gerekirdi, karşılığı buna değmez.
+     *
+     * ## Ne söyler, ne söylemez
+     * Bir görev kimliği tabloda hiç görünmüyorsa o görev ya çok zor ya da fark edilmiyor;
+     * ikisi de tasarım hatasıdır ve düzeltmesi ucuzdur. Ama "kaç kişiye gösterildi"
+     * bilinmediği için oran hesaplanamaz: görevler periyot başına seçiliyor, nadir seçilen
+     * bir görev de az görünür. Haftalar içinde seçim dengelendiği için sayılar
+     * karşılaştırılabilir hale gelir.
+     *
+     * @param missionId `daily_finish_step_2` biçiminde: periyot + görev kimliği. İkisi tek
+     *   değerde çünkü aynı görev hem günlük hem haftalık listede olabiliyor ve ayrı bir
+     *   periyot boyutu bir slot daha harcardı. `begins with daily_` ile süzülür.
+     */
+    fun logMissionClaimed(missionId: String) = safe { fa ->
+        fa.logEvent(EV_MISSION_CLAIMED) {
+            param(P_MISSION_ID, sanitize(missionId))
+        }
+    }
+
+    // ── Altın / anahtar harcaması ───────────────────────────────────────
+
+    /**
+     * Kullanıcı altın harcadı (Firestore `users.currency` düştü).
+     *
+     * ## Neden gerekli
+     * Altının KAZANILDIĞI yer ölçülüyordu (sandık, görev, günlük soru) ama HARCANDIĞI yer hiç
+     * ölçülmüyordu. Harcama yoksa altın birikir ve ödül anlamsızlaşır: sandık açmak heyecan
+     * vermez, görev yapmak gereksizleşir. Bu olay ekonominin gider tarafıdır; kazanım
+     * olaylarıyla birlikte bakılınca "altın bir işe yarıyor mu" sorusu cevaplanır.
+     *
+     * ## Nasıl bakılır
+     * `spend_item` kırılımında hiç görünmeyen bir ürün ya çok pahalı ya da fark edilmiyor demektir.
+     * `begins with bead_` / `begins with frame_` ile kategori toplamları alınır.
+     *
+     * ## Ne zaman yazılır
+     * Sunucu harcamayı ONAYLADIKTAN sonra ([UserWalletFirestore] içindeki tek yakınsama
+     * noktasında). Bakiyesi yetmediği için reddedilen ya da iade edilen (`purchase_rollback`)
+     * işlemler buraya DÜŞMEZ.
+     *
+     * @param itemId Satın alınan şey: `bead_ANIMAL3`, `bead_color_ANIMAL3`, `frame_WOOD`,
+     *   `frame_color_WOOD` gibi. Kimlik üretilemezse `unknown` gelir — tabloda görünür,
+     *   yani yeni bir harcama noktasının bağlanmayı unuttuğu sessizce kaybolmaz.
+     * @param amount Harcanan altın (pozitif). GA4'te özel ölçüm olarak kaydedilirse toplam
+     *   ve ortalama harcama doğrudan raporlanabilir.
+     */
+    fun logGoldSpent(itemId: String, amount: Int) = safe { fa ->
+        fa.logEvent(EV_GOLD_SPENT) {
+            param(P_SPEND_ITEM, sanitize(itemId))
+            param(P_AMOUNT, amount.toLong())
+        }
+    }
+
+    /**
+     * Kullanıcı anahtar harcadı (Firestore `users.keys` düştü).
+     *
+     * Altından AYRI olay adı, çünkü iki para birimi ayrı ekonomilerdir ve aynı tabloda
+     * toplanırlarsa rakamlar anlamsız olur. Para birimini parametre yapmak bir boyut slotu
+     * daha harcardı; olay adı kotası (500) ise bol. Ayrıntı için bkz. [logGoldSpent].
+     *
+     * Anahtar şu yerlerde harcanır: yarışı hızlandırma ([ITEM_RACE_FAST_FORWARD]), kilitli
+     * dersi açma ([ITEM_LESSON_UNLOCK]) ve günlük
+     * soruya devam etme ([ITEM_DAILY_QUESTION_CONTINUE]). Bunların sayısı, çocuğun beklemek
+     * yerine ödemeyi seçtiği anlardır — sabırsızlık ölçüsü.
+     */
+    fun logKeySpent(itemId: String, amount: Int) = safe { fa ->
+        fa.logEvent(EV_KEY_SPENT) {
+            param(P_SPEND_ITEM, sanitize(itemId))
+            param(P_AMOUNT, amount.toLong())
+        }
+    }
+
+    // ── Rozet ──────────────────────────────────────────────────
+
+    /**
+     * Bir rozetin yeni kademesi kazanıldı.
+     *
+     * ## Neden gerekli
+     * 18 rozet var ve hiçbiri ölçülmüyordu. Rozetler uygulamanın en pahalı içeriği: her biri
+     * ayrı animasyon, ayrı ses, ayrı ilerleme mantığı. Bir rozet hiç kazanılmıyorsa o emeğin
+     * tamamı boşa gidiyor ve bunu görecek tek yer bu olay.
+     *
+     * ## Nasıl bakılır
+     * `badge_id` kırılımında **hiç görünmeyen rozet = ölü içerik**: ya eşiği çok yüksek ya da
+     * o davranışı kimse yapmıyor. Bir rozet görünüyor ama hep en düşük `badge_level` ile
+     * görünüyorsa ikinci kademe çok zor demektir — çocuk başlayıp bırakıyor.
+     *
+     * ## Kapsam
+     * Çocuğun kendi davranışıyla kazandığı 14 rozet: `dart`, `bowling`, `karate`, `rocket`,
+     * `golf`, `fishing`, `tornado`, `volcano`, `dino`, `crocodile`, `goat`, `eagle`, `fly`,
+     * `turtle`. Sezon sonu liderlik ödülleri (`cup`, `gold`, `silver`, `bronze`) BURADA YOK:
+     * onları sunucu sezon kapanışında yazıyor, istemci yalnızca toplatıyor ve istemcideki
+     * üretici saf bir yeniden hesaplama olduğu için birden fazla kez çalışabiliyor — oradan
+     * yazılan sayı şişik olurdu.
+     *
+     * @param badgeId Rozet kimliği, [BadgeKind] adının küçük harfli hali. Animasyon adı
+     *   ([BadgeFragment.BadgeAnimMode]) KULLANILMAZ; o adlar arayüze ait ve yanıltıcı
+     *   (örneğin `DAILY_ONLY` aslında Dart rozetidir).
+     * @param level Ulaşılan eşik (`reachedTarget`). Eşikler rozetten rozeğe çok farklı
+     *   (dart 3, dino 500); bu yüzden SATIR İÇİNDE anlamlıdır, rozetler arasında
+     *   karşılaştırılmaz. Özel ölçüm olarak kaydedilip ortalaması alınırsa "bu rozette
+     *   ortalama kaçıncı kademeye kadar gidiliyor" sorusunu cevaplar.
+     */
+    fun logBadgeLevelUp(badgeId: String, level: Int) = safe { fa ->
+        fa.logEvent(EV_BADGE_LEVEL_UP) {
+            param(P_BADGE_ID, sanitize(badgeId))
+            param(P_BADGE_LEVEL, level.toLong())
+        }
+    }
+
+    // ── Sosyal (takip) ───────────────────────────────────────────
+
+    /*
+     * ## Neden hepsi ayrı OLAY ADI, tek olay + parametre değil
+     * Boyut kotası 48/50; olay adı kotası (500) ise neredeyse boş. Ayrıca `Event name`
+     * GA4'ün YERLEŞİK boyutu: kırılımı olay adına koyunca tablo ücretsiz geliyor, özel
+     * boyut kaydetmeye hiç gerek kalmıyor. Toplam için `matches regex ^friend_added`.
+     *
+     * ## Neden ekran görüntülemesi yetmiyor
+     * `screen_view` zaten her fragment için gidiyor, yani "arkadaş ekle ekranı açıldı"
+     * biliniyor. Bilinmeyen, o ekranın BİR İŞE YARAYIP yaramadığı: arama yapıldı mı,
+     * sonuç döndü mü, takip gerçekleşti mi. Sosyal graf pahalı bir özellik; kimse
+     * kullanmıyorsa bunu bilmek gerekir.
+     */
+
+    /** Arama sonuçlarından takip edildi ([AddFriendFragment]). */
+    fun logFriendAddedFromSearch() = safe { fa -> fa.logEvent(EV_FRIEND_ADDED_SEARCH) {} }
+
+    /** Takipçi listesinden takip edildi ([FollowersFollowingFragment]). */
+    fun logFriendAddedFromList() = safe { fa -> fa.logEvent(EV_FRIEND_ADDED_LIST) {} }
+
+    /** Başkasının profilinden takip edildi ([ProfileFragment]). */
+    fun logFriendAddedFromProfile() = safe { fa -> fa.logEvent(EV_FRIEND_ADDED_PROFILE) {} }
+
+    /**
+     * Kullanıcı arama yaptı ve sonuç geldi.
+     *
+     * "Daha fazla yükle" adımları SAYILMAZ, yalnızca ilk arama. Yoksa her sayfa bir arama
+     * gibi görünür ve sonuçsuz arama oranı olduğundan iyi çıkar.
+     *
+     * Boş sonucun ayrı olay olması önemli: arama adı ve kullanıcı koduna ön ek eşleşmesiyle
+     * bakıyor, yani "ahmet" yazanın "Ahmet"i bulamaması mümkün. Boş oranı yüksekse sorun
+     * ilgisizlik değil, aramaNıN KENDİSİdİr — ve ikisi tamamen farklı çözüm ister.
+     */
+    fun logFriendSearchResult(hasResults: Boolean) = safe { fa ->
+        fa.logEvent(if (hasResults) EV_FRIEND_SEARCH_HIT else EV_FRIEND_SEARCH_EMPTY) {}
+    }
+
+    /**
+     * Takip bırakıldı ([ProfileFragment]).
+     *
+     * `friend_added_*` sayılarının paydası. İkisi birbirine yakınsa sosyal graf BÜYÜMÜYOR
+     * demektir: çocuklar takip ediyor, sonra vazgeçiyor. Sadece "kaç takip ekle" sayısına
+     * bakmak bu durumu tamamen gizlerdi.
+     */
+    fun logFriendRemoved() = safe { fa -> fa.logEvent(EV_FRIEND_REMOVED) {} }
+
+    /**
+     * Başka bir kullanıcının profili açıldı.
+     *
+     * `screen_view` kendi profili ile başkasının profilini ayırt edemiyor (ikisi de
+     * [ProfileFragment]). Merak sinyali bu: çocuk başka bir çocuğun rozetlerine,
+     * kupalarına bakıyor mu?
+     */
+    fun logOtherProfileViewed() = safe { fa -> fa.logEvent(EV_PROFILE_OTHER_VIEWED) {} }
+
+    /**
+     * Reklam ekrana geldi.
+     *
+     * ## Neden gerekli
+     * Reklam SONRASI Pro panelini ölçüyorduk ama reklamın kendisini ölçmüyorduk. Reklam
+     * yüklenemezse panel de çıkmaz, ödüllü reklamla can da alınamaz — gelir ve enerji ekonomisi
+     * aynı anda sessizce durur ve sebebi hiçbir yerde görünmez.
+     *
+     * ## Neden hata sebebi ayrı olay
+     * `ad_load_failed`, `ad_show_failed` ve `ad_not_ready` ayrı olay adları; sebep parametre
+     * olsaydı bir boyut slotu daha harcanırdı. Olay adı kotası çok daha bol (500), boyut kotası
+     * dar — bu yüzden ayrım isimlere kondu.
+     */
+    fun logAdShown(adType: String) = safe { fa ->
+        fa.logEvent(EV_AD_SHOWN) { param(P_AD_TYPE, sanitize(adType)) }
+    }
+
+    /**
+     * Reklam yüklenemedi (AdMob dolgu veremedi, ağ hatası vb.). Gösterim hiç denenmedi.
+     *
+     * ## Neden hata kodu olay adında
+     * Yalnızca "yüklenemedi" demek sebebi gizliyordu: dolgu yokluğu (AdMob hesabı/uygulama
+     * kurulumu, çocuk etiketi), ağ hatası ve hatalı istek tamamen farklı çözümler istiyor.
+     * Sebep parametre olsaydı boyut slotu gerekirdi; o kota dolu, olay adı kotası bol. Olay adı
+     * `ad_load_failed_<sebep>` biçiminde — hepsini birden görmek için Keşif'te
+     * `^ad_load_failed` ile filtrele.
+     *
+     * @param errorCode [com.google.android.gms.ads.LoadAdError.getCode].
+     */
+    fun logAdLoadFailed(adType: String, errorCode: Int) = safe { fa ->
+        fa.logEvent(EV_AD_LOAD_FAILED + "_" + adLoadErrorReason(errorCode)) {
+            param(P_AD_TYPE, sanitize(adType))
+        }
+    }
+
+    /** AdMob yükleme hata kodunu olay adına girecek kısa bir sebebe çevirir. */
+    private fun adLoadErrorReason(code: Int): String = when (code) {
+        AdRequest.ERROR_CODE_INTERNAL_ERROR -> "internal"
+        AdRequest.ERROR_CODE_INVALID_REQUEST -> "invalid_request"
+        AdRequest.ERROR_CODE_NETWORK_ERROR -> "network"
+        AdRequest.ERROR_CODE_NO_FILL -> "no_fill"
+        AdRequest.ERROR_CODE_APP_ID_MISSING -> "app_id_missing"
+        AdRequest.ERROR_CODE_MEDIATION_NO_FILL -> "mediation_no_fill"
+        AdRequest.ERROR_CODE_REQUEST_ID_MISMATCH -> "request_id_mismatch"
+        AdRequest.ERROR_CODE_INVALID_AD_STRING -> "invalid_ad_string"
+        else -> "other"
+    }
+
+    /** Reklam yüklüydü ama gösterilemedi. */
+    fun logAdShowFailed(adType: String) = safe { fa ->
+        fa.logEvent(EV_AD_SHOW_FAILED) { param(P_AD_TYPE, sanitize(adType)) }
+    }
+
+    /**
+     * Reklam gösterilmesi istendi ama hazır değildi — en can sıkıcı hata.
+     *
+     * Ödüllü reklamda bu, çocuğun canını veya sandığını ALAMAMASI demek; ekranda
+     * "Reklam henüz yüklenmedi" yazısını görüyor. Geçiş reklamında ise hem gelir hem
+     * ardından açılacak Pro paneli kayboluyor.
+     */
+    fun logAdNotReady(adType: String) = safe { fa ->
+        fa.logEvent(EV_AD_NOT_READY) { param(P_AD_TYPE, sanitize(adType)) }
+    }
+
+    /**
+     * Kupa yarışı sonuçlandı.
+     *
+     * ## Neden gerekli
+     * Kupa modunda yalnızca enerji harcaması ölçülüyordu; yarışın kazanılıp kazanılmadığı hiç
+     * gitmiyordu. Kayıp oranı yüksekse çocuk modu terk eder ve biz sadece "enerji harcandı"
+     * görürüz — terk sebebini göremeyiz.
+     *
+     * ## Neden [cupMode] ayrı
+     * Beş mod aynı ekranı paylaşıyor: normal, körleme, çarpma, çıkarma ve bunların körleme
+     * birleşimleri. Zorlukları birbirinden çok farklı; tek kovada toplanırsa "kupa zor" gibi
+     * kullanılamaz bir sonuç çıkar, oysa sorun tek bir modda olabilir.
+     *
+     * ## Neden [cupQuestion] ayrı
+     * Aynı mod içinde soru kupa aralığına göre değişiyor: basamak sayısı, gösterilen sayı adedi
+     * ve sayılar arası süre [CupRuleEngine] tablosundan geliyor. "Körleme zor" demek yetmez —
+     * hangi aralıktaki hangi soru şeklinin zor olduğunu görmek gerekiyor.
+     *
+     * [cupMode] kaba ve okunabilir (6 değer), [cupQuestion] ince ve çok değerli. Tabloyu modla
+     * okuyup şekille derinleşmek için ikisi birden var.
+     *
+     * @param result [CUP_RESULT_WIN], [CUP_RESULT_LOSS] veya [CUP_RESULT_QUIT].
+     * @param cupQuestion `r200_d1_n5_i2400` biçiminde: kupa aralığının alt sınırı, basamak,
+     *   sayı adedi, sayılar arası süre (ms).
+     */
+    fun logCupRaceResult(result: String, cupMode: String, cupQuestion: String) = safe { fa ->
+        fa.logEvent(EV_CUP_RACE_RESULT) {
+            param(P_CUP_RESULT, sanitize(result))
+            param(P_CUP_MODE, sanitize(cupMode))
+            param(P_CUP_QUESTION, sanitize(cupQuestion))
+        }
+    }
+
+    /**
+     * Günün sorularından biri başlatıldı.
+     *
+     * ## Neden gerekli
+     * 24 saatte 3 soru, uygulamanın günlük geri dönüş mekanizması. Sunucuda bütün akış
+     * (`recordQuestionResult`, `incrementSolvedCount`, `markRewardClaimed`) çalışıyordu ama tek
+     * olay gönderilmiyordu: kaç çocuğun başladığını, kaçının üçünü de bitirdiğini, kaçının
+     * ödülü aldığını bilmiyorduk. Yani özelliğin işe yarayıp yaramadığına dair hiçbir kanıt yoktu.
+     *
+     * @param questionNo Günün kaçıncı sorusu (1-3). `question_no` parametresi anket
+     *   olaylarıyla PAYLAŞILIYOR — ikisi de "sıradaki kaçıncı soru" demek; raporda olay adıyla
+     *   filtrelemek şart.
+     */
+    fun logDailyQuestionStart(questionNo: Int) = safe { fa ->
+        fa.logEvent(EV_DAILY_QUESTION_START) {
+            param(P_QUESTION_NO, questionNo.toString())
+        }
+    }
+
+    /**
+     * Günün sorusu sonuçlandı.
+     *
+     * Başlangıç ile sonuç arasındaki fark, soruyu açıp bitirmeden bırakanları verir.
+     * [isCorrect] false ise çocuk elmas harcayarak devam etme paneliyle karşılaşıyor.
+     */
+    fun logDailyQuestionResult(questionNo: Int, isCorrect: Boolean) = safe { fa ->
+        fa.logEvent(EV_DAILY_QUESTION_RESULT) {
+            param(P_QUESTION_NO, questionNo.toString())
+            param(P_IS_CORRECT, if (isCorrect) "true" else "false")
+        }
+    }
+
+    /** Üç soru da bitti ve günün ödülü alındı — huninin son adımı. */
+    fun logDailyQuestionClaim() = safe { fa ->
+        fa.logEvent(EV_DAILY_QUESTION_CLAIM) {}
+    }
+
+    /**
+     * Kullanıcı bir bildirime dokundu.
+     *
+     * ## Neden gerekli
+     * Gönderim sayısını biliyorduk, açılma sayısını bilmiyorduk — yani bir bildirim türünün
+     * işe yarayıp yaramadığı ölçülemiyordu. Açılmayan bildirim hata üretmediği için sahada
+     * görünmüyor; yalnızca kullanıcıyı yoruyor ve sonunda bildirimlerin tamamen
+     * kapatılmasıyla sonuçlanıyor.
+     *
+     * Aynı sayı sunucuda da tutuluyor (functions/notifications.js) ama orada KARAR için:
+     * üst üste açılmayan konu susuyor. Buradaki kayıt raporlama için — ikisi ayrı işler.
+     *
+     * @param topic Bildirimin konu etiketi (örn. `streak_reminder`, `season_ending`).
+     *   Serbest metin değil, sabit bir etiket kümesi; kişisel veri taşımıyor.
+     */
+    fun notificationOpened(topic: String) = safe { fa ->
+        fa.logEvent(EV_NOTIFICATION_OPENED) {
+            param(P_NOTIFY_TOPIC, sanitize(topic))
+        }
+    }
+
+    /**
+     * Bildirim kullanıcıya GERÇEKTEN gösterildi.
+     *
+     * ## Neden gerekli — açılma oranının paydası
+     * [notificationOpened] tek başına "kaç kez açıldı" diyor, "kaç kez gösterildi" demiyor.
+     * Gönderim sayısı sunucuda (`functions/notifications.js`) tutuluyor, yani oranı GA4
+     * içinde hesaplamak mümkün değildi: payı bir yerde, paydası başka yerde duruyordu.
+     *
+     * Burası gösterimin gerçekleştiği an ([MyFirebaseMessagingService] `notify()` çağrıları),
+     * yani sunucunun gönderdiği değil kullanıcının gördüğü sayı. İkisi arasındaki fark da
+     * ayrıca bilgi: istemci tarafında tercih kapalı olduğu için düşen bildirimler orada
+     * görünür (bkz. `NotificationPrefs.isEnabled` kontrolü).
+     *
+     * `notification_shown` → `notification_opened` hunisi tamamen GA4 içinde kuruluyor.
+     *
+     * @param topic Sunucunun verdiği konu etiketi; [notificationOpened] ile aynı küme,
+     *   böylece iki olay aynı boyutta eşleşiyor.
+     */
+    fun notificationShown(topic: String) = safe { fa ->
+        fa.logEvent(EV_NOTIFICATION_SHOWN) {
+            param(P_NOTIFY_TOPIC, sanitize(topic))
+        }
+    }
+
+    /**
+     * Kullanıcı bir bildirim türünü açtı ya da kapattı ([SoundSettingsFragment]).
+     *
+     * ## Neden gerekli
+     * [notificationOpened] hangi bildirimin işe yaradığını söylüyor; hangisinin kullanıcıyı
+     * bıktırdığını söylemiyor. Oysa bu yapının asıl riski tam olarak o: açılmayan bildirim
+     * hata üretmiyor, sadece yoruyor ve sonunda kullanıcı bildirimleri tamamen kapatıyor.
+     * Kapatma geri dönüşü olan bir hareket değil — kapatan kullanıcı bir daha açmıyor.
+     *
+     * Tür için ayrı bir parametre AÇILMADI; [P_NOTIFY_TOPIC] yeniden kullanılıyor. GA4'ün
+     * ücretsiz sürümünde olay kapsamlı boyut yuvası 50 ile sınırlı ve doldu. Aynı boyutu
+     * birden çok olayın paylaşması bu projede zaten kurulu bir desen (bkz. `question_no`,
+     * `view_no`): raporda olay adıyla süzülüyor.
+     *
+     * @param type `chat`, `streak`, `reward` ya da [NOTIFY_TYPE_ALL] (ana anahtar).
+     * @param enabled true: açtı. Metrik olarak ortalaması "açık kalma oranı"nı veriyor.
+     */
+    fun notificationPrefChanged(type: String, enabled: Boolean) = safe { fa ->
+        fa.logEvent(EV_NOTIFICATION_PREF_CHANGED) {
+            param(P_NOTIFY_TOPIC, sanitize(type))
+            param(P_NOTIFY_ENABLED, if (enabled) 1L else 0L)
+        }
+    }
+
+    /**
+     * Çocuk öğretmene soru gönderdi.
+     *
+     * ## Neden gerekli
+     * Satın almayı ölçüyoruz ama o kredinin KULLANILDIĞINI ölçmüyorduk. Kredi alıp hiç
+     * sormayan bir çocuk, parasını verip ürünü raftan indirmemiş demektir; bu sessiz kayıp
+     * `purchase` sayısına bakarak fark edilmiyor.
+     *
+     * @param mediaType [QUESTION_MEDIA_IMAGE] veya [QUESTION_MEDIA_VIDEO].
+     */
+    fun logQuestionAsked(mediaType: String) = safe { fa ->
+        fa.logEvent(EV_QUESTION_ASKED) {
+            param(P_MEDIA_TYPE, sanitize(mediaType))
+        }
+    }
+
+    /**
+     * Öğretmen bir soruya İLK cevabını gönderdi.
+     *
+     * ## Neden öğretmen tarafından ölçülüyor
+     * Gerçek cevap süresini yalnızca bu an biliyor: sorunun `createdAt`'i elde ve cevap şimdi
+     * gidiyor. Çocuk tarafından ölçülseydi "öğretmen ne zaman cevapladı" değil "çocuk ne zaman
+     * açtı" ölçülürdü — bambaşka bir soru.
+     *
+     * ## Neden önemli
+     * Sorular 48 saat cevapsız kalırsa sunucu krediyi iade edip soruyu `expired` yapıyor
+     * (bkz. `QUESTION_REFUND_AFTER_MS`). Kredi geri gelse de çocuk iki gün bekleyip eli boş
+     * kalmış oluyor. Bekleme süresi uzadıkça kredi değersizleşir ve Pro yenilenmez;
+     * bu olay olmadan durum ancak iptaller başlayınca fark edilir.
+     *
+     * @param waitHours [questionWaitBucket] ile üretilmiş kova.
+     */
+    fun logQuestionAnswered(waitHours: String) = safe { fa ->
+        fa.logEvent(EV_QUESTION_ANSWERED) {
+            param(P_WAIT_HOURS, sanitize(waitHours))
+        }
+    }
+
+    /**
+     * Çocuk bir soru sohbetini açtı.
+     *
+     * @param questionStatus Sunucudaki durum: `pending`, `claimed`, `resolved`, `expired`.
+     *   `expired` satırındaki her kullanıcı, iki gün bekleyip cevap alamamış bir çocuktur —
+     *   bu tablodaki en önemli satır odur.
+     */
+    fun logQuestionChatOpened(questionStatus: String) = safe { fa ->
+        fa.logEvent(EV_QUESTION_CHAT_OPENED) {
+            param(P_QUESTION_STATUS, sanitize(questionStatus))
+        }
+    }
+
+    /**
+     * Soru sorulduktan sonra geçen sürenin GA4 kovası.
+     *
+     * Başa sıfır konuyor: GA4 metin boyutlarını alfabetik sıralıyor, `"1-3"` ile `"12-24"`
+     * yan yana yanlış diziliyor. `48+` sınırı sunucunun iade eşiğiyle aynı — o kovaya düşen
+     * cevap, kredisi çoktan iade edilmiş bir soruya gelmiş demektir.
+     */
+    fun questionWaitBucket(waitMs: Long): String {
+        val hours = waitMs / 3_600_000.0
+        return when {
+            waitMs < 0L -> "00-01"
+            hours < 1 -> "00-01"
+            hours < 3 -> "01-03"
+            hours < 12 -> "03-12"
+            hours < 24 -> "12-24"
+            hours < 48 -> "24-48"
+            else -> "48+"
+        }
+    }
+
+    /**
+     * Kayıt hunisinin bir adımına ulaşıldı.
+     *
+     * ## Neden gerekli
+     * Ölçtüğümüz her şey — dersler, enerji, Pro hunisi — uygulamaya çoktan girmiş kullanıcıyı
+     * anlatıyor. Kurulumların ne kadarının kapıdan geçemediği hiç görünmüyordu; o oran
+     * bilinmeden diğer bütün metriklerin paydası sessizce bozuk kalıyor.
+     *
+     * ## Neden tek olay, adım parametresiyle
+     * Her adım ayrı bir olay olsaydı GA4'te huni kurmak için altı ayrı olay adı gerekirdi ve
+     * araya yeni bir adım eklemek her raporu elden geçirmeyi gerektirirdi. Tek olay + [stage]
+     * ile huni adımları parametre koşuluyla seçiliyor.
+     *
+     * Adımlar kullanıcı bazında sayılır; ekran döndürme veya geri dönüp tekrar ilerleme aynı
+     * kullanıcıyı ikinci kez huniye sokmaz.
+     *
+     * @param stage `SIGNUP_*` sabitlerinden biri.
+     * @param role [SIGNUP_ROLE_STUDENT] veya [SIGNUP_ROLE_TEACHER]. Öğretmen kaydı ayrı bir
+     *   akış ve çok daha az sayıda; ayrılmazsa öğrenci hunisini kirletir.
+     */
+    fun logSignupStep(stage: String, role: String) = safe { fa ->
+        fa.logEvent(EV_SIGNUP_STEP) {
+            param(P_SIGNUP_STAGE, sanitize(stage))
+            param(P_SIGNUP_ROLE, sanitize(role))
+        }
+    }
+
+    // ── Günlük seri ────────────────────────────────────────────────────────
+    //
+    // NEDEN BU ALTI OLAY
+    //   Seri, uygulamanın geri dönüş vaadi. Ölçülmezse yalnızca "kaç kişi açtı" bilinir;
+    //   asıl sorular cevapsız kalır: kurulum akışını kaç kişi bitiriyor, hangi hedefi
+    //   seçiyorlar, kaçı ikinci güne geliyor, seriler kaç günde kırılıyor ve kaç gün
+    //   kaçırılarak kırılıyor. Sonuncusu seri dondurma kararının tek girdisi: kırılmaların
+    //   çoğu TEK gün kaçırmadan geliyorsa dondurma işe yarar, gelmiyorsa yaramaz.
+
+    /**
+     * Kurulum akışında bir adım görüldü.
+     *
+     * Kayıt hunisiyle aynı desen: tek olay + [stage]. Adım başına ayrı olay açmak GA4'te
+     * dört ayrı huni adımı tanımlamak demekti.
+     *
+     * @param stage `STREAK_STAGE_*` sabitlerinden biri.
+     */
+    fun logStreakSetupStep(stage: String) = safe { fa ->
+        fa.logEvent(EV_STREAK_SETUP_STEP) {
+            param(P_STREAK_STAGE, sanitize(stage))
+        }
+    }
+
+    /**
+     * Günlük hedef seçildi ya da değiştirildi.
+     *
+     * @param source [STREAK_SOURCE_ONBOARDING] veya [STREAK_SOURCE_SETTINGS]. Ayrımı önemli:
+     *   ilk seçim niyeti, sonraki değişiklik ise seçimin tutmadığını gösterir. Hedefini
+     *   düşürenlerin oranı, varsayılanın yanlış olup olmadığını söyler.
+     */
+    fun logStreakGoalSet(minutes: Int, source: String) = safe { fa ->
+        fa.logEvent(EV_STREAK_GOAL_SET) {
+            param(P_GOAL_MINUTES, minutes.toLong())
+            param(P_SOURCE, sanitize(source))
+        }
+    }
+
+    /** [logStreakReminderSet]'in seçim ve izin değerleri. */
+    const val REMINDER_CHOICE_YES = "yes"
+    const val REMINDER_CHOICE_LATER = "later"
+    const val NOTIF_PERMISSION_GRANTED = "granted"
+    const val NOTIF_PERMISSION_DENIED = "denied"
+    /** Android 13 öncesi ya da izin zaten var: sorulmadı. */
+    const val NOTIF_PERMISSION_NOT_NEEDED = "not_needed"
+    /** "Şimdi değil": izin bilerek sorulmadı. */
+    const val NOTIF_PERMISSION_NOT_ASKED = "not_asked"
+
+    /**
+     * Hatırlatma saati seçildi (kayıttaki soru ya da seri ekranı).
+     *
+     * İzin sonucu ayrı tutuluyor: "evet" deyip sistem penceresinde reddedenlerin oranı,
+     * bağlamlı sormanın işe yarayıp yaramadığını gösteriyor (eskiden izin ana ekranda
+     * bağlamsız soruluyordu).
+     *
+     * @param choice [REMINDER_CHOICE_YES] / [REMINDER_CHOICE_LATER]; seri ekranında hep "yes".
+     * @param permission `NOTIF_PERMISSION_*` değerlerinden biri.
+     */
+    fun logStreakReminderSet(hour: Int, source: String, choice: String, permission: String) = safe { fa ->
+        fa.logEvent(EV_STREAK_REMINDER_SET) {
+            param(P_REMINDER_HOUR, hour.toLong())
+            param(P_SOURCE, sanitize(source))
+            param(P_REMINDER_CHOICE, sanitize(choice))
+            param(P_NOTIF_PERMISSION, sanitize(permission))
+        }
+    }
+
+    /** Meydan okuma (kaç gün üst üste) seçildi ya da değiştirildi. */
+    fun logStreakChallengeSet(days: Int, source: String) = safe { fa ->
+        fa.logEvent(EV_STREAK_CHALLENGE_SET) {
+            param(P_CHALLENGE_DAYS, days.toLong())
+            param(P_SOURCE, sanitize(source))
+        }
+    }
+
+    /**
+     * Günlük hedef tutturuldu; seri bir gün ilerledi.
+     *
+     * Günde en fazla bir kez gönderilir (bkz. [StreakRepository.refresh]).
+     *
+     * @param streakDays Yeni seri değeri. 1 = bugün başladı.
+     */
+    fun logStreakDayDone(streakDays: Int, goalMinutes: Int) = safe { fa ->
+        fa.logEvent(EV_STREAK_DAY_DONE) {
+            param(P_STREAK_DAYS, streakDays.toLong())
+            param(P_GOAL_MINUTES, goalMinutes.toLong())
+        }
+    }
+
+    /**
+     * Seri kırıldı.
+     *
+     * @param streakDays Kaybedilen serinin uzunluğu — kırılmanın maliyeti.
+     * @param missedDays Kaç gün kaçırıldığı; 31 = otuz günden eski.
+     */
+    fun logStreakBroken(streakDays: Int, missedDays: Int) = safe { fa ->
+        fa.logEvent(EV_STREAK_BROKEN) {
+            param(P_STREAK_DAYS, streakDays.toLong())
+            param(P_MISSED_DAYS, missedDays.toLong())
+        }
+    }
+
+    /**
+     * Meydan okuma tamamlandı: kullanıcı verdiği sözü tuttu.
+     *
+     * Kurulum akışının işe yarayıp yaramadığının tek doğrudan ölçüsü bu; taahhüt alınıp
+     * tutulmuyorsa soru sormanın anlamı yok.
+     */
+    fun logStreakChallengeDone(days: Int) = safe { fa ->
+        fa.logEvent(EV_STREAK_CHALLENGE_DONE) {
+            param(P_CHALLENGE_DAYS, days.toLong())
+        }
+    }
+
+    /**
+     * Seri dondurma harcandı: kaçan ilk gün kapatıldı.
+     *
+     * Satın alma ayrıca [logGoldSpent] ile ([ITEM_STREAK_FREEZE]) gidiyor; bu olay
+     * dondurmanın İŞE YARAYIP YARAMADIĞINI ölçüyor. Fiyatın doğru olup olmadığı ikisinin
+     * oranından okunur: alınıp hiç harcanmıyorsa gereksiz bir güvence, harcanıp seriyi
+     * çoğunlukla kurtarmıyorsa ([saved] = false) çocuğa boşa altın harcatan bir ürün.
+     *
+     * @param streakDays Korunan (ya da yine de kaybedilen) serinin uzunluğu.
+     * @param saved Seri yaşıyor mu. false: arkasından bir gün daha kaçtı, seri yine kırıldı.
+     */
+    fun logStreakFreezeUsed(streakDays: Int, saved: Boolean) = safe { fa ->
+        fa.logEvent(EV_STREAK_FREEZE_USED) {
+            param(P_STREAK_DAYS, streakDays.toLong())
+            param(P_STREAK_SAVED, if (saved) 1L else 0L)
+        }
+    }
+
+    /**
+     * Mağazadaki seri dondurma kartı **alınabilir** hâlde görüldü.
+     *
+     * Satın almanın paydası. Alım `gold_spent` olayıyla ([ITEM_STREAK_FREEZE]) zaten
+     * gidiyordu ama payda yoktu: 4000 altınlık bir ürünün kaç kez görülüp kaç kez
+     * alındığı, yani dönüşüm oranı hesaplanamıyordu. Huni:
+     * `streak_freeze_offer_shown` → `gold_spent[item_id=streak_freeze]`.
+     *
+     * Elde dondurma varken ("✓ HAZIR") gönderilmiyor: o hâl bir teklif değil.
+     * Mağaza her tazelemede kartı yeniden çiziyor, bu yüzden çağıran taraf olayı
+     * ekran ömrü başına bir kez gönderiyor (bkz. [ShopFragment]).
+     *
+     * @param canAfford Kullanıcının altını yetiyor mu. Dönüşmeyen görüşlerin "istemedi" mi
+     *   "parası yetmedi" mi olduğunu ayırıyor; ikisi tamamen farklı iki karar demek
+     *   (fiyatı düşürmek ya da kartı anlatmak).
+     */
+    fun logStreakFreezeOfferShown(canAfford: Boolean) = safe { fa ->
+        fa.logEvent(EV_STREAK_FREEZE_OFFER) {
+            param(P_CAN_AFFORD, if (canAfford) 1L else 0L)
+        }
+    }
+
+    /**
+     * Avatar ekranında bir parça değiştirildi — **ekran ömrü başına parça başına bir kez**.
+     *
+     * Hangi parçaların ilgi çektiğini ölçüyor; ücretli yapılacak parçalara karar vermenin
+     * tek verisi bu. Tekilleştirme çağıran tarafta: saç seçeneklerini tek tek gezen bir
+     * çocuk yirmi olay değil bir `hair` olayı üretiyor, yoksa rapor "en çok denenen" ile
+     * "en çok seçenek içeren" parçayı ayırt edemezdi.
+     *
+     * @param part [AvatarTab.key] — `hair`, `hairColor`, `skinColor`, `eyes`, `nose`,
+     *   `mouth`, `facialHair`, `body`, `clothingColor`, `backgroundColor`. Sayısı sabit
+     *   ve küçük olduğu için ham gönderiliyor.
+     * @param style [AvatarStyle.key]. Şimdilik tek stil var, yani bugün tek değerli:
+     *   GA4'te özel boyut olarak KAYDEDİLMEMESİ gerekiyor (yuva sınırlı ve tek değerli bir
+     *   boyut hiçbir soruya cevap vermiyor). Gönderilmeye devam ediyor; ikinci stil
+     *   eklendiğinde kaydedilir, o güne kadar BigQuery'den okunabilir.
+     */
+    fun logAvatarPartChanged(part: String, style: String) = safe { fa ->
+        fa.logEvent(EV_AVATAR_PART_CHANGED) {
+            param(P_AVATAR_PART, part)
+            param(P_AVATAR_STYLE, style)
+        }
+    }
+
+    /**
+     * Avatar kaydedildi.
+     *
+     * Ekranı açıp vazgeçenlerin oranı, bununla `screen_view[AvatarCustomFragment]`
+     * sayısının karşılaştırılmasından çıkıyor; bu yüzden ayrı bir "ekran açıldı" olayı yok.
+     *
+     * @param changedParts Yüklenen hâle göre kaç parça farklı. 0: ekrana girip bir şey
+     *   değiştirmeden kaydetti.
+     * @param usedRandom "Rastgele" düğmesi kullanıldı mı. Parça başına ücretlendirme
+     *   kararı için belirleyici: kullanıcıların çoğu zarı atıp kaydediyorsa tek tek parça
+     *   satmak karşılıksız kalır.
+     */
+    fun logAvatarSaved(changedParts: Int, usedRandom: Boolean, style: String) = safe { fa ->
+        fa.logEvent(EV_AVATAR_SAVED) {
+            param(P_CHANGED_PARTS, changedParts.toLong())
+            param(P_USED_RANDOM, if (usedRandom) 1L else 0L)
+            param(P_AVATAR_STYLE, style)
+        }
+    }
+
+    /**
+     * Cihazın duvar saati sunucu saatinden belirgin biçimde sapıyor.
+     *
+     * İki ayrı soruyu birlikte cevaplıyor:
+     *
+     * 1. **Dürüst bozulma.** Saati yanlış olan cihazlarda can ve seri yanlış zamanda
+     *    işliyor. Kaç kullanıcının başına geldiğini bilmeden bunun önemsenecek bir sorun
+     *    olup olmadığı bilinemez.
+     * 2. **Saatle oynama.** İleri yönlü büyük sapmalar, canı erken doldurmak için saati
+     *    ileri alma denemesinin izi. [TrustedClock] bunu zaten etkisiz bırakıyor ama
+     *    kapatılmayan bir boşluk duruyor (çapa yokken duvar saatine dönülüyor). O boşluğu
+     *    kapatmanın bedeli var: ders başlatmayı sunucu onayına bağlamak, yani internetsiz
+     *    ders açılamaması. Bu olay o kararı tahminden çıkarıyor.
+     *
+     * Ham fark gönderilmiyor; bkz. [skewBucket].
+     *
+     * @param bucket [skewBucket] çıktısı — yönü de içeriyor (`ahead_1h_6h`).
+     *   [SKEW_UNDER_5M] ile çağrılmamalı.
+     */
+    fun logDeviceClockSkew(bucket: String) = safe { fa ->
+        fa.logEvent(EV_DEVICE_CLOCK_SKEW) {
+            param(P_SKEW_BUCKET, bucket)
+        }
+    }
+
+    /**
+     * Öğretmene sorma tanıtımı ([AskQuestionOpenFragment]) ekrana geldi.
+     *
+     * @param trigger [PROMO_TRIGGER_AUTO] veya [PROMO_TRIGGER_OUT_OF_CREDITS].
+     * @param viewNo Bu tetikleyici için kaçıncı görüş; bkz. [AskQuestionPromoStats.viewBucket].
+     * @param welcomeCreditAvailable Cihaz hediye krediyi hâlâ alabiliyor mu. Ekranın hangi
+     *   düzenle açıldığını belirliyor (alabiliyorsa büyük düğme Pro, alamıyorsa kredi satın
+     *   alma). Bu ayrım kaydedilmezse `buy_credits` payındaki değişimin kullanıcı tercihinden
+     *   mi düzenden mi geldiği sonradan ayırt edilemez.
+     */
+    fun logAskQuestionPromoShown(
+        trigger: String,
+        viewNo: String,
+        welcomeCreditAvailable: Boolean,
+    ) = safe { fa ->
+        fa.logEvent(EV_ASK_QUESTION_PROMO_SHOWN) {
+            param(P_TRIGGER, sanitize(trigger))
+            param(P_VIEW_NO, sanitize(viewNo))
+            param(P_WELCOME_CREDIT, if (welcomeCreditAvailable) "true" else "false")
+        }
+    }
+
+    /**
+     * Tanıtım kapandı — hangi yoldan kapandığıyla birlikte.
+     *
+     * ## Neden üç çıkış yolu ayrı ayrı
+     * [PROMO_BUY_CREDITS] ayrı bir ürün sinyali: "şeyi istiyorum, aboneliği değil". Ağırlık
+     * oraya kayıyorsa ekranın "1 hafta ücretsiz dene" çerçevesi o an için yanlış demektir.
+     * Tek bir "kapattı" kaydı bu farkı yok ederdi.
+     *
+     * ## Neden onDismiss değil
+     * [AdSkipFragment] ile aynı gerekçe: `onDismiss` yapılandırma değişikliğinde ve uygulama
+     * öldürülürken de çalışıyor, sahte "kapattı" kaydı düşerdi. Düğmeler kendi sonuçlarını
+     * bildiriyor, `onCancel` ise yalnızca geri tuşu ve panel dışına dokunmada çalışıyor.
+     *
+     * @param dwellMs Ekranda kalınan ham süre. Bu ekran için kova üretilmiyor: [AdSkipFragment]
+     *   bir kesintiydi ve orada süre "okudu mu, refleksle mi kapattı" sorusunu cevaplıyordu;
+     *   burada [PROMO_TRIGGER_OUT_OF_CREDITS] durumunda kullanıcı ekrana bilerek geliyor, süre
+     *   ilgiyi değil okuma hızını ölçer. Ham değer yine de gidiyor ki ortalaması alınabilsin.
+     */
+    fun logAskQuestionPromoClosed(
+        trigger: String,
+        viewNo: String,
+        outcome: String,
+        dwellMs: Long,
+        welcomeCreditAvailable: Boolean,
+    ) = safe { fa ->
+        fa.logEvent(EV_ASK_QUESTION_PROMO_CLOSED) {
+            param(P_TRIGGER, sanitize(trigger))
+            param(P_VIEW_NO, sanitize(viewNo))
+            param(P_OUTCOME, sanitize(outcome))
+            param(P_DWELL_MS, dwellMs.coerceAtLeast(0L))
+            param(P_WELCOME_CREDIT, if (welcomeCreditAvailable) "true" else "false")
+        }
+    }
+
+    /**
+     * Pro paneli ([ProDiffirentFragment]) açıldı — hunideki "kapı" adımı.
+     *
+     * ## Neden `screen_view` yetmiyor
+     * Panel dört ayrı yerden açılıyor (reklam sonrası, öğretmene sorma tanıtımı, mağazadaki iki
+     * düğme). Huni adımları ekran adıyla eşlendiğinden bu dördü tek havuzda toplanıyor ve
+     * "reklam sonrası panel işe yarıyor mu" sorusu ölçülüyor gibi görünüp ölçülmüyordu.
+     * Bu olay kapıyı taşıyor; aynı kapı [ProFlow] üzerinden satın alma olaylarına da gidiyor,
+     * böylece gösterim → ödeme ekranı → satın alma zinciri tek tabloda kapıya göre bölünebiliyor.
+     */
+    fun logProPanelShown(entryPoint: String) = safe { fa ->
+        fa.logEvent(EV_PRO_PANEL_SHOWN) {
+            param(P_PRO_ENTRY_POINT, sanitize(entryPoint))
+        }
+    }
+
+    /**
+     * Plan seçme ekranı ([PlanFragment]) açıldı — hunideki panel ile ödeme arasındaki adım.
+     *
+     * ## Neden ayrı bir olay, `screen_view` dururken
+     * Huninin kapıya göre bölünebilmesi için HER adımın `pro_entry_point` taşıması gerekiyor:
+     * GA4 huni ayrıştırmasında bir adımı tamamlayan olay o boyutu taşımıyorsa o adım
+     * `(not set)` görünür ve ayrıştırma zincirin ortasında kopar. `screen_view` bu parametreyi
+     * taşıyamaz, çünkü merkezden ([NumiGooApplication]) gönderiliyor ve Pro akışını bilmiyor.
+     *
+     * Kapı [ProFlow]'dan okunuyor; [PlanFragment] yalnızca [ProDiffirentFragment]'tan
+     * açıldığı için değer her zaman o akışa ait.
+     */
+    fun logPlanShown() = safe { fa ->
+        fa.logEvent(EV_PLAN_SHOWN) {
+            param(P_PRO_ENTRY_POINT, sanitize(ProFlow.entryPoint()))
+        }
+    }
+
+    /**
+     * Play'in ödeme ekranı açıldı.
+     *
+     * [logPurchase]'ın paydası: ödeme ekranına kadar gidip vazgeçenlerin oranı. Pro hunisinin
+     * son boşluğu burası — `PlanFragment`'e ulaşmakla parayı ödemek arasındaki fark.
+     *
+     * Hem abonelikler hem altın/anahtar paketleri buradan geçer; ayrımı [productId] taşır.
+     */
+    fun logPurchaseStarted(productId: String, value: Double?, currency: String?) = safe { fa ->
+        fa.logEvent(EV_PURCHASE_STARTED) {
+            param(P_PRODUCT_ID, sanitize(productId))
+            param(P_PRO_ENTRY_POINT, sanitize(ProFlow.entryPoint()))
+            if (value != null) param(FirebaseAnalytics.Param.VALUE, value)
+            if (!currency.isNullOrBlank()) param(FirebaseAnalytics.Param.CURRENCY, sanitize(currency))
+        }
+    }
+
+    /**
+     * Play satın almayı onayladı — asıl dönüşüm.
+     *
+     * ## Neden gerekli (Play Console zaten geliri gösteriyor)
+     * Play Console "kaç abone, ne kadar gelir" der ama satın almayı kullanıcının yolculuğuna
+     * bağlayamaz. Bu olay sayesinde "satın alanların kaçı enerji duvarına çarpmıştı", "kaçı Pro
+     * panelini üçüncü kez görmüştü", "hangi kanaldan gelmişlerdi" soruları sorulabilir hâle gelir.
+     *
+     * ## Nereden çağrıldığı önemli
+     * `BillingManager.onPurchasesUpdated` — Play'in "az önce bir satın alma işlemi bitti"
+     * geri çağırımı. `processPurchase`'tan çağrılamaz: `refreshPurchases()` uygulama her
+     * açıldığında Play'de duran AKTİF ABONELİĞİ tekrar oraya sokuyor, yani tek bir aboneden
+     * ayda otuz satın alma kaydedilirdi. `queryPurchasesAsync` bu geri çağırımı tetiklemez.
+     *
+     * Bedeli: uygulama kapalıyken tamamlanan (nadir) bir satın alma yalnızca
+     * `refreshPurchases` ile işlenir ve ölçüme girmez. Eksik saymak, otuz kat fazla saymaktan
+     * iyidir.
+     *
+     * @param transactionId Play sipariş numarası. GA4 aynı numaralı satın almaları tekilleştirir;
+     *   geri çağırım iki kez gelse bile gelir iki kez sayılmaz.
+     */
+    fun logPurchase(
+        productId: String,
+        transactionId: String?,
+        value: Double?,
+        currency: String?,
+    ) = safe { fa ->
+        fa.logEvent(FirebaseAnalytics.Event.PURCHASE) {
+            param(P_PRODUCT_ID, sanitize(productId))
+            param(P_PRO_ENTRY_POINT, sanitize(ProFlow.entryPoint()))
+            if (!transactionId.isNullOrBlank()) {
+                param(FirebaseAnalytics.Param.TRANSACTION_ID, sanitize(transactionId))
+            }
+            if (value != null) param(FirebaseAnalytics.Param.VALUE, value)
+            if (!currency.isNullOrBlank()) param(FirebaseAnalytics.Param.CURRENCY, sanitize(currency))
+        }
+    }
+
+    // ── Sobi (yapay zekâ yardımcısı) ────────────────────────────────────────
+
+    /*
+     * Sobi sekmesi ve ders içi Sobi ne kadar kullanılıyor, örnekler ve krediler satıyor mu (02.11.2026).
+     * Kırılım OLAY ADINDA, parametre yok: olay kapsamlı boyut kotası dolu (arşivlemeden sonra da yer
+     * ileride gerekecek boyutlara bırakıldı). Toplam için `matches regex ^sobi_message_`.
+     * Kredi satın alma ayrıca `purchase` olayında (product_id sobi_credits_*).
+     */
+
+    /** Sobi ekranı: sekme ([SobiChatFragment]) ya da ders içi ([MistakeReviewDialog]). */
+    const val SOBI_SCREEN_TAB = "tab"
+    const val SOBI_SCREEN_LESSON = "lesson"
+
+    /** Sobi sekmesi açıldı (sekmeye her geçiş). */
+    fun logSobiTabOpen() = safe { fa -> fa.logEvent(EV_SOBI_TAB_OPEN) {} }
+
+    /** Sobi'ye mesaj ya da balon gönderildi: `sobi_message_tab` / `sobi_message_lesson`. */
+    fun logSobiMessage(screen: String) = safe { fa -> fa.logEvent(EV_SOBI_MESSAGE + sanitize(screen)) {} }
+
+    /**
+     * Yeni örnek açıldı ve ödendi: `sobi_example_free` (günlük ücretsiz hak) / `sobi_example_credit`.
+     * [paidWith] sunucunun cevabı (startSobiExample); oturumsuz ücretsiz örnek gönderilmez.
+     */
+    fun logSobiExample(paidWith: String) = safe { fa -> fa.logEvent(EV_SOBI_EXAMPLE + sanitize(paidWith)) {} }
+
+    /** Hak ve kredi bitti, mesaj ya da örnek açılamadı: `sobi_limit_tab` / `sobi_limit_lesson`. */
+    fun logSobiLimit(screen: String) = safe { fa -> fa.logEvent(EV_SOBI_LIMIT + sanitize(screen)) {} }
+
+    /**
+     * Sobi sekmesinde Sobi'nin koyduğu düğmeye dokunuldu: `sobi_btn_test`, `sobi_btn_kredi`,
+     * `sobi_btn_pro`, `sobi_btn_ders`, `sobi_btn_goster`, `sobi_btn_alistirma` (sunucudaki `tur` adları).
+     */
+    fun logSobiButton(kind: String) = safe { fa -> fa.logEvent(EV_SOBI_BUTTON + sanitize(kind)) {} }
+
+    // ── Crashlytics ─────────────────────────────────────────────────────────
+
+    /**
+     * Yakalanmış ama beklenmeyen bir hatayı Crashlytics'e "ölümcül olmayan" olarak bildirir.
+     *
+     * Kodda `addOnFailureListener { Log.w(...) }` ile yutulan hatalar üretimde tamamen
+     * görünmez; bu fonksiyon onları görünür kılmak içindir.
+     */
+    fun recordNonFatal(where: String, error: Throwable) {
+        try {
+            Firebase.crashlytics.log(where)
+            Firebase.crashlytics.recordException(error)
+        } catch (e: Throwable) {
+            Log.w(TAG, "Crashlytics'e yazılamadı", e)
+        }
+    }
+}

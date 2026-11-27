@@ -4,6 +4,7 @@ import android.animation.AnimatorSet
 import android.animation.Keyframe
 import android.animation.ObjectAnimator
 import android.animation.PropertyValuesHolder
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,6 +17,7 @@ import android.widget.ImageView
 import android.os.Handler
 import android.os.Looper
 import androidx.activity.addCallback
+import androidx.annotation.StringRes
 import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentNewChestBinding
 import kotlin.random.Random
@@ -54,20 +56,20 @@ class NewChestFragment : Fragment() {
     enum class ChestRarity(
         val drawableRes: Int, 
         val openDrawableRes: Int, 
-        val label: String, 
+        @StringRes val labelRes: Int,
         val labelColor: Int,
         val theme: RarityTheme
     ) {
-        COMMON(R.drawable.new_chest_close_ic1, R.drawable.new_chest_open_ic1, "SIRADAN",  0xFFFFB300.toInt(),
+        COMMON(R.drawable.new_chest_close_ic1, R.drawable.new_chest_open_ic1, R.string.ui_siradan, 0xFFFFB300.toInt(),
             RarityTheme(0xFF141F23.toInt(), 0xFF263238.toInt(), 0xFFFFD54F.toInt(), 0xFFFFB300.toInt(), 0xFF3A3010.toInt())
         ),
-        RARE(R.drawable.new_chest_close_ic2, R.drawable.new_chest_open_ic2, "ENDER",     0xFFFFFFFF.toInt(),
+        RARE(R.drawable.new_chest_close_ic2, R.drawable.new_chest_open_ic2, R.string.ui_ender, 0xFFFFFFFF.toInt(),
             RarityTheme(0xFF4AC3F6.toInt(), 0xFF2A9FE5.toInt(), 0xFFBCE5FB.toInt(), 0xFFBCE5FB.toInt(), 0xFF2A9FE5.toInt())
         ),
-        EPIC(R.drawable.new_chest_close_ic3, R.drawable.new_chest_open_ic3, "DESTANSI",  0xFFFFFFFF.toInt(),
+        EPIC(R.drawable.new_chest_close_ic3, R.drawable.new_chest_open_ic3, R.string.ui_destansi, 0xFFFFFFFF.toInt(),
             RarityTheme(0xFFAB47BC.toInt(), 0xFF8E24AA.toInt(), 0xFFE1BEE7.toInt(), 0xFFE1BEE7.toInt(), 0xFF8E24AA.toInt())
         ),
-        LEGENDARY(R.drawable.new_chest_close_ic4, R.drawable.new_chest_open_ic4, "EFSANEVİ", 0xFFFFFFFF.toInt(),
+        LEGENDARY(R.drawable.new_chest_close_ic4, R.drawable.new_chest_open_ic4, R.string.ui_efsanevi, 0xFFFFFFFF.toInt(),
             RarityTheme(0xFFFF9800.toInt(), 0xFFF57C00.toInt(), 0xFFFFE0B2.toInt(), 0xFFFFE0B2.toInt(), 0xFFF57C00.toInt())
         ),
     }
@@ -75,6 +77,25 @@ class NewChestFragment : Fragment() {
     companion object {
         private const val ARG_START_RARITY = "start_rarity"
         private const val ARG_AD_NONCE = "ad_nonce"
+        private const val ARG_SOURCE = "chest_source"
+
+        /**
+         * Doluysa sandık kupa yolundan geliyor demektir ve `claimCupPathChest` ile açılır
+         * (bkz. [CupPathRewardRepository]). Boşsa normal `openChest` yolu kullanılır.
+         */
+        private const val ARG_CUP_FIELD = "cup_field"
+
+        /** Kupa yolu sandığının eşiği (300, 400, ...). Yalnızca [ARG_CUP_FIELD] ile anlamlı. */
+        private const val ARG_CUP_MILESTONE = "cup_milestone"
+
+        /**
+         * Kupa yolu ekranından açılan sandığın geri yığını adı.
+         *
+         * Sandık bu adla yığına eklendiğinde kapanışta yığın bu ada kadar (dahil)
+         * boşaltılıyor ve altındaki kupa yolu ekranı geri geliyor — görev ve mağaza
+         * sandıklarındaki davranışın aynısı. Adı [CupPathRoadFragment] de kullanıyor.
+         */
+        const val BACK_STACK_CUP_PATH_ROAD = "cup_path_road"
         const val RESULT_EARNED_GOLD = "earned_gold"
         const val RESULT_EARNED_KEY = "earned_key"
 
@@ -82,15 +103,28 @@ class NewChestFragment : Fragment() {
          * @param adNonce Reklamla kazanilan sandiklar icin AdManager'in urettigi nonce.
          *   Sunucu bu nonce ile AdMob SSV dogrulamasindan gelen hakki bozdurur. Reklam disi
          *   sandiklarda (ders/gorev) null birakilir ve gunluk tavan uygulanir.
+         * @param source Sandığın hangi akıştan açıldığı — [AnalyticsLogger] içindeki
+         *   `CHEST_SOURCE_*` sabitlerinden biri. Varsayılanı YOKTUR: uygulamadaki bütün
+         *   sandık akışları bu tek ekrandan geçtiği için, kaynağı bildirmek ölçümde onları
+         *   ayırt edebilmenin tek yolu. Yeni bir çağrı yeri eklendiğinde derleyici burayı
+         *   doldurmaya zorlar.
          */
         fun newInstance(
             startRarity: ChestRarity = ChestRarity.COMMON,
             adNonce: String? = null,
+            source: String,
+            cupField: String? = null,
+            cupMilestone: Int = 0,
         ): NewChestFragment {
             return NewChestFragment().apply {
                 arguments = Bundle().apply {
                     putString(ARG_START_RARITY, startRarity.name)
                     if (adNonce != null) putString(ARG_AD_NONCE, adNonce)
+                    putString(ARG_SOURCE, source)
+                    if (cupField != null) {
+                        putString(ARG_CUP_FIELD, cupField)
+                        putInt(ARG_CUP_MILESTONE, cupMilestone)
+                    }
                 }
             }
         }
@@ -98,6 +132,8 @@ class NewChestFragment : Fragment() {
 
     // Oyun durumu
     private var canClose = false
+    /** Durum kaydedildiği için yapılamayan "map_chest" kapanışı; onStart'ta yeniden denenir. */
+    private var pendingChestHandoffClose: (() -> Unit)? = null
     private var currentRarity = ChestRarity.COMMON
     private var earnedGoldAmount = 0
     private var earnedKeyAmount = 0
@@ -109,6 +145,23 @@ class NewChestFragment : Fragment() {
     private var outcomeReady = false
     // 0 = hiç tıklanmadı, 1..3 = adımlar, 4 = açılmaya hazır, 5 = açıldı
     private var tapCount = 0
+
+    // ── Ölçüm (bkz. AnalyticsLogger) ────────────────────────────────────────
+    // Sandık akışı kullanıcıdan 5 dokunuş ve birkaç saniye animasyon istiyor. Bu alanlar
+    // "akış ne kadar sürüyor" ve "kaç kişi ödülü görmeden çıkıyor" sorularını ölçer.
+    //
+    // Süre iki parçaya ayrılıyor: ekran açılışından sunucu cevabına kadar geçen bekleme
+    // ([outcomeReadyAtMs] set edilene kadar) ve ondan sonraki saf animasyon. İkisinin
+    // çaresi farklı olduğu için ayrı ölçülmeleri gerekiyor — bkz. AnalyticsLogger.
+    private var screenOpenedAtMs = 0L
+    /** Sunucu sonucu geldiği an; 0 = henüz gelmedi. */
+    private var outcomeReadyAtMs = 0L
+    private var rewardShown = false
+    private var outcomeLogged = false
+
+    /** Hangi akıştan açıldığımız; [AnalyticsLogger] `CHEST_SOURCE_*` sabitlerinden biri. */
+    private val chestSource: String
+        get() = arguments?.getString(ARG_SOURCE) ?: AnalyticsLogger.CHEST_SOURCE_LESSON
 
     // Sallanma animasyonu
     private var idleAnim: ObjectAnimator? = null
@@ -127,6 +180,8 @@ class NewChestFragment : Fragment() {
 
     private var originalStatusBarColor: Int? = null
     private var originalNavigationBarColor: Int? = null
+    /** Android 15+'da çubukları sandık rengine boyayan şeritler; eski sürümlerde null. */
+    private var barStrips: SystemBarStrips? = null
 
     override fun onAttach(context: android.content.Context) {
         super.onAttach(context)
@@ -145,6 +200,16 @@ class NewChestFragment : Fragment() {
 
         originalStatusBarColor = requireActivity().window.statusBarColor
         originalNavigationBarColor = requireActivity().window.navigationBarColor
+        // Android 15+ window.statusBarColor/navigationBarColor'ı yok sayıyor: çubuklar sandığın
+        // nadirlik renginden kopuk, uygulamanın zemin renginde kalıyordu. Orada renk çubukların
+        // arkasına konan şeritlerle veriliyor. Eski sürümlerde pencere rengi zaten çalışıyor;
+        // şerit eklenmiyor ki davranışları birebir aynı kalsın.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            barStrips = SystemBarStrips(requireActivity())
+        }
+
+        // Sunucu beklemesi de kullanıcının beklediği süreye dahil; sayaç burada başlar.
+        screenOpenedAtMs = android.os.SystemClock.elapsedRealtime()
 
         val startRarityName = arguments?.getString(ARG_START_RARITY) ?: ChestRarity.COMMON.name
         currentRarity = try {
@@ -187,6 +252,11 @@ class NewChestFragment : Fragment() {
         super.onStart()
         // MainActivity'deki when bloğu NewChestFragment'i görecek; insets yeniden hesaplansın.
         requireActivity().findViewById<View>(R.id.bottomNavigationID)?.requestApplyInsets()
+        // Arka plandayken ertelenen sandık kapanışı (bkz. closeFragment/finishClose).
+        pendingChestHandoffClose?.let { retry ->
+            pendingChestHandoffClose = null
+            view?.post { if (isAdded) retry() }
+        }
     }
 
     override fun onStop() {
@@ -202,31 +272,60 @@ class NewChestFragment : Fragment() {
      * ödül verilmediği için kullanıcı bir şey kaybetmez, tekrar deneyebilir.
      */
     private fun requestOutcomeFromServer() {
+        fun handleOutcome(outcome: ServerRewards.ChestOutcome) {
+            if (!isAdded || _binding == null) return
+            serverRarityPath = outcome.rarityPath.mapNotNull { name ->
+                try { ChestRarity.valueOf(name) } catch (e: IllegalArgumentException) { null }
+            }
+            serverRewardType = outcome.rewardType
+            serverRewardAmount = outcome.rewardAmount
+            outcomeReady = true
+            binding.chestLoadingSpinner.visibility = View.GONE
+            // Bakiye göstergesini tazele; ödül zaten sunucuda yazıldı.
+            (activity as? MainActivity)?.refreshWalletUi()
+
+            outcomeReadyAtMs = android.os.SystemClock.elapsedRealtime()
+            AnalyticsLogger.logChestOpenStart(
+                startRarity = currentRarity.name,
+                finalRarity = outcome.finalRarity,
+                chestSource = chestSource,
+            )
+        }
+
+        fun handleFailure(message: String) {
+            // Sunucu hatası "kullanıcı sıkılıp bıraktı" demek değil; sandık hiç açılabilir
+            // hâle gelmedi. Bayrağı burada set ederek onDestroyView'ın bunu terk olarak
+            // saymasını engelliyoruz — aksi halde chest_abandoned oranı şişerdi.
+            outcomeLogged = true
+            if (!isAdded || _binding == null) return
+            binding.chestLoadingSpinner.visibility = View.GONE
+            android.widget.Toast.makeText(
+                requireContext(),
+                message,
+                android.widget.Toast.LENGTH_SHORT,
+            ).show()
+            closeFragment()
+        }
+
+        // Kupa yolu sandığı ayrı bir çağrıdan geliyor: sunucu kupa puanını ve "en son hangi
+        // eşik alındı" defterini kendisi doğruluyor, sonuç biçimi aynı olduğu için ekranın
+        // geri kalanı hiç değişmiyor.
+        val cupField = arguments?.getString(ARG_CUP_FIELD)
+        if (!cupField.isNullOrBlank()) {
+            ServerRewards.claimCupPathChest(
+                cupField = cupField,
+                milestone = arguments?.getInt(ARG_CUP_MILESTONE) ?: 0,
+                onResult = { outcome -> handleOutcome(outcome) },
+                onFailure = { handleFailure(appString(R.string.ui_sandik_acilamadi_tekrar_deneyin)) },
+            )
+            return
+        }
+
         ServerRewards.openChest(
             startRarity = currentRarity.name,
             adNonce = arguments?.getString(ARG_AD_NONCE),
-            onResult = { outcome ->
-                if (!isAdded || _binding == null) return@openChest
-                serverRarityPath = outcome.rarityPath.mapNotNull { name ->
-                    try { ChestRarity.valueOf(name) } catch (e: IllegalArgumentException) { null }
-                }
-                serverRewardType = outcome.rewardType
-                serverRewardAmount = outcome.rewardAmount
-                outcomeReady = true
-                binding.chestLoadingSpinner.visibility = View.GONE
-                // Bakiye göstergesini tazele; ödül zaten sunucuda yazıldı.
-                (activity as? MainActivity)?.refreshWalletUi()
-            },
-            onFailure = {
-                if (!isAdded || _binding == null) return@openChest
-                binding.chestLoadingSpinner.visibility = View.GONE
-                android.widget.Toast.makeText(
-                    requireContext(),
-                    "Sandık açılamadı. Tekrar deneyin.",
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
-                closeFragment()
-            },
+            onResult = { outcome -> handleOutcome(outcome) },
+            onFailure = { handleFailure(appString(R.string.ui_sandik_acilamadi_tekrar_deneyin)) },
         )
     }
 
@@ -250,7 +349,7 @@ class NewChestFragment : Fragment() {
                 }
                 // 3. adımdan sonra ipucu güncelle
                 if (tapCount == 3) {
-                    binding.chestHintText.text = "Sandığı açmak için dokun!"
+                    binding.chestHintText.text = appString(R.string.ui_sandigi_acmak_icin_dokun)
                 }
             }
             3 -> {
@@ -283,8 +382,9 @@ class NewChestFragment : Fragment() {
             w.statusBarColor = rarity.theme.bgColor
             w.navigationBarColor = rarity.theme.bgColor
         }
+        barStrips?.color = rarity.theme.bgColor
 
-        binding.chestRarityLabel.text = rarity.label
+        binding.chestRarityLabel.text = appString(rarity.labelRes)
         binding.chestRarityLabel.setTextColor(rarity.labelColor)
 
         // Eski yıldızların rengini yeni temanın rengine güncelle
@@ -496,11 +596,15 @@ class NewChestFragment : Fragment() {
 
             val bgColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.background_color)
             activity?.window?.let { w ->
-                val colorAnim = android.animation.ValueAnimator.ofArgb(w.statusBarColor, bgColor)
+                // Şerit varsa geçiş onun renginden başlar: Android 15+ pencereye yazılan rengi yok
+                // saydığı için w.statusBarColor ekrandaki rengi göstermiyor.
+                val fromColor = barStrips?.color ?: w.statusBarColor
+                val colorAnim = android.animation.ValueAnimator.ofArgb(fromColor, bgColor)
                 colorAnim.addUpdateListener { animator ->
                     val color = animator.animatedValue as Int
                     w.statusBarColor = color
                     w.navigationBarColor = color
+                    barStrips?.color = color
                 }
                 hideAnims.add(colorAnim)
             }
@@ -523,6 +627,24 @@ class NewChestFragment : Fragment() {
 
     private fun showReward() {
         ChestSoundPlayer.playReward(requireContext())
+
+        rewardShown = true
+        if (!outcomeLogged) {
+            outcomeLogged = true
+            val now = android.os.SystemClock.elapsedRealtime()
+            // showReward yalnızca sunucu sonucu geldikten sonra çağrılabildiği için
+            // outcomeReadyAtMs burada her zaman set edilmiştir.
+            val serverWaitMs = (outcomeReadyAtMs - screenOpenedAtMs).coerceAtLeast(0L)
+            AnalyticsLogger.logChestOpenComplete(
+                finalRarity = currentRarity.name,
+                rewardType = serverRewardType,
+                rewardAmount = serverRewardAmount,
+                durationMs = now - screenOpenedAtMs,
+                serverWaitMs = serverWaitMs,
+                animationMs = (now - outcomeReadyAtMs).coerceAtLeast(0L),
+                chestSource = chestSource,
+            )
+        }
 
         // Ödül sunucudan geldi ve bakiyeye ZATEN yazıldı; burada yalnızca gösteriliyor.
         val isKeyReward = serverRewardType == "KEY"
@@ -588,23 +710,44 @@ class NewChestFragment : Fragment() {
             // çıkıyordu — animasyon bitene kadar bekleseydik bu görünürdü. Şimdi kayma sırasında
             // solda direkt harita görünüyor.
             (fm.fragments.firstOrNull { it is ChestFragment } as? ChestFragment)?.hideOwnScreenForChestClose()
+            // Kayma başlamadan ÖNCE zemini kaldır: aksi halde 300 ms boyunca solda harita
+            // görünüyor ve rozet gelene kadar öyle kalıyordu. Artık harita, ne göstereceğimiz
+            // belli olana kadar hiç açılmıyor; gösterilecek bir şey yoksa kuyruk zemini
+            // indirip haritayı yumuşakça getiriyor.
+            (activity as? MainActivity)?.raisePostLessonBackdropForHandoff("chestHandoff")
             var closeHandled = false
-            val finishClose: () -> Unit = {
-                if (!closeHandled) {
-                    closeHandled = true
-                    if (isAdded) {
-                        fm.popBackStackImmediate(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-                    }
-                    fm.setFragmentResult("chest_closed", resultBundle)
+            // Play vitals: animasyon bitince popBackStackImmediate IllegalStateException atıyordu
+            // (uygulama bu arada arka plana düşüp durum kaydedilmişti ya da fragment ayrılmıştı).
+            fun finishClose() {
+                if (closeHandled || fm.isDestroyed) return
+                if (isAdded && fm.isStateSaved) {
+                    // Durum kaydedildikten sonra pop yapılamaz; kullanıcı dönünce (onStart) yeniden dene.
+                    pendingChestHandoffClose = { finishClose() }
+                    return
                 }
+                closeHandled = true
+                pendingChestHandoffClose = null
+                if (isAdded) {
+                    try {
+                        fm.popBackStackImmediate(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                    } catch (e: IllegalStateException) {
+                        // Örn. başka bir işlem yürütülürken çağrıldı: senkron yerine sıraya al.
+                        android.util.Log.w("NewChestFragment", "finishClose: popBackStackImmediate olmadı, sıraya alınıyor", e)
+                        fm.popBackStack(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                    }
+                }
+                fm.setFragmentResult("chest_closed", resultBundle)
             }
             val rootView = binding.root
             rootView.animate()
-                .translationX(rootView.width.toFloat())
-                .setDuration(300L)
+                // SOLA çıkıyor: zincirdeki her ekran sağdan girip sola çıkıyor ve böylece
+                // sandık → rozet → yeni seri tek bir ileri hareket gibi okunuyor. Eskiden
+                // sağa kayıyordu, yani bir sonraki ekranla aynı yönden çakışıyordu.
+                .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
+                .setDuration(400L)
                 .withEndAction { finishClose() }
                 .start()
-            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finishClose() }, 600L)
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({ finishClose() }, 700L)
             return
         }
 
@@ -612,7 +755,7 @@ class NewChestFragment : Fragment() {
         // hale getiriyor. Bu yüzden önce NewChestFragment'i senkron olarak (Immediate) kaldırıp,
         // altındaki ekran zaten "dinlenme" halindeyken sonucu gönderiyoruz — aksi halde alttaki
         // fragment daha NewChestFragment tam kalkmadan animasyona başlayıp tuhaf bir "dönüşme" görüntüsü oluşuyordu.
-        if (topName == "mission_chest" || topName == "shop_chest") {
+        if (topName == "mission_chest" || topName == "shop_chest" || topName == BACK_STACK_CUP_PATH_ROAD) {
             fm.popBackStackImmediate(topName, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
         } else {
             val main = activity as? MainActivity
@@ -627,10 +770,26 @@ class NewChestFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+
+        // Ödül görülmeden çıkıldıysa kaydet. Tüm Activity'ler portrait kilitli olduğu için
+        // burası ekran döndürmeyle tetiklenmez; gerçekten terk edilen akışları ölçer.
+        if (!rewardShown && !outcomeLogged) {
+            outcomeLogged = true
+            AnalyticsLogger.logChestAbandoned(
+                atTap = tapCount,
+                durationMs = android.os.SystemClock.elapsedRealtime() - screenOpenedAtMs,
+                // 0 = sunucu cevabı hiç gelmedi; kullanıcı beklerken çıktı.
+                serverWaitMs = (outcomeReadyAtMs - screenOpenedAtMs).takeIf { outcomeReadyAtMs > 0L },
+                chestSource = chestSource,
+            )
+        }
+
         activity?.window?.let { w ->
             originalStatusBarColor?.let { w.statusBarColor = it }
             originalNavigationBarColor?.let { w.navigationBarColor = it }
         }
+        barStrips?.remove()
+        barStrips = null
         hintHandler.removeCallbacks(hintRunnable)
         starHandler.removeCallbacks(starSpawner)
         stopIdleAnimation()

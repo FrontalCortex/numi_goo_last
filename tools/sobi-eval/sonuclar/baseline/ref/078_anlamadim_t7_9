@@ -1,0 +1,1 @@
+Birler sütununda şu an 4 birlik boncuk var, boşta ise hiç yok. 7'yi doğrudan eklersek 11 olur, ama bir sütun en fazla 9 tutar, o yüzden yer yetmiyor. Bunun yerine 7'yi 10 eklemek ve 3 çıkarmak gibi düşünüyoruz: 10 gelir, 3 gider, sonuç 11.

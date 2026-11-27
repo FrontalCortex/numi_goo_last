@@ -53,16 +53,16 @@ class TeacherNewPasswordFragment : Fragment() {
             val confirm = binding.etNewPasswordConfirm.text?.toString().orEmpty()
 
             if (newPassword.length < MIN_PASSWORD_LENGTH) {
-                Toast.makeText(requireContext(), "Şifre en az $MIN_PASSWORD_LENGTH karakter olmalıdır", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_sifre_en_az_x_karakter_olmalidir, MIN_PASSWORD_LENGTH), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             if (newPassword != confirm) {
-                Toast.makeText(requireContext(), "Şifreler eşleşmiyor", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_sifreler_eslesmiyor), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             binding.btnUpdatePassword.isEnabled = false
-            binding.btnUpdatePassword.text = "Güncelleniyor..."
+            binding.btnUpdatePassword.text = appString(R.string.ui_guncelleniyor)
 
             authManager.resetTeacherPassword(email, code, newPassword) { success, error ->
                 if (success) {
@@ -72,14 +72,14 @@ class TeacherNewPasswordFragment : Fragment() {
                             requireActivity().finish()
                         } else {
                             binding.btnUpdatePassword.isEnabled = true
-                            binding.btnUpdatePassword.text = "Şifreyi güncelle"
-                            Toast.makeText(requireContext(), "Şifre güncellendi. Giriş yapabilirsiniz.", Toast.LENGTH_LONG).show()
+                            binding.btnUpdatePassword.text = appString(R.string.ui_sifreyi_guncelle)
+                            Toast.makeText(requireContext(), appString(R.string.ui_sifre_guncellendi_giris_yapabilirsiniz), Toast.LENGTH_LONG).show()
                         }
                     }
                 } else {
                     binding.btnUpdatePassword.isEnabled = true
-                    binding.btnUpdatePassword.text = "Şifreyi güncelle"
-                    Toast.makeText(requireContext(), error ?: "Şifre güncellenemedi", Toast.LENGTH_LONG).show()
+                    binding.btnUpdatePassword.text = appString(R.string.ui_sifreyi_guncelle)
+                    Toast.makeText(requireContext(), error ?: appString(R.string.ui_sifre_guncellenemedi), Toast.LENGTH_LONG).show()
                 }
             }
         }

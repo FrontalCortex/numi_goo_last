@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Seçili seçenek satırı.
+
+  Dolgu değil çerçeve değişiyor: seçim belli olsun ama satırdaki metin okunaklılığını
+  kaybetmesin. Renk üst bardaki alevle aynı turuncu, böylece "bu seri ile ilgili" bağı
+  görsel olarak kuruluyor.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#2A3B42" />
+    <stroke
+        android:width="3dp"
+        android:color="#FF9800" />
+    <corners android:radius="14dp" />
+</shape>

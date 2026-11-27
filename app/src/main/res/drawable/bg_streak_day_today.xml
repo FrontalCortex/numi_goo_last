@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hafta şeridinde bugün: henüz tutturulmadı ama sıradaki gün o. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#00000000" />
+    <stroke
+        android:width="2dp"
+        android:color="#FF9800" />
+</shape>

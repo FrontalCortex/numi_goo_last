@@ -27,7 +27,7 @@
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
             android:background="@drawable/bg_question_thumbnail_placeholder"
-            android:contentDescription="Önizleme" />
+            android:contentDescription="@string/item_question_question_thumbnail_desc" />
     </FrameLayout>
 
     <LinearLayout
@@ -70,7 +70,7 @@
                 android:id="@+id/questionStatusIcon"
                 android:layout_width="10dp"
                 android:layout_height="10dp"
-                android:contentDescription="Durum ikonu"
+                android:contentDescription="@string/item_question_question_status_icon_desc"
                 android:visibility="gone" />
 
             <TextView

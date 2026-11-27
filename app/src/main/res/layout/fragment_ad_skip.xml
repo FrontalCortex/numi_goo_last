@@ -15,7 +15,7 @@
         android:background="@drawable/bg_shop_super_badge"
         android:paddingHorizontal="12dp"
         android:paddingVertical="4dp"
-        android:text="PRO"
+        android:text="@string/fragment_ad_skip_super_badge"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -29,7 +29,7 @@
         android:layout_marginTop="24dp"
         android:fontFamily="sans-serif-black"
         android:gravity="center"
-        android:text="7 günlük ücretsiz PRO"
+        android:text="@string/fragment_ad_skip_title_text1"
         android:textColor="#FFFFFF"
         android:textSize="22sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -42,28 +42,30 @@
         android:layout_height="wrap_content"
         android:fontFamily="sans-serif-black"
         android:gravity="center"
-        android:text="denemesiyle reklamları atla!"
+        android:text="@string/fragment_ad_skip_title_text2"
         android:textColor="#FFFFFF"
         android:textSize="22sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleText1" />
 
-    <!-- Center Graphic Placeholder -->
-    <com.airbnb.lottie.LottieAnimationView
+    <!--
+      Maskot: sağdaki reklam billboardını sihirli değnekle yok ediyor (yasak işareti mühürlenip
+      billboard yıldız tozuna dönüşüyor), ardından taç ve gözlükle havalı poz (BunnyMascotView,
+      AD_MAGIC döngüsü; oynatma AdSkipFragment'ta). Eskiden timsah Lottie'siydi. Sahne
+      billboardla birlikte geniş olduğu için timsahtan geniş alan; görünüm kendini kareye sığdırıyor.
+    -->
+    <com.example.app.BunnyMascotView
         android:id="@+id/centerGraphic"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginBottom="32dp"
-        app:lottie_fileName="crocodile_anim.json"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="24dp"
         app:layout_constraintBottom_toTopOf="@id/bottomWhiteContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleText2"
-        app:layout_constraintWidth_percent="0.6" />
+        app:layout_constraintWidth_percent="0.85" />
 
     <!-- Bottom White Container -->
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -91,7 +93,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="24dp"
-            android:text="Deneme süren sona ermeden önce bildirim alacaksın."
+            android:text="@string/fragment_ad_skip_reminder_text"
             android:textColor="#4A4A4A"
             android:textSize="14sp"
             android:gravity="center_horizontal"
@@ -111,11 +113,12 @@
             app:layout_constraintTop_toBottomOf="@id/reminderText">
 
             <TextView
+                android:id="@+id/btnTryFreeText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:fontFamily="sans-serif-black"
-                android:text="₺0,00 ÖDEYEREK DENE"
+                android:text="@string/fragment_ad_skip_btn_try_free_text"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp" />
         </FrameLayout>
@@ -127,7 +130,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:fontFamily="sans-serif-black"
-            android:text="HAYIR TEŞEKKÜRLER"
+            android:text="@string/fragment_ad_skip_btn_no_thanks"
             android:textColor="#3D4DFF"
             android:textSize="16sp"
             app:layout_constraintEnd_toEndOf="parent"

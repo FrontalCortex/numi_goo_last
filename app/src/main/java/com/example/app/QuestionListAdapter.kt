@@ -87,9 +87,9 @@ class QuestionListAdapter(
             timeAgo.text = formatTimeAgo(q.createdAt)
             val context = itemView.context
             status.text = when (q.status) {
-                StudentQuestion.STATUS_PENDING -> "Cevaplanmadı"
-                StudentQuestion.STATUS_CLAIMED -> "Cevaplanıyor"
-                StudentQuestion.STATUS_RESOLVED -> "Çözüldü"
+                StudentQuestion.STATUS_PENDING -> appString(R.string.ui_cevaplanmadi)
+                StudentQuestion.STATUS_CLAIMED -> appString(R.string.ui_cevaplaniyor)
+                StudentQuestion.STATUS_RESOLVED -> appString(R.string.ui_cozuldu)
                 else -> ""
             }
             val hasStatus = status.text.isNotEmpty()
@@ -144,10 +144,10 @@ class QuestionListAdapter(
             val hours = TimeUnit.MILLISECONDS.toHours(diff)
             val days = TimeUnit.MILLISECONDS.toDays(diff)
             return when {
-                minutes < 1 -> "Az önce"
-                minutes < 60 -> "${minutes} dakika önce"
-                hours < 24 -> "${hours} saat önce"
-                else -> "${days} gün önce"
+                minutes < 1 -> appString(R.string.ui_az_once)
+                minutes < 60 -> appPlural(R.plurals.ui_x_dakika_once, minutes, minutes)
+                hours < 24 -> appPlural(R.plurals.ui_x_saat_once, hours, hours)
+                else -> appPlural(R.plurals.ui_x_gun_once, days, days)
             }
         }
     }

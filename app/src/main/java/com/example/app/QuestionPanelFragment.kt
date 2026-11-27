@@ -14,19 +14,31 @@ import androidx.fragment.app.Fragment
 import com.example.app.databinding.FragmentQuestionPanelBinding
 import com.example.app.model.LessonItem
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 
 /**
  * Ders sonu anket ekranı.
- * AbacusFragment tüm soruları bitirince bu fragment açılır; kullanıcı
- * gönder veya atla'ya bastıktan sonra LessonResult / ChestResult / LessonResultFalse
- * fragment'ine geçilir.
  *
- * Firestore hiyerarşisi:
- *   questionPanel/{globalPartId}/{mapFragmentIndex}/question{N}/
- *     - choice{1–5}  : FieldValue.increment(1) ile sayaç
- *     - text/{uid}   : { uid, text } sub-collection
+ * ŞU AN HİÇBİR YERDEN AÇILMIYOR: anket yalnızca tutorial sonunda kaldı
+ * ([TutorialQuestionPanelFragment]). AbacusFragment ve BlindingLessonFragment son sorudan
+ * sonra doğrudan sonuç ekranına geçiyor (ikisinde de `finishLesson`). Geri getirilirse
+ * kullanıcı gönder veya atla'ya bastıktan sonra "questionPanelResult" yayınlanır ve
+ * LessonResult / ChestResult / LessonResultFalse fragment'ine geçilir.
+ *
+ * ## Cevaplar nereye gidiyor
+ * Anket iki farklı türde veri üretir ve ikisi ayrı yerlere yazılır:
+ *
+ * - **Şık seçimleri → Firebase Analytics.** Eskiden
+ *   `questionPanel/{partId}/{index}/question{N}` dokümanında `choice{1–5}` sayaçlarıydı.
+ *   Güvenlik kuralı zaten `allow read: false` diyordu; veri uygulamaya geri dönmüyordu.
+ *   Analytics'te aynı dağılım sürüm/ülke/segment boyutlarıyla kırılabiliyor ve sayaçlar
+ *   manipüle edilemiyor. Bkz. [AnalyticsLogger.logSurveyChoice].
+ *
+ * - **Serbest metin → Firestore'da KALIR**, `questionPanel/.../question{N}/text/{uid}`.
+ *   Bunlar çocukların kendi yazdığı metinlerdir; Analytics'e gönderilmesi hem Google'ın
+ *   kişisel veri politikasını ihlal eder hem de 100 karakter sınırında kesilirdi. Ayrıca
+ *   bu metinler okunup değerlendirilecek — Analytics'ten geri okuma mümkün değildir.
+ *   Analytics'e yalnızca "metin yazıldı" bilgisi gider ([AnalyticsLogger.logSurveyText]).
  */
 class QuestionPanelFragment : Fragment() {
 
@@ -227,7 +239,8 @@ class QuestionPanelFragment : Fragment() {
 
     private fun submitAndProceed() {
         val globalPartId = arguments?.getInt(ARG_GLOBAL_PART_ID) ?: return
-        val mapFragmentIndex = arguments?.getInt(ARG_MAP_FRAGMENT_INDEX) ?: return
+        val lessonId = arguments?.getString(ARG_LESSON_ID).orEmpty()
+        val lessonTitle = arguments?.getString(ARG_LESSON_TITLE).orEmpty()
         val uid = auth.currentUser?.uid
 
         // Kaydedilecek hiçbir şey yoksa direkt geç (güvenlik)
@@ -236,61 +249,57 @@ class QuestionPanelFragment : Fragment() {
                 || binding.q1TextInput.text.isNotBlank()
                 || binding.q2TextInput.text.isNotBlank()
                 || binding.q3TextInput.text.isNotBlank()
-        if (!hasAnyAnswer) {
+        // Kimliksiz cevabı saklayacak yer yok — ama akış ASLA burada durmamalı, yoksa
+        // çocuk anket ekranında kilitli kalır. Kaydetmeyi atla, derse devam et.
+        if (!hasAnyAnswer || lessonId.isBlank()) {
             proceedToResult()
             return
         }
 
-        setSendingUi(true)
-
         val basePath = firestore
             .collection("questionPanel")
             .document(globalPartId.toString())
-            .collection(mapFragmentIndex.toString())
+            .collection(lessonId)
 
-        // Tüm yazma işlemlerini topla; hepsi bitince sonuca geç
+        // Firestore'a yazılacak işler; yalnızca SERBEST METİN kaldı (bkz. sınıf başlığı).
         val tasks = mutableListOf<com.google.android.gms.tasks.Task<*>>()
 
         // ── Soru 1 ──
         val q1Choice = q1SelectedChoice
         val q1Text = binding.q1TextInput.text.toString().trim()
-        if (q1Choice != null || q1Text.isNotEmpty()) {
-            val q1Doc = basePath.document("question1")
-            if (q1Choice != null) {
-                tasks.add(
-                    q1Doc.set(
-                        mapOf("choice$q1Choice" to FieldValue.increment(1)),
-                        com.google.firebase.firestore.SetOptions.merge()
-                    )
-                )
-            }
-            if (q1Text.isNotEmpty() && uid != null) {
-                tasks.add(
-                    q1Doc.collection("text").document(uid)
-                        .set(mapOf("uid" to uid, "text" to q1Text))
-                )
-            }
+        if (q1Choice != null) {
+            AnalyticsLogger.logSurveyChoice(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 1, q1Choice, unitTitle = lessonTitle,
+            )
+        }
+        if (q1Text.isNotEmpty() && uid != null) {
+            tasks.add(
+                basePath.document("question1")
+                    .collection("text").document(uid)
+                    .set(mapOf("uid" to uid, "text" to q1Text))
+            )
+            AnalyticsLogger.logSurveyText(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 1, unitTitle = lessonTitle,
+            )
         }
 
         // ── Soru 2 ──
         val q2Choice = q2SelectedChoice
         val q2Text = binding.q2TextInput.text.toString().trim()
-        if (q2Choice != null || q2Text.isNotEmpty()) {
-            val q2Doc = basePath.document("question2")
-            if (q2Choice != null) {
-                tasks.add(
-                    q2Doc.set(
-                        mapOf("choice$q2Choice" to FieldValue.increment(1)),
-                        com.google.firebase.firestore.SetOptions.merge()
-                    )
-                )
-            }
-            if (q2Text.isNotEmpty() && uid != null) {
-                tasks.add(
-                    q2Doc.collection("text").document(uid)
-                        .set(mapOf("uid" to uid, "text" to q2Text))
-                )
-            }
+        if (q2Choice != null) {
+            AnalyticsLogger.logSurveyChoice(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 2, q2Choice, unitTitle = lessonTitle,
+            )
+        }
+        if (q2Text.isNotEmpty() && uid != null) {
+            tasks.add(
+                basePath.document("question2")
+                    .collection("text").document(uid)
+                    .set(mapOf("uid" to uid, "text" to q2Text))
+            )
+            AnalyticsLogger.logSurveyText(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 2, unitTitle = lessonTitle,
+            )
         }
 
         // ── Soru 3 (sadece metin) ──
@@ -301,7 +310,19 @@ class QuestionPanelFragment : Fragment() {
                     .collection("text").document(uid)
                     .set(mapOf("uid" to uid, "text" to q3Text))
             )
+            AnalyticsLogger.logSurveyText(
+                AnalyticsLogger.SURVEY_LESSON, globalPartId, lessonId, 3, unitTitle = lessonTitle,
+            )
         }
+
+        // Kullanıcı yalnızca şık seçtiyse Firestore'a yazılacak bir şey kalmaz; bekleme
+        // katmanını hiç göstermeden geç. (Analytics çağrıları ağı beklemez.)
+        if (tasks.isEmpty()) {
+            proceedToResult()
+            return
+        }
+
+        setSendingUi(true)
 
         // Tüm task'ler tamamlanınca sonuca geç
         com.google.android.gms.tasks.Tasks.whenAllComplete(tasks)
@@ -341,8 +362,11 @@ class QuestionPanelFragment : Fragment() {
         // İşimiz bittiğinde AbacusFragment'teki listener'a sinyal gönderiyoruz
         parentFragmentManager.setFragmentResult("questionPanelResult", Bundle())
 
-        // QuestionPanelFragment'ı kendi kendini kapattırıyoruz
+        // QuestionPanelFragment'ı kendi kendini kapattırıyoruz.
+        // Sola kayarak: sonuç ekranı sağdan geliyor, ikisi tek bir itme gibi okunuyor.
+        // Animasyonsuz kapanıyordu ve zincirdeki tek sert kesme buydu.
         parentFragmentManager.beginTransaction()
+            .setCustomAnimations(0, R.anim.queue_screen_out)
             .remove(this)
             .commit()
     }
@@ -358,7 +382,8 @@ class QuestionPanelFragment : Fragment() {
         const val ARG_SUCCESS_RATE = "successRate"
         const val ARG_DERS_PUANI = "dersPuani"
         const val ARG_GLOBAL_PART_ID = "globalPartId"
-        const val ARG_MAP_FRAGMENT_INDEX = "mapFragmentIndex"
+        const val ARG_LESSON_ID = "lessonId"
+        const val ARG_LESSON_TITLE = "lessonTitle"
         const val ARG_LESSON_TYPE = "lessonType"
         const val ARG_CURRENT_TIME = "currentTime"
         const val ARG_WORST_CUP_TIME = "worstCupTime"
@@ -369,10 +394,12 @@ class QuestionPanelFragment : Fragment() {
             successRate: Float,
             dersPuani: Int,
             globalPartId: Int,
-            mapFragmentIndex: Int,
+            lessonId: String,
             lessonType: Int,
             currentTime: String = "",
-            worstCupTime: Int = 0
+            worstCupTime: Int = 0,
+            /** Kartta görünen ünite adı; yalnızca günlük soruda dolu gelir. */
+            lessonTitle: String = "",
         ): QuestionPanelFragment {
             return QuestionPanelFragment().apply {
                 arguments = Bundle().apply {
@@ -381,7 +408,8 @@ class QuestionPanelFragment : Fragment() {
                     putFloat(ARG_SUCCESS_RATE, successRate)
                     putInt(ARG_DERS_PUANI, dersPuani)
                     putInt(ARG_GLOBAL_PART_ID, globalPartId)
-                    putInt(ARG_MAP_FRAGMENT_INDEX, mapFragmentIndex)
+                    putString(ARG_LESSON_ID, lessonId)
+                    putString(ARG_LESSON_TITLE, lessonTitle)
                     putInt(ARG_LESSON_TYPE, lessonType)
                     putString(ARG_CURRENT_TIME, currentTime)
                     putInt(ARG_WORST_CUP_TIME, worstCupTime)

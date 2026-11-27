@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Sorobit</string>
+    <!-- Tavşan maskotun adı (kayıttaki tanışma ekranı); değişirse yalnızca burası. -->
+    <string name="mascot_name">Sobi</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <!-- Google Sign-In Web Client ID - Firebase Console > Authentication > Sign-in method > Google'dan alınmalı -->
@@ -10,12 +12,12 @@
     <string name="lesson_hint_step3">Hatasız, en kısa sürede bitir.</string>
     <string name="lesson_hint_step4">5 gelir kardeş gider.</string>
     <string name="lesson_hint_step5">10 gelir adımını uygularken 5 lik kuralı kullanman gerekebilir.</string>
-    <string name="login_start_student_title">Hesabın mı var?</string>
-    <string name="login_start_student_subtitle">Sorobit\'e ilk defa mı giriyorsun?</string>
-    <string name="login_start_teacher_title">Öğretmen hesabın mı var?</string>
-    <string name="login_start_teacher_subtitle">Öğretmen kaydı oluştur</string>
-    <string name="login_start_primary_button">GİRİŞ YAP</string>
-    <string name="login_start_secondary_button">BAŞLA</string>
+    <string name="login_start_student_title">Zihnini Güçlendir</string>
+    <string name="login_start_student_subtitle">Abaküsle oynayarak zihinden hesaplamayı öğren, daha hızlı düşün ve matematikte kendine güven.</string>
+    <string name="login_start_teacher_title">Öğrencilerine Yol Göster</string>
+    <string name="login_start_teacher_subtitle">Öğrencilerinin sorularını yanıtla, abaküsle ilerlemelerine destek ol.</string>
+    <string name="login_start_start_button">Başla</string>
+    <string name="login_start_login_button">Zaten hesabım var</string>
     <string name="login_start_teacher_mode_button">Öğretmen girişi</string>
     <string name="login_start_student_mode_button">Öğrenci girişi</string>
     <!-- OTP doğrulama -->
@@ -47,6 +49,34 @@
     <!-- FCM mesaj bildirimi -->
     <string name="notification_channel_messages_name">Sohbet mesajları</string>
     <string name="notification_channel_messages_desc">Yeni sohbet mesajı bildirimleri</string>
+    <string name="notification_channel_messages_quiet_name">Sohbet mesajları (sessiz)</string>
+    <string name="notification_channel_messages_quiet_desc">Gece gelen sohbet mesajları — sessiz gösterilir</string>
+    <string name="notification_channel_streak_name">Günlük seri hatırlatması</string>
+    <string name="notification_channel_streak_desc">Günlük hedefini henüz tamamlamadığın akşamlarda tek bir hatırlatma</string>
+    <string name="notification_channel_rewards_name">Ödüller ve etkinlikler</string>
+    <string name="notification_channel_rewards_desc">Bekleyen sandık, sezon sonu ve benzeri oyun bildirimleri</string>
+    <string name="notification_channel_account_name">Hesap ve ödeme</string>
+    <string name="notification_channel_account_desc">Deneme süresi, kredi iadesi ve sorunun durumu gibi önemli bilgiler</string>
+    <string name="notification_channel_pool_name">Havuzdaki sorular</string>
+    <string name="notification_channel_pool_desc">Öğretmenler için: havuza yeni soru düştüğünde haber verir</string>
+    <string name="notification_channel_pool_quiet_name">Havuzdaki sorular (sessiz)</string>
+    <string name="notification_channel_pool_quiet_desc">Gece havuza düşen sorular — sessiz gösterilir</string>
+
+    <!-- Ses ve Bildirimler ekranındaki tür bazlı bildirim ayarları -->
+    <string name="settings_notify_chat">Öğretmen mesajları</string>
+    <string name="settings_notify_chat_desc">Sorunun cevaplandığını bu bildirim haber veriyor</string>
+    <string name="settings_notify_streak">Günlük hatırlatma</string>
+    <string name="settings_notify_reward">Ödüller ve etkinlikler</string>
+
+    <!-- Ayarlar → Dil (AppLanguage). Dil adları kendi dillerinde, çevrilmez. -->
+    <string name="settings_language">Dil</string>
+    <string name="settings_ad_privacy_options">Reklam gizlilik seçenekleri</string>
+    <string name="settings_ad_privacy_options_error">Gizlilik seçenekleri şu anda açılamadı. Lütfen sonra tekrar dene.</string>
+    <string name="settings_language_system">Telefonun dili</string>
+    <string name="settings_language_tr" translatable="false">Türkçe</string>
+    <string name="settings_language_en" translatable="false">English</string>
+    <string name="settings_language_id" translatable="false">Bahasa Indonesia</string>
+    <string name="settings_language_ar" translatable="false">العربية</string>
 
     <!-- Soru medya indirme bildirimi (ayrı kanal yerine upload kanalı kullanılıyor) -->
     <string name="notification_download_cancel">İptal et</string>
@@ -75,6 +105,10 @@
     <string name="daily_question_challenge_complete">Mücadeleyi tamamladın!</string>
     <string name="daily_question_claim_requires_complete">Ödülü almak için mücadeleyi tamamla.</string>
     <string name="daily_question_focus_format">Seviye: %1$s</string>
+    <!-- Gösterim; kayıtta Türkçe "Kolay/Orta/Zor" kimlik olarak kalıyor (DailyQuestionPoolBuilder.displayDifficulty) -->
+    <string name="daily_question_difficulty_easy">Kolay</string>
+    <string name="daily_question_difficulty_medium">Orta</string>
+    <string name="daily_question_difficulty_hard">Zor</string>
     <string name="daily_question_progress_format">%1$d/%2$d</string>
     <string name="daily_question_progress_complete_label">Tamamlandı</string>
     <string name="daily_question_refresh_countdown">%1$s</string>
@@ -117,6 +151,35 @@
     <string name="record_season_countdown_hours_minutes">%1$d sa %2$d dk</string>
 
     <string name="ask_question_teacher_not_approved">Bu özelliği kullanabilmeniz için hesabınızın onaylanmış olması gerekir.</string>
+    <string name="teacher_approval_pending_banner">Hesabınız onay bekliyor</string>
+    <string name="teacher_account_banner">Öğretmen hesabı</string>
+    <string name="teacher_shop_unlimited">Öğretmen hesabında altın, anahtar ve can sınırsızdır; satın almanız gereken bir şey yok.</string>
+    <string name="teacher_not_approved_contact_support">Destek ile İletişime Geç</string>
+    <string name="teacher_not_approved_support_subject">Öğretmen hesabı onayı</string>
     <string name="ask_question_account_restricted">Hesap kural ihlali yüzünden kısıtlanmıştır.</string>
     <string name="ask_question_alert_ok">Tamam</string>
+
+    <!-- Plan ekranı: fiyatlar Play'den gelir, buradaki yalnızca biçimdir. -->
+    <string name="plan_price_monthly">Aylık %1$s</string>
+    <string name="plan_price_yearly">%1$s/yıl</string>
+    <!-- Abonelik CTA'sı: deneme yalnızca Play'in UYGUN gördüğü kullanıcıya vaat edilir. -->
+    <string name="sub_cta_trial_days">%1$d GÜN ÜCRETSİZ DENE</string>
+    <string name="sub_cta_trial_weeks">%1$d HAFTA ÜCRETSİZ DENE</string>
+    <!-- Deneme yoksa metin plana göre değişmeli: Lite seçiliyken "PRO'YA GEÇ" yazmak,
+         düğmeye basınca Lite satın alındığı için yanlış. Türkçe ek uyumu tek bir format
+         dizesiyle çözülemediği için (Pro'ya / Lite'a) ayrı ayrı tanımlı. -->
+    <string name="sub_cta_no_trial_pro">PRO\'YA GEÇ</string>
+    <string name="sub_cta_no_trial_lite">LITE\'A GEÇ</string>
+
+    <!-- Öğretmene sorma tanıtımı (AskQuestionOpenFragment) varyant metinleri.
+         Büyük düğme her zaman kullanıcıya KREDİ GETİREN eylemdir: hediye kredi alınabiliyorsa
+         Pro, alınamıyorsa doğrudan kredi satın alma. Aksi halde kullanıcı parasını ödeyip
+         geldiği işi yapamıyor. -->
+    <string name="ask_promo_cta_buy_credits">KREDİ AL</string>
+    <string name="ask_promo_secondary_buy_credits">BUNUN YERİNE KREDİ AL</string>
+    <!-- formatted="false": metindeki % aapt tarafından biçim belirteci sanılmasın. -->
+    <string name="ask_promo_secondary_pro_bonus" formatted="false">PRO\'YA GEÇ · KREDİLERDE %20 BONUS</string>
+    <!-- Zaten Pro olan, kredisi biten kullanıcı için. Bonus rakamları sunucudaki
+         PRO_CREDIT_BONUS ile birlikte güncellenmelidir. -->
+    <string name="ask_promo_info_pro_out_of_credits">Danışma kredin kalmadı. Pro üyesi olduğun için 5\'li pakette 6, 10\'luda 12 kredi alırsın.</string>
 </resources>

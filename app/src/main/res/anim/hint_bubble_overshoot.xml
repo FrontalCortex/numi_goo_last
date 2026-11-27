@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- İpucu balonunun açılışı: varsayılan gerilim (2) metni fazla esnetiyordu; 1.5 hedefi ~%3 aşıp
+     geri oturur, "pıt" diye açılma hissi verir. -->
+<overshootInterpolator xmlns:android="http://schemas.android.com/apk/res/android"
+    android:tension="1.5" />

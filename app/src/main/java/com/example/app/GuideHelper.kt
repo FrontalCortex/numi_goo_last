@@ -4,8 +4,9 @@ import android.content.Context
 import android.view.View
 import android.graphics.Color
 
+/** Rehber panelinin bir sayfası: Sobi'nin o sayfadaki hâli ([emote]) ve yazı. */
 data class GuideContent(
-    val imageResource: Int,
+    val emote: BunnyMascotView.Emote,
     val text: String,
     val onContentShown: (() -> Unit)? = null,
     val bubbleAnimationTarget: View? = null,
@@ -35,70 +36,51 @@ object SharedGuideHelper {
         abacusModeButton: View? = null
     ): List<GuideContent> {
         return when (guideNumber) {
+            // Toplama rehberi: Sobi anlatıyor; yazı düz geliyor (yazma efekti ve ses yok).
             1 -> listOf(
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Bu testte toplama işlemini abaküste yapacaksın.",
+                    emote = BunnyMascotView.Emote.TEACH_TALK,
+                    text = appString(R.string.ui_bu_testte_toplama_islemini_abakuste_yapacaks),
                     onContentShown = { },
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_0,
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Önce abaküse ilk sayıyı yazıp...",
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_once_abakuse_ilk_sayiyi_yazip),
                     onContentShown = { },
                     bubbleAnimationTarget = firstNumberText,
                     bubbleAnimationColor = Color.YELLOW,
                     beadIds = listOf("rod4BottomBead4"),
                     backBeadIds = listOf("rod4BottomBead1"),
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_1,
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Sonrasında ikinci sayıyı ekle.",
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_sonrasinda_ikinci_sayiyi_ekle),
                     onContentShown = { },
                     bubbleAnimationTarget = secondNumberText,
                     bubbleAnimationColor = Color.YELLOW,
                     beadIds = listOf("rod4TopBead"),
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_2,
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "ve işlem bitince kontrol et butonuna tıkla.",
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_ve_islem_bitince_kontrol_et_butonuna),
                     bubbleAnimationTarget = kontrolButton,
                     bubbleAnimationMaxScale = 1.1F,
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_3,
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt3,
-                    text = "Sakın aklından toplayıp o sayıyı abaküse yazma. O şekilde öğrenemezsin.",
+                    emote = BunnyMascotView.Emote.TEACH_WARN,
+                    text = appString(R.string.ui_sakin_aklindan_toplayip_o_sayiyi_abakuse),
                     finishBeadIds = listOf("rod4BottomBead1","rod4TopBead"),
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide1_4,
                 )
             )
+            // Sihirli değnek / kural tablosu rehberi: Sobi anlatıyor; yazma efekti ve ses yok.
             2 -> listOf(
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kuralları unutursan sağdaki sihirli değneye tıklayarak kural tablosunu açabilirsin.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide2_0,
+                    emote = BunnyMascotView.Emote.TEACH_TALK,
+                    text = appString(R.string.ui_kurallari_unutursan_sagdaki_sihirli_degneye),
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Burada derste öğrendiğin sayılar ve kardeşleri gösterilir.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide2_1,
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_burada_derste_ogrendigin_sayilar_ve_kardesle),
                     bubbleAnimationTarget = rulesPanelButton,
                     bubbleAnimationMaxScale = 1.1F,
                     bubbleAnimationColor = Color.parseColor("#8BC34A"),
@@ -106,20 +88,15 @@ object SharedGuideHelper {
                     requiredClickTarget = rulesPanelButton,
                 )
             )
+            // Kurallar kitabı rehberi: Sobi anlatıyor; yazma efekti ve ses yok.
             3 -> listOf(
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kuralları unutursan sağ üstteki kitaba tıklayarak kurallar kitabına gidebilirsin.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide3_0,
+                    emote = BunnyMascotView.Emote.TEACH_TALK,
+                    text = appString(R.string.ui_kurallari_unutursan_sag_ustteki_kitaba_tikla),
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Burada öğrendiğin kurallar yer alır.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide3_1,
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_burada_ogrendigin_kurallar_yer_alir),
                     bubbleAnimationTarget = rulesBookButton,
                     bubbleAnimationColor = Color.parseColor("#8BC34A"),
                     bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
@@ -127,69 +104,54 @@ object SharedGuideHelper {
                     requiredClickTarget = rulesBookButton,
                 )
             )
+            // Kural tablosunu abaküse alma rehberi: Sobi anlatıyor; yazma efekti ve ses yok.
             4 -> listOf(
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kurallar kitabına tıkladığında ekrana gelen kurallardan herhangi birisine tıklayarak tabloyu abaküsün üstüne alabilirsin.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide4_0,
+                    emote = BunnyMascotView.Emote.TEACH_TALK,
+                    text = appString(R.string.ui_kurallar_kitabina_tikladiginda_ekrana_gelen),
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Kurallar kitabına tıkla.",
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_kurallar_kitabina_tikla),
                     bubbleAnimationTarget = rulesBookButton,
                     bubbleAnimationMaxScale = 1.1F,
                     bubbleAnimationColor = Color.parseColor("#8BC34A"),
                     bubbleAnimationTintLight = Color.parseColor("#DFF0D4"),
                     requiredClickTarget = rulesBookButton,
                     requiredClickAdvancesGuide = true,
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide4_1,
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Ekrana gelen kurallardan herhangi birisini seç.",
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_ekrana_gelen_kurallardan_herhangi_birisini_s),
                     waitForRulesTableSelection = true,
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide4_2,
                 )
             )
+            // Sayıyı geçme oku rehberi: Sobi anlatıyor; yazma efekti ve ses yok.
             5 -> listOf(
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Eğer tahtada gösterilen sayıyı hemen geçmek istersen, sağ altta bulunan ok butonuna tıklayabilirsin.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_eger_tahtada_gosterilen_sayiyi_hemen_gecmek),
                     bubbleAnimationTarget = skipStepButton,
                     bubbleAnimationColor = Color.parseColor("#263C31"),
                     bubbleAnimationTintLight = Color.parseColor("#00FF8C"),
                     bubbleAnimationMaxScale = 1.1F,
-                    soundResource = R.raw.guide5_0,
                 ),
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_gpt4,
-                    text = "Bu butona tahtada bir sayı varken basarsan, doğrudan sıradaki sayıya geçersin.",
+                    emote = BunnyMascotView.Emote.TEACH_TALK,
+                    text = appString(R.string.ui_bu_butona_tahtada_bir_sayi_varken),
                     onContentShown = { },
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
-                    soundResource = R.raw.guide5_1,
                 )
             )
+            // Abaküs boyutu rehberi: Sobi gösteriyor; yazma efekti ve ses yok.
             6 -> listOf(
                 GuideContent(
-                    imageResource = R.drawable.teacher_emotes_stick,
-                    text = "Abaküsün boyutunu sağ alttaki ölçekleme butonunu kullanarak özelleştirebilirsin.",
-                    useTypewriterEffect = true,
-                    typewriterSpeed = 40L,
+                    emote = BunnyMascotView.Emote.TEACH_POINT,
+                    text = appString(R.string.ui_abakusun_boyutunu_sag_alttaki_olcekleme_buto),
                     bubbleAnimationTarget = abacusModeButton,
                     bubbleAnimationColor = Color.parseColor("#263C31"),
                     bubbleAnimationTintLight = Color.parseColor("#00FF8C"),
                     bubbleAnimationMaxScale = 1.1F,
                     requiredClickTarget = abacusModeButton,
-                    soundResource = R.raw.guide6_0,
                 ),
             )
 

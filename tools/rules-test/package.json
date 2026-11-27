@@ -1,0 +1,13 @@
+{
+  "name": "numigo-rules-test",
+  "private": true,
+  "type": "module",
+  "description": "firestore.rules davranış testleri. Cloud Functions paketinden AYRI tutuluyor: bu bağımlılıklar functions/package.json içinde olsaydı deploy sırasında Cloud Build'in bağımlılık çözümüne girer ve derlemeyi kırardı (bir kez kırdı).",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project rules-test \"node test-firestore-rules.mjs\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.0.0"
+  }
+}

@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -11,6 +12,10 @@ import com.example.app.databinding.ActivityTeacherLoginBinding
 class TeacherLoginActivity : AppCompatActivity(),
     OnTeacherOtpVerifiedForResetListener,
     OnOtpVerifyProgressListener {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
 
     private lateinit var binding: ActivityTeacherLoginBinding
     private lateinit var authManager: AuthManager
@@ -105,7 +110,7 @@ class TeacherLoginActivity : AppCompatActivity(),
         val password = binding.etPassword.text.toString()
         
         if (email.isEmpty() || password.isEmpty()) {
-            showError("Lütfen tüm alanları doldurun")
+            showError(appString(R.string.ui_lutfen_tum_alanlari_doldurun))
             return
         }
         binding.btnBack.isEnabled = false
@@ -121,7 +126,7 @@ class TeacherLoginActivity : AppCompatActivity(),
                 startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                 finish()
             } else {
-                showError(error ?: "Şifre veya e-posta hatalı")
+                showError(error ?: appString(R.string.ui_sifre_veya_e_posta_hatali))
             }
         }
     }

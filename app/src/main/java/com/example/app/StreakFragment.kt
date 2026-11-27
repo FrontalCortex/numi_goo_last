@@ -1,0 +1,431 @@
+package com.example.app
+
+import android.graphics.Color
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import com.example.app.databinding.FragmentStreakBinding
+
+/**
+ * Günlük seri ekranı: üst bardaki aleve dokununca açılır.
+ *
+ * ## Ne gösteriyor
+ * Serinin kaç gün olduğu, bugünkü hedefin ne kadarının tamamlandığı, haftanın hangi
+ * günlerinin tutturulduğu ve meydan okumanın durumu.
+ *
+ * ## Neden hedef değiştirilebiliyor ama meydan okuma değiştirilemiyor
+ * Kurulum akışı kullanıcıya "Bu hedefi istediğin zaman değiştirebilirsin" diyor. O sözün
+ * karşılığı bu ekran; başka bir yerde ayar yok.
+ *
+ * Meydan okuma ise seri boyunca değişmiyor çünkü ÖDÜLÜ var: değiştirilebilseydi
+ * kullanıcı üç günlük sözün 500 altınını alıp hemen yedi güne çıkarak 1500'ü de
+ * alabilirdi. Yeni bir söz ancak seri kırıldıktan sonra, ders dönüşünde veriliyor
+ * (bkz. [NewStreakFragment]). Aynı kural sunucuda da var; buradaki yalnızca arayüzün
+ * tutarlı durması için.
+ *
+ * ## Neden süre dinleyicisi kurulmuyor
+ * [StudyTimeTracker] yalnızca ders ekranlarında sayıyor; bu ekran açıkken süre zaten
+ * işlemiyor. Dinleyici kurulsaydı [MainActivity]'nin dinleyicisini ezerdi ve ekran
+ * kapandığında üst bar güncellenmez hale gelirdi.
+ */
+class StreakFragment : Fragment() {
+
+    private var _binding: FragmentStreakBinding? = null
+    private val binding get() = _binding!!
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View {
+        _binding = FragmentStreakBinding.inflate(inflater, container, false)
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        binding.btnStreakBack.setOnClickListener { close() }
+        binding.streakChangeGoal.setOnClickListener { showGoalPicker() }
+        binding.streakChangeReminder.setOnClickListener { showReminderPicker() }
+        binding.streakChallengeClaim.setOnClickListener { claimChallenge() }
+        binding.streakFreezeRow.setOnClickListener { openShopForFreeze() }
+
+        // Mağaza bu ekranın ÜSTÜNE ekleniyor (replace değil), yani kapandığında onResume
+        // çalışmıyor ve ekran kendiliğinden yeniden çizilmiyor. Satın alma haberi buradan
+        // geliyor; yoksa çocuk dondurmayı alıp geri döndüğünde satırda hâlâ "Yok" yazardı.
+        parentFragmentManager.setFragmentResultListener(
+            ShopFragment.RESULT_STREAK_FREEZE_BOUGHT,
+            viewLifecycleOwner,
+        ) { _, _ -> render() }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        render()
+        // Bekleyen gün varsa (çevrimdışı tutturulmuş olabilir) burada kapanıyor; dönünce
+        // ödül satırları da tazeleniyor.
+        StreakSyncService.syncPendingDays(requireContext()) {
+            if (isAdded) render()
+        }
+        // Okuma yönü: ödül satırlarının dayandığı seri sunucuda tutuluyor, bu ekran her
+        // açıldığında oradan tazeleniyor. Gönderecek gün olmadığında tek güncelleme yolu bu.
+        StreakSyncService.refreshFromServer(requireContext()) {
+            if (isAdded) render()
+        }
+    }
+
+    private fun close() {
+        if (!isAdded) return
+        parentFragmentManager.popBackStack()
+    }
+
+    // ── Çizim ───────────────────────────────────────────────────────────
+
+    private fun render() {
+        val b = _binding ?: return
+        b.streakChangeReminder.text = appString(R.string.ui_bildirim_saatini_degistir) +
+            StreakViews.hourText(StreakRepository.reminderHour(requireContext()))
+        val state = StreakRepository.refresh(requireContext())
+        val alive = state.current > 0
+        // Ekranın ne çizdiği de zincirin bir halkası: "kırık yazıyor" bildirimi geldiğinde
+        // verinin mi ekranın mı yanlış olduğu ancak bu satırla ayrılıyor.
+        StreakDiag.log(
+            "Ekran.render",
+            "current=${state.current} longest=${state.longest} " +
+                "sure=${state.secondsToday}sn hedef=${state.goalSeconds}sn " +
+                "bugunTutturuldu=${state.goalReachedToday} yasiyor=$alive " +
+                "challengeDays=${StreakRepository.chosenChallengeDays(requireContext())} " +
+                "challengeClaimed=${StreakRepository.challengeClaimed(requireContext())} " +
+                "sunucuCurrent=${StreakRepository.serverCurrent(requireContext())}",
+        )
+
+        // Seri yaşıyorsa alev oynuyor, kırıksa sönük duruyor. Aynı ayrım üst barda da var.
+        b.streakLottie.visibility = if (alive) View.VISIBLE else View.GONE
+        b.streakDeadIcon.visibility = if (alive) View.GONE else View.VISIBLE
+
+        b.streakBigNumber.text = state.current.toString()
+        b.streakBigNumber.setTextColor(Color.parseColor(if (alive) COLOR_ACCENT else COLOR_DEAD))
+        b.streakBigLabel.text = if (alive) appString(R.string.ui_gun_ust_uste) else appString(R.string.ui_serin_su_anda_kirik)
+        b.streakBigSubtitle.text = when {
+            state.goalReachedToday -> appString(R.string.ui_bugunku_hedefini_tamamladin_yarin_da_bekleri)
+            alive -> appString(R.string.ui_bugun_x_dakika_daha_calis_serin, state.minutesLeft)
+            else -> appString(R.string.ui_bugun_x_dakika_calis_yeni_serini, state.goalMinutes)
+        }
+
+        val minutesToday = state.secondsToday / 60
+        b.streakTodayText.text =
+            if (state.goalReachedToday) appString(R.string.ui_hedef_tamamlandi)
+            else appString(R.string.ui_x_x_dakika, minutesToday, state.goalMinutes)
+        // Çubuğun genişliği ölçüm bitmeden bilinmiyor; kupa yolundaki ile aynı yol.
+        val zone = b.streakTodayZone
+        zone.post {
+            val live = _binding ?: return@post
+            if (zone.width <= 0) return@post
+            applyDailyQuestionProgressOverlayNow(
+                widthHost = zone,
+                fill = live.streakTodayFill,
+                shine = live.streakTodayShine,
+                percent = state.todayFraction * 100f,
+                complete = state.goalReachedToday,
+            )
+        }
+
+        StreakViews.buildWeekStrip(b.streakWeekStrip, state.achievedDays, state.frozenDays)
+
+        renderChallenge(b, state)
+
+        b.streakLongest.text = appPlural(R.plurals.ui_x_gun, state.longest, state.longest)
+
+        // Dondurma mağazadan alınıyor ama koruduğu şey burada; alındıktan sonra görülebildiği
+        // tek yer mağaza kartı olsaydı çocuk "korunuyor muyum" sorusunun cevabını seriye
+        // baktığı ekranda bulamazdı.
+        b.streakFreezeStatus.text = if (state.freezeHeld) appString(R.string.ui_hazir_2) else appString(R.string.ui_yok)
+        b.streakFreezeStatus.setTextColor(
+            Color.parseColor(if (state.freezeHeld) COLOR_FREEZE else COLOR_DEAD),
+        )
+        // Yalnızca elde yokken tıklanabilir: eldeyken yenisi alınamıyor, mağazaya götürmek
+        // çocuğu basılamayan bir düğmenin önüne bırakmak olurdu.
+        b.streakFreezeRow.isClickable = !state.freezeHeld
+        b.streakFreezeChevron.visibility = if (state.freezeHeld) View.GONE else View.VISIBLE
+
+        renderRewards(b)
+    }
+
+    /**
+     * Ödül satırları.
+     *
+     * SUNUCUNUN bildiği seriye bakıyor, yerel sayaca değil: ödülü veren taraf sunucu, yerel
+     * sayaç ondan ileride olabilir (henüz eşitlenmemiş gün) ve o durumda basılabilir ama her
+     * seferinde hata veren bir "Topla" düğmesi göstermiş olurduk.
+     */
+    private fun renderRewards(b: FragmentStreakBinding) {
+        val serverStreak = StreakRepository.serverCurrent(requireContext())
+        val claimed = StreakRepository.claimedMilestones(requireContext())
+        StreakViews.buildMilestoneRows(b.streakRewards, serverStreak, claimed) { milestone ->
+            claimMilestone(milestone)
+        }
+    }
+
+    private fun claimMilestone(milestone: Int) {
+        if (!isAdded) return
+        StreakSyncService.claimReward(requireContext(), milestone) { success, message, _, _ ->
+            if (!isAdded) return@claimReward
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            if (success) {
+                // Cüzdan değişti: üst bardaki altın/anahtar da tazelensin.
+                (activity as? MainActivity)?.refreshWalletUi()
+                render()
+            }
+        }
+    }
+
+    // ── Meydan okuma ──────────────────────────────────
+
+    /**
+     * Meydan okuma kartı: verilen söz, ödül rozeti, ilerleme çubuğu ve hak edildiyse
+     * toplama düğmesi.
+     *
+     * İlerleme YEREL seriden çiziliyor — ekranın tepesindeki büyük sayı da oradan geliyor,
+     * ikisi ayrı kaynaklardan beslenseydi aynı ekran kendi kendisiyle çelişirdi. Ödülün
+     * toplanabilirliği ise SUNUCUNUN serisine bakıyor: ödülü veren taraf o, yoksa basılabilen
+     * ama her seferinde hata veren bir düğme göstermiş olurduk.
+     *
+     * İkisinin ayrıştığı tek durum — yerelde tamamlandı, henüz sunucuya gitmedi — sessiz
+     * bırakılmıyor: "ödülün hazırlanıyor" satırı onu anlatıyor. Yoksa çocuk sözünü tuttuğunu
+     * görüp karşılığını bulamazdı.
+     */
+    private fun renderChallenge(b: FragmentStreakBinding, state: StreakRepository.StreakState) {
+        // Seçilmiş değer, varsayılan değil: bu özellikten ÖNCE kayıt olmuş kullanıcı hiçbir
+        // söz vermedi, sunucu da onun için bir meydan okuma tanımıyor. Kart varsayılanla
+        // çizilseydi o kullanıcıya basıldığında "meydan okuma seçilmemiş" hatası veren bir
+        // "Topla" düğmesi gösterirdik.
+        val days = StreakRepository.chosenChallengeDays(requireContext())
+        val reward = StreakMilestones.challengeReward(days)
+        val claimedDays = StreakRepository.challengeClaimed(requireContext())
+
+        // Ödül alındıktan sonra kart O GÜNÜN sonuna kadar duruyor, ertesi gün gidiyor.
+        //
+        // Hemen kaldırmak kutlamayı çalıyor: çocuk "Topla"ya bastığı anda sözünü tuttuğunun
+        // izi ekrandan siliniyordu. Sürekli bırakmak da yanlış: meydan okuma bir kez
+        // seçiliyor, yani bitmiş kart bir daha asla değişmeyecek ölü bir kutu olarak kalır ve
+        // ekranın asıl işini — bugün ne yapmalı — aşağı iter.
+        val claimedToday = claimedDays > 0 &&
+            StreakRepository.challengeClaimedDay(requireContext()) == StudyTimeTracker.dayId()
+        if (days <= 0 || reward <= 0 || (claimedDays > 0 && !claimedToday)) {
+            b.streakChallengeCard.visibility = View.GONE
+            return
+        }
+        b.streakChallengeCard.visibility = View.VISIBLE
+
+        val done = state.current.coerceIn(0, days)
+        val serverStreak = StreakRepository.serverCurrent(requireContext())
+        val complete = state.current >= days
+        val claimable = claimedDays <= 0 && serverStreak >= days
+
+        b.streakChallengeTitle.text = appString(R.string.ui_x_gunluk_meydan_okuma, days)
+        b.streakChallengeSub.text = when {
+            claimedDays > 0 -> appString(R.string.ui_tamamlandi_buyuk)
+            claimable -> appString(R.string.ui_tamamlandi_odulunu_topla)
+            complete -> appString(R.string.ui_tamamlandi_odulun_hazirlaniyor)
+            state.current <= 0 -> appString(R.string.ui_bugun_basliyor)
+            else -> appString(R.string.ui_x_gunun_x_gunu, days, done)
+        }
+
+        // Ödül alındıysa rozet kalkıyor: artık bir vaat değil, olmuş bitmiş bir şey.
+        b.streakChallengeReward.visibility = if (claimedDays > 0) View.GONE else View.VISIBLE
+        b.streakChallengeRewardText.text = "+$reward"
+        b.streakChallengeClaim.visibility = if (claimable) View.VISIBLE else View.GONE
+
+        // Çubuğun üstündeki sayı. Doluluk kaçıncı günde olunduğunu yaklaşık gösteriyor ama
+        // 3 günlük bir meydan okumada birinci ile ikinci günün doluluğu gözle ayırt
+        // edilemiyordu. Tamamlanınca sayı yerine durum yazıyor: "3 / 3" teknik olarak doğru
+        // ama kutlama değil.
+        b.streakChallengeProgressText.text = if (complete) appString(R.string.ui_tamamlandi_2) else RtlSupport.ltr("$done / $days")
+
+        val fraction = (done.toFloat() / days).coerceIn(0f, 1f)
+        val zone = b.streakChallengeZone
+        zone.post {
+            val live = _binding ?: return@post
+            if (zone.width <= 0) return@post
+            applyDailyQuestionProgressOverlayNow(
+                widthHost = zone,
+                fill = live.streakChallengeFill,
+                shine = live.streakChallengeShine,
+                percent = fraction * 100f,
+                complete = complete,
+            )
+        }
+    }
+
+    private fun claimChallenge() {
+        if (!isAdded) return
+        StreakSyncService.claimChallengeReward(requireContext()) { success, message, _, _ ->
+            if (!isAdded) return@claimChallengeReward
+            Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+            if (success) {
+                (activity as? MainActivity)?.refreshWalletUi()
+                render()
+            }
+        }
+    }
+
+    // ── Seri dondurma ──────────────────────────────────
+
+    /** Art arda dokunuşları elemek için son dokunuş anı (monoton saat). */
+    private var lastFreezeRowClickMs = 0L
+
+    /**
+     * Mağazayı seri dondurma kartında açar.
+     *
+     * Kart mağazanın ortalarında ("Özel Teklifler"in en altı); mağaza tepeden açılsaydı
+     * çocuk buradan gönderildiği şeyi aramak zorunda kalırdı.
+     *
+     * Çift dokunuş eleniyor: mağaza `commit()` ile, yani bir sonraki karede ekleniyor;
+     * [MainActivity.openShopFragment] içindeki "zaten açık mı" kontrolü o kareye kadar
+     * ikinci dokunuşu göremiyor ve üst üste iki mağaza açılabiliyordu.
+     */
+    private fun openShopForFreeze() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - lastFreezeRowClickMs < FREEZE_ROW_CLICK_GAP_MS) return
+        lastFreezeRowClickMs = now
+        (activity as? MainActivity)?.openShopFragment(focusStreakFreeze = true)
+    }
+
+    // ── Hedef penceresi ──────────────────────────────────
+
+    /**
+     * Günlük hedef seçimi. Ekrandaki tek ayar bu; meydan okuma bir kez seçildiği için
+     * buradan değiştirilemiyor (bkz. sınıf açıklaması).
+     *
+     * Seçim yapılır yapılmaz kaydedilip pencere kapanıyor: "onayla" düğmesi tek seçimli bir
+     * listede fazladan bir adım olurdu.
+     */
+    private fun showGoalPicker() {
+        if (!isAdded) return
+        val view = layoutInflater.inflate(R.layout.dialog_streak_options, null)
+        val dialog = AlertDialog.Builder(requireContext()).setView(view).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = appString(R.string.ui_gunluk_hedefin)
+        view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
+            appString(R.string.ui_her_gun_ne_kadar_ogrenmek_istersin)
+        StreakViews.buildOptionRows(
+            container = view.findViewById<LinearLayout>(R.id.streakOptionsContainer),
+            values = StreakRepository.GOAL_OPTIONS,
+            labels = listOf(appString(R.string.ui_rahat), appString(R.string.ui_duzenli), appString(R.string.ui_ciddi)),
+            trailing = StreakRepository.GOAL_OPTIONS.map { appPlural(R.plurals.ui_x_dakika, it, it) },
+            selected = StreakRepository.goalMinutes(requireContext()),
+        ) { value ->
+            // Aynı değere tekrar dokunmak bir değişiklik değil; ölçüme de öyle gitmemeli.
+            if (value != StreakRepository.goalMinutes(requireContext())) {
+                AnalyticsLogger.logStreakGoalSet(value, AnalyticsLogger.STREAK_SOURCE_SETTINGS)
+            }
+            StreakRepository.setGoalMinutes(requireContext(), value)
+            dialog.dismiss()
+            render()
+        }
+        dialog.show()
+    }
+
+    // ── Hatırlatma saati ─────────────────────────────────
+
+    /**
+     * Saat seçilince bildirim izni yoksa (Android 13+) burada soruluyor: kayıtta "Şimdi değil"
+     * diyen çocuğun saati ayarlaması hatırlatma istediğini gösteriyor. Sonuç ne olursa olsun
+     * saat kayıtlı; ölçüme izin durumuyla gidiyor.
+     */
+    private val notificationPermission = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        logReminderChange(
+            if (granted) AnalyticsLogger.NOTIF_PERMISSION_GRANTED else AnalyticsLogger.NOTIF_PERMISSION_DENIED,
+        )
+    }
+
+    /**
+     * Hatırlatma saati seçimi; kayıttaki "Sobi sana her gün hatırlatsın mı?" sorusunun
+     * verdiği "saati istediğin zaman değiştirebilirsin" sözünün karşılığı. Hedef penceresiyle
+     * aynı davranış: seçim yapılır yapılmaz kaydedilip kapanıyor. Yeni saat hemen sunucuya
+     * gönderiliyor; bugünün hatırlatması zaten gittiyse ikincisi gelmiyor (günde bir).
+     */
+    private fun showReminderPicker() {
+        if (!isAdded) return
+        val view = layoutInflater.inflate(R.layout.dialog_streak_options, null)
+        val dialog = AlertDialog.Builder(requireContext()).setView(view).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = appString(R.string.ui_bildirim_saatin)
+        view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
+            appString(R.string.ui_sobi_sana_her_gun_ne_zaman)
+        val current = StreakRepository.reminderHour(requireContext())
+        StreakViews.buildReminderRows(
+            view.findViewById<LinearLayout>(R.id.streakOptionsContainer),
+            selected = current,
+            onPick = { hour ->
+                dialog.dismiss()
+                applyReminderHour(hour)
+            },
+            // "Başka bir saat": bu pencere kapanıp 24 saatlik pencere açılıyor.
+            onCustom = {
+                dialog.dismiss()
+                StreakViews.showHourPicker(requireContext(), layoutInflater, current, ::applyReminderHour)
+            },
+        )
+        dialog.show()
+    }
+
+    private fun applyReminderHour(hour: Int) {
+        val context = context ?: return
+        if (hour == StreakRepository.reminderHour(context) &&
+            !StreakRepository.reminderHourPending(context)
+        ) {
+            return
+        }
+        StreakRepository.setReminderHour(context, hour)
+        StreakSyncService.syncPendingDays(context)
+        render()
+        val needsPermission =
+            android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU &&
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context, android.Manifest.permission.POST_NOTIFICATIONS,
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (needsPermission) {
+            notificationPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        } else {
+            logReminderChange(AnalyticsLogger.NOTIF_PERMISSION_NOT_NEEDED)
+        }
+    }
+
+    private fun logReminderChange(permission: String) {
+        val context = context ?: return
+        AnalyticsLogger.logStreakReminderSet(
+            StreakRepository.reminderHour(context),
+            AnalyticsLogger.STREAK_SOURCE_SETTINGS,
+            AnalyticsLogger.REMINDER_CHOICE_YES,
+            permission,
+        )
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
+    private companion object {
+        const val COLOR_ACCENT = "#FF9800"
+        const val COLOR_DEAD = "#78909C"
+
+        /** Buz mavisi: mağaza kartındaki "HAZIR" rozetiyle aynı. */
+        const val COLOR_FREEZE = "#4FC3F7"
+
+        /** Seri dondurma satırına iki dokunuş arasında geçmesi gereken en kısa süre. */
+        const val FREEZE_ROW_CLICK_GAP_MS = 700L
+    }
+}

@@ -26,6 +26,8 @@ class ChestFragment : Fragment() {
     private lateinit var lessonItem : LessonItem
     private var recordScore: Int = 0
     private var lessonSuccessRate: Float = 0f
+    /** BlindingLessonFragment'ta soru ekranına giriş anından bu yana geçen süre — lessonSuccessRate finish-time bucket'ı için. */
+    private var questionElapsedMs: Long? = null
     private var pendingChestRecordBreakMission: Boolean = false
     private var pendingChestStarGainAmount: Int = 0
     /** Aynı anda yalnızca bir ödül akışı (çift tıklama engeli) */
@@ -33,11 +35,17 @@ class ChestFragment : Fragment() {
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
-    private fun lessonProgressKey(item: LessonItem, fallbackIndex: Int): String {
-        val stableId = item.id ?: -1
-        val part = item.partId ?: -1
-        return "${item.type}_${stableId}_${part}_${item.title}_$fallbackIndex"
-    }
+    /**
+     * Yerel (SharedPreferences) görsel durum anahtarı — [LessonAdapter] ile AYNI biçimde
+     * üretilmeli, yoksa iki taraf farklı anahtara yazar. Eskiden hiç doldurulmayan `item.id`
+     * ve liste sırası kullanılıyordu; artık [LessonItem.stableId].
+     *
+     * [fallbackIndex] korunmuş imza uyumu için duruyor, anahtara girmiyor.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    private fun lessonProgressKey(item: LessonItem, fallbackIndex: Int): String =
+        "${item.type}_${item.stableId}"
+
 
     /** [abacusFragmentContainer] üzerinde harita ([coordinator_layout]) dokunuşunu geçirmemek için. */
     private var chestHostView: View? = null
@@ -81,8 +89,8 @@ class ChestFragment : Fragment() {
             (activity as? MainActivity)?.notifyMapVisibleAfterLessonClaim("ChestFragment.loginReturn")
             parentFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    R.anim.slide_in_left,
-                    R.anim.slide_out_left
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out,
                 )
                 .remove(this@ChestFragment)
                 .commit()
@@ -106,12 +114,19 @@ class ChestFragment : Fragment() {
      * devam etmesi için [GlobalLessonData] tarafından okunuyor.
      */
     private fun redirectToLoginForFirstTutorial(source: String) {
-        FirstTutorialShownStore.markShown(requireContext(), source)
+        // `first_tutorial_shown` artık yazılmıyor: tutorial'in gösterilme şartı bu bayrak
+        // değil, cihazda hiç hesap açılıp açılmadığı (bkz. DeviceAccountStore). Eski
+        // bayrak yalnızca `currentTutorialNumber == 1` iken yazıldığı için, ilk tutorial
+        // başarısız geçildiğinde bir daha hiç yazılmıyor ve tutorial tekrar ediyordu.
+        Log.d(MainActivity.FIRST_TUTORIAL_LOG_TAG, "ilk tutorial bitti, girişe yönlendiriliyor: $source")
         requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
             .edit()
             .putBoolean("tutorial1_login_flow_pending", true)
             .apply()
         GlobalValues.currentTutorialNumber = 0
+
+        // Seri kurulumu artık burada değil, kayıt akışının içinde (bkz. UserInfoFragment):
+        // burada sorulduğunda yalnızca temiz kurulumdan gelen kullanıcı yakalanıyordu.
         loginLauncher.launch(
             Intent(requireContext(), LoginStartActivity::class.java)
                 .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true),
@@ -144,9 +159,21 @@ class ChestFragment : Fragment() {
         // geçen animasyon/geçiş süresinin arkasında gizlenir.
         ServerRewards.prefetchChest(NewChestFragment.ChestRarity.COMMON.name)
 
-        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex)!!
+        // Ders listesi bu an elde değilse (ör. süreç yeniden kurulduktan sonra) `!!` çöküyordu
+        // (Crashlytics, sürüm 21: NullPointerException). Sandığı göstermeden haritaya dön; ödül
+        // akışı başlamadığı için kaybolan bir şey yok. Dönüş bir sonraki karede: onViewCreated
+        // bir fragment işleminin içinden çağrılıyor, burada senkron işlem yapılamaz.
+        lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) ?: run {
+            AnalyticsLogger.recordNonFatal(
+                "ChestFragment: ders bulunamadı, haritaya dönülüyor",
+                IllegalStateException("mapIdx=$mapFragmentStepIndex part=$globalPartId"),
+            )
+            view.post { returnToMapWithoutLessonItem() }
+            return
+        }
         recordScore = arguments?.getInt("toplamPuan", arguments?.getInt("dersPuani", 0) ?: 0) ?: 0
         lessonSuccessRate = arguments?.getFloat("successRate", 0f) ?: 0f
+        questionElapsedMs = arguments?.getLong("questionElapsedMs", -1L)?.takeIf { it >= 0L }
         pendingChestRecordBreakMission =
             arguments?.getBoolean(ChestResult.ARG_PENDING_CHEST_RECORD_BREAK_MISSION, false) == true
         //record()
@@ -155,8 +182,8 @@ class ChestFragment : Fragment() {
         // gösterilmiyor; görünen tek ekran NewChestFragment (kristal/sandık mini oyunu). ChestFragment'in
         // KENDİ root'unu burada invisible yapmıyoruz: NewChestFragment bir "post" ile (yani asenkron)
         // eklendiği için araya bir çizim (frame) girip arkadaki haritayı bir an gösterebiliyordu.
-        // fragment_chest.xml'in arka planı (#101820) NewChestFragment'in ilk açılış temasına
-        // (#141F23) çok yakın olduğu için bu kısa yükleme anı fark edilmiyor.
+        // fragment_chest.xml'in arka planı NewChestFragment'in ilk açılış temasıyla AYNI
+        // (@color/background_color) olduğu için bu kısa yükleme anı hiç fark edilmiyor.
         prepareHiddenRewardUi()
         setupClaimRewardButton()
         showCrystalBreakAtStart()
@@ -311,7 +338,7 @@ class ChestFragment : Fragment() {
                                 "missionSnapLocalOnly=true",
                         )
                         if (hasMissionProgress) {
-                            android.util.Log.d("DEBUG_BADGE", "ChestFragment proceedWithResult routing to MissionChestRewardFragment with levelUpPayloads=${levelUpPayloads.size}")
+                            BadgeDiagnostics.log("ChestFragment proceedWithResult routing to MissionChestRewardFragment with levelUpPayloads=${levelUpPayloads.size}")
                             LessonProgressDiag.recordClaim(
                                 mapIdx = mapFragmentStepIndex,
                                 partId = globalPartId,
@@ -323,9 +350,12 @@ class ChestFragment : Fragment() {
                                 tutorialNumber = GlobalValues.currentTutorialNumber,
                             )
                             fm.beginTransaction()
+                                // Görev ilerlemesi paneli de zincirin parçası: sağdan girer,
+                                // sola çıkar. Eskiden SOLDAN giriyordu, yani sandık sola
+                                // çıkarken bu da soldan geliyor ve ikisi çakışıyordu.
                                 .setCustomAnimations(
-                                    R.anim.slide_in_left,
-                                    R.anim.slide_out_left,
+                                    R.anim.queue_screen_in,
+                                    R.anim.queue_screen_out,
                                 )
                                 .replace(
                                     hostContainerId,
@@ -334,6 +364,7 @@ class ChestFragment : Fragment() {
                                         after = afterSnap,
                                         openBadgeAfterContinue = levelUpPayloads.isNotEmpty(),
                                         badgePayloadQueue = levelUpPayloads.map { BadgeProgressFirestore.payloadToQueueItem(it) },
+                                        isLessonTypeReturn = lessonItem.type == LessonItem.TYPE_LESSON,
                                     ),
                                 )
                                 .commitNowAllowingStateLoss()
@@ -354,7 +385,7 @@ class ChestFragment : Fragment() {
                                 "CLAIM_MAP_RETURN",
                                 "removeThenPrepare+finalize",
                             )
-                            android.util.Log.d("DEBUG_BADGE", "ChestFragment proceedWithResult routing directly to map return with levelUpPayloads=${levelUpPayloads.size}")
+                            BadgeDiagnostics.log("ChestFragment proceedWithResult routing directly to map return with levelUpPayloads=${levelUpPayloads.size}")
                             // ChestFragment'in kendi ekranı zaten görünmez (bkz. chest_closed dinleyicisi);
                             // burada gösterilecek/kaydırılacak bir şey yok, harita dönüşü hemen yapılıyor.
                             if (isAdded) {
@@ -365,7 +396,10 @@ class ChestFragment : Fragment() {
                             main?.prepareMapReturnAfterLessonClaim()
                             main?.finalizeMapReturnAfterLessonClaim(
                                 caller = "ChestFragment.claimAfterRemove",
-                                badgePayloads = levelUpPayloads
+                                badgePayloads = levelUpPayloads,
+                                // Ders başarıyla bitince LessonResult buraya (ders ödül sandığı) yönlendiriyor;
+                                // türü LESSON olan item'lar için haritaya dönüş asıl olarak burada oluyor.
+                                isLessonTypeReturn = lessonItem.type == LessonItem.TYPE_LESSON,
                             )
                         }
                         // Ödül NewChestFragment kapanırken zaten verildi (bkz. showCrystalBreakAtStart); burada tekrar verilmiyor.
@@ -382,6 +416,18 @@ class ChestFragment : Fragment() {
                 val shouldIncrementVolcano = globalPartId == 8
                 if (shouldIncrementDartProgress || completedMissionCount > 0 || shouldIncrementKarate || incrementRocketDailyLessons || shouldIncrementTornado || shouldIncrementVolcano) {
                     GlobalValues.pendingBadgeFirestoreOperation = true
+                    // Rozet kontrolü asenkron (Firestore round-trip) — sonucu netleşene kadar
+                    // haritayı erkenden kilitle; yoksa görev ilerlemesi animasyonu yoksa harita
+                    // rozet/rehber gösterilene kadar birkaç saniye tıklanabilir kalıyordu.
+                    fun findMain(): MainActivity? =
+                        (activity ?: safeActivityFm?.findFragmentById(R.id.fragmentContainerID)?.activity) as? MainActivity
+                    fun findMap(main: MainActivity?): MapFragment? =
+                        main?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+                    findMap(findMain())?.lockTouchForPendingOverlay()
+                    // Zemini de şimdi kaldır: sandığın ekranı birazdan görünmez olacak ve
+                    // rozet gelene kadar arada harita açığa çıkıyor. Kuyruğun kendi zamanı
+                    // (finalizeMapReturn) bunun için çok geç kalıyor.
+                    findMain()?.raisePostLessonQueueOverlayEarly()
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = shouldIncrementDartProgress,
                         incrementBowlingBy = completedMissionCount,
@@ -392,23 +438,21 @@ class ChestFragment : Fragment() {
                         incrementVolcano = shouldIncrementVolcano,
                         onDone = { payloads ->
                             GlobalValues.pendingBadgeFirestoreOperation = false
-                            android.util.Log.d("DEBUG_BADGE", "ChestFragment onDone finished with payloads=${payloads.size}")
+                            BadgeDiagnostics.log("ChestFragment onDone finished with payloads=${payloads.size}")
+                            val main = findMain()
+                            findMap(main)?.enableMapTouchRouting()
                             if (payloads.isNotEmpty()) {
                                 val stringPayloads = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
                                 val missionFragment = safeFm.findFragmentById(safeHostContainerId) as? MissionChestRewardFragment
                                 if (missionFragment != null && missionFragment.isAdded) {
-                                    android.util.Log.d("DEBUG_BADGE", "ChestFragment forwarding badge payloads to active MissionChestRewardFragment")
+                                    BadgeDiagnostics.log("ChestFragment forwarding badge payloads to active MissionChestRewardFragment")
                                     missionFragment.setBadgePayloads(stringPayloads)
-                                } else {
-                                    val main = (activity ?: safeActivityFm?.findFragmentById(R.id.fragmentContainerID)?.activity) as? MainActivity
-                                    if (main != null) {
-                                        android.util.Log.d("DEBUG_BADGE", "ChestFragment routing badge payloads directly to MainActivity queue")
-                                        main.enqueuePendingBadgePayloads(payloads, stringPayloads)
-                                    }
+                                } else if (main != null) {
+                                    BadgeDiagnostics.log("ChestFragment routing badge payloads directly to MainActivity queue")
+                                    main.enqueuePendingBadgePayloads(payloads, stringPayloads)
                                 }
                             } else {
                                 // Rozet yok: kupa yolu / maraton rehberi bu işlem yüzünden bekletilmiş olabilir, tekrar dene.
-                                val main = (activity ?: safeActivityFm?.findFragmentById(R.id.fragmentContainerID)?.activity) as? MainActivity
                                 main?.tryShowPendingMarathonGuideOnMap("ChestFragment.badgeFirestoreOnDone.noPayloads")
                             }
                         },
@@ -416,9 +460,34 @@ class ChestFragment : Fragment() {
                 }
             } catch (e: IllegalStateException) {
                 Log.e("ChestFragment", "Ödül fragment işlemi başarısız", e)
+                LessonProgressDiag.log(
+                    "ChestFragment.claim",
+                    "HATA ${e.javaClass.simpleName}: ${e.message} | ${Log.getStackTraceString(e).take(1500)}",
+                )
                 claimRewardInProgress = false
-                if (isAdded && _binding != null) {
-                    binding.claimRewardButton.isEnabled = true
+                // Eskiden yalnızca düğme tekrar açılıyordu. Ama düğme hiç görünmüyor ve
+                // ChestFragment'in kendi ekranı chest_closed'da görünmez yapılmış oluyor:
+                // kabı haritanın üstünde tıklanabilir kalıyor, kuyruk da "üstte ChestFragment
+                // var" diye Kupa Yolu'nu açmıyordu. Kullanıcı tıklanamayan bir haritada
+                // kalmasın diye haritaya dönüş yine de yapılıyor.
+                if (isAdded) {
+                    val main = activity as? MainActivity
+                    try {
+                        parentFragmentManager.beginTransaction()
+                            .remove(this@ChestFragment)
+                            .commitNowAllowingStateLoss()
+                    } catch (removeError: IllegalStateException) {
+                        Log.e("ChestFragment", "Hata sonrası kaldırma da başarısız", removeError)
+                        parentFragmentManager.beginTransaction()
+                            .remove(this@ChestFragment)
+                            .commitAllowingStateLoss()
+                    }
+                    main?.prepareMapReturnAfterLessonClaim()
+                    main?.finalizeMapReturnAfterLessonClaim(
+                        caller = "ChestFragment.claimFailed",
+                        badgePayloads = emptyList(),
+                        isLessonTypeReturn = lessonItem.type == LessonItem.TYPE_LESSON,
+                    )
                 }
             }
         }
@@ -465,8 +534,16 @@ class ChestFragment : Fragment() {
 
         val containerId = (requireView().parent as View).id
         parentFragmentManager.beginTransaction()
-            .setCustomAnimations(R.anim.slide_in_left, 0)
-            .add(containerId, NewChestFragment.newInstance(NewChestFragment.ChestRarity.COMMON))
+            // Ders sonrası zincirindeki her ekran gibi: sağdan girer, sola çıkar.
+            // Tek yönlü akış, art arda gelen ekranları tek bir ilerleme gibi okutuyor.
+            .setCustomAnimations(R.anim.queue_screen_in, 0)
+            .add(
+                containerId,
+                NewChestFragment.newInstance(
+                    NewChestFragment.ChestRarity.COMMON,
+                    source = AnalyticsLogger.CHEST_SOURCE_LESSON,
+                ),
+            )
             .addToBackStack("map_chest")
             .commit()
     }
@@ -521,8 +598,12 @@ class ChestFragment : Fragment() {
             lessonItem,
             "BEFORE",
         )
+        // Açılacak item bir sonraki; başlıksa atlanır (sandıktan sonra hep başlık geliyor).
+        // Eskiden "sandık mı" sorusu cupPoint1 ile soruluyordu; 4. ve 5. bölüm sandıklarında
+        // cupPoint1 olmadığı için kilidi sonraki ders yerine başlık alıyordu ve ders ancak
+        // harita yeniden yüklenince (withDerivedUnlocks) açılıyordu.
         var index: Int = mapFragmentStepIndex + 1
-        if(lessonItem?.cupPoint1 != null){
+        if (LessonManager.getLessonItem(index)?.type == LessonItem.TYPE_HEADER) {
             index += 1
         }
         val lessonItem2 = LessonManager.getLessonItem(index)
@@ -540,6 +621,10 @@ class ChestFragment : Fragment() {
                         "BRANCH raceBusyLevel==1 (race update; finish uses snapshot raceBusy=${item.raceBusyLevel})",
                     )
                     val updatedItem = item.copy(raceBusyLevel = 0)
+                    if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs)
+                        LessonSuccessRateRepository.recordItemFirstFinish(globalPartId, mapFragmentStepIndex, null)
+                    }
                     LessonManager.updateRaceItem(requireContext(), mapFragmentStepIndex, updatedItem)
                     unlockNextRaceItemSkippingCompleted(mapFragmentStepIndex)
                 }
@@ -549,6 +634,10 @@ class ChestFragment : Fragment() {
                         "BRANCH raceBusyLevel==2 (fast-forward; only self → TAMAMLANDI, next unchanged)",
                     )
                     val updatedItem = item.copy(raceBusyLevel = 0)
+                    if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs)
+                        LessonSuccessRateRepository.recordItemFirstFinish(globalPartId, mapFragmentStepIndex, null)
+                    }
                     LessonManager.updateRaceItem(requireContext(), mapFragmentStepIndex, updatedItem)
                 }
             }
@@ -606,7 +695,7 @@ class ChestFragment : Fragment() {
                     if (!item.stepIsFinish && updatedItem.stepIsFinish &&
                         (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST)
                     ) {
-                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep)
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs)
                         val chestStars = if (updatedItem.type == LessonItem.TYPE_CHEST) {
                             ChestTypeProgressHelper.starCountForChestIcon(updatedItem.stepCupIcon)
                         } else {
@@ -624,6 +713,10 @@ class ChestFragment : Fragment() {
                                 toFilledSegments = afterFilled,
                             )
                         GlobalValues.canConsumePendingLessonProgressAnimations = false
+                        LessonProgressDiag.log(
+                            "ChestFragment.updateMapProgress",
+                            "PENDING_PROGRESS key=$key $beforeFilled->$afterFilled",
+                        )
                     }
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
                     LessonProgressDiag.logItem(
@@ -647,7 +740,7 @@ class ChestFragment : Fragment() {
                         "BRANCH INTERMEDIATE currentStep ${item.currentStep}→${item.currentStep + 1} (stepIsFinish stays false)",
                     )
                     if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
-                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep)
+                        LessonSuccessRateRepository.recordPass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs)
                     }
                     val updatedItem = item.copy(
                         stepCompletionStatus = newStepCompletionStatus,
@@ -670,6 +763,10 @@ class ChestFragment : Fragment() {
                                 toFilledSegments = afterFilled,
                             )
                         GlobalValues.canConsumePendingLessonProgressAnimations = false
+                        LessonProgressDiag.log(
+                            "ChestFragment.updateMapProgress",
+                            "PENDING_PROGRESS key=$key $beforeFilled->$afterFilled",
+                        )
                     }
                     LessonManager.updateLessonItem(requireContext(),mapFragmentStepIndex, updatedItem)
                     LessonProgressDiag.logItem(
@@ -758,6 +855,21 @@ class ChestFragment : Fragment() {
         if (activity is MainActivity) {
             //activity.refreshRacePanel()
         }
+    }
+
+    /** Ders bulunamadığında (bkz. onViewCreated) sandığı hiç açmadan haritaya dönüş. */
+    private fun returnToMapWithoutLessonItem() {
+        if (!isAdded) return
+        val main = activity as? MainActivity
+        parentFragmentManager.beginTransaction()
+            .remove(this@ChestFragment)
+            .commitAllowingStateLoss()
+        main?.prepareMapReturnAfterLessonClaim()
+        main?.finalizeMapReturnAfterLessonClaim(
+            caller = "ChestFragment.noLessonItem",
+            badgePayloads = emptyList(),
+            isLessonTypeReturn = false,
+        )
     }
 
     override fun onDestroyView() {

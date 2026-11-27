@@ -34,7 +34,7 @@ class OfflineFragment : Fragment(R.layout.fragment_offline) {
             } else {
                 Toast.makeText(
                     requireContext(),
-                    "Hâlâ çevrimdışısınız. Lütfen bağlantınızı kontrol edin.",
+                    appString(R.string.ui_hala_cevrimdisisiniz_lutfen_baglantinizi_kon),
                     Toast.LENGTH_SHORT
                 ).show()
                 messageText.text = getString(R.string.offline_message)

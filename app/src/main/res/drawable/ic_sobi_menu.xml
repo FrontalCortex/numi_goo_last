@@ -1,0 +1,10 @@
+<!-- Sobi sekmesinin sol üstündeki ☰: sohbet listesini açar (SobiChatFragment). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#8B949E"
+        android:pathData="M4,6.5h16a1.25,1.25 0,0 0,0 -2.5H4a1.25,1.25 0,0 0,0 2.5zM20,10.75H4a1.25,1.25 0,0 0,0 2.5h16a1.25,1.25 0,0 0,0 -2.5zM20,17.5H4a1.25,1.25 0,0 0,0 2.5h16a1.25,1.25 0,0 0,0 -2.5z" />
+</vector>

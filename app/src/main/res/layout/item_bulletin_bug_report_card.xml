@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Görevler → "Hata Avcısı" kartı (bkz. TasksFragment.BugReportVH). Karta dokunmak bildirim
+  ekranını açar; onaylanmış ve toplanmamış bir bildirim varsa "Ödülünü topla" düğmesi görünür.
+-->
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="10dp"
+    android:layout_marginBottom="10dp"
+    app:cardBackgroundColor="@color/dark_primary"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="2dp"
+    app:strokeWidth="0dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:contentDescription="@null"
+                android:scaleType="fitCenter"
+                android:src="@drawable/feedback_ic" />
+
+            <TextView
+                android:id="@+id/bugCardTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:includeFontPadding="false"
+                android:text="@string/bug_report_card_title"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:contentDescription="@null"
+                android:src="@drawable/dualingo_arrow_ic"
+                app:tint="@android:color/white" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/bugCardSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="@string/bug_report_card_subtitle_default"
+            android:textColor="#F1F8E9"
+            android:textSize="14sp" />
+
+        <include
+            android:id="@+id/bugCardRewards"
+            layout="@layout/view_bug_report_rewards"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/bugCardClaimButton"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="12dp"
+            android:fontFamily="@font/font_regular"
+            android:text="@string/bug_report_card_claim"
+            android:textAllCaps="false"
+            android:textColor="@color/button_text_enabled"
+            android:textSize="16sp"
+            android:visibility="gone"
+            app:backgroundTint="@color/lesson_header_yellow"
+            app:cornerRadius="14dp" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

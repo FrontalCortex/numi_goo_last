@@ -38,6 +38,7 @@ class ChestResult : Fragment() {
     private var dersPuani: Int = 0
     private var toplamPuan: Int = 0
     private var worstCupTime: Int = 0
+    private var questionElapsedMs: Long = -1L
     private var targetTimeSeconds: Int = 0
     private var carpan: Float = 1f
     private var scoreCap: Int = 1
@@ -53,20 +54,6 @@ class ChestResult : Fragment() {
     private val runningAnimators = mutableListOf<Animator>()
     private var isViewBeingDestroyed: Boolean = false
     private var shouldIncrementChestRecordBreakMission: Boolean = false
-    private val animations = listOf(
-        "animation_one.json",
-        "animaton_two.json",
-        "animaton_three.json",
-        "animaton_four.json",
-        "animaton_five.json",
-        "animaton_six.json",
-        "animaton_eight.json",
-        "animaton_nine.json",
-        "animaton_ten.json",
-        "animaton_eleven.json",
-        "animaton_twelve.json",
-        "animaton_thirteen.json"
-    )
 
 
     override fun onCreateView(
@@ -88,6 +75,7 @@ class ChestResult : Fragment() {
             time = bundle.getString("time", "")
             dersPuani = bundle.getInt("dersPuani", 0)
             worstCupTime = bundle.getInt("worstCupTime", 0)
+            questionElapsedMs = bundle.getLong("questionElapsedMs", -1L)
             successRate = bundle.getFloat("successRate", 0f)
             targetTimeSeconds = parseTimeToSeconds(time) ?: 0
             carpan = bundle.getFloat("carpan", 1f)
@@ -98,7 +86,7 @@ class ChestResult : Fragment() {
         continueFragment()
         prepareInitialUiState()
         setupStarSound()
-        showRandomAnimation()
+        playEndMascot()
         setupStarMarkerPositions()
         startRevealSequence()
         record()
@@ -112,9 +100,14 @@ class ChestResult : Fragment() {
         lessonItem.record = m.record
         lessonItem.leaderboardSeasonId = m.leaderboardSeasonId
         lessonItem.leaderboardSeasonBest = m.leaderboardSeasonBest
+        // Haftalık kart için sandık süresi (ilk / en iyi): puan süreyi saklamıyor. Arka planda ve ayrı
+        // belgeye yazılır; bu ekranın akışını beklemez, hatası akışı durdurmaz (LessonMilestones).
+        LessonMilestones.recordChestRun(globalPartId, lessonItem.stableId, successRate, parseTimeToSeconds(time))
     }
 
     private fun continueFragment() {
+        // Göçen düğme (bg_depth_result_continue): basılıyken dudak kadar iner.
+        com.example.app.homework.DepthPress.attach(binding.claimButton)
         binding.claimButton.setOnClickListener {
             val shouldPassRecordBreakMission = shouldIncrementChestRecordBreakMission
             shouldIncrementChestRecordBreakMission = false
@@ -173,8 +166,8 @@ class ChestResult : Fragment() {
                     if (hasMissionProgress) {
                         fm.beginTransaction()
                             .setCustomAnimations(
-                                R.anim.slide_in_left,
-                                R.anim.slide_out_left,
+                                R.anim.queue_screen_in,
+                                R.anim.queue_screen_out,
                             )
                             .replace(
                                 R.id.abacusFragmentContainer,
@@ -212,20 +205,34 @@ class ChestResult : Fragment() {
                                     it.finalizeMapReturnAfterLessonClaim(
                                         caller = "ChestResult.claimAfterRemove",
                                         badgePayloads = payloads,
+                                        // Derse girerken yakalanan lessonItem; dönüş sırasındaki
+                                        // liste temizliğinden etkilenmiyor.
+                                        isLessonTypeReturn =
+                                            lessonItem.type == LessonItem.TYPE_LESSON,
                                     )
                                 }
                             }
                         }
+                        // Zemin, kayma BAŞLAMADAN kalkıyor; bkz. [LessonResult]'taki aynı
+                        // düzeltme. Zemini completeMapReturn'e bırakmak, yani animasyon
+                        // BİTTİKTEN sonraya, haritanın önce görünüp sonra zeminle
+                        // kapatılmasına yol açıyor.
+                        //
+                        // Aşağıdaki rozet dalı zaten [raisePostLessonQueueOverlayEarly]
+                        // çağırıyor ama o yalnızca belirli bölümlerde ve KOŞULLU çalışıyor;
+                        // buradaki kaldırma koşulsuz ve her dönüşü kapsıyor.
+                        main?.raisePostLessonBackdropForHandoff("ChestResult.claim")
                         val rootView = binding.root
                         rootView.animate()
-                            .translationX(rootView.width.toFloat())
-                            .setDuration(300L)
+                            // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
+                            .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
+                            .setDuration(400L)
                             .withEndAction { completeMapReturn() }
                             .start()
                         // Animasyon kesintiye uğrar da withEndAction hiç çalışmazsa (arka plana alma,
                         // view'ın penceresinden kopması vb.) haritaya dönüşü garantiye alan yedek.
                         android.os.Handler(android.os.Looper.getMainLooper())
-                            .postDelayed({ completeMapReturn() }, 600L)
+                            .postDelayed({ completeMapReturn() }, 700L)
                     }
                 }
 
@@ -237,6 +244,14 @@ class ChestResult : Fragment() {
                 if (shouldIncrementKarate || shouldIncrementTornado || shouldIncrementVolcano) {
                     val safeFm = parentFragmentManager
                     val safeActivity = activity as? MainActivity
+                    GlobalValues.pendingBadgeFirestoreOperation = true
+                    // Rozet kontrolü asenkron (Firestore round-trip) — sonucu netleşene kadar
+                    // haritayı erkenden kilitle (bkz. ChestFragment'teki aynı düzeltme).
+                    (safeActivity?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                        ?.lockTouchForPendingOverlay()
+                    // Zemin de şimdi kalksın: bu ekran birazdan görünmez olacak ve rozet
+                    // gelene kadar arada harita açığa çıkıyor (bkz. ChestFragment'teki aynı düzeltme).
+                    safeActivity?.raisePostLessonQueueOverlayEarly()
                     BadgeProgressFirestore.incrementBadgeProgressAndDetectLevelUp(
                         incrementDart = false,
                         incrementBowlingBy = 0,
@@ -246,6 +261,9 @@ class ChestResult : Fragment() {
                         incrementTornado = shouldIncrementTornado,
                         incrementVolcano = shouldIncrementVolcano,
                         onDone = { payloads ->
+                            GlobalValues.pendingBadgeFirestoreOperation = false
+                            (safeActivity?.supportFragmentManager?.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                                ?.enableMapTouchRouting()
                             if (payloads.isNotEmpty()) {
                                 val stringPayloads = payloads.map { BadgeProgressFirestore.payloadToQueueItem(it) }
                                 val missionFragment = safeFm.findFragmentById(R.id.abacusFragmentContainer) as? MissionChestRewardFragment
@@ -254,12 +272,27 @@ class ChestResult : Fragment() {
                                 } else if (safeActivity != null) {
                                     safeActivity.enqueuePendingBadgePayloads(payloads, stringPayloads)
                                 }
+                            } else {
+                                safeActivity?.tryShowPendingMarathonGuideOnMap("ChestResult.badgeFirestoreOnDone.noPayloads")
                             }
                         },
                     )
                 }
             } else {
                 parentFragmentManager.beginTransaction()
+                    // Girişe BİLEREK animasyon verilmiyor.
+                    //
+                    // Denendi: girişe de kayma verilince iki ekranın arasında boşluk
+                    // açılıyor ve abacusFragmentContainer saydam olduğu için o boşluktan
+                    // HARİTA görünüyor. Kabı opak yapmak da çözüm değil — o zaman ders
+                    // ekranları haritanın üstüne kayarken arkada harita yerine düz bir
+                    // panel kalıyor (bkz. activity_main.xml'deki kap yorumu).
+                    //
+                    // Bu haliyle gelen ChestFragment tam ekran ve opak olduğu için boşluk
+                    // hiç oluşmuyor; ekran kaymadan, anında değişiyor. Gerçekten kayması
+                    // istenirse geçiş boyunca postLessonBackdrop kaldırılmalı (8dp, bu
+                    // kabın altında) — o zaman boşluktan harita değil zemin görünür.
+                    .setCustomAnimations(0, R.anim.queue_screen_out)
                     .replace(
                         R.id.abacusFragmentContainer,
                         ChestFragment().apply {
@@ -268,6 +301,7 @@ class ChestResult : Fragment() {
                                 putFloat("successRate", successRate)
                                 putInt("toplamPuan", toplamPuan)
                                 putInt("dersPuani", dersPuani)
+                                putLong("questionElapsedMs", questionElapsedMs)
                             }
                         },
                     )
@@ -276,10 +310,13 @@ class ChestResult : Fragment() {
         }
     }
 
-    private fun showRandomAnimation() {
-        val randomAnim = animations.random()
-        binding.lottieView.setAnimation(randomAnim)
-        binding.lottieView.playAnimation()
+    /**
+     * Sandık sonucu Sobi'si: dersle aynı torbadan sıradaki sahne ([LessonEndMascot]).
+     * Ekran sağdan kayarak girerken Sobi bekliyor; giriş bitince sahne başlıyor.
+     */
+    private fun playEndMascot() {
+        val emote = LessonEndMascot.nextSuccess(requireContext())
+        binding.mascotView.postDelayed({ _binding?.mascotView?.play(emote) }, LessonEndMascot.ENTER_DELAY_MS)
     }
 
     private fun prepareInitialUiState() {
@@ -676,6 +713,9 @@ class ChestResult : Fragment() {
 
     private fun playStarSoundForTier(tier: Int) {
         if (!isStarSoundLoaded || starSoundId == 0) return
+        // Ses efektleri ayarı kapalıysa çalmıyor (öteki efekt sesleri gibi; önce unutulmuştu).
+        val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
+        if (!prefs.getBoolean("sound_enabled", true)) return
         val rate = when (tier) {
             1 -> 0.9f  // daha kalin
             2 -> 1.0f  // normal

@@ -1,0 +1,1 @@
+Birler sütununda 1 yok, o yüzden 1'i doğrudan çıkaramıyoruz. Bunun yerine 10 gidiyor, sol sütundan 1 boncuk gidiyor ve birler sütununa 1'in kardeşi geliyor. 1'in kardeşi 9'dur, çünkü 1 + 9 = 10; 10 gidip 9 geldiği için 10 − 1 = 9 olur.

@@ -1,6 +1,7 @@
 package com.example.app
 
 import android.content.Context
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
@@ -8,6 +9,27 @@ import com.google.firebase.firestore.SetOptions
 data class UserWallet(
     val keys: Int,
     val currency: Int,
+    /**
+     * Öğretmen danışma kredisi. Sunucuya ait bir alandır (firestore.rules ile istemci
+     * yazımına kapalı); yalnızca satın alma ve askTeacherQuestion değiştirir.
+     * Yerel önbellekte tutulmaz, canlı dinleyiciden gelir.
+     */
+    val questionCredits: Int = 0,
+    /**
+     * Sobi kredisinin gösterim kopyası (users.sobiCredits). Asıl bakiye sunucuda,
+     * istemcinin okuyamadığı sobiChats/{uid}.credits; sunucu her değişiklikte aynı işlemde
+     * buraya da yazıyor. Harcama kararı bu alandan verilmez. İade sonrası eksi olabilir.
+     * [questionCredits] gibi önbellekte tutulmaz, canlı dinleyiciden gelir.
+     */
+    val sobiCredits: Int = 0,
+    /**
+     * Süre kontrolü uygulanmış GEÇERLİ plan (bkz. PlanStatus).
+     *
+     * Plan, istemcide hiçbir olay üretmeden değişebilir: RTDN'nin ilettiği yenileme ve
+     * iptal, aboneliğin süresinin dolması, başka bir cihazdan yapılan işlem. Bu canlı
+     * dinleyici, arayüzün bunları öğrenebildiği tek kanaldır.
+     */
+    val plan: String = "Free",
     /**
      * Harcama çağrılarında sunucunun ürettiği tek kullanımlık geri alma jetonu.
      *
@@ -46,10 +68,24 @@ object WalletReason {
 object UserWalletFirestore {
     const val FIELD_KEYS = "keys"
     const val FIELD_CURRENCY = "currency"
+    const val FIELD_QUESTION_CREDITS = "questionCredits"
+    const val FIELD_SOBI_CREDITS = "sobiCredits"
     const val DEFAULT_KEYS = 1
     const val DEFAULT_CURRENCY = 0
 
     private const val PREFS_APP = "app_prefs"
+
+    /**
+     * Cüzdan önbelleği KULLANICIYA ÖZELDİR: aynı cihazda hesap değiştiğinde önceki
+     * kullanıcının altın/anahtar bakiyesi yeni kullanıcıya görünmesin diye dosya adı uid
+     * içerir. Değerler zaten Firestore'dan tazeleniyor; bu yalnızca ilk karede gösterilen
+     * önbellektir.
+     */
+    private fun walletPrefs(context: Context): android.content.SharedPreferences {
+        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        val suffix = if (uid.isNullOrEmpty()) "guest" else uid
+        return context.getSharedPreferences(PREFS_APP + "_" + suffix, Context.MODE_PRIVATE)
+    }
     private const val PREF_CURRENCY = "currency"
     private const val PREF_CURRENCY_MIGRATED = "currency_migrated_to_firestore"
 
@@ -57,6 +93,57 @@ object UserWalletFirestore {
         FIELD_KEYS to DEFAULT_KEYS,
         FIELD_CURRENCY to DEFAULT_CURRENCY,
     )
+
+    /**
+     * Öğretmen hesabının cüzdanı istemcide gerçek bakiyeyle değil, kipiyle görünür:
+     * - onaysız öğretmen: altın ve anahtar 0 — hiçbir şey yapamıyor, kayıtta verilmiş
+     *   anahtarı da harcayamamalı;
+     * - onaylı öğretmen: sınırsız ([UNLIMITED_BALANCE]) — "yeter mi" kontrolleri
+     *   (özelleştirme, yarış hızlandırma, günlük soru devamı) kendiliğinden geçer.
+     *
+     * Kip tek tek ekranlarda değil burada uygulanıyor, çünkü bakiyeyi okuyan herkes (üst
+     * panel, mağaza, özelleştirme) ya bu dinleyiciden, ya [applyDelta] sonucundan ya da
+     * önbellekten okuyor. Önbellek GERÇEK değeri tutar, kip okurken uygulanır: kip
+     * değişince (destek onaylar ya da onayı geri alır) eski değer yanlış kipte kalmaz.
+     *
+     * Sunucudaki bakiyeye dokunulmuyor; onaylı öğretmende harcama sunucuda no-op
+     * (functions/index.js → isApprovedTeacher), onaysızda reddediliyor.
+     */
+    private const val PREF_WALLET_MODE = "wallet_mode"
+    private const val MODE_NORMAL = 0
+    private const val MODE_LOCKED = 1
+    private const val MODE_UNLIMITED = 2
+
+    /** Onaylı öğretmenin görünen bakiyesi. Hesaba yazılmaz; yalnızca karşılaştırmalar için. */
+    const val UNLIMITED_BALANCE = 9_999_999
+
+    private fun modeOf(doc: DocumentSnapshot): Int = when {
+        doc.getString("role") != "TEACHER" -> MODE_NORMAL
+        doc.getBoolean("teacherApproved") == true -> MODE_UNLIMITED
+        else -> MODE_LOCKED
+    }
+
+    private fun rememberMode(context: Context, doc: DocumentSnapshot) {
+        walletPrefs(context).edit().putInt(PREF_WALLET_MODE, modeOf(doc)).apply()
+    }
+
+    private fun visible(context: Context, raw: Int): Int =
+        when (walletPrefs(context).getInt(PREF_WALLET_MODE, MODE_NORMAL)) {
+            MODE_LOCKED -> 0
+            MODE_UNLIMITED -> UNLIMITED_BALANCE
+            else -> raw
+        }
+
+    /** Bakiye sayı yerine "∞" ile gösterilmeli mi (onaylı öğretmen). */
+    fun isUnlimited(context: Context): Boolean =
+        walletPrefs(context).getInt(PREF_WALLET_MODE, MODE_NORMAL) == MODE_UNLIMITED
+
+    /**
+     * Bakiyenin ekrandaki metni. Yalnızca geri OKUNMAYAN metinler için: MainActivity ve
+     * mağaza harcamada bakiyeyi kendi metinlerinden parse ediyor, onlara "∞" yazılamaz.
+     */
+    fun displayText(context: Context, value: Int): String =
+        if (isUnlimited(context)) "∞" else value.toString()
 
     fun loadWallet(
         context: Context,
@@ -86,13 +173,13 @@ object UserWalletFirestore {
                         .document(uid)
                         .update(patch)
                 }
+                rememberMode(context, doc)
                 cacheLocally(context, keys, currency)
-                onResult(UserWallet(keys = keys, currency = currency))
+                onResult(UserWallet(keys = visible(context, keys), currency = visible(context, currency)))
             }
             .addOnFailureListener { e ->
                 onFailure?.invoke(e)
-                val keys = context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
-                    .getInt(FIELD_KEYS, DEFAULT_KEYS)
+                val keys = getCachedKeys(context)
                 val currency = getCachedCurrency(context)
                 onResult(UserWallet(keys = keys, currency = currency))
             }
@@ -110,8 +197,18 @@ object UserWalletFirestore {
                 if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
                 val keys = snapshot.getLong(FIELD_KEYS)?.toInt() ?: DEFAULT_KEYS
                 val currency = snapshot.getLong(FIELD_CURRENCY)?.toInt() ?: resolveCurrencyForMigration(context)
+                val credits = snapshot.getLong(FIELD_QUESTION_CREDITS)?.toInt() ?: 0
+                rememberMode(context, snapshot)
                 cacheLocally(context, keys, currency)
-                onUpdate(UserWallet(keys, currency))
+                onUpdate(
+                    UserWallet(
+                        visible(context, keys),
+                        visible(context, currency),
+                        questionCredits = credits,
+                        sobiCredits = snapshot.getLong(FIELD_SOBI_CREDITS)?.toInt() ?: 0,
+                        plan = PlanStatus.effectivePlan(snapshot),
+                    )
+                )
             }
     }
 
@@ -128,9 +225,10 @@ object UserWalletFirestore {
         delta: Int,
         reason: String,
         rollbackToken: String? = null,
+        itemId: String? = null,
         onSuccess: ((UserWallet) -> Unit)? = null,
         onFailure: ((Exception) -> Unit)? = null,
-    ) = applyDelta(context, keyDelta = delta, currencyDelta = 0, reason = reason, rollbackToken = rollbackToken, onSuccess = onSuccess, onFailure = onFailure)
+    ) = applyDelta(context, keyDelta = delta, currencyDelta = 0, reason = reason, rollbackToken = rollbackToken, itemId = itemId, onSuccess = onSuccess, onFailure = onFailure)
 
     /**
      * Altın bakiyesini [delta] kadar değiştirir. Gerekçe kuralları için bkz. [applyKeyDelta].
@@ -141,9 +239,10 @@ object UserWalletFirestore {
         delta: Int,
         reason: String,
         rollbackToken: String? = null,
+        itemId: String? = null,
         onSuccess: ((UserWallet) -> Unit)? = null,
         onFailure: ((Exception) -> Unit)? = null,
-    ) = applyDelta(context, keyDelta = 0, currencyDelta = delta, reason = reason, rollbackToken = rollbackToken, onSuccess = onSuccess, onFailure = onFailure)
+    ) = applyDelta(context, keyDelta = 0, currencyDelta = delta, reason = reason, rollbackToken = rollbackToken, itemId = itemId, onSuccess = onSuccess, onFailure = onFailure)
 
     private fun applyDelta(
         context: Context,
@@ -151,6 +250,7 @@ object UserWalletFirestore {
         currencyDelta: Int,
         reason: String,
         rollbackToken: String?,
+        itemId: String?,
         onSuccess: ((UserWallet) -> Unit)?,
         onFailure: ((Exception) -> Unit)?,
     ) {
@@ -167,10 +267,14 @@ object UserWalletFirestore {
             .call(data)
             .addOnSuccessListener { result ->
                 val resultData = result.data as? Map<*, *>
-                val keys = (resultData?.get("keys") as? Number)?.toInt() ?: getCachedKeys(context)
-                val currency = (resultData?.get("currency") as? Number)?.toInt() ?: getCachedCurrency(context)
-
-                cacheLocally(context, keys, currency)
+                // Sunucu GERÇEK bakiyeyi döndürüyor; önbelleğe o yazılır, ekrana kipiyle gider.
+                val rawKeys = (resultData?.get("keys") as? Number)?.toInt() ?: rawCachedKeys(context)
+                val rawCurrency = (resultData?.get("currency") as? Number)?.toInt() ?: rawCachedCurrency(context)
+                cacheLocally(context, rawKeys, rawCurrency)
+                val keys = visible(context, rawKeys)
+                val currency = visible(context, rawCurrency)
+                // Onaylı öğretmenin "harcaması" gerçek değil (sunucuda no-op); öğrenci ölçümüne karışmasın.
+                if (!isUnlimited(context)) logSpend(keyDelta, currencyDelta, reason, itemId)
                 onSuccess?.invoke(
                     UserWallet(
                         keys = keys,
@@ -184,16 +288,53 @@ object UserWalletFirestore {
             }
     }
 
-    fun getCachedKeys(context: Context): Int =
-        context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
-            .getInt(FIELD_KEYS, DEFAULT_KEYS)
+    /**
+     * Harcamayı ölçüme yazar. Altın/anahtar düşüren BÜTÜN ekranlar [applyKeyDelta] /
+     * [applyCurrencyDelta] üzerinden geçtiği için tek yakınsama noktası burasıdır; harcama
+     * ekranlarının her birine ayrı kanca takılsaydı yeni bir ekran eklendiğinde sessizce
+     * eksik kalırdı.
+     *
+     * Yalnızca sunucu işlemi ONAYLADIKTAN sonra çağırılır: reddedilen harcama harcama değildir.
+     *
+     * İki filtre var:
+     * - [WalletReason.PURCHASE_ROLLBACK] iadedir, harcama değil;
+     * - delta POZİTİFse bakiye artmış demektir (sandık/kristal ödülleri zaten bu yoldan hiç
+     *   geçmez, sunucuda yazılır).
+     *
+     * [itemId] null gelirse `unknown` yazılır — olayı hiç göndermemek, yeni bir harcama
+     * noktasının kimlik geçirmeyi unuttuğunu görünmez kılardı.
+     */
+    private fun logSpend(keyDelta: Int, currencyDelta: Int, reason: String, itemId: String?) {
+        if (reason != WalletReason.SPEND) return
+        val id = itemId ?: "unknown"
+        if (keyDelta < 0) AnalyticsLogger.logKeySpent(id, -keyDelta)
+        if (currencyDelta < 0) AnalyticsLogger.logGoldSpent(id, -currencyDelta)
+    }
 
-    fun getCachedCurrency(context: Context): Int =
-        context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
-            .getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
+    /** Görünen anahtar bakiyesi: öğretmen kipi uygulanmış (bkz. [visible]). */
+    fun getCachedKeys(context: Context): Int = visible(context, rawCachedKeys(context))
+
+    /** Görünen altın bakiyesi: öğretmen kipi uygulanmış (bkz. [visible]). */
+    fun getCachedCurrency(context: Context): Int = visible(context, rawCachedCurrency(context))
+
+    private fun rawCachedKeys(context: Context): Int =
+        walletPrefs(context).getInt(FIELD_KEYS, DEFAULT_KEYS)
+
+    private fun rawCachedCurrency(context: Context): Int =
+        walletPrefs(context).getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
+
+    /** Yalnızca altın bakiyesini önbelleğe yazar (MainActivity.saveCurrency için). */
+    fun cacheCurrency(context: Context, value: Int) {
+        walletPrefs(context).edit().putInt(PREF_CURRENCY, value).apply()
+    }
+
+    /** Yalnızca anahtar bakiyesini önbelleğe yazar (MainActivity.saveKeys için). */
+    fun cacheKeys(context: Context, value: Int) {
+        walletPrefs(context).edit().putInt(FIELD_KEYS, value).apply()
+    }
 
     private fun cacheLocally(context: Context, keys: Int, currency: Int) {
-        context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
+        walletPrefs(context)
             .edit()
             .putInt(FIELD_KEYS, keys)
             .putInt(PREF_CURRENCY, currency)
@@ -201,7 +342,7 @@ object UserWalletFirestore {
     }
 
     private fun resolveCurrencyForMigration(context: Context): Int {
-        val prefs = context.getSharedPreferences(PREFS_APP, Context.MODE_PRIVATE)
+        val prefs = walletPrefs(context)
         if (!prefs.getBoolean(PREF_CURRENCY_MIGRATED, false)) {
             val legacy = prefs.getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
             prefs.edit().putBoolean(PREF_CURRENCY_MIGRATED, true).apply()

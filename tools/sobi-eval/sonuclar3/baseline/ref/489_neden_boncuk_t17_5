@@ -1,0 +1,1 @@
+Bu sütunda 3 var ve 8'i doğrudan çıkaramayız. 10'luk kural burada da 10 gider ve kardeşi gelir diyor; 8'in kardeşi 2'dir. Ama 3'ün üstüne 2 birlik gelirse 5 olur ve alt sütunda en fazla 4 birlik olabildiği için 2 doğrudan gelemiyor. Bu yüzden boncuk kuralını kullanıyoruz: 5 gelir, kardeşin kardeşi olan 3 gider.

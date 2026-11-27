@@ -36,6 +36,7 @@
 
             <TextView
                 android:id="@+id/rowName"
+                android:textAlignment="viewStart"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="15sp"
@@ -45,6 +46,7 @@
 
             <TextView
                 android:id="@+id/rowTime"
+                android:textAlignment="viewStart"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"

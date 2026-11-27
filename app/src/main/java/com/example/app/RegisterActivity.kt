@@ -19,6 +19,7 @@ import android.text.style.StyleSpan
 import androidx.core.content.ContextCompat
 import com.google.android.material.snackbar.Snackbar
 import com.example.app.auth.AuthManager
+import com.example.app.auth.ParentalConsentPolicy
 import com.example.app.databinding.ActivityRegisterBinding
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -28,10 +29,22 @@ import android.util.Log
 
 class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
+
     private lateinit var binding: ActivityRegisterBinding
     private lateinit var authManager: AuthManager
     private var resendCooldownTimer: CountDownTimer? = null
     private var isGoogleFlowInProgress: Boolean = false
+
+    /**
+     * Durum kaydedildikten sonra (kullanıcı kodu okumak için e-posta uygulamasına geçtiğinde)
+     * gelen ağ cevabının açmak istediği adım. `commit()` o anda IllegalStateException atıyordu;
+     * adım burada bekletilip [onResume]'da açılıyor, böylece kullanıcı döndüğünde doğru
+     * ekranı (kod / veli onayı) görüyor.
+     */
+    private var pendingStepTransition: (() -> Unit)? = null
     
     companion object {
         const val EXTRA_ACQUISITION_SOURCE = "extra_acquisition_source"
@@ -39,6 +52,13 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         const val EXTRA_FORCE_TEACHER = "extra_force_teacher"
         const val EXTRA_FORCE_STUDENT = "extra_force_student"
         const val EXTRA_BIRTH_YEAR = "extra_birth_year"
+
+        /**
+         * Hesabın "az önce açıldı" sayılacağı pencere. Yeni kayıtta Auth kaydı saniyeler
+         * önce oluşur; mevcut bir hesapla giriş yapıldığında günler/aylar öncesidir. Pencere
+         * bol tutuldu çünkü ağ gecikmesi ve saat kayması araya girebiliyor.
+         */
+        private const val NEW_ACCOUNT_WINDOW_MS = 2 * 60 * 1000L
     }
 
     private var currentForcedRole: ForcedRole = ForcedRole.STUDENT
@@ -80,6 +100,10 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
     override fun onResume() {
         super.onResume()
+        pendingStepTransition?.let { step ->
+            pendingStepTransition = null
+            step()
+        }
         if (binding.emailStepContainer.visibility == android.view.View.VISIBLE) {
             updateContinueButtonForResendCooldown()
         }
@@ -93,8 +117,18 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        // Eğer bu activity kapatılırken FirebaseAuth'ta bir kullanıcı varsa
-        // ve Firestore'da buna ait tam bir profil yoksa, bu yarım oluşmuş hesabı sil.
+        // Yeniden oluşturmada (tema/dil değişimi) kayıt sürüyor: veli onayı beklenirken
+        // açık Google kaydını silmek, onay gelince hesabı açılamaz hale getirirdi.
+        if (isChangingConfigurations) return
+        deleteIncompleteAuthUser()
+    }
+
+    /**
+     * FirebaseAuth'ta bir kullanıcı varsa ve Firestore'da buna ait tam bir profil yoksa, bu
+     * yarım oluşmuş hesabı siler. Google ile kayıtta veli onayı beklenirken (13 yaş altı)
+     * vazgeçilirse de bu yoldan silinir; sunucudaki saatlik temizlik ikinci emniyet.
+     */
+    private fun deleteIncompleteAuthUser() {
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser ?: return
         val uid = currentUser.uid
@@ -130,6 +164,10 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                                 if (currentForcedRole == ForcedRole.TEACHER) {
                                     showTeacherStep()
                                 } else {
+                                    // Google ile veli onayı ekranından dönüldüyse açık kalan
+                                    // yarım Google kaydı burada silinir; e-posta adımında başka
+                                    // bir yol seçilirse arkada sahipsiz kalmasın.
+                                    deleteIncompleteAuthUser()
                                     showEmailStep()
                                 }
                             }, 350)
@@ -143,6 +181,10 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
             }
         }
         
+        DepthButtons.primary(binding.btnContinue)
+        DepthButtons.primary(binding.btnRegister)
+        DepthButtons.google(binding.btnGoogleSignIn)
+
         // Öğrenci kaydı: OTP akışı
         binding.btnContinue.setOnClickListener {
             requireOnlineOrShowOffline {
@@ -150,11 +192,11 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 val email = binding.etEmail.text?.toString()?.trim() ?: ""
 
                 if (email.isEmpty()) {
-                    showError("Lütfen e-posta girin")
+                    showError(appString(R.string.ui_lutfen_e_posta_girin))
                     return@requireOnlineOrShowOffline
                 }
                 if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-                    showError("Geçerli bir e-posta adresi giriniz.")
+                    showError(appString(R.string.ui_gecerli_bir_e_posta_adresi_giriniz))
                     return@requireOnlineOrShowOffline
                 }
 
@@ -186,15 +228,22 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
     }
 
     private fun setupTermsAndPrivacyText() {
-        val fullText = "Hesap oluşturarak Kullanım Şartlarını ve Gizlilik Politikasını kabul etmiş olursunuz."
+        val fullText = appString(R.string.ui_hesap_olusturarak_kullanim_sartlarini_ve_giz)
         val spannable = SpannableStringBuilder(fullText)
 
-        val termsText = "Kullanım Şartlarını"
-        val privacyText = "Gizlilik Politikasını"
+        val termsText = appString(R.string.ui_kullanim_sartlarini)
+        val privacyText = appString(R.string.ui_gizlilik_politikasini)
         // Tek sayfada birleşik: privacy-policy.html hem Gizlilik Politikası (Part I) hem
         // Kullanım Şartları (Part II) içeriyor, çapa (#pp-1 / #tos-1) doğru bölüme atlıyor.
-        val termsUrl = "https://numigo-new.web.app/privacy-policy.html#tos-1"
-        val policyUrl = "https://numigo-new.web.app/privacy-policy.html#pp-1"
+        // Sayfa uygulamanın dilinde (privacy-policy-tr / -id / -ar; İngilizce asıl metin); çapalar hepsinde aynı.
+        val page = when (AppLanguage.current(this)) {
+            AppLanguage.TURKISH -> "privacy-policy-tr.html"
+            AppLanguage.INDONESIAN -> "privacy-policy-id.html"
+            AppLanguage.ARABIC -> "privacy-policy-ar.html"
+            else -> "privacy-policy.html"
+        }
+        val termsUrl = "https://numigo-new.web.app/$page#tos-1"
+        val policyUrl = "https://numigo-new.web.app/$page#pp-1"
 
         val termsStart = fullText.indexOf(termsText)
         if (termsStart != -1) {
@@ -265,7 +314,20 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
 
     private enum class ForcedRole { STUDENT, TEACHER }
 
+    /**
+     * Formu role göre kurar ve kayıt hunisinin form adımını bildirir.
+     *
+     * Ölçüm [showEmailStep] / [showTeacherStep] içinde DEĞİL: o ikisi yalnızca kod ekranından
+     * geri dönüldüğünde çağrılıyor, formun ilk göründüğü an değil. Oraya konsaydı huninin form
+     * adımı yalnızca geri dönenleri sayar ve neredeyse boş görünürdü.
+     */
     private fun updateUIForRole(role: ForcedRole) {
+        AnalyticsLogger.logSignupStep(
+            stage = if (role == ForcedRole.TEACHER) AnalyticsLogger.SIGNUP_TEACHER_FORM
+                    else AnalyticsLogger.SIGNUP_EMAIL,
+            role = if (role == ForcedRole.TEACHER) AnalyticsLogger.SIGNUP_ROLE_TEACHER
+                   else AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+        )
         when (role) {
             ForcedRole.STUDENT -> {
                 // Öğrenci kaydı: OTP akışı
@@ -317,12 +379,12 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 override fun onFinish() {
                     resendCooldownTimer = null
                     binding.btnContinue.isEnabled = true
-                    binding.btnContinue.text = "Devam Et"
+                    binding.btnContinue.text = appString(R.string.ui_devam_et_2)
                 }
             }.start()
         } else {
             binding.btnContinue.isEnabled = true
-            binding.btnContinue.text = "Devam Et"
+            binding.btnContinue.text = appString(R.string.ui_devam_et_2)
         }
     }
 
@@ -359,21 +421,21 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         }
 
         binding.btnContinue.isEnabled = false
-        binding.btnContinue.text = "Gönderiliyor..."
+        binding.btnContinue.text = appString(R.string.ui_gonderiliyor)
         binding.btnBack.isEnabled = false
         binding.btnGoogleSignIn.isEnabled = false
 
         authManager.isEmailRegistered(email) { alreadyRegistered, uid, role ->
             fun reenableBackAndContinue() {
                 binding.btnContinue.isEnabled = true
-                binding.btnContinue.text = "Devam Et"
+                binding.btnContinue.text = appString(R.string.ui_devam_et_2)
                 binding.btnBack.isEnabled = true
                 binding.btnGoogleSignIn.isEnabled = true
             }
             if (alreadyRegistered && !uid.isNullOrEmpty()) {
                 if (role == AuthManager.ROLE_TEACHER) {
                     reenableBackAndContinue()
-                    showError("Bu e-posta ile öğrenci hesabı açılamaz.")
+                    showError(appString(R.string.ui_bu_e_posta_ile_ogrenci_hesabi))
                     return@isEmailRegistered
                 }
                 // Zaten kayıtlı (öğrenci): giriş için kod gönder
@@ -381,41 +443,59 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                     reenableBackAndContinue()
                     if (success) {
                         OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
-                        hideKeyboard()
-                        showCodeStep()
-                        supportFragmentManager.beginTransaction()
-                            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                            .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email.trim().lowercase(), isRegistration = false))
-                            .addToBackStack("otp")
-                            .commit()
+                        runStepTransitionSafely {
+                            hideKeyboard()
+                            showCodeStep()
+                            supportFragmentManager.beginTransaction()
+                                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                                .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email.trim().lowercase(), isRegistration = false))
+                                .addToBackStack("otp")
+                                .commit()
+                        }
                     } else {
-                        showError(error ?: "Kod gönderilemedi")
+                        showError(error ?: appString(R.string.ui_kod_gonderilemedi))
                     }
                 }
             } else if (alreadyRegistered) {
                 reenableBackAndContinue()
-                showError("Kod gönderilemedi")
+                showError(appString(R.string.ui_kod_gonderilemedi))
             } else {
                 // Yeni kayıt: pending oluştur, kod gönder, isRegistration = true
                 authManager.createPendingRegistrationForOTP(email) { createSuccess, createError ->
                     if (!createSuccess) {
                         reenableBackAndContinue()
-                        showError(createError ?: "İşlem başarısız")
+                        showError(createError ?: appString(R.string.ui_islem_basarisiz))
+                        return@createPendingRegistrationForOTP
+                    }
+                    val year = birthYear
+                    if (ParentalConsentPolicy.requiresParentalConsent(year) && year != null) {
+                        // 13 yaş altı: kod çocuğa değil veliye gidecek; önce velinin
+                        // e-postasını soruyoruz. Kod o ekrandan gönderiliyor.
+                        reenableBackAndContinue()
+                        showParentConsentStep(normalizedEmail, isGoogle = false, birthYear = year)
                         return@createPendingRegistrationForOTP
                     }
                     authManager.resendStudentVerificationCode(email, isRegistration = true) { success, error ->
                         reenableBackAndContinue()
                         if (success) {
+                            // YALNIZCA yeni kayıt dalında. Üstteki dal zaten kayıtlı e-posta
+                            // için kod gönderiyor; o bir giriş ve huniye katılırsa payda şişer.
+                            AnalyticsLogger.logSignupStep(
+                                AnalyticsLogger.SIGNUP_OTP_SENT,
+                                AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                            )
                             OtpVerificationFragment.startResendCooldownInPrefs(this, normalizedEmail)
-                            hideKeyboard()
-                            showCodeStep()
-                            supportFragmentManager.beginTransaction()
-                                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                                .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
-                                .addToBackStack("otp")
-                                .commit()
+                            runStepTransitionSafely {
+                                hideKeyboard()
+                                showCodeStep()
+                                supportFragmentManager.beginTransaction()
+                                    .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                                    .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
+                                    .addToBackStack("otp")
+                                    .commit()
+                            }
                         } else {
-                            showError(error ?: "Kod gönderilemedi")
+                            showError(error ?: appString(R.string.ui_kod_gonderilemedi))
                         }
                     }
                 }
@@ -423,6 +503,34 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         }
     }
     
+    /**
+     * Google ile kayıt tamamlandıysa huninin son adımını bildirir.
+     *
+     * ## Neden gerekiyordu
+     * Google yolu OTP akışını tamamen atlıyor: [handleGoogleSignInResult] başarılı olunca
+     * doğrudan MainActivity'ye gidiliyor. Ölçüm yalnızca OTP dalında olduğu için Google ile
+     * kaydolan kullanıcı hunide "e-posta adımında düştü" görünüyordu — oysa hesabını açmıştı.
+     * Google ile kayıt yaygınsa son adım olduğundan düşük çıkar ve "OTP ekranında herkesi
+     * kaybediyorum" gibi yanlış bir sonuca götürür.
+     *
+     * ## Neden hesap yaşına bakılıyor
+     * Bu dal hem YENİ kayıt hem de mevcut bir Google hesabıyla GİRİŞ olabiliyor;
+     * `handleGoogleSignInResult` geri çağırımı ikisini ayırmıyor ve AuthManager'ın ortak
+     * imzasını bunun için değiştirmek istemedik. Firebase Auth'un `creationTimestamp`'i ayrımı
+     * zaten taşıyor: yeni açılan hesapta saniyeler, mevcut hesapta günler öncesi. Girişleri
+     * kayıt saymak huniyi şişirirdi — OTP dalında da aynı ayrımı yapıyoruz (zaten kayıtlı
+     * e-postaya kod gönderilmesi `otp_sent` üretmiyor).
+     */
+    private fun logSignupCompletedIfNewAccount() {
+        val createdAt = FirebaseAuth.getInstance().currentUser?.metadata?.creationTimestamp ?: return
+        val ageMs = System.currentTimeMillis() - createdAt
+        if (ageMs !in 0..NEW_ACCOUNT_WINDOW_MS) return
+        AnalyticsLogger.logSignupStep(
+            AnalyticsLogger.SIGNUP_COMPLETED,
+            AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+        )
+    }
+
     private fun signInWithGoogle() {
         android.util.Log.d("RegisterActivity", "signInWithGoogle() çağrıldı - kayıt için")
         
@@ -441,13 +549,13 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                         android.util.Log.e("RegisterActivity", "Google Sign-In Intent null!")
                         setScreenEnabled(true)
                         isGoogleFlowInProgress = false
-                        showError("Google kaydı başlatılamadı")
+                        showError(appString(R.string.ui_google_kaydi_baslatilamadi))
                     }
                 } catch (e: Exception) {
                     android.util.Log.e("RegisterActivity", "Google Sign-In başlatılırken hata oluştu", e)
                     setScreenEnabled(true)
                     isGoogleFlowInProgress = false
-                    showError("Google kaydı başlatılamadı: ${e.localizedMessage}")
+                    showError(appString(R.string.ui_google_kaydi_baslatilamadi_x, e.localizedMessage))
                 }
             }
     }
@@ -461,12 +569,18 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 // Play Services, imza/paket uyuşmazlığında da "iptal" gibi döner. Gerçek nedeni
                 // ApiException'ın durum kodundan oku: 10 = DEVELOPER_ERROR (SHA-1 eşleşmiyor),
                 // 12501 = kullanıcı gerçekten iptal etti, 7 = ağ hatası.
+                val reason = googleSignInFailureReason(data)
                 android.util.Log.w(
                     "RegisterActivity",
-                    "Google Sign-In tamamlanmadı: ${googleSignInFailureReason(data)}"
+                    "Google Sign-In tamamlanmadı: $reason"
                 )
                 setScreenEnabled(true)
                 isGoogleFlowInProgress = false
+                if (!reason.contains("kullanıcı geri tuşuna basmış olabilir")
+                    && !reason.contains("statusCode=12501")
+                ) {
+                    showError(appString(R.string.ui_google_kaydi_basarisiz_x, reason))
+                }
                 return
             }
 
@@ -485,19 +599,60 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 if (success) {
                     // Google Sign-In ile gelen kullanıcılar otomatik öğrenci olarak kaydedilir/giriş yapar
                     android.util.Log.d("RegisterActivity", "Google ile işlem başarılı, MainActivity'ye yönlendiriliyor")
+                    logSignupCompletedIfNewAccount()
                     setResult(RESULT_OK)
                     startActivity(Intent(this, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
                     finish()
+                } else if (error == AuthManager.PARENTAL_CONSENT_REQUIRED) {
+                    // 13 yaş altı: Google oturumu açık, hesap henüz yok. Velinin onayıyla
+                    // sunucu açacak.
+                    val childEmail = FirebaseAuth.getInstance().currentUser?.email
+                    val year = birthYear
+                    if (childEmail.isNullOrBlank() || year == null) {
+                        deleteIncompleteAuthUser()
+                        showError(appString(R.string.ui_google_kaydi_basarisiz))
+                    } else {
+                        showParentConsentStep(childEmail, isGoogle = true, birthYear = year)
+                    }
                 } else {
                     // Sadece gerçek hataları göster, kullanıcı iptal ettiyse sessizce dön
-                    if (error != "Kullanıcı girişi iptal edildi") {
-                        showError(error ?: "Google kaydı başarısız")
+                    if (error != appString(R.string.ui_kullanici_girisi_iptal_edildi)) {
+                        showError(error ?: appString(R.string.ui_google_kaydi_basarisiz))
                     }
                 }
             }
         }
     }
     
+    /** 13 yaş altı kayıt: velinin e-postasını soran ekran (bkz. [ParentConsentFragment]). */
+    private fun showParentConsentStep(childEmail: String, isGoogle: Boolean, birthYear: Int) = runStepTransitionSafely {
+        hideKeyboard()
+        showCodeStep()
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+            .replace(
+                R.id.fragmentContainer,
+                ParentConsentFragment.newInstance(childEmail, isGoogle, birthYear, acquisitionSource)
+            )
+            .addToBackStack("parent_consent")
+            .commit()
+    }
+
+    /**
+     * Ağ cevabından sonra adım değiştiren geçişleri güvenle çalıştırır: activity kapanıyorsa
+     * hiçbir şey yapmaz; durum kaydedilmişse (uygulama arka planda) geçişi [onResume]'a erteler.
+     * `commitAllowingStateLoss` yerine erteleme seçildi: o, süreç ölürse adımı sessizce
+     * kaybederdi; burada kullanıcı döndüğünde adım gerçekten açılıyor.
+     */
+    private fun runStepTransitionSafely(step: () -> Unit) {
+        if (isFinishing || isDestroyed) return
+        if (supportFragmentManager.isStateSaved) {
+            pendingStepTransition = step
+            return
+        }
+        step()
+    }
+
     private fun registerTeacherWithOtp() {
         val name = binding.etName.text.toString().trim()
         val email = binding.etTeacherEmail.text.toString().trim()
@@ -505,19 +660,19 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         val passwordConfirm = binding.etApprovalCode.text.toString()
         
         if (email.isEmpty() || name.isEmpty() || password.isEmpty() || passwordConfirm.isEmpty()) {
-            showError("Lütfen tüm alanları doldurun")
+            showError(appString(R.string.ui_lutfen_tum_alanlari_doldurun))
             return
         }
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            showError("Geçerli bir e-posta adresi giriniz.")
+            showError(appString(R.string.ui_gecerli_bir_e_posta_adresi_giriniz))
             return
         }
         if (password.length < 6) {
-            showError("Şifre en az 6 karakter olmalı")
+            showError(appString(R.string.ui_sifre_en_az_6_karakter_olmali))
             return
         }
         if (password != passwordConfirm) {
-            showError("Şifreler eşleşmiyor")
+            showError(appString(R.string.ui_sifreler_eslesmiyor))
             return
         }
         
@@ -525,9 +680,9 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
         authManager.isEmailRegistered(email) { alreadyRegistered, _, role ->
             if (alreadyRegistered) {
                 if (role == AuthManager.ROLE_TEACHER) {
-                    showError("Bu e-posta zaten bir öğretmen hesabı ile kayıtlı. Lütfen öğretmen giriş ekranını kullanın.")
+                    showError(appString(R.string.ui_bu_e_posta_zaten_bir_ogretmen))
                 } else {
-                    showError("Bu e-posta başka bir hesapta kullanılıyor.")
+                    showError(appString(R.string.ui_bu_e_posta_baska_bir_hesapta))
                 }
                 return@isEmailRegistered
             }
@@ -539,22 +694,24 @@ class RegisterActivity : AppCompatActivity(), OnOtpVerifyProgressListener {
                 if (!success) {
                     binding.btnBack.isEnabled = true
                     binding.btnRegister.isEnabled = true
-                    showError(error ?: "İşlem başarısız")
+                    showError(error ?: appString(R.string.ui_islem_basarisiz))
                     return@createPendingTeacherRegistrationForOTP
                 }
                 authManager.resendStudentVerificationCode(email, isRegistration = true) { codeSuccess, codeError ->
                     binding.btnBack.isEnabled = true
                     binding.btnRegister.isEnabled = true
                     if (codeSuccess) {
-                        hideKeyboard()
-                        showCodeStep()
-                        supportFragmentManager.beginTransaction()
-                            .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
-                            .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
-                            .addToBackStack("otp")
-                            .commit()
+                        runStepTransitionSafely {
+                            hideKeyboard()
+                            showCodeStep()
+                            supportFragmentManager.beginTransaction()
+                                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                                .replace(R.id.fragmentContainer, OtpVerificationFragment.newInstance(email, isRegistration = true, birthYear = birthYear, acquisitionSource = acquisitionSource))
+                                .addToBackStack("otp")
+                                .commit()
+                        }
                     } else {
-                        showError(codeError ?: "Kod gönderilemedi")
+                        showError(codeError ?: appString(R.string.ui_kod_gonderilemedi))
                     }
                 }
             }

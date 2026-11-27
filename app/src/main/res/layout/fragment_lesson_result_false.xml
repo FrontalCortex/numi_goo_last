@@ -7,29 +7,28 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:gravity="center_horizontal"
+    android:background="@color/background_color"
     android:layout_gravity="center"
-    android:background="#101820"
     android:paddingHorizontal="24dp"
-    android:paddingTop="80dp">
+    android:paddingTop="48dp">
 
-    <!-- Karakter ve animasyonlar için bir ImageView -->
-    <!-- tools:visibility="gone" = Layout Editor'da çizilmez, Android Studio çökmesi önlenir; uygulama çalışırken görünür -->
-    <com.airbnb.lottie.LottieAnimationView
-        android:id="@+id/lottieView"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_gravity="center"
-        tools:visibility="gone"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
-        app:lottie_fileName="animation_one.json" />
+    <!--
+      Sobi: başarısız derste hep üzgün → kararlı. Başlık, açıklama, kutular ve düğme ekranın
+      altında toplanıyor; Sobi üstte kalan bütün yeri kaplıyor (çizim kendini kareye
+      sığdırıp ortalıyor).
+    -->
+    <com.example.app.BunnyMascotView
+        android:id="@+id/mascotView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <!-- Başlık -->
     <TextView
         android:id="@+id/resultTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Ders Geçilemedi!"
+        android:text="@string/fragment_lesson_result_false_result_title"
         android:textColor="#E93939"
         android:textSize="28sp"
         android:textStyle="bold"
@@ -38,11 +37,10 @@
         android:id="@+id/resultTitleComment"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Başarı oranı %80'den düşük!"
+        android:text="@string/fragment_lesson_result_false_result_title_comment"
         android:textColor="#E00000"
         android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="32dp"/>
+        android:textStyle="bold"/>
 
     <!-- Sonuç kutuları -->
     <LinearLayout
@@ -50,7 +48,8 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginBottom="32dp">
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="16dp">
 
         <!-- Toplam Puan -->
         <LinearLayout
@@ -64,7 +63,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="TOPLAM PUAN"
+                android:text="@string/fragment_lesson_result_false_text"
                 android:textColor="#FFD600"
                 android:textStyle="bold"
                 android:textSize="14sp"/>
@@ -91,7 +90,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="BAŞARI"
+                android:text="@string/fragment_lesson_result_false_text_2"
                 android:textColor="#7ED321"
                 android:textStyle="bold"
                 android:textSize="14sp"/>
@@ -106,20 +105,22 @@
         </LinearLayout>
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
     <!-- Puanı Al Butonu -->
     <Button
         android:id="@+id/claimButton"
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:fontFamily="@font/font_regular"
-        android:text="Çıkış"
+        android:text="@string/fragment_lesson_result_false_claim_button"
         android:layout_marginBottom="20dp"
         android:textStyle="bold"
         android:textColor="#101820"
-        android:backgroundTint="#29B6F6"
+        android:background="@drawable/bg_depth_result_continue"
+        app:backgroundTint="@null"
+        android:stateListAnimator="@null"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:paddingTop="0dp"
+        android:paddingBottom="4dp"
         android:textSize="18sp"/>
 </LinearLayout>

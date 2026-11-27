@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Hafta şeridinde seri dondurmanın kapattığı gün: tutturulmadı ama seri kırılmadı.
+
+  Turuncu (tutturuldu) ile boş halka (kaçtı) arasında üçüncü bir durum; boş bırakılsaydı
+  "5 gün üst üste" yazan bir serinin ortasında açıklanamayan bir delik görünürdü.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="oval">
+            <solid android:color="#29B6F6" />
+        </shape>
+    </item>
+    <item
+        android:bottom="6dp"
+        android:drawable="@drawable/streak_snowflake_ic"
+        android:left="6dp"
+        android:right="6dp"
+        android:top="6dp" />
+</layer-list>

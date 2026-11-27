@@ -20,7 +20,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.setFragmentResultListener
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -53,6 +52,12 @@ class ProfileFragment : Fragment() {
     companion object {
         private const val ARG_TARGET_UID = "target_uid"
 
+        /** imgProfilePhoto'nun boyutu (fragment_profile.xml); avatar bu boyutta bitmap'e çiziliyor. */
+        private const val AVATAR_SIZE_DP = 240
+
+        /** Açık avatar zemininde ad ve ayarlar ikonu bu renkte. */
+        private const val HEADER_DARK_TEXT = 0xFF3C3C3C.toInt()
+
         /** Kendi profiliniz için: ProfileFragment() */
         /** Başkasının profili için: ProfileFragment.newInstance(uid) */
         fun newInstance(targetUid: String): ProfileFragment {
@@ -75,6 +80,25 @@ class ProfileFragment : Fragment() {
     /** Başkasının profilini gösterirken set edilir. Null = kendi profili */
     private var targetUid: String? = null
     private val isOtherUser get() = targetUid != null && targetUid != auth.currentUser?.uid
+
+    /**
+     * Profil kartının gösterdiği rozet verisi; kart yalnızca buradan okur.
+     * [BadgeProgressRepository] giriş yapan kullanıcıya ait ortak depo: sezon ödül kapısı
+     * bekleyen sezonu oradan okuyor. Eskiden başkasının profili de oraya yazılıyordu ve
+     * o kişinin toplanmamış sezon ödülü bizim hesapta "Ödülleri topla" ekranı açıyordu.
+     */
+    private var shownBadgeProgress = UserBadgeProgress()
+    private var shownBadgeStates: List<BadgeState> = BadgeProgressEngine.calculate(shownBadgeProgress)
+
+    /**
+     * [shareWithRepo]: yalnızca Firestore'dan gerçekten okunan veri ortak depoya geçer.
+     * Okuma hatasında boş veriyle depoyu ezmiyoruz (bekleyen ödül vb. silinirdi).
+     */
+    private fun showBadgeProgress(progress: UserBadgeProgress, shareWithRepo: Boolean) {
+        shownBadgeProgress = progress
+        shownBadgeStates = BadgeProgressEngine.calculate(progress)
+        if (shareWithRepo && !isOtherUser) BadgeProgressRepository.update(progress)
+    }
     private val lockedBaseColor: Int
         get() = ContextCompat.getColor(requireContext(), R.color.badge_locked_base)
     private val lockedTopColor: Int
@@ -148,7 +172,7 @@ class ProfileFragment : Fragment() {
                 reauthenticateWithGoogleAccount(account)
             }
         } catch (e: ApiException) {
-            Toast.makeText(context, "Google ile kimlik doğrulama başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_google_ile_kimlik_dogrulama_basarisiz_x, e.message), Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -169,22 +193,21 @@ class ProfileFragment : Fragment() {
 
         setupClickListeners()
 
-        // AvatarPickerFragment sadece kendi profilimizde aktif
-        if (!isOtherUser) {
-            setFragmentResultListener(AvatarPickerFragment.REQUEST_KEY) { _, bundle ->
-                val avatarIndex = bundle.getInt(AvatarPickerFragment.KEY_AVATAR_INDEX, 0)
-                if (avatarIndex in 1..12) {
-                    updateAvatarImage(avatarIndex)
-                }
-            }
+        // Sabit üst panelin altındaki çizgi yalnızca içerik aşağı kaydırılmışken görünür; en üstte
+        // panel avatar alanıyla tek parça duruyor.
+        binding.profileScroll.setOnScrollChangeListener { _, _, scrollY, _, _ ->
+            val a = if (scrollY > 0) 1f else 0f
+            binding.profileTopDivider.alpha = a
+            binding.otherUserTopDivider.alpha = a
         }
-        
+
         // Verileri yükle
         loadUserData()
     }
     
     override fun onResume() {
         super.onResume()
+        (activity as? MainActivity)?.setStatusBarTint(headerColor)
         resumeCupAnimations()
         if (!isDataLoaded && !isUserDataLoading) {
             reloadUserData()
@@ -203,24 +226,66 @@ class ProfileFragment : Fragment() {
     private fun showLoadingState() {
         binding.tvCompletedLessons.visibility = View.GONE
         binding.tvTotalTime.visibility = View.GONE
-        binding.tvSubscriptionInfo.visibility = View.GONE
+        binding.tvLongestStreak.visibility = View.GONE
     }
     
     private fun hideLoadingState() {
         binding.tvCompletedLessons.visibility = View.VISIBLE
         binding.tvTotalTime.visibility = View.VISIBLE
-        binding.tvSubscriptionInfo.visibility = View.VISIBLE
+        binding.tvLongestStreak.visibility = View.VISIBLE
     }
 
-    /** Verilen avatar indeksine göre (1-12) imgProfilePhoto'yu günceller. */
-    private fun updateAvatarImage(index: Int) {
+    /**
+     * Profildeki büyük avatarı çizer. [config] null ise (başkasının avatarı yoksa) non_user.
+     * Kendi profilimizde ağı beklemeden yerel kopya gösteriliyor; bkz. [AvatarStore].
+     *
+     * Avatar dairesiz çiziliyor; arka plan rengi bütün avatar alanını, kendi profilimizde sabit üst
+     * paneli ve telefonun durum çubuğunu kaplıyor (Duolingo gibi).
+     */
+    private fun showAvatar(config: AvatarConfig?) {
         if (!isAdded || view == null) return
-        val resId = resources.getIdentifier("avatar_ic$index", "drawable", requireContext().packageName)
-        if (resId != 0) {
-            binding.imgProfilePhoto.setImageResource(resId)
-        } else {
+        if (config == null) {
             binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+            applyHeaderColor(null)
+            return
         }
+        val sizePx = (AVATAR_SIZE_DP * resources.displayMetrics.density).toInt()
+        binding.imgProfilePhoto.setImageBitmap(
+            AvatarView.toBitmap(requireContext(), config, sizePx, withBackground = false),
+        )
+        val bg = config.values["backgroundColor"]
+            ?.let { runCatching { Color.parseColor("#$it") }.getOrNull() }
+        applyHeaderColor(bg)
+    }
+
+    /** Avatar alanının ve (kendi profilimizde) üst panel ile durum çubuğunun rengi. */
+    private var headerColor: Int? = null
+
+    private fun applyHeaderColor(color: Int?) {
+        headerColor = color
+        val bg = color ?: ContextCompat.getColor(requireContext(), R.color.background_color)
+        binding.avatarHeader.setBackgroundColor(bg)
+        // Açık zeminde (pastel arka planların çoğu) yazı ve ikon koyu, koyu zeminde beyaz.
+        val light = androidx.core.graphics.ColorUtils.calculateLuminance(bg) > 0.5
+        val fg = if (light) HEADER_DARK_TEXT else Color.WHITE
+        if (isResumed) (activity as? MainActivity)?.setStatusBarTint(color)
+        if (isOtherUser) {
+            // Başkasının profilinde üstte geri düğmeli bar var; o da avatarın rengini alıyor.
+            binding.otherUserProfileTopBar.setBackgroundColor(bg)
+            binding.tvOtherUserProfileName.setTextColor(fg)
+            binding.btnOtherUserProfileBack.setColorFilter(fg)
+            binding.btnStudentProgress.setColorFilter(fg)
+            binding.otherUserTopDivider.setBackgroundColor(
+                androidx.core.graphics.ColorUtils.blendARGB(bg, Color.BLACK, 0.15f),
+            )
+            return
+        }
+        binding.profileTopPanel.setBackgroundColor(bg)
+        binding.tvTopLeftName.setTextColor(fg)
+        binding.btnAccountSettings.setColorFilter(fg)
+        binding.profileTopDivider.setBackgroundColor(
+            androidx.core.graphics.ColorUtils.blendARGB(bg, Color.BLACK, 0.15f),
+        )
     }
     
     private fun reloadUserData() {
@@ -254,8 +319,8 @@ class ProfileFragment : Fragment() {
             return
         }
 
-        // Varsayılan olarak non_user göster
-        binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+        // Kendi profilimizde yerel avatar hemen; başkasınınki Firestore'dan gelene kadar non_user.
+        showAvatar(if (isOtherUser) null else AvatarStore.loadActive(requireContext()))
 
         // Başkasının profilinde `users` dokümanı okunamaz (yalnızca sahibi ve onaylı
         // öğretmenler okuyabilir — bkz. firestore.rules). Görüntülenecek alanlar
@@ -273,12 +338,15 @@ class ProfileFragment : Fragment() {
                     loadAbacusPreview(uid)
                     if (!isOtherUser) loadCupPathScores() else loadCupPathScoresForUser(uid)
 
-                    // Avatar seçimini Firestore'dan oku
-                    val selectedAvatar = doc.getLong("selectedAvatar")?.toInt() ?: 0
-                    if (selectedAvatar in 1..12) {
-                        updateAvatarImage(selectedAvatar)
+                    val remoteAvatar = doc.getString(AvatarStore.FIRESTORE_FIELD)
+                    if (isOtherUser) {
+                        showAvatar(AvatarConfig.decode(remoteAvatar))
                     } else {
-                        binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
+                        // Yeni cihaz / yeniden kurulum: Firestore'daki avatar yerele alınır.
+                        if (AvatarStore.applyRemote(requireContext(), remoteAvatar)) {
+                            (activity as? MainActivity)?.refreshProfileNavIcon()
+                        }
+                        showAvatar(AvatarStore.loadActive(requireContext()))
                     }
 
                     // Kullanıcı Adı (Sol üstte büyük)
@@ -288,7 +356,7 @@ class ProfileFragment : Fragment() {
                     } else if (!isOtherUser && !auth.currentUser?.displayName.isNullOrBlank()) {
                         auth.currentUser?.displayName
                     } else {
-                        "Kullanıcı"
+                        appString(R.string.ui_kullanici)
                     }
                     binding.tvTopLeftName.text = displayName
                     if (isOtherUser) binding.tvOtherUserProfileName.text = displayName
@@ -304,15 +372,15 @@ class ProfileFragment : Fragment() {
                     }
                     val userId = doc.getString("userId") ?: ""
                     if (userId.isNotEmpty()) {
-                        binding.tvUsernameAndDate.text = "@$userId • $year YILINDA KATILDI"
+                        binding.tvUsernameAndDate.text = appString(R.string.ui_x_x_yilinda_katildi, userId, year)
                     } else {
-                        binding.tvUsernameAndDate.text = "$year YILINDA KATILDI"
+                        binding.tvUsernameAndDate.text = appString(R.string.ui_x_yilinda_katildi, year)
                     }
 
                     // Tamamlanan ders yüzdesi
-                    binding.tvCompletedLessons.text = "Hesaplanıyor..."
+                    binding.tvCompletedLessons.text = appString(R.string.ui_hesaplaniyor)
                     GlobalLessonData.calculateGlobalCompletionPercentage(uid) { percentage ->
-                        if (isAdded) binding.tvCompletedLessons.text = "%$percentage tamamlandı"
+                        if (isAdded) binding.tvCompletedLessons.text = appString(R.string.ui_x_tamamlandi, percentage)
                     }
 
                     // Toplam geçirilen süre
@@ -328,13 +396,14 @@ class ProfileFragment : Fragment() {
                         updateTotalTimeDisplay(totalTime)
                     }
 
-                    // Abonelik bilgisi
-                    val plan = doc.getString("plan") ?: "Free"
-                    when (plan.lowercase()) {
-                        "pro" -> binding.tvSubscriptionInfo.text = "PRO"
-                        "lite" -> binding.tvSubscriptionInfo.text = "Lite"
-                        else -> binding.tvSubscriptionInfo.text = "Free"
-                    }
+                    // En uzun günlük seri.
+                    //
+                    // Dokümandan okunuyor, yerel [StreakRepository]'den değil: bu kart
+                    // başkasının profilinde de açılıyor ve oradaki kaynak `publicProfiles`
+                    // aynası. Tek bir okuma yolu olması için kendi profilimizde de aynı
+                    // alan okunuyor — zaten toplam süre ve ders yüzdesi de oradan geliyor.
+                    val longestStreak = doc.getLong("longestStreak") ?: 0L
+                    binding.tvLongestStreak.text = appPlural(R.plurals.ui_en_uzun_seri_x_gun, longestStreak, longestStreak)
 
                     // Takipçi / Takip edilen sayaçları
                     val followersCount = doc.getLong("followersCount") ?: 0L
@@ -351,10 +420,10 @@ class ProfileFragment : Fragment() {
                     isDataLoaded = true
                     isUserDataLoading = false
                 } else {
-                    BadgeProgressRepository.update(UserBadgeProgress())
+                    showBadgeProgress(UserBadgeProgress(), shareWithRepo = true)
                     bindRandomProfileBadges()
-                    binding.imgProfilePhoto.setImageResource(R.drawable.non_user)
-                    binding.tvSubscriptionInfo.text = "Free"
+                    showAvatar(if (isOtherUser) null else AvatarStore.loadActive(requireContext()))
+                    binding.tvLongestStreak.text = appString(R.string.ui_en_uzun_seri_0_gun)
                     hideLoadingState()
                     isDataLoaded = true
                     isUserDataLoading = false
@@ -365,7 +434,7 @@ class ProfileFragment : Fragment() {
                     isUserDataLoading = false
                     return@addOnFailureListener
                 }
-                BadgeProgressRepository.update(UserBadgeProgress())
+                showBadgeProgress(UserBadgeProgress(), shareWithRepo = false)
                 bindRandomProfileBadges()
                 Log.e("ProfileFragment", "Firestore'dan kullanıcı bilgileri yüklenemedi", e)
                 hideLoadingState()
@@ -374,7 +443,7 @@ class ProfileFragment : Fragment() {
             }
     }
 
-    /** Hedef kullanıcıyı takip edip etmediğimizi kontrol ederek TAKİP ET butonunu günceller */
+    /** Hedef kullanıcıyı takip edip etmediğimizi okuyup butonu günceller. */
     private fun updateFollowButtonState(targetUid: String) {
         val myUid = auth.currentUser?.uid ?: return
         firestore.collection("users").document(targetUid)
@@ -382,16 +451,97 @@ class ProfileFragment : Fragment() {
             .get()
             .addOnSuccessListener { doc ->
                 if (!isAdded) return@addOnSuccessListener
-                if (doc.exists()) {
-                    binding.btnAddFriend.text = "TAKİP EDİLİYOR"
-                    binding.btnAddFriend.isEnabled = false
-                    binding.btnAddFriend.alpha = 0.5f
-                } else {
-                    binding.btnAddFriend.text = "TAKİP ET"
-                    binding.btnAddFriend.isEnabled = true
-                    binding.btnAddFriend.alpha = 1f
-                }
+                applyFollowButtonState(targetUid, following = doc.exists())
             }
+    }
+
+    /**
+     * Takip butonunun hem GÖRÜNÜMÜNÜ hem DAVRANIŞINI tek yerden kurar.
+     *
+     * İkisi ayrı yerlerde kurulsaydı "TAKİP EDİLİYOR" yazarken takip eden bir butona
+     * düşmek mümkün olurdu; metin ve tıklama her zaman birlikte değişmeli.
+     *
+     * Takip edilirken buton artık KAPALI değil: ikinci dokunuş takibi bırakıyor. Bu yüzden
+     * yarı saydamlık da kaldırıldı — o, dokunulamayan bir buton demekti.
+     */
+    private fun applyFollowButtonState(targetUid: String, following: Boolean) {
+        binding.btnAddFriend.isEnabled = true
+        binding.btnAddFriend.alpha = 1f
+        if (following) {
+            binding.btnAddFriend.text = appString(R.string.ui_takip_ediliyor)
+            binding.btnAddFriend.setOnClickListener { confirmUnfollow(targetUid) }
+        } else {
+            binding.btnAddFriend.text = appString(R.string.ui_takip_et)
+            binding.btnAddFriend.setOnClickListener { followTargetUser(targetUid) }
+        }
+    }
+
+    /**
+     * Takibi bırakmadan önce sorar.
+     *
+     * Buton aynı yerde, aynı büyüklükte ve az önce takip etmek için kullanılmıştı; onay
+     * sorulmasaydı yanlışlıkla bırakmak çok kolay olurdu. Geri alınabilir bir işlem ama
+     * hedef kitle çocuk ve "arkadaşımı kaybettim" hissi ucuz değil.
+     */
+    private fun confirmUnfollow(targetUid: String) {
+        val targetName = binding.tvTopLeftName.text.toString()
+        AlertDialog.Builder(requireContext())
+            .setMessage(appString(R.string.ui_x_adli_kullaniciyi_takip_etmeyi_birakmak, targetName))
+            .setNegativeButton(appString(R.string.ui_takibi_birak)) { dialog, _ ->
+                dialog.dismiss()
+                unfollowTargetUser(targetUid)
+            }
+            .setPositiveButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    /**
+     * Takibi bırakır: iki takip kaydını da siler.
+     *
+     * Sunucuda yapılacak bir şey YOK. firestore.rules zaten kendi takip satırını silmeye
+     * izin veriyor ve onFollowerDeleted / onFollowingDeleted trigger'ları sayaçları
+     * düşürüyor — ikisi de hesap silme akışı için zaten yazılmıştı.
+     */
+    private fun unfollowTargetUser(targetUid: String) {
+        val myUid = auth.currentUser?.uid ?: return
+
+        val batch = firestore.batch()
+        batch.delete(
+            firestore.collection("users").document(targetUid)
+                .collection("followers").document(myUid)
+        )
+        batch.delete(
+            firestore.collection("users").document(myUid)
+                .collection("following").document(targetUid)
+        )
+
+        binding.btnAddFriend.isEnabled = false
+        batch.commit()
+            .addOnSuccessListener {
+                // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip bırakıldı.
+                AnalyticsLogger.logFriendRemoved()
+                if (!isAdded) return@addOnSuccessListener
+                applyFollowButtonState(targetUid, following = false)
+                nudgeFollowersCount(-1)
+                Toast.makeText(requireContext(), appString(R.string.ui_takip_birakildi), Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                if (!isAdded) return@addOnFailureListener
+                binding.btnAddFriend.isEnabled = true
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    /**
+     * Ekrandaki takipçi sayısını hemen düzeltir.
+     *
+     * Gerçek sayaç sunucudaki takip trigger'larıyla güncelleniyor ve bu birkaç saniye
+     * sürebiliyor. O aralıkta kullanıcı bastığı butonun karşılığını göremezse işlem
+     * olmamış gibi görünür.
+     */
+    private fun nudgeFollowersCount(delta: Int) {
+        val shown = binding.tvFollowersCount.text.toString().toIntOrNull() ?: return
+        binding.tvFollowersCount.text = (shown + delta).coerceAtLeast(0).toString()
     }
 
     /** Başkasını takip etme işlemi */
@@ -427,16 +577,49 @@ class ProfileFragment : Fragment() {
         binding.btnAddFriend.isEnabled = false
         batch.commit()
             .addOnSuccessListener {
+                // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip gerçekleşti.
+                AnalyticsLogger.logFriendAddedFromProfile()
                 if (!isAdded) return@addOnSuccessListener
-                binding.btnAddFriend.text = "TAKİP EDİLİYOR"
-                binding.btnAddFriend.alpha = 0.5f
-                Toast.makeText(requireContext(), "Takip edildi!", Toast.LENGTH_SHORT).show()
+                applyFollowButtonState(targetUid, following = true)
+                nudgeFollowersCount(+1)
+                Toast.makeText(requireContext(), appString(R.string.ui_takip_edildi), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
                 binding.btnAddFriend.isEnabled = true
-                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
+    }
+
+    /**
+     * Bakan kişi bu öğrencinin kurs öğretmeniyse üst çubuktaki ilerleme düğmesini açar.
+     *
+     * Karar öğrencinin `users` dokümanındaki `classTeacherUids`'ten (yalnızca sunucu yazıyor);
+     * aynı liste kurallarda raporun okunmasına izin veren tek şey (`isTeacherOfStudent`).
+     * `users` dokümanını yalnızca onaylı öğretmen okuyabildiği için öğrencide okuma hiç
+     * denenmiyor — reddedilecek bir okuma için ağa gitmeye gerek yok.
+     */
+    private fun showStudentProgressButtonIfMyStudent(studentUid: String) {
+        val myUid = auth.currentUser?.uid ?: return
+        if ((activity as? MainActivity)?.isApprovedTeacher() != true) return
+        firestore.collection("users").document(studentUid).get()
+            .addOnSuccessListener { doc ->
+                if (_binding == null || !isAdded) return@addOnSuccessListener
+                @Suppress("UNCHECKED_CAST")
+                val teachers = doc.get("classTeacherUids") as? List<String> ?: return@addOnSuccessListener
+                if (myUid !in teachers) return@addOnSuccessListener
+                binding.btnStudentProgress.visibility = View.VISIBLE
+                binding.btnStudentProgress.setOnClickListener {
+                    val name = binding.tvOtherUserProfileName.text?.toString().orEmpty()
+                        .ifBlank { doc.getString("name").orEmpty() }
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                        .replace(R.id.fragmentContainerID, ProgressHubFragment.newForStudent(studentUid, name))
+                        .addToBackStack(null)
+                        .commit()
+                }
+            }
+            .addOnFailureListener { e -> Log.w("ProfileFragment", "öğrenci dokümanı okunamadı", e) }
     }
 
     private fun openFollowScreen(startTab: Int) {
@@ -570,14 +753,14 @@ class ProfileFragment : Fragment() {
 
             fun goPrev() {
                 if (ownedTypes.size == 1) {
-                    Toast.makeText(ctx, "Sadece 1 adet boncuğun var", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, appString(R.string.ui_sadece_1_adet_boncugun_var), Toast.LENGTH_SHORT).show()
                     return
                 }
                 select((index - 1 + ownedTypes.size) % ownedTypes.size)
             }
             fun goNext() {
                 if (ownedTypes.size == 1) {
-                    Toast.makeText(ctx, "Sadece 1 adet boncuğun var", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(ctx, appString(R.string.ui_sadece_1_adet_boncugun_var), Toast.LENGTH_SHORT).show()
                     return
                 }
                 select((index + 1) % ownedTypes.size)
@@ -684,7 +867,10 @@ class ProfileFragment : Fragment() {
                         badgeProgressDoc(uid).set(missing, SetOptions.merge())
                     }
                 }
-                BadgeProgressRepository.update(BadgeProgressFirestore.userBadgeProgressFromStateSnapshot(badgeDoc))
+                showBadgeProgress(
+                    BadgeProgressFirestore.userBadgeProgressFromStateSnapshot(badgeDoc),
+                    shareWithRepo = true,
+                )
                 bindRandomProfileBadges()
                 binding.profileBadgesCard.visibility = View.VISIBLE
                 if (!isOtherUser) {
@@ -693,7 +879,7 @@ class ProfileFragment : Fragment() {
             }
             .addOnFailureListener {
                 if (!isAdded) return@addOnFailureListener
-                BadgeProgressRepository.update(UserBadgeProgress())
+                showBadgeProgress(UserBadgeProgress(), shareWithRepo = false)
                 bindRandomProfileBadges()
                 binding.profileBadgesCard.visibility = View.VISIBLE
             }
@@ -705,15 +891,15 @@ class ProfileFragment : Fragment() {
         val minutes = (totalSeconds % 3600) / 60
         
         val timeText = when {
-            days > 0 -> "$days Gün $hours saat $minutes dakika"
-            hours > 0 -> "$hours saat $minutes dakika"
-            else -> "$minutes dakika"
+            days > 0 -> appString(R.string.ui_x_gun_x_saat_x_dakika, days, hours, minutes)
+            hours > 0 -> appString(R.string.ui_x_saat_x_dakika, hours, minutes)
+            else -> appPlural(R.plurals.ui_x_dakika, minutes, minutes)
         }
         binding.tvTotalTime.text = timeText
     }
 
     private fun getBadgeLevel(kind: BadgeKind): Int {
-        val progress = BadgeProgressRepository.getUserBadgeProgress()
+        val progress = shownBadgeProgress
         val raw = when (kind) {
             BadgeKind.DART -> progress.userDartProgress
             BadgeKind.FISHING -> progress.userFishingProgress
@@ -730,22 +916,10 @@ class ProfileFragment : Fragment() {
             BadgeKind.BOWLING -> progress.userBowlingProgress
             else -> 0
         }
-        val spec = when (kind) {
-            BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
-            BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-            BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
-            BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
-            BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
-            else -> return 0
-        }
+        // Eşikler tek kaynaktan: [BadgeProgressEngine.levelSpec]. Burası eskiden kendi
+        // kopyasını tutuyordu ve roket rozetinde rozet ızgarasından FARKLI bir tablo
+        // kullanıyordu. Kademesi olmayan rozetlerde (kupa, madalya, siyah kuşak) null gelir.
+        val spec = BadgeProgressEngine.levelSpec(kind) ?: return 0
         val (levels, step) = spec
         val rawCapped = raw.coerceAtLeast(0)
         val first = levels.first()
@@ -759,7 +933,7 @@ class ProfileFragment : Fragment() {
     }
 
     private fun getBadgeSortingWeight(kind: BadgeKind): Double {
-        val progress = BadgeProgressRepository.getUserBadgeProgress()
+        val progress = shownBadgeProgress
         val raw = when (kind) {
             BadgeKind.DART -> progress.userDartProgress
             BadgeKind.FISHING -> progress.userFishingProgress
@@ -776,22 +950,10 @@ class ProfileFragment : Fragment() {
             BadgeKind.BOWLING -> progress.userBowlingProgress
             else -> 0
         }
-        val spec = when (kind) {
-            BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
-            BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-            BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
-            BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
-            BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
-            else -> return 0.0
-        }
+        // Eşikler tek kaynaktan: [BadgeProgressEngine.levelSpec]. Burası eskiden kendi
+        // kopyasını tutuyordu ve roket rozetinde rozet ızgarasından FARKLI bir tablo
+        // kullanıyordu. Kademesi olmayan rozetlerde (kupa, madalya, siyah kuşak) null gelir.
+        val spec = BadgeProgressEngine.levelSpec(kind) ?: return 0.0
         val (levels, step) = spec
         val rawCapped = raw.coerceAtLeast(0)
         val first = levels.first()
@@ -813,7 +975,7 @@ class ProfileFragment : Fragment() {
             ProfileBadgeSlot(binding.badgeItemGolf, binding.badgeGolfBase, binding.badgeGolfTop, binding.badgeGolfValue),
         )
 
-        val badgesByType = BadgeProgressRepository.getStates().associateBy { it.kind }
+        val badgesByType = shownBadgeStates.associateBy { it.kind }
 
         // İlk grup (sabit öncelikli): GOLD, SILVER, BRONZE, CUP, KARATE
         val firstGroupOrder = listOf(
@@ -1151,26 +1313,31 @@ class ProfileFragment : Fragment() {
 
     private fun setupClickListeners() {
         if (isOtherUser) {
+            // Bu fonksiyon onViewCreated'dan bir kez çağrılıyor, yani görüntüleme başına tek olay.
+            // `screen_view` kendi profili ile başkasınınkini ayırt edemiyor; ikisi de ProfileFragment.
+            AnalyticsLogger.logOtherProfileViewed()
+
             // --- Başkasının profili ---
             // Ayarlar gizli
             binding.btnAccountSettings.visibility = View.GONE
-            // tvTopLeftName'in solundaki alanda settings ikonu olmayacak, üstüne yazma ihtiyacı yok
+            // Ad ve ayarların sabit paneli yalnızca kendi profilimizde; burada geri düğmeli
+            // otherUserProfileTopBar onun yerini alıyor.
+            binding.profileTopPanel.visibility = View.GONE
 
             // Üst panel: geri butonu + bakılan kullanıcının adı (fragment_followers_following'teki toolbar ile aynı görünüm)
             binding.otherUserProfileTopBar.visibility = View.VISIBLE
             binding.btnOtherUserProfileBack.setOnClickListener {
                 requireActivity().onBackPressedDispatcher.onBackPressed()
             }
+            targetUid?.let { showStudentProgressButtonIfMyStudent(it) }
 
-            // Avatar tıklanamaz
-            binding.imgProfilePhoto.isClickable = false
+            // Avatar tıklanamaz (dinleyici yalnızca kendi profilimizde kuruluyor)
+            binding.avatarHeader.isClickable = false
 
-            // Arkadaş Ekle butonu → TAKİP ET (ilk render; asıl durum loadUserData içinde güncellenir)
-            binding.btnAddFriend.text = "TAKİP ET"
-            binding.btnAddFriend.setOnClickListener {
-                val uid = targetUid ?: return@setOnClickListener
-                followTargetUser(uid)
-            }
+            // Arkadaş Ekle butonu → TAKİP ET. Metin ve tıklama davranışı tek yerden kuruluyor
+            // (bkz. applyFollowButtonState); asıl durum loadUserData -> updateFollowButtonState
+            // ile geliyor, burası yalnızca ilk render.
+            targetUid?.let { applyFollowButtonState(it, following = false) }
 
             // Takipçi / Takip edilen sayaçlara basmak bu modda bir şey açmayacak
             binding.followingCount.setOnClickListener(null)
@@ -1214,9 +1381,18 @@ class ProfileFragment : Fragment() {
                     .commit()
             }
 
-            // Avatar tıklandığında AvatarPickerFragment'i aç
-            binding.imgProfilePhoto.setOnClickListener {
-                AvatarPickerFragment().show(requireActivity().supportFragmentManager, AvatarPickerFragment.TAG)
+            // Avatara ya da etrafındaki renkli alana dokununca avatar düzenleme ekranı.
+            binding.avatarHeader.setOnClickListener {
+                requireActivity().supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        R.anim.slide_in_right,
+                        R.anim.slide_out_left,
+                        R.anim.slide_in_left,
+                        R.anim.slide_out_right,
+                    )
+                    .replace(R.id.fragmentContainerID, AvatarCustomFragment())
+                    .addToBackStack(null)
+                    .commit()
             }
         }
 
@@ -1245,21 +1421,21 @@ class ProfileFragment : Fragment() {
     private fun verifyEmail() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
         // E-posta doğrulama linki gönder
         currentUser.sendEmailVerification()
             .addOnSuccessListener {
-                Toast.makeText(context, "Doğrulama e-postası gönderildi. E-postanızı doğruladıktan sonra bu ekrana geri dönün.", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, appString(R.string.ui_dogrulama_e_postasi_gonderildi_e_postanizi), Toast.LENGTH_LONG).show()
                 
                 // E-posta gönderildikten sonra, kullanıcı bilgilerini periyodik olarak kontrol et
                 // (Kullanıcı e-postayı doğruladıktan sonra uygulamaya geri döndüğünde otomatik güncellenir)
                 startEmailVerificationCheck()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "E-posta gönderilemedi: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_e_posta_gonderilemedi_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
     
@@ -1287,7 +1463,7 @@ class ProfileFragment : Fragment() {
                                 firestore.collection("users").document(currentUser.uid)
                                     .update("verified", true)
                                     .addOnSuccessListener {
-                                        Toast.makeText(context, "E-posta başarıyla doğrulandı!", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, appString(R.string.ui_e_posta_basariyla_dogrulandi), Toast.LENGTH_SHORT).show()
                                         loadUserData() // UI'ı yenile
                                     }
                                 // Kontrolü durdur
@@ -1315,20 +1491,20 @@ class ProfileFragment : Fragment() {
         
         val input = android.widget.EditText(requireContext())
         input.setText(currentName)
-        input.hint = "Kullanıcı Adı"
+        input.hint = appString(R.string.ui_kullanici_adi)
         
         AlertDialog.Builder(requireContext())
-            .setTitle("Profili Düzenle")
+            .setTitle(appString(R.string.ui_profili_duzenle))
             .setView(input)
-            .setPositiveButton("Kaydet") { _, _ ->
+            .setPositiveButton(appString(R.string.ui_kaydet)) { _, _ ->
                 val newName = input.text.toString().trim()
                 if (newName.isNotEmpty()) {
                     updateUserName(newName)
                 } else {
-                    Toast.makeText(context, "Kullanıcı adı boş olamaz", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, appString(R.string.ui_kullanici_adi_bos_olamaz), Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
     
@@ -1348,39 +1524,39 @@ class ProfileFragment : Fragment() {
                 firestore.collection("users").document(currentUser.uid)
                     .update("name", newName)
                     .addOnSuccessListener {
-                        Toast.makeText(context, "Kullanıcı adı güncellendi", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, appString(R.string.ui_kullanici_adi_guncellendi), Toast.LENGTH_SHORT).show()
                     }
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Kullanıcı adı güncellenemedi: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_kullanici_adi_guncellenemedi_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
     
     private fun showChangePasswordDialog() {
         val input = android.widget.EditText(requireContext())
         input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        input.hint = "Yeni Şifre"
+        input.hint = appString(R.string.ui_yeni_sifre)
         
         AlertDialog.Builder(requireContext())
-            .setTitle("Şifre Değiştir")
-            .setMessage("Yeni şifrenizi girin (en az 6 karakter)")
+            .setTitle(appString(R.string.ui_sifre_degistir))
+            .setMessage(appString(R.string.ui_yeni_sifrenizi_girin_en_az_6))
             .setView(input)
-            .setPositiveButton("Değiştir") { _, _ ->
+            .setPositiveButton(appString(R.string.ui_degistir)) { _, _ ->
                 val newPassword = input.text.toString().trim()
                 if (newPassword.length >= 6) {
                     changePassword(newPassword)
                 } else {
-                    Toast.makeText(context, "Şifre en az 6 karakter olmalı", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, appString(R.string.ui_sifre_en_az_6_karakter_olmali), Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
     
     private fun changePassword(newPassword: String) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -1389,27 +1565,27 @@ class ProfileFragment : Fragment() {
         val isGoogleUser = providers.any { it.providerId == "google.com" }
         
         if (isGoogleUser) {
-            Toast.makeText(context, "Google hesabı ile giriş yaptınız. Şifre değiştirilemez.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, appString(R.string.ui_google_hesabi_ile_giris_yaptiniz_sifre), Toast.LENGTH_LONG).show()
             return
         }
         
         currentUser.updatePassword(newPassword)
             .addOnSuccessListener {
-                Toast.makeText(context, "Şifre başarıyla değiştirildi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_sifre_basariyla_degistirildi), Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Şifre değiştirilemedi: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_sifre_degistirilemedi_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
     
     private fun showLogoutConfirmation() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Çıkış Yap")
-            .setMessage("Çıkış yapmak istediğinize emin misiniz?")
-            .setPositiveButton("Evet") { _, _ ->
+            .setTitle(appString(R.string.ui_cikis_yap))
+            .setMessage(appString(R.string.ui_cikis_yapmak_istediginize_emin_misiniz))
+            .setPositiveButton(appString(R.string.ui_evet)) { _, _ ->
                 logout()
             }
-            .setNegativeButton("Hayır", null)
+            .setNegativeButton(appString(R.string.ui_hayir), null)
             .show()
     }
     
@@ -1427,19 +1603,19 @@ class ProfileFragment : Fragment() {
     
     private fun showDeleteAccountConfirmation() {
         AlertDialog.Builder(requireContext())
-            .setTitle("Hesabı Sil")
-            .setMessage("Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz!")
-            .setPositiveButton("Evet, Sil") { _, _ ->
+            .setTitle(appString(R.string.ui_hesabi_sil))
+            .setMessage(appString(R.string.ui_hesabinizi_silmek_istediginize_emin_misiniz))
+            .setPositiveButton(appString(R.string.ui_evet_sil)) { _, _ ->
                 deleteAccount()
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
     
     private fun deleteAccount() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -1477,28 +1653,28 @@ class ProfileFragment : Fragment() {
     private fun showPasswordReauthDialog() {
         val input = EditText(requireContext())
         input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        input.hint = "Şifrenizi girin"
+        input.hint = appString(R.string.ui_sifrenizi_girin)
         
         AlertDialog.Builder(requireContext())
-            .setTitle("Hesabı Sil")
-            .setMessage("Hesabınızı silmek için şifrenizi girin")
+            .setTitle(appString(R.string.ui_hesabi_sil))
+            .setMessage(appString(R.string.ui_hesabinizi_silmek_icin_sifrenizi_girin))
             .setView(input)
-            .setPositiveButton("Onayla") { _, _ ->
+            .setPositiveButton(appString(R.string.ui_onayla)) { _, _ ->
                 val password = input.text.toString().trim()
                 if (password.isNotEmpty()) {
                     reauthenticateWithPassword(password)
                 } else {
-                    Toast.makeText(context, "Şifre boş olamaz", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, appString(R.string.ui_sifre_bos_olamaz), Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("İptal", null)
+            .setNegativeButton(appString(R.string.ui_iptal_2), null)
             .show()
     }
     
     private fun reauthenticateWithPassword(password: String) {
         val currentUser = auth.currentUser
         if (currentUser == null || currentUser.email == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -1511,14 +1687,14 @@ class ProfileFragment : Fragment() {
                 performAccountDeletion()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Kimlik doğrulama başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_kimlik_dogrulama_basarisiz_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
     
     private fun reauthenticateWithGoogleAccount(account: GoogleSignInAccount) {
         val currentUser = auth.currentUser
         if (currentUser == null) {
-            Toast.makeText(context, "Kullanıcı bulunamadı", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, appString(R.string.ui_kullanici_bulunamadi), Toast.LENGTH_SHORT).show()
             return
         }
         
@@ -1530,13 +1706,13 @@ class ProfileFragment : Fragment() {
                 performAccountDeletion()
             }
             .addOnFailureListener { e ->
-                Toast.makeText(context, "Kimlik doğrulama başarısız: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_kimlik_dogrulama_basarisiz_x, e.message), Toast.LENGTH_SHORT).show()
             }
     }
     
     private fun performAccountDeletion() {
         val progressDialog = android.app.ProgressDialog(requireContext()).apply {
-            setMessage("Hesabınız ve ilişkili verileriniz siliniyor...")
+            setMessage(appString(R.string.ui_hesabiniz_ve_iliskili_verileriniz_siliniyor))
             setCancelable(false)
             show()
         }
@@ -1547,7 +1723,7 @@ class ProfileFragment : Fragment() {
                 firestore = firestore,
                 onSuccess = {
                     progressDialog.dismiss()
-                    Toast.makeText(context, "Hesap başarıyla silindi", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, appString(R.string.ui_hesap_basariyla_silindi), Toast.LENGTH_SHORT).show()
                     val intent = Intent(requireContext(), LoginActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
@@ -1555,7 +1731,7 @@ class ProfileFragment : Fragment() {
                 },
                 onRequiresRecentLogin = {
                     progressDialog.dismiss()
-                    Toast.makeText(context, "Güvenlik nedeniyle hesabı silmek için lütfen tekrar giriş yapıp hemen silmeyi deneyin.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, appString(R.string.ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen), Toast.LENGTH_LONG).show()
                     val intent = Intent(requireContext(), LoginActivity::class.java)
                     intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     startActivity(intent)
@@ -1563,7 +1739,7 @@ class ProfileFragment : Fragment() {
                 },
                 onFailure = { e ->
                     progressDialog.dismiss()
-                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, appString(R.string.ui_hata_x, e.message), Toast.LENGTH_LONG).show()
                 }
             )
         }
@@ -1571,12 +1747,12 @@ class ProfileFragment : Fragment() {
 
     private fun loadCupPathScores() {
         val uid = auth.currentUser?.uid ?: return
-        setupCupCard(R.id.cupCard1, "Toplama", "dinosaur_anim.json", false, uid, "addition_abacus_cup", AbacusCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard2, "Çıkarma", "crocodile_anim.json", false, uid, "extraction_abacus_cup", ExtractionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard3, "Çarpma", "goat_anim.json", false, uid, "impact_abacus_cup", ImpactCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard4, "Toplama", "eagle_anim.json", true, uid, "blinding_addition_abacus_cup", BlindingAdditionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard5, "Çıkarma", "fly_anim.json", true, uid, "blinding_extraction_abacus_cup", BlindingExtractionCupRepository::fetchCupScore)
-        setupCupCard(R.id.cupCard6, "Çarpma", "turtle_anim.json", true, uid, "blinding_impact_abacus_cup", BlindingImpactCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard1, appString(R.string.ui_toplama), "dinosaur_anim.json", false, uid, "addition_abacus_cup", AbacusCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard2, appString(R.string.ui_cikarma), "crocodile_anim.json", false, uid, "extraction_abacus_cup", ExtractionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard3, appString(R.string.ui_carpma), "goat_anim.json", false, uid, "impact_abacus_cup", ImpactCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard4, appString(R.string.ui_toplama), "eagle_anim.json", true, uid, "blinding_addition_abacus_cup", BlindingAdditionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard5, appString(R.string.ui_cikarma), "fly_anim.json", true, uid, "blinding_extraction_abacus_cup", BlindingExtractionCupRepository::fetchCupScore)
+        setupCupCard(R.id.cupCard6, appString(R.string.ui_carpma), "turtle_anim.json", true, uid, "blinding_impact_abacus_cup", BlindingImpactCupRepository::fetchCupScore)
     }
 
     /**
@@ -1592,7 +1768,7 @@ class ProfileFragment : Fragment() {
             Triple(R.id.cupCard5, "blinding_extraction_abacus_cup", true),
             Triple(R.id.cupCard6, "blinding_impact_abacus_cup", true),
         )
-        val titles = listOf("Toplama", "Çıkarma", "Çarpma", "Toplama", "Çıkarma", "Çarpma")
+        val titles = listOf(appString(R.string.ui_toplama), appString(R.string.ui_cikarma), appString(R.string.ui_carpma), appString(R.string.ui_toplama), appString(R.string.ui_cikarma), appString(R.string.ui_carpma))
         val anims = listOf("dinosaur_anim.json", "crocodile_anim.json", "goat_anim.json", "eagle_anim.json", "fly_anim.json", "turtle_anim.json")
 
         firestore.collection("users").document(uid)
@@ -1660,6 +1836,17 @@ class ProfileFragment : Fragment() {
             .replace(R.id.fragmentContainerID, CupHistoryFragment.newInstance(uid, field, title, animFile))
             .addToBackStack(null)
             .commit()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Başka bir ekrana geçerken durum çubuğu uygulamanın kendi rengine dönsün.
+        (activity as? MainActivity)?.setStatusBarTint(null)
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        (activity as? MainActivity)?.setStatusBarTint(if (hidden) null else headerColor)
     }
 
     override fun onDestroyView() {

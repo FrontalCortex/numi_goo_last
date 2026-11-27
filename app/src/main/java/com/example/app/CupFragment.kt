@@ -84,38 +84,38 @@ class CupFragment : Fragment() {
         val cupPoint2 = lessonItem.cupPoint2
         if (cupPoint1 != null && toplamPuan >= cupPoint1) {
             icon= R.drawable.cup_ic3
-            cupName.text = "Bilgelik Kupası"
-            val cupMotivation = listOf("Tüm sorular senin zekânla boy ölçüştü, ama kazanan sensin",
-                "Zirve senin, bu başarı tesadüf değil!", "Mükemmel bir iş çıkardın!",
-                "Bu seviye, sadece çok çalışanların ulaşabildiği yer.",
-                "Sen artık bu konunun ustasısın – neyi başaramazsın ki?",)
+            cupName.text = appString(R.string.ui_bilgelik_kupasi)
+            val cupMotivation = listOf(appString(R.string.ui_tum_sorular_senin_zekanla_boy_olcustu),
+                appString(R.string.ui_zirve_senin_bu_basari_tesaduf_degil), appString(R.string.ui_mukemmel_bir_is_cikardin),
+                appString(R.string.ui_bu_seviye_sadece_cok_calisanlarin_ulasabildi),
+                appString(R.string.ui_sen_artik_bu_konunun_ustasisin_neyi),)
             motivationText.text = cupMotivation.random()
         } else if (cupPoint2 != null && toplamPuan >= cupPoint2) {
             icon = R.drawable.cup_ic2
-            cupName.text = "Usta Kupası"
-            val cupMotivation = listOf("Gerçek ustalık; bilgi, sabır ve kararlılıkla gelir. Tebrikler!",
-                "Gayet iyi!", "Biraz daha pratikle zirveye ulaşman an meselesi.",
-                "Azmin gücüyle her adım seni daha da ileri taşıyor!",
-                "Çok iyi gidiyorsun! Birkaç adım sonra zirvedesin.",
-                "Gelişimin fark ediliyor. Pes etme, devam et!")
+            cupName.text = appString(R.string.ui_usta_kupasi)
+            val cupMotivation = listOf(appString(R.string.ui_gercek_ustalik_bilgi_sabir_ve_kararlilikla),
+                appString(R.string.ui_gayet_iyi), appString(R.string.ui_biraz_daha_pratikle_zirveye_ulasman_an),
+                appString(R.string.ui_azmin_gucuyle_her_adim_seni_daha),
+                appString(R.string.ui_cok_iyi_gidiyorsun_birkac_adim_sonra),
+                appString(R.string.ui_gelisimin_fark_ediliyor_pes_etme_devam))
             motivationText.text = cupMotivation.random()
         } else if (toplamPuan > 0) {
             icon = R.drawable.cup_ic
-            cupName.text = "Deneyim Kupası"
-            val cupMotivation = listOf("Her usta bir zamanlar amatördü. Sen de yoldasın!",
-                "Cesaret ettin, başladın. Bu en önemli adımdı.",
-                "Unutma, başarı tekrar tekrar denemekten geçer!",
-                "Bugün attığın adım, yarının başarısını başlatır.")
+            cupName.text = appString(R.string.ui_deneyim_kupasi)
+            val cupMotivation = listOf(appString(R.string.ui_her_usta_bir_zamanlar_amatordu_sen),
+                appString(R.string.ui_cesaret_ettin_basladin_bu_en_onemli),
+                appString(R.string.ui_unutma_basari_tekrar_tekrar_denemekten_gecer),
+                appString(R.string.ui_bugun_attigin_adim_yarinin_basarisini_baslat))
             motivationText.text = cupMotivation.random()
         }else{
             icon = R.drawable.cup_ic
-            cupName.text = "Deneyim Kupası"
-            val cupMotivation = listOf("Ayıp olmasın diye bu kupayı verdik.",
-                "Biraz fazla mı yavaş oldu ne ?",
-                "Yanii.. Hiç yapmamış olmaktan iyi.",
-                "En azından ekranı açtın, bu da bir şey.",
-                "Kupayı biz de pek vermek istemedik ama...",
-                "Kupa geldi ama vicdanımız biraz sızladı.")
+            cupName.text = appString(R.string.ui_deneyim_kupasi)
+            val cupMotivation = listOf(appString(R.string.ui_ayip_olmasin_diye_bu_kupayi_verdik),
+                appString(R.string.ui_biraz_fazla_mi_yavas_oldu_ne),
+                appString(R.string.ui_yanii_hic_yapmamis_olmaktan_iyi),
+                appString(R.string.ui_en_azindan_ekrani_actin_bu_da),
+                appString(R.string.ui_kupayi_biz_de_pek_vermek_istemedik),
+                appString(R.string.ui_kupa_geldi_ama_vicdanimiz_biraz_sizladi))
             motivationText.text = cupMotivation.random()
         }
         cupImageView.setImageResource(icon)

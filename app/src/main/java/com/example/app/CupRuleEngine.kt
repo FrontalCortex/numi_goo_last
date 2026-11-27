@@ -319,6 +319,26 @@ object CupRuleEngine {
         return configs.map { it.digits }.distinct().sorted()
     }
 
+    /**
+     * Haftalık ilerleme kartı için: puanın o an açtığı kurallar (abaküslü ya da körleme tablosu).
+     * Kart ham kupa puanını "2 basamaklı 4–6 sayı" diye okuyor; BLINDING_RANGES özel (boş liste,
+     * kimliğiyle ayırt ediliyor) olduğu için dışarıdan doğru tabloyu seçmenin tek yolu bu.
+     */
+    fun configsFor(cupScore: Int, isBlinding: Boolean): List<DigitConfig> =
+        resolveConfigs(cupScore, if (isBlinding) BLINDING_RANGES else RANGES)
+
+    /** Haftalık kart için çarpma kupasının basamakları (1. sayı, 2. sayı); soru üretmeden. */
+    fun multiplicationDigitsFor(cupScore: Int, isBlinding: Boolean): Pair<Int, Int> =
+        if (isBlinding) {
+            val c = BLINDING_MULTIPLICATION_RANGES.firstOrNull { cupScore in it.minCup..it.maxCup }
+                ?: BLINDING_MULTIPLICATION_RANGES.last()
+            c.firstDigitCount to c.secondDigitCount
+        } else {
+            val c = MULTIPLICATION_RANGES.firstOrNull { cupScore in it.minCup..it.maxCup }
+                ?: MULTIPLICATION_RANGES.last()
+            c.firstDigitCount to c.secondDigitCount
+        }
+
     fun resolve(cupScore: Int, ranges: List<CupRange> = RANGES, forcedDigitSize: Int? = null): DigitConfig {
         val configs = resolveConfigs(cupScore, ranges)
         if (forcedDigitSize != null) {

@@ -44,7 +44,7 @@
                 android:textStyle="bold"
                 android:textColor="@color/yellow"
                 android:layout_marginBottom="50dp"
-                android:text="Harika Kupa" />
+                android:text="@string/fragment_cup_cup_name_text_view" />
 
 
             <ImageView
@@ -52,7 +52,7 @@
                 android:layout_width="200dp"
                 android:layout_height="200dp"
                 android:src="@drawable/cup_ic"
-                android:contentDescription="Kupa" />
+                android:contentDescription="@string/fragment_cup_cup_image_view_desc" />
 
 
             <TextView
@@ -63,7 +63,7 @@
                 android:textSize="18sp"
                 android:layout_marginTop="40dp"
                 android:gravity="center"
-                android:text="Harika bir iş çıkardın! Seninle gurur duyuyoruz!" />
+                android:text="@string/fragment_cup_motivation_text_view" />
 
         <Button
             android:id="@+id/claimButton"
@@ -71,7 +71,7 @@
             android:layout_height="60dp"
             android:layout_marginTop="16dp"
             android:backgroundTint="#8CC63F"
-            android:text="Desvam et"
+            android:text="@string/fragment_cup_claim_button"
             android:layout_marginHorizontal="10dp"
             android:textAllCaps="false"
             android:textColor="#000000"

@@ -1,0 +1,87 @@
+vg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Arka plan: uygulamanın koyu teması -->
+  <rect width="1024" height="1024" fill="#141F23"/>
+
+  <!-- Karakter, uyarlanabilir ikonun güvenli alanına sığsın diye küçültülüyor -->
+  <g transform="translate(512 500) scale(0.8) translate(-512 -560)"
+     stroke="#1E7FB8" stroke-width="10" stroke-linejoin="round" stroke-linecap="round">
+
+    <!-- Gövde -->
+    <path d="M200 1200 C200 880 320 780 512 780 C704 780 824 880 824 1200 Z" fill="#5EC4F7"/>
+    <ellipse cx="512" cy="1000" rx="150" ry="150" fill="#E6F6FE" stroke="none"/>
+
+    <!-- Sol kulak: dik -->
+    <g transform="rotate(-14 400 300)">
+      <ellipse cx="400" cy="250" rx="72" ry="170" fill="#5EC4F7"/>
+      <ellipse cx="400" cy="265" rx="38" ry="120" fill="#FFB3C7" stroke="none"/>
+    </g>
+
+    <!-- Sağ kulak: ucu öne kıvrık -->
+    <g transform="rotate(16 620 330)">
+      <path d="M560 420 C548 300 570 190 620 190 C670 190 692 300 680 420 Z" fill="#5EC4F7"/>
+      <path d="M585 400 C578 310 595 230 620 230 C645 230 662 310 655 400 Z" fill="#FFB3C7" stroke="none"/>
+      <path d="M578 232 C584 176 660 168 668 214 C676 256 712 280 704 318 C664 316 618 286 596 266 C582 254 576 246 578 232 Z" fill="#4DB3E8"/>
+    </g>
+
+    <!-- Kafa -->
+    <ellipse cx="512" cy="560" rx="262" ry="222" fill="#5EC4F7"/>
+    <ellipse cx="440" cy="420" rx="90" ry="34" fill="#FFFFFF" opacity="0.25" stroke="none" transform="rotate(-18 440 420)"/>
+
+    <!-- Gözler: mutlu, yarı kapalı -->
+    <g stroke="none">
+      <ellipse cx="420" cy="560" rx="30" ry="38" fill="#141F23"/>
+      <ellipse cx="604" cy="560" rx="30" ry="38" fill="#141F23"/>
+      <circle cx="430" cy="546" r="11" fill="#FFFFFF"/>
+      <circle cx="614" cy="546" r="11" fill="#FFFFFF"/>
+      <circle cx="412" cy="574" r="5" fill="#FFFFFF"/>
+      <circle cx="596" cy="574" r="5" fill="#FFFFFF"/>
+    </g>
+
+    <!-- Yanaklar -->
+    <ellipse cx="356" cy="632" rx="40" ry="22" fill="#F48FB1" opacity="0.75" stroke="none"/>
+    <ellipse cx="668" cy="632" rx="40" ry="22" fill="#F48FB1" opacity="0.75" stroke="none"/>
+
+    <!-- Burun -->
+    <path d="M494 606 Q512 596 530 606 Q522 626 512 628 Q502 626 494 606 Z" fill="#F06292" stroke="#C2185B" stroke-width="5"/>
+
+    <!-- Ağız: kapalı gülümseme ve tek tavşan dişi -->
+    <rect x="499" y="638" width="26" height="28" rx="6" fill="#FFFFFF" stroke="#141F23" stroke-width="6"/>
+    <path d="M462 634 Q486 660 512 638 Q538 660 562 634" fill="none" stroke="#141F23" stroke-width="9"/>
+
+    <!-- Atkı -->
+    <path d="M330 760 Q512 830 694 760 L700 812 Q512 884 324 812 Z" fill="#FFA726" stroke="#E07B00"/>
+
+    <!-- Soroban -->
+    <rect x="352" y="850" width="320" height="170" rx="22" fill="#8D5A3B" stroke="#5D3A24"/>
+    <rect x="374" y="872" width="276" height="126" rx="10" fill="#F6E7CC" stroke="none"/>
+    <g stroke="#5D3A24" stroke-width="6">
+      <line x1="402" y1="872" x2="402" y2="998"/>
+      <line x1="457" y1="872" x2="457" y2="998"/>
+      <line x1="512" y1="872" x2="512" y2="998"/>
+      <line x1="567" y1="872" x2="567" y2="998"/>
+      <line x1="622" y1="872" x2="622" y2="998"/>
+    </g>
+    <rect x="374" y="912" width="276" height="12" fill="#8D5A3B" stroke="none"/>
+    <g stroke="#3B2A20" stroke-width="4">
+      <!-- Üst boncuklar -->
+      <path d="M380 892 L402 880 L424 892 L402 904 Z" fill="#FF5A5F"/>
+      <path d="M435 900 L457 888 L479 900 L457 912 Z" fill="#FFA726"/>
+      <path d="M490 892 L512 880 L534 892 L512 904 Z" fill="#21D07A"/>
+      <path d="M545 900 L567 888 L589 900 L567 912 Z" fill="#B39DDB"/>
+      <path d="M600 892 L622 880 L644 892 L622 904 Z" fill="#49C0F8"/>
+      <!-- Alt boncuklar -->
+      <path d="M380 938 L402 926 L424 938 L402 950 Z" fill="#FF5A5F"/>
+      <path d="M380 968 L402 956 L424 968 L402 980 Z" fill="#FF5A5F"/>
+      <path d="M435 950 L457 938 L479 950 L457 962 Z" fill="#FFA726"/>
+      <path d="M490 938 L512 926 L534 938 L512 950 Z" fill="#21D07A"/>
+      <path d="M490 968 L512 956 L534 968 L512 980 Z" fill="#21D07A"/>
+      <path d="M545 960 L567 948 L589 960 L567 972 Z" fill="#B39DDB"/>
+      <path d="M600 938 L622 926 L644 938 L622 950 Z" fill="#49C0F8"/>
+      <path d="M600 968 L622 956 L644 968 L622 980 Z" fill="#49C0F8"/>
+    </g>
+
+    <!-- Patiler sorobanı kavrıyor -->
+    <ellipse cx="352" cy="920" rx="48" ry="44" fill="#5EC4F7"/>
+    <ellipse cx="672" cy="920" rx="48" ry="44" fill="#5EC4F7"/>
+  </g>
+</svg>

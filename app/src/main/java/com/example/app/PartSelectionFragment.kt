@@ -13,6 +13,9 @@ import com.example.app.model.LessonItem
 
 class PartSelectionFragment : Fragment() {
 
+    /** Sobi'nin günlük testi düğmesi; haritadakinin aynısı (bkz. [MapSobiTestButton]). */
+    private var sobiTestButton: MapSobiTestButton? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -26,7 +29,20 @@ class PartSelectionFragment : Fragment() {
         // lessonPartBackButton kapat (part secim ekraninda geri buton olmayacak)
         requireActivity().findViewById<ImageButton>(R.id.lessonPartBackButton)?.visibility = View.GONE
 
+        sobiTestButton = MapSobiTestButton(this, view.findViewById(R.id.partSelectionRoot))
+
         loadStatesAndSetup(view)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        sobiTestButton?.refresh()
+    }
+
+    override fun onDestroyView() {
+        sobiTestButton?.release()
+        sobiTestButton = null
+        super.onDestroyView()
     }
     
     private fun loadStatesAndSetup(view: View) {
@@ -39,21 +55,25 @@ class PartSelectionFragment : Fragment() {
             GlobalLessonData.loadLessonItemsForPart(context, 2) { items2 ->
                 val part2ChestComplete = items2.filter { it.type == LessonItem.TYPE_CHEST }.lastOrNull()?.stepIsFinish == true
                 GlobalLessonData.loadLessonItemsForPart(context, 3) { items3 ->
-                    val part3ChestComplete = items3.filter { it.type == LessonItem.TYPE_CHEST }.lastOrNull()?.stepIsFinish == true
+                    // 2–6. kartların kapısı: önceki bölümün SON ÜNİTE MARATONU. Maraton da 1 anahtarla
+                    // açılabildiği için (LessonAdapter.isKeyUnlockable) bölüm anahtar yoluyla da açılabilir.
+                    val lastMarathonDone = mapOf(1 to lastMarathonFinished(items1), 2 to lastMarathonFinished(items2), 3 to lastMarathonFinished(items3))
                     
                     val currentUser = auth.currentUser
                     if (currentUser == null) {
-                        finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                        finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, lastMarathonDone)
                     } else {
                         firestore.collection("users").document(currentUser.uid)
                             .get()
                             .addOnSuccessListener { doc ->
-                                val plan = if (doc.exists()) doc.getString("plan") ?: "Free" else "Free"
+                                // Süresi dolmuş abonelik Free sayılır; aksi halde aboneliği
+                                // biten kullanıcı Pro derslerine erişmeye devam ederdi.
+                                val plan = if (doc.exists()) PlanStatus.effectivePlan(doc) else "Free"
                                 val teacherApproved = doc.getBoolean("teacherApproved") == true
-                                finalizeSetup(view, plan, teacherApproved, part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                                finalizeSetup(view, plan, teacherApproved, part1ChestComplete, part2ChestComplete, lastMarathonDone)
                             }
                             .addOnFailureListener {
-                                finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, part3ChestComplete)
+                                finalizeSetup(view, "Free", false, part1ChestComplete, part2ChestComplete, lastMarathonDone)
                             }
                     }
                 }
@@ -61,27 +81,53 @@ class PartSelectionFragment : Fragment() {
         }
     }
     
-    private fun finalizeSetup(view: View, plan: String, teacherApproved: Boolean, part1ChestComplete: Boolean, part2ChestComplete: Boolean, part3ChestComplete: Boolean) {
+    /** Bölümün son ünite maratonu (son TYPE_CHEST item) bitmiş mi. */
+    private fun lastMarathonFinished(items: List<LessonItem>): Boolean =
+        items.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
+
+    private fun marathonGatedState(partId: Int, prerequisitePart: Int, lastMarathonDone: Map<Int, Boolean>): PartState {
+        val open = lastMarathonDone[prerequisitePart] == true
+        return PartState(
+            partId,
+            visualActive = open,
+            functionalActive = open,
+            inactiveMessage = appString(R.string.ui_x_bolumunun_son_unite_maratonunu_bitir, partTitle(prerequisitePart)),
+        )
+    }
+
+    private fun partTitle(partId: Int): String = when (partId) {
+        1 -> appString(R.string.ui_abakusun_temeli_ve_toplama)
+        2 -> appString(R.string.ui_abakuste_cikarma)
+        else -> appString(R.string.ui_abakuste_carpma)
+    }
+
+    private fun finalizeSetup(view: View, plan: String, teacherApproved: Boolean, part1ChestComplete: Boolean, part2ChestComplete: Boolean, lastMarathonDone: Map<Int, Boolean>) {
         if (!isAdded) return
 
-        val hasProPlan = plan.equals("Pro", ignoreCase = true) || plan.equals("Premium", ignoreCase = true) || teacherApproved
-        
-        val getPartState = { partId: Int ->
+        val hasProPlan = PlanStatus.isProPlan(plan) || teacherApproved
+
+        val getPartState = getPartState@{ partId: Int ->
+            // Onaylı öğretmende bölüm sırası yok: dersleri tek seferde açılıyor
+            // (GlobalLessonData.unlockLessonsForApprovedTeacherOnce) ama sandıkları bitmiş
+            // sayılmıyor, yani aşağıdaki "önceki bölümü bitir" kuralı 2–8'i kapalı tutardı.
+            if (teacherApproved) {
+                return@getPartState PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
+            }
             when (partId) {
+                // Kapı önceki bölümün son ünite maratonu (kullanıcı kararı 04.11.2026); uyarı artık
+                // "X bölümünün son ünite maratonunu bitir" diyor, eski "X kısmını bitir" yerine.
                 1 -> PartState(1, visualActive = true, functionalActive = true, inactiveMessage = "")
-                2 -> PartState(2, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = "Abaküsün Temeli ve Toplama kısmını bitir.")
-                3 -> PartState(3, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = "Abaküsün Temeli ve Toplama kısmını bitir.")
-                4 -> PartState(4, visualActive = part1ChestComplete, functionalActive = part1ChestComplete, inactiveMessage = "Abaküsün Temeli ve Toplama kısmını bitir.")
-                5 -> PartState(5, visualActive = part2ChestComplete, functionalActive = part2ChestComplete, inactiveMessage = "Abaküste Çıkarma kısmını bitir.")
-                6 -> PartState(6, visualActive = part3ChestComplete, functionalActive = part3ChestComplete, inactiveMessage = "Abaküste Çarpma kısmını bitir.")
+                2, 3, 4 -> marathonGatedState(partId, prerequisitePart = 1, lastMarathonDone)
+                5 -> marathonGatedState(5, prerequisitePart = 2, lastMarathonDone)
+                6 -> marathonGatedState(6, prerequisitePart = 3, lastMarathonDone)
                 7 -> {
                     val functional = hasProPlan && part1ChestComplete
-                    val msg = if (!hasProPlan) "Bu kısmı açmak için planı Pro'ya yükselt." else "Abaküste Toplama kısmını bitir."
+                    val msg = if (!hasProPlan) appString(R.string.ui_bu_kismi_acmak_icin_plani_pro) else appString(R.string.ui_abakuste_toplama_kismini_bitir)
                     PartState(7, visualActive = hasProPlan, functionalActive = functional, inactiveMessage = msg)
                 }
                 8 -> {
                     val functional = hasProPlan && part2ChestComplete
-                    val msg = if (!hasProPlan) "Bu kısmı açmak için planı Pro'ya yükselt." else "Abaküste Çıkarma kısmını bitir."
+                    val msg = if (!hasProPlan) appString(R.string.ui_bu_kismi_acmak_icin_plani_pro) else appString(R.string.ui_abakuste_cikarma_kismini_bitir)
                     PartState(8, visualActive = hasProPlan, functionalActive = functional, inactiveMessage = msg)
                 }
                 else -> PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
@@ -91,6 +137,27 @@ class PartSelectionFragment : Fragment() {
         setupRecyclerView(view, R.id.additionRecyclerView, listOf(1, 4, 7).map { getPartState(it) })
         setupRecyclerView(view, R.id.subtractionRecyclerView, listOf(2, 5, 8).map { getPartState(it) })
         setupRecyclerView(view, R.id.multiplicationRecyclerView, listOf(3, 6).map { getPartState(it) })
+
+        // Sobi'nin "… derslerine git" düğmesinden gelindi: bölüm açıksa haritası açılır, kapalıysa kartın
+        // kendi kilit mesajı (karta dokunmakla aynı kural). Bir kez; geri dönünce yeniden açılmasın.
+        val openPart = arguments?.getInt(ARG_OPEN_PART, 0) ?: 0
+        if (openPart > 0) {
+            arguments?.remove(ARG_OPEN_PART)
+            val state = getPartState(openPart)
+            if (state.functionalActive) openMapForPart(openPart)
+            else if (state.inactiveMessage.isNotBlank()) {
+                LockedHint.show(view, state.inactiveMessage)
+            }
+        }
+    }
+
+    companion object {
+        private const val ARG_OPEN_PART = "open_part"
+
+        /** Ana ekran, açılınca [partId] bölümünün ders haritasına geçer (Sobi sekmesi, derse_git). */
+        fun openingPart(partId: Int) = PartSelectionFragment().apply {
+            arguments = Bundle().apply { putInt(ARG_OPEN_PART, partId) }
+        }
     }
 
     private fun setupRecyclerView(root: View, recyclerViewId: Int, parts: List<PartState>) {
@@ -104,8 +171,10 @@ class PartSelectionFragment : Fragment() {
     private fun openMapForPart(partId: Int) {
         if (partId == 7 || partId == 8) {
             val dummyItem = LessonItem(
+                // Kalıcı değil: yalnızca yarış haritasını açmak için taşıyıcı.
+                stableId = "transient_race_part$partId",
                 type = LessonItem.TYPE_RACE,
-                title = if (partId == 7) "Toplama Ustalığı" else "Çıkarma Ustalığı",
+                title = if (partId == 7) appString(R.string.ui_toplama_ustaligi) else appString(R.string.ui_cikarma_ustaligi),
                 offset = 0,
                 isCompleted = false,
                 stepCount = 0,

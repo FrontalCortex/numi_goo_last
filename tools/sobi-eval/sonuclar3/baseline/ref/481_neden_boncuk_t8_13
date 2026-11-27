@@ -1,0 +1,1 @@
+Boncuk kuralı, 10'luk kuralın yapamadığı yerde devreye girer. 10'luk kuralda büyük kardeşin, örneğin 6 için 4'ün, sütunda gidecek boncuğu olması gerekir. Gidecek boncuk yoksa 6'yı doğrudan ekleyemeyiz; o zaman 1 gelir, 5 gider, 10 gelir yaparak aynı sonuca ulaşırız.

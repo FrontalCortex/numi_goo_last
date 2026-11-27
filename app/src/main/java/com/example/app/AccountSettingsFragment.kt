@@ -9,6 +9,8 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentAccountSettingsBinding
+import com.google.android.ump.ConsentInformation
+import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -33,7 +35,73 @@ class AccountSettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         authManager = AuthManager().apply { initialize(requireContext()) }
         setupClickListeners()
+        setupAdPrivacyOptions()
         loadUserPlan()
+    }
+
+    /**
+     * Reklam rızasını geri alma / değiştirme girişi. AB kuralı: rıza veren kullanıcı kararını
+     * uygulama içinden değiştirebilmeli. Durumu UMP biliyor — MainActivity açılışta
+     * [AgeConsentManager] üzerinden rıza bilgisini güncelliyor; burada yalnızca okunuyor.
+     * Satır yalnızca REQUIRED iken (AEA/İngiltere/İsviçre) görünür; Türkiye'de gizli kalır.
+     */
+    private fun setupAdPrivacyOptions() {
+        val consentInfo = UserMessagingPlatform.getConsentInformation(requireContext())
+        val required = consentInfo.privacyOptionsRequirementStatus ==
+            ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED
+        binding.btnAdPrivacyOptions.visibility = if (required) View.VISIBLE else View.GONE
+        binding.dividerAdPrivacy.visibility = if (required) View.VISIBLE else View.GONE
+        binding.btnAdPrivacyOptions.setOnClickListener {
+            val activity = activity ?: return@setOnClickListener
+            UserMessagingPlatform.showPrivacyOptionsForm(activity) { formError ->
+                if (formError != null) {
+                    android.util.Log.w(
+                        "AccountSettings",
+                        "Privacy options form error: ${formError.errorCode} ${formError.message}"
+                    )
+                    if (isAdded) {
+                        Toast.makeText(
+                            requireContext(),
+                            appString(R.string.settings_ad_privacy_options_error),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // onResume'da: Kurs ekranından (katıldı / ayrıldı) dönünce satır güncel olsun.
+        loadCourseRow()
+    }
+
+    /**
+     * "Kurs" satırı: yalnızca öğrencide. Sınıftaysa "Sınıfım" ve sınıfın adı, değilse "Kursa
+     * katıl"; bekleyen bir davet varsa alt satırda söyleniyor (bildirimini kaçıran çocuk
+     * daveti burada görsün).
+     */
+    private fun loadCourseRow() {
+        if (!StudentClassFeature.ENABLED) return
+        if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) return
+        if (FirebaseAuth.getInstance().currentUser == null) return
+        binding.tvCourseHeader.visibility = View.VISIBLE
+        binding.courseCard.visibility = View.VISIBLE
+        CourseClasses.loadMyClass { c, _ ->
+            val b = _binding ?: return@loadMyClass
+            b.tvCourseRowTitle.text = appString(if (c != null) R.string.class_settings_my_class else R.string.class_settings_join)
+            val classLine = c?.let { listOf(it.name, it.courseName).filter { s -> s.isNotBlank() }.joinToString(" · ") }
+            b.tvCourseRowSubtitle.text = classLine
+            b.tvCourseRowSubtitle.visibility = if (classLine.isNullOrBlank()) View.GONE else View.VISIBLE
+            CourseClasses.loadMyInvites { invites ->
+                val bb = _binding ?: return@loadMyInvites
+                if (invites.isNotEmpty()) {
+                    bb.tvCourseRowSubtitle.text = appString(R.string.class_settings_invites)
+                    bb.tvCourseRowSubtitle.visibility = View.VISIBLE
+                }
+            }
+        }
     }
 
     private fun loadUserPlan() {
@@ -58,6 +126,28 @@ class AccountSettingsFragment : Fragment() {
             }
     }
 
+    /** Dil adları kendi dillerinde ("Türkçe", "English", "Bahasa Indonesia"); yalnızca "telefonun dili" çevriliyor. */
+    private fun languageLabel(choice: String): String = when (choice) {
+        AppLanguage.TURKISH -> getString(R.string.settings_language_tr)
+        AppLanguage.ENGLISH -> getString(R.string.settings_language_en)
+        AppLanguage.INDONESIAN -> getString(R.string.settings_language_id)
+        AppLanguage.ARABIC -> getString(R.string.settings_language_ar)
+        else -> getString(R.string.settings_language_system)
+    }
+
+    private fun showLanguagePicker() {
+        val choices = AppLanguage.CHOICES
+        val selected = choices.indexOf(AppLanguage.choice(requireContext()))
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle(R.string.settings_language)
+            .setSingleChoiceItems(choices.map(::languageLabel).toTypedArray(), selected) { dialog, which ->
+                dialog.dismiss()
+                AppLanguage.apply(requireActivity(), choices[which])
+            }
+            .setNegativeButton(R.string.class_cancel, null)
+            .show()
+    }
+
     private fun setupClickListeners() {
         binding.btnBack.setOnClickListener {
             // Geri tuşu: Hesap Ayarları önceki fragmana (ProfileFragment) gelsin.
@@ -76,6 +166,32 @@ class AccountSettingsFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
+        binding.btnCourseClass.setOnClickListener {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.fragmentContainerID, StudentClassFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+        binding.btnParentPanel.setOnClickListener {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.fragmentContainerID, ProgressHubFragment())
+                .addToBackStack(null)
+                .commit()
+        }
+        binding.btnInvite.setOnClickListener { InviteFragment.open(requireActivity().supportFragmentManager) }
+
         binding.btnPrivacySettings.setOnClickListener {
             val fragment = SoundSettingsFragment().apply {
                 arguments = Bundle().apply { putBoolean("fromAccountSettings", true) }
@@ -91,13 +207,16 @@ class AccountSettingsFragment : Fragment() {
                 .addToBackStack(null)
                 .commit()
         }
-        
+
+        binding.tvLanguageValue.text = languageLabel(AppLanguage.choice(requireContext()))
+        binding.btnLanguage.setOnClickListener { showLanguagePicker() }
+
         binding.btnCancelSubscription.setOnClickListener {
             try {
                 val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://play.google.com/store/account/subscriptions"))
                 startActivity(intent)
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Play Store açılamadı", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_play_store_acilamadi), Toast.LENGTH_SHORT).show()
             }
         }
         
@@ -114,6 +233,18 @@ class AccountSettingsFragment : Fragment() {
                     R.anim.slide_out_right
                 )
                 .replace(R.id.fragmentContainerID, fragment)
+                .addToBackStack(null)
+                .commit()
+        }
+        binding.btnCredits.setOnClickListener {
+            requireActivity().supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    R.anim.slide_in_right,
+                    R.anim.slide_out_left,
+                    R.anim.slide_in_left,
+                    R.anim.slide_out_right
+                )
+                .replace(R.id.fragmentContainerID, CreditsFragment())
                 .addToBackStack(null)
                 .commit()
         }

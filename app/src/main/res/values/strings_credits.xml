@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ayarlar → Kaynaklar ve lisanslar (CreditsFragment). Yalnızca başlıklar çevriliyor; atıf
+  metinleri (ör. "designed by Freepik - Magnific.com") lisansın istediği biçimde, kodda İngilizce.
+-->
+<resources>
+    <string name="credits_title">Kaynaklar ve lisanslar</string>
+    <string name="credits_intro">Sorobit\'te başkalarının emeğiyle hazırlanmış çizimler, animasyonlar ve sesler de var. Hepsine teşekkür ederiz.</string>
+    <string name="credits_mascot">Sobi maskot çizimi</string>
+    <string name="credits_avatars">Avatarlar</string>
+    <string name="credits_emoji">Animasyonlu emojiler</string>
+    <string name="credits_icons">İkonlar ve görseller</string>
+    <string name="credits_sounds">Ses efektleri</string>
+    <string name="credits_animations">Animasyonlar</string>
+    <string name="credits_font">Yazı tipi</string>
+    <string name="credits_modified">Değiştirilerek kullanıldı.</string>
+    <string name="credits_open_source">Açık kaynak lisansları</string>
+    <string name="credits_open_source_desc">Uygulamada kullanılan yazılım kütüphaneleri</string>
+</resources>

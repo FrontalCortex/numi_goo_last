@@ -35,8 +35,8 @@
     </ImageView>
     <ImageView
         android:id="@+id/askQuestionButton"
-        android:layout_width="@dimen/tutorial_ask_button_size"
-        android:layout_height="@dimen/tutorial_ask_button_size"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
         android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:elevation="10dp"
@@ -56,7 +56,7 @@
         android:textColor="@color/yellow"
         android:textSize="18sp"
         android:visibility="visible"
-        android:layout_marginTop="-10dp"
+        android:layout_marginTop="@dimen/abacus_fragment_timer_margin_top"
         app:layout_constraintTop_toBottomOf="@id/blackboardImage"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -116,41 +116,50 @@
     </LinearLayout>
 
 
+    <!--
+      Sayı kartı (eski kara tahta görseli yerine; ödev oynatıcısıyla aynı, bg_flash_card). Kimlik eski
+      adıyla kaldı: sayılar ve tahtanın altındakiler ona bağlı. Alçak olduğu için abaküsün üstünde açılan
+      kural paneline yer kalıyor.
+    -->
     <ImageView
         android:id="@+id/blackboardImage"
         android:layout_width="0dp"
-        android:layout_height="300dp"
-        android:scaleType="centerCrop"
-        android:layout_marginTop="20dp"
-        android:src="@drawable/class_board"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_height="@dimen/flash_card_height"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_flash_card"
+        android:importantForAccessibility="no"
+        app:layout_constraintTop_toBottomOf="@id/quitButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
     <!-- Ä°lk sayÄ± widget'Ä± -->
     <TextView
         android:id="@+id/firstNumberText2"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="40sp"
         android:textColor="#FFFFFF"
         android:fontFamily="@font/font_regular"
         android:padding="16dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="4dp"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
-        app:layout_constraintStart_toStartOf="@id/blackboardImage"
-        app:layout_constraintEnd_toStartOf="@id/secondNumberText"/>
+        app:layout_constraintLeft_toLeftOf="@id/blackboardImage"
+        app:layout_constraintRight_toLeftOf="@id/secondNumberText"/>
     <TextView
         android:id="@+id/operator"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:fontFamily="@font/font_regular"
         android:textStyle="bold"
         android:textSize="40sp"
         android:textColor="@color/white"
-        android:layout_marginBottom="20dp"
-        app:layout_constraintStart_toStartOf="@id/firstNumberText2"
-        app:layout_constraintEnd_toEndOf="@id/secondNumberText"
+        android:layout_marginBottom="4dp"
+        app:layout_constraintLeft_toLeftOf="@id/firstNumberText2"
+        app:layout_constraintRight_toRightOf="@id/secondNumberText"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
         app:layout_constraintTop_toTopOf="@id/blackboardImage">
 
@@ -158,33 +167,36 @@
     <!-- Ä°kinci sayÄ± widget'Ä± -->
     <TextView
         android:id="@+id/secondNumberText"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="40sp"
         android:textColor="#FFFFFF"
         android:fontFamily="@font/font_regular"
         android:padding="16dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="4dp"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
-        app:layout_constraintStart_toEndOf="@id/firstNumberText2"
-        app:layout_constraintEnd_toEndOf="@id/blackboardImage"/>
+        app:layout_constraintLeft_toRightOf="@id/firstNumberText2"
+        app:layout_constraintRight_toRightOf="@id/blackboardImage"/>
     <!-- Ä°lk sayÄ± widget'Ä± -->
     <TextView
         android:id="@+id/firstNumberText"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="40sp"
         android:textColor="#FFFFFF"
         android:fontFamily="@font/font_regular"
         android:padding="16dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="4dp"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
-        app:layout_constraintStart_toStartOf="@id/blackboardImage"
-        app:layout_constraintEnd_toEndOf="@id/blackboardImage"/>
+        app:layout_constraintLeft_toLeftOf="@id/blackboardImage"
+        app:layout_constraintRight_toRightOf="@id/blackboardImage"/>
     <EditText
         android:id="@+id/numberInput"
+        android:layoutDirection="ltr"
         android:layout_width="180dp"
         android:layout_height="98dp"
         android:background="@drawable/rounded_edittext"
@@ -198,10 +210,11 @@
         android:elevation="0dp"
         app:layout_constraintTop_toBottomOf="@id/blackboardImage"
         app:layout_constraintBottom_toTopOf="@id/kontrolButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"/>
     <FrameLayout
         android:id="@+id/abacusContainer"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/abacus_frame_bg"
@@ -540,863 +553,44 @@
         </LinearLayout>
     </FrameLayout>
 
-    <FrameLayout
+    <!-- Kural paneli zamanlayıcının altından abaküsün üstüne kadar uzayabiliyor; içerik kısaysa abaküse yapışık. -->
+    <include
         android:id="@+id/rulesPanelScrollView"
+        layout="@layout/view_rules_panel"
         android:layout_width="wrap_content"
-        android:layout_height="120dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
         android:layout_marginBottom="-5dp"
-        android:visibility="gone"
-        android:clipChildren="true"
-        android:clipToPadding="true"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintVertical_bias="1"
+        app:layout_constraintTop_toBottomOf="@id/timerTextView"
         app:layout_constraintBottom_toTopOf="@id/abacusContainer"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <ScrollView
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:scrollbars="vertical"
-            android:clipChildren="true"
-            android:clipToPadding="true"
-            android:overScrollMode="ifContentScrolls">
-
-        <LinearLayout
-            android:id="@+id/rulesPanelScrollContent"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <LinearLayout
-                android:id="@+id/fiveRuleTableLinearLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TableLayout
-                    android:layout_width="@dimen/rules_fragment_table_width"
-                    android:layout_height="wrap_content"
-                    android:stretchColumns="*">
-
-                    <TableRow>
-                        <TextView
-                            android:id="@+id/fiveText"
-                            android:text="Eklenecek sayı"
-                            android:textStyle="bold"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="Kardeşi"
-                            android:textStyle="bold"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:text="1"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-
-                        <TextView
-                            android:text="4"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:text="2"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="3"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:text="3"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="2"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:text="4"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border3"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="1"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:padding="@dimen/rules_fragment_cell_padding"
-                            android:background="@drawable/table_cell_border4"
-                            android:textAlignment="center"/>
-                    </TableRow>
-                </TableLayout>
-                <TextView
-                    android:id="@+id/fiveRuleDescriptionText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="5 gelir. Kardeş gider"
-                    android:textColor="#fff"
-                    android:textAlignment="center"
-                    android:background="@drawable/table_cell_border"
-                    android:textSize="@dimen/rules_fragment_description_text_size"
-                    android:padding="@dimen/rules_fragment_description_padding"
-                    android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
-                    android:layout_gravity="center"/>
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/tenRuleFiveTableLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TableLayout
-                    android:layout_width="@dimen/rules_fragment_table_width"
-                    android:layout_height="wrap_content"
-                    android:stretchColumns="*">
-
-                    <TableRow>
-                        <TextView
-                            android:id="@+id/tenText"
-                            android:text="Eklenecek sayı"
-                            android:textStyle="bold"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="Büyük Kardeşi"
-                            android:textStyle="bold"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:text="1"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-
-                        <TextView
-                            android:text="9"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:text="2"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="8"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:text="3"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="7"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-
-                    <TableRow>
-                        <TextView
-                            android:text="4"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border1"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="6"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border2"
-                            android:textAlignment="center"/>
-                    </TableRow>
-                    <TableRow>
-                        <TextView
-                            android:text="5"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border3"
-                            android:textAlignment="center"/>
-                        <TextView
-                            android:text="5"
-                            android:textColor="#fff"
-                            android:textSize="@dimen/rules_fragment_cell_text_size"
-                            android:background="@drawable/table_cell_border4"
-                            android:textAlignment="center"/>
-                    </TableRow>
-                </TableLayout>
-                <TextView
-                    android:id="@+id/tenRuleFiveDescriptionText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="10 gelir. Kardeş gider."
-                    android:textColor="#fff"
-                    android:textAlignment="center"
-                    android:textSize="@dimen/rules_fragment_description_text_size"
-                    android:padding="@dimen/rules_fragment_description_padding"
-                    android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
-                    android:background="@drawable/table_cell_border"
-                    android:layout_gravity="center"/>
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/tenRuleTableLinearLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TableLayout
-                    android:layout_width="200dp"
-                    android:layout_height="wrap_content"
-                    android:baselineAligned="false"
-                    android:stretchColumns="*">
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:padding="2dp"
-                            android:text="Eklenecek sayı"
-                            android:textAlignment="center"
-                            android:textColor="#fff"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:padding="2dp"
-                            android:text="Kardeşi"
-                            android:textAlignment="center"
-                            android:textColor="#fff"
-                            android:textStyle="bold" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:padding="2dp"
-                            android:text="6"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:padding="2dp"
-                            android:text="4"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:padding="2dp"
-                            android:text="7"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:padding="2dp"
-                            android:text="3"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:padding="2dp"
-                            android:text="8"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:padding="2dp"
-                            android:text="2"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border3"
-                            android:padding="2dp"
-                            android:text="9"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border4"
-                            android:padding="2dp"
-                            android:text="1"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-                </TableLayout>
-                <TextView
-                    android:id="@+id/tenRuleDescriptionText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="10 gelir. Kardeş gider."
-                    android:textColor="#fff"
-                    android:textAlignment="center"
-                    android:textSize="@dimen/rules_fragment_description_text_size"
-                    android:padding="@dimen/rules_fragment_description_padding"
-                    android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
-                    android:background="@drawable/table_cell_border"
-                    android:layout_gravity="center"/>
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/BeadRuleTable"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TableLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:shrinkColumns="1">
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border1"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="Eklenecek sayı"
-                            android:textAlignment="center"
-                            android:textColor="#fff"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border2"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="İşlem"
-                            android:textAlignment="center"
-                            android:textColor="#fff"
-                            android:textStyle="bold" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border1"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="6"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border2"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="1 gelir - 5 gider - 10 gelir"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border1"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="7"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border2"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="2 gelir - 5 gider - 10 gelir"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border1"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="8"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border2"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="3 gelir - 5 gider - 10 gelir"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border3"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="9"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border4"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="4 gelir - 5 gider - 10 gelir"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-                </TableLayout>
-
-            </LinearLayout>
-            <LinearLayout
-                android:id="@+id/BeadRuleExtractionTable"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TableLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:shrinkColumns="1">
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border1"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="Çıkarılacak sayı"
-                            android:textAlignment="center"
-                            android:textColor="#fff"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border2"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="İşlem"
-                            android:textAlignment="center"
-                            android:textColor="#fff"
-                            android:textStyle="bold" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border1"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="6"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border2"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="1 gider - 5 gelir - 10 gider"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border1"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="7"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border2"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="2 gider - 5 gelir - 10 gider"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border1"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="8"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border2"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="3 gider - 5 gelir - 10 gider"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border3"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="9"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:layout_height="wrap_content"
-                            android:background="@drawable/table_cell_border4"
-                            android:gravity="center"
-                            android:paddingVertical="2dp"
-                            android:paddingHorizontal="4dp"
-                            android:text="4 gider - 5 gelir - 10 gider"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-                </TableLayout>
-
-            </LinearLayout>
-
-            <FrameLayout
-                android:id="@+id/rulesPanelMultiplicationSlot"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:visibility="gone" />
-
-            <LinearLayout
-                android:id="@+id/tenRuleExtractionTableLayout"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <TableLayout
-                    android:layout_width="200dp"
-                    android:layout_height="wrap_content"
-                    android:background="#222"
-                    android:stretchColumns="*">
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:padding="2dp"
-                            android:text="Çıkarılacak Sayı"
-                            android:textAlignment="center"
-                            android:textColor="#fff"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:padding="2dp"
-                            android:text="Kardeşi"
-                            android:textAlignment="center"
-                            android:textColor="#fff"
-                            android:textStyle="bold" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:text="1"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:text="9"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:text="2"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:text="8"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:text="3"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:text="7"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:text="4"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:text="6"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:text="5"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:text="5"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:text="6"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:text="4"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:text="7"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:text="3"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border1"
-                            android:text="8"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border2"
-                            android:text="2"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-
-                    <TableRow>
-
-                        <TextView
-                            android:background="@drawable/table_cell_border3"
-                            android:text="9"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-
-                        <TextView
-                            android:background="@drawable/table_cell_border4"
-                            android:text="1"
-                            android:textAlignment="center"
-                            android:textColor="#fff" />
-                    </TableRow>
-                </TableLayout>
-
-                <TextView
-                    android:id="@+id/extractionTenRuleDescriptionText"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="10 gider. Kardeş gelir"
-                    android:textColor="#fff"
-                    android:textAlignment="center"
-                    android:background="@drawable/table_cell_border"
-                    android:textSize="@dimen/rules_fragment_description_text_size"
-                    android:padding="@dimen/rules_fragment_description_padding"
-                    android:layout_marginTop="@dimen/rules_fragment_description_margin_top"
-                    android:layout_gravity="center"/>
-
-
-            </LinearLayout>
-
-
-        </LinearLayout>
-
-
-
-        </ScrollView>
-
-    </FrameLayout>
+        app:layout_constraintStart_toStartOf="parent" />
 
     <Button
         android:id="@+id/kontrolButton"
+        android:background="@drawable/bg_depth_hw_control"
+        app:backgroundTint="@null"
+        android:stateListAnimator="@null"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:minHeight="@dimen/tutorial_control_button_height"
+        android:paddingTop="0dp"
+        android:paddingBottom="4dp"
         android:layout_width="0dp"
-        android:layout_height="60dp"
+        android:layout_height="@dimen/tutorial_control_button_height"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="15dp"
         android:fontFamily="@font/font_regular"
-        android:text="Kontrol Et"
+        android:text="@string/fragment_blinding_lesson_kontrol_button"
         android:visibility="invisible"
         android:textAllCaps="false"
         android:textSize="18sp"
         android:textStyle="bold"
         android:elevation="0dp"
         android:textColor="#000000"
-        android:backgroundTint="#8CC63F"
-        app:cornerRadius="15dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
@@ -1417,8 +611,8 @@
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/resetButton"
-        android:layout_width="56dp"
-        android:layout_height="56dp"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
         android:background="@drawable/fab_background"
         app:lottie_autoPlay="false"
         app:lottie_loop="false"
@@ -1434,8 +628,8 @@
 
     <ImageView
         android:id="@+id/rulesPanelButton"
-        android:layout_width="@dimen/tutorial_ask_button_size"
-        android:layout_height="@dimen/tutorial_ask_button_size"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
         android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:elevation="10dp"
@@ -1449,8 +643,8 @@
         android:src="@drawable/magic_wand_ic"/>
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/skipStepButton"
-        android:layout_width="@dimen/tutorial_ask_button_size"
-        android:layout_height="@dimen/tutorial_ask_button_size"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
         android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:visibility="visible"
@@ -1465,8 +659,8 @@
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/abacusModeButton"
-        android:layout_width="@dimen/tutorial_ask_button_size"
-        android:layout_height="@dimen/tutorial_ask_button_size"
+        android:layout_width="@dimen/abacus_side_button_size"
+        android:layout_height="@dimen/abacus_side_button_size"
         android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
         android:layout_marginEnd="@dimen/abacus_fragment_ask_button_margin_end"
         android:visibility="visible"
@@ -1480,34 +674,40 @@
         app:layout_constraintBottom_toTopOf="@id/startButton"/>
 
 
+    <!-- İpucu balonu fragment_abacus.xml'deki ile aynı; neden kırpılmadığı orada anlatılıyor. -->
     <FrameLayout
         android:id="@+id/hintContainer"
         android:layout_width="wrap_content"
-        android:layout_height="56dp"
+        android:layout_height="@dimen/abacus_side_button_size"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="@dimen/abacus_fragment_ask_button_margin_top"
+        android:clipChildren="false"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@id/askQuestionButton">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:clipChildren="true"
-            android:clipToPadding="true"
+            android:layout_marginTop="@dimen/abacus_fragment_hint_bubble_overflow"
+            android:layout_marginBottom="@dimen/abacus_fragment_hint_bubble_overflow"
+            android:clipChildren="false"
             android:layout_gravity="center">
             <TextView
                 android:id="@+id/tvHint"
                 android:layout_width="wrap_content"
-                android:layout_height="55dp"
-                android:background="@drawable/hint_background"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/abacus_side_button_size"
+                android:gravity="center_vertical"
+                android:background="@drawable/hint_bubble_background"
                 android:textColor="@android:color/white"
-                android:layout_marginEnd="15dp"
-                android:paddingLeft="10dp"
-                android:clipChildren="true"
-                android:clipToPadding="true"
-                android:paddingRight="30dp"
+                android:layout_marginEnd="@dimen/abacus_fragment_hint_tv_margin_end"
+                android:paddingStart="@dimen/abacus_fragment_hint_tv_padding_start"
+                android:paddingTop="@dimen/abacus_fragment_hint_tv_padding_vertical"
+                android:paddingEnd="@dimen/abacus_fragment_hint_tv_padding_end"
+                android:paddingBottom="@dimen/abacus_fragment_hint_tv_padding_vertical"
+                android:lineSpacingExtra="@dimen/abacus_fragment_hint_tv_line_spacing"
                 android:visibility="invisible"
-                android:textSize="16sp"
+                android:textSize="@dimen/abacus_fragment_hint_tv_text_size"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
                 tools:ignore="MissingConstraints" />
@@ -1516,8 +716,8 @@
 
         <com.airbnb.lottie.LottieAnimationView
             android:id="@+id/fabHint"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
+            android:layout_width="@dimen/abacus_side_button_size"
+            android:layout_height="@dimen/abacus_side_button_size"
             android:background="@drawable/fab_background"
             app:lottie_autoPlay="false"
             app:lottie_loop="false"
@@ -1576,7 +776,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/tutorial_result_item_margin"
             android:layout_marginStart="@dimen/tutorial_result_title_start_margin"
-            android:text="Yanlış"
+            android:text="@string/fragment_blinding_lesson_incorrect_text"
             android:textColor="#FF4B4B"
             android:textSize="@dimen/tutorial_result_title_text_size"
             android:textStyle="bold"
@@ -1606,19 +806,56 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/correctAnswerLabel" />
 
+        <!-- "Sobi ile analiz et": soru abaküste adım adım yeniden çözülür, hatanın yeri bulunur
+             (BlindingLessonFragment.bindReviewButton, MistakeReviewDialog). -->
+        <LinearLayout
+            android:id="@+id/incorrectSobiAnalyze"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_margin="@dimen/tutorial_result_item_margin"
+            android:background="@drawable/bg_hw_send"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.example.app.SobiHeadView
+                android:layout_width="30dp"
+                android:layout_height="30dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/review_open_button"
+                android:textColor="#FFFFFF"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/okayButton"
+            android:background="@drawable/bg_depth_tutorial_okay"
+            app:backgroundTint="@null"
+            android:stateListAnimator="@null"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="@dimen/tutorial_panel_button_height"
+            android:paddingTop="0dp"
+            android:paddingBottom="4dp"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/tutorial_result_button_height"
+            android:layout_height="@dimen/tutorial_panel_button_height"
             android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
-            android:backgroundTint="#FF4B4B"
-            android:text="Devam Et"
+            android:text="@string/fragment_blinding_lesson_okay_button"
             android:layout_marginHorizontal="@dimen/tutorial_result_item_margin"
             android:textAllCaps="false"
             android:textColor="#000000"
             android:textSize="@dimen/tutorial_result_button_text_size"
             android:textStyle="bold"
-            app:cornerRadius="@dimen/tutorial_result_button_corner_radius"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@id/correctAnswerText" />
 
@@ -1657,7 +894,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/tutorial_result_title_start_margin"
-            android:text="Aferin!"
+            android:text="@string/fragment_blinding_lesson_correct_text"
             android:textColor="#8CC63F"
             android:textSize="@dimen/tutorial_result_title_text_size"
             android:textStyle="bold"
@@ -1666,20 +903,26 @@
 
         <Button
             android:id="@+id/continueButton"
+            android:background="@drawable/bg_depth_tutorial_continue"
+            app:backgroundTint="@null"
+            android:stateListAnimator="@null"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:minHeight="@dimen/tutorial_panel_button_height"
+            android:paddingTop="0dp"
+            android:paddingBottom="4dp"
             android:layout_width="0dp"
-            android:layout_height="@dimen/tutorial_result_button_height"
+            android:layout_height="@dimen/tutorial_panel_button_height"
             android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
-            android:backgroundTint="#8CC63F"
-            android:text="Devam et"
+            android:text="@string/fragment_blinding_lesson_continue_button"
             android:textAllCaps="false"
             android:textColor="#000000"
             android:textSize="@dimen/tutorial_result_button_text_size"
             android:textStyle="bold"
-            app:cornerRadius="@dimen/tutorial_result_button_corner_radius"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintTop_toBottomOf="@id/correctText"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"/>
+            app:layout_constraintEnd_toEndOf="parent" />
 
 
 
@@ -1687,157 +930,41 @@
 
     <Button
         android:id="@+id/startButton"
+        android:background="@drawable/bg_depth_tutorial_control"
+        app:backgroundTint="@null"
+        android:stateListAnimator="@null"
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:minHeight="@dimen/tutorial_control_button_height"
+        android:paddingTop="0dp"
+        android:paddingBottom="4dp"
         android:layout_width="0dp"
-        android:layout_height="60dp"
+        android:layout_height="@dimen/tutorial_control_button_height"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="15dp"
         android:fontFamily="@font/font_regular"
-        android:text="Başla"
+        android:text="@string/fragment_blinding_lesson_start_button"
         android:visibility="visible"
         android:textAllCaps="false"
         android:textSize="18sp"
         android:textStyle="bold"
         android:elevation="0dp"
         android:textColor="#000000"
-        android:backgroundTint="#8CC63F"
-        app:cornerRadius="15dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <LinearLayout
+    <include
         android:id="@+id/abacusSettingsPanel"
+        layout="@layout/view_abacus_settings_panel"
         android:layout_width="340dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/guide_panel_background"
-        android:elevation="12dp"
-        android:padding="16dp"
-        android:translationX="400dp"
-        android:visibility="visible"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintVertical_bias="0.1">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:baselineAligned="false">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:layout_marginEnd="8dp">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/abacus_svg_ic"
-                    android:layout_marginBottom="12dp"/>
-
-                <SeekBar
-                    android:id="@+id/seekBarScaleX"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:max="100"
-                    android:progress="50"/>
-
-                <SeekBar
-                    android:id="@+id/seekBarScaleY"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:max="100"
-                    android:progress="50"/>
-
-                <SeekBar
-                    android:id="@+id/seekBarMarginBottom"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="100"
-                    android:progress="0"/>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:gravity="center_horizontal"
-                android:layout_marginStart="8dp">
-
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:src="@drawable/bead"
-                    android:layout_marginBottom="12dp"/>
-
-                <SeekBar
-                    android:id="@+id/seekBarBeadScaleX"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:max="100"
-                    android:progress="50"/>
-
-                <SeekBar
-                    android:id="@+id/seekBarBeadScaleY"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:max="100"
-                    android:progress="50"/>
-                    
-                <SeekBar
-                    android:id="@+id/seekBarBeadMarginTop"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
-                    android:max="30"
-                    android:progress="0"/>
-
-                <SeekBar
-                    android:id="@+id/seekBarBeadMarginBottom"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="50"
-                    android:progress="0"/>
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end"
-            android:layout_marginTop="8dp">
-            <ImageButton
-                android:id="@+id/abacusSettingsResetButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/special_reset_ic"
-                android:scaleType="centerInside"
-                android:background="@drawable/fab_background"
-                android:layout_marginEnd="16dp"
-                android:padding="8dp"/>
-            <ImageButton
-                android:id="@+id/abacusSettingsSaveButton"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/correct_ic"
-                android:background="@drawable/fab_background"
-                android:padding="6dp"/>
-        </LinearLayout>
-
-    </LinearLayout>
+        app:layout_constraintVertical_bias="0.1" />
 
     <include
         layout="@layout/view_guide_panel"

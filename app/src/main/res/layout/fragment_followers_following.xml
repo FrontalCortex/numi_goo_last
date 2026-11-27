@@ -20,7 +20,7 @@
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Geri"
+            android:contentDescription="@string/fragment_followers_following_btn_back_desc"
             android:padding="12dp"
             android:src="@drawable/ic_back_arrow"
             app:tint="@android:color/white" />
@@ -30,7 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="Arkadaşlar"
+            android:text="@string/fragment_followers_following_text"
             android:textColor="@android:color/white"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -91,7 +91,7 @@
             android:id="@+id/tvEmpty"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Henüz kimse yok"
+            android:text="@string/fragment_followers_following_tv_empty"
             android:textColor="#93A5B3"
             android:textSize="16sp" />
 

@@ -438,8 +438,15 @@ object MissionsProgressStore {
 
     fun markMissionRewardClaimed(context: Context, window: MissionWindow, missionId: String) {
         ensureResets(context)
+        val key = rewardClaimKey(context, window, missionId)
+        // Ölçüm iki çağrı yerine değil buraya kondu: hem görev listesi hem sandık ekranı
+        // buradan geçiyor. Bayrak kontrolü, aynı görevin aynı periyotta iki kez sayılmasını
+        // engelliyor — üstteki çağrılar da kontrol ediyor ama tek kaynak burası olmalı.
+        if (!prefs(context).getBoolean(key, false)) {
+            AnalyticsLogger.logMissionClaimed("${window.name.lowercase()}_$missionId")
+        }
         prefs(context).edit()
-            .putBoolean(rewardClaimKey(context, window, missionId), true)
+            .putBoolean(key, true)
             .apply()
         uploadStateToCloud(context)
     }

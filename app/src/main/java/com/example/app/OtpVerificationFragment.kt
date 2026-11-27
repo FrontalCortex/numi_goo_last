@@ -42,6 +42,24 @@ class OtpVerificationFragment : Fragment() {
     private val acquisitionSource: String? by lazy {
         requireArguments().getString(ARG_ACQUISITION_SOURCE)
     }
+    /**
+     * Doluysa bu bir VELİ onay kodudur (13 yaş altı kayıt, bkz. [ParentConsentFragment]):
+     * kod bu adrese gitti, "tekrar gönder" de buraya gönderir.
+     */
+    private val parentEmail: String? by lazy {
+        requireArguments().getString(ARG_PARENT_EMAIL)?.takeIf { it.isNotBlank() }
+    }
+    /**
+     * Doluysa bu, 13 yaş altı kayıtta çocuğun KENDİ adresinin kodu: doğrulanınca hesap
+     * açılmaz, bu adrese veli kodu gönderilip veli kod ekranına geçilir.
+     */
+    private val pendingParentEmail: String? by lazy {
+        requireArguments().getString(ARG_PENDING_PARENT_EMAIL)?.takeIf { it.isNotBlank() }
+    }
+    /** Veli kodu Google kaydı için mi; öyleyse hesap confirmParentalConsent ile açılır. */
+    private val googleParental: Boolean by lazy {
+        requireArguments().getBoolean(ARG_GOOGLE_PARENTAL, false)
+    }
 
     companion object {
         private const val ARG_EMAIL = "arg_email"
@@ -49,6 +67,9 @@ class OtpVerificationFragment : Fragment() {
         private const val ARG_FOR_PASSWORD_RESET = "arg_for_password_reset"
         private const val ARG_BIRTH_YEAR = "arg_birth_year"
         private const val ARG_ACQUISITION_SOURCE = "arg_acquisition_source"
+        private const val ARG_PARENT_EMAIL = "arg_parent_email"
+        private const val ARG_GOOGLE_PARENTAL = "arg_google_parental"
+        private const val ARG_PENDING_PARENT_EMAIL = "arg_pending_parent_email"
         private const val RESEND_COOLDOWN_MS = 45_000L   // 45 saniye
         private const val MAX_WRONG_ATTEMPTS = 5
         private const val WRONG_ATTEMPT_COOLDOWN_MS = 15 * 60 * 1000L // 15 dk
@@ -95,7 +116,10 @@ class OtpVerificationFragment : Fragment() {
             isRegistration: Boolean,
             forPasswordReset: Boolean = false,
             birthYear: Int? = null,
-            acquisitionSource: String? = null
+            acquisitionSource: String? = null,
+            parentEmail: String? = null,
+            googleParental: Boolean = false,
+            pendingParentEmail: String? = null
         ): OtpVerificationFragment {
             return OtpVerificationFragment().apply {
                 arguments = Bundle().apply {
@@ -104,6 +128,9 @@ class OtpVerificationFragment : Fragment() {
                     putBoolean(ARG_FOR_PASSWORD_RESET, forPasswordReset)
                     birthYear?.let { putInt(ARG_BIRTH_YEAR, it) }
                     acquisitionSource?.let { putString(ARG_ACQUISITION_SOURCE, it) }
+                    parentEmail?.let { putString(ARG_PARENT_EMAIL, it) }
+                    putBoolean(ARG_GOOGLE_PARENTAL, googleParental)
+                    pendingParentEmail?.let { putString(ARG_PENDING_PARENT_EMAIL, it) }
                 }
             }
         }
@@ -112,6 +139,9 @@ class OtpVerificationFragment : Fragment() {
     private var wrongAttempts = 0
     private var resendCooldownTimer: CountDownTimer? = null
     private var wrongAttemptCooldownTimer: CountDownTimer? = null
+
+    /** Arka plandayken gelen cevabın istediği ekran geçişi; [onResume]'da yapılır. */
+    private var pendingNavigation: (() -> Unit)? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -129,11 +159,22 @@ class OtpVerificationFragment : Fragment() {
         })
         authManager = AuthManager().also { it.initialize(requireContext()) }
         binding.tvTitle.text = when {
-            forPasswordReset -> "Şifre sıfırlama"
-            isRegistration -> "Hesap oluştur"
-            else -> "E-postanı doğrula"
+            forPasswordReset -> appString(R.string.ui_sifre_sifirlama)
+            parentEmail != null -> appString(R.string.ui_veli_onayi)
+            pendingParentEmail != null -> appString(R.string.ui_e_postani_dogrula)
+            isRegistration -> appString(R.string.ui_hesap_olustur)
+            else -> appString(R.string.ui_e_postani_dogrula)
         }
-        binding.tvEmail.text = email
+        val parent = parentEmail
+        if (parent != null) {
+            binding.tvEmail.text = appString(R.string.ui_veli_e_postasi_x, parent)
+            binding.tvInstruction.text = appString(R.string.ui_veli_e_postasina_gelen_kodu_gir)
+        } else {
+            binding.tvEmail.text = email
+            if (pendingParentEmail != null) {
+                binding.tvInstruction.text = appString(R.string.ui_once_kendi_e_postana_gelen_kodu_gir)
+            }
+        }
         binding.btnVerify.setOnClickListener { verify() }
         binding.btnResend.setOnClickListener { resend() }
         startResendCooldown()
@@ -200,7 +241,7 @@ class OtpVerificationFragment : Fragment() {
                     ?.remove(OTP_COOLDOWN_EMAIL)
                     ?.apply()
                 binding.btnVerify.isEnabled = true
-                binding.btnVerify.text = "Doğrula"
+                binding.btnVerify.text = appString(R.string.ui_dogrula)
                 updateResendButtonState()
                 Toast.makeText(requireContext(), getString(R.string.otp_can_retry), Toast.LENGTH_SHORT).show()
             }
@@ -210,17 +251,30 @@ class OtpVerificationFragment : Fragment() {
     private fun resend() {
         if (wrongAttemptCooldownTimer != null) return
         binding.btnResend.isEnabled = false
-        val sendCode: (Boolean, String?) -> Unit = { success, error ->
+        val sendCode: (Boolean, String?) -> Unit = sendCode@{ success, error ->
+            // Cevap gelene kadar ekrandan çıkılmış olabilir (geri düğmesi, activity kapandı):
+            // requireContext() ve binding o zaman IllegalStateException / NPE atıyordu.
+            if (_binding == null || !isAdded) return@sendCode
             if (success) {
-                Toast.makeText(requireContext(), "Kod tekrar gönderildi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_kod_tekrar_gonderildi), Toast.LENGTH_SHORT).show()
                 startResendCooldown()
             } else {
                 updateResendButtonState()
-                Toast.makeText(requireContext(), error ?: "Kod gönderilemedi", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_gonderilemedi), Toast.LENGTH_LONG).show()
             }
         }
+        val parent = parentEmail
+        val year = birthYear
         if (forPasswordReset) {
             authManager.sendTeacherPasswordResetCode(email, sendCode)
+        } else if (parent != null && year != null) {
+            // Veli kodu yeniden VELİYE gider; normal kayıt koduna düşseydi sunucu 13 yaş
+            // altı kaydı reddederdi.
+            if (googleParental) {
+                authManager.requestGoogleParentalConsent(parent, year, acquisitionSource, sendCode)
+            } else {
+                authManager.sendParentalRegistrationCode(email, parent, year, acquisitionSource, sendCode)
+            }
         } else {
             authManager.resendStudentVerificationCode(email, isRegistration, sendCode)
         }
@@ -235,31 +289,42 @@ class OtpVerificationFragment : Fragment() {
         }
         val code = binding.etCode.text?.toString()?.trim().orEmpty()
         if (code.length != 6) {
-            Toast.makeText(requireContext(), "Kod 6 haneli olmalıdır", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_kod_6_haneli_olmalidir), Toast.LENGTH_SHORT).show()
             return
         }
 
         binding.btnVerify.isEnabled = false
-        binding.btnVerify.text = "Doğrulanıyor..."
+        binding.btnVerify.text = appString(R.string.ui_dogrulaniyor)
         if (forPasswordReset) binding.btnResend.isEnabled = false
-        (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyStarted()
+        (activity as? OnOtpVerifyProgressListener)?.onOtpVerifyStarted()
 
-        val onVerifyFailed: (String?) -> Unit = { error ->
-            (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
+        val onVerifyFailed: (String?) -> Unit = onVerifyFailed@{ error ->
+            if (_binding == null || !isAdded) return@onVerifyFailed
+            // Yalnızca kayıt akışında: giriş veya şifre sıfırlamadaki yanlış kod, kayıt
+            // hunisinin sürtünmesi değil.
+            if (isRegistration) {
+                AnalyticsLogger.logSignupStep(
+                    AnalyticsLogger.SIGNUP_OTP_WRONG,
+                    AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                )
+            }
+            (activity as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
             if (forPasswordReset && wrongAttemptCooldownTimer == null) {
                 updateResendButtonState()
             }
             wrongAttempts++
-            binding.btnVerify.text = "Doğrula"
+            binding.btnVerify.text = appString(R.string.ui_dogrula)
             binding.btnVerify.isEnabled = wrongAttempts < MAX_WRONG_ATTEMPTS
             if (wrongAttempts >= MAX_WRONG_ATTEMPTS) {
                 startWrongAttemptCooldown()
                 Toast.makeText(requireContext(), getString(R.string.otp_too_many_wrong), Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(requireContext(), error ?: "Kod doğrulanamadı", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), error ?: appString(R.string.ui_kod_dogrulanamadi), Toast.LENGTH_LONG).show()
             }
-            // Sunucu 15 dk cooldown döndüyse istemcide de kilidi başlat
-            if (error != null && (error.contains("15 dakika") || error.contains("Çok fazla yanlış"))) {
+            // Sunucu 15 dk cooldown döndüyse istemcide de kilidi başlat. Türkçede sunucunun mesajı geliyor;
+            // başka dilde serverErrorText resource-exhausted'ı ui_server_too_many'ye çeviriyor.
+            if (error != null && (error.contains("15 dakika") || error.contains("Çok fazla yanlış") ||
+                    error == appString(R.string.ui_server_too_many))) {
                 wrongAttempts = MAX_WRONG_ATTEMPTS
                 startWrongAttemptCooldown()
             }
@@ -269,14 +334,80 @@ class OtpVerificationFragment : Fragment() {
             forPasswordReset -> {
                 authManager.verifyTeacherPasswordResetCode(email, code) { success, error ->
                     if (success) {
-                        (requireActivity() as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
-                        (requireActivity() as? OnTeacherOtpVerifiedForResetListener)?.onOtpVerifiedForReset(email, code)
+                        (activity as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
+                        (activity as? OnTeacherOtpVerifiedForResetListener)?.onOtpVerifiedForReset(email, code)
                     } else {
                         onVerifyFailed(error)
                     }
                 }
             }
+            googleParental -> {
+                // 13 yaş altı Google kaydı: hesabı sunucu açar (users dokümanı onayla yazılır).
+                authManager.confirmGoogleParentalConsent(code) { success, error ->
+                    if (success) {
+                        AnalyticsLogger.logSignupStep(
+                            AnalyticsLogger.SIGNUP_COMPLETED,
+                            AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                        )
+                        acquisitionSource?.let { AppStatisticsManager.incrementAcquisitionSource(it) }
+                        openMainAndFinish()
+                    } else {
+                        onVerifyFailed(error)
+                    }
+                }
+            }
+            pendingParentEmail != null && birthYear != null -> {
+                val parent = pendingParentEmail!!
+                val year = birthYear!!
+                authManager.verifyChildEmailForParentalConsent(email, code, year) { success, error ->
+                    if (!success) {
+                        onVerifyFailed(error)
+                        return@verifyChildEmailForParentalConsent
+                    }
+                    // Çocuğun adresi doğrulandı; şimdi veli kodu. Hesap veli kodu girilince açılır.
+                    authManager.sendParentalRegistrationCode(email, parent, year, acquisitionSource) { sent, sendError ->
+                        if (_binding == null || !isAdded) return@sendParentalRegistrationCode
+                        (activity as? OnOtpVerifyProgressListener)?.onOtpVerifyFinished()
+                        // Uygulama arka plandaysa popBackStack/commit IllegalStateException atar;
+                        // geçiş onResume'a ertelenir.
+                        navigateWhenResumed nav@{
+                            // Bu ekran yığından çıkıyor; sonrasında fragment'a dokunmamak için önce al.
+                            val fm = parentFragmentManager
+                            val containerId = id
+                            val ctx = requireContext().applicationContext
+                            // Bu kod kullanıldı; geri dönüş bu ekrana değil veli e-postası ekranına
+                            // olmalı. Doğrulama 30 dk geçerli, oradan yeniden göndermek ikinci kez
+                            // çocuğun adresine kod istemez.
+                            fm.popBackStack()
+                            if (!sent) {
+                                Toast.makeText(ctx, sendError ?: appString(R.string.ui_kod_gonderilemedi), Toast.LENGTH_LONG).show()
+                                return@nav
+                            }
+                            AnalyticsLogger.logSignupStep(
+                                AnalyticsLogger.SIGNUP_OTP_SENT,
+                                AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                            )
+                            fm.beginTransaction()
+                                .setCustomAnimations(R.anim.slide_in_right, R.anim.slide_out_left, R.anim.slide_in_left, R.anim.slide_out_right)
+                                .replace(
+                                    containerId,
+                                    newInstance(
+                                        email = email,
+                                        isRegistration = true,
+                                        birthYear = year,
+                                        acquisitionSource = acquisitionSource,
+                                        parentEmail = parent,
+                                    )
+                                )
+                                .addToBackStack("otp")
+                                .commit()
+                        }
+                    }
+                }
+            }
             isRegistration -> {
+                // Veli kodu da (e-posta yolu) buradan doğrulanır: sunucu kodun veli kodu
+                // olduğunu kendi kaydından bilir, doğum yılını da oradan alır.
                 // birthYear / acquisitionSource artık SUNUCUYA gönderiliyor; hesap
                 // oluşturulurken Cloud Function yazıyor. Eskiden kayıt sonrası istemci
                 // kendi dokümanına update atıyordu — birthYear reklam yaş korumasını
@@ -289,10 +420,13 @@ class OtpVerificationFragment : Fragment() {
                     acquisitionSource = acquisitionSource,
                 ) { success, error ->
                     if (success) {
+                        // Huninin son adımı: hesap gerçekten oluştu.
+                        AnalyticsLogger.logSignupStep(
+                            AnalyticsLogger.SIGNUP_COMPLETED,
+                            AnalyticsLogger.SIGNUP_ROLE_STUDENT,
+                        )
                         acquisitionSource?.let { AppStatisticsManager.incrementAcquisitionSource(it) }
-                        requireActivity().setResult(Activity.RESULT_OK)
-                        startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
-                        requireActivity().finish()
+                        openMainAndFinish()
                     } else {
                         onVerifyFailed(error)
                     }
@@ -301,14 +435,42 @@ class OtpVerificationFragment : Fragment() {
             else -> {
                 authManager.verifyLoginWithOTP(email, code) { success, error ->
                     if (success) {
-                        requireActivity().setResult(Activity.RESULT_OK)
-                        startActivity(Intent(requireContext(), MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
-                        requireActivity().finish()
+                        openMainAndFinish()
                     } else {
                         onVerifyFailed(error)
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Hesap açıldı / giriş yapıldı: ana ekrana geç. Cevap geldiğinde fragment ayrılmış
+     * olabilir; requireActivity() o zaman IllegalStateException atıyordu.
+     */
+    private fun openMainAndFinish() {
+        val act = activity ?: return
+        if (act.isFinishing) return
+        act.setResult(Activity.RESULT_OK)
+        act.startActivity(Intent(act, MainActivity::class.java).putExtra(MainActivity.EXTRA_FROM_LOGIN, true))
+        act.finish()
+    }
+
+    /** Fragment ayrıldıysa geçişi atlar; durum kaydedildiyse (uygulama arka planda) [onResume]'a erteler. */
+    private fun navigateWhenResumed(action: () -> Unit) {
+        if (!isAdded) return
+        if (parentFragmentManager.isStateSaved) {
+            pendingNavigation = action
+            return
+        }
+        action()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        pendingNavigation?.let { action ->
+            pendingNavigation = null
+            action()
         }
     }
 

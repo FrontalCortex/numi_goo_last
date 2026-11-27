@@ -22,25 +22,13 @@ import com.example.app.model.LessonItem
 class LessonResult : Fragment() {
     private var _binding: FragmentLessonResultBinding? = null
     private val binding get() = _binding!!
-    private val animations = listOf(
-        "animation_one.json",
-        "animaton_two.json",
-        "animaton_three.json",
-        "animaton_four.json",
-        "animaton_five.json",
-        "animaton_six.json",
-        "animaton_eight.json",
-        "animaton_nine.json",
-        "animaton_ten.json",
-        "animaton_eleven.json",
-        "animaton_twelve.json",
-        "animaton_thirteen.json"
-    )
-    private var currentAnimIndex = 0
     private var correctAnswers: Int = 0
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
     private var lessonScore: Int = 0
+    private var questionElapsedMs: Long = -1L
+    /** Türü LESSON olan bir item mı? Dersi başlatan fragment args ile bildiriyor. */
+    private var isLessonTypeItem: Boolean = false
 
     private val revealHandler = Handler(Looper.getMainLooper())
     private var activeCountAnimator: ValueAnimator? = null
@@ -50,7 +38,7 @@ class LessonResult : Fragment() {
         const val COUNT_UP_DURATION_MS = 1000L
         const val CLAIM_BUTTON_FADE_MS = 300L
         const val STEP_PAUSE_MS = 100L
-        const val EXIT_ANIM_DURATION_MS = 300L
+        const val EXIT_ANIM_DURATION_MS = 400L
     }
 
     // --- Teşhis: fragment_lesson_result'tan beklenmedik şekilde MapFragment'e dönme sorunu ---
@@ -112,6 +100,9 @@ class LessonResult : Fragment() {
         arguments?.let { bundle ->
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
+            questionElapsedMs = bundle.getLong("questionElapsedMs", -1L)
+            // Dersi başlatan fragment'tan geliyor (indeks aramasına güvenilmiyor).
+            isLessonTypeItem = bundle.getBoolean("isLessonTypeItem", false)
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
             } else {
@@ -120,6 +111,8 @@ class LessonResult : Fragment() {
             // Bu verileri kullanarak UI'ı güncelle
             updateUI()
         }
+        // Göçen düğme (bg_depth_result_continue): basılıyken dudak kadar iner.
+        com.example.app.homework.DepthPress.attach(binding.claimButton)
         binding.claimButton.setOnClickListener {
             val clickAtMs = System.currentTimeMillis()
             if (claimHandled) {
@@ -145,6 +138,7 @@ class LessonResult : Fragment() {
             val args = Bundle().apply {
                 putFloat("successRate", succsessRate)
                 putInt("dersPuani", lessonScore)
+                putLong("questionElapsedMs", questionElapsedMs)
             }
             if (lessonItem?.stepIsFinish == true) {
                 LessonProgressDiag.log(
@@ -170,12 +164,31 @@ class LessonResult : Fragment() {
                                 .commitNowAllowingStateLoss()
                         }
                         main?.prepareMapReturnAfterLessonClaim()
-                        main?.finalizeMapReturnAfterLessonClaim("LessonResult.claimStepFinish")
+                        // Bu dal (SKIP_TO_MAP) hem LESSON hem CHEST item'ı için çalışabiliyor;
+                        // yukarıda (tıklama anında) okunan lessonItem'a göre karar veriyoruz —
+                        // prepareMapReturn sonrası global aramaya güvenilmiyor.
+                        main?.finalizeMapReturnAfterLessonClaim(
+                            "LessonResult.claimStepFinish",
+                            isLessonTypeReturn = isLessonTypeItem,
+                        )
                     }
                 }
+                // Zemin, kayma BAŞLAMADAN kalkıyor.
+                //
+                // Eskiden zemini ancak completeMapReturn kaldırıyordu, yani animasyon
+                // BİTTİKTEN sonra. Bu ekran kayarken arkasında harita duruyordu ve sıra
+                // şöyle oluyordu: harita görünür → zemin üstünü kapatır → zemin iner →
+                // harita tekrar görünür. Kullanıcının gördüğü, zeminin haritadan SONRA
+                // anlık parlaması.
+                //
+                // Başarısızlık ekranı ([LessonResultFalse]) bu sorunu hiç yaşamıyor çünkü
+                // kayma animasyonu yok: kendini anında kaldırıp haritaya dönüyor, zemin de
+                // harita hiç boyanmadan kalkmış oluyor.
+                main?.raisePostLessonBackdropForHandoff("LessonResult.claimStepFinish")
                 val rootView = binding.root
                 rootView.animate()
-                    .translationX(rootView.width.toFloat())
+                    // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
+                    .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
                     .setDuration(EXIT_ANIM_DURATION_MS)
                     .withEndAction { completeMapReturn() }
                     .start()
@@ -190,10 +203,20 @@ class LessonResult : Fragment() {
                 )
                 chestFragment.arguments = args
                 (activity as? MainActivity)?.showResultOverlayHost()
-                // ChestFragment kendi ekranını göstermiyor (bkz. ChestFragment), bu yüzden onun
-                // girişine animasyon vermiyoruz; sadece LessonResult sağa kayarak kapanıyor.
+                // DİKKAT: aşağıdaki `commitNowAllowingStateLoss` işlemi SENKRON çalıştırıyor
+                // ve senkron işlemlerde FragmentManager animasyonları hiç oynatmıyor. Yani
+                // buradaki çizimler şu an etkisiz; ekran kaymadan, anında değişiyor.
+                //
+                // Görüntüde sorun çıkarmıyor: gelen ChestFragment tam ekran ve opak, boşluk
+                // bırakmadan bu ekranın yerini alıyor. Kaymasını istersek `commitNow` yerine
+                // `commitAllowingStateLoss` gerekiyor — o da işlemi asenkron yapıyor, yani
+                // bu noktadan sonra ChestFragment'i hemen bulmaya güvenen bir kod varsa
+                // etkilenir. Sırf animasyon için alınacak risk değil.
+                //
+                // ChestResult'taki aynı geçiş (abacusFragmentContainer) asenkron olduğu için
+                // orada çizimler gerçekten oynuyor.
                 parentFragmentManager.beginTransaction()
-                    .setCustomAnimations(0, R.anim.slide_out_right)
+                    .setCustomAnimations(0, R.anim.queue_screen_out)
                     .replace(R.id.resultFragmentContainer, chestFragment)
                     .remove(this@LessonResult)
                     .commitNowAllowingStateLoss()
@@ -202,7 +225,7 @@ class LessonResult : Fragment() {
         }
 
         // Animasyonları başlat
-        showRandomAnimation()
+        playEndMascot()
         playResultRevealSequence()
 
         binding.root.post { elevateLessonResultOverlayAboveMap() }
@@ -233,20 +256,15 @@ class LessonResult : Fragment() {
         succsessRate = if (totalQuestions > 0) ((correctAnswers.toFloat() / totalQuestions.toFloat()) * 100) else 0f
         lessonScore = (succsessRate * 5f).toInt()
         // Metinler ve kutular playResultRevealSequence() tarafından sırayla gösterilir.
-
-        // Başarı durumuna göre farklı animasyon gösterebilirsiniz
-        /*if (correctAnswers >= totalQuestions * 0.8) { // %80 ve üzeri başarı
-            binding.lottieView.setAnimation("success.json")
-        } else {
-            binding.lottieView.setAnimation("try_again.json")
-        }
-        binding.lottieView.playAnimation()*/
     }
 
-    private fun showRandomAnimation() {
-        val randomAnim = animations.random()
-        binding.lottieView.setAnimation(randomAnim)
-        binding.lottieView.playAnimation()
+    /**
+     * Ders sonu Sobi'si: başarılı derste torbadan sıradaki sahne ([LessonEndMascot]).
+     * Ekran sağdan kayarak girerken Sobi bekliyor; giriş bitince sahne başlıyor.
+     */
+    private fun playEndMascot() {
+        val emote = LessonEndMascot.nextSuccess(requireContext())
+        binding.mascotView.postDelayed({ _binding?.mascotView?.play(emote) }, LessonEndMascot.ENTER_DELAY_MS)
     }
 
     /**

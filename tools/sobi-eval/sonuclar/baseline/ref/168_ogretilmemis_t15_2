@@ -1,0 +1,1 @@
+Bu soru şu anki dersin sorusundan farklı, ama cevabı şöyle: 11'den 6'yı doğrudan çıkaramayız, çünkü birler sütununda yalnızca 1 var. Bunun için boncuk kuralını kullanırız: onlar basamağından 1 gider, birler sütununa 5 gelir, sonra kardeşi 1 gider. Sonuçta abaküste 5 kalır.

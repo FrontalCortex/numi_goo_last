@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Sobi'ye sor" yapay zekâ yardımcısı ve Sobi ekranı
+     (bkz. MistakeReviewDialog.kt, functions/sobi/, docs/ANLAMADIM_YARDIM_PLANI.md). -->
+<resources>
+    <string name="sobi_ai_note">Sobi bir yapay zekâ yardımcısı; bazen yanılabilir.</string>
+    <string name="sobi_ask_button">Sobi\'ye sor</string>
+    <string name="sobi_send_desc">Gönder</string>
+    <string name="sobi_close_desc">Kapat</string>
+    <string name="sobi_thinking">Sobi düşünüyor…</string>
+    <string name="sobi_watch_button">Abaküste izle</string>
+    <string name="sobi_suggest_show_abacus">Abaküste göster</string>
+    <string name="sobi_error_example_limit">Yeni bir örnek 1 mesaj sayılıyor ve bugünkü ücretsiz mesajların bitti. Devam etmek istersen Sobi kredisi al.</string>
+    <string name="sobi_error_example_limit_trial">Yeni bir örnek 1 mesaj sayılıyor ve bugünkü ücretsiz mesajların bitti. Sobi kredisi alabilir ya da Pro\'yu ücretsiz deneyebilirsin: Pro\'da her gün 20 mesaj!</string>
+    <!-- Kendiliğinden açılan balonlar (SobiNudge) -->
+    <string name="sobi_nudge_wrong">Birlikte bakalım mı?</string>
+    <string name="sobi_nudge_idle">Anlamadığın yeri bana sor!</string>
+
+    <!-- Öneri balonları: etiket ve gönderilen metin aynı -->
+    <string name="sobi_suggest_dont_know">Ne yapacağımı bilmiyorum</string>
+    <string name="sobi_suggest_why">Neden böyle?</string>
+    <string name="sobi_suggest_show">Bana göster</string>
+    <string name="sobi_suggest_show_again">Bir daha göster</string>
+    <string name="sobi_suggest_got_it">Anladım!</string>
+    <string name="sobi_suggest_didnt_get">Bunu anlamadım</string>
+    <string name="sobi_suggest_example">Bir örnek ver</string>
+
+    <!-- Beğen / beğenme (Sobi'nin her cevabının altında; haftalık iyileştirme döngüsünün verisi) -->
+    <string name="sobi_speak">Sesli oku</string>
+    <string name="sobi_auto_read">Sobi\'nin mesajlarını sesli oku</string>
+    <string name="sobi_next_question">Sıradaki soru</string>
+    <string name="sobi_next_question_message">Bir soru daha ver</string>
+    <string name="sobi_rate_up">Bu cevabı beğendim</string>
+    <string name="sobi_rate_down">Bu cevabı beğenmedim</string>
+    <!-- Oydan sonra beliren bağlantı; dokununca kısa bir yorum kutusu açılır -->
+    <string name="sobi_feedback_more">Bize daha fazla bilgi ver</string>
+    <string name="sobi_feedback_thanks">Teşekkürler!</string>
+    <string name="sobi_feedback_title">Ne oldu?</string>
+    <string name="sobi_feedback_hint">Kısaca yaz (ör. sayı yanlış, çok uzun, çok güzeldi)</string>
+    <string name="sobi_feedback_send">Gönder</string>
+    <string name="sobi_feedback_cancel">Vazgeç</string>
+    <!-- Bildir: uygunsuz ya da zararlı cevap için (beğenmemekten ayrı, hemen incelenir) -->
+    <string name="sobi_report">Bu cevabı bildir</string>
+    <string name="sobi_report_message">Bu cevapta uygunsuz, korkutucu ya da yanlış bir şey mi var? İstersen ne olduğunu yaz. Sobi\'nin ekibi inceleyecek.</string>
+    <string name="sobi_report_send">Bildir</string>
+    <string name="sobi_report_done">Bildirdin, teşekkürler!</string>
+
+    <!-- Sorunlar -->
+    <string name="sobi_error_network">Şu an Sobi\'ye ulaşamıyorum. İnternetini kontrol edip yeniden dener misin?</string>
+    <string name="sobi_error_daily_limit">Bugünkü ücretsiz mesajların bitti. Devam etmek istersen Sobi kredisi al.</string>
+    <string name="sobi_error_restricted">Şu an Sobi ile konuşamıyorsun.</string>
+    <string name="sobi_turn_limit">Bu sohbet çok uzadı. Yeni bir soruyla yeniden başlayalım.</string>
+
+    <!-- "Sobi ile analiz et" ekranı (MistakeReviewDialog) -->
+    <string name="review_open_button">Sobi ile analiz et</string>
+    <string name="review_title">Sobi ile analiz</string>
+    <string name="review_check">Kontrol Et</string>
+    <string name="review_back">Derse dön</string>
+    <string name="review_intro_question">%1$s sorusunda cevabın %2$d oldu, doğrusu %3$d.</string>
+    <string name="review_prev">Önceki adım</string>
+    <string name="review_next">Sonraki adım</string>
+    <string name="review_step_result">Sonuç</string>
+    <string name="review_input_hint">Bu adım hakkında Sobi\'ye yaz…</string>
+    <string name="review_step_label">Adım %1$d / %2$d</string>
+    <string name="review_step_label_number">Adım %1$d / %2$d · %3$s işleniyor</string>
+    <string name="review_intro_found">Hatanı buldum! %1$s\n\nŞimdi bu soruyu birlikte adım adım çözelim.</string>
+    <string name="review_intro_unknown">Bu soruyu birlikte adım adım çözelim; nerede şaştığını beraber bulalım.</string>
+    <string name="review_step_write">Önce %1$d sayısını abaküse yaz, sonra \"Kontrol Et\"e dokun.</string>
+    <string name="review_step_add">%1$s basamağına %2$d ekle.\n%3$s: %4$s.</string>
+    <string name="review_step_sub">%1$s basamağından %2$d çıkar.\n%3$s: %4$s.</string>
+    <string name="review_was_here">Dikkat! Az önce burada şaşmıştın.</string>
+    <string name="review_correct">Aferin, doğru!</string>
+    <string name="review_wrong">Bir daha bakalım. %1$s\n\nAbaküsü bu adımın başına geri aldım, yeniden dene. İstersen \"Bana göster\"e dokun.</string>
+    <string name="review_found_now">İşte, hata büyük ihtimalle burada!</string>
+    <string name="review_done">Harika, birlikte doğru çözdük: %1$s = %2$d.</string>
+    <!-- Flaş dizisi: yalnızca yanlış yapılan işlemler; %2$s kural özeti ("10'luk kuralda 2 hata ve boncuk kuralında 1 hata") -->
+    <string name="review_intro_sequence">Bu dizide %1$d yerde şaştın: %2$s. Doğru yaptıklarını tekrar etmene gerek yok; şimdi yalnızca bu işlemleri birlikte çözelim.</string>
+    <string name="review_mistake_add">%1$d. hata: Abaküste %2$d varken %3$d eklerken %4$d yaptın, %5$d olmalıydı.</string>
+    <string name="review_mistake_sub">%1$d. hata: Abaküste %2$d varken %3$d çıkarırken %4$d yaptın, %5$d olmalıydı.</string>
+    <string name="review_mistake_write">%1$d. hata: İlk sayı %2$d idi, sen abaküse %3$d yazdın.</string>
+    <!-- Sobi ekranı öğreticiden açılınca (MistakeReviewDialog.forTutorial) -->
+    <string name="sobi_screen_lesson_step">Dersteki adım</string>
+    <string name="sobi_screen_lesson_intro">Şu an dersin bu kısmındayız:\n«%1$s»\n\nNeresi kafana takıldı? Aşağıdan seç ya da bana yaz.</string>
+    <string name="sobi_screen_lesson_op_intro">Derste şu işlem anlatılıyor: %1$s\n«%2$s»\n\nBirlikte abaküste adım adım yapalım. Başka bir şey sormak istersen aşağıya yaz ya da ‹ ile dersteki adıma dön.</string>
+    <string name="sobi_screen_lesson_op_done">Harika, işlemi birlikte yaptık! İstersen bir örnek daha çöz ya da \"Derse dön\"e dokun.</string>
+    <string name="sobi_screen_question_intro">Şu an bu sorudayız: «%1$s»\n\nBirlikte adım adım çözelim. Takıldığın yerde aşağıdaki balonlara dokun.</string>
+    <string name="sobi_screen_question_done">Harika, birlikte çözdük! Şimdi \"Derse dön\"e dokun ve aynısını derste kendin yap.</string>
+    <string name="sobi_screen_example_intro">Örnek: %1$s. İlk sayı abaküste hazır; bu işlemde %2$s kullanılıyor. Adım adım birlikte yapalım.</string>
+    <string name="sobi_screen_example_intro_direct">Örnek: %1$s. İlk sayı abaküste hazır; bu işlemde kural gerekmiyor. Adım adım birlikte yapalım.</string>
+    <string name="sobi_screen_example_title">Örnek bitti</string>
+    <string name="sobi_screen_example_done">Harika, örneği çözdük: %1$s = %2$d. İstersen \"Başka bir örnek\"e dokun ya da derse dön.</string>
+    <string name="sobi_screen_example_done_ai">Harika, %1$s = %2$d! İstersen \"Sıradaki soru\"ya dokun; sana göre bir soru seçeyim.</string>
+    <string name="sobi_screen_harder_example">Daha zor bir örnek</string>
+    <string name="sobi_screen_example_level">Zorluk %1$d/%2$d.</string>
+    <string name="sobi_screen_another_example">Başka bir örnek</string>
+    <!-- Analiz ekranında adımın parça balonları (kural motoru cevaplar) -->
+    <string name="review_why_rule">Neden bu kural?</string>
+    <string name="review_label_first">ilk sayı</string>
+    <string name="review_done_sequence">Harika, yanıldığın işlemleri birlikte doğru çözdük! Dizinin doğru cevabı %1$d.</string>
+    <string name="review_done_tip">\n\nBundan sonra %1$s basamağında %2$s adımlarına dikkat et!</string>
+
+    <!-- Sobi'nin günlük testi (SobiDailyTest, HomeworkPlayerFragment Sobi testi kipi, MapSobiTestButton) -->
+    <string name="sobi_test_title">Sobi\'nin testi</string>
+    <string name="sobi_test_step">Soru %1$d / %2$d</string>
+    <string name="sobi_test_step_mental">Soru %1$d / %2$d · Zihinden</string>
+    <string name="sobi_test_done_title">Sobi\'nin testi bitti!</string>
+    <!-- "10'luk toplama: 14 işlemden 11'i doğru" -->
+    <string name="sobi_test_rule_line">%1$s: %2$d işlemden %3$d doğru</string>
+    <string name="sobi_test_rule_line_questions">%1$s: %2$d sorudan %3$d doğru</string>
+    <string name="sobi_test_cheer_good">Harika gidiyorsun! Yarın yeni bir test hazırlarım.</string>
+    <string name="sobi_test_cheer_try">Bu kurala yarın yine bakalım; her gün biraz daha iyi olacak.</string>
+    <string name="sobi_test_open_chest">Sandığını aç</string>
+    <string name="sobi_test_quit_title">Testten çıkılsın mı?</string>
+    <string name="sobi_test_quit_message">Test bitmeden çıkarsan bugünkü test sayılmaz; yeniden açınca aynı sorular gelir.</string>
+    <string name="sobi_test_button_desc">Sobi\'nin günlük testi</string>
+    <string name="sobi_test_nudge">Senin için bir test hazırladım!</string>
+    <string name="sobi_test_dialog_title">Sobi\'nin bugünkü testi</string>
+    <string name="sobi_test_dialog_extra_title">Bir test daha</string>
+    <string name="sobi_test_diff_easy">🐢 Kolay</string>
+    <string name="sobi_test_diff_mine">🐰 Benim seviyem</string>
+    <string name="sobi_test_diff_hard">🚀 Zor</string>
+    <string name="sobi_test_subtitle">10 soru · bitirince sandık</string>
+    <string name="sobi_test_subtitle_extra">Bugünkü testi bitirdin, aferin! 10 soru daha · yine sandık</string>
+    <string name="sobi_test_rules_label">BUGÜN ÇALIŞACAĞIMIZ KURALLAR</string>
+    <string name="sobi_test_difficulty_label">NE KADAR ZOR OLSUN?</string>
+    <string name="sobi_test_level_of">Seviye %1$d/%2$d</string>
+    <string name="sobi_test_level_short">Seviye %1$d</string>
+    <string name="sobi_test_preparing">Hazırlanıyor…</string>
+    <string name="sobi_test_spec">%1$d basamaklı %2$d sayı, %3$s sn</string>
+    <string name="sobi_test_level_up">Seviye %1$d → %2$d, tebrikler!</string>
+    <string name="sobi_test_level_down">Seviye %1$d; yarın yine birlikte deneriz.</string>
+    <string name="sobi_test_level_same">Seviye %1$d</string>
+    <string name="sobi_test_dialog_start">Başla</string>
+    <string name="sobi_test_dialog_later">Sonra</string>
+    <string name="sobi_test_no_data">Biraz ders çöz, sana göre bir test hazırlayayım!</string>
+    <string name="sobi_test_ok">Tamam</string>
+    <string name="sobi_test_rule_add_direct">kuralsız toplama</string>
+    <string name="sobi_test_rule_add_five">5\'lik toplama</string>
+    <string name="sobi_test_rule_add_ten">10\'luk toplama</string>
+    <string name="sobi_test_rule_add_bead">boncuk kuralıyla toplama</string>
+    <string name="sobi_test_rule_sub_direct">kuralsız çıkarma</string>
+    <string name="sobi_test_rule_sub_five">5\'lik çıkarma</string>
+    <string name="sobi_test_rule_sub_ten">10\'luk çıkarma</string>
+    <string name="sobi_test_rule_sub_bead">boncuk kuralıyla çıkarma</string>
+    <string name="sobi_test_rule_mental">%1$s · zihinden</string>
+    <!-- Çarpma çifti: "2×1 çarpma" (2 basamaklı × 1 basamaklı) -->
+    <string name="sobi_test_rule_mul">%1$d×%2$d çarpma</string>
+
+    <!-- Sobi ekonomisi (functions/sobi/wallet.js; kullanıcı kararları 01.11.2026). -->
+    <string name="sobi_balance_free">Bugün %1$d ücretsiz mesaj</string>
+    <string name="sobi_balance_free_credits">Bugün %1$d ücretsiz mesaj · %2$d kredi</string>
+    <string name="sobi_balance_credits">%1$d kredi · her mesaj 1 kredi</string>
+    <string name="sobi_balance_empty">Ücretsiz mesajların bitti · Kredi al ›</string>
+    <!-- Sobi'nin Pro deneme tanıtımı (SobiProTrialFragment) ve Sobi ekranındaki deneme bağlantısı. -->
+    <string name="sobi_trial_title_weeks">%1$d hafta Pro\'yu ücretsiz dene</string>
+    <string name="sobi_trial_title_days">%1$d gün Pro\'yu ücretsiz dene</string>
+    <string name="sobi_trial_title_no_trial">Pro ile Sobi hep yanında</string>
+    <string name="sobi_trial_subtitle">Takıldığın her yerde Sobi sana yardım etsin!</string>
+    <string name="sobi_trial_benefit_messages">Sobi\'ye günde 20 mesaj</string>
+    <string name="sobi_trial_benefit_tests">Sınırsız Sobi testi</string>
+    <string name="sobi_trial_benefit_energy">Sınırsız can</string>
+    <string name="sobi_trial_benefit_no_ads">Reklamsız öğrenim</string>
+    <string name="sobi_trial_benefit_welcome">Hoş geldin: 20 Sobi kredisi</string>
+    <string name="sobi_test_pro_free">Pro\'da ek testler ücretsiz ›</string>
+    <string name="sobi_trial_not_now">ŞİMDİ DEĞİL</string>
+    <string name="sobi_error_daily_limit_trial">Bugünkü ücretsiz mesajların bitti. Sobi kredisi alabilir ya da Pro\'yu ücretsiz deneyebilirsin: Pro\'da her gün 20 mesaj!</string>
+    <string name="sobi_test_start_keys">Başla · %1$d</string>
+    <string name="sobi_test_not_enough_keys">Ek test için %1$d anahtar gerekiyor, sende %2$d var. Sandıklardan anahtar kazanabilirsin; yarın yine ücretsiz bir test hazırlarım!</string>
+    <string name="shop_sobi_credit_title">Sobi\'ye Sor</string>
+    <string name="shop_sobi_credit_info">Günlük ücretsiz mesaj bitince her Sobi mesajı 1 kredi. Krediler süresiz.</string>
+    <string name="shop_sobi_credit_balance">Sobi kredin: %1$d · Her gün %2$d mesaj ücretsiz. Krediler süresiz.</string>
+    <string name="shop_sobi_credit_amount_20">20 kredi</string>
+    <string name="shop_sobi_credit_amount_50">50 kredi</string>
+    <string name="shop_sobi_credit_amount_120">120 kredi</string>
+    <string name="shop_sobi_credit_desc">Sobi kredisi</string>
+    <string name="progress_hub_sobi">Sobi\'ye sor</string>
+    <string name="progress_hub_sobi_desc">Bu ay %1$d mesaj (%2$d kredi harcandı)\nKalan kredi: %3$d · Günde %4$d mesaj ücretsiz</string>
+
+    <!-- Sobi sekmesi (SobiChatFragment): ders dışı genel sohbet -->
+    <string name="sobi_tab_title">Sobi</string>
+    <string name="sobi_tab_menu">Sohbetler</string>
+    <string name="sobi_tab_new_chat">Yeni sohbet</string>
+    <string name="sobi_tab_history">Önceki sohbetler</string>
+    <string name="sobi_tab_no_history">Henüz sohbet yok</string>
+    <string name="sobi_tab_greeting">Merhaba! Ben Sobi.</string>
+    <string name="sobi_tab_greeting_sub">Abaküs, dersler ya da uygulama hakkında ne merak ediyorsan sor!</string>
+    <string name="sobi_tab_hint">Sobi\'ye yaz…</string>
+    <string name="sobi_tab_starter_today">Bugün ne çalışayım?</string>
+    <string name="sobi_tab_starter_ten">10\'luk toplamayı anlat</string>
+    <string name="sobi_tab_starter_test">Bana test hazırla</string>
+    <string name="sobi_tab_starter_credits">Krediler nasıl çalışır?</string>
+    <string name="sobi_tab_button_test">Teste başla ›</string>
+    <string name="sobi_tab_button_credits">Kredi al ›</string>
+    <string name="sobi_tab_search">Sohbetlerde ara</string>
+    <string name="sobi_tab_button_lesson">📚 %1$s derslerine git ›</string>
+    <string name="sobi_tab_button_pro">Pro\'ya bak ›</string>
+    <string name="sobi_tab_button_show">%1$s · abaküste gör ›</string>
+    <string name="sobi_tab_button_practice">%1$s · abaküste çöz ›</string>
+    <string name="sobi_tab_delete_title">Sohbet silinsin mi?</string>
+    <string name="sobi_tab_delete_message">\"%1$s\" sohbeti silinecek.</string>
+    <string name="sobi_tab_delete">Sil</string>
+    <string name="sobi_tab_cancel">Vazgeç</string>
+    <string name="sobi_tab_load_error">Sohbet açılamadı. İnternetini kontrol edip yeniden dener misin?</string>
+    <string name="sobi_tab_login">Sobi ile konuşmak için giriş yapmalısın.</string>
+</resources>

@@ -33,7 +33,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Kupa Yolu"
+                android:text="@string/panel_cup_path_text"
                 android:textColor="@android:color/white"
                 android:textSize="20sp"
                 android:textStyle="bold"
@@ -49,11 +49,29 @@
                 android:layout_centerVertical="true"
                 android:layout_marginEnd="8dp">
                 
-                <ImageView
+                <FrameLayout
                     android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:src="@drawable/heart_ic"
-                    android:contentDescription="Can" />
+                    android:layout_height="22dp">
+
+                    <ImageView
+                        android:id="@+id/panelCupPathEnergyIcon"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:src="@drawable/heart_ic"
+                        android:contentDescription="@string/panel_cup_path_panel_cup_path_energy_icon_desc" />
+
+                    <!-- Sonsuz enerjide ikonun üzerinde görünür; yanındaki sayı boşalır. -->
+                    <TextView
+                        android:id="@+id/panelCupPathEnergyInfiniteBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center"
+                        android:text="∞"
+                        android:textColor="#FFFFFF"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:visibility="gone" />
+                </FrameLayout>
 
                 <TextView
                     android:id="@+id/panelCupPathEnergyText"
@@ -115,7 +133,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Toplama Kupa Yolu"
+                            android:text="@string/panel_cup_path_card1_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -130,8 +148,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card1DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card1TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card1TitleRow">
 
                         <ImageView
                             android:id="@+id/card1CupIcon"
@@ -166,6 +183,89 @@
                             android:visibility="gone" />
                     </LinearLayout>
 
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card1RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="16dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card1DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card1CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card1RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card1RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <!-- Dolgunun üstündeki parlama şeridi; görevlerdeki ve günlük soru
+                             kartındaki çubuklarla aynı. Genişliği koddan veriliyor. -->
+                        <View
+                            android:id="@+id/card1RewardShine"
+                            android:layout_width="0dp"
+                            android:layout_height="@dimen/mission_progress_shine_height"
+                            android:layout_gravity="top|start"
+                            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+                            android:layout_marginTop="@dimen/mission_progress_shine_top"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card1RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:paddingEnd="32dp"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
+                    <ImageView
+                        android:id="@+id/card1RewardChest"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
+                        android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card1RewardZone"
+                        app:layout_constraintEnd_toEndOf="@id/card1RewardZone"
+                        app:layout_constraintTop_toTopOf="@id/card1RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card1RewardZone" />
+
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card1DinoAnim"
                         android:layout_width="70dp"
@@ -176,7 +276,8 @@
                         app:lottie_loop="true"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintVertical_bias="0.0" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -212,7 +313,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Çıkarma Kupa Yolu"
+                            android:text="@string/panel_cup_path_card2_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -227,8 +328,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card2DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card2TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card2TitleRow">
 
                         <ImageView
                             android:id="@+id/card2CupIcon"
@@ -262,6 +362,89 @@
                             android:textStyle="bold"
                             android:visibility="gone" />
                     </LinearLayout>
+
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card2RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="16dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card2DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card2CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card2RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card2RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <!-- Dolgunun üstündeki parlama şeridi; görevlerdeki ve günlük soru
+                             kartındaki çubuklarla aynı. Genişliği koddan veriliyor. -->
+                        <View
+                            android:id="@+id/card2RewardShine"
+                            android:layout_width="0dp"
+                            android:layout_height="@dimen/mission_progress_shine_height"
+                            android:layout_gravity="top|start"
+                            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+                            android:layout_marginTop="@dimen/mission_progress_shine_top"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card2RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:paddingEnd="32dp"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
+                    <ImageView
+                        android:id="@+id/card2RewardChest"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
+                        android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card2RewardZone"
+                        app:layout_constraintEnd_toEndOf="@id/card2RewardZone"
+                        app:layout_constraintTop_toTopOf="@id/card2RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card2RewardZone" />
 
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card2DinoAnim"
@@ -310,7 +493,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Çarpma Kupa Yolu"
+                            android:text="@string/panel_cup_path_card3_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -325,8 +508,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card3DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card3TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card3TitleRow">
 
                         <ImageView
                             android:id="@+id/card3CupIcon"
@@ -361,6 +543,89 @@
                             android:visibility="gone" />
                     </LinearLayout>
 
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card3RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="16dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card3DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card3CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card3RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card3RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <!-- Dolgunun üstündeki parlama şeridi; görevlerdeki ve günlük soru
+                             kartındaki çubuklarla aynı. Genişliği koddan veriliyor. -->
+                        <View
+                            android:id="@+id/card3RewardShine"
+                            android:layout_width="0dp"
+                            android:layout_height="@dimen/mission_progress_shine_height"
+                            android:layout_gravity="top|start"
+                            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+                            android:layout_marginTop="@dimen/mission_progress_shine_top"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card3RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:paddingEnd="32dp"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
+                    <ImageView
+                        android:id="@+id/card3RewardChest"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
+                        android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card3RewardZone"
+                        app:layout_constraintEnd_toEndOf="@id/card3RewardZone"
+                        app:layout_constraintTop_toTopOf="@id/card3RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card3RewardZone" />
+
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card3DinoAnim"
                         android:layout_width="70dp"
@@ -371,7 +636,8 @@
                         app:lottie_loop="true"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintVertical_bias="0.0" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -406,7 +672,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Toplama Kupa Yolu - Körleme"
+                            android:text="@string/panel_cup_path_card4_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -421,8 +687,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card4DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card4TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card4TitleRow">
 
                         <ImageView
                             android:id="@+id/card4CupIcon"
@@ -457,6 +722,89 @@
                             android:visibility="gone" />
                     </LinearLayout>
 
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card4RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="16dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card4DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card4CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card4RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card4RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <!-- Dolgunun üstündeki parlama şeridi; görevlerdeki ve günlük soru
+                             kartındaki çubuklarla aynı. Genişliği koddan veriliyor. -->
+                        <View
+                            android:id="@+id/card4RewardShine"
+                            android:layout_width="0dp"
+                            android:layout_height="@dimen/mission_progress_shine_height"
+                            android:layout_gravity="top|start"
+                            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+                            android:layout_marginTop="@dimen/mission_progress_shine_top"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card4RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:paddingEnd="32dp"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
+                    <ImageView
+                        android:id="@+id/card4RewardChest"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
+                        android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card4RewardZone"
+                        app:layout_constraintEnd_toEndOf="@id/card4RewardZone"
+                        app:layout_constraintTop_toTopOf="@id/card4RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card4RewardZone" />
+
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card4DinoAnim"
                         android:layout_width="70dp"
@@ -467,7 +815,8 @@
                         app:lottie_loop="true"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintVertical_bias="0.0" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -502,7 +851,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Çıkarma Kupa Yolu - Körleme"
+                            android:text="@string/panel_cup_path_card5_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -517,8 +866,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card5DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card5TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card5TitleRow">
 
                         <ImageView
                             android:id="@+id/card5CupIcon"
@@ -553,6 +901,89 @@
                             android:visibility="gone" />
                     </LinearLayout>
 
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card5RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="16dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card5DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card5CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card5RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card5RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <!-- Dolgunun üstündeki parlama şeridi; görevlerdeki ve günlük soru
+                             kartındaki çubuklarla aynı. Genişliği koddan veriliyor. -->
+                        <View
+                            android:id="@+id/card5RewardShine"
+                            android:layout_width="0dp"
+                            android:layout_height="@dimen/mission_progress_shine_height"
+                            android:layout_gravity="top|start"
+                            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+                            android:layout_marginTop="@dimen/mission_progress_shine_top"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card5RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:paddingEnd="32dp"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
+                    <ImageView
+                        android:id="@+id/card5RewardChest"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
+                        android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card5RewardZone"
+                        app:layout_constraintEnd_toEndOf="@id/card5RewardZone"
+                        app:layout_constraintTop_toTopOf="@id/card5RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card5RewardZone" />
+
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card5DinoAnim"
                         android:layout_width="70dp"
@@ -563,7 +994,8 @@
                         app:lottie_loop="true"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintVertical_bias="0.0" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -598,7 +1030,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:includeFontPadding="false"
-                            android:text="Çarpma Kupa Yolu - Körleme"
+                            android:text="@string/panel_cup_path_card6_title"
                             android:textColor="@android:color/white"
                             android:textSize="18sp"
                             android:textStyle="bold" />
@@ -613,8 +1045,7 @@
                         android:layout_marginTop="6dp"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintEnd_toStartOf="@id/card6DinoAnim"
-                        app:layout_constraintTop_toBottomOf="@id/card6TitleRow"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toBottomOf="@id/card6TitleRow">
 
                         <ImageView
                             android:id="@+id/card6CupIcon"
@@ -649,6 +1080,89 @@
                             android:visibility="gone" />
                     </LinearLayout>
 
+
+                    <!-- Kupa yolu ödülü: ilerleme çubuğu + sandık. Görsel dil günlük soru
+                         kartıyla aynı (aynı track/fill çizimleri ve aynı yükseklik). -->
+                    <FrameLayout
+                        android:id="@+id/card6RewardZone"
+                        android:layout_width="0dp"
+                        android:layout_height="@dimen/daily_question_progress_height"
+                        android:layout_marginTop="10dp"
+                        android:layout_marginEnd="16dp"
+                        android:clipChildren="false"
+                        android:clipToPadding="false"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toStartOf="@id/card6DinoAnim"
+                        app:layout_constraintTop_toBottomOf="@id/card6CupInfoRow"
+                        app:layout_constraintBottom_toBottomOf="parent">
+
+                        <View
+                            android:id="@+id/card6RewardTrack"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="@drawable/daily_question_progress_track"
+                            android:contentDescription="@null" />
+
+                        <View
+                            android:id="@+id/card6RewardFill"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="start|center_vertical"
+                            android:contentDescription="@null" />
+
+                        <!-- Dolgunun üstündeki parlama şeridi; görevlerdeki ve günlük soru
+                             kartındaki çubuklarla aynı. Genişliği koddan veriliyor. -->
+                        <View
+                            android:id="@+id/card6RewardShine"
+                            android:layout_width="0dp"
+                            android:layout_height="@dimen/mission_progress_shine_height"
+                            android:layout_gravity="top|start"
+                            android:layout_marginStart="@dimen/mission_progress_shine_inset_start"
+                            android:layout_marginTop="@dimen/mission_progress_shine_top"
+                            android:contentDescription="@null" />
+
+                        <TextView
+                            android:id="@+id/card6RewardText"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:elevation="2dp"
+                            android:gravity="center"
+                            android:outlineProvider="none"
+                            android:paddingEnd="32dp"
+                            android:text="200 / 300"
+                            android:textColor="@android:color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                    </FrameLayout>
+
+                    <!--
+                      Sandık çubuğun SONUNA oturuyor, yanına değil: ödülün çubuğun varış
+                      noktası olduğu böyle anlaşılıyor (günlük soru kartındaki sandık da
+                      böyle duruyor).
+
+                      Başı ve sonu AYNI kenara (çubuğun ucuna) bağlı; ConstraintLayout iki
+                      ucu aynı yere bağlanan görünümü o kenarda ORTALIYOR. Yani sandığın
+                      x ekseni tam çubuğun bittiği yerde. Önceden yalnızca sonu bağlıydı ve
+                      eksi bir payla itiliyordu; o yöntem sandığı çubuğun ucunun solunda
+                      bırakıyordu.
+
+                      Alt pay ise kapalı sandık çizimindeki üst boşluğu telafi ediyor;
+                      olmasaydı sandık çubuğun altına kaymış görünüyordu.
+                    -->
+                    <ImageView
+                        android:id="@+id/card6RewardChest"
+                        android:layout_width="@dimen/cup_path_chest_size"
+                        android:layout_height="@dimen/cup_path_chest_size"
+                        android:layout_marginBottom="@dimen/cup_path_chest_center_offset"
+                        android:contentDescription="@null"
+                        android:elevation="6dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/new_chest_close_ic1"
+                        app:layout_constraintStart_toEndOf="@id/card6RewardZone"
+                        app:layout_constraintEnd_toEndOf="@id/card6RewardZone"
+                        app:layout_constraintTop_toTopOf="@id/card6RewardZone"
+                        app:layout_constraintBottom_toBottomOf="@id/card6RewardZone" />
+
                     <com.airbnb.lottie.LottieAnimationView
                         android:id="@+id/card6DinoAnim"
                         android:layout_width="70dp"
@@ -659,7 +1173,8 @@
                         app:lottie_loop="true"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent" />
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintVertical_bias="0.0" />
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>

@@ -27,7 +27,7 @@
         android:background="@drawable/bg_shop_super_badge"
         android:paddingHorizontal="12dp"
         android:paddingVertical="4dp"
-        android:text="PRO"
+        android:text="@string/fragment_pro_diffirent_super_badge"
         android:textColor="#FFFFFF"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -48,30 +48,49 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btnClose" />
 
-    <!-- Center Mascot -->
-    <com.airbnb.lottie.LottieAnimationView
+    <!--
+      Maskot: başında taç, zafer işareti yapıp göz kırpıyor (BunnyMascotView, CROWN döngüsü;
+      oynatma ProDiffirentFragment'ta). Eskiden roket Lottie'siydi. Tavşan karesinin yarısı
+      kadar geniş olduğu için alan rokettekinden geniş tutuldu; yükseklik başlık ile alt
+      bölüm arasındaki boşluğa göre, görünüm kendini kare alana sığdırıyor.
+    -->
+    <com.example.app.BunnyMascotView
         android:id="@+id/centerMascot"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginBottom="50dp"
-        app:lottie_fileName="rocket_anim.json"
-        app:lottie_autoPlay="true"
-        app:lottie_loop="true"
-        app:layout_constraintBottom_toTopOf="@id/bottomWhiteContainer"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="24dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomWhiteScroll"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTitle"
-        app:layout_constraintWidth_percent="0.5" />
+        app:layout_constraintWidth_percent="0.75" />
 
-    <!-- Bottom White Section -->
+    <!-- Bottom White Section
+         Beyaz bölüm içeriği kadar yüksek ve ekranın altına yaslı; ama en fazla başlığın altına kadar
+         uzayabilir (constrainedHeight). Eskiden üstü serbestti: küçük ekran / büyük yazı / ekran
+         yakınlaştırmasında satırlar 2-3 satıra kırılınca kutu başlığın ve ekranın üstüne taşıyordu.
+         Sığmadığında artık içerik kayıyor; sığdığında görünüm aynı. Beyaz zemin kayan alanda,
+         id (bottomWhiteContainer) içteki kutuda kaldı: SystemBarColors alt çubuk dolgusunu ona
+         ekliyor. -->
+    <ScrollView
+        android:id="@+id/bottomWhiteScroll"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_bottom_sheet_white"
+        android:overScrollMode="ifContentScrolls"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintVertical_bias="1"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        app:layout_constraintBottom_toBottomOf="parent">
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/bottomWhiteContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/bg_bottom_sheet_white"
         android:paddingTop="32dp"
-        android:paddingBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent">
+        android:paddingBottom="24dp">
 
         <!-- SUPER Column Background -->
         <View
@@ -92,7 +111,7 @@
             android:layout_height="wrap_content"
             android:layout_marginEnd="24dp"
             android:fontFamily="sans-serif-black"
-            android:text="ÜCRETSİZ"
+            android:text="@string/fragment_pro_diffirent_tv_header_free"
             android:textColor="#4A4A4A"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/superColumnBg"
@@ -105,7 +124,7 @@
             android:background="@drawable/bg_shop_super_badge"
             android:paddingHorizontal="8dp"
             android:paddingVertical="2dp"
-            android:text="PRO"
+            android:text="@string/fragment_pro_diffirent_tv_header_super"
             android:textColor="#FFFFFF"
             android:textSize="12sp"
             app:layout_constraintEnd_toEndOf="@id/superColumnBg"
@@ -121,7 +140,7 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="24dp"
             android:layout_marginEnd="16dp"
-            android:text="Ders içerikleri"
+            android:text="@string/fragment_pro_diffirent_row1_text"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
@@ -155,7 +174,7 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="20dp"
             android:layout_marginEnd="16dp"
-            android:text="Sınırsız can"
+            android:text="@string/fragment_pro_diffirent_row2_text"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
@@ -190,7 +209,7 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="20dp"
             android:layout_marginEnd="16dp"
-            android:text="Reklamsız öğrenim"
+            android:text="@string/fragment_pro_diffirent_row3_text"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
@@ -225,7 +244,7 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="20dp"
             android:layout_marginEnd="16dp"
-            android:text="Ustalık Yolu"
+            android:text="@string/fragment_pro_diffirent_row4_text"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
@@ -260,33 +279,122 @@
             android:layout_marginStart="32dp"
             android:layout_marginTop="20dp"
             android:layout_marginEnd="16dp"
-            android:text="Eğitmen desteği"
+            android:text="@string/fragment_pro_diffirent_row5_text"
             android:textColor="#666666"
             android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/row4Text" />
 
+        <!-- Sobi mesajı her iki planda var, fark miktarda: hücrelerde ✓/— yerine günlük hak. -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-black"
-            android:text="—"
-            android:textColor="#999999"
+            android:text="@string/fragment_pro_diffirent_row5_free"
+            android:textColor="#4A4A4A"
+            android:textSize="13sp"
             app:layout_constraintBottom_toBottomOf="@id/row5Text"
             app:layout_constraintEnd_toEndOf="@id/tvHeaderFree"
             app:layout_constraintStart_toStartOf="@id/tvHeaderFree"
             app:layout_constraintTop_toTopOf="@id/row5Text" />
 
-        <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:src="@drawable/correct_ic2"
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-black"
+            android:text="@string/fragment_pro_diffirent_row5_pro"
+            android:textColor="#000000"
+            android:textSize="13sp"
             app:layout_constraintBottom_toBottomOf="@id/row5Text"
             app:layout_constraintEnd_toEndOf="@id/superColumnBg"
             app:layout_constraintStart_toStartOf="@id/superColumnBg"
             app:layout_constraintTop_toTopOf="@id/row5Text" />
 
+        <!-- Row 7: Sobi testi. Ücretsizde günün ilk testi bedava, ek test 3 anahtar; Pro'da hepsi
+             ücretsiz. Satır 6'dan (hoş geldin) önce duruyor: hoş geldin satırı gizlenebildiği
+             için listenin sonunda kalmalı. -->
+        <TextView
+            android:id="@+id/row7Text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/fragment_pro_diffirent_row7_text"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/row5Text" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-black"
+            android:text="@string/fragment_pro_diffirent_row7_free"
+            android:textColor="#4A4A4A"
+            android:textSize="13sp"
+            app:layout_constraintBottom_toBottomOf="@id/row7Text"
+            app:layout_constraintEnd_toEndOf="@id/tvHeaderFree"
+            app:layout_constraintStart_toStartOf="@id/tvHeaderFree"
+            app:layout_constraintTop_toTopOf="@id/row7Text" />
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/correct_ic2"
+            app:layout_constraintBottom_toBottomOf="@id/row7Text"
+            app:layout_constraintEnd_toEndOf="@id/superColumnBg"
+            app:layout_constraintStart_toStartOf="@id/superColumnBg"
+            app:layout_constraintTop_toTopOf="@id/row7Text" />
+
+
+        <!-- Row 6 -->
+        <TextView
+            android:id="@+id/row6Text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/fragment_pro_diffirent_row6_text"
+            android:textColor="#666666"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toStartOf="@id/tvHeaderFree"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/row7Text" />
+
+        <TextView
+            android:id="@+id/row6Free"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-black"
+            android:text="—"
+            android:textColor="#999999"
+            app:layout_constraintBottom_toBottomOf="@id/row6Text"
+            app:layout_constraintEnd_toEndOf="@id/tvHeaderFree"
+            app:layout_constraintStart_toStartOf="@id/tvHeaderFree"
+            app:layout_constraintTop_toTopOf="@id/row6Text" />
+
+        <ImageView
+            android:id="@+id/row6Pro"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/correct_ic2"
+            app:layout_constraintBottom_toBottomOf="@id/row6Text"
+            app:layout_constraintEnd_toEndOf="@id/superColumnBg"
+            app:layout_constraintStart_toStartOf="@id/superColumnBg"
+            app:layout_constraintTop_toTopOf="@id/row6Text" />
+
+        <!-- Hoş geldin kredisi CİHAZ başına bir kez veriliyor. Cihaz krediyi tükettiyse bu
+             satır yerine getirilemeyecek bir vaat olur; ProDiffirentFragment gizliyor.
+             Group üç hücreyi birden kapatıyor: metin, Free sütunundaki "—" ve Pro tiki. -->
+        <androidx.constraintlayout.widget.Group
+            android:id="@+id/welcomeCreditRow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:constraint_referenced_ids="row6Text,row6Free,row6Pro" />
 
         <!-- Button -->
         <FrameLayout
@@ -296,18 +404,21 @@
             android:layout_marginHorizontal="24dp"
             android:layout_marginTop="32dp"
             android:background="@drawable/bg_blue_rounded_button"
-            app:layout_constraintTop_toBottomOf="@id/row5Text">
+            app:layout_constraintTop_toBottomOf="@id/row6Text">
 
             <TextView
+                android:id="@+id/btnTryFreeText"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
                 android:fontFamily="sans-serif-black"
-                android:text="₺0,00 ÖDEYEREK DENE"
+                android:text="@string/fragment_pro_diffirent_btn_try_free_text"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp" />
         </FrameLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </ScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

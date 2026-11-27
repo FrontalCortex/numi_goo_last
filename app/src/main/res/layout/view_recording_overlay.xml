@@ -19,7 +19,7 @@
         android:layout_height="40dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/pause_video_ic"
-        android:contentDescription="Durdur"
+        android:contentDescription="@string/view_recording_overlay_recording_btn_pause_resume_desc"
         app:tint="@color/message_buttons" />
 
     <TextView
@@ -40,7 +40,7 @@
         android:layout_marginStart="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_delete"
-        android:contentDescription="İptal"
+        android:contentDescription="@string/view_recording_overlay_recording_btn_cancel_desc"
         app:tint="@color/message_buttons" />
 
     <ImageButton
@@ -50,7 +50,7 @@
         android:layout_marginStart="8dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@drawable/ic_done"
-        android:contentDescription="Kaydet"
+        android:contentDescription="@string/view_recording_overlay_recording_btn_save_desc"
         app:tint="@color/dark_success" />
 
 </LinearLayout>

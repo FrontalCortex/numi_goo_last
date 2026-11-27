@@ -23,6 +23,20 @@ import java.util.UUID
  */
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
+    /**
+     * Gelen her bildirim buradan geçiyor.
+     *
+     * Sunucu data-only gönderiyor (bkz. functions/index.js → sendUserNotification), yani
+     * gösterme kararının son adımı burada: bildirim başka bir hesabın cihazına düşmemeli ve
+     * kullanıcının kapattığı tür gösterilmemeli. Sunucu da aynı kontrolleri yapıyor; buradaki
+     * tekrar gereksiz değil, çünkü tercih değişikliği Firestore'a ulaşmadan önce gönderilmiş
+     * bir bildirim hâlâ yolda olabilir.
+     *
+     * TÜRÜ BULMA
+     *   Güncel sunucu `notifyType` gönderiyor. Eski alanlara düşme yolu korunuyor çünkü
+     *   kuyrukta bekleyen bir bildirim eski biçimde gelebilir: `type == "streak_reminder"`
+     *   seri hatırlatması, `questionId` varsa sohbet.
+     */
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         Log.d(TAG, "onMessageReceived: from=${remoteMessage.from}, data=${remoteMessage.data}")
         val data = remoteMessage.data
@@ -33,43 +47,56 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val title = data["title"] ?: data["senderName"] ?: getString(R.string.app_name)
         val body = data["body"] ?: data["messagePreview"] ?: ""
-        val questionId = data["questionId"] ?: run {
-            Log.w(TAG, "onMessageReceived: missing questionId in data")
-            return
+        val recipientUid = data["recipientUid"]
+
+        val type = data["notifyType"] ?: when {
+            data["type"] == TYPE_STREAK_REMINDER -> NotificationPrefs.STREAK
+            data["questionId"] != null -> NotificationPrefs.CHAT
+            else -> null
         }
-        val messageId = data["messageId"]
-        val recipientUid = data["recipientUid"] ?: run {
-            Log.w(TAG, "onMessageReceived: missing recipientUid in data")
+        if (type == null) {
+            Log.w(TAG, "onMessageReceived: tür belirlenemedi, atlanıyor")
             return
         }
 
-        // Ek güvenlik: cihazda şu an hangi hesapla oturum açık?
+        // Bildirim yalnızca alıcının oturum açtığı cihazda gösterilir. Aile içinde cihaz
+        // paylaşılıyor olabilir; başka bir çocuğun öğretmen sohbeti görünmemeli.
         val currentUid = FirebaseAuth.getInstance().currentUser?.uid
-        if (currentUid == null) {
-            Log.d(TAG, "onMessageReceived: no logged-in user, skipping notification")
-            return
-        }
-        if (currentUid != recipientUid) {
-            Log.d(
-                TAG,
-                "onMessageReceived: currentUid($currentUid) != recipientUid($recipientUid), skipping notification"
-            )
+        if (currentUid == null || currentUid != recipientUid) {
+            Log.d(TAG, "onMessageReceived: alıcı bu cihazdaki hesap değil ($type), atlanıyor")
             return
         }
 
-        val prefs = getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
-        val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
-        if (!notificationsEnabled) {
-            Log.d(TAG, "onMessageReceived: skipping (notifications_enabled is false)")
+        // `account` türü uygulama içinden kapatılamıyor (bkz. NotificationPrefs.ALL); onun
+        // dışındaki her tür kullanıcının tercihine tabi.
+        if (type in NotificationPrefs.ALL && !NotificationPrefs.isEnabled(this, type)) {
+            Log.d(TAG, "onMessageReceived: $type kullanıcı tarafından kapatılmış, atlanıyor")
             return
         }
 
-        if (shouldSkipNotification(questionId)) {
-            Log.d(TAG, "onMessageReceived: skipping (user already on this chat)")
+        // Sunucu hangi kanalı istediğini söylüyor: sessiz saatte sohbet bildirimi sessiz
+        // varyanta düşüyor ve o karar sunucuda veriliyor (kullanıcının saat dilimi orada).
+        val channelId = data["channel"] ?: defaultChannelFor(type)
+        // Açılma ölçümünün etiketi; sunucudaki defterle aynı anahtar.
+        val topic = data["topic"] ?: type
+
+        if (type == NotificationPrefs.CHAT) {
+            val questionId = data["questionId"] ?: run {
+                Log.w(TAG, "onMessageReceived: sohbet bildiriminde questionId yok")
+                return
+            }
+            if (shouldSkipNotification(questionId)) {
+                Log.d(TAG, "onMessageReceived: skipping (user already on this chat)")
+                return
+            }
+            showNotification(questionId, data["messageId"], recipientUid, title, body, channelId, topic)
             return
         }
 
-        showNotification(questionId, messageId, recipientUid, title, body)
+        showSimpleNotification(
+            type, topic, channelId, title, body, data["questionId"], recipientUid,
+            homeworkId = data["homeworkId"], classId = data["classId"],
+        )
     }
 
     override fun onNewToken(token: String) {
@@ -158,9 +185,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         messageId: String?,
         recipientUid: String,
         title: String,
-        body: String
+        body: String,
+        channelId: String,
+        topic: String
     ) {
-        val channelId = CHANNEL_ID_MESSAGES
         createChannelIfNeeded(channelId)
 
         // Aynı soru (questionId) için tek bir bildirim ID'si kullan:
@@ -178,6 +206,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra(MainActivity.EXTRA_OPEN_QUESTION_ID, questionId)
             putExtra(MainActivity.EXTRA_NOTIFICATION_RECIPIENT_UID, recipientUid)
+            putExtra(MainActivity.EXTRA_NOTIFICATION_TOPIC, topic)
             Log.d(TAG, "Building notification intent with questionId=$questionId")
         }
         val pendingIntent = PendingIntent.getActivity(
@@ -195,7 +224,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         val builder = NotificationCompat.Builder(this, channelId)
-            .setSmallIcon(R.mipmap.ic_launcher)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(displayTitle)
             .setContentText(latestBody)
             .setWhen(System.currentTimeMillis())
@@ -221,16 +250,115 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(notificationId, notification)
+        // Açılma oranının paydası; sunucunun gönderdiği değil kullanıcının GÖRDÜĞÜ sayı.
+        AnalyticsLogger.notificationShown(topic)
     }
 
+    /**
+     * Sohbet dışındaki bütün bildirimler: seri hatırlatması, ödüller, hesap/ödeme.
+     *
+     * Sohbet yolundan ayrı çünkü ihtiyaçları farklı: biriktirme (InboxStyle) yok ve her
+     * türün SABİT tek bildirim kimliği var — aynı türden ikinci bildirim birikmek yerine
+     * birincinin yerini alıyor. Bildirim çekmecesinde üst üste yığılmak, tavan koymakla
+     * önlemeye çalıştığımız şeyin kendisi.
+     */
+    private fun showSimpleNotification(
+        type: String,
+        topic: String,
+        channelId: String,
+        title: String,
+        body: String,
+        questionId: String?,
+        recipientUid: String?,
+        homeworkId: String? = null,
+        classId: String? = null,
+    ) {
+        createChannelIfNeeded(channelId)
+
+        // Bir soruya bağlı bildirim (soru durumu değişimi) o soruya özel kimlik alıyor:
+        // iki ayrı sorunun kredisi iade edildiğinde ikinci bildirim birincinin yerini
+        // almasın. Aynı sorunun ardışık durum bildirimleri ise BİLEREK aynı kimliği
+        // paylaşıyor — sorunun güncel durumu tek bildirimde.
+        //
+        // "account:" öneki şart: soru sohbeti bildirimleri de questionId'den türetilmiş
+        // kimlik kullanıyor (bkz. showNotification) ve önek olmasa öğretmenin yazdığı
+        // mesajın bildirimi, peşinden gelen durum bildirimiyle silinirdi.
+        val notificationId = if (!questionId.isNullOrEmpty()) {
+            "account:$questionId".hashCode() and 0x7FFFFFFF
+        } else if (topic == TOPIC_CLASS_INVITE) {
+            CLASS_INVITE_NOTIFICATION_ID
+        } else if (type == TYPE_HOMEWORK_DONE && !homeworkId.isNullOrEmpty()) {
+            // Ödev başına tek bildirim: her bitirişte metin ("8/12 öğrenci bitirdi") güncelleniyor,
+            // sınıf bitirdikçe öğretmenin bildirim çekmecesi dolmuyor.
+            "homework_done:$homeworkId".hashCode() and 0x7FFFFFFF
+        } else {
+            notificationIdFor(type)
+        }
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_NOTIFICATION_TOPIC, topic)
+            // Havuz bildirimi doğrudan Havuz sekmesini açıyor; öteki türlerde uygulamanın
+            // normal açılışı doğru yer.
+            if (type == TYPE_POOL) putExtra(MainActivity.EXTRA_OPEN_TEACHER_POOL, true)
+            // Sınıf daveti: öğrenci doğrudan Kurs ekranına, davet kartının olduğu yere.
+            if (topic == TOPIC_CLASS_INVITE) putExtra(MainActivity.EXTRA_OPEN_STUDENT_CLASS, true)
+            // Yeni ödev: öğrenciye Sorularım → Ödevlerim.
+            if (type == TYPE_HOMEWORK) putExtra(MainActivity.EXTRA_OPEN_HOMEWORKS, true)
+            // Öğrenci ödevi bitirdi: öğretmene o ödevin ayrıntısı.
+            if (type == TYPE_HOMEWORK_DONE && !homeworkId.isNullOrEmpty() && !classId.isNullOrEmpty()) {
+                putExtra(MainActivity.EXTRA_OPEN_TEACHER_HOMEWORK, homeworkId)
+                putExtra(MainActivity.EXTRA_OPEN_TEACHER_HOMEWORK_CLASS, classId)
+            }
+            // Soru durumu bildirimine dokunan öğrenci doğrudan sorusuna gitsin.
+            // MainActivity ikisini birlikte bekliyor (bkz. handleOpenQuestionIdFromIntent).
+            if (!questionId.isNullOrEmpty() && !recipientUid.isNullOrEmpty()) {
+                putExtra(MainActivity.EXTRA_OPEN_QUESTION_ID, questionId)
+                putExtra(MainActivity.EXTRA_NOTIFICATION_RECIPIENT_UID, recipientUid)
+            }
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setWhen(System.currentTimeMillis())
+            .setShowWhen(true)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .build()
+
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
+            .notify(notificationId, notification)
+        AnalyticsLogger.notificationShown(topic)
+    }
+
+    /**
+     * Kanalı gerekiyorsa oluşturur.
+     *
+     * KANALLAR NEDEN AYRI
+     *   Kullanıcı Android ayarlarından seri hatırlatmasını kapatırken öğretmen mesajlarını
+     *   kapatmak zorunda kalmamalı. Uygulama içindeki tercihin yanında bu da duruyor, çünkü
+     *   `account` türünü yalnızca buradan susturabiliyor.
+     *
+     *   `_quiet` varyantları ayrı bir kanal olmak ZORUNDA: Android'de bir kanalın önem
+     *   derecesi oluşturulduktan sonra uygulama tarafından değiştirilemiyor, yani "gece
+     *   gelirse sessiz olsun" tek kanalla kurulamıyor.
+     */
     private fun createChannelIfNeeded(channelId: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val channel = NotificationChannel(
-            channelId,
-            getString(R.string.notification_channel_messages_name),
-            NotificationManager.IMPORTANCE_HIGH
-        ).apply {
-            description = getString(R.string.notification_channel_messages_desc)
+        val spec = CHANNELS[channelId] ?: CHANNELS.getValue(CHANNEL_ID_MESSAGES)
+        val channel = NotificationChannel(channelId, getString(spec.nameRes), spec.importance).apply {
+            description = getString(spec.descRes)
             setShowBadge(true)
         }
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
@@ -264,13 +392,20 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                     )
                 )
 
-                // En fazla 2 cihaz: son 2 kaydı tut.
-                val trimmed = if (filtered.size > 2) filtered.takeLast(2) else filtered
+                // En fazla MAX_FCM_DEVICES cihaz: en son kaydedilenleri tut.
+                val trimmed = if (filtered.size > MAX_FCM_DEVICES) filtered.takeLast(MAX_FCM_DEVICES) else filtered
                 val lastToken = trimmed.lastOrNull()?.get("token") as? String
 
                 val updateMap = mutableMapOf<String, Any?>(
                     "fcmDevices" to trimmed,
-                    "fcmTokenUpdatedAt" to Timestamp.now()
+                    "fcmTokenUpdatedAt" to Timestamp.now(),
+                    // Sessiz saatler sunucuda bu alana bakıyor (functions/notifications.js).
+                    // Token ile birlikte yazılıyor: ikisi de "bu cihaz şu an burada" bilgisi
+                    // ve ikisinin tazeliği de aynı anda gerekiyor.
+                    "utcOffsetMinutes" to deviceUtcOffsetMinutes(),
+                    // Bildirim metinlerinin dili (functions: sendUserNotification). Dil değişince süreç
+                    // yeniden başlıyor ve bu kayıt açılışta yeniden yazılıyor.
+                    "lang" to AppLanguage.current(applicationContext)
                 )
                 updateMap["fcmToken"] = lastToken
 
@@ -283,11 +418,136 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             }
     }
 
+    /** Bir Android bildirim kanalının görünen adı, açıklaması ve önem derecesi. */
+    private data class ChannelSpec(val nameRes: Int, val descRes: Int, val importance: Int)
+
     companion object {
         private const val TAG = "FCMService"
         const val CHANNEL_ID_MESSAGES = "messages"
+        const val CHANNEL_ID_MESSAGES_QUIET = "messages_quiet"
+        const val CHANNEL_ID_STREAK = "streak_reminder"
+        const val CHANNEL_ID_REWARDS = "rewards"
+        const val CHANNEL_ID_ACCOUNT = "account"
+        const val CHANNEL_ID_POOL = "pool"
+        const val CHANNEL_ID_POOL_QUIET = "pool_quiet"
+        const val CHANNEL_ID_ACCOUNT_QUIET = "account_quiet"
+
+        /**
+         * Kanal kataloğu. Sunucunun gönderdiği `channel` alanı buradaki anahtarlarla
+         * eşleşiyor (functions/notifications.js → NOTIFICATION_TYPES).
+         */
+        private val CHANNELS = mapOf(
+            CHANNEL_ID_MESSAGES to ChannelSpec(
+                R.string.notification_channel_messages_name,
+                R.string.notification_channel_messages_desc,
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
+            // Gece gelen sohbet mesajı: görünür ama ses çıkarmıyor. Çocuğun telefonunu
+            // 03:00'te çaldırmak, bildirimin tamamen kapatılmasıyla sonuçlanan yol.
+            CHANNEL_ID_MESSAGES_QUIET to ChannelSpec(
+                R.string.notification_channel_messages_quiet_name,
+                R.string.notification_channel_messages_quiet_desc,
+                NotificationManager.IMPORTANCE_LOW,
+            ),
+            // Günlük hatırlatma, sohbet mesajı değil: sesle/titreşimle araya girmesin.
+            CHANNEL_ID_STREAK to ChannelSpec(
+                R.string.notification_channel_streak_name,
+                R.string.notification_channel_streak_desc,
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ),
+            CHANNEL_ID_REWARDS to ChannelSpec(
+                R.string.notification_channel_rewards_name,
+                R.string.notification_channel_rewards_desc,
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ),
+            CHANNEL_ID_ACCOUNT to ChannelSpec(
+                R.string.notification_channel_account_name,
+                R.string.notification_channel_account_desc,
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ),
+            // Öğretmenin işi: havuza düşen soru. Yüksek önem, çünkü cevaplanmayan soru
+            // 48 saat sonra öğrenciye iade ediliyor.
+            CHANNEL_ID_POOL to ChannelSpec(
+                R.string.notification_channel_pool_name,
+                R.string.notification_channel_pool_desc,
+                NotificationManager.IMPORTANCE_HIGH,
+            ),
+            CHANNEL_ID_POOL_QUIET to ChannelSpec(
+                R.string.notification_channel_pool_quiet_name,
+                R.string.notification_channel_pool_quiet_desc,
+                NotificationManager.IMPORTANCE_LOW,
+            ),
+            // Gece gelen ödev bildirimi (sunucuda `homework` türü, quiet: silence → "account_quiet").
+            // Bu kanal olmasaydı bilinmeyen kanal sesli mesaj kanalının ayarlarına düşerdi.
+            CHANNEL_ID_ACCOUNT_QUIET to ChannelSpec(
+                R.string.notification_channel_account_quiet_name,
+                R.string.notification_channel_account_quiet_desc,
+                NotificationManager.IMPORTANCE_LOW,
+            ),
+        )
+
+        /** Sunucudaki tür adı → o türün varsayılan kanalı (`channel` alanı gelmezse). */
+        private fun defaultChannelFor(type: String): String = when (type) {
+            NotificationPrefs.CHAT -> CHANNEL_ID_MESSAGES
+            NotificationPrefs.STREAK -> CHANNEL_ID_STREAK
+            NotificationPrefs.REWARD -> CHANNEL_ID_REWARDS
+            TYPE_POOL -> CHANNEL_ID_POOL
+            else -> CHANNEL_ID_ACCOUNT
+        }
+
+        /** Eski sürümlerin ayrıştırma anahtarı (functions/index.js: sendStreakReminders). */
+        private const val TYPE_STREAK_REMINDER = "streak_reminder"
+
+        /** Öğretmen havuzu bildirimi (functions/index.js: notifyTeacherPool). */
+        private const val TYPE_POOL = "pool"
+        /** Yeni ödev (createHomework); bkz. functions/notifications.js `homework`. */
+        private const val TYPE_HOMEWORK = "homework"
+        /** Öğretmene: öğrenci ödevi bitirdi (onHomeworkProgressWritten); kanalı `pool`. */
+        private const val TYPE_HOMEWORK_DONE = "homework_done"
+        /** Sınıf daveti (inviteStudentToClass). Türü `account`; ayrıldığı yer konu etiketi. */
+        private const val TOPIC_CLASS_INVITE = "class_invite"
+        /**
+         * Davetin kendi kimliği: `account` türünün ortak kimliğini (90_003) kullansaydı deneme
+         * süresi uyarısı gibi bir hesap bildiriminin yerine geçip onu silerdi.
+         */
+        private const val CLASS_INVITE_NOTIFICATION_ID = 90_005
+
+        /**
+         * Tür başına sabit bildirim kimliği: aynı türden ikinci bildirim birikmek yerine
+         * birincinin yerini alıyor.
+         */
+        private fun notificationIdFor(type: String): Int = when (type) {
+            NotificationPrefs.STREAK -> 90_001
+            NotificationPrefs.REWARD -> 90_002
+            TYPE_POOL -> 90_004
+            // Kendi kimliği: hesap bildirimleriyle (90_003) birbirinin yerine geçmesinler.
+            TYPE_HOMEWORK -> 90_006
+            else -> 90_003
+        }
+
         private const val PREFS_NAME_THREADS = "notification_threads"
         private const val MAX_INBOX_LINES = 7
+
+        /**
+         * Hesap başına kaç cihaz bildirim alır.
+         *
+         * İkizi sunucuda: functions/index.js → `FCM_MAX_DEVICES`. İkisi birlikte değişmeli;
+         * sunucu daha azını okursa buraya kaydedilen cihaz sessizce bildirim almaz.
+         *
+         * 2'den 3'e çıkarıldı (05.10.2026): tipik kurulum ailede tablet + çocuğun telefonu +
+         * ebeveyn telefonu ve 2 sınırıyla en eskisi listeden sessizce düşüyordu.
+         */
+        private const val MAX_FCM_DEVICES = 3
+
+        /**
+         * Cihazın UTC farkı (dakika). Türkiye için +180.
+         *
+         * İkizi StreakSyncService.utcOffsetMinutes — oradaki seri hatırlatma saatini, buradaki
+         * sessiz saatleri besliyor. Yaz saati uygulayan yerlerde yılda iki kez değişiyor;
+         * token her uygulama açılışında yazıldığı için kendiliğinden düzeliyor.
+         */
+        private fun deviceUtcOffsetMinutes(): Int =
+            java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 60000
 
         /**
          * Call from app to persist current FCM token (e.g. after login or app start).
@@ -333,11 +593,13 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                                     "updatedAt" to Timestamp.now()
                                 )
                             )
-                            val trimmed = if (filtered.size > 2) filtered.takeLast(2) else filtered
+                            val trimmed = if (filtered.size > MAX_FCM_DEVICES) filtered.takeLast(MAX_FCM_DEVICES) else filtered
                             val lastToken = trimmed.lastOrNull()?.get("token") as? String
                             val updateMap = mutableMapOf<String, Any?>(
                                 "fcmDevices" to trimmed,
-                                "fcmTokenUpdatedAt" to Timestamp.now()
+                                "fcmTokenUpdatedAt" to Timestamp.now(),
+                                "utcOffsetMinutes" to deviceUtcOffsetMinutes(),
+                                "lang" to AppLanguage.current(AppStrings.context())
                             )
                             updateMap["fcmToken"] = lastToken
                             userRef.set(updateMap, SetOptions.merge())

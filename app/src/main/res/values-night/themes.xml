@@ -6,10 +6,15 @@
         <item name="android:statusBarColor">@color/background_color</item>
     </style>
 
-    <!-- Manifest'te kullanılan tema: status/navigation bar renkleri message_topbar ile aynı -->
+    <!--
+      Manifest'te kullanılan tema: üst ve alt sistem çubuğu ekranın zemin rengiyle aynı.
+      Alt çubuk eskiden message_topbar'dı (#111416, zeminden koyu): kendi rengini koddan
+      vermeyen ekranlarda (giriş, kayıt, öğretmen girişi/OTP, e-posta doğrulama) telefonun
+      tuşlarının olduğu şerit ekrandan kopuk duruyordu. Açık temadaki tanımla da artık aynı.
+    -->
     <style name="Theme.NumiGoo" parent="Theme.MaterialComponents.NoActionBar">
         <item name="android:statusBarColor">@color/background_color</item>
-        <item name="android:navigationBarColor">@color/message_topbar</item>
+        <item name="android:navigationBarColor">@color/background_color</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowBackground">@color/background_color</item>

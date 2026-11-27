@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.view.doOnNextLayout
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.app.GlobalLessonData.globalPartId
@@ -29,6 +30,8 @@ class MapFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var lessonsAdapter: LessonAdapter // Adapter'ı tanımla
     private var askQuestionBounceAnimators: List<ObjectAnimator>? = null
+    /** Sobi'nin günlük testi düğmesi (bkz. [MapSobiTestButton]). */
+    private var sobiTestButton: MapSobiTestButton? = null
 
     private val guidePanelBackCallback = object : androidx.activity.OnBackPressedCallback(false) {
         override fun handleOnBackPressed() {
@@ -38,7 +41,10 @@ class MapFragment : Fragment() {
 
     companion object {
         const val ARG_SHOW_GUIDE = "show_guide"
-        
+
+        /** Harita kapalıyken bekleyen ilerleme animasyonu için yoklama aralığı. */
+        private const val LESSON_PROGRESS_RETRY_MS = 250L
+
         fun newInstance(showGuide: Boolean = false): MapFragment {
             val fragment = MapFragment()
             val args = Bundle().apply {
@@ -107,7 +113,12 @@ class MapFragment : Fragment() {
                 1010 -> MathOperationGenerator.generateRelatedNumbersList(6, 3, 3)
 
                 1013 -> listOf(
-                    MathOperationGenerator.generateRelatedNumbers(1, 1),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
+                    MathOperationGenerator.generateRelatedNumbers(4, 4),
+                    MathOperationGenerator.generateRelatedNumbers(5, 5),
                 )
                 7 -> listOf(
                     MathOperationGenerator.generateRelatedNumbers0(1, 1),
@@ -185,16 +196,6 @@ class MapFragment : Fragment() {
                     generateRelatedNumbers2(4, 5),
                     generateRelatedNumbers2(5, 5),
                     generateRelatedNumbers2(4, 4),
-                    generateRelatedNumbers2(5, 4),
-                    )
-                18 -> listOf(
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
-                    generateRelatedNumbers2(5, 5),
                     )
                 19 -> listOf(
                     generateRandomMathOperation1(),
@@ -1011,7 +1012,7 @@ class MapFragment : Fragment() {
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                 )
                 80 -> listOf(
-                    MathOperationGenerator.generalCollectionTwoDigits(4), //3 adet 7 olarak güncellenecek
+                    MathOperationGenerator.generalCollectionTwoDigits(4),
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                     MathOperationGenerator.generalCollectionTwoDigits(4),
                 )
@@ -1150,22 +1151,28 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         // Geri tuşunu engelleme callback'ini kaydet (başlangıçta isEnabled = false)
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, guidePanelBackCallback)
 
         // Veriyi yükle (lokal → yoksa Firestore → yoksa varsayılan); hazır olunca listeyi kur
         GlobalLessonData.initialize(requireContext(), globalPartId) {
             activity?.runOnUiThread {
+                // Firestore yüklemesi view yok edildikten sonra bitebiliyor (Play vitals:
+                // getBinding NPE). View yoksa listeyi kurmuyoruz; yeni view kendi yüklemesini yapar.
+                if (!isAdded || _binding == null) return@runOnUiThread
                 setupRecyclerView()
                 changeAdapterList()
             }
         }
         setupGuidePanel()
         setupAskQuestionButton()
+        // Sobi'nin günlük testi: "Öğretmene sor"un üstünde ayrı bir düğme (liste ve ders dönüşüne dokunmadan).
+        sobiTestButton = MapSobiTestButton(this, binding.root, binding.askQuestionButton)
         
         // View hazır olduğunda scroll listener'ı tetikle
         view.post {
+            if (!isAdded || _binding == null) return@post
             // İlk açılışta liste her zaman en üstten başlasın.
             // Sadece state restore senaryosunda eski pozisyonu uygula.
             if (savedInstanceState != null && GlobalValues.scrollPosition > 0) {
@@ -1178,11 +1185,6 @@ class MapFragment : Fragment() {
     }
     
     private fun setupGuidePanel() {
-        binding.guidePanel.setOnBackClickListener {
-            // İlk adımdaysa ve back'e basılırsa paneli kapat
-            binding.guidePanel.hide()
-        }
-        
         // Panel kapandığında MainActivity view'larını tekrar aktif et
         binding.guidePanel.setOnPanelHideListener {
             enableMainActivityViews()
@@ -1194,11 +1196,10 @@ class MapFragment : Fragment() {
                     "Panel kapandı ama enableMapFragmentViews henüz çağrılmamış olabilir",
                 )
             }
-            val act = activity as? MainActivity
-            if (act != null && act.justFinishedChestForRating) {
-                act.justFinishedChestForRating = false
-                AppRatingManager.checkAndShowRatingPrompt(act, 1)
-            }
+            // Rating artık doğrudan çağrılmıyor: ders sonrası kuyruğu dürtülüyor ve
+            // sırası geldiyse rating'i o açıyor. Doğrudan çağrı rating'in üç ayrı
+            // tetikleyicisinden biriydi ve diğer ekranların üstüne binebiliyordu.
+            (activity as? MainActivity)?.pumpPostLessonQueue("MapFragment.guidePanelHidden")
         }
         
         // GuidePanel'in son adımına gelindiğinde recordLayout animasyonunu başlat
@@ -1208,7 +1209,7 @@ class MapFragment : Fragment() {
                 // MapFragment için: recordLayout animasyonu
                 val activity = requireActivity()
                 val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
-                val bottomSheetView = coordinatorLayout?.findViewWithTag<View>("bottom_sheet")
+                val bottomSheetView = coordinatorLayout?.findViewWithTag<View>(LessonPanel.TAG)
                 val recordLayout = bottomSheetView?.findViewById<android.widget.LinearLayout>(R.id.recordLayout)
 
                 recordLayout?.let { recordLayoutView ->
@@ -1227,16 +1228,8 @@ class MapFragment : Fragment() {
                         recordLayoutView.scaleY = 1f
 
 
-                        // BottomSheet'i kapat
-                        val activity = requireActivity()
-                        val coordinatorLayout = activity.findViewById<androidx.coordinatorlayout.widget.CoordinatorLayout>(R.id.coordinator_layout)
-                        val bottomSheetView = coordinatorLayout?.findViewWithTag<View>("bottom_sheet")
-                        val bottomSheetLayout = bottomSheetView?.findViewById<android.widget.LinearLayout>(R.id.bottomSheetLayout)
-                        bottomSheetLayout?.let { layout ->
-                            val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(layout)
-                            behavior.isHideable = true
-                            behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_HIDDEN
-                        }
+                        // Ders panelini kapat
+                        LessonPanel.dismiss(requireActivity())
 
                         enableMainActivityViews()
                         enableMapFragmentViews()
@@ -1244,7 +1237,7 @@ class MapFragment : Fragment() {
                         val chestIndex = MarathonGuideStore.firstMarathonLessonIndex()
                         val chestItem = GlobalLessonData.getLessonItem(chestIndex)
                         if (chestItem != null) {
-                            openRecordFragmentFromMarathonGuide(chestIndex, chestItem)
+                            openRecordFragmentFromMarathonGuide(chestItem)
                         }
 
                         // Panel kapatma işlemi setTargetViewForLastStep içinde otomatik yapılacak
@@ -1264,6 +1257,13 @@ class MapFragment : Fragment() {
                 (activity as? MainActivity)?.startQuestionFlow(R.id.fragmentContainerID) { binding.root }
             },
             onReadyForBounce = { startAskQuestionBounceAnimation() },
+            // Rehber ya da ders paneli açıkken renk dalgası oynamasın; dikkati onlardan çekmesin.
+            canPlayWave = {
+                val b = _binding
+                val lessonPanelOpen = activity?.findViewById<View>(R.id.coordinator_layout)
+                    ?.findViewWithTag<View>(LessonPanel.TAG) != null
+                b != null && !b.guidePanel.isShown && !lessonPanelOpen
+            },
         )
     }
 
@@ -1282,12 +1282,12 @@ class MapFragment : Fragment() {
         // Guide panel verilerini oluştur
         val guideData = listOf(
             GuidePanelData(
-                imageResId = R.drawable.teacher_emotes_gpt4,
-                text = "Ünite maratonunda hatasız en hızlı çözümler kaydedilir."
+                emote = BunnyMascotView.Emote.TEACH_TALK,
+                text = appString(R.string.ui_unite_maratonunda_hatasiz_en_hizli_cozumler)
             ),
             GuidePanelData(
-                imageResId = R.drawable.teacher_emotes_gpt3,
-                text = "Ünite maratonu panelindeki Rekor'a tıklayarak liderlik tablosunu ve kendi sıranı görebilirsin."
+                emote = BunnyMascotView.Emote.TEACH_POINT,
+                text = appString(R.string.ui_unite_maratonu_panelindeki_rekor_a_tiklayara)
             )
             // Daha fazla resim/text eklenebilir
         )
@@ -1297,43 +1297,103 @@ class MapFragment : Fragment() {
         // MainActivity'deki view'lar zaten disableMainActivityViews() ile devre dışı bırakıldı
         // (gecikme süresinde tıklamalar engellenmesi için onViewCreated'da çağrılıyor)
 
-        // Panel'i göster
-        binding.guidePanel.show()
-        
+        // Düzen yukarıdan aşağı: maraton kartı → ders paneli → rehber balonu. Rehber önce ekran
+        // dışında hazırlanıyor (karartma açık), kart ekranın üstüne kaydırılıyor, ders paneli
+        // kartın altına açılıyor, balon panelin altına yerleştirilip ancak o zaman içeri kayıyor.
+        // Eskiden balon sabit yerdeydi (üstten 150dp) ve kart ona göre kaydırılıyordu; ilk
+        // maraton listenin başına yakın olduğu için kart balonun altına inemiyor, ders paneli
+        // (aktivite koordinatöründe, rehberin üstünde çiziliyor) balonu örtüyordu.
+        binding.guidePanel.prepareShow()
+
         // Panel gizlendiğinde overlay'i ve kilitleri kaldır
         binding.guidePanel.setOnPanelHideListener {
             enableMainActivityViews()
             enableMapTouchRouting()
-            val act = activity as? MainActivity
-            if (act != null && act.justFinishedChestForRating) {
-                act.justFinishedChestForRating = false
-                AppRatingManager.checkAndShowRatingPrompt(act, 1)
+            // Rating artık doğrudan çağrılmıyor: ders sonrası kuyruğu dürtülüyor ve
+            // sırası geldiyse rating'i o açıyor. Doğrudan çağrı rating'in üç ayrı
+            // tetikleyicisinden biriydi ve diğer ekranların üstüne binebiliyordu.
+            (activity as? MainActivity)?.pumpPostLessonQueue("MapFragment.guidePanelHidden")
+        }
+
+        val recycler = binding.lessonsRecyclerView
+        val chestIndex = MarathonGuideStore.firstMarathonLessonIndex()
+        recycler.stopScroll()
+        // Ofset üst dolgudan sonrası için: 0 → kart, liste en üstteyken ilk kartın durduğu yerde.
+        (recycler.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(chestIndex, 0)
+        recycler.doOnNextLayout {
+            recycler.post {
+                if (!isAdded || view == null) return@post
+                val lessonItem = GlobalLessonData.getLessonItem(chestIndex)
+                if (lessonItem != null && ::lessonsAdapter.isInitialized) {
+                    lessonsAdapter.showLessonBottomSheet(lessonItem, chestIndex)
+                }
+                // Ders paneli kendi post'unda yerleşiyor; bu post ondan sonra çalışır.
+                val lessonPanel = requireActivity()
+                    .findViewById<ViewGroup>(R.id.coordinator_layout)
+                    ?.findViewWithTag<View>(LessonPanel.TAG)
+                if (lessonPanel == null) {
+                    // Panel açılmadı (çevrimdışı vb.): rehber varsayılan yerinde gelsin.
+                    binding.guidePanel.slideIn()
+                    return@post
+                }
+                lessonPanel.post {
+                    if (!isAdded || view == null) return@post
+                    placeGuideBalloonBelow(lessonPanel, chestIndex)
+                    binding.guidePanel.slideIn()
+                }
             }
         }
-        
-        // Panel gösterildikten sonra LessonAdapter'daki showLessonBottomSheet'i çağır
-        view?.postDelayed({
-            val chestIndex = MarathonGuideStore.firstMarathonLessonIndex()
-            val lessonItem = GlobalLessonData.getLessonItem(chestIndex)
-            if (lessonItem != null && ::lessonsAdapter.isInitialized) {
-                lessonsAdapter.showLessonBottomSheet(lessonItem, chestIndex)
-            }
-        }, 600) // Panel animasyonu tamamlandıktan sonra
     }
 
-    private fun openRecordFragmentFromMarathonGuide(lessonIndex: Int, item: LessonItem) {
+    /**
+     * Rehber balonunu ders panelinin (ya da kart panelin altındaysa kartın) altına koyar.
+     * Sığmazsa ekranın altına dayanır; çok kısa ekranda panelle biraz çakışabilir.
+     */
+    private fun placeGuideBalloonBelow(lessonPanel: View, chestIndex: Int) {
+        val guide = binding.guidePanel
+        val parent = guide.parent as? View ?: return
+        val density = resources.displayMetrics.density
+        val gap = 12f * density
+        val edge = 12f * density
+        val parentY = IntArray(2).also { parent.getLocationInWindow(it) }[1]
+        val panelRootY = IntArray(2).also { lessonPanel.getLocationInWindow(it) }[1]
+        val panelCard = lessonPanel.findViewById<View>(R.id.lessonPanelCard)
+        // Konum ölçeklemeden (açılış animasyonu 0.92'den büyütüyor) etkilenmesin diye y + yükseklik.
+        var bottom = if (panelCard != null && panelCard.height > 0) {
+            panelRootY + panelCard.y + panelCard.height
+        } else {
+            0f
+        }
+        binding.lessonsRecyclerView.layoutManager?.findViewByPosition(chestIndex)?.let { item ->
+            val card = item.findViewById<View>(R.id.lessonCard) ?: item
+            val cardY = IntArray(2).also { card.getLocationInWindow(it) }[1]
+            bottom = maxOf(bottom, (cardY + card.height).toFloat())
+        }
+        if (bottom <= 0f) return
+        val balloonH = guide.balloonHeight()
+        val maxTop = parent.height - edge - balloonH
+        val top = (bottom - parentY + gap).coerceAtMost(maxTop)
+        guide.placeBalloonTop(top)
+    }
+
+    // Konum parametresi kaldırıldı: tahta anahtarı artık [item]'ın kalıcı kimliği.
+    private fun openRecordFragmentFromMarathonGuide(item: LessonItem) {
         if (!isAdded) return
         val act = requireActivity()
         val openRecord = {
             act.findViewById<View>(R.id.abacusFragmentContainer).visibility = View.VISIBLE
             act.supportFragmentManager.beginTransaction()
                 .setCustomAnimations(
-                    android.R.anim.slide_in_left,
-                    android.R.anim.slide_out_right,
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out,
+                    // popEnter/popExit: LessonAdapter'daki aynı açılış yolunda olduğu gibi,
+                    // geri tuşu/X ile kapanışta da kayarak kapansın.
+                    R.anim.queue_screen_in,
+                    R.anim.queue_screen_out,
                 )
                 .replace(
                     R.id.abacusFragmentContainer,
-                    RecordFragment.newInstance(globalPartId, lessonIndex, item.title),
+                    RecordFragment.newInstance(globalPartId, item.stableId, item.title),
                 )
                 .addToBackStack(null)
                 .commitAllowingStateLoss()
@@ -1430,11 +1490,29 @@ class MapFragment : Fragment() {
         }
     }
     
+    /**
+     * Chrome kilidini bu fragment aldıysa ve henüz bırakmadıysa true.
+     *
+     * [disableMainActivityViews] aynı bekleyen overlay için birden fazla yerden çağrılıyor
+     * ([lockTouchForPendingOverlay] + [notifyVisibleAfterOverlayDismiss] EAGER LOCK +
+     * [maybeShowPendingMarathonGuide]). Eskiden her çağrı ayrı bir acquire'dı ve sayaç 2'ye
+     * çıkıyordu; tek bir [enableMainActivityViews] sayacı 1'de bırakıyor, harita açılırken alt
+     * bar ve para paneli kilitli kalıyordu. Bayrak sayesinde fragment kilidi en fazla bir kez
+     * tutuyor ve yalnızca kendi aldığını bırakıyor.
+     */
+    private var mainActivityViewsLocked = false
+
     private fun disableMainActivityViews() {
         val activity = requireActivity()
-        android.util.Log.d("GuideDebug", "disableMainActivityViews called, locking ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
-        MainActivityChromeBlocker.acquire(activity)
-        
+        android.util.Log.d("GuideDebug", "disableMainActivityViews called, locking ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()} alreadyLocked=$mainActivityViewsLocked")
+        // Sayaç 0 ise bayrak bayat: ensureUnlockedForMapReturn sayacı zorla sıfırlamış, bizim
+        // acquire'ımız da onunla gitmiş. O durumda atlamak chrome'u kilitsiz bırakırdı.
+        val alreadyHeld = mainActivityViewsLocked && MainActivityChromeBlocker.currentLockDepth() > 0
+        if (!alreadyHeld) {
+            mainActivityViewsLocked = true
+            MainActivityChromeBlocker.acquire(activity)
+        }
+
         // Currency panel (üstteki panel)
         activity.findViewById<View>(R.id.currencyPanel)?.apply {
             isClickable = false
@@ -1520,11 +1598,14 @@ class MapFragment : Fragment() {
     }
     
     private fun enableMapFragmentViews() {
-        android.util.Log.d("GuideDebug", "enableMapFragmentViews called, releasing ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
+        android.util.Log.d("GuideDebug", "enableMapFragmentViews called. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
         val hadBlock = mapTransparentTouchBlockActive || (overlayView?.parent != null)
         mapTransparentTouchBlockActive = false
         guidePanelBackCallback.isEnabled = false
-        MainActivityChromeBlocker.release(activity)
+        // Chrome kilidi burada BIRAKILMIYOR: disableMapFragmentViews hiç acquire etmiyor.
+        // Eskiden release buradaydı ve enableMainActivityViews de bu fonksiyonu çağırdığı için
+        // forceEnableMapTouchRouting iki kez release ediyordu — çift acquire'ı tesadüfen telafi
+        // eden, ama başka bir fragment'ın kilidini de düşürebilen bir çapraz eşleşme.
         if (hadBlock) {
             MapTouchDiagnostics.reportFromFragment(
                 this,
@@ -1592,9 +1673,18 @@ class MapFragment : Fragment() {
             activity.setupClickListeners()
         }
         
+        // disableMainActivityViews'in aldığı kilidin karşılığı. Bayrak yoksa release yok:
+        // sayaçta duran kilit başka bir fragment'ın (ChestFragment, LessonResult vb.) ve onu
+        // kendi onDestroyView'ı bırakacak.
+        if (mainActivityViewsLocked) {
+            mainActivityViewsLocked = false
+            android.util.Log.d("GuideDebug", "enableMainActivityViews releasing ChromeBlocker. current depth: ${MainActivityChromeBlocker.currentLockDepth()}")
+            MainActivityChromeBlocker.release(activity)
+        }
+
         // MapFragment view'larını da tekrar aktif et
         enableMapFragmentViews()
-        
+
         android.util.Log.d("MapFragment", "MainActivity views enabled")
     }
 
@@ -1623,6 +1713,9 @@ class MapFragment : Fragment() {
         }
         askQuestionBounceAnimators?.forEach { it.cancel() }
         askQuestionBounceAnimators = null
+        sobiTestButton?.release()
+        sobiTestButton = null
+        view?.removeCallbacks(lessonProgressConsumeRetry)
         super.onDestroyView()
         // Verileri kaydet
         GlobalLessonData.saveToPreferences(requireContext())
@@ -1642,48 +1735,13 @@ class MapFragment : Fragment() {
         // RecyclerView'ı ayarla
         binding.lessonsRecyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
-            val stickyLinear = binding.root.findViewById<LinearLayout>(R.id.StickyLinear)
-            val stickyHeader = requireActivity().findViewById<LinearLayout>(R.id.stickyHeader)
-            val stickySectionUnit = requireActivity().findViewById<TextView>(R.id.stickySectionUnit)
-            val stickyHeaderTitle = requireActivity().findViewById<TextView>(R.id.stickyHeaderTitle)
-            
-            val maxOffsetPx = resources.getDimensionPixelSize(R.dimen.max_lesson_offset)
-            val cardPx = resources.getDimensionPixelSize(R.dimen.map_lesson_card_size)
-            val itemPadPx = resources.getDimensionPixelSize(R.dimen.map_lesson_item_padding)
-            val safetyPx = resources.getDimensionPixelSize(R.dimen.map_lesson_offset_edge_margin)
-
-            addItemDecoration(
-                DynamicOffsetDecoration(
-                    maxOffsetPx = maxOffsetPx,
-                    lessonCardSizePx = cardPx,
-                    lessonItemHorizontalPaddingTotalPx = itemPadPx * 2,
-                    edgeSafetyMarginPx = safetyPx,
-                )
-            )
+            // Dersler alt alta kartlar (item_lesson_card); eski sağa-sola kaydırmalı yol
+            // (DynamicOffsetDecoration, LessonItem.offset) kaldırıldı. offset verisi duruyor, kullanılmıyor.
 
             // Adapter'ı bağla
             adapter = lessonsAdapter
 
-            // Scroll listener'ı ekle
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-                    android.util.Log.d("MapFragment", "Scroll detected: dx=$dx, dy=$dy")
-                    updateStickyHeader(recyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
-                }
-            })
-
-            // Recycler sınırı artık tüm fragment: sticky yüksekliği kadar üst inset ver.
-            // Böylece item'ler sticky alana kayarken kesilmez, sticky'nin altında akıyormuş gibi görünür.
-            val extraTopGap = resources.getDimensionPixelSize(R.dimen.map_sticky_recycler_padding_top)
-            val applyTopInset = {
-                val stickyHeight = stickyLinear?.height ?: 0
-                setPadding(paddingLeft, stickyHeight + extraTopGap, paddingRight, paddingBottom)
-            }
-            stickyLinear?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-                applyTopInset()
-            }
-            post { applyTopInset() }
+            // Sabit bölüm başlığı kaldırıldı; listenin üst boşluğu düzenden (paddingTop).
 
             // Genişlik ilk kez >0 olduğunda decoration’ları yeniden ölç (post bazen erken kalabiliyor)
             addOnLayoutChangeListener(object : View.OnLayoutChangeListener {
@@ -1699,18 +1757,11 @@ class MapFragment : Fragment() {
                 }
             })
 
-            // İlk yüklemede sticky header + decoration yenileme
+            // İlk açılışta (restore yoksa) liste en baştan başlasın.
             post {
-                android.util.Log.d("MapFragment", "Initial update of sticky header")
-                updateStickyHeader(this, stickyHeader, stickySectionUnit, stickyHeaderTitle)
                 invalidateItemDecorations()
-
-                // İlk açılışta (restore yoksa) ilk item'ı sticky'nin altında başlat.
                 if (GlobalValues.scrollPosition <= 0) {
-                    val stickyHeight = stickyLinear?.height ?: 0
-                    val initialOffset = stickyHeight + extraTopGap
-                    (layoutManager as? LinearLayoutManager)
-                        ?.scrollToPositionWithOffset(0, initialOffset)
+                    (layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(0, 0)
                 }
             }
         }
@@ -1719,6 +1770,8 @@ class MapFragment : Fragment() {
     private fun changeAdapterList(){
         //GlobalLessonData.initialize(requireContext(),globalPartId)
         lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+        // Part 1'in 6. dersi yeni bittiyse Sobi testi düğmesi ders dönüşünde hemen açılsın.
+        sobiTestButton?.refresh(nudge = false)
 
     }
     
@@ -1730,12 +1783,65 @@ class MapFragment : Fragment() {
     /** Recycler + MainActivity dokunma yönlendirmesini sıfırla (overlay / guide panel sonrası). */
     fun enableMapTouchRouting() {
         if (!isAdded || view == null) return
-        
-        if (marathonGuidePresentationScheduled || binding.guidePanel.visibility == View.VISIBLE) {
-            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled or visible")
+
+        // Rehber henüz gösterilmedi ama gösterilecek (isPending) — kilidi burada açıp
+        // 1.2-2.8 sn'lik retry penceresinde haritayı tıklanabilir bırakmayalım. Rozet
+        // Firestore kontrolü sürüyorsa da aynı sebeple kilit açılmasın (bkz.
+        // ChestFragment/ChestResult — GlobalValues.pendingBadgeFirestoreOperation).
+        // AskQuestionOpen promosu da aynı sebeple bekliyor olabilir (reklam kontrolü + haritanın
+        // temizlenmesi); promo ekrana gelene kadar kilit açılmamalı.
+        // Kuyrukta bekleyen ekran varken kilit açılmamalı: kullanıcı rozet/yeni seri/rating
+        // ekranlarının ARKASINDAKİ haritaya dokunup başka bir derse girebiliyordu. Kuyruk
+        // boşaldığında kilidi kendisi bırakıyor (bkz. MainActivity.runPostLessonQueue).
+        if (marathonGuidePresentationScheduled || binding.guidePanel.visibility == View.VISIBLE ||
+            MarathonGuideStore.isPending(requireContext()) || GlobalValues.pendingBadgeFirestoreOperation ||
+            (activity as? MainActivity)?.isAskQuestionPromoPending() == true ||
+            (activity as? MainActivity)?.hasPostLessonQueueWork() == true
+        ) {
+            android.util.Log.d("GuideDebug", "enableMapTouchRouting SKIP because guide panel is scheduled, visible, pending, badge check in flight or ask-question promo pending")
             return
         }
-        
+
+        forceEnableMapTouchRouting()
+    }
+
+    /**
+     * Ders sonrası kuyruğunun aldığı kilidi bırakır.
+     *
+     * Guard'ları BİLEREK atlıyor: bu çağrı kuyruğun kendi `acquire`'ıyla birebir
+     * eşleşiyor ve [MainActivityChromeBlocker] sayıcılı — başka bir fragment kilidi hâlâ
+     * istiyorsa kendi acquire'ı duruyor, bizimki düşünce sayacı sıfıra inmiyor.
+     * (Harita içindeki çağrılar tek kilidi paylaşıyor, bkz. [mainActivityViewsLocked].)
+     *
+     * Guard'lı [enableMapTouchRouting] burada kullanılamıyor: bırakmayı reddettiğinde
+     * kuyruğun borcu ödenmemiş kalıyor ve harita kalıcı olarak kilitli kalabiliyor.
+     *
+     * ## Tek istisna: rehber paneli ekrandayken
+     * Kuyruk, maraton rehberini gösterdiği an işini bitmiş sayıyor (bekleyen iş kalmadı) ve
+     * bir sonraki turunda kilidini bırakıyor — rehber ise daha yeni açılmış oluyor. Harita
+     * içindeki kilit tek ve paylaşılan bir kilit ([mainActivityViewsLocked]); yukarıdaki
+     * "başkasının acquire'ı duruyor" varsayımı fragment'lar arasında doğru, haritanın kendi
+     * içinde değil. Burada bırakılınca rehberin arkasındaki harita, alt çubuk ve para
+     * paneli tıklanabilir kalıyordu (cihazda görüldü: rehber açıldıktan 84 ms sonra kilit
+     * bırakıldı, kullanıcı alt çubuktan başka sekmeye geçebildi).
+     *
+     * Bu durumda kilit rehbere DEVREDİLİYOR. Borç ödenmemiş kalmıyor: panel kapanırken
+     * kendi dinleyicisi ([showGuidePanel]) kilidi koşulsuz bırakıyor. Yukarıdaki sakınca
+     * (bırakmayı reddedip bir daha kimsenin bırakmaması) bu yüzden burada yok.
+     *
+     * Kuyruğun dışından çağırmayın.
+     */
+    fun releasePostLessonQueueTouchLock() {
+        if (isAdded && view != null && binding.guidePanel.visibility == View.VISIBLE) {
+            android.util.Log.d("GuideDebug", "releasePostLessonQueueTouchLock SKIP: rehber paneli acik, kilit rehbere devredildi")
+            return
+        }
+        forceEnableMapTouchRouting()
+    }
+
+    /** Guard'ları atlayıp kilidi doğrudan kaldırır; yalnızca kuyruk pes ettiğinde. */
+    private fun forceEnableMapTouchRouting() {
+        if (!isAdded || view == null) return
         enableMapFragmentViews()
         enableMainActivityViews()
         (activity as? MainActivity)?.logMapTouchDiag(
@@ -1745,12 +1851,27 @@ class MapFragment : Fragment() {
         )
     }
 
+    /**
+     * Rozet/rehber gösterileceği kesinleşmiş ama içerik henüz hazır değilken (reklam kontrolü,
+     * ağ isteği vb. asenkron gecikme) haritayı erkenden kilitler — açılışta 2-3 sn'lik
+     * tıklanabilir pencere kalmasın diye. [enableMapTouchRouting] içerik gösterildiğinde veya
+     * gösterilmeyeceği netleştiğinde kilidi kaldırır.
+     */
+    fun lockTouchForPendingOverlay() {
+        if (!isAdded || view == null) return
+        disableMainActivityViews()
+        disableMapFragmentViews()
+    }
+
     /** Ders overlay (Abacus quit, ChestResult vb.) kapandıktan sonra liste ve dokunuşları yenile. */
     fun notifyVisibleAfterOverlayDismiss() {
         if (!isAdded || view == null) return
         
-        // EAGER LOCK: Eğer rehber açılacaksa haritanın animasyonunu/rötarını beklemeden kalkanı hemen aç!
-        if (MarathonGuideStore.isPending(requireContext())) {
+        // EAGER LOCK: Eğer rehber ya da AskQuestionOpen promosu açılacaksa haritanın
+        // animasyonunu/rötarını beklemeden kalkanı hemen aç!
+        if (MarathonGuideStore.isPending(requireContext()) ||
+            (activity as? MainActivity)?.isAskQuestionPromoPending() == true
+        ) {
             disableMainActivityViews()
             disableMapFragmentViews()
         }
@@ -1787,7 +1908,9 @@ class MapFragment : Fragment() {
             "NOTIFY_VISIBLE_ENTER",
         )
         (activity as? MainActivity)?.restoreMapUiAfterLessonOverlayDismiss()
-        GlobalValues.canConsumePendingLessonProgressAnimations = true
+        // Eskiden burada koşulsuz true yapılıyordu: zemin/rozet haritayı kapatırken
+        // animasyon onların altında oynayıp bitiyordu. Karar artık tek yerde.
+        tryConsumePendingLessonProgress("notifyVisibleAfterOverlayDismiss")
         enableMapTouchRouting()
         (activity as? MainActivity)?.logMapTouchDiag(
             "MapFragment.notifyVisibleAfterOverlayDismiss",
@@ -1798,8 +1921,64 @@ class MapFragment : Fragment() {
             lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
         }
         binding.lessonsRecyclerView.invalidate()
-        maybeShowPendingMarathonGuide("notifyVisibleAfterOverlayDismiss")
+        // Rehber doğrudan değil kuyruktan açılıyor: harita görünür olduğunda rozet ya
+        // da yeni seri ekranı henüz sırasını beklemiyor olabilir ve rehber onların
+        // önüne geçerdi. Kuyruk sırayı biliyor.
+        (activity as? MainActivity)?.pumpPostLessonQueue("MapFragment.notifyVisibleAfterOverlayDismiss")
         scheduleMarathonGuideRetriesAfterMapVisible()
+    }
+
+    /** Son loglanan engel; aynı satır 250 ms'de bir tekrarlanmasın diye. */
+    private var lastLessonProgressBlockReason: String? = null
+
+    private val lessonProgressConsumeRetry = Runnable {
+        tryConsumePendingLessonProgress("retry")
+    }
+
+    /**
+     * Bekleyen kart ilerleme animasyonlarını, harita kullanıcının gözü önündeyse oynatır.
+     *
+     * Değilse (zemin, rozet, yeni seri, rating, tanıtım…) kartlar ESKİ değerde bekler ve
+     * 250 ms'de bir yeniden denenir. Hangi ekranın ne zaman kapandığını tek tek dinlemek
+     * yerine yoklama seçildi: kuyruğa yarın eklenecek bir ekran kapanışta haber vermeyi
+     * unutsa bile animasyon kaybolmuyor. Yoklama yalnızca bekleyen animasyon VARKEN ve
+     * activity önde iken dönüyor; reklam gibi activity'nin arkaya düştüğü durumlarda
+     * duruyor, [onResume] yeniden başlatıyor.
+     */
+    fun tryConsumePendingLessonProgress(caller: String) {
+        val v = view ?: return
+        if (!isAdded) return
+        v.removeCallbacks(lessonProgressConsumeRetry)
+        if (GlobalValues.pendingLessonProgressAnimations.isEmpty()) {
+            lastLessonProgressBlockReason = null
+            return
+        }
+        val act = activity as? MainActivity ?: return
+        val block = act.lessonProgressAnimationBlockReason()
+        if (block != null) {
+            GlobalValues.canConsumePendingLessonProgressAnimations = false
+            if (block != lastLessonProgressBlockReason) {
+                lastLessonProgressBlockReason = block
+                LessonProgressDiag.log(
+                    "MapFragment.tryConsumeProgress",
+                    "BEKLIYOR caller=$caller block=$block pending=${GlobalValues.pendingLessonProgressAnimations.keys}",
+                )
+            }
+            if (block != "not_resumed") {
+                v.postDelayed(lessonProgressConsumeRetry, LESSON_PROGRESS_RETRY_MS)
+            }
+            return
+        }
+        LessonProgressDiag.log(
+            "MapFragment.tryConsumeProgress",
+            "OYNAT caller=$caller oncekiEngel=$lastLessonProgressBlockReason " +
+                "pending=${GlobalValues.pendingLessonProgressAnimations.keys}",
+        )
+        lastLessonProgressBlockReason = null
+        GlobalValues.canConsumePendingLessonProgressAnimations = true
+        if (::lessonsAdapter.isInitialized) {
+            lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
+        }
     }
 
     /** Sezon kapısı / overlay gecikmesinden sonra bekleyen maraton rehberini tekrar dene. */
@@ -1815,87 +1994,34 @@ class MapFragment : Fragment() {
                     "MapFragment.guideRetry",
                     "delay=${delay}ms pending still true → maybeShow",
                 )
-                maybeShowPendingMarathonGuide("notifyVisibleAfterOverlayDismiss+retry@${delay}ms")
+                (activity as? MainActivity)
+                    ?.pumpPostLessonQueue("MapFragment.guideRetry@${delay}ms")
             }, delay)
         }
-    }
-
-    /** Kaynak ID değişince (örn. Media3) eski color ID geçersiz olabilir; geçerli color yoksa varsayılan döner. */
-    private fun safeColorRes(colorResId: Int): Int {
-        val ctx = requireContext()
-        return try {
-            if (ctx.resources.getResourceTypeName(colorResId) == "color") {
-                ContextCompat.getColor(ctx, colorResId)
-            } else {
-                ContextCompat.getColor(ctx, android.R.color.darker_gray)
-            }
-        } catch (_: Exception) {
-            ContextCompat.getColor(ctx, android.R.color.darker_gray)
-        }
-    }
-
-    private fun updateStickyHeader(
-        recyclerView: RecyclerView,
-        stickyHeader: LinearLayout,
-        stickySectionUnit: TextView,
-        stickyHeaderTitle: TextView
-    ) {
-        val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
-        val adapter = recyclerView.adapter as? LessonAdapter ?: return
-        val firstVisible = layoutManager.findFirstVisibleItemPosition()
-
-        android.util.Log.d("MapFragment", "Updating sticky header for position: $firstVisible")
-
-        var headerTitle: String? = null
-        var sectionUnit: String? = null
-        for (i in firstVisible downTo 0) {
-            val item = adapter.getItem(i)
-            if (item.type == LessonItem.TYPE_HEADER) {
-                headerTitle = item.title
-                sectionUnit = "${item.stepCount}. KISIM, ${item.currentStep}. ÜNİTE"
-
-                val colorRes = item.color
-                if (colorRes != null) {
-                    val color = safeColorRes(colorRes)
-                    android.util.Log.d("MapFragment", "Setting color for header: $headerTitle, colorRes: $colorRes")
-                    stickyHeader.backgroundTintList = ColorStateList.valueOf(color)
-                }
-                break
-            }
-        }
-        if (headerTitle != null) {
-            stickySectionUnit.text = sectionUnit
-            stickyHeaderTitle.text = headerTitle
-            stickyHeader.visibility = View.VISIBLE
-            android.util.Log.d("MapFragment", "Header visible: $headerTitle")
-        } else {
-            stickyHeader.visibility = View.GONE
-            android.util.Log.d("MapFragment", "No header found, hiding sticky header")
-        }
+        // Eskiden burada 3.2 saniye sonra kilidi ZORLA açan bir güvenlik ağı vardı.
+        // Kaldırıldı: kuyruk üç ekran gösteriyorsa bu süre normal olarak aşılıyor ve kilit
+        // ekranların ARKASINDAKİ haritayı tıklanabilir bırakıyordu. Aynı işi artık kuyruğun
+        // bekçisi yapıyor: süreye değil "bekleyen iş kaldı mı" sorusuna bakıyor ve pes
+        // ederken kilidi açıyor (bkz. MainActivity.schedulePostLessonQueueWatchdog).
     }
 
     override fun onResume() {
         super.onResume()
-        val mayConsumeProgress = (activity as? MainActivity)?.shouldConsumeLessonProgressAnimationsOnMap() == true
-        if (mayConsumeProgress) {
-            GlobalValues.canConsumePendingLessonProgressAnimations = true
+        sobiTestButton?.refresh()
+        // ensureUnlockedForMapReturn sayacı zorla 0'a çektiyse bizim acquire'ımız da gitti;
+        // bayrak true kalırsa sonraki enableMainActivityViews başkasının kilidini bırakır.
+        if (MainActivityChromeBlocker.currentLockDepth() == 0) {
+            mainActivityViewsLocked = false
         }
+        // İlerleme animasyonu burada TÜKETİLMİYOR: Fragment.onResume sırasında activity
+        // henüz RESUMED değil, reklamdan dönüşte de zemin hâlâ haritanın üstünde olabiliyor.
+        // Karar aşağıdaki post'ta veriliyor; o ana kadar kartlar eski değerde bekliyor.
         if (::lessonsAdapter.isInitialized) {
             lessonsAdapter.updateItems(GlobalLessonData.lessonItems)
         }
-        // Fragment yeniden görünür olduğunda sticky header'ı güncelle
-        binding.lessonsRecyclerView.post {
-            if (!isAdded) return@post
-            val activity = activity ?: return@post
-            val stickyHeader = activity.findViewById<LinearLayout>(R.id.stickyHeader)
-            val stickySectionUnit = activity.findViewById<TextView>(R.id.stickySectionUnit)
-            val stickyHeaderTitle = activity.findViewById<TextView>(R.id.stickyHeaderTitle)
-            if (stickyHeader != null && stickySectionUnit != null && stickyHeaderTitle != null) {
-                updateStickyHeader(binding.lessonsRecyclerView, stickyHeader, stickySectionUnit, stickyHeaderTitle)
-            }
-        }
         view?.post {
-            if (!isAdded) return@post
+            if (!isAdded || _binding == null) return@post
+            tryConsumePendingLessonProgress("onResume")
             val act = activity as? MainActivity ?: return@post
             act.logChromeBlockerDiagnostic("MapFragment.onResume")
             val shouldReconcile = act.shouldReconcileAbacusOverlayOnMapResume()

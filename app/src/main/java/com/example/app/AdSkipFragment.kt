@@ -1,9 +1,11 @@
 package com.example.app
 
+import android.content.DialogInterface
 import android.media.MediaPlayer
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +24,19 @@ class AdSkipFragment : DialogFragment() {
     private var crowdCheer: MediaPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
 
+    private companion object {
+        /** Panel kapandıktan sonra kuyruğun dürtülmesi için bekleme; bkz. [onDismiss]. */
+        const val PUMP_AFTER_DISMISS_MS = 250L
+    }
+
+    // ── Ölçüm ───────────────────────────────────────────────────────────────
+    // Ölçmek istediğimiz şey panelin yıpratıp yıpratmadığı: tekrar gördükçe kitle "hiç bakmadan
+    // kapat" tarafına kayıyor mu, ve kaçı gerçekten Pro akışına giriyor.
+    private var shownAtMs: Long = 0L
+    private var viewNoBucket: String = ""
+    private var outcome: String = AnalyticsLogger.AD_SKIP_DISMISSED
+    private var closeLogged = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
@@ -29,7 +44,10 @@ class AdSkipFragment : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-        dialog?.window?.setWindowAnimations(R.style.DialogAnimationSlideRight)
+        // Kuyruğun çizimleri: sağdan girer, SOLA çıkar. Bu ekran yalnızca reklam
+        // akışından açılıyor ve kapanınca sıradaki kuyruk ekranı sağdan geliyor; eskiden
+        // sağa çıktığı için ikisi aynı kenarda çakışıyordu.
+        dialog?.window?.setWindowAnimations(R.style.QueueScreenAnimation)
     }
 
     override fun onCreateView(
@@ -44,11 +62,42 @@ class AdSkipFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        playSounds()
+        // Telefonun üst çubuğu lacivert zemine, alt tuşların çubuğu alttaki beyaz bölüme uysun.
+        dialog?.window?.let { w ->
+            SystemBarColors.applyToDialog(
+                w,
+                top = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.paywall_navy),
+                bottom = android.graphics.Color.WHITE,
+                topView = binding.root,
+                bottomView = binding.bottomWhiteContainer,
+            )
+        }
+
+        // Maskot reklamı değnekle yok edip havalı poz veriyor; panel açık kaldıkça döngüde.
+        binding.centerGraphic.play(BunnyMascotView.Emote.AD_MAGIC)
+
+        val billing = (activity as? MainActivity)?.billingManager
+        val trialDays = billing?.freeTrialDays(BillingCatalog.SUB_PRO)
+        bindOffer(trialDays)
+
+        // Sesler (konfeti patlaması + müzik + alkış) yalnızca deneme teklifinde. Denemesini
+        // kullanmış kullanıcıya panel sessiz açılıyor; konfeti görseli yine var.
+        if (trialDays != null) playSounds()
+
+        viewNoBucket = AdSkipStats.viewBucket(AdSkipStats.nextViewNo(requireContext()))
+        shownAtMs = SystemClock.elapsedRealtime()
+        AnalyticsLogger.logAdSkipShown(viewNoBucket, trialOffer = trialDays != null)
+
+        // Bu ekran satın alma başlatmıyor (huniyi ProDiffirent → Plan diye sürdürüyor) ama
+        // düğmede deneme vaadi var; uygun olmayan kullanıcıya o vaadi göstermemek gerekiyor.
+        SubscriptionCta.apply(billing, binding.btnTryFreeText)
 
         binding.btnTryFree.setOnClickListener {
+            logClosed(AnalyticsLogger.AD_SKIP_TRY_FREE)
             // Yeni fragmenti hemen açıyoruz
-            ProDiffirentFragment().show(requireActivity().supportFragmentManager, "ProDiffirent")
+            ProDiffirentFragment
+                .newInstance(AnalyticsLogger.PRO_ENTRY_AD_SKIP)
+                .show(requireActivity().supportFragmentManager, "ProDiffirent")
             
             // Altında kalan bu fragmenti animasyon süresi kadar (yaklaşık 500ms) arkada bekletip,
             // daha sonra animasyonsuz ve sessizce kapatıyoruz. Böylece aradaki boşluk/bekleme hissi kayboluyor.
@@ -61,10 +110,97 @@ class AdSkipFragment : DialogFragment() {
         }
 
         binding.btnNoThanks.setOnClickListener {
+            logClosed(AnalyticsLogger.AD_SKIP_NO_THANKS)
             dismiss()
         }
     }
 
+    /**
+     * Geri tuşu veya panel dışına dokunma.
+     *
+     * Ölçüm `onDismiss`'te DEĞİL burada yapılıyor: `onDismiss` yapılandırma değişikliğinde ve
+     * uygulama öldürülürken de tetikleniyor, o durumlarda sahte bir "kapattı" kaydı düşerdi.
+     * `onCancel` yalnızca gerçek kullanıcı hareketinde çalışır.
+     *
+     * Paneli hiç kapatmadan uygulamadan çıkanlar bilerek ölçüm dışında: onları
+     * `ad_skip_shown` ile `ad_skip_closed` arasındaki fark ve `app_exit_screen` veriyor.
+     */
+    override fun onCancel(dialog: DialogInterface) {
+        super.onCancel(dialog)
+        logClosed(AnalyticsLogger.AD_SKIP_DISMISSED)
+    }
+
+    /**
+     * Ders sonrası kuyruğunu dürt: bu panel açıkken kuyruk "ad_skip_showing" diye bekliyor.
+     *
+     * Kapanınca kimse dürtmüyordu. Bekçi de çalışmıyordu, çünkü bekleyen tek iş öğretmene sorma
+     * tanıtımıysa o zemin tutmuyor ve kuyruk "meşgul" sayılmıyor. Tanıtım bayrağı asılı kalıyor,
+     * harita kartın ilerleme çubuğunu `promo_pending` diye bir sonraki derse kadar eski değerde
+     * bırakıyordu (cihazda görüldü 08.11.2026). Dürtmek boşa çağrılsa da zararsız.
+     *
+     * Neden gecikmeli: kapılar paneli `findFragmentByTag("AdSkip")` ile arıyor ve `onDismiss`
+     * fragment'i kaldıran işlemden ÖNCE çalışıyor. Bir kare beklemek ([MainActivity.pumpPostLessonQueue]
+     * kendisi bekliyor) cihazda yetmedi: tur paneli hâlâ bulup "ad_skip_showing" deyip durdu.
+     * "Pro'ya geç" yolunda da güvenli: Pro/plan ekranı açıkken kuyruk zaten bekliyor
+     * (subscriptionFlowBlockReason) ve o ekranlar kapanınca kuyruğu kendileri dürtüyor.
+     */
+    override fun onDismiss(dialog: DialogInterface) {
+        super.onDismiss(dialog)
+        val act = activity as? MainActivity ?: return
+        // Fragment'in kendi `handler`'ı değil: onDestroyView onu temizliyor ve panel kaldırılırken
+        // bu iş de silinirdi.
+        Handler(Looper.getMainLooper()).postDelayed({
+            if (!act.isFinishing && !act.isDestroyed) act.pumpPostLessonQueue("AdSkip.dismiss")
+        }, PUMP_AFTER_DISMISS_MS)
+    }
+
+    private fun logClosed(reason: String) {
+        if (closeLogged || shownAtMs == 0L) return
+        closeLogged = true
+        outcome = reason
+        val dwellMs = (SystemClock.elapsedRealtime() - shownAtMs).coerceAtLeast(0L)
+        AnalyticsLogger.logAdSkipClosed(
+            viewNo = viewNoBucket,
+            dwellBucket = AdSkipStats.dwellBucket(dwellMs),
+            dwellMs = dwellMs,
+            outcome = outcome,
+        )
+    }
+
+    /**
+     * Panelin iki sürümü, kullanıcının ücretsiz deneme hakkına göre.
+     *
+     * Deneme hakkını Play tutuyor (Google hesabı başına bir kez); [BillingManager.freeTrialDays]
+     * null ise kullanıcı denemesini kullanmış (ya da teklif tanımlı değil). Düğme metni
+     * ([SubscriptionCta]) de aynı bilgiye bakıyor, başlık onunla çelişmesin diye.
+     *
+     *  - Hakkı var: "N günlük ücretsiz PRO / denemesiyle reklamları atla!" ve "deneme bitmeden
+     *    haber vereceğiz" satırı (gün sayısı Play'deki tekliften).
+     *  - Hakkı yok: denemeden söz edilmiyor — "PRO ile reklamsız, / kesintisiz öğren!" ve
+     *    zil yerine onay işaretiyle "istediğin zaman iptal edebilirsin". Deneme vaadi, onu
+     *    kullanmış birine yalan olurdu.
+     */
+    private fun bindOffer(trialDays: Int?) {
+        if (trialDays != null) {
+            binding.titleText1.text = appString(R.string.ui_x_gunluk_ucretsiz_pro, trialDays)
+            binding.titleText2.text = appString(R.string.ui_denemesiyle_reklamlari_atla)
+            binding.reminderText.text = appString(R.string.ui_deneme_suren_sona_ermeden_once_bildirim)
+            return
+        }
+        binding.titleText1.text = appString(R.string.ui_pro_ile_reklamsiz)
+        binding.titleText2.text = appString(R.string.ui_kesintisiz_ogren)
+        binding.bellIcon.setImageResource(R.drawable.correct_ic)
+        // Zil gri boyanıyor (layout'ta tint); yeşil onay işareti boyansa gri kareye dönerdi.
+        binding.bellIcon.imageTintList = null
+        binding.reminderText.text = appString(R.string.ui_aboneligini_istedigin_zaman_iptal_edebilirsi)
+    }
+
+    /**
+     * Konfeti patlaması, enerjik müzik ve alkış — yalnızca deneme teklifinde çağrılıyor:
+     * hediye gibi sunulan ücretsiz denemeye kutlama yakışıyor, ücretli aboneliği aynı coşkuyla
+     * satmak ısrarcı duruyor. Patlama sesleri de birlikte gidiyor: müziksiz, tek başına çalan
+     * konfeti sesi amatör duruyordu (kullanıcı geri bildirimi).
+     */
     private fun playSounds() {
         val prefs = requireContext().getSharedPreferences("AppPrefs", android.content.Context.MODE_PRIVATE)
         if (!prefs.getBoolean("sound_enabled", true)) return

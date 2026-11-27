@@ -1,0 +1,4859 @@
+# Devir Notu — bilgisayardaki oturum için
+
+Bu not, bulutta çalışan bir oturumdan devralan ve **derleyebilen** bir oturum için yazıldı.
+Buluttaki oturumda Android SDK yoktu; Kotlin hiç derlenemedi, her değişiklik yalnızca mantık
+olarak doğrulandı. İlk kazanç bu: artık `.\gradlew compileDebugKotlin` çalıştırılabiliyor.
+
+- Dal: `claude/soban-gamified-education-prb70m`
+- İletişim: **Türkçe**
+- Proje: numi_goo — Türk çocukları (~7–10 yaş) için oyunlaştırılmış soroban (abaküs) eğitimi
+- `applicationId = com.numigo.app`, namespace `com.example.app`
+- Geliştirici tek kişi, Windows + Android Studio, gerçek cihaz/emülatörde elle test ediyor
+
+## Çalışma anlaşmaları
+
+- **Riskli yerlere dokunmadan önce bildir.** Ders sonrası akışı (`prepareMapReturnAfterLessonClaim`,
+  `finalizeMapReturnAfterLessonClaim`, ders sonu ekran zinciri ve animasyonları) uzun uğraşla
+  stabilize edildi; oraya dokunan bir değişiklik önce anlatılıp onaylanmalı.
+- Çalışan bir akışı bozmamak, yeni bir hatayı düzeltmekten önce gelir.
+- Kodun yorum yoğunluğu yüksek ve yorumlar **nedeni** anlatıyor ("niye böyle yapıldı",
+  "eskiden ne bozuluyordu"). Aynı üslubu koru; yalnızca ne yaptığını söyleyen yorum eklemeyin.
+- **Derlemek kurmak değildir.** `.\gradlew compileDebugKotlin` cihaza hiçbir şey göndermez; cihazda
+  sınanacak her değişiklikten sonra `.\gradlew installDebug` çalıştırılmalı. Emin olmak için:
+  `adb shell dumpsys package com.numigo.app | Select-String lastUpdateTime`. Bir tur, eski
+  sürüm test edilip "düzeltme işe yaramadı" sanıldığı için kaybedildi.
+
+## Öğretmen sınıfını siler (21.11.2026 — sürüm 26'ya giriyor; telefona kuruldu 00:34; 6a96e36 push edildi, deleteClass + 12 sınıf fonksiyonu CANLIDA; telefonda deneme silmesi kullanıcıda)
+Kullanıcı kararı: **gerçek silme** (arşiv değil). Sınıf ayrıntısı → Sınıf ayarları paneli → en altta kırmızı "Sınıfı sil"
+→ geri alınamaz olduğunu söyleyen onay → `deleteClass` callable (functions/index.js `deleteClassData`; yetki
+`classes.deleteClassDecision`: yalnızca `teacherUids` içindeki öğretmen, kapanmış sınıf da silinebilir, olmayan sınıf
+`deleted:false` başarı). Sıra: `archived:true` (silme sürerken katılma/davet/ödev kapalı) → katılma kodu → öğrencilerin
+üyelik alanları (members ∪ `users.classId` sorgusu, öğrenci başına transaction; başka sınıfa geçmişe dokunmuyor) →
+bekleyen sorular genel havuza (sahiplenilmiş sohbetler öğretmende kalır) → davetler, ödevler + ilerlemeleri, sınıf + members.
+**Kalan:** `homeworkRuleStats/{uid}` (kural başarısı) öğrencide. Kurallar zaten istemciye kapalıydı, değişmedi.
+Öğrenci: Ayarlar Kurs satırı ve sınıf ekranı `loadMyClass` ile "Sınıfa katıl"a dönüyor; açık sınıf ekranında
+`members` dinleyicisi hata verirse ekran yeniden okunuyor. Metinler 4 dilde (`class_delete*`).
+Testler: test-classes 64, test-class-flow 76, test:pools 75, npm test 60 — hepsi geçti. Push edilince `deleteClass`
+yeni fonksiyon olarak deploy edilir (kurallar değişmedi).
+
+## Kurs satışı: sınıf yapısı yeniden açıldı (19.11.2026 — versionCode 26 derlendi, telefona kuruldu 12:14, kullanıcı bakacak; commit edilmedi, AAB yok)
+**Sürüm 26:** `StudentClassFeature.ENABLED = true` (Ayarlar'da Kurs kartı); `StudentClassFragment`'ta sınıftaki
+öğrenciye Ödevlerim kartı (eski Sohbet sekmesindekinin aynısı, `HomeworkCard.Watcher` alt satırı) →
+`StudentHomeworkListFragment`. Metinler dört dilde zaten vardı. Derleme + birim testler geçti.
+**Öğretmen (aynı sürüm 26, telefona kuruldu 13:03; kullanıcı kararı 19.11):** öğretmende Sobi yok (`SobiAccess`):
+öğreticideki Sobi düğmeleri/balonları, derslerin "Sobi ile analiz et"i, haritadaki Sobi testi düğmesi gizli.
+Onaylı öğretmende sohbet sekmesi doğrudan Sınıflarım (`TeacherClassesFragment.newAsTab`, simge `class_ic`,
+`MainActivity.isTeacherClassesTab`); onay bekleyen öğretmen eski ekranda ("onay bekleniyor"). Soru havuzu,
+sohbet ve rapor sekmelerine öğretmenin artık yolu yok (soru gönderme kullanılmıyor).
+Kalan: telefonda öğrenciyle kodla katıl → ödev listesi, öğretmenle sekme/ders denemesi, commit + push, release AAB.
+
+**Videolar v2 (19.11.2026, `Videos\Sorobit_tanitim`):** soru gönderme bölümleri ve eski havuz ekranı çıktı, sesler
+yeni önekle (`*_v2_sound`, metinden eşlendi). `sahip\Sorobit_neden_v2.mp4` (3:10, kurs sahibi), `kurs\Sorobit_ogretmen_sinif_v2.mp4`
+(2:22, YouTube w9VcGvZ5JkA'nın yerine), `ogrsinif\Sorobit_ogrenci_sinif_v2.mp4` (1:26, 5lu67-4rN8Q'nun yerine; açılış sesinin
+"sorularını ona sor"u kesildi). Eksik: öğrenci videosunda sürüm 26 sınıf ekranının Ödevlerim kartı (yeni kayıt gerekiyor).
+Eski: "teste katılma" (5THLibeS0sE) ve "öğretmen rehberi" (E2q3DklpcgA) tamamen eskidi, mesajlardan çıktı.
+
+Önceki tarama (sürüm 26'dan önce):
+Plan (kullanıcı): kursla anlaşınca öğretmen hesap açar, kullanıcı adını verir; onay + `kurs_ogretmeni_ata.js`
+elle; sınıfa katılana 1 ay Pro elle. Sınıf kapatıldıktan (ef7f7aa) sonraki 109 commit sınıf/ödev/ilerleme
+paneliyle çakışma için tarandı: **çakışma yok.** Dokunan işler: çeviriler, Sobi testi aynı oynatıcıda
+(`questionWithAbacus`, ödev kipi aynı davranıyor), kural panelinde zihinden (`m_`) kartlar, öğretmen
+görünümünde haftalık kart gizli, `weeklyStats` öğretmeni atlıyor. Testler: birim 153, test:classes 60,
+kurallar 60 + pools 65 + homework 38, emülatör ödev akışı 58 + sınıf akışı 55 — hepsi geçti.
+- **Engel:** sürüm 25'te öğrenci sınıfa kodla katılamıyor (`StudentClassFeature.ENABLED = false`) ve
+  Ödevlerim listesine yol yok (eski Sohbet sekmesinde kaldı, öğrencide Sobi var). Sürüm 26 gerekiyor.
+- **Elle Pro:** `plan` değil `giftProUntil` (ms) + `giftProSource: 'kurs'` yazılmalı; istemci ve sunucu
+  bunu Pro sayıyor, abonelik alanlarına dokunmuyor. Bitince çocuk yine reklam görür.
+- Emülatör testleri Windows'ta Firestore emülatörünü açık bırakıyor; arka arkaya koşarken arada
+  `cloud-firestore-emulator` java sürecini kapat.
+
+## Biyografi indirme sayfası /i (17.11.2026 — Hosting'e YÜKLENDİ, canlıda; commit edilmedi)
+
+- Sorun: Instagram biyografisindeki doğrudan `play.google.com/...id=com.numigo.app` bağlantısı (referrer'lı da,
+  düz de) kullanıcının telefonunda dokununca hiçbir şey yapmıyordu (Instagram'ın uygulama içi tarayıcısı Play'e
+  devredemiyor; başka telefonda denenmedi).
+- Çözüm: `public/i.html` + `firebase.json` rewrite `/i` → `/i.html`. Adres `https://numigo-new.web.app/i?k=<kaynak>`:
+  simge, slogan, üç madde, "Google Play'den indir" düğmesi (kullanıcı dokunduğu için geçiş açılıyor). `k`
+  (`[a-z0-9_]{1,40}`) Play referrer'ına `utm_source=<k>&utm_medium=bio` olarak gider; dil k'nın sonekinden
+  (`_tr/_en/_id/_ar`), yoksa tarayıcı dilinden; ar rtl. Instagram/Facebook/TikTok tarayıcısında "⋮ → Tarayıcıda
+  aç" ipucu. `firebase deploy --only hosting` ile yüklendi; canlıda `?k=instagram_id` Endonezce açıldı, href
+  `...&referrer=utm_source%3Dinstagram_id%26utm_medium%3Dbio` doğrulandı. Biyografi linkleri:
+  `/i?k=instagram_tr|instagram_en|instagram_id|instagram_ar`. Kullanıcı Instagram'dan deneyecek.
+
+## Kaynaklar ve lisanslar ekranı (10.11.2026 — derlendi, telefona kuruldu, kullanıcı bakacak; 10.11 commit + push, sürüm 24)
+Ayarlar → Destek → "Kaynaklar ve lisanslar" (`CreditsFragment`, `fragment_credits.xml`, `strings_credits.xml`
+4 dil). Atıf metinleri lisansın istediği gibi İngilizce, kodda (`CREDITS` listesi); başlıklar çevrili.
+Altta "Açık kaynak lisansları" → `OssLicensesMenuActivity` (eklenti `com.google.android.gms.oss-licenses-plugin`
+0.10.6, settings.gradle.kts'de `resolutionStrategy` ile modüle eşlendi; kütüphane 17.1.0; koyu tema
+`Theme.NumiGoo.Licenses`). Liste yalnızca RELEASE'de gerçek (308 kütüphane doğrulandı), debug'da yer tutucu.
+Tarama sonucu (dosyalardan + eski notlardan):
+- Kesin atıf gerekli, ekranda: Sobi uygulama içi çizimi (`BunnyMascotArt`, Freepik no. 1040416 →
+  "designed by Freepik - Magnific.com"); avatarlar (Personas by Draftbit, CC BY 4.0); ~30 `emoji_*` Lottie
+  (Google Noto Emoji Animation, CC BY 4.0; kullanıcının notundaki IconScout "Google Inc." bunlar, Racing Car
+  artık yok).
+- Atıf istemeyen ama ekranda: floraphonic (Pixabay), LottieFiles, Baloo 2 (OFL), "Designed by Magnific"
+  (kullanıcının notu). nomagician (success_finish_sound) uygulamada YOK, eklenmedi.
+- KAYNAĞI BİLİNMEYEN (kullanıcı bakacak): raw'daki abacus_sound1–5, correct/incorrect, badge, chest_level,
+  reward, star, confetti_pop, crowd_cheer, lesson_result, energic_music; 229 vektör ikonun çoğu (ör.
+  `abacus_svg_ic` Flaticon → yazar adıyla atıf ister); raster görseller (blinding_tutorial*, class_board*,
+  book_ic, rules_book_image.jpg, mini_abacus_ic, mipmap back/energy/map/tasks/user…). Öğretici sesleri
+  ElevenLabs: ücretli planda üretildiyse atıf gerekmez (TR seslerin planı doğrulanmadı).
+- Freepik 8.1 marka yasağı atıfla kalkmıyor (Sobi maskot); eski not geçerli.
+
+## Açılış ekranı sadeleşti (10.11.2026 — derlendi, telefona kuruldu, kullanıcı bakacak; 10.11 commit + push, sürüm 24)
+Kullanıcı kararı: Duolingo/Mimo gibi yalnızca marka. Eskiden Android 12+'da önce sistemin ikon ekranı, sonra
+bizim farklı (abaküs) logolu ekranımız + "Öğrenmeye hazır mısın?" + boşuna dönen çark geliyordu ve sabit 2 sn
+bekletiyordu. Şimdi `androidx.core:core-splashscreen:1.0.1`, `Theme.App.Starting` (koyu zemin, mor dairede
+Sobi = uygulama ikonu), `SplashActivity.revealBrand`: kendi ikonunu sistem ikonunun üstüne koyup sistem
+ekranını kaldırıyor, ikon yukarı kayıp altından "Sorobit" beliriyor (450 ms). En kısa süre 2000 → 1200 ms
+(zorunlu güncelleme bekleyişi aynı, en çok +1 sn). İkon `drawable-xxxhdpi/splash_icon.png` (960 px)
+`tools/ikon_uret.ps1 -YalnizAcilis` ile üretildi. `activity_splash_text_2` artık kullanılmıyor.
+Düzeltme (aynı gün, kullanıcı fark etti): MIUI 14 ikon zemin rengini (`Theme.SplashScreen.IconBackground`)
+daireye kırpmadan KARE çiziyordu → mor daire artık resmin içinde (`IkonUret.Acilis`, 288dp tuval = 1152 px,
+tema `Theme.SplashScreen`, zeminsiz). Android 12+ ikon kutusu görünen maske boyunda, resim 1,5 katı çiziliyor
+→ `revealBrand` ölçeği `sys.width * 1.5 / icon.width` (31 altı 1.0, DENENMEDİ). Telefonda ekran kaydıyla
+doğrulandı: şekil ve boy geçişte aynı.
+
+## GA4 kopma analizi (03.11.2026, son 28 gün 6 Eki–2 Kas, `Build type ≠ debug` filtreli)
+
+Ayıklama: son 28 günde `tester = true` olan kullanıcı YOK (değer listesinde yalnızca `false`); ayıklama
+`Build type` (olay boyutu, `customDimensionsGroup1Slot04`) ile. Rapor filtresi URL'de
+`_r..dataFilters` parametresiyle taşınabiliyor. Otomatik olaylarda (first_open, session_start) bu
+parametre olmadığı için onlar filtreden etkilenmiyor; release cihazındaki kendi denemeler de içeride.
+Huni (kullanıcı): first_open 98 → öğretici 1 açıldı 70 → öğretici 1'in ilk sorusuna ~38 →
+son sorusuna 30 → kayıt start 36 (7'si öğretmen) → intro 28 → age 27 → source 24 → email 24 →
+completed 20 → ders 2 (`p1_i02`) açıldı 14 → seri günü tamamlayan 12. En büyük kayıp öğretici 1'in
+soru öncesi anlatım adımları (70 → 38, ~%45; çıkış ekranında `TutorialFragment` 31 kullanıcıyla 1.).
+Elde tutma: geri gelen 25 / yeni 98, kullanıcı başına etkileşim 14 dk, `app_remove` 29 kullanıcı.
+Teknik: `app_exception` 26 kullanıcı, `ad_load_failed` 36 kullanıcı.
+
+## AdMob kurulumu (17.11.2026 — kısmen)
+- `public/app-ads.txt` (`google.com, pub-8436855856536384, DIRECT, f08c47fec0942fa0`) hosting'e deploy
+  edildi, `https://numigo-new.web.app/app-ads.txt` 200 dönüyor (b118860).
+- Play Console → Mağaza ayarları → Web sitesi = `https://numigo-new.web.app` (kaydedildi ve yayınlandı).
+- AdMob (panelde authuser=1 hesabı): uygulama "Numigo" → mağaza URL'siyle Google Play'e bağlandı (paket adıyla
+  arama bulamadı, `https://play.google.com/store/apps/details?id=com.numigo.app` ile buldu), adı "Sorobit" oldu.
+  "Sorobit (Android) uygulamasını başarıyla doğruladınız" → AdMob incelemesi 2–3 gün; o zamana kadar sınırlı sunum.
+- GDPR mesajı (17.11): AdMob'da Sorobit'e gizlilik politikası URL'si (`https://numigo-new.web.app/privacy-policy.html`)
+  kaydedildi; mesaj düzenleyicide uygulama seçildi ama "Yayınla" otomasyonla sonuçlanmadı (düğme griye dönüp
+  listede mesaj çıkmadı). Kullanıcı elle yayınladı: 4 ek dil, "İzin vermeyin" tüm ülkelerde açık
+  (yayın düğmesi bu seçim yapılmadan gri kalıyordu). Listede "Yayınlandı" henüz doğrulanmadı.
+- UMP "gizlilik seçenekleri" girişi (iptal bağlantısı) EKLENDİ (615df94, sürüm 26'ya girecek): Hesap ayarları →
+  "Reklam gizlilik seçenekleri", yalnızca `privacyOptionsRequirementStatus == REQUIRED` iken görünür,
+  `showPrivacyOptionsForm` açar. Derleme tamam; telefon bağlı olmadığı için cihazda denenmedi
+  (Türkiye'de satır zaten gizli; görmek için VPN/AEA test cihazı gerekir).
+- AdMob durumu (17.11): uygulama "Hazırlanıyor" (inceleme sürüyor) → son 7 gün 38 istek, 0 gösterim. Ödeme hesabı
+  (AdSense Türkiye) kurulu, eşik ₺200, birikmiş ₺6,40; kimlik doğrulama eşikte istenecek. Reklam yerleri:
+  geçiş (ders/ödev/kupa dönüşü, 5 dk aralık, 1. bölüm 2. sandıktan sonra), ödüllü (Mağaza). Pro/öğretmen
+  onaylı/oturumsuz kullanıcıya geçiş reklamı yok → "ilk 100'e 1 ay Pro" alanlar 1 ay reklam görmez.
+
+## YAYINDA (17.11.2026): Sorobit Google Play'de herkese açık
+Play Console "Son yayınlanma tarihi: 17 Kasım 2026", inceleme bölümü boş; mağaza sayfası
+`play.google.com/store/apps/details?id=com.numigo.app` açık ("10+ indirme", "Reklam içerir · Uygulama içi satın alma").
+
+## ÜRETİM: sürüm 25 Google incelemesine gönderildi (12.11.2026 ~03:15, kullanıcı kararı "direkt yayına")
+Üretim kanalı: 25 (1.0), tam kullanıma sunum (%100), 177 ülke + "dünyanın geri kalanı" (=178, kapalı testle aynı),
+yönetilen yayınlama KAPALI → Google onaylayınca kendiliğinden yayına girer. Sürüm notları tr/en/id/ar.
+Play inceleme hesabı: Play'deki öğrenci kullanıcı adı = `serverConfig/reviewLogin.email`, hesap STUDENT + Pro
+(12.11 kontrol); şifre = kod eşleşmesi telefonda denenmedi. Yayın hediyesi başlangıcı 12.11.2026 00:00 TR'ye
+çekildi (9641fa2, 15 fonksiyon deploy BAŞARILI). Tek kayıt ekip hesabı "Başar"dı: sayaç 0/100'e indirildi,
+`launchGiftClaims` kaydı `excludedFromCount: true` ile korundu, hesap `isTester: true` (kullanıcı, 12.11). Ret gelirse nedeni e-postayla ve Yayın özeti'nde.
+
+## versionCode 25 AAB (12.11.2026 02:57, HEAD 3d0bff4, temiz ağaçtan)
+24 + aşağıdaki iki commit. Test anahtarları kapalı; imzalı (Numigo, `jar verified`), 70,8 MB,
+`app/release/sorobit-25.aab`. Plan: önce kapalı teste, sonra yönetilen yayınlamayla üretime (hedef 17.11).
+
+## Sürüm 25'e girenler (12.11.2026 — derlendi, telefona kuruldu, push edildi)
+- 8a872e3: oturum açmamış kullanıcıya öğreticide Sobi gösterilmiyor (`isSobiChatAvailable`).
+- f5f867b: Crashlytics'te sürüm 21'de görülen 4 çökmeye savunma (purgeAbacusOverlayHosts FM meşgulken
+  erteleniyor; ChestFragment ders yoksa haritaya dönüyor; körleme/abaküs son sorudan sonra Kontrol yok
+  sayılıyor; AbacusCustomization geç Firestore cevabı). Sürüm 24'te 7 günde 0 çökme/ANR (Crashlytics).
+- Temel yolu GİRMİYOR (`claude/temel-yolu` dalında, telefonda denenmedi).
+
+## Play üretim erişimi başvurusu (10.11.2026 13:57 gönderildi — 12.11.2026'da ONAYLANMIŞ görüldü; üretim kanalı henüz "Etkin değil", mağaza sayfası 404)
+Kapalı test: 53 etkin test kullanıcısı, son sürüm 24 (10.11 01:33). Form İngilizce dolduruldu (testçiler Instagram +
+arkadaş çevresi, "ne zor ne kolay", ilk yıl 10–100 bin kurulum). Google "genellikle 7 gün veya daha kısa"
+diyor; sonuç hesap sahibine e-postayla gelir. Onay yayın demek değil: üretim sürümü ayrıca yüklenip yayınlanacak
+(hedef 17.11). Yayından önce bakılacaklar: yayın hediyesi sayacı 10.11'den sayıyor (`launchGift.js`
+LAUNCH_GIFT_START_MS), Play inceleme hesabı (`tryReviewLogin`) çalışıyor mu.
+
+## Öğretici anketi sadeleşti (08.11.2026 — derlendi, birim testi geçti; kullanıcı isteğiyle commit edildi, telefonda denenmedi)
+Neden: 1 Eki–8 Kas'ta 19 kişiden 58 cevap, %80'i 4–5; tek işe yarar bilgi bir yazılı yorumdu ("tek tek
+kontrol et hoşuma gitmiyor"). Kullanıcı kararı: sıklığı düşür, kısalt, takılınca sor.
+- `TutorialSurveyPolicy`: öğretici sonu anketi yalnızca ünite başı öğreticilerde (başlıktan sonraki ilk
+  ders; p1_i01, p1_i06, p1_i12, p1_i17 …) ve öğretici başına cihazda bir kez.
+- `TutorialQuestionPanelFragment` + layout baştan: "Bu dersi anladın mı?" 😊/😐/😕. 😊 ve 😐 tek dokunuşla
+  geçer; 😕 yazı kutusunu açar (Firestore'da eski `question3/text/{uid}` yolu, `choice` alanıyla).
+  GA4: `lesson_survey_choice` `survey_type=tutorial_quick`, choice 1 anlamadım / 2 biraz / 3 anladım;
+  hiçbir şey seçmeden Atla/geri → yeni `lesson_survey_skip`.
+- Takılınca sor: adım ancak 3. denemede ya da sonra geçilirse doğru panelinde "Ne zorladı?" (anlamadım /
+  kuralı karıştırdım / yanlışlıkla bastım) → yeni `tutorial_stuck_reason` (`step_key`, `choice`,
+  `attempt_bucket`). Yeni GA4 boyutu açılmadı; var olan parametreler.
+- Eski 20 `fragment_tutorial_question_panel_*` metni 4 dilden silindi, yeni 13 metin 4 dile eklendi.
+- **09.11.2026 düzeltme (derlendi, commit + push edildi, telefonda denenmedi):** seçim kilitleniyor, 😊/😐 250 ms
+  sonra kendiliğinden geçiyordu; yanlış dokunan düzeltemiyordu. Artık seçim serbestçe değişir, seçince
+  "Devam" düğmesi çıkar ("Atla" gizlenir), geçiş yalnızca Devam/geri ile. 😕'dan vazgeçilirse yazı kutusu
+  kapanır, metin gönderilmez. GA4 `lesson_survey_choice` artık her dokunuşta değil, geçişte son seçimle
+  bir kez yazılır. `tutorial_quick_survey_send` ("Gönder") → `tutorial_quick_survey_continue` ("Devam"), 4 dil.
+
+## Haftalık kart paylaşımı ve davet ölçümü (08.11.2026 — derlendi, testler geçti (uygulama 3/3, sunucu emülatörde hepsi); telefona kuruldu; b61410a CANLIDA: 3 fonksiyon deploy'u ve hosting deploy'u başarılı; telefonda paylaşım ve başka telefonda kurulum kullanıcı deneyecek)
+Plan: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` §2, §4. Kullanıcı kararları (08.11): veli kapısı = yazıyla çarpma
+("on yedi çarpı üç", 3 yanlışta kapanır); ödül ikisine de 7 gün Pro, getiren yılda en çok 10; App Links ŞİMDİLİK YOK
+(Play App Signing SHA-256 gerekli, uygulama kapalı testte; `public/.well-known/assetlinks.json` zaten yanlış paket
+`com.example.app` içeriyor, düzeltilmedi).
+- **09.11 değişiklikleri (versionCode 22 AAB'de YOK, sonraki pakete):** veli kapısı yalnızca 13 yaş altında (ve doğum
+  yılı yoksa), soru tek basamaklı yazıyla (3..9 × 3..9); 13+ için de `share_gate_pass` gönderiliyor (huni yaştan
+  bağımsız). Ana satırda **seviye merdiveni** (`LevelLadderView`, `WeeklyCardRules.ladderFor`: kupada 1 basamak =
+  100 puan, bir geriden iki ileriye, en çok 14; Sobi 1..20), altında örnek sayılar ve cümle. Çizgi grafik 4 hafta
+  veri birikince. 8db19bd: örnek dizide en çok 5 sayı (fazlası "…"); kupada 5 basamaktan büyük sıçramada merdiven 9
+  basamağa sıkışıyor, arada `//` kırık. Test 17/17; telefonda (09.11 00:59, Ted, 2–8 Kas) görüldü.
+  DİKKAT: Ted'in 2–8 Kas kartı sunucunun gerçek kaydını SAHTE 26 Eki–1 Kas kaydıyla kıyaslıyor (toplama kupası
+  640 → gerçek), "2 → 3 basamaklı" abartılı; örnek verinin geri alınması önerildi, kullanıcı henüz karar vermedi.
+- **Davet her yerde + genel davet (09.11 gece; uygulama 1fc671c, sunucu/sayfa sonraki commit):** kartta Paylaş
+  altında ödül satırı (`share_reward_hint`), paylaşım metninde "1 hafta Pro hediye". `InviteFragment` ("Arkadaşını
+  davet et"): Mağaza'da Pro kartının altı (`shopInviteCard`, mağazanın kendi kabına `add`) ve Ayarlar'da Veli
+  paneli altında (`btnInvite`); Sobi'li davet görseli (`inviteHero` paylaşılan bitmap), nasıl çalışır, sayaç
+  (`getReferralCode` artık `invited`, `earnedDays` dönüyor), bağlantı `/d/<kod>?k=invite` → `utm_medium=invite`.
+  Ödül paneli: sunucu `users.referralRewardNotice {role, days, atMs}`; `MainActivity.maybeShowReferralReward`
+  (30 dk'da bir okuma, `homeIdleBlockReason` ortak kapı — haftalık kartla birlikte), görülen atMs
+  `AppPrefs.referral_reward_seen_{uid}`; GA4 `referral_reward_shown`, `share_card_shown_invite`.
+  **Sahte hesaba karşı cihaz sınırı:** istemci ANDROID_ID'nin tuzlu SHA-256'sını (`deviceFingerprint`) gönderiyor;
+  `referralDevices/{hash}` bir telefon bir kez davetli, `referralCodes.devices` davet edenin telefonu sayılmaz
+  (`device_used`, `same_device`). Parmak izi gelmezse (sürüm 22) geçiyor; herkes 23+'a geçince zorunlu yapılabilir.
+  Play Integrity (App Check zorunluluğu) konuşuldu, şimdilik yapılmadı.
+- **Paylaşma:** kartta "Paylaş" (yalnızca ilerleme varsa) → `ParentGate` → `WeeklyCardShare`: özet kartının bitmap'i
+  + altta "Sorobit" → cache/share/haftalik.png, FileProvider, EXTRA_STREAM + metin (`weekly_share_text`, bağlantılı),
+  `createChooser(…, IntentSender)` → `ChosenReceiver` EXTRA_CHOSEN_COMPONENT → `share_done_whatsapp|instagram|other`.
+  Bağlantı `getReferralCode` callable'ından; alınamazsa Play bağlantısı (atıf kaybolur, paylaşım olur).
+- **Bağlantı:** `public/d.html` + firebase.json rewrite `/d/**`; Play'e `referrer=utm_source=ref&utm_medium=weekly&utm_campaign=<KOD>`.
+  Dil `navigator.language` (tr/en/id/ar). og:image `public/og-sorobit.png` (uygulama ikonu). Hosting push'la GİTMEZ.
+- **Atıf:** `ReferralAttribution` (installreferrer 2.2): `NumiGooApplication` ilk açılışta (cihaz başına bir kez) referrer'ı
+  okur, kod varsa bekletir + `ref_install` + kullanıcı özelliği `ref_source`; `MainActivity.onResume` oturum açıksa
+  `claimReferral`. Sunucu (`functions/referrals.js`): `referralCodes/{KOD}`, `users.referralCode`, `referrals/{yeniUid}`
+  (yalnızca bir kez, kendi kodu olmaz, Auth hesabı ≤7 gün), `users.referredBy`. "Bizi nereden duydun?"a
+  "Başka bir veli / WhatsApp grubu" (değer `Veli/WhatsApp`).
+- **Ödül:** `grantReferralRewardOnLesson` = `users/{uid}/lessonMilestones/1_p1_i02_2_basamakli_sayilar` yazılınca
+  (finishedAtMs) transaction: gelene +7 gün `giftProUntil` (sürüyorsa bitişten), getirene de (`referralRewardCounts/{uid}_{yıl}` < 10).
+  `giftProSource = 'referral'`. Uygulamada "Pro kazandın" bildirimi YOK (sonraki iş).
+  Sıra hatası kapatıldı (08.11 akşam): atıf ders 2'den SONRA gelirse tetikleyici kaçırıyordu; `claimAndMaybeReward`
+  atıf kabulünde ders 2 kaydı varsa ödülü hemen veriyor (emülatörde test edildi).
+- **App Links (98b2e79, hosting deploy edildi):** `assetlinks.json` paket `com.numigo.app`, parmak izleri Play uygulama
+  imzalama (79:40:D6…2E:80) + bu bilgisayarın debug anahtarı (DC:D9…86:CF). Play Console'da "Önceki uygulama imzalama
+  anahtarları"nda bir eski anahtar daha var (1 Eyl 2026); parmak izi EKLENMEDİ (kullanıcı yalnızca kullanımdakini verdi).
+  SplashActivity'de `/d/` için autoVerify; telefonda (debug) `pm get-app-links` → verified, bağlantı uygulamayı açtı.
+- **Ölçüm:** GA4 `share_card_shown_weekly`, `share_gate_pass`, `share_done_*`, `ref_install`, `ref_link_open` (parametresiz),
+  `ref_source` (kullanıcı). GA4'te (08.11 akşam): kullanıcı kapsamlı özel boyut "Davet kaynağı" (`ref_source`) ve keşif
+  "Davet hunisi (haftalık kart)" (kart gösterildi → veli kapısı → paylaşıldı: whatsapp/instagram/other). Huninin
+  build type filtresi YOK (kendi denemeleri de sayılır). `ref_install` başka cihazda olduğu için huniye girmiyor;
+  kesin sayı `tools/referral-report.js`. K raporu `tools/referral-report.js` (yalnız okur; canlıda izinle).
+- Kurallar: yeni koleksiyonlar catch-all ile istemciye kapalı; kural değişikliği yok. `users.referralCode/referredBy`
+  serverOnlyFields'e EKLENMEDİ (istemci kendine yazabilir ama sunucu `referrals`'a bakıyor; zararsız).
+- Deploy önizlemesi (deploy-plan, f03da30 → şimdi): 76 fonksiyondan yalnızca 3 yeni. Yereldeki `.env`/debug log yüzünden
+  yerel çalıştırma "full" der; CI'da yalnızca commit'li dosyalar var. Testler: `node scripts/test-referrals.js` (emülatörle).
+
+## Haftalık ilerleme kartı: ekran (08.11.2026 — derlendi, birim testi 11/11; kullanıcı kararıyla 10.11 YAYININA GİRİYOR; Ted'e örnek veri yazıldı; telefonda kullanıcı bakacak)
+Kararlar (kullanıcı, 08.11): kapanan hafta (Pazarı bugünden önce olan en yeni `weeklyStats`) önceki kayıtla
+(en çok 3 hafta geriden) kıyaslanır; ilk sürüm kaynakları kupa + sandık + ders + Sobi (öğretmen ödevi YOK);
+eşikler: kupa görünen kural (basamak/adet/aralık) değişmeli, sandık ≥3 sn ve ≥%10, Sobi ≥1 seviye, ders
+bu hafta bitmiş; beceri adı = mevcut ünite başlığı (yeni ders metni yok); "Paylaş · yakında" görünür ama
+basılamaz, ilerleme yoksa hiç görünmez; düzen "tek büyük kart".
+- `WeeklyCardRules.kt` (saf, `WeeklyCardRulesTest`): hafta seçimi, kupa puanı → `CupRuleEngine.configsFor` /
+  `multiplicationDigitsFor` (yeni, okuma amaçlı) ile "N basamaklı a–b sayı · x sn arayla", ana satır önceliği
+  körleme (körleme kupası, `m_` Sobi kuralı) → kupa/Sobi → sandık → yeni ders; yalnızca yükselen; Sobi önerisi
+  (yarım kalan ilk kural, yoksa ustalaşılanın sonraki). `WeeklyCardRepository.kt`: okuma (kullanıcı, son 4 hafta,
+  tüm `lessonMilestones`, `homeworkRuleStats`, ders biten bölüm varsa `ParentReportRepository`). Hitap: doğum
+  yılından 13+ kendisine, altı (ve yılı yoksa) adın ilk kelimesiyle üçüncü şahıs.
+- `WeeklyCardFragment` (DialogFragment): İlerleme sayfası → "Haftanın özeti" kartı (yalnızca kendi hesabında);
+  ve `MainActivity.maybeAutoOpenWeeklyCard` (onResume'dan, süreç başına bir okuma): ilerleme varsa ve o hafta
+  gösterilmediyse, harita taban + ders sonu kuyruğu boş + yeni seri kapısındaki engeller yokken tam ekran
+  pencere. 60 sn içinde açılamazsa o açılışta vazgeçer. Ders sonu akışına dokunulmadı. Hafta işareti
+  `AppPrefs.weekly_card_auto_week_{uid}`; yeniden görmek için uygulama verisi ya da bu anahtar silinmeli.
+  Log: `adb logcat -s WeeklyCard`. Bekleme süresi yalnızca uygulama öndeyken işler; dolarsa sonraki öne gelişte yeniden okunur.
+  `weeklyStats` okuması kimliğe göre ARTAN aralık (son 6 hafta): ters sıralı sorgu indeks istiyordu
+  (cihazda FAILED_PRECONDITION), indeks eklemek yerine sorgu değişti.
+  Otomatik açılış için "boşta ana ekran" = harita YA DA bölüm seçimi (uygulama açılışta PartSelectionFragment'ta
+  başlıyor; yalnızca harita beklenince kart hiç açılmamıştı).
+- **Somut özet (kullanıcı geri bildirimi 08.11 akşam: "çok karmaşık, daha somut"):** kupa/Sobi ana satırı artık o
+  seviyeden ÜRETİLMİŞ örnek sayılar ("örnek sayılar" etiketiyle): Geçen hafta `3 + 4 + 1 + 2` · her sayı 3,6 saniyede
+  → Bu hafta `3 + 4 + 1 + 2 + 3` · 3,4 saniyede ✔, altında tek cümle (basamak > adet > hız önceliği; yalnızca hız
+  değiştiyse önce/sonra AYNI sayılar). Sayılar hafta + yol başına sabit (`WeeklyCardRules.concrete`,
+  `exampleNumbers`; çıkarmada ara sonuç eksiye düşmez, gerekirse + ile). Maraton: büyük 1:20 → 0:52 + "28 saniye daha
+  kısa". Özette yalnızca bir somut satır daha; geri kalan her şey "Ayrıntıları göster" ile açılıyor. Test 15/15.
+  Cihazda (08.11 18:14, Ted): kart bölüm seçiminden kendiliğinden açıldı, ekran görüntüsüyle bakıldı.
+- GA4: `weekly_card_shown_{auto|hub}_{progress|empty}` (parametresiz). Metinler `strings_weekly_card.xml` 4 dil.
+- **ÖRNEK VERİ (canlıda, Ted `835398VV`):** `.github/scripts/seed-weekly-card-sample.js` + yml: `weeklyStats/2026-W43`,
+  `2026-W44` ve 3 `lessonMilestones` (dokunulan belgelerin önceki hâli `users/{uid}/seedSamples/weeklyCard`'da).
+  8 Kasım'da kart W44'ü (26 Eki–1 Kas) gösterir; 9 Kasım'dan itibaren sunucunun GERÇEK W45'i sahte W44 ile
+  kıyaslanır (Ted için anlamsız satırlar çıkabilir). **Geri almak için:** yml'de `REMOVE: '1'` yapıp push et.
+- Denenmeyenler: Arapça sağdan sola görünüm, 13 yaş üstü hitap, ilerlemesiz hafta, öğretmen görünümü (kart gizli).
+  İşlem başına süre ("8 sn → 5 sn") yok: sandık kaydında soru sayısı tutulmuyor.
+
+## Haftalık ilerleme kartı: veri toplama (08.11.2026 — Parça A f03da30 CANLIDA (fonksiyon + kural/indeks deploy başarılı); Parça B kullanıcı kararıyla 10.11 yayınına giriyor, telefonda uçtan uca denendi; kart ekranı YOK)
+Neden: kart "geçen hafta → bu hafta" diyecek; geçmiş geri gelmediği için veri karttan önce birikmeli.
+Tasarım: `docs/BUYUME_DONGUSU_ARASTIRMASI.md` (döngü 2). Kararlar (kullanıcı, 08.11): yol
+`users/{uid}/weeklyStats/{yyyy-Www}`; Pzt–Paz ISO hafta, Türkiye saati, Pazartesi 00:10 koşu; aktif =
+`streak/state.lastSeenAt` son 14 gün; deploy sonrası bir kez elle koşu (taban kaydı); sandık süresi
+yalnızca sandığı geçen ve başarısı ≥ %80 koşular; örnek işlem dersin son adımındaki doğrulardan en zoru.
+- **Parça A (sunucu, yayından bağımsız deploy edilebilir):** `functions/weeklyStats.js` (saf: hafta, gövde) +
+  `index.js` sonu `snapshotWeeklyStats` / `runWeeklyStatsSnapshot`. İçerik: 6 kupa puanı (ham), Sobi
+  seviyeleri, canlı seri + en uzun, haftanın hedef günleri, günlük saniye (`dailyTimeSpent`), toplam süre,
+  biten ders ve geçilen adım SAYIMI (count sorgusu). Maliyet: öğrenci başına haftada ~10 okuma + 1 yazma.
+  Kurallar: istemci yazamaz, sahibi okur/siler. İndeks: `streak.lastSeenAt` koleksiyon grubu (fieldOverride).
+  Hesap silme: `users/{uid}` altında olduğu için mevcut recursiveDelete siliyor. Testler:
+  `functions/scripts/test-weekly-stats.js` (emülatörle), `firestore-rules-tests` (60/60).
+  Seri dokümanı hiç açılmamış (hedefi hiç tutturmamış, saat seçmemiş) kullanıcı taranmıyor. Tek koşu 540 sn;
+  binlerce öğrencide yarım kalırsa `truncated` uyarısı yazılır, zincirleme sonra.
+- **Parça B (uygulama, 10.11 yayın AAB'sine GİRMEYECEK, ilk güncelleme):** `LessonMilestones.kt` →
+  `users/{uid}/lessonMilestones/{partId}_{stableId}`: `finishedAtMs`, `sampleOp`, `chest{firstSec,bestSec,…}`.
+  Kullanıcı onayıyla üç noktaya bağlı: ders ekranlarının `recordRuleStats`'ı (bellekte örnek işlem),
+  `LessonSuccessRateRepository.recordItemFirstFinish` (bitiş + örnek), `ChestResult.record()` (süre).
+  LessonItem / merge / ekran geçişleri değişmedi. Birim testi `LessonMilestoneRulesTest` (5/5).
+  Telefonda (08.11 01:33 kurulum, HEAD + yalnızca bu dosyalar): Part 4 ders 2→3. adım bitti → `recordFinish`
+  (`finishedAtMs`, örnek `4 + 20 + 50 + 10 = 84`); Part 6 maraton (1 anahtarla açıldı) 96 sn → ilk kayıt, tekrar
+  62 sn → `firstSec=96, bestSec=62`; tekrar oynamada bitiş yeniden yazılmadı. Doğrulama: `adb logcat -s LessonMilestones`.
+  Part 4–5 sandıkları ChestResult’a uğramıyor; süre kaydı BlindingLessonFragment’ın geçiş dalında (08.11 02:05
+  cihazda: Part 4 maraton `firstSec=168`).
+- **Ek düzeltmeler (08.11.2026, cihazda doğrulandı):** reklam sonrası "PRO ile reklamsız" paneli (AdSkip)
+  kapanınca ders sonrası kuyruğu dürtülmüyordu; öğretmene sorma tanıtımı bayrağı asılı kalıyor, harita kart
+  çubuğu `promo_pending` diye bir sonraki derse kadar eski değerde kalıyordu. `AdSkipFragment.onDismiss` →
+  250 ms sonra `pumpPostLessonQueue` (bir kare yetmedi: kapı paneli `findFragmentByTag` ile hâlâ buluyordu).
+  Cihazda (`AdSkipDebug.FORCE` geçici açılarak, sonra kapatıldı): kapanınca tanıtım adımı çalıştı, çubuk 1→2 oynadı.
+  Puanlama penceresi TR metni "Sorobit’i Beğendin mi?" (diğer diller zaten Sorobit).
+- Elle taban koşusu: Cloud Scheduler'da `firebase-schedule-snapshotWeeklyStats-…` işi → "Zorla çalıştır".
+
+## Öğreticide oturumsuz Sobi notu (08.11.2026 — derlendi; kullanıcı onayıyla commit + push edildi, telefona kuruldu 08.11 00:11, kullanıcı deneyecek)
+Neden: kayıttan önce oynanan ilk öğreticide "Sobi'ye sor" ekranı (`MistakeReviewDialog.forTutorial`) oturum
+yokken yazma satırını tamamen gizliyordu (`sobiChat` oturum istiyor); yeni kullanıcı yapay zekâ sohbetini hiç
+görmüyordu. Kullanıcı kararı: yazma çubuğunun (`reviewInputBar`) yerinde yalnızca bilgi notu
+(`reviewLoginNote`, `sobi_chat_needs_account`, 4 dil `strings_sobi_guest.xml`); **düğme yok, kayda buradan
+yönlendirme yok**. Anonim oturum (Firebase anonymous auth + sunucuda günlük sınır) düşünüldü, yayından önce
+riskli bulundu: kodda ~50 yerde `currentUser != null` "kayıtlı" sayılıyor.
+
+## Sobi testinde abaküssüz (zihinden) sorular (07.11.2026 — birim testleri geçti; kullanıcı onayıyla commit + push edildi , Functions deploy BAŞARILI 08.11.2026 (b0480ce), telefona kuruldu 08.11 00:11, kullanıcı deneyecek)
+Neden: soroban'ın vitrini zihinden hesap (Part 4–6 körleme), Sobi testi yalnızca abaküslü soru veriyordu
+(`docs/BUYUME_DONGUSU_ARASTIRMASI.md`). Kullanıcı kararları (07.11.2026):
+- **Görülmüş sayılma:** Part 4/5'te o kuralın bölümündeki HERHANGİ bir dersin (ünite maratonu dahil) EN AZ BİR ADIMI
+  bitmişse (08.11.2026 kullanıcı kararı; `stepIsFinish` ancak 3 adımın hepsiyle geliyordu, telefonda 5'lik çıkarma 2/3
+  adımdayken zihinden gelmedi; artık `currentStep > 1` ya da `stepCompletionStatus` da sayılıyor). İlk ders şart değil. Teşhis
+  logu: `adb logcat -s SobiDailyTest` → "dersler:" satırı (her satır kimlik:tür:adım:BITTI). Eşleme bölüm
+  başlığının `stableId`'sinden: `SobiTestPlanner.LESSON_SECTIONS`, `seenFromLessons`. Cihazda hesap başına
+  önbellek (`sobi_test` → `mental_seen_<uid>`), sekizi de görülünce Firestore'a gidilmiyor. Görülmemiş kural
+  zihinden gelmiyor (motor izinli kurallarla kuruyor + `rulesOf` ikinci kilit).
+- **Ayrı veri:** `m_` önekli anahtarlar (`m_add_ten`) aynı `homeworkRuleStats/{uid}` belgesinde (tally/recent/
+  level/sobiLevel). Körleme dersi ve körleme kupa yolu (`BlindingLessonFragment`, `isBlinding`) artık yalnızca
+  buraya yazıyor; eskiden abaküslü toplama yalnızca doğruları yazıp oranı şişiriyordu. Eski karışık veri ayrılamadı.
+- **Sayım:** soru başına — soruda geçen her kurala 1 doğru / 1 yanlış (`SobiRuleStats.recordMental`, `mentalTally`);
+  klavyeli cevapta hatanın işlemi bulunamıyor. Ödevin abaküssüz kipi eskisi gibi kural saymıyor.
+- **Karışım:** tek test; zihinden görülmüş kural varsa 3 soru zihinden (sıra 4/7/10), abaküssüz oran abaküslü en
+  zayıftan 20+ puan düşükse 5 (tek sıralar). Zihinden kural: %90 altı en düşük, yoksa en az çalışılan (yeni ders
+  önce), yoksa en düşük. Pekiştirme 3'ten 2'ye (5 zihindende 1'e) iniyor.
+- **Merdiven:** aynı 20 seviye, seviye ayrı (`m_` anahtarı); kayıt yoksa 10+ zihinden soruda orandan tahmin, yoksa 1.
+- **Oynatıcı:** zihinden soruda abaküs gizli, cevap klavyeyle (ödevin abaküssüz kipi), üstte "Soru 3/10 · Zihinden";
+  yanlışta "Sobi ile analiz et" boncuk kaydı olmadan. Kararlar `HomeworkPlayerFragment.questionWithAbacus()`'tan.
+- Test sayfasında zihinden kural ayrı satır ("10'luk toplama · zihinden"); veli panelinde "Abaküssüz toplama /
+  çıkarma" kartları (birim "soru"). Sobi sohbetine giden `ruleStats` yalnızca abaküslü (`snapshot(withMental=false)`).
+- Sunucu: `functions/homework.js` `RULE_TALLY_KEY` / `EXTRA_TALLY_KEY` `m_` kabul ediyor, seviye süzgeci 16 anahtar.
+  **Deploy olmadan** yeni uygulamanın zihinden sayımı sunucuda süzülüp kaybolur (istemci gönderileni düşüyor).
+- GA4'e yeni olay eklenmedi.
+- **Çarpma (08.11.2026 kullanıcı kararları; 120 birim testi geçti, telefonda baştan sona denendi 00:51, kullanıcı onayıyla commit + push cc48436, Functions deploy BAŞARILI: recordRuleTally, recordSobiLevels, createHomework, onHomeworkProgressWritten):**
+  her basamak çifti bir "kural" (`mulA_2x1` abaküslü, `mulM_2x1` zihinden; ödevin anahtarları). Zayıf kural seçiminde
+  toplama/çıkarmayla birlikte yarışıyor (çarpmada zayıfsa test çoğunlukla çarpma). Görülme: Part 3 (2×1, 2×2, 3×1, 3×2)
+  ve Part 6 (2×1, 2×2; kolay ve zor bölümü aynı çift) bölümlerinde bir adım; ödevden veri olsa da ders görülmemişse
+  çıkmaz. Seviye YOK (zorluk = çift; Kolay/Zor yalnızca toplama/çıkarma, zayıfların hepsi çarpmaysa seçim gizli).
+  Dersler artık çarpmayı da kaydediyor: `AbacusFragment` (Part 3) `mulA_`, `BlindingLessonFragment` körlemede `mulM_`,
+  abaküs açıkken (kupa yolu, günlük soru) `mulA_`; soru başına (`SobiRuleStats.recordMultiplication`). Sunucu
+  `EXTRA_TALLY_KEY` çarpmayı kabul ediyor, seviye süzgeci ayrı (`SOBI_LEVEL_KEY`, çarpma yok). **Deploy olmadan
+  derslerin çarpma sayımı sunucuda süzülüp kaybolur.** Test sonu satırı zihinden ve çarpmada "x sorudan y doğru".
+  Telefonda bulunan hata: oynatıcıya soru türü 0/1 (toplama/çıkarma) diye taşınıyordu, çarpma toplamaya dönüşüyordu
+  (62 × 5 → 62 + 5); artık 0/1/2 (`HomeworkPlayerFragment.opCode/opOf`).
+
+## Başkasının profili → sahte "Sezon ödüllerini topla" (06.11.2026 — derlendi, commit yok, telefonda denenmedi)
+- Belirti: başka bir kullanıcının profiline bakınca kendi hesapta "Sezon 10 ödülleri" kapısı, iki kez.
+- Neden: `ProfileFragment.loadBadgeProgressFromFirestore` karşı tarafın rozet belgesini ortak
+  `BadgeProgressRepository`'ye yazıyordu; kapı (`MainActivity.tryShowSeasonLeaderboardRewardGateIfNeeded`,
+  back stack dinleyicileri) bekleyen sezonu oradan okuyor. Firestore'a bir şey yazılmadı.
+- Düzeltme: profil kartı kendi kopyasını (`shownBadgeProgress`) tutuyor; ortak depoya yalnızca kendi
+  profilinde ve okuma başarılıysa yazılıyor (hata durumunda artık depo boş veriyle ezilmiyor).
+
+## Yayın hediyesi: ilk 100 öğrenciye 1 ay Pro (05.11.2026 — testler geçti; kullanıcı onayıyla commit + push edildi, telefonda denenmedi; 05.11 deploy'u "Pass the --force option" hatasıyla DÜŞMÜŞTÜ, tetikleyici 08.11.2026'ya kadar canlıda yoktu; iş akışına --force eklendi, b0480ce deploy'u ile CANLIDA)
+- Söz: Reklam 13 kapanışı (TR, EN, ID, AR) "10 Kasım'da yayında, ilk 100 kişiye 1 ay ücretsiz tam
+  erişim". Play indirme sırasını vermediği için sıra = uygulamada hesap açılış sırası.
+- Sunucu: `functions/launchGift.js`, tetikleyici `grantLaunchGiftOnSignup` (`users/{uid}` onCreate,
+  `failurePolicy: true`). Transaction: `launchGift/counter.count` < 100 ise +1, defter
+  `launchGiftClaims/{uid}` (aynı hesap doküman silip yeniden yaratsa da ikinci kez almaz),
+  `users/{uid}.giftProUntil` = şimdi + 30 gün, `giftProSource = 'launch_2026_11'`.
+- Sayılmayanlar: Auth hesabı 10.11.2026 00:00 TR'den (09.11 21:00 UTC) önce açılanlar, öğretmenler,
+  `isTester: true`, `.env`'deki `LAUNCH_GIFT_EXCLUDED_EMAILS` (virgüllü) listesi. Yayından sonra
+  açılacak test hesapları için bu listeye e-posta ekle (isTester konsoldan sonradan yazıldığı için
+  kayıt anında genelde yok).
+- `plan` alanına dokunulmuyor. Sunucuda `effectivePlan` hediyeyi Pro sayıyor (enerji, Sobi, kredi
+  bonusu); abonelik rütbe kararı (`resolvePlanUpdate`) yeni `subscriptionPlan`'i kullanıyor, yani
+  hediyeli kullanıcının aldığı Lite reddedilmiyor. İstemcide `PlanStatus.effectivePlan` aynı kural;
+  `MainActivity` ve `LessonAdapter`'daki elle plan okuması PlanStatus'a bağlandı.
+- Kurallar: `giftProUntil`, `giftProSource` sunucu alanı (create ve update kapalı); sayaç/defter
+  catch-all ile kapalı.
+- Testler: `node functions/scripts/test-launch-gift.js` (emülatörle 120 hesap / 15 paralel işçi →
+  tam 100), `firestore-rules-tests` (52 + 65 + 38 geçti), `PlanStatusTest` (8), plan/abonelik/kredi
+  testleri geçti. 120'si birden aynı anda: emülatörde kilit zaman aşımı → `maxAttempts: 30` +
+  failurePolicy eklendi.
+- Bilinen eksikler: tetikleyici kayıttan birkaç saniye sonra yazdığı için kullanıcı ilk açılışta Pro'yu
+  görmeyebilir (sonraki plan okumasında görür); uygulamada "hediye kazandın" mesajı ve bitişe yakın
+  bildirim yok; profil rozeti (`publicProfiles.plan`) hediyeyi göstermiyor; Hesap ayarlarındaki
+  "Ödemeler" kartı ham `plan`'a bakıyor (doğru: hediyede ödeme yok).
+- Sayacı izlemek: Firestore'da `launchGift/counter` (count), kimin aldığı `launchGiftClaims`.
+
+## Kilitli ders 1 anahtarla açılıyor (04.11.2026 — derlendi, cihazda denenmedi)
+- Can yapısı DEĞİŞMEDİ (kullanıcı kararı 04.11.2026): her ders başlatma 1 can; ücretsiz 5 can / 10 dk,
+  Lite 10 can / 7 dk, Pro/Premium sonsuz. "Yalnızca çıkış/başarısızlıkta can" önerisi reddedildi.
+- 1–6. bölümde kilitli DERS paneli: "1 anahtarla kilidi aç" (`LessonAdapter.unlockLessonWithKey`).
+  Anahtar `MainActivity.spendKeysConfirmed` ile sunucuda düşülür, ONAYDAN sonra `isCompleted = true`
+  yazılır ve panel açık hâliyle yeniden gösterilir. Can harcanmaz (can "Başla"da gider). Anahtar
+  yetmezse mağaza açılır. Ünite maratonu da anahtarla açılabiliyor (04.11.2026); bölüm 2–6 kartları ve
+  kupa kartları önceki/aynı bölümün SON ÜNİTE MARATONU bitince açılıyor, uyarı "X bölümünün son
+  ünite maratonunu bitir".
+- Ölçüm: `lesson_unlock_offer` → `lesson_unlock_key` (talep), `lesson_unlock_no_keys` → mağaza
+  `purchase_started` (gelir), `key_spent` (`spend_item = lesson_unlock`), kullanıcı özelliği
+  `key_unlocker = true` (öğrenme: atlayanların `lesson_step_fail` oranı). Yeni olay boyutu YOK.
+  GA4'te `key_unlocker` kullanıcı kapsamlı özel boyut olarak TANIMLANMALI (henüz yapılmadı).
+- Can duvarı verisi (GA4, 7 Eki–3 Kas, FİLTRESİZ: test/debug dahil): `energy_spent` 29 kullanıcı,
+  `energy_blocked` 38 kez / 12 kullanıcı (36'sı ders, 2'si kupa; 30'u oturumda 5+ dersten sonra;
+  çoğu 1. bölüm). `energy_refill` 107 / 12 kullanıcı: **105'i anahtarla**, 2'si reklamla.
+  `purchase` 28 / 9 kullanıcı ($85,61): pro_monthly 9 (4 kişi), credits_medium 6, anahtar paketleri
+  8, lite_monthly 1. Satın almaların çoğu büyük olasılıkla kendi denemelerimiz; `Build type`
+  filtresiyle yeniden bakılmalı. Not: anahtarla can alma `key_spent`'e düşmüyor (ServerEnergy yolu),
+  yalnızca `energy_refill(keys)`'e.
+
+## SONRA YAPILACAK: kurs testinden önce güvenlik (kullanıcı kararı 23.10.2026, "sonra yapacağız")
+
+1. **Öğretmenin `users` okuması:** kurallar onaylı HER öğretmene her kullanıcı dokümanını (e-posta,
+   doğum yılı, FCM token) açıyor (`firestore.rules` users read). Öğretmene yalnızca kendi sınıfındaki ve
+   kendisine soru sormuş öğrenciyi açmak; önce öğretmenin users okuduğu yerleri çıkar (kısıtlama/yasak
+   ekranı `whereEqualTo("banned", true)`, soru sohbeti, profil ilerleme düğmesi).
+2. **Storage soru medyası:** onaylı her öğretmen her sorunun medyasını indirebiliyor; havuz ayrımı
+   medyaya da uygulanmalı.
+3. **`teacherInvites`:** giriş yapan herkes okuyup "kullanıldı" yapabiliyor; kod kontrolü callable'a.
+Ayrıca önerildi (sıra verilmedi): deploy iş akışında önce testler + kısmi başarısızlıkta yeniden
+deneme, staging projesi, hep kırmızı "Build Debug APK" iş akışı, sunucu hata metinlerinin
+yerelleştirilmesi, ödev saklama süresi.
+
+## Gizlilik politikası: Sobi eklendi (03.11.2026 — commit 52a2c0a; CANLIDA: kullanıcı onayıyla push edildi, Functions ve Hosting deploy'ları başarılı)
+- Dört dilde `public/privacy-policy*.html`: 2.4 Sobi bölümü, Bölüm 3'te Anthropic, 5.2/6/7'de Sobi;
+  danışma "şu an kapalı". Veli onay e-postası (`mailTexts.js`) aynı; `PARENTAL_CONSENT_VERSION` .3.
+- Sayfalar push'la yayınlanmaz: `firebase deploy --only hosting` elle. E-posta push'la (Functions).
+- Play Console'da elle: Veri güvenliği formu (danışma kapalıysa fotoğraf/video/ses çıkarılabilir),
+  içerik derecelendirme anketi, mağaza açıklaması. Sonraki sürüm: manifestten `RECORD_AUDIO`,
+  `ScreenRecordingService` (mediaProjection|microphone) kaldırılabilir — danışma kapalıyken
+  Play ön plan hizmeti beyanı istiyor. Danışma açılırsa politika ve e-posta maddesi geri gelmeli.
+
+## Dil seçeneği: İngilizce (02.11.2026 — uygulama tarafı yazıldı; telefonda denenmedi; sunucu tarafı kullanıcı kararı bekliyor)
+- **Çeviri:** `res/values-en/` altında bütün `strings*.xml` (3.257 metin). Terimler
+  `docs/CEVIRI_SOZLUGU.md`'de, kullanıcı onaylı: 5'lik → small friends, 10'luk → big friends, boncuk
+  kuralı → mixed friends, kardeş → friend, körleme → Blind, altın → coins, Strike Ustası → Streak Master.
+  Çevrilmeyen 148 anahtar dilden bağımsız (çarpım tablosu satırları, "PRO", sayılar); Türkçeye düşüyor.
+- **Dil seçimi:** `AppLanguage` (Ayarlar → Dil: Telefonun dili / Türkçe / English). AppCompat'ın
+  `setApplicationLocales`'ı kullanılmadı: metinler uygulama context'inden okunuyor ve Android 13 öncesinde
+  o yol uygulama context'ini değiştirmiyor. Dil `NumiGooApplication.attachBaseContext` + `FontScaleLimiter.wrap`
+  (her aktivite) ile veriliyor; seçim süreci yeniden başlatıyor. "Telefonun dili" Türkçe değilse İngilizce
+  (varsayılan `values/` Türkçe, Endonezce telefonda Türkçe çıkmasın diye).
+- **Koddaki metinler:** `MistakeAnalyzer` + `SubStepExplainerEn` (Sobi analiz ekranı) İngilizce dalı,
+  `HomeworkText.withAccusative` İngilizcede ek koymuyor, `SobiSpeaker` seçili dilde okuyor,
+  `LoginActivity` "Kullanıcı bulunamadı" karşılaştırması kaynağa bağlandı (İngilizcede kayıt ekranına
+  yönlenmiyordu). Log/hata kayıtlarındaki Türkçe bilerek bırakıldı.
+- **Sobi İngilizce (02.11.2026, sunucu commit'i deploy onayı bekliyor):** uygulama her `sobiChat`
+  isteğine `lang` koyuyor; sunucu `lang: 'en'`de talimatların SONUNA `sobi/prompt_lang_en.md` blokunu
+  ekliyor (Türkçe istek bayt bayt aynı, önbelleği bozulmuyor). Oturuma `lang` ve `promptVersion+en`
+  yazılıyor (haftalık rapor ayırabilsin). Hazır ders açıklamalarının İngilizcesi (t3, 12 parça; Türkçe
+  onaylıların çevirisi, kullanıcıya gösterildi): metin `tools/sobi-eval/aciklamalar/aciklamalar_en.json`,
+  yayın `yayinla_dil.mjs en` → `functions/sobi/aciklamalar_en.json` (adımlar İngilizce adım metninin parmak
+  iziyle; Türkçe yayın değişince bunu da çalıştır). Kredi açıklaması ve yedek metinler İngilizce.
+  Gerçek modelde denendi (`node scripts/sobi-dene.js --dil en`): cevaplar İngilizce, terimler doğru;
+  bir cevapta numaralı liste kullandı (Türkçe talimat yasaklıyor, İngilizcede de izlenmeli).
+- **E-postalar, yasal sayfa, sunucu hataları (03.11.2026):** doğrulama kodu ve veli onayı e-postası
+  `functions/mailTexts.js`'te üç dilde (istemci `sendStudentVerificationCode`'a `lang` gönderiyor; onay
+  kaydında `consentLang`; `PARENTAL_CONSENT_VERSION` 2026-11-03.1). `public/privacy-policy-tr.html` ve
+  `-id.html` (İngilizce asıl metnin çevirisi, aynı çapalar); kayıt ekranı ve onay e-postası dilin sayfasını
+  açıyor. **Hosting push'la deploy olmuyor**: `firebase deploy --only hosting` elle. Sunucu hata mesajı
+  gösteren yerler (sınıf, ödev, hata bildirimi, soru gönderme, seri ödülü) Türkçe dışında koddan genel metin
+  (`serverErrorText` / `serverDetailText`). Yasal metinlerin hukukçu kontrolü önerildi.
+- **Öğretici seslendirmesi EN/ID (03.11.2026, Storage'da):** ElevenLabs Creator (kullanıcının aboneliği,
+  ticari lisans); İngilizce Nichalia `XfNU2rGpBa01ckF309OY`, Endonezce Bee Ard `1k39YpzqXZn52BgyLyGO`.
+  `tutorial_audio/<en|id>_<kayıt>.mp3`, dilde 852 dosya; uygulama `TutorialFragment` ile indiriyor. Betikler
+  `tools/seslendirme/` (README): uret → yaziya (Speech to Text ile metin karşılaştırma) → esle (metni
+  başka anahtardan gelen 100 kayıt) → yukle. Sayılar/çarpma yazıyla okutuluyor (model rakam rakam
+  okuyordu). Öğretici metni değişirse o cümleyi `--yeniden` ile üretip esle + yukle. Öğretici 104 hiçbir
+  derse bağlı değil (ölü taslak; içindeki `tutorial6_3` iki adımda aynı cümleyi çalıyor).
+- **Kimlik olarak saklanan Türkçe metinler (03.11.2026):** günlük sorunun ünite adı ve zorluğu ortak
+  başarı istatistiğinin anahtarı, liderlik `titleUnit`'i sezon madalya/kupa parçasının adı. Bunlar dil ne
+  olursa olsun Türkçe yazılıyor (`GlobalLessonData.turkishItem`), gösterimde `localizeLessonText` /
+  `DailyQuestionPoolBuilder.displayDifficulty`. Telefonda İngilizceye geçmeden oluşmuş günlük soru kartı
+  Türkçe görünüyordu.
+- **Bildirimler (03.11.2026, sunucu commit'i deploy onayı bekliyor):** uygulama token kaydıyla
+  `users/{uid}.lang` yazıyor (kural değişikliği gerekmedi, users yasak listeli). `sendUserNotification`
+  `en: { title, body }` alıyor; kullanıcı `lang: 'en'` ise o gidiyor. Metin üreticileri `lang` parametresi
+  aldı (Türkçe çıktıları aynı), karar fonksiyonları `textEn` döndürüyor. Yeni bildirim eklerken `en` vermeyi
+  unutma: verilmezse İngilizce kullanıcıya Türkçe gider.
+- **Sunucu hata metinleri:** giriş/doğrulama akışında (`AuthManager`) `serverErrorText`: Türkçede sunucunun
+  mesajı, başka dilde hata kodundan metin. Diğer ~45 yer (ödev, sınıf, mağaza…) hâlâ sunucunun Türkçe
+  mesajını gösteriyor.
+- **Açık kalanlar:** (3) öğretici
+  seslendirmeleri (`res/raw/*.mp3`) Türkçe — şimdilik İngilizcede susturuldu (`TutorialFragment.playSound`); (4) Play Store sayfası; (5) TR kaynaktaki iki yazım hatası:
+  `tutorial_ipucu_114` "10 x 1 = 1", `tutorial_ipucu_134` "8'i" (56 olmalı) — EN'de doğru yazıldı.
+
+## Dil seçeneği: Arapça — durum (03.11.2026)
+- Altı alt oturum dalı (altyapı, sunucu, dört çeviri) bu dala birleştirildi (b4ad55d); sözlük
+  `docs/CEVIRI_SOZLUGU_AR.md` (rakam 0–9, cinsiyetsiz/eril hitap, Baloo Bhaijaan 2 onaylı). `values-ar`: ~3.270 metin.
+  Hazır açıklamalar yayınlandı (`functions/sobi/aciklamalar_ar.json`). Derleme, birim ve sunucu testleri geçti;
+  telefona kuruldu. Arapça bilen biri metinleri okumadı.
+- Push ve hosting deploy'u yapıldı (03.11.2026). **Seslendirme:** Rawi `F2jHHIMyJTh1pdwoLzNQ` (fasih, erkek), 752 cümle
+  + 100 eşleme = 852 dosya Storage'da (`tutorial_audio/ar_*`); bütün sayılar yazıyla (ayrıntı
+  `tools/seslendirme/README.md`), yazıya çevirme denetiminde şüpheli 0. ~22.600 kredi.
+- **Bekleyenler:** Play Store Arapça listesi. Körleme/ödev ekranındaki
+  "adımı atla" Lottie oku sağdan sola dilde `scaleX = -1` (`LessonSideButtons.setupSkip`). `AbacusPracticeFragment` hiçbir yerden açılmıyor (kontrol edilemedi).
+
+## Dil seçeneği: Arapça — uygulama altyapısı (03.11.2026 — claude/ar-altyapi dalında commit; push yok; telefonda Arapça seçilip bakıldı, çeviriler henüz yoktu)
+- **Seçenek:** `AppLanguage.ARABIC = "ar"` (Ayarlar → Dil → العربية); telefon Arapçaysa "Telefonun dili" de
+  Arapça. Sunucuya ve `users/{uid}.lang`'a "ar". Yerel `ar-u-nu-latn`: `String.format`/`getString(id, sayı)`
+  Batı rakamı (0–9) ve ondalık nokta üretiyor (`ArabicSupportTest`). Telefon ar-EG gibi ٠–٩'lu bir Arapçaysa
+  yapılandırma yine yeniden kuruluyor (`wrap` artık `nu` uzantısına da bakıyor).
+- **Yazı tipi:** `res/font-ar/font_regular.ttf` = Baloo Bhaijaan 2 (değişken, 285 KB; Latin harfleri Baloo 2
+  ile aynı). Temalar değişmedi; Android Arapçada `@font/font_regular`'ı oradan alıyor. Lisans
+  `design/font/` (OFL, uygulama içi atıf şartı yok).
+- **Sağdan sola:** menüler/kartlar/oklar dönüyor (yön okları `autoMirrored`); abaküs kapları, denklem
+  satırları (`firstNumberText/operator/secondNumberText`), flaş metni ve sayı girişleri `layoutDirection="ltr"`
+  + left/right kısıtlarla sabit. Öğreticinin odak çerçevesi (`focusView`) abaküse göre left/right. Metne gömülü
+  denklemler `RtlSupport.isolateEquations` (Sobi balonları, analiz ekranı, öğretici metni) ve `RtlSupport.ltr`
+  ile U+2066…U+2069 arasında. Kayma animasyonları `RtlSupport.endSign` ile. Türkçe/İngilizce görünüm aynı.
+- **Koddaki metinler:** `MistakeAnalyzer` Arapça dalı, `SubStepExplainerAr` (sözlük + öğretici oturumunun
+  terimleri: خرزة الخمسة / خرزات الواحد), sayı+ad uyumu için `mistakesAr`/`beadsAr`; `SobiSpeaker` Arapça ses
+  (yoksa sessiz); kayıt ekranı `privacy-policy-ar.html` (sayfa claude/ar-sunucu dalında).
+- **Telefonda görülüp düzeltilenler:** görev ilerlemesi "2 / 10" ters diziliyordu (yalıtıldı), ders paneli
+  açılınca seçili kartın kopyası sağa kayıyordu (`lesson_popover` left|top), öğreticinin denklem kutusu
+  (`questionText`) "3 + 5"i "5 + 3" gösteriyordu (LTR), bölmeli çubuk (`SegmentBarView`) artık sağdan doluyor.
+  Ölçülen: APK +136 KB (yazı tipi sıkıştırılmış). Kalan: Latin harfli kullanıcı adları/Türkçe metinler kendi
+  yönüne hizalanıyor (çeviri gelince çoğu düzelir; liderlik satırı ve ders paneli viewStart'a alındı).
+
+## Dil seçeneği: Endonezce — sunucu (03.11.2026 — claude/id-sunucu dalında commit; push/deploy kullanıcı onayı bekliyor)
+- **Sobi:** `lang: 'id'` → talimatın sonuna `sobi/prompt_lang_id.md` (sözlük: `docs/CEVIRI_SOZLUGU_ID.md`;
+  düğme adları "Tunjukkan"/"Periksa" sözlükten seçildi, `values-in/strings_sobi.xml` gelince karşılaştır).
+  Kredi açıklaması, yedek metinler, boş sohbet başlığı ("Obrolan") Endonezce; ad maskesi "nama saya
+  (adalah)", "namaku". Gerçek modelde denendi (`sobi-dene.js --dil id`, 3 senaryo): cevaplar Endonezce,
+  terimler doğru; bir cevapta `**kalın**` ve numaralı liste kullandı (İngilizcedeki gibi izlenmeli).
+- **Hazır açıklamalar:** metinler `tools/sobi-eval/aciklamalar/aciklamalar_id.json` (12 parça) hazır;
+  YAYINLANMADI: `values-in/strings_tutorial.xml` yok. O gelince `node tools/sobi-eval/aciklamalar/yayinla_dil.mjs id`
+  (eski `yayinla_en.mjs` → `yayinla_dil.mjs en|id`; dosya yoksa hiçbir şey yazmaz).
+- **Bildirimler:** `sendUserNotification` `en` yanında `id: { title, body }` alıyor; karar fonksiyonları
+  `textId` döndürüyor. İngilizcesi olan 13 bildirimin hepsine Endonezce eklendi; `test:notifications`
+  yeni bir çağrıda `en:` olup `id:` yoksa kırılıyor. Hata bildiriminde sekme adı "Misi" varsayıldı.
+
+## Dil seçeneği: Arapça — sunucu (03.11.2026 — claude/ar-sunucu dalında commit; push/deploy kullanıcı onayı bekliyor)
+- **Sobi:** `lang: 'ar'` → talimatın sonuna `sobi/prompt_lang_ar.md` (sözlük `docs/CEVIRI_SOZLUGU_AR.md`; fasih,
+  Batı rakamı, cinsiyetsiz hitap). Düğme adları sözlükten seçildi: "Bana göster" → **"أرِني"**, "Kontrol Et" →
+  **"تحقّق"** (`prompt_lang_ar.md` ve `guard.js` yedek metni); `values-ar/strings_sobi.xml` gelince karşılaştır.
+  Kredi açıklaması, yedek metinler, boş başlık ("محادثة") Arapça; ad maskesi "اسمي/إسمي …" ve "أنا/انا …"
+  ("أنا لا أفهم" gibi sık sözler ve "ال" ile başlayanlar maskelenmez). Gerçek modelde denendi
+  (`sobi-dene.js --dil ar`, 3 senaryo): cevaplar Arapça, terimler sözlükteki gibi, ad maskelendi.
+- **Hazır açıklamalar:** `tools/sobi-eval/aciklamalar/aciklamalar_ar.json` (t3, 12 parça) hazır; YAYINLANMADI:
+  `values-ar/strings_tutorial.xml` gelince `node tools/sobi-eval/aciklamalar/yayinla_dil.mjs ar`.
+- **Bildirimler:** `sendUserNotification` `ar: { title, body }` da alıyor; karar fonksiyonları `textAr`. 13 çağrının
+  hepsinde Arapça; sayı-ad uyumu `functions/arabic.js` `arCount` (1/2/3–10/11–99/100+), kesir ve "2 × 1"
+  U+2066…U+2069 ile yalıtılı. Görevler sekmesi "المهام" varsayıldı (`bugReports.js`).
+- **E-postalar:** `mailTexts.js` `ar` (doğrulama + veli onayı), HTML `dir="rtl"` sarmal, adresler `<bdi dir="ltr">`.
+  `PARENTAL_CONSENT_VERSION` 2026-11-03.2. **Yasal sayfa:** `public/privacy-policy-ar.html` (23 çapa, RTL),
+  diğer üç sayfada "العربية" bağlantısı. DEPLOY EDİLMEDİ (hosting deploy'u gerekli).
+- **Sunucu hata mesajları:** sunucuda değişecek bir şey yok; Türkçe dışındaki dillerde metin istemcide
+  (`ServerErrors.kt`, `values-ar/strings_code.xml` → `ui_server_too_many`, `ui_x_birazdan_tekrar_dene`).
+
+## Reklam yükleme hataları (02.11.2026 — derlendi, commit + push edildi (yalnızca uygulama, deploy yok); telefonda denenmedi; GA4 "Reklamlar" filtresi güncellenmedi)
+- **Asıl sebep AdMob'da:** Sorobit (com.numigo.app) "Onaylanacak uygulamalar"da, durumu
+  "Kurulum tamamlanmadı" (son 7 günde 186 istek). Uygulama AdMob listesine eklenip mağaza
+  kaydına bağlanmadıkça reklam sunumu sınırlı → release'te ~33 kullanıcının 31'inde açılış
+  yüklemesi başarısız, 18+ yetişkinlerde bile. "Kurulumu bitir"i kullanıcı yapacak.
+  (AdMob, tarayıcıdaki Google hesabında değil, başka hesapta.)
+- `ad_load_failed` şişkindi: açılışta herkese, Pro/onaylı öğretmen/2. sandığa gelmemiş
+  kullanıcıya da önden yükleme yapılıyordu. Çocuğun gördüğü hata `ad_not_ready`
+  (28 günde geçiş 76 gösterim/8 hazır değil, ödüllü 7/5). Ödüllü yalnızca mağazadaki 2 düğmede.
+- Yapılanlar: hata kodu olay adında (`ad_load_failed_no_fill`, `_network`, `_internal`…;
+  Keşif'te `^ad_load_failed` ile filtrele — "Reklamlar" keşfinin regex'i güncellenmeli);
+  AdManager log'larındaki `\$` hatası (mesaj hiç yazılmıyordu); geçiş reklamı artık
+  yalnızca uygun kullanıcıya, AdMob başlayınca ve ders başlarken yükleniyor
+  (`GlobalValues.shouldShowAdOnReturn` setter'ı → `MainActivity.preloadInterstitialIfEligible`).
+- Başarısız yükleme arka planda yeniden deneniyor (`AdManager.LoadRetry`: 30 sn, 1, 2, 4 dk,
+  sonra durur; yalnızca no_fill/network/internal'da). Reklamı göstermez, yalnızca indirir.
+  Zincirde yalnızca ilk hata olaya yazılıyor (denemeler oranı şişirmesin).
+- AdMob'da "Google Play'e bağla" → "Eşleşen uygulama bulunamadı": uygulama Play'de herkese
+  açık değil (kapalı test). Bağlantı üretim yayınında yapılacak; o zamana kadar dolgu düşük.
+
+## Sobi sekmesi: öğrencide Sohbet yerine tam ekran Sobi (02.11.2026 — commit 1fad2be sunucu + 468fbbb uygulama + ce1fd52 çöküş düzeltmesi + 87ea2e0 "Sınıfım" bağlantısı kaldırıldı; CANLIDA: 87ea2e0 push edildi, Functions deploy'u başarılı, sobiSessions canlıda; telefona kuruldu, kullanıcı deniyor)
+- Sunucu: `sobiChat` `mode: 'genel'` (bağlam sunucuda: plan, bakiye, homeworkRuleStats özeti),
+  `prompt_genel_tr.md` ayrı önbellekli sistem bloğu (konu sınırı + uygulama rehberi), genel araç
+  listesi (+test_baslat, magaza_goster; abakuste_goster/alistirma_ver düğmeye döner), "krediler"
+  balonu hazır cevap, yeni callable `sobiSessions` (liste/aç/sil; `kind: 'genel'`). test-sobi 66 geçti.
+- Uygulama: `SobiChatFragment` (çekmece liste, tablette kalıcı), alt menüde `R.id.notification`
+  öğrencide Sobi (`MainActivity.applySobiTab`), öğretmende eski ekran. `SobiBalanceBar` ortak.
+- Push gerekince: functions/ değişti → seçici deploy sobiChat + yeni sobiSessions'ı almalı.
+- 02.11.2026 akşam: 5bc9d7c ve 68df096 push edildi (ders içi Sobi: "Abaküste göster" seçeneği,
+  gösterim kendiliğinden, analizde başka/zor örnek, alttaki "Bana göster" kalktı). d436b70 (örnek
+  zorluğu 5. kademe, 4 basamak) ve 118df2e (TTL ilkesi + genel sohbet en çok 20) CANLIDA: kullanıcı
+  onayıyla push edildi, Functions ve Firestore deploy'ları başarılı; TTL ilkeleri (sessions,
+  sobiFeedback, sobiReports) "CREATING" durumunda, Firestore birkaç saatte ACTIVE yapar. TTL kurulana
+  dek hiçbir Sobi sohbeti silinmiyordu.
+- 0b1b73b CANLIDA (kullanıcı onayıyla push, deploy başarılı): Sobi ekranında her yeni örnek 1 ücretsiz
+  hak ya da 1 kredi (`startSobiExample`, sobiChats.monthExamples). Örneğin içi ve yanlış sorunun
+  analizi ücretsiz; oturumsuz ilk öğreticide örnek ücretsiz.
+- 6050f88 CANLIDA (b57b2d6 beğeni türü + ef7f7aa sınıf kartı gizli ile birlikte): derse_git düğmesi
+  (bölüm haritası), cevap akarak açılıyor (gerçek streaming yok: guard bütün cevabı denetliyor),
+  sohbet listesinde arama.
+- fc03d56 push edildi: GA4 Sobi olayları (sobi_tab_open, sobi_message_tab/lesson, sobi_example_free/
+  credit, sobi_limit_tab/lesson, sobi_btn_<tür>), parametresiz. GA4 olay boyutu 46/50 (4 öğretmen/
+  sıra boyutu arşivlendi). TTL ilkeleri ACTIVE (02.11.2026 doğrulandı). GA4'te "Sobi kullanımı"
+  keşfi kuruldu (Etkinlik adı "sobi_" ile başlar). Sobi sekmesi işi BİTTİ.
+
+## PLAN: "Sobi'ye sor" sohbet eden yardımcı (28.10.2026 — Faz 1 canlıda (fcad0fb); Faz 2 kodu `functions/sobi/` altında, testler geçiyor, ANTHROPIC_API_KEY secret'ı kuruldu, sobiChat canlıda; Faz 4 ilk sürüm (öğreticide sohbet paneli) yazıldı ve derlendi, telefonda denenmedi)
+
+"Öğretmene sor"un video akışı çok zahmetli. Kullanıcı kararı: öğretici adımında "Anlamadım" diyen
+çocuk yapay zekâyla (Sobi) sohbet ederek anlasın. Temel kural: sohbeti dil modeli, hesabı kural
+motoru yapar — model hamleleri araç olarak (`AbacusMoves`/`RuleAnalysis` mantığının JS karşılığı)
+çağırır, cevabındaki sayılar araç sonuçlarıyla denetlenir. Sesli soru + öneri balonları, güvenlik
+katmanları, Play/KVKK beyanları, yayından önce test seti. Öğretmene sor son basamak, video yerine
+bağlam paketiyle. Ayrıntı ve fazlar: `docs/ANLAMADIM_YARDIM_PLANI.md`.
+
+## Ödev başarısı: Bu hafta kartı, başarı grafiği, kural ustalığı (26.10.2026 — CANLIDA: 21c26d3 push edildi; fonksiyon, kural deploy'u ve Başlangıç aktarımı başarılı; telefona kuruldu, kullanıcı bakmadı)
+
+- **Neden:** eski ekran yalnızca toplam oranı gösteriyordu; yüzlerce sorudan sonra kımıldamıyor, "ilerlemişim"
+  dedirtmiyordu. Kullanıcı kararları: veli ve öğretmen aynı ekran; tarihsiz eski veri "Başlangıç" noktası;
+  1 hafta / 1 ay / 3 ay / Tümü; usta = son 50 işlemde %90 (gelişiyor %70), aşama geri düşmez.
+- **Ekran** (`HomeworkRuleStatsFragment`, hesap `RuleProgress.kt` + `RuleProgressTest`): Bu hafta kartı (son 7 gün
+  vs önceki 7 gün, fark puanı, şimdiye kadarki toplam); grafik: konu seçenekleri (Hepsi = sorular, kurallar =
+  işlemler), her nokta o dönemin oranı, üstünde o ana kadarki TOPLAM (en çok 7 etiket), dokununca ayrıntı; 1 hafta
+  günlük (7 nokta), 1 ay 3 günlük (10 nokta; önce günlüktü, kullanıcı kararı 26.10.2026 — commit edilmedi, telefona
+  kuruldu 15:18), 3 ay haftalık (13), Tümü aylık; hepsine ek olarak en solda Başlangıç; dönemin oranı dönemdeki
+  bütün soruların oranı (günlük oranların ortalaması değil); 5 sorudan az dönem soluk. Ustalık satırına dokununca grafik o kurala geçer.
+- **Sunucu** (`onHomeworkProgressWritten`, işlem içinde): `homeworkRuleStats/{uid}` → `tally` (artık mutlak değer),
+  `recent` (son ~50 işlem, adım sınırında), `level` (0/1/2, yalnızca yükselir); günlük kayıt
+  `homeworkRuleStats/{uid}/months/{yyyy-mm}.days.{gg}` → `q` (soru) ve `t` (kural), Türkiye saatiyle. Hesap
+  silinince alt koleksiyon da siliniyor (`recursiveDelete`). Saf mantık `functions/homework.js`; emülatör testi 49/49.
+- **Başlangıç:** `base.q` = ilerlemelerin toplamı − günlük kayıttaki sorular
+  (`functions/scripts/backfill-homework-stats-base.js`, iş akışı `backfill-homework-stats-base.yml` push'ta bir kez
+  çalışır; deploy'dan önce ya da sonra çalışması fark etmez, çift sayım yok). Kurallarda başlangıcı istemci buluyor
+  (toplam − günlük kayıtlar).
+- **Kurallar:** `homeworkRuleStats/{uid}/months/{m}` okuma (öğrenci + sınıf öğretmeni). Günlük kayıt
+  okunamazsa ekran toplamlarla açılıyor (çökmüyor).
+- `functions/index.js`'ten yalnızca bu işin parçası commit'lendi (kısmi sahneleme); yerel veli onayı taslağı
+  hâlâ yerelde, canlıdaki veli onayı metni değişmedi.
+- **ÖRNEK VERİ (canlıda, Ted `835398VV`):** ekranı dolu görmek için son 90 günün sahte kaydı yazıldı
+  (`.github/scripts/seed-homework-progress-sample.js` + `seed-homework-progress-sample.yml`). 4728997 ile
+  `REPLACE` yapıldı: her gün 30–40 soru (90 gün, 3130 soru), %52 → %90 düz yükseliş + günlük ±2 ve 3 günlük ±3
+  zikzak ("şimşek gibi", kullanıcı isteği); her konu kendi başlangıcından yükseliyor, eski konular arada sürüyor.
+  Aynı miktarlar `tally`'ye de eklendi; bugün yazılmadı. Eklenenler `homeworkRuleStats/{uid}/seed/sample`'da.
+  **Geri almak için:** yml'de `REMOVE: '1'` yapıp push et. Ted'in ustalık aşamaları bu yüzden şişkin görünür.
+  Örnekte kuralsız toplama yalnızca 59–90 gün önce var (çocuk sonra 10'luğa geçiyor); 1 hafta / 1 ayda boş
+  görünmesi doğru. Boş dönemde artık "En son çalışma: 12 Ağu · %78 doğru" yazıyor (5dfc882).
+- Ustalık satırında usta değilse hedefe kalan: "Son 52 işlem · %86 doğru · Usta olmaya %4 kaldı"; 50 işlemden
+  azsa "Usta olmaya 12 işlem kaldı". Pencere yoksa (eski/örnek veri) "Son" yazmıyor, toplam gösteriliyor
+  (kullanıcı isteği; commit edilmedi, telefona kuruldu 15:11).
+
+## Ödev formunda "Gelişmiş": hangi rakamlar gelsin (26.10.2026 — CANLIDA: fa8197b push edildi, fonksiyon deploy'u başarılı; telefona kuruldu, kullanıcı bakmadı)
+
+- **Ne:** Konu kartının altında "Gelişmiş" satırı → alt panel; seçili her kural için o kuralla eklenebilecek
+  (çıkarmada çıkarılabilecek) rakamlar açılıp kapanıyor (5'lik 1–4, boncuk 6–9, kuralsız/10'luk 1–9;
+  `HomeworkEngine.ruleDigitOptions` sınıflandırmadan hesaplıyor). Çarpmada Ayarlar kartının altında; her
+  sayının her basamağı ayrı kart (en büyük basamakta 0 yok, tek basamaklı çarpanda 1 yok). Son açık rakam
+  kapatılamıyor; "Tümü" hepsini açıyor. Panel formun kart/düğme görünümünde (`sheet_hw_advanced.xml`).
+- **Motor:** hareket ancak kuralı seçili VE rakamı açıksa yapılıyor (`MoveRules`); eldenin kuralsız +1'i
+  serbest, 5'lik/10'luk +1'i de denetimden geçiyor. Elde yokken sınır kesin (ColumnPlan süzgeçle kuruluyor).
+  Elde/ödünçte tablo artık üst sınır; gerçek sınır formda arka planda ölçülüyor (`measureCarryMax`, tablo
+  üreticisiyle aynı yöntem, 300 soru güvenlik denemesi; PC'de ~0,1–0,5 sn). Ölçüm bitene kadar "En fazla
+  değer hesaplanıyor…" ve gönderilemiyor.
+- **Veri:** `config.ruleDigits` = `{ five: [3, 4] }`, çarpmada `mulDigits1/2` = `{ "0": [2, 5] }` (Firestore iç
+  içe dizi tutmuyor). Yalnızca kısıtlı girişler yazılıyor; eski ödevler değişmedi. İstemci okurken
+  `HomeworkEngine.normalized` ile temizliyor.
+- **Sunucu:** `functions/homework.js normalizeConfig` yeni alanları süzüp saklıyor (deploy edildi).
+  Emülatör testi geçti (`test-homework-flow.js`). Commit'e yalnızca bu işin dosyaları girdi; yerel veli
+  onayı taslağı (`index.js` vb.) girmedi, canlıdaki veli onayı metni değişmedi.
+- **Eski uygulama sürümü:** süzgeci bilmeyen öğrenci telefonu ödevi süzgeçsiz üretir (çökmez).
+- Ödev ayrıntı satırına (`HomeworkText.details`) seçim ekleniyor: "5'lik: 3, 4", "2. sayı birler: 2, 3".
+
+## Ödevler (23.10.2026 — CANLIDA: 668ff08 push edildi, kurallar deploy başarılı; fonksiyon deploy'unda spendEnergy ve onFollowerCreated güncellenemedi, temiz worktree'den elle deploy edildi; telefona 21:58 kuruldu; CİHAZDA HENÜZ DENENMEDİ)
+
+**1785e41 (23.10.2026 22:48 telefona kuruldu; push edildi, 22:54 fonksiyon + kural deploy'u başarılı, 63 fonksiyonun hepsi aynı kodda):** öğretmen ödev listesinde "12 öğrenciden
+8'i bitirdi" (`HomeworkText.withAccusative`), öğretmene bitiş bildirimi (`onHomeworkProgressWritten`
+tetikleyicisi → `doneUids` + `homework_done`, istemcide ödev başına tek bildirim), öğrencinin ödevleri ve
+sınıf arkadaşları Sorularım'a taşındı (Sorularım | Ödevlerim | Sınıfım; Görevler kartı kaldırıldı,
+TasksFragment ödevden önceki hâlinde; oynatıcı `MainActivity.finishHomeworkOverlay` ile kapanıyor).
+Kurallar: sınıftaki öğrenci `members` okuyabiliyor (politika taslağına cümle eklendi). Kullanıcı
+soruları: son tarih ve arşiv anlatıldı, henüz istenmedi; birden fazla sınıf YOK (tek sınıf önerildi).
+
+Not: veli onayı e-postası taslağı (kurs maddesi, sürüm 2026-10-23.1) yanlışlıkla 69312cd'ye girmişti, 668ff08
+ile geri alındı; taslak `functions/index.js`, `public/privacy-policy.html`, `strings_ui.xml` içinde YEREL
+ve commit edilmemiş, kullanıcı onayını bekliyor. Bu dosyalar commit edilirken dikkat. Yerelden fonksiyon
+deploy'u `functions/.env`'i (depoda yok) yüklerdi: gerekirse temiz worktree + npm ci ile.
+
+Kurs öğretmeni sınıfına ya da seçtiği öğrencilere ödev verir: işlem (toplama/çıkarma/çarpma), konu
+(kuralsız/5'lik/10'luk/boncuk, çoklu), tür (abaküslü/abaküssüz), basamak, sayı adedi, hız, soru adedi.
+Kullanıcı kararları: çıkarmada sayı adedi başlangıç HARİÇ; abaküslü 5 basamak/sonuç 99.999, abaküssüz
+sayılar ve sonuç 8 basamak; adım (10 soru) doğru sayısından bağımsız tamamlanır, doğrular kaydedilir;
+en düşük hız 0,1 sn. Sınıfa verilen ödevi sonradan katılan da görür, ayrılanın listesinden düşer.
+
+- **Motor:** `app/.../homework/HomeworkEngine.kt` (saf Kotlin). Sütun hareketleri soldan sağa
+  sınıflanıyor; elde/ödünç +1'i doğrudansa kuralın parçası, sol sütun 4/9 (çıkarmada 5/0) ise 5'lik/10'luk
+  gerekir. Elde yoksa sütun planıyla kesin üretim (kuralsız+5'lik max 9, 9'da hepsi 1; kuralsız 5;
+  5'lik 2). Elde varsa plan yönlendirmeli rastgele üretim; en fazla adet ölçülmüş tabloda
+  (`HomeworkLimitTable.kt`, yeniden üretmek için başlık yorumu). Dikkat: 5'lik+10'luk TEK BAŞINA sınırlı
+  (1 basamakta 10 sayı); kuralsız ya da boncuk eklenince 100. Testler `HomeworkEngineTest` (10).
+- **Sunucu:** `functions/homework.js`, `createHomework`/`deleteHomework` (index.js "Ödevler"), bildirim
+  türü `homework` (notifications.js), kurallar "Ödevler" bölümü (ilerleme yalnızca bir adım ileri),
+  indeksler. Testler: `firestore-rules-tests` `npm run test:homework` (31), `functions/scripts/test-homework-flow.js` (26).
+- **Uygulama:** öğretmen sınıf ekranında "Ödevler" → `TeacherHomeworkFragments.kt`, `HomeworkCreateFragment`;
+  öğrenci Görevler en üstte "Ödevlerim" (`HomeworkCard.kt`) → `HomeworkPlayerFragment` (BlindingLesson
+  kullanılmadı, abaküs bloğu fragment_abacus_practice'ten). MainActivity'de overlay izin listelerine ve
+  bildirim açılışına ekleme; `account_quiet` bildirim kanalı eklendi.
+- **Sıradaki:** push (fonksiyonlar + kurallar + indeksler deploy) → telefona kur → öğretmenle ödev ver,
+  öğrenciyle çöz. Push edilmeden ödev ekranları çalışmaz (createHomework ve kurallar canlıda yok).
+
+## Kurs sınıfları ve soru havuzu ayrımı (23.10.2026 — 1. aşama (sunucu) CANLIDA: c9dc213 push edildi, fonksiyon + kural deploy'u başarılı, eski soru işaretleme çalıştı (0 bekleyen soru vardı); okuma ayrımı KAPALI; sıradaki 2. aşama)
+
+İstek: kurs öğretmeni yalnızca kendi öğrencilerinin sorularını görsün, kursu olmayan öğretmen
+sınıfı olmayan öğrencilerin sorularını görsün; öğretmen panelinde öğrenci listesi → profil →
+ilerleme (veli paneli). Kullanıcı kararları: kurs öğretmeni genel havuzu "isterse" açar
+(`helpsGeneralPool`); cevaplanmayan sınıf sorusu sınıfta kalır (48 sa iade aynen); katılma sınıf
+kodu + kullanıcı adıyla davet (öğrenci kabul eder); sınıfı öğretmen uygulamadan açar, öğretmeni
+kursa yönetici bağlar. Model ve gerekçeler `functions/classes.js` başlığında.
+
+- **Sunucu:** `askTeacherQuestion` ve `resendTeacherQuestion` soruya `pool`/`classId`/`courseId`/
+  `classTeacherUids` yazıyor. Yeni callable'lar: `createClass`, `regenerateClassCode`,
+  `joinClassByCode`, `inviteStudentToClass`, `respondClassInvite`, `removeStudentFromClass`,
+  `leaveMyClass`. `notifyTeacherPool` artık öğretmen başına kendi havuzunu sayıyor.
+  `cleanupUserOnDelete` sınıf izlerini siliyor.
+- **Kurallar:** soru okuma/yazma havuza göre; `claimedByTeacherUid` yalnızca boşken yazılabilir
+  (iki öğretmenin aynı soruyu sahiplenme yarışı kapandı); öğretmen sınıfındaki öğrencinin
+  `lessonSuccessRateState`'ini okuyabilir. **Okuma ayrımı bir anahtarla açılıyor**
+  (`system/questionPools.enforced`, `tools/kurs/havuz_ayrimi.js`): eski öğretmen sürümü havuzu
+  filtresiz dinlediği için hemen açılsa havuzu boş kalırdı. Yazma ayrımı her durumda geçerli.
+- **Tuzak (emülatörde yakalandı):** kuralda `q.get('pool', 'general') == 'general'` sorgu
+  kanıtında gevşek; genel öğretmen filtresiz sorguyla sınıf sorularını listeleyebiliyordu.
+  Okuma tarafı katı `q.pool == 'general'`; bu yüzden `pool` alanı olmayan eski bekleyen sorular
+  `tools/kurs/eski_sorulari_isaretle.js` ile işaretlenmeli.
+- **Testler:** `npm run test:classes` (60, saf), `functions/scripts/test-class-flow.js` (55,
+  emülatör; komut dosyanın başında), `firestore-rules-tests` → `npm run test:pools` (63) +
+  `npm test` (41, regresyon). `tools/rules-test` (rozet kuralları) çalıştırılmadı, node_modules yok.
+- **Yayın sırası (önemli):** (1) push → fonksiyonlar + kurallar + indeksler deploy (ayrım kapalı,
+  eski sürümler aynen çalışır); (2) hemen `eski_sorulari_isaretle.js --yaz`; (3) versionCode 16
+  (2. ve 3. aşama: öğretmen havuz sekmeleri `pool == general` / `classTeacherUids array-contains`,
+  sınıf ve öğrenci paneli, profil ilerleme düğmesi, öğrencide kod/davet/ayrılma); (4) öğretmenler
+  16'ya geçince `havuz_ayrimi.js --ac`. Kursu öğretmene bağlamak: `tools/kurs/kurs_ogretmeni_ata.js`.
+- **2. aşama (öğretmen uygulaması) — 0aaf55e, derlendi, push edilmedi, CİHAZDA DENENMEDİ:**
+  telefonda Play'den gelen sürüm var, debug imzası uyuşmuyor (INSTALL_FAILED_UPDATE_INCOMPATIBLE);
+  kurmak için uygulamayı kaldırmak gerekiyor (kullanıcıya soruldu). Havuz alt sekmeleri
+  (`NotificationFragment.setupPoolVisibility`), `TeacherClassesFragment`, `TeacherClassDetailFragment`,
+  `CourseClasses.kt`, profilde `btnStudentProgress` → `ParentPanelFragment.newForStudent`.
+  Metinler `strings_classes.xml` (ceviri.js listesinde değil, bug report gibi). versionCode değişmedi.
+  Denemek için bir öğretmen hesabı `kurs_ogretmeni_ata.js` ile bir kursa bağlanmalı.
+  23.10.2026 17:45 debug telefona kuruldu (kullanıcı Play sürümünü kaldırdı). Canlıda `sennin-school`
+  ("Sennin School") kursu açıldı, TEK öğretmen hesabı "Mehmet Öğretmen" (746609WU) bağlandı ve
+  genel havuz kimsesiz kalmasın diye `helpsGeneralPool: true` yazıldı (kapatılırsa genel havuzu
+  hiçbir öğretmen görmez). Bağımsız öğretmen = tek kişilik kurs (aynı betikle, ad öğretmenin adı).
+- 2. aşama kullanıcı tarafından telefonda denendi: "her şey sorunsuz çalıştı" (23.10.2026).
+  Betiğe `--bagimsiz` (bağımsız öğretmen = tek kişilik kurs, ad öğretmenin adı) eklendi, 2e5fe93.
+- **3. aşama (öğrenci) — fb15b4f, versionCode 16, telefona kuruldu 18:12, push edilmedi:**
+  Ayarlar'da "Kurs" satırı (yalnızca öğrenci) → `StudentClassFragment` (kodla katılma, davetler,
+  sınıftan ayrılma). Davet bildirimi (`topic = class_invite`) → `EXTRA_OPEN_STUDENT_CLASS`.
+  Kalanlar: gizlilik politikası (kurs öğretmeni ilerlemeyi görüyor), cihazda öğrenci akışı denemesi,
+  AAB + kapalı test, öğretmenler 16'ya geçince `havuz_ayrimi.js --ac`.
+- **versionCode 17 AAB (25.10.2026 14:34):** 16 hiç AAB olmadı, 17 sınıflar + ödevler + kural kural ödev
+  başarısı + sınıf ekranı düzeltmesiyle kapalı teste gidiyor. Veli onayı taslağı (`strings_ui.xml`) derleme
+  sırasında geri alındı, AAB'de YOK; sonra yerel taslak geri kondu. Öğretmenler 17'ye geçince `havuz_ayrimi.js --ac`.
+- **versionCode 18 AAB (26.10.2026 22:41, ed3cb6e push edildi):** 17 + ödev başarısında 1 ay 3 günlük grafik ve
+  ustalık satırında "Usta olmaya … kaldı". Veli onayı taslağı yine derleme sırasında geri alındı, AAB'de YOK;
+  yerel taslak geri kondu. `app/build/outputs/bundle/release/app-release.aab` (69 MB), kapalı teste kullanıcı yükleyecek.
+- **versionCode 19 AAB (03.11.2026 18:52):** 18 + dil seçeneği (Türkçe / English / Bahasa Indonesia / العربية),
+  sağdan sola düzen, Baloo Bhaijaan 2, öğretici seslendirmesi (en/id/ar, Storage'dan). Test anahtarları kapalı;
+  imzalı (NUMIGO). `app/build/outputs/bundle/release/app-release.aab` (67 MB), kapalı teste kullanıcı yükleyecek.
+- **versionCode 20 AAB (04.11.2026 03:58, HEAD 1aad981, temiz ağaçtan):** 19 + kilitli ders/maraton 1 anahtarla,
+  bölüm kartları son ünite maratonuyla açılıyor, kilit uyarısı Snackbar, hata avcısı ödülü Sobi kredisi,
+  Arapçada abaküs küçülme düzeltmesi. Test anahtarları kapalı; imzalı (Numigo). 70 MB, kapalı teste kullanıcı
+  yükleyecek. Ekran kaydı izinleri ve servisi bilerek kaldı (öğretmen ekranı hâlâ ulaşıyor); Veri güvenliği
+  formunda fotoğraf/video/ses beyanı bu yüzden duruyor.
+- **versionCode 21 AAB (04.11.2026 04:07, HEAD 7259e43, temiz ağaçtan):** 20 + kayıttaki "Bizi nereden duydun?"
+  dile göre (sabit Türkçeydi), uygulamadaki veli onayı listesinde danışma yerine Sobi maddesi. Sabit metin
+  taraması (Kotlin, layout, values-en/in/ar eksik anahtar) başka arayüz metni bulmadı; kalanlar log, deneme
+  ekranı etiketi, Sobi modeline giden bağlam ve sayı/denklem dizeleri. İmzalı (Numigo), 70 MB, kapalı teste
+  kullanıcı yükleyecek. 20 yüklenmediyse doğrudan 21 yüklenebilir.
+- **versionCode 22 AAB (08.11.2026 23:43, HEAD 9f4a0da, temiz ağaçtan):** 21 + haftalık ilerleme kartı (somut özet,
+  otomatik açılış), Paylaş (veli kapısı, kart görseli + davet bağlantısı), Install Referrer atıfı, App Links (`/d/`),
+  "Bizi nereden duydun?"a veli/WhatsApp, ders 2 davet ödülü (sunucu zaten canlıda). Test anahtarları kapalı; imzalı
+  (Numigo), 70 MB, `app/release/sorobit-22.aab` (git'e girmiyor: .git/info/exclude). Kullanıcı önce DAHİLİ teste
+  yükleyip iki telefonla davet akışını deneyecek; aynı paket sonra kapalı teste/üretime yükseltilebilir.
+- **versionCode 23 AAB (09.11.2026 12:09, HEAD 52056b0, temiz ağaçtan):** 22 + seviye merdiveni (kırık, en çok 5
+  örnek sayı), veli kapısı yalnızca 13 yaş altında (tek basamaklı soru), kartta ödül satırı, "Arkadaşını davet et"
+  (Mağaza + Ayarlar), ödül paneli, cihaz parmak izi; dalda o ana kadar commit'lenmiş başka oturumların işleri de
+  içinde (öğretici anket paneli vb.). İmzalı (Numigo), 70 MB, `app/release/sorobit-23.aab`. Önce dahili test,
+  B telefonuyla davet denemesi, sonra kapalı teste yükseltilecek.
+  **Uçtan uca deneme BAŞARILI (09.11.2026 18:08–18:10, dahili test 23):** A = Ted (kod FF3F7V), B = başka telefon,
+  yeni hesap (uid 7Pserfq8…). `referrals/7Pserfq8…`: source weekly, cihaz parmak izi var, rewarded + referrerRewarded
+  true; iki hesapta `giftProUntil` = ödül anı + tam 7 gün, `giftProSource: referral`, `referralRewardNotice` yazıldı.
+  Kullanıcı iki uygulamada da Pro'yu gördü. Ders: B'nin hesabı dahili test listesinde olsa da dahili testin
+  KENDİ katılım bağlantısıyla (`/apps/internaltest/4701623111001835867`) katılmadan Play kapalı test sürümünü veriyordu.
+  Panel A'da (Ted) çıktı, B'de çıkmadı: B ders başında okumuştu, 30 dk'lık aralık yüzünden ödülden sonra bakmadı.
+  Düzeltme (sürüm 24'e): 2. ders bitiş kaydı yazılınca `MainActivity.requestReferralRewardCheck` 8 ve 30 sn sonra
+  aralığı sıfırlayıp yeniden okuyor; panel yine ana ekran boşalınca. Derlendi, telefonda denenmedi.
+- **Pro plan ekranı (PlanFragment, sürüm 24'e):** sol üstte kapatma tuşu (`btnPlanClose`; önceden yalnızca geri tuşu),
+  satın alma düğmesinin altında "Ya da arkadaşını davet et: ikiniz de 1 hafta Pro kazanın ›" (`tvPlanInvite`,
+  GA4 `plan_invite_tap`). `InviteFragment` artık DialogFragment: Ayarlar/Mağaza'dan sayfa, plandan tam ekran pencere
+  (`showAsDialog`; plan reklam sonrası Pro panelinden, yani ders sonu kuyruğunun ortasında da açılabiliyor).
+  Ders sonu kuyruğuna TEK dokunuş: `subscriptionFlowBlockReason` davet penceresi açıkken de bekliyor, kapanınca
+  `pumpPostLessonQueue("Invite.dismiss")`. Derlendi, telefonda denenmedi.
+- **Kötüye kullanım (09.11 gece):** cihaz izi artık ZORUNLU (`no_device`; sürüm 22 izsizdi, yalnızca 4 dahili
+  test kullanıcısında). `tools/referral-report.js` son 7 günde 5'ten fazla davet alan kişiyi listeliyor (uid · davet
+  · ödüllü · izsiz). Kalan açık: çok sayıda emülatör/telefon (yılda en çok 70 gün); görülürse Play Integrity
+  (App Check zorunluluğu). Cihaz izi topladığımız için Veri güvenliği formunda "Cihaz veya diğer kimlikler" ve
+  gizlilik politikasında madde gerekiyor (aynı gece ele alınıyor).
+- **Gizlilik + hesap silme (09.11 gece):** politika 4 dilde: 2.2'ye "cihaz özeti (arkadaş daveti)", yeni **2.5
+  Arkadaş davetleri ve paylaşım** (paylaşılan içerik, davet kodu, Install Referrer, ödül, silme), Bölüm 7 saklanan
+  verilere "davet cihaz özeti", yürürlük 10 Kasım 2026. `cleanupUserOnDelete` sonuna `referrals.deleteReferralData`:
+  `referrals/{uid}` silinir, davet ettiklerinde `referrerUid: null, referrerDeleted: true`, `referralCodes` ve
+  `referralRewardCounts` silinir, `referralDevices` KALIR. Emülatör testleri geçti. 1033c75 canlı (4 fonksiyon +
+  hosting). Veri güvenliği formu: "Cihaz veya diğer kimlikler" zaten toplanıyor/paylaşılıyor, amaçlarda "Sahtekarlığı
+  önleme, güvenlik ve kanunlara uygunluk" + "Uygulama işlevselliği" işaretli → değişiklik GEREKMEDİ (okundu, kaydedilmedi).
+  GA4: yeni keşif "Plan ekranı: satın alma mı davet mi" (plan_shown → plan_invite_tap → share_gate_pass → share_done_*);
+  satın alma tarafı mevcut "Pro Hunisi" keşfinde.
+- **Başarı anı paylaşımı (09.11 gece, sürüm 24'e; telefonda rozet ve seri paneli doğal akışta görüldü, paylaşım
+  çalıştı; 13 altı veli kapısı DENENMEDİ):** kullanıcı kararı: seri 7/30/100 gün + rozet
+  seviye atlaması; ders sonu zincirine dokunmadan "an kaydı + sonra panel". `ShareMoments` (prefs `share_moments`:
+  bekleyen an, günde en çok bir panel, seri rozeti ezer, görülenler) kaydı `MainActivity.showStreakCelebration` ve
+  `BadgeProgressFirestore.logLevelUps`'tan; `ShareMomentDialog` (Sobi + başlık kartı paylaşılan bitmap, 13 altı veli
+  kapısı, `?k=moment`) `homeIdleBlockReason` boşalınca, en çok 3 dk bekler. GA4 `share_card_shown_streak|badge`.
+  Sunucu (`SOURCES` + 'moment') ve d.html regex'i 10.11 commit + push (4 fonksiyon deploy'u başarılı; d.html hosting deploy'u 10.11 başarılı)
+  (deploy-plan: 4 fonksiyon — 3 davet + cleanupUserOnDelete, aynı modülü kullandığı için). Denemek için:
+  `adb shell run-as com.numigo.app` ile `shared_prefs/share_moments.xml`'e bekleyen an yazılıp uygulama açılabilir.
+  Rozet anı anahtarı `BADGE:<ad>:<reachedTarget>`: aynı seviyeye yeniden çıkmak (kullanıcı denemek için 49'a
+  düşürüyordu) yeni an değil, bilerek böyle. Günlük hak dolduysa an ertesi güne kalıyor ve ilk açılışta çıkıyor
+  (10.11 00:01'de dünkü Siyah Kuşak böyle geldi); kayıt cihaz başına, hesap başına değil. Kullanıcı kararı (10.11):
+  BÖYLE KALSIN (aynı güne sınırlanmadı). Paylaş düğmesi içe göçen, köşe 14 dp. Paylaş'a basınca "Hazırlanıyor…" (davet bağlantısı panel açılırken
+  önceden isteniyor). Yanında düzeltilenler (kullanıcı onaylı, 10.11 commit edildi):
+  `MissionChestRewardFragment` "Devam"dan sonra gelen rozet yükünü `MainActivity.enqueuePendingBadgePayloads`'a
+  aktarıyor (önceden kayboluyordu; rozet kutlaması telefonda görüldü). Reklam: geçiş reklamı yüklü değilse 5 dk'lık
+  aralık artık BAŞLAMIYOR (`AdManager.isInterstitialReady`, `ensureInterstitialLoading`); B hesabında telefonda
+  doğrulandı. Mağazada davet kartı Pro (SUPER) kartının hemen altına taşındı.
+- **İçe göçen düğmeler (09–10.11, kullanıcı isteği; telefona kuruldu, kullanıcı bakıyor; 10.11 commit + push):**
+  10.11: mağaza kartlarında basınca üst kenar yerinde kalıyordu — CardView `clipToOutline` ile kendini arka planın
+  çizgisine (dudak katmanı, üstten 4 dp içeride) göre kırpıyordu; `clipToOutline = false`. Plan ve Pro karşılaştırma
+  ekranlarındaki mavi `btnTryFree` (#3D4DFF, 12 dp) da eklendi.
+  `DepthButtons.style(view, yüz, köşe, dudak?, kenar?)` kodla 4 dp dudaklı seçici + `DepthPress`; rengi duruma göre
+  değişen düğmeler için (aynı renkle tekrar çağrı bir şey yapmaz; devre dışıyken dudaksız düz). Uygulananlar: ders
+  paneli `actionButton` (Başla/Devam/Tekrar dene/1 anahtarla aç; yükseklik 52→56 dp, kilitli ve rehber modunda
+  düz), davet ekranı "Davet et", mağaza "Pro'ya geç" (artık kendi tıklaması var, kartla aynı), seri dondurma
+  "4000" ve ekstra can "1 anahtar" kartları (hazır/dolu hâlde `isEnabled=false` + düz), LoginStart "Başla",
+  UserInfo "Devam Et", Register "Devam/Kayıt ol/Google", Login "Devam/Google".
+- Açık kalanlar (konuşuldu, bu işe dahil değil): her onaylı öğretmen her `users` dokümanını
+  okuyabiliyor; `teacherInvites` herkese açık; storage'da öğretmen her soru medyasını indirebiliyor.
+
+## Reels sonuçları ve yeni reklam planı (23.10.2026 — plan önerildi, kullanıcı onaylamadı)
+
+Kullanıcının verdiği ekranda kalma oranları: Reklam 6 15. sn'de %36, uygulama ekranının girdiği
+~25. sn'den sonra sert düşüş; Reklam 5 yeni tahta bitene kadar (9. sn) %40, uygulamaya geçince 15. sn'de
+%19; Reklam 3 eski hikâye bitince (6. sn) %31, 15. sn'de %10. Reklam 6 en çok izlenen ve beğenilen oldu.
+Sonuç: izleyici içerik sürdükçe kalıyor, uygulama tanıtımına geçilen anda gidiyor (üçünde de aynı).
+Önerilen plan:
+- Format "kısa ders": 0–2 sn ilk karede sonuç ya da soru; 2–22 sn ders, her 4–5 sn'de yeni bir açılış;
+  uygulama dersin içinde, aynı görsel stilde (3D abaküs telefondaki abaküse dönüşür), en çok 3–4 sn;
+  toplam ~25 sn; ayrı mor kapanış ekranı yok ya da çok kısa.
+- Seri: 1 kuralsız toplama/çıkarma (Reklam 6 var), 2 küçük arkadaş (5'lik), 3 büyük arkadaş (10'luk),
+  4 abaküsü zihne taşıma, 5 hız gösterisi. Haftada 2–3 bölüm.
+- Hikâyeli reklamlar (3, 4, 5) beklemeye; hikâye ders öncesi 3–4 sn'lik kanca olarak kullanılabilir.
+- Ücretli öne çıkarma Reklam 4 yerine Reklam 6 anneler'e (kanca + ders); ondan önce sonu kısaltılmalı.
+- Ölçüm: 3. sn'de kalma, uygulamanın girdiği saniyede kalma, sonda kalma, kaydetme/paylaşma, "bilgi"
+  yorumu sayısı.
+- Reklam 5 Facebook öne çıkarması (22.10, amaç "Video Görüntülemeleri", günlük ₺50): ₺41,72'ye 2.014
+  görüntülenme, 297 ThruPlay (~₺0,14), ama hiç beğeni/kaydetme/paylaşma yok → kullanıcı durduruyor.
+  FB'deki 1,3 B görüntülenmenin çoğu bu öne çıkarmadan geldi; Reklam 6'nın FB'deki 2'siyle kıyaslanamaz.
+  Ders: "Video Görüntülemeleri" ucuz ama ilgisiz izleyici getiriyor. Sıradaki: Instagram'daki Reklam 6
+  gönderisi Business Suite'ten (Instagram sekmesi) amaç Etkileşim, kadın 28–45, günlük ₺50, 3 gün.
+- lemo-opuscar (github.com/lemomo-ai/lemo-opuscar, MIT; kodla film stil kütüphanesi) incelendi, eklenti
+  KURULMADI. Alınacaklar (2. bölüm "küçük arkadaş" için önerildi, onay yok): telestrator'dan "önce hızlı
+  izlet, sonra geri sar + dondur + çiz" (her donmada tek bulgu, müzik de donar); whiteboard'dan terim
+  söylendiği anda belirir, en fazla 3 anlamlı renk, önceki dersin silik izi; living-screencast'ten
+  uygulamaya eşleşen geçiş (3D abaküs telefondaki aynı alıştırmaya dönüşür), J-cut (uygulama sesi
+  görüntüden önce), slogan ayrı kart değil uygulamanın içinde, tek vaade spot ışığı; DIRECTOR.md'den
+  ilk 3 sn kanca, sonun açılışı yankılaması (Reels döngüsü için son kare = ilk kare), dönemeçten önce sessizlik.
+- 23.10.2026: kullanıcı 5'lik kuralı öğretmenin işe yaramayacağını düşünüyor; yeni yön "beklenmedik
+  günlük hayat hikâyesi + kısa öğretici an" (örnek: kilosu 160 TL çerezden 650 g = 104 TL, kasada 140).
+  Senaryolar önerildi (kasiyer hatası, hesap makinesi yarışı, para üstü, taksit, 3 al 2 öde); seçim yok.
+  Uygulama dersleri: toplama/çıkarma (kuralsız, 5'lik, 10'luk), 2'ye 1 … 3'e 2 çarpma, süreli zihinden
+  toplama/çıkarma; ondalık, yüzde, bölme yok → videoda uygulamaya bunları öğretiyor dedirtme.
+- 24.10.2026: kullanıcı 1. senaryoyu (kasadaki 140 lira) seçti. Seslendirme (9 kayıt, `kasa_1-9`; ad7_*
+  Reklam 6 anneler'e ait olduğu için bu ad seçildi) ve saniye saniye sahne akışı
+  `docs/REKLAM7_KASA_SENARYO.md`'de; kullanıcı onaylamadı. Açık konular: karakter İlgisu mu,
+  çocuk sesi nereden, uygulama ekranı kodla mı çizilecek (önerilen) yoksa kayıt mı.
+  **26.10.2026: kullanıcı bu senaryoyu iptal etti** (dosya kaldı, kullanılmıyor).
+
+## Reklam 7 rekor: kanca + kuralsız toplama + 10 basamak + hayal (26.10.2026 — geçici sesle ilk çıktı, kullanıcı bakmadı)
+
+Kullanıcı isteği: Reklam 6 taslağına benzer, tasarımı biraz iyileştirilmiş; 3 basamaklı toplamadan sonra
+"aynı yöntemle 10 basamaklı sayılar, küçük boncuk hareketleri, ustalaşınca boncukları hayal et". Kanca:
+`Downloads\soroban_world_record.mp4` (kopyası `reklam7\`) 32,0–35,2 sn (son el hareketleri, cevap, ✓) +
+36,0–37,0 (sevinç) → `public/rekor_kanca.mp4` (1080×1920, 30 fps, sesi 0,6). **Uyarı kullanıcıya iletildi:**
+klip Guinness World Records çekimi ("Officially Amazing" duvarı, hakem) ve tanınabilir bir çocuk; reklamda,
+özellikle ücretli öne çıkarmada telif ve görüntü hakkı riski, Meta telif eşleşmesiyle kısıtlanabilir.
+Kullanıcı riski bilerek klibin kalmasına karar verdi (26.10.2026); kayıtları (`rekor_0-5`) gönderecek.
+**Kanca değişti (26.10.2026, kullanıcı isteği: toplama görünsün, sonda doğru cevap, en fazla 5 sn):**
+`rekor_kanca.mp4` artık 150 kare, 4 parça: 18,5–20,9 bölünmüş ekran (sayılar + havada abaküs), 32,8–33,4
+cevabı yazıyor, 34,2–35,4 cevap kutusu "556251" + ✓ (crop 360×640 @ 295,175, ~3 kat), 36,0–36,8 sevinç.
+Soru yazısı koyu kutuda y 400 (monitörün boş alt yarısı), cevap ekranından önce söner (`CEVAP` 90, ✓
+sesi `TIK` 111). ffmpeg'de her parça `fps=30` sonrası kare numarasıyla kesildi ve `setsar=1` verildi
+(ilk denemede zaman damgaları bozuktu, Remotion 21. karede "No frame found" verdi). Toplam ~43,7 sn.
+**Sesler geldi (26.10.2026 20:45):** ElevenLabs "Bunty - Funny Best Friend", indirme sırasıyla rekor_0–4
+(asılları `reklam7\rekor_0-4.mp3`) → `public/rekor_0-4.wav`, Reklam 6 işlemiyle (duraklama 0,14 sn, 1,2 kat,
+-14 LUFS; 0'a +2,9 dB, 4'e +1 dB, `alimiter level=disabled` — açıkken hedefi 1,5 dB aşıyordu). Süreler
+74/95/102/124/83 kare. **rekor_5 (çağrı) 20:56'da geldi** (+2,9 dB, 78 kare). `Son` artık `cagriSure`
+alıyor: kısa modda kart en az çağrı sesi + 12 kare sürer (önceki 73 karelik yer sesi kesiyordu).
+Kod `src/modern/Reklam7Rekor.jsx`, kompozisyon `Reklam7Rekor`, `npm run render:r7r` →
+`out/Sorobit_reklam7_rekor.mp4` (kopya `reklam7\`). Akış: kanca 126 kare → Reklam 6 dersi (r6_1–5, çıkarma
+yok; kamera 31→28,5, zemin biraz aydınlık) → abaküs 10 çubuğa uzar (B=541), 1.234.056.213 + 3.510.623.276 =
+4.744.679.489 (her çubuk kuralsız) → hayal: saydam abaküste 3.141.205.312 + 5.802.793.672 = 8.943.998.984
+→ `Son` kısa mod (yeni `kisa`/`cagriSes`: konusma5 yok, kart ~2,5 sn). Toplam 1285 kare (~42,8 sn).
+`Abakus3D.Soroban` artık `xler`/`gorunur`/`cerceve` alıyor ve geçişi çubuk başına sayıyor (Reklam 6/5
+modern yeniden render edilirse 6 kare arayla gelen olaylarda boncuklar sıçramaz, başka fark yok).
+Seslendirme: `rekor_0-5.wav` yoksa `gecici_rekor_0-5.wav` (Windows OneCore "Tolga", scratchpad'deki
+tts.ps1 ile; trim + loudnorm). Kullanıcı kaydı gelince `SURE` (kare) yeniden ölçülmeli. Cümleler:
+0 "Bu çocuk bu sayıları nasıl bu kadar hızlı topluyor?", 1 "Aynı yöntemle çok büyük sayıları bile kolayca
+toplayabilirsin.", 2 "On basamaklı bir sayıyı bile, sadece küçük boncuk hareketleriyle.", 3 "Yeterince
+ustalaştığında, boncukları hayal ederek bu işlemleri zihninde yaparsın.", 4 "İşte bu şekilde on basamaklı
+sayıları toplayabilirsin.", 5 "Ücretsiz denemek için yorumlara bilgi yazın."
+**Sonuç (27.10.2026):** Reels'te patladı, tek videoda ~150 takipçi.
+
+## Endonezce katılım videosu ve mağaza (04.11.2026 — mağaza taslağı kaydedildi, incelemeye gönderilmedi)
+
+- Kapalı test artık bütün ülkelerde (kullanıcı ekledi). Telefonda güncel sürüm var; kapalı teste kullanıcı yükleyecek.
+- Play Console varsayılan mağaza girişine **Endonezce – id** eklendi; ad/kısa/tam açıklama girildi ve "Taslak olarak
+  kaydet"lendi. Kullanıcı kontrol edip Yayın özetinden gönderecek. Görseller yerelleştirilmedi (Türkçe ekran
+  görüntüleri kullanılıyor; Endonezce ekran görüntüleri sonra). Metinler `docs/MAGAZA_METINLERI.md`'de (TR de orada).
+- Aynı gün Türkçe tam açıklamaya "Takıldığı yerde Sobi yanında" bölümü eklendi (hata analizi, Sobi'ye sor,
+  Sobi'nin testi, "bazen yanılabilir" uyarısı; öğretmene soru zaten metinde yoktu) ve taslak kaydedildi (2015/4000).
+  Ardından aynı bölümle Endonezce güncellendi, **İngilizce (en-US) ve Arapça (ar)** eklendi; dördü de taslak olarak
+  kaydedildi ve sayfa yeniden açılınca doğrulandı (TR 2015, AR 1785, ID 2263, EN 2159 karakter). İncelemeye
+  GÖNDERİLMEDİ (kullanıcı kontrol edecek). Görseller hiçbir dilde yerelleştirilmedi (Türkçe ekran görüntüleri).
+  Kullanıcı yeni uygulama simgesini (`Downloads\Sorobit_magaza_ikonu_512.png`) Türkçeye yükledi; AR/ID/EN kendi
+  simgesi olmadığı için aynı görseli kullanıyor (dört dilde aynı görsel adresi, 04.11.2026'da doğrulandı).
+  Öne çıkan görsel dil başına: `montaj\betikler\magaza_one_cikan.ps1` → `magaza\one_cikan_gorsel_{tr,en,id,ar}_1024x500.png`
+  (sağda telefon kartında Reklam 11 "örnek" kesitinden Sobi ekranı: tr `r11_oz4` kare 60 = kullanıcının seçtiği "Sonuç",
+  en/id kare 165, ar kare 105; Arapça aynalı, Baloo Bhaijaan 2). Üretildi, kullanıcı onayı bekliyor; konsola YÜKLENMEDİ.
+  Kullanıcı öne çıkan görselleri kendisi yükleyecek (tarayıcı panelinde dosya yükleme aracı yok).
+  6. telefon ekran görüntüsü ("Gelişimini her gün görün") dil başına yenilendi: `montaj\betikler\magaza_ekran_dil.ps1`
+  → `magaza\{tr,en,id,ar}\ekran_goruntusu_6.png`, veli panelindeki Kural ustalığı (Reklam 11 veli kesitleri: tr kare 60,
+  en/id 105, ar 135). Alt yazı "Veli panelinde her kuralın ustalık durumu" oldu. Diğer 5 ekran yalnızca Türkçe.
+  Yeni 7. ekran ("Eksiklerini yapay zekâ ile kapatsın" / Close the gaps with AI / Tutup kekurangan dengan AI /
+  سُدّ الثغرات بالذكاء الاصطناعي): öne çıkan görseldeki Sobi kareleri, aynı betikte. Kullanıcı yükleyecek.
+  1–5 de EN/ID/AR için üretildi (aynı betik, Reklam 11 HAM kayıtları `r11<dil>_*_1.mp4`): 4'te Kupa Yolu kaydı olmadığı
+  için Sobi testinde doğru cevap anı; EN 2 konular ızgarası değil ders yolu listesi. **ID 2 YOK**: Endonezce konular
+  ekranı kaydı yok, uygulama Endonezceyken konular ekranının kısa kaydı gerekiyor.
+  TR 5 de diğer dillerle aynı türe çevrildi: `magaza\tr\ekran_goruntusu_5.png` (r11_oz6_1, Sobi testi "Soru 5/10").
+  AR/EN dil eklemeleri + TR/ID açıklamaları "Kaydet"lendi, Yayın özetinde 4 değişiklik gönderilmeyi bekliyor.
+  Konsol notu: "Dilleri yönetin"de Uygula'ya ilk tıklama pencere daraldığı için dışarı düşüp seçimi iptal edebiliyor.
+- Ayrı Google Grubu açılmayacak (kullanıcı kararı). Sırada: telefonu Endonezceye alıp katılım videosunu çekmek;
+  sonra `katilim_grafik.ps1` / `katilim_montaj.ps1` dile göre (başlıklar, kapak, kapanış, kesim zamanları).
+
+## Reklam 11 İngilizce (03.11.2026 — ~64,9 sn, Jessica; sırada Endonezce, sonra Arapça)
+
+- `Reklam11.jsx` artık dile göre kuruluyor: `DILLER.tr/en` (yazılar, kelime anahtarları, sayı biçimi, "canlandırma"
+  / "reenactment") + `yap(dil)`. Kompozisyon `Reklam11EN`, `render:r11en` → `reklam11\Sorobit_reklam11_EN.mp4`.
+  Türkçe süreler aynı kaldı (R11 1696, R12/R13 1931 kare).
+- `SobiTanitim.jsx` de dile göre: `TANITIM.tr/en` (klipler, başlıklar, rozet "Sobi · AI", kapanış yazıları, yorum
+  kelimesi "INFO"); `ozellikSahneleri(dil)`, `ozellikBilesenleri(dil)`, `Kapanis` `dil` alıyor. `YorumKutusu`
+  (Reklam10) `yorum`/`yer` alıyor.
+- Sesler `node araclar/tr_sesler.mjs r11en --uret` (METINLER.r11en, k1–k12; hamlar `reklam11\ses_en`), kapanışta
+  "Learn the math trick!" "learn" kelimesinde gelir.
+- **İngilizce arayüz kayıtları** (ham `Videos\Sorobit_tanitim\r11en_*_1.mp4`, 1080 genişlik → crop 1080:2175 @ y 95):
+  egitim 25,2–34,0 (264 kare) · anlamadim 35,0–38,9 + 47,8–52,4 (255; "I didn't get this") · ornek 34,0–35,6 +
+  38,8–41,5 + 44,8–47,0 + 49,0–51,6 (273; "Can you give me an example?" → Step 1/2, 2/2 → Example done; bu kayıt
+  Türkçede yoktu) · veli 39,6–41,3 + 44,8–47,8 (141; kullanıcı: "Mixed friends addition" seçiminden sonrası, Rule
+  mastery) · test 62,4–63,6 + 66,6–68,0 + 73,0–75,0 + 157,9–159,2 + 160,4–162,75 + 0,8 sn son kare dondurma (272;
+  162,8'den sonra AdMob test reklamı araya giriyor).
+- Bu oturumdaki ham kayıtlar 1080 genişlikte (önceki Türkçe oz kayıtları 1072'ydi): kırpmadan önce genişliğe bak.
+- **Endonezce (03.11.2026, ~71 sn):** `Reklam11ID`, `render:r11id` → `reklam11\Sorobit_reklam11_ID.mp4`; sesler
+  `tr_sesler.mjs r11id --uret` (hamlar `reklam11\ses_id`), `DILLER.id` / `TANITIM.id`. Kayıtlar (Endonezce arayüz):
+  egitim 15,6–24,6 (270) · anlamadim 20,4–23,6 + 32,9–37,4 (231; "Aku belum paham ini") · ornek 0–3,8 + 24,0–28,4
+  (246; kayıt örneğin ortasında başladı: Langkah 5/5 → Hasil → yeni örnek Langkah 1/4) · veli 30,1–31,8 + 34,8–39,6
+  (195; "Gabungan" seçimi → Penguasaan rumus) · test iki parça (`_1` 90,8–92,2 + 95,8–97,2 + 103,0–104,6 + 111,0–113,0;
+  `_2` 9,3–10,5 + 10,7–12,2 + 14,0–16,3 + 0,6 sn dondurma; 360). screenrecord 178 sn'de parça açıyor.
+- **Arapça (04.11.2026, ~74 sn, tamamlandı):** 4 kayıt kesildi, `public/r11ar_*.mp4`: egitim 12,6–21,6 (270) · anlamadim
+  17,3–20,2 + 24,3–28,8 (222; "لم أفهم هذا") · ornek 21,0–25,2 + 29,8–33,4 (234; "أعطني مثالًا" → adımlar → "انتهى
+  المثال") · veli 25,5–31,9 (192; "القاعدة المركّبة" → "إتقان القواعد"). test 3,0–4,3 + 19,6–21,4 +
+  96,8–100,9 (3 parça) + 103,8–104,6 + 105,5–106,3 + 0,8 sn dondurma (279). `Reklam11AR`, `render:r11ar` → `reklam11\Sorobit_reklam11_AR.mp4`;
+  sesler `tr_sesler.mjs r11ar` (hamlar `reklam11\ses_ar`); `DILLER.ar` `rtl: true` → sayfada `div { unicode-bidi: plaintext }` (her paragraf yönünü ilk harfinden alır, düzen değişmez), rakamlar batı; `TANITIM.ar`.
+
+## Reklam 7 rekor Endonezce ve Arapça (03.11.2026 — ID ~52,7 sn, AR ~56,3 sn)
+
+- `Reklam7RekorEN.jsx` artık dile göre kuruluyor: `DILLER.en/id/ar` (kanca, 9 altyazı, basamak etiketleri, üst notlar,
+  imza, telefon altyazısı, olay anahtar kelimeleri: id "satu/lima/tiga", ar "واحد/خمسة/ثلاثة") ve `yap(dil)` her dil
+  için zamanları kendi `r7{dil}_zaman.json`'undan hesaplıyor. Kompozisyonlar `Reklam7RekorEN/ID/AR`,
+  `render:r7en/r7id/r7ar` → `reklam7\Sorobit_reklam7_rekor_{EN,ID,AR}.mp4`. EN süresi değişmedi (1458 kare).
+- Sesler `node araclar/r7en_sesler.mjs id|ar --uret` (aynı Liam sesi, Eleven v4, language_code id/ar); hamlar
+  `reklam7\id`, `reklam7\ar`.
+- Arapça: altyazı/kanca/kapanış kartı `dir="rtl"`; sayı, işlem ve alt alta toplama ekranları `dir="ltr"`, batı
+  rakamı. Inter'de Arapça harf yok → sistem yazı tipi. `Son.jsx` METIN'e id ve ar eklendi (ar kartı rtl).
+- Yorum kelimesi her dilde "INFO"; telefon kaydı Türkçe arayüzlü (kullanıcı böyle kalsın dedi).
+
+## Reklam 15: soroban övgüsü + "kurslar pahalı" + Sorobit (05.11.2026, ilk çıktı, ~37,3 sn, yalnızca TR, müzik yok)
+
+- `src/modern/Reklam15.jsx`, `npm run render:r15` → `reklam15\Sorobit_reklam15.mp4`. Kanca ve takip kapanışı Reklam 13
+  yeni ile aynı (s1 ve c kayıtları `reklam13\ses_yeni`'den `reklam15\ses`'e kopya); ses Jessica,
+  `tr_sesler.mjs r15 [--uret]`, `r15_zaman.json`. Müzik yok (kullanıcı isteği), efektler var.
+- Orta: P1 "Cevap: soroban. Japonya'da yüzyıllardır…" (r10_shuzan tam ekran, SOROBAN başlığı) → P2 "Ama soroban
+  kursları pahalı; her aile bu eğitimi karşılayamıyor." (₺₺₺ fiyat etiketi + PAHALI damgası) → P3 "Biz de herkes
+  öğrenebilsin diye Sorobit'i geliştirdik." (logo) → P4 "Yapay zekâ öğretmenimiz Sobi ile çocuğunuz bu tekniğe
+  ücretsiz başlayabilir." (telefonda r11_egitim, "Ücretsiz başla" rozeti) → P5 veli paneli (r11_veli) → T "Hepsi oyun
+  oynar gibi." + takip kartı.
+- Kullanıcı kararları: "ücretsiz başlayabilir" (Free plan enerjili, tam erişim Pro; "ücretsiz öğrenebilir" yanıltıcı
+  olurdu), "geliştirdik" + Jessica (kadın sesiyle "geliştirdim" kurucu sanılırdı). Kurs fiyatı rakamla verilmedi.
+- **Düzeltme (05.11.2026, ~35,8 sn):** ekranda her adımda seslendirmenin tam metni (`Akis`: cümle parçaları kendi
+  kelimelerinde değişir; kullanıcı kısaltılmış yazı istemiyor — sonraki reklamlarda da). p1/p4 kullanıcının TTS yazımıyla
+  ("Cevap, soroban. JJaponya’da…", "Yapaay zekA…"; ekranda doğru yazım), kelime anahtarı `jjaponyada`. Kullanıcının
+  kendi ElevenLabs web kaydı sesi farklı buldu → sesleri API'den biz üretiyoruz. Telefon bölümü cümle kadar
+  (`TELEFON = SES_ONCE + t + 10`, sessiz bekleme kalktı); `Son.jsx`'te "Aferin" sesi yalnızca `aferin < kart` ise.
+- **EN / ID / AR (05.11.2026):** `Reklam15.jsx` artık `DILLER` + `yap(dil)` (metin parçaları, animasyon kelimeleri `k`,
+  fiyat etiketi $$$ / Rp Rp Rp, rozetler, takip kartı); `render:r15en|r15id|r15ar` → `reklam15\Sorobit_reklam15_{EN,ID,AR}.mp4`.
+  Sesler `tr_sesler.mjs r15en|r15id|r15ar --uret` (anadil: Jessica / honeypie / Habibah; hamlar `reklam15\ses_{dil}`;
+  s1 ve c `reklam13\ses_yeni_{dil}`'den kopya). Telefondaki kayıtlar dilin kendi arayüzüyle (r11{dil}_egitim, _veli).
+  Velilere hitap ID "Anda", AR "طفلك". Arapça yazılar rtl.
+
+## Reklam 14: "En hızlı nasıl toplarız?" — abaküs sıfırdan (04.11.2026, ilk çıktı, kullanıcı bakmadı, ~52 sn)
+
+Kullanıcı isteği: 7.256.138 + 1.641.851 sorusuyla başla; abaküs sıfırdan kurulsun (her basamağa bir çubuk, yukarı
+itilen boncuk 1; 1, 2, 10, 11), 9 boncuk sığmadığı için beşlik boncuk (5, 50, 61), sonra işlem soroban mantığıyla.
+- `src/modern/Reklam14.jsx`, `npm run render:r14` → `reklam14\Sorobit_reklam14.mp4` (1562 kare). Sesler
+  `node araclar/tr_sesler.mjs r14 [--uret]` (Jessica, s1–s10 + t + c; hamlar `reklam14\ses`, `r14_zaman.json`).
+- Kendi 2D abaküsü (r5y_boncuk.png, Abakus2D ölçüleri): önce çubukta 9 tane 1'lik boncuk; s5'te üstteki 5 boncuk
+  turkuaz parlar, birleşir, kiriş gelir ve sorobana dönüşür. Sonra 7 çubuk; işlem kuralsız (elde yok), 8.897.989.
+- Kapanış Reklam 13 yeni gibi Son kisa (3B telefon + "bilgi").
+- **Düzeltme (04.11.2026, kullanıcı isteği):** s2 metni "Heer basamak…" (yeniden üretildi); s5, s7 sonrası ve s9
+  öncesi boşluklar kısaldı (PAY s5 4, s7 4, s8 0); çıktı 1,2 kat hızlı: `render:r14` sonra `hizla:r14`
+  (ffmpeg setpts + atempo) → `reklam14\Sorobit_reklam14.mp4`. `out\` içindeki 1x kalır.
+- **EN / ID / AR (04.11.2026):** `Reklam14.jsx` artık `yap(dil)` ile kuruluyor (`DILLER`: yazılar, etiketler, sayı
+  biçimi, animasyon kelimeleri `k`); kompozisyonlar `Reklam14EN/ID/AR`, `render:r14en|id|ar` + `hizla:r14en|id|ar` →
+  `reklam14\Sorobit_reklam14_{EN,ID,AR}.mp4`. Sesler `tr_sesler.mjs r14en|r14id|r14ar` (Jessica; hamlar
+  `reklam14\ses_{en,id,ar}`). Yorum kelimesi INFO; Arapça rtl (plaintext), rakamlar batı.
+
+## Reklam 12 ve 13: ara anlatım denemeleri (03.11.2026 — ~64,5 sn, ElevenLabs "Jessica")
+
+Kullanıcı: Reklam 11/10 mantığıyla (kanca → ara anlatım → Sobi tanıtımı) iki video; tanıtım Reklam 11'dekiyle aynı.
+- **Ortak tanıtım `src/modern/SobiTanitim.jsx`:** G (`Gecis`), O1–O5 (`OZELLIK`, `OZ_SAHNE`, `OZ_BILESEN`; ses hep
+  `r11s_k7–k11`), K (`Kapanis`, `ust` = videonun ilk satırı) ve `MiniAbakus`/`MOR`/`varMi`/`SES_ONCE`. Reklam 11 de
+  artık bunu kullanıyor (süre aynı kaldı, 1696 kare). Özellik kaydı değişirse tek yerden.
+- **Reklam 12 "Okulda neden öğretilmiyor?"** (`Reklam12.jsx`, `render:r12` → `reklam12\`): Japon sınıfı klibi
+  (r10_japon, perdede sayılar) "Japonya'da bu yöntem ilkokulda öğretiliyor. Peki bizde neden yok?" → "Adı soroban"
+  + Fuji/kimonolu çocuk (Pexels) → çocuk klibi → kıyas kartı (Japonya ✓ / Türkiye ✗) → anket kartı EVET/HAYIR
+  "yorumlara yaz" → G "Okulda yoksa evde öğren" → K "Okulda öğretilmeyen yöntem artık cebinde". Doğruluk: soroban
+  Japon ilkokul müfredatında (3–4. sınıf); flash anzan daha çok kurslarda — metin klibin okul dersi olduğunu söylemiyor.
+- **Reklam 13 yeni (04.11.2026, kullanıcı isteği, ~36,5 sn)** — ayrı video: `Reklam13Yeni.jsx`, `render:r13y` →
+  `reklam13\Sorobit_reklam13_yeni.mp4`; sesler `tr_sesler.mjs r13y` (yalnızca s1, t, c → `r13ys_*.wav`,
+  `r13y_zaman.json`, hamlar `reklam13\ses_yeni`), s2–s6 Reklam 13'ün kayıtları. Eski Reklam 13 (`Reklam13.jsx`,
+  ~64 sn) geri kuruldu; eski s1 kaydının üstüne yazıldığı için s1 yeniden üretildi (aynı metin, yeni çekim).
+  **Akıcılık (04.11.2026, kullanıcı isteği, ~34 sn):** kelime yolu (742'yi söyleme), "hadi deneyelim", "saymadın",
+  hayal/eller ve "yetenek değil beceri" çıktı. Artık hepsi r13y sesleri, sıra A G L M F T: A kanca → G g1 "Çünkü
+  sayıları kafasında boncuk olarak görüyor" (742 kurulur) → L d1 742 + 152 = 894 → M m1 "Sadece küçük boncuk
+  hareketleriyle çok büyük sayıları bile toplayabilirsin": abaküs 10 çubuğa genişler, 1.234.056.894 + 3.215.732.105
+  = 4.449.788.999 (kuralsız, 3 karede bir çubuk) → F f1 faydalar (zihinden hesap gelişir / hesap makinesi gerekmez /
+  çok daha hızlı düşünürsün; Reels talebi "zihinden hesabı geliştirmek") + çocuk klibi → T. Sahne arası boşluklar
+  kısaldı; G-L-M aynı abaküs, aralarında whoosh yok.
+  **Dil sürümleri (04.11.2026):** `Reklam13Yeni.jsx` artık `DILLER` tablosuyla tr/en/id/ar (`yap(dil)`, Reklam 7 EN
+  gibi); `render:r13yen|r13yid|r13yar` → `reklam13\Sorobit_reklam13_yeni_{EN,ID,AR}.mp4`. Sesler `tr_sesler.mjs
+  r13yen|r13yid|r13yar --uret` (hamlar `reklam13\ses_yeni_{en,id,ar}`, `public/r13y{dil}s_*.wav`). Kullanıcı isteği:
+  her dil kendi anadil sesiyle — hesaba eklenmiş kütüphane sesleri API'den çalışıyor: id honeypie
+  (`3AwU3nHsI4YWeBJbz6yn`, genç kadın), ar Habibah (`w4LX7bK479eHGM1k15Em`, genç kadın, Modern Standart Arapça), en
+  Jessica (premade). Hesapta ayrıca id: Selma Sita, Bee Ard; ar: Aseel, Rawi, Asmaa. Yorum kelimesi yabancı dillerde
+  "INFO". Boncuk olayları her dilin kelimesinde (`anahtar`: hundreds/ratusan/المئات…); Arapça yazılar rtl.
+  **Takip kapanışı (05.11.2026, kullanıcı isteği, 4 dil):** kapalı test / "bilgi yaz" çağrısı yerine c "Sorobit 10
+  Kasım'da yayında. İlk 100 kişiye 1 ay ücretsiz tam erişim hediye. Kaçırmamak için hemen takip et!" (kullanıcı 1 ay
+  seçti). `Son.jsx`'e isteğe bağlı `takip` eklendi (`TakipKarti`: tarih, hediye rozeti, Instagram mavisi "Takip et"
+  düğmesi "takip/follow/تابعنا" kelimesinden 8 kare sonra basılır → "Takip ediliyor ✓"; `sonSure`'nin 6. parametresi
+  `takipBas`); diğer reklamlar etkilenmez. TR ~38,9 sn. **Yapılması gereken:** ilk 100 hesaba 1 ay tam erişimin
+  yayın gününden önce uygulamada (hesap açılış sırasına göre) hazır olması — söz verildi.
+  Kanca artık üstte Reklam 10'un perdesi
+  (r10_japon.mp4'ten yalnızca perde kırpılıyor: x 252–780, y 298–690; kaynak 134. kareden, 10 sayı akar; perdeye cevap
+  konmadı) + altta r11_cocuk; ses s1 "Bu çocuk bu sayıları nasıl bu kadar hızlı topluyor?". Sobi tanıtımı (G, O1–O5,
+  K) kaldırıldı → Reklam 7'deki gibi kısa 3B telefon + "bilgi" kartı (`Son kisa`), sesler t "Sorobit uygulaması bunu
+  yapay zekâ ile oyun oynar gibi öğretir." ve c "Ücretsiz denemek için yorumlara bilgi yaz." (Jessica). Ara bölüm
+  (s2–s6) henüz aynı; kullanıcıya daha somut, "ben de yapabilirim" hissi veren bir ara bölüm önerildi.
+- **Reklam 13 "Bu dahilik değil"** (`Reklam13.jsx`, `render:r13` → `reklam13\`): çocuk klibi + "DAHİ DEĞİL" damgası →
+  "742" ve "yedi yüz kırk iki" balonu (kelime yolu) → 742 abaküste (görsel yol) → hayal + eller havada → araştırma
+  kartları Sözel ✗ / Görsel ✓, kaynak Frank & Barner (2012), J. Exp. Psychol.: General → "YETENEK" üstü çizili,
+  "BECERİ ✓" → G "Bu beceriyi yapay zekâ ile öğrenebilirsin" → K "Bu beceri artık cebinde".
+- Sesler `araclar/tr_sesler.mjs r12|r13 [--uret [s1,g]]`: /with-timestamps ile ölçülmüş kelime kareleri
+  (`r12_zaman.json`, `r13_zaman.json`), 1,15 kat, -14 LUFS; hamlar `reklam12\ses`, `reklam13\ses`.
+- `Reklam10.jsx`'ten `Kayan` da dışa aktarılıyor.
+
+## Reklam 7 rekor İngilizce (03.11.2026 — kullanıcının Instagram hesabı için, ~48,7 sn)
+
+- **Yayın kapanışı (17.11.2026, kullanıcı; ~52,4 sn):** "Comment INFO" kartı yerine Reklam 18'in Google Play sahnesi.
+  Ortak bileşen `src/modern/PlayKapanis.jsx` (`PlayKapanis`, `playKapanisSure(ySure, iSure)`; yazılar `M` ile). Reklam
+  7 EN'de `DILLER.en.play` varsa telefon sahnesi (p8) `TELEFON_SURE` kadar oynar, ardından PlayKapanis; üst köşe notu
+  ve imza o sırada gizlenir. id/ar eski "INFO" kapanışıyla aynı. Sesler `r7en_sesler.mjs` en y "It's now live on
+  Google Play." / i "Download it now from the link in my profile!" (Liam, Scribe ile doğrulandı). Render için ayrı
+  giriş `src/r7en_giris.jsx` (`--gl=angle --concurrency=1`). Eski INFO sürümü `reklam7\Sorobit_reklam7_rekor_EN_info.mp4`.
+
+- `src/modern/Reklam7RekorEN.jsx`, `npm run render:r7en` → `reklam7\Sorobit_reklam7_rekor_EN.mp4`. Görüntü Reklam 7
+  rekorla aynı; zamanlar sabit kare değil, `r7en_zaman.json`'daki ölçülmüş kelime karelerinden (ders cümleleri
+  arka arkaya 8 kare arayla; boncuklar "one"/"five", "Here's 123", "three, five, one"e oturur).
+- Sesler `araclar/r7en_sesler.mjs --uret [h0,d3]`: ElevenLabs `/with-timestamps` (karakter zamanları → kelime
+  karesi ölçüm), premade "Liam - Energetic, Social Media Creator" (`TX3LPaxmHKxFdv7VOQHJ`), Eleven v4, en; işlem baştaki
+  sessizlik kırpma + 1,08 kat + -14 LUFS (cümle içi duraklamalara dokunulmaz). Hamlar `reklam7\en\*.mp3/.json`.
+  Cümleler: h0 kanca · d1–d5 ders · r1–r4 · p8 telefon · r5 "Comment INFO to try it for free."
+- `Son.jsx` artık `dil` alıyor (`METIN.tr/en`: slogan, etiket, çağrı, yorum kutusu yazısı, telefon altyazısı);
+  `Sablon.Imza` `alt` alıyor. Türkçe videolar değişmedi (varsayılan tr).
+- Eksik: telefon bölümündeki `oyun.mp4` Türkçe arayüz ("Aferin!", "Kontrol Et"); İngilizce arayüz kaydı alınırsa
+  değiştirilmeli. Kanca Guinness klibi (telif riski, öne çıkarmada kullanma).
+
+## Reklam 11: "Makineyi yenen alet" — 1946 abaküs - hesap makinesi yarışması (02.11.2026 — tanıtıma kadar, geçici sesle)
+
+Kalıp reklam7/10: kanca (zor işlem yapan çocuk) → ara anlatım → yapay zekâ (Sobi) ile uygulama tanıtımı. Ara anlatım
+1946 Tokyo yarışması (Kojima, "The Japanese Abacus" 1954'ten doğrulandı): 12 Kasım 1946, Ernie Pyle Tiyatrosu,
+Kiyoshi Matsuzaki (posta tasarruf bürosu memuru, soroban) 4 – 1 Er Thomas Nathan Wood (MacArthur karargâhı, Japonya'nın
+en iyi elektrikli hesap makinesi operatörü seçilmiş). Turlar: toplama (50 sayı, 3–6 basamak; 1:15 – 2:00) A, çıkarma A,
+çarpma M, bölme A, karışık A.
+- `src/modern/Reklam11.jsx`, `npm run render:r11` → `reklam11\Sorobit_reklam11.mp4` (~19,6 sn, 584 kare).
+  Sahneler A kanca (k1) · B yıl sayacı 2026→1946 + TOKYO + "soroban"da soroban, "elektrikli"de makine + VS (k2) ·
+  D toplama: 6 basamaklı sayılar 2 karede bir akar (sayaç 50'ye), iki şeritte kronometre, soroban 1:15'te ("saniyede"),
+  makine 2:00'de ("dakikada") durur (k3) · E sonuç kartı "SOROBAN BİLEN İNSAN MAKİNEYİ YENDİ · 4 – 1" + "İNSAN
+  KAZANDI" damgası (k4) · F sepya kalkar, mor zeminde soroban 1946→2026, "Peki nedir bu soroban?" (k5).
+  **Kullanıcı kararları (02.11.2026):** oyuncu kartları sahnesi kesildi; turlar tek tek anlatılmıyor, yalnızca toplama
+  örneği; ekranda yalnızca 6 basamaklı sayılar (gerçekte 3–6 basamak; canlandırma); "abaküs kazandı" değil "soroban
+  bilen insan kazandı" (övgü alete değil öğrenilen beceriye; YZ tanıtımına zıtlık: "o gün insan makineyi yendi, bugün
+  makine bunu öğretiyor"). Sırada: "nedir bu soroban?" sonrası 5–8 sn mini ders (1'lik / 5'lik boncuk), sonra uygulama.
+  Bütün 1946 sahneleri kodla çizilmiş (`EskiFilm`: sepya, tane, titreme, çizik; köşede "canlandırma"); dönem fotoğrafı yok.
+- k1 (03.11.2026, kullanıcı: girişte toplama yapıldığı anlaşılmıyordu): "Bu çocuğun sayıları bu kadar hızlı toplamasını
+  sağlayan yöntem, bir zamanlar bir makineyi yendi." Yazı y 1030'da (geçici klipte monitörle yüz arası). Video ~21,1 sn.
+- **Tanıtım eklendi (03.11.2026, ~43,5 sn, 1300 kare):** G k6 "Soroban, Japonların abaküsü. Bugün bu yöntemi yapay
+  zekâ ile öğrenebilirsin." · O1–O6 k7–k12 kullanıcının verdiği altı Sobi özelliği (ne çalışacağını söyler · nerede
+  yanıldığını bulur · abaküsünde gösterir · zorluğu ayarlar · anlamadığını sor · eksiğe göre test + sandık), her biri
+  tek cümle, en az 66 kare, üstte başlık + "Sobi · yapay zekâ n/6" rozeti · K k13 kapanış kartı, yorumlara "bilgi",
+  "Kurulum linkini ben göndereyim". Mini ders kullanıcı istemedi, yok. Kayıtlar `public/r11_oz1–6.mp4` (946×1920; ham
+  1072×2400 kayıttan Reklam 9 gibi crop 1072×2175 @ y 95 → scale 946×1920, 30 fps); yoksa sahnede ne çekileceğini
+  yazan yer tutucu çıkar.
+- **Ekran kayıtları alındı (03.11.2026, kayit.ps1/bitir.ps1):** hamları `Videos\Sorobit_tanitim\r11_oz1–6_1.mp4`,
+  kesilmişleri `public\r11_oz1–6.mp4`. Kesim kare hızı SABİTLENDİKTEN sonra yapılmalı (`fps=30` önce, sonra `trim`):
+  screenrecord VFR, durgun ekranda kare yok; `-ss`+`fps` ile okunan zamanlar kayıyordu, zamanları 30 fps vekil kopyada
+  kare numarasıyla ölç. Kesimler (sn): oz1 27,2–28,6 + 39,4–41,9 + 45,4–45,95 + 59,9–62,0 (kullanıcı: "Derse git"ten
+  doğrudan "10 − 1" tahtasına, geçiş kesildi; Sobi'nin 9 sn "düşünüyor"u da çıkarıldı) · oz2 36,3–43,2 (Yanlış → "Sobi
+  ile analiz et" → "1 yerde şaştın… 409 yaptın, 408 olmalıydı", sütun parlıyor) · oz3 42,0–47,6 ("Abaküste göster",
+  boncuklar oynuyor; parlayan sütun bu kayıtta görünmüyor) · oz4 47,8–50,6 + 57,9–60,33 ("Daha zor bir örnek" → "Zorluk
+  4/5"; zorluk otomatik değil düğmeyle arttı) · oz5 19,2–20,9 + 25,2–29,6 ("Bunu anlamadım" → basit anlatım, sütun
+  parlıyor) · oz6 17,2–19,2 + 103,3–105,0 + 107,3–111,9 (Sobi'nin bugünkü testi → 10/10 → sandık ENDER → 575 altın).
+  Kare sayıları `OZ_KARE`; sahne en fazla 1,6 kat hız (`EN_HIZ`). Kayıt sahnede 760 px genişliğinde, y 420'de telefon
+  ekranı gibi (başlık Sobi balonlarını kapatmasın). Video ~52,7 sn (tanıtım ~28 sn).
+- **Tanıtım metni değişti (03.11.2026, kullanıcının metni), 5 özellik + kapanış, video ~51,9 sn:** k7 "Sobi sana bu
+  eğitimi kusursuz öğretir" → `r11_egitim.mp4` (oz5 hamının 3,9–11,0 sn'si, ders eğitimi "10 yazmak için…") · k8
+  "Anlamadığın yerde Sobi'ye sor" → oz5 · k9 "Açıklama yetmediyse örnek iste, adım adım anlatır" → `r11_ornek.mp4`
+  (HENÜZ ÇEKİLMEDİ; yokken oz4 "Daha zor bir örnek" oynar, `OZELLIK` tablosunda gelince `kare` yaz) · k10 "Her kuralda
+  ilerlemeni ve eksiğini gör" → `r11_veli.mp4` (`guncel2_veli_1.mp4` 32,6–37,6, Veli paneli → Ödev başarısı → Kural
+  ustalığı; 17.10 kaydı, 1080 genişlik) · k11 "Eksiğini görür, test hazırlar" → oz6 · k12 kapanış: "Makineyi yenen yöntem
+  artık cebinde. Sorobit ile matematiğin hilesini öğren! Denemek için yorumlara bilgi yaz." (ekranda önce iki iddialı
+  satır, "denemek"te Sorobit kartı). oz1–oz3 kayıtları artık kullanılmıyor.
+- **Yeni kanca (03.11.2026, kullanıcı):** k1 "Sence hesap makinesi mi daha hızlıdır, yoksa sıradan bir Japon çocuk
+  mu?" — "hesap"ta üstte kodla çizilmiş bugünün hesap makinesi (4.582.913 + 7.306.245 = 11.889.158 yazılır),
+  "yoksa"da altta çocuk sağdan kayar, VS. Çocuk `Downloads\japanese_kid.mp4` (kopyası `reklam11\kaynak\`) →
+  `public/r11_cocuk.mp4` (crop 720×484 @ y 598: üstteki "DID YOU KNOW" yazısı ve alttaki "@HistoryRootsX" dışarıda).
+  **Uyarı kullanıcıya iletildi:** videonun kendi yazısı "Chinese children" diyor (Çin'de yarışma), "Japon çocuk"
+  yanlış olur; klip "History Roots" hesabının paylaşımı (telif/özgünlük riski, öne çıkarmada dikkat). Eski
+  `rekor_kanca.mp4` artık kullanılmıyor.
+- **Kıyas "Japon abaküsü - hesap makinesi" (03.11.2026, kullanıcı):** k2 "…Japon abaküs tekniği bilen bir memur,
+  elektrikli hesap makinesiyle yarıştı." · k3 "Önlerine altı basamaklı elli sayı kondu…" · k4 "Günün sonunda Japon
+  abaküs tekniği bilen insan, makineyi dört bir yendi." · k5 "Peki nedir bu Japon abaküsü?" · k6 "Adı soroban. Bugün bu
+  yöntemi yapay zekâ ile öğrenebilirsin." (k5/k6'yı tutarlılık için ben değiştirdim: "soroban" adı ilk kez k6'da).
+  Ekran: "50 SAYI · 6 BASAMAK", şeritte "Japon abaküsü", kartta "ABAKÜS BİLEN İNSAN MAKİNEYİ YENDİ · ABAKÜS 4 – 1".
+  Video ~52,4 sn.
+- **ElevenLabs sesleri (03.11.2026, kullanıcı: kadın sesi):** `node araclar/r11_sesler.mjs --uret [k3,k7]` cümleleri
+  API'den doğrudan üretir (anahtar `ELEVENLABS_API_KEY` kullanıcı ortam değişkeninde; PowerShell'de
+  `[Environment]::GetEnvironmentVariable('ELEVENLABS_API_KEY','User')` ile alınıp verilmeli), ses premade "Jessica -
+  Playful, Bright, Warm" (`cgSgspJ2msm6clMCkdW9`), model "Eleven v4", `language_code: tr`. Diğer premade kadın
+  sesleri: Sarah, Laura, Alice, Matilda, Bella, Lily (kütüphane sesleri 402). k7 artık "…eğitimi eksiksiz öğretir".
+  12 cümle üretildi → `public/r11s_k*.wav` (geçicilerin önüne geçer). Video ~57,3 sn, -14,3 LUFS.
+  Düzeltmeler (03.11.2026, kullanıcı): k1 "Hesap makinesi mi daha hızlıdır? Yoksa sıradan bir Japon çocuk mu?" ·
+  k2 "…bir memur, hesap makinesiyle yarıştı." ("elektrikli" çıktı; makine sahnesi "hesap"ta gelir) · k3 "…on beş
+  saniyede topladı…" · k6 metni "adı soroban…" (küçük harfle, telaffuz için) · k10 metni "heer kuralda…" (telaffuz
+  için, kullanıcının yazımı) · 1. özellik başlığı "Sobi sana eksiksiz öğretir". Video ~56,6 sn.
+- **Eski kanca notu (geçersiz):** `public/r11_kanca.mp4` yoksa `rekor_kanca.mp4` (Guinness klibi) 1,5 kat hızla oynuyor. Kullanıcının
+  kendi çekimi gelince `public/r11_kanca.mp4` olarak koy, `KLIP_SURE`'yi kare sayısına göre güncelle.
+- Sesler: `araclar/r11_sesler.mjs` (k1–k12, SATIRLAR). Şimdilik `gecici_r11s_k*.wav` (Windows OneCore "Tolga",
+  scratchpad'deki tts.ps1, WinRT). ElevenLabs kayıtları gelince `node araclar/r11_sesler.mjs --indir` (en yeni 12 mp3) →
+  `r11s_k*.wav` geçicilerin önüne geçer, zamanlar `r11_zaman.json`'dan kendiliğinden kayar.
+- `Reklam10.jsx`'ten `Yazi` ve `Efekt` artık dışa aktarılıyor (Reklam 11 kullanıyor).
+- Sırada: tanıtım (Sobi sahnesi, gerçek soru-cevap kaydı) + kapanış kartı (yorumlara "bilgi").
+
+## Reklam 18 (yayın günü) kanca klibi (12.11.2026 — yalnızca kanca kesildi, video yok)
+
+- Business Suite verisi: tutanların hepsi ilk karede gerçek çocuğun "imkânsız" hızı; dağıtımı paylaşım sürüklüyor
+  (Reklam 16: 654 izlenme, 1 paylaşım). Kullanıcı kanca olarak Aaryan Shukla'nın Pune "Mega Mental Arithmetic"
+  sahnesini (50 × 5 basamak) istedi. Orijinal (resmî kanal wWS4FU7wSxM) üstte başlık yazılı; IBC/AppWonders/SnapSpaxx
+  logolu ya da altyazılı. Yazısız sürüm DeKosky `eAZZZbotF3Q` (720p dikey) → yt-dlp ile (winget, `--js-runtimes node`)
+  `reklam18\kaynak\aaryan_dekosky_eAZZZbotF3Q.mp4`. Zaman: 0–4 geri sayım, 4–24 sayılar (~0,5 sn'de bir), ~34,5 ✓,
+  37,5+ alkış. Kesimler `public/r18_kanca_sayilar.mp4` (4–8 sn, 1,5 kat, sessiz, 82 kare) ve `public/r18_kanca_cevap.mp4`
+  (33,8–38,3, ✓ + dönüş, sesli, 135 kare), 1080×1920. Uyarı iletildi: görüntü başkasının; isim yazılmaz, Sorobit
+  kullanıyormuş gibi gösterilmez, öne çıkarılmaz.
+- **Video (12.11.2026, ilk çıktı, ~34,8 sn, -14,2 LUFS, kullanıcı bakmadı):** `src/modern/Reklam18.jsx`, giriş
+  `src/r18_giris.jsx`, `npm run render:r18` → `reklam18\Sorobit_reklam18.mp4`. ElevenLabs kredisi BİTTİ (0 kredi,
+  quota_exceeded); `tr_sesler.mjs`'e r18 metni eklendi ama üretilmedi. Bunun yerine Jessica'nın eski kayıtları:
+  A r13ys_s1 kanca · B ses yok, orijinal alkış ("DOĞRU ✓") · C r13ys_g1 (34.123 kartı + abaküs) · D r17s_k4 (soroban,
+  Japonya) · E r17s_k5 (Sobi, r11_egitim) · F r16s_s5 (oz5 → kupa yolu → veli) · K r16s_c ("artık Google Play'de",
+  ilk 100'e 1 ay Pro, link profilde) + ekranda "Bu videoyu bir anneye gönderin". `Kayan`, `Kart`, `Rozet`, `Telefon`
+  artık Reklam17'den dışa aktarılıyor. Gömleğindeki isim kartı küçük de olsa okunuyor.
+- **Sadeleştirildi (12.11.2026, kullanıcı; ~24,4 sn, -14,0 LUFS):** A kanca aynı (r13ys_s1), sayılar uzun
+  (`public/r18_kanca_sayilar_uzun.mp4` = 4–14 sn, 1,5 kat, 202 kare) · B ✓ + alkış, ses "Cevap, soroban."
+  (`public/r18s_cevap.wav` = r15s_p1'in ilk 1,3 sn'si; kredi yok), yazı "Çünkü soroban tekniğini kullanıyor" ·
+  E Reklam 16'nın uygulama bölümü birebir (r16s_s5; oz2 → eğitim → kupa yolu → veli) · K Reklam 16 kartı,
+  son satır "👆 Profildeki linkten indirin" (r16s_c). Boncuk, soroban/Japonya ve telefon sahneleri çıktı. İlk sürüm
+  `reklam18\Sorobit_reklam18_ilk.mp4`. Kredi gelince: `tr_sesler.mjs r18 --uret g` ("Çünkü soroban tekniğini
+  kullanıyor.") → B'de `r18s_cevap.wav` yerine `r18s_g.wav`, `CEVAP_SES_SURE` = r18_zaman.json g.sure.
+- **Son akış (12.11.2026, kullanıcı "net ve açık"; ~16 sn, -15,2 LUFS):** A kanca + uzun sayılar · B ✓ + alkış, g
+  "Çünkü soroban tekniğini biliyor." · C sahte Google Play sayfası (`public/sorobit_ikon.png` = Downloads'taki mağaza
+  simgesi; "Yükle" → % → "Aç"), y "Bu tekniği öğreten uygulamamız şu anda yayında.", i "Profilimdeki linkten hemen
+  indir!" + sarı düğme. Uygulama tanıtımı ve hediye satırı çıktı. g/y/i ŞİMDİLİK Windows "Tolga" (erkek, geçici;
+  `public/gecici_r18s_*.wav`, scratchpad tts.ps1). Kredi gelince `node araclar/tr_sesler.mjs r18 --uret g,y,i`
+  yeterli: kod `r18s_*.wav` + `r18_zaman.json` varsa onları kullanıyor (`varMi`). Önceki sade sürüm
+  `reklam18\Sorobit_reklam18_sade1.mp4`.
+- **Yeni kanca (17.11.2026, kullanıcı; ~15,1 sn):** ses ve yazı "Bu sayıları bu kadar hızlı toplamasını sağlayan
+  tekniği öğrenmek ister misin?" (`tr_sesler r18 k`, Jessica, yeni anahtar; `public/r18s_k.wav`), r13ys_s1 yerine.
+  Videodaki ses Scribe ile doğrulandı. Eski kancalı sürüm `reklam18\Sorobit_reklam18_eski_kanca.mp4`.
+- **"Çünkü soroban" kaldırıldı (17.11.2026, kullanıcı; ~13,6 sn):** B sahnesi yalnızca DOĞRU ✓ + alkış, 60 kare
+  (g sesi ve yazısı yok; `G_BAS` artık kullanılmıyor). Önceki sürüm `reklam18\Sorobit_reklam18_cunku_soroban.mp4`.
+- **Jessica sesleri eklendi (12.11.2026):** kullanıcının verdiği yeni ElevenLabs anahtarıyla g/y/i üretildi
+  (`public/r18s_{g,y,i}.wav`, `r18_zaman.json`), Scribe ile doğrulandı. Video ~17,1 sn, -13,5 LUFS. Kullanıcı ortam
+  değişkenindeki eski anahtarın kredisi 0; yeni anahtar ortam değişkenine kaydedilmedi (kullanıcı kararı bekliyor).
+
+## Reklam 17: annelere "kaç saniyede yapıyor?" (09.11.2026 — ilk çıktı, ~46 sn, Jessica, kullanıcı bakmadı)
+
+Kullanıcı: Reklam 11 yapısında, görseller sürekli sağdan/soldan gelsin, hedef anneler. Yedi kanca önerildi; kullanıcı
+2'yi seçti: "Çocuğunuz kırk yedi artı otuz sekizi kaç saniyede yapıyor?" (anne kafasında kendi çocuğunu dener).
+- `src/modern/Reklam17.jsx`, `npm run render:r17` → `out/Sorobit_reklam17.mp4`. Giriş dosyası AYRI:
+  `src/r17_giris.jsx` (yalnızca Reklam17; o sırada başka oturum Reklam16'yı düzenlerken index.jsx bozuktu).
+  index.jsx'e de kayıtlı. `Kronometre`, `KafaAbakusu`, `El` Reklam 16'dan kopya (bağımlılık yok).
+- Sahneler: A+B kanca tek parça (işlem kartı soldan; parmakla sayan el + kırmızı kronometre soldan → sola çıkar,
+  Pexels kızı 5199633 sağdan, sarı kronometre "iki"de 2,0 sn, "seksen"de 85 ✓, "canlandırma" etiketi) · C "Dahi
+  değil" (soldan parmak ✗, sağdan kafadaki abaküs) · D Japonya kartı soldan, soroban sağdan, "küçük yaşta" rozeti ·
+  E telefon (r11_egitim) · F1 oz5 "Sobi'ye sor" · F2 oz2 → oz6 (test) · F3 r9_kupayolu → oz6 56–100. kare ("10/10,
+  Seviye 4 → 5") + "Seviye 4 → 5 ✓" rozeti · F4 r11_veli · K "Çok yakında Google Play'de", yorumlara "bilgi yazın",
+  ilk 100 kişiye 1 ay Pro. Her klip `Kayan` ile yandan girer, sonraki klip öncekini karşı yana iter.
+- Ses `tr_sesler.mjs r17 --uret` (Jessica, hamlar `reklam17\ses`), k1–k9 + c; Scribe ile okunuş doğrulandı.
+- Not: 47 + 38 ve aynı Pexels kızı Reklam 16'da da var; ikisi aynı hafta paylaşılırsa tekrar gibi görünebilir.
+
+## Reklam 16: annelere "aynı çocuk, aynı soru" (08.11.2026 — ~32 sn, ElevenLabs "Mine K.", yayın günü için)
+
+Kullanıcı: abaküs öğreten video istemiyor; hedef çocuklu anneler, bir vaat olmalı. "Ekran süresi" açısı daha önce
+denenip az izlenmişti. Meta Reklam Kütüphanesi taraması (SplashLearn, Kidslar, 25 Matematik, Pro Matematik, Kanguru;
+TikTok Top Ads girişsiz açılmıyor): ortak kalıp = annenin tanıdığı belirti ("2. sınıfta hâlâ heceliyor mu?") →
+"fark zekâ değil" (Kidslar: "Aynı sınıfta iki çocuk… Fark zekâ değil — hazırlık") → "daha çok çalıştırmak çözüm
+değil" → küçük günlük doz ("30 minutes a day", "25 dakikada"). Türkiye'de abaküs/zihinden aritmetik reklamı yok denecek
+kadar az. Bu ücretli reklamlar; organik Reels'te kitleyi içerik belirliyor (bkz. Reklam 7 %92 erkek).
+- `src/modern/Reklam16.jsx`, `npm run render:r16` → `reklam16\Sorobit_reklam16.mp4` (963 kare). Sahneler dosyanın başında:
+  bölünmüş ekran (aynı kız: üstte düşünceli, sayaç 48, 49… ve kronometre, C'de donar; altta gülümseyen, düşünce
+  balonunda 2D abaküs 47 → 85, "seksen"de 85 ✓, 2 sn) → "Fark zekâ değil… YÖNTEM" → "Daha çok işlem çözdürmek parmakla
+  saymayı bitirmez" → uygulama (Sobi r11_oz2, eğitim, kupa yolu, veli r11_veli; "Günde sadece 10 dakika") → kart
+  ("Google Play'de", "İlk 100 kişiye 1 ay ücretsiz", "👆 Link profilde").
+- Görüntü: Pexels Max Fischer 5199628 (düşünceli) / 5199633 (gülümseyen), aynı kız ve kara tahta (4K, `reklam16\kaynak`;
+  `public/r16_k*.mp4` 960 yükseklik 30 fps). İkisi de aynı çocuk olduğu için "iki çocuk" yerine "aynı çocuk, aynı soru"
+  (fark yöntem). Alttaki kız sola kaydırıldı (düşünce balonu yüzü kapatıyordu).
+- Ses `tr_sesler.mjs r16 --uret` (Mine K. `8WPhqbK1tiExOyeiOUT0`, Türkçe anadil kadın; hamlar `reklam16\ses`),
+  okunuş Scribe ile doğrulandı. Kapanış "Sorobit artık Google Play'de" (10.11 ve sonrası için; "bugün" denmedi).
+- Vaat sınırı: not/sonuç garantisi yok; "günde 10 dakika, oyun gibi" + veli takibi.
+- **Yayından önceki iki kapanış (09.11.2026, kullanıcı isteği; asıl "artık Google Play'de" sürümü duruyor):**
+  `Reklam16Takip` (`render:r16y`, ses cy: "çok yakında… ilk yüz kişiye bir ay ücretsiz. Kaçırmamak için hemen takip
+  et!", "Takip et" düğmesi basılır) ve `Reklam16Bilgi` (`render:r16b`, ses cb: "Erken erişim için yorumlara bilgi
+  yaz, ilk yüz kişiye bir ay ücretsiz!", yorum kutusuna "bilgi" yazılır) → `reklam16\Sorobit_reklam16_{takip,bilgi}.mp4`.
+  Ortak `YakindaKart({c})`; A–E sahneleri aynı. Öneri "bilgi": yorum hem algoritmaya güçlü sinyal hem DM'den
+  ulaşılacak kişi listesi; takip edenler yayın gününü çoğu zaman görmüyor. "bilgi" yazanlara link elle/otomatik DM.
+- **Düzeltme (09.11.2026, kullanıcı):** "1 ay ücretsiz" uygulamayı ücretli gibi gösteriyordu → üç kapanışta da (c, cy,
+  cb) ses ve yazı "İlk yüz kişiye bir ay Pro abonelik hediye". D sahnesinin ikinci yarısına görsel: yazı yukarı (top
+  250), "işlem"den itibaren üst üste düşen çalışma kâğıtları (`Kagit`, 6 karede bir, en çok 14), "parmakla"dan itibaren
+  parmaklarını tek tek açan SVG el (`El`, 7 karede bir, tik sesi) ve 48, 49… sayacı (`IslemYigini`).
+- **Ses değişti (09.11.2026, kullanıcı "bu ses kötü"):** Mine K. yerine premade Jessica (`tr_sesler.mjs`'te r16
+  `SESLER`'den çıktı, varsayılan). Mine K. hamları `reklam16\ses_mine`. Scribe ile doğrulandı (s5 ilk denemede
+  "Sorobith" → yeniden üretildi). Alternatif: Lauren `DODLEQrClDo8wCz460ld` hesapta var, denenmedi.
+- **Müzik kaldırıldı (09.11.2026, kullanıcı):** dört sürümde de `muzik` varsayılanı false.
+- **Endonezce "bilgi" sürümü (09.11.2026):** `Reklam16.jsx` artık `DILLER` + `yap(dil)` (modül düzeyinde JSX için
+  `import React`); `Reklam16BilgiID`, `render:r16bid` → `reklam16\Sorobit_reklam16_bilgi_ID.mp4` (~42 sn; Endonezce
+  cümleler uzun). Ses `tr_sesler.mjs r16id --uret` (honeypie, hamlar `reklam16\ses_id`, Scribe ile doğrulandı; s5
+  "Sorobid" → yeniden üretildi). Sayılar yazıyla, animasyon kelimeleri `DILLER.id.k` (parmak eli "kebiasaan"da).
+  Yorum kelimesi INFO, hediye "Hadiah 1 bulan Pro untuk 100 orang pertama". Uygulama kayıtları Endonezce arayüz:
+  Sobi r11id_anlamadim, eğitim r11id_egitim, veli r11id_veli; kupa yolu (r9_kupayolu) Türkçe kaldı (Endonezcesi yok).
+  Takip ve yayın günü kapanışlarının Endonezcesi yok (c / cy sesleri üretilmedi).
+- **Yeni giriş, ayrı kompozisyon (09.11.2026, kullanıcının metni; eski dört sürüm duruyor):** `src/modern/Reklam16Yeni.jsx`,
+  giriş dosyası `src/r16n_giris.jsx`, `npm run render:r16n` → `out/Sorobit_reklam16_yeni.mp4`. Akış: "basit bir işlemde
+  bile parmaklarıyla mı sayıyor?" (`Downloads\videoplayback.mp4` alt yarısı, crop 1080×1120 @ 0,800, 1,0–7,2 sn →
+  `public/r16n_parmak.mp4`; başkasının reaksiyon videosu, tanınabilir çocuk: telif/görüntü riski) → "daha çok işlem…
+  bitirmez, mesele yöntemi değiştirmek" (IslemYigini) → rekor çocuğu (`soroban_world_record` 3,0–9,0 bölünmüş ekran +
+  34,2–35,4 cevap kutusu → `r16n_rekor.mp4`; 36,0–37,8 + 39,8–42,7 → `r16n_sevinc.mp4`) → "en iyi eğitimi neden
+  vermeyesiniz, hem de ücretsizken" → eğitim / kupa yolu / Sobi (r11_oz5) → veli → "günde 10 dakika, boyut atlattırın"
+  (r11_oz6) → Reklam16Takip kartı. Ses `tr_sesler.mjs r16n` (Jessica, hamlar `reklam16\ses_yeni`, cy eski kaydın
+  kopyası), Scribe ile doğrulandı. Kullanıcının "Play Store" dediği yer "Google Play" bırakıldı.
+  **Aynı gün değişti:** giriş videosu dikeyde ortada (top 400), yazı üstte; veli (s6) ve "günde 10 dakika" (s7)
+  sahneleri çıkarıldı (Sobi'den sonra doğrudan takip kartı, ~37,6 sn); ses Reklam 7 rekorun erkek sesi "Bunty - Funny
+  Best Friend" (`7b9mYhmnp0y2qSH1FnBL`, hamlar `reklam16\ses_bunty`, cy dahil yeniden üretildi, Scribe ile doğrulandı;
+  Jessica hamları `reklam16\ses_yeni`). Kopya `reklam16\Sorobit_reklam16_yeni.mp4`.
+  **Takılma + 1,2x (09.11.2026):** rekor klibinin kaynağı 25 fps; `fps=30` her 5 karede bir kare tekrarlıyordu
+  (mpdecimate: 216'da 23 tekrar) → takılma. Rekor/sevinç artık kaynak kareleri 30 fps'e birebir (`setpts=N/(30*TB)`,
+  tam 1,2x, tekrar yok; rekor 150 + 30 kare, CEVAP 150). Genel hız 1,2x: `tr_sesler` r16n HIZ 1,38 (1,15 × 1,2,
+  yeniden üretim yok), uygulama kayıtları ve parmak klibi playbackRate 1,2, sahne araları /1,2. Süre ~31,4 sn.
+  Rekor klibinin orijinal sesi kapatıldı (`muted`; Guinness çekimi, Meta ses eşleşmesi riski), yalnızca ding kaldı.
+  Müzik videoya gömülmedi: kullanıcı Instagram'ın kendi kütüphanesinden ~%10–15 seviyede ekleyecek.
+- **Yayın kapanışı + 4 dil (17.11.2026, kullanıcı):** kapanış "takip et" yerine c "Sorobit şu anda Google Play'de
+  yayında. Profilimdeki linkten hemen indir!" (kart: ŞU ANDA YAYINDA, Google Play, sarı "👆 Profilimdeki linkten
+  indir"; hediye satırı çıktı). `Reklam16Yeni.jsx` artık `yap(dil)` + `DILLER.{tr,en,id,ar}` (yazılar, kelime
+  anahtarları `k`, uygulama kayıtları: tr eğitim/kupa yolu/oz5, diğerleri r11{dil}_egitim/_test/_anlamadim); ar `rtl`.
+  Kompozisyonlar Reklam16Yeni/EN/ID/AR (`src/r16n_giris.jsx`), `npm run render:r16n|r16nen|r16nid|r16nar` →
+  `reklam16\Sorobit_reklam16_yeni{,_EN,_ID,_AR}.mp4`. Ses dört dilde premade **Liam** (`TX3LPaxmHKxFdv7VOQHJ`,
+  Eleven v4): kullanıcının yeni ElevenLabs anahtarı ücretsiz planda, kütüphane sesleri (Bunty, honeypie, Habibah,
+  Bee Ard) API'de 402 veriyor; kullanıcı örnekleri dinleyip "hepsinin ilki" (Liam) dedi (`reklam16\ses_ornekleri`).
+  Hamlar `reklam16\ses_liam` (tr), `ses_yeni_{en,id,ar}`; tr_sesler r16n/r16nen/r16nid/r16nar. Scribe ile 24 cümle
+  doğrulandı; Arapça c'de marka "سوروبيت" "سرو بت" duyulduğu için Latin "Sorobit" yazıldı. Bunty sürümü yedek:
+  `proje\public_yedek_bunty\` (sesler, zaman, kod) ve `reklam16\Sorobit_reklam16_yeni_bunty_takip.mp4`.
+  Açık konu: s4/s5 "tamamen ücretsiz" diyor, uygulamada Pro abonelik var (kullanıcıya soruldu, cevap yok).
+
+## Reklam 10: kurucunun vizyonu (29.10.2026 — kullanıcının 12 kaydıyla render edildi, ses ElevenLabs "Hasan Yasin", ~48 sn)
+
+Kullanıcı (Başar) kendini ve vizyonunu anlatmak istedi: Japonların sorobanını Türkiye'de yaygınlaştırmak, matematiği
+sevdirmek. Fotoğrafı yok, "Merhaba ben Başar" cümlesi çıkarıldı. Giriş kelime kelime resimler (kullanıcının isteği).
+- `src/modern/Reklam10.jsx` (~45 sn), `npm run render:r10` → `reklam10\`. Sahneler A–L dosyanın başında.
+- Kaynaklar: `Downloads\japan_soroban_class.mp4` (filigran yok; perdede 3-2-1, sonra 1,4 sn'de 10 sayı: 890, 271,
+  564, 325, 876, 130, 946, 259, 470, 315 = **5.046**; kaynak kareleri `AKIS`) → r10_japon.mp4/.wav; perdeyi beyazla
+  klip olduğu gibi (kullanıcı: perdeye ek sayı/cevap koyma). Filigran kontrolü: videolarda ve resimlerde yok. `babaji_meme.mp4` 2,5–7,7 (animasyon filmi meme'i, telif riski: öne çıkarmada
+  kullanma) → r10_babaji. `珠算練習１級-2.mp4` 7,5–13,5 (yalnızca eller) → r10_shuzan. Pexels (ücretsiz, atıf
+  gerekmez): r10_fuji.jpg (30091614, Fuji + torii), r10_japon_cocuk.jpg (31366051, kimonolu çocuk; baş ekranda
+  ~432,668). `Downloads\turk_class.jpg` → r10_turk_sinif.jpg (645×360, büyük ihtimalle haber fotoğrafı, telifi
+  belirsiz; bulanık zemin + kart olarak). Eğitim ekranı ogr2b_egitim 20–25,5 → r10_egitim.mp4.
+- Cümleler `araclar/r10_sesler.mjs` (j1–j12; kullanıcının metni, öneri 1 "bizim çocuklarımız neden matematikten
+  korkuyor?" ve 4 "Bu yüzden Sorobit'i geliştirdim: …" uygulandı). Kelime kareleri r10_zaman.json; kayıtlar gelince
+  `node araclar/r10_sesler.mjs --indir` (en yeni 12 ElevenLabs mp3) ya da kendi sesi `reklam10\ses\j1–j12.mp3`.
+- **Endonezce (08.11.2026, ~56 sn, 1682 kare):** kullanıcı "Reklam 8'in Endonezcesi, sınıf görseli Endonezya sınıfı
+  olsun" dedi; Reklam 8'de sınıf yok, sorunca Reklam 10 olduğu netleşti. `Reklam10.jsx` artık `DILLER.tr/id` +
+  `yap(dil)` (yazılar, animasyon kelimeleri `k`, sınıf fotoğrafı, yorum "INFO"); Türkçe süre aynı (1448). Modül
+  düzeyinde JSX olduğu için dosyada `import React` var. `Reklam10ID`, `render:r10id` → `reklam10\Sorobit_reklam10_ID.mp4`.
+  Sesler `tr_sesler.mjs r10id --uret` (Bee Ard, Endonezce erkek; Türkçedeki Hasan Yasin'in karşılığı; hız 1,2; hamlar
+  `reklam10\ses_id`, işlenmiş `public/r10ids_j*.wav`). Okunuş Scribe ile doğrulandı. Sınıf: `public/r10_id_sinif.jpg`
+  = Unsplash `1tq5bahX8wg` (Fiqih Alfarish, Jakarta, batikli ilkokul çocukları, 1600×900, Unsplash Lisansı — Türk
+  fotoğrafının aksine telif sorunu yok). "Türk çocukları" → "Anak-anak Indonesia", damga "BISA!", test damgası
+  "VERSI UJI". H cümlesi yumuşatıldı: "Hanya saja, banyak yang belum mengenal metode ini" (Endonezya'da sempoa
+  kursları biliniyor, "hiç tanışmadılar" doğru olmazdı). Uygulama kesitleri Türkçe arayüzlü kaldı.
+- **Endonezce kapanış (08.11.2026, kullanıcı isteği):** test/INFO çağrısı yerine Reklam 15 gibi yayın + takip: j11
+  "Sorobit akan rilis tanggal 10 November." (damga "RILIS 10 NOV"), j12 "Seratus orang pertama … Follow sekarang …
+  Ayo, kita buat anak-anak cinta matematika!". `DILLER.id.takip` varsa `Kart` yerine `TakipKarti` (Son.jsx'teki
+  düğmenin kopyası: hediye rozeti "seratus"ta, Follow düğmesi "follow" + 8 karede basılır). Türkçe kapanış aynı.
+- **"Tujuan saya" sahnesi (J, kullanıcı isteği):** arkada Türkçe eğitim ekranı + konfeti yerine Sobi'nin Endonezce
+  açıklaması (`DILLER.id.amacKlip` = `r11id_anlamadim.mp4`, 231 kare sahneye sığacak kadar hızlanır); yazı baloncuğu
+  kapatmasın diye abaküsün üstünde (ust 1090).
+- Kapanış kartında "Test sürümü · Ücretsiz", yorumlara "bilgi", "Kurulum linkini ben göndereyim".
+
+## Reklam 9: oyunlaştırma (29.10.2026 — kullanıcının 7 kaydıyla render edildi, ses ElevenLabs "Lauren", ~24 sn)
+
+Neden: Reklam 7 ~137 bin izlenme ama %92 erkek; huni 688 profil → 316 takip → 207 WhatsApp dokunuşu → ~40 mesaj.
+Reklam 8 (filigranlı Douyin kancası) tutmadı, bırakıldı. Bu video dönüşüm için: oyun yanı, veliye konuşan kısa
+cümleler, yorum kelimesi "oyun" (hangi videodan geldiği ayrılsın), "test" yerine "ücretsiz erken erişim", Android.
+- `src/modern/Reklam9.jsx` (~21 sn), `npm run render:r9` / `render:r9m` (müziksiz) → `reklam9\`.
+- Kesitler öğrenci rehberinin ham kayıtlarından (1072×2400, değişken fps), 9:16 kırpıp 30 fps `public/r9_*.mp4`:
+  sandik ogr3 30,6–35,4 (y 150, sesi `r9_sandik.wav`), kupayolu ogr4 23,8–27,6 (y 120), konfeti ogr3 50,8–54,6
+  (y 150; konfeti 78. karede) [29.10 akşam: hepsi durum/gezinme çubukları hariç TAM ekran: crop 1072×2175 @ y 95 → 946×1920, kenarlar #141E23; yazı üstte (y 230), tek seferde, karartmasız, kalın kontur; yalnızca müzikli sürüm (kullanıcı isteği)], magaza1–3 ogr5 28–30,6 / 31–39,2 / 40–41,8, maraton ogr2 42,2–43,4 (y 300),
+  liderlik ogr2 45,3–49,8 (y 100), rozet ogr7 86,6–90,6. Rehber videosunda değil hamda: yazısız, tam ekran.
+- Cümleler (`araclar/r9_sesler.mjs` SATIRLAR): v1 "Matematik öğrenmenin en eğlenceli yolu." (kullanıcının kancası)
+  … v6 "Ücretsiz erken erişim için yorumlara oyun yazın.", v7 "İlk yüz kullanıcıya bir ay Sorobit Pro hediye!"
+  (kullanıcı "Android" ve "aile" kelimelerini çıkardı; karttaki etiket de "Ücretsiz erken erişim").
+  Sahne = cümle + 14 kare (sandık en az 100, mağaza en az 90), kesitler orantılı hızlanır. Kayıtlar gelince
+  `node araclar/r9_sesler.mjs --indir` (en yeni 7 ElevenLabs mp3) ve yeniden render.
+
+## Reklam 8: Reklam 7 rekorun 2D'si (28.10.2026 — kullanıcı kayıtlarıyla ikinci çıktı, petrol zemin)
+
+Kullanıcı kararı: kanca aynı mantıkta ama başka çocuk, ders 3D değil 2D (r5y_boncuk.png), sonda "Sorobit bunu oyun
+oynar gibi öğretir, şu an kapalı testte" + ilk 100 test kullanıcısına 1 ay Pro. Çağrıyı "profildeki linkten mesaj"
+yerine (önerim) yorumlara **"test"** yaptım; kullanıcı onayladı (28.10.2026). Değişecekse `Reklam8.jsx`'te `YORUM`
+ve `cagriUst`.
+- **Kanca:** `Downloads\How Mental Math Geniuses in China Calculate.mp4` (kopyası `reklam8\`), 720×1280, iç kare
+  yatay (720×400 @ y 440). `r8_islem.mp4` = 11,0–14,9 sn (330–446. kare) iç kare 1,5 kat, altta sayılar akarken
+  çocuk havada işlem yapıyor (sayı değişimi klipte 2/31/47/64/84/106. kare → tık sesi); `r8_cevap.mp4` = 25,6–26,7
+  sn (768–800) 7283 kâğıdı, 720×848 @ 0,0 (altındaki İngilizce altyazı dışarıda) + yeşil ✓ ve "Cevap: 7.283".
+  **Yakın çekim (kullanıcı isteği, 28.10.2026: "geniş ekranda gözüküyor", soldaki çocuk da görünsün):** artık
+  `r8_islem_ham.mp4` (iç kare 3 kat, 2160×1200) ekranda 1080×960 penceresinde: 0–80 sağdaki çocuk (iç karede x 350,
+  y 10, genişlik 360), 80–86 bulanık kaydırma, sonra ~1 sn soldaki çocuk (20, 70, 270). Klibin sayıları kadraj
+  dışında; aynı karelerde bizim sarı sayılarımız (`SAYILAR`) pencerenin altında. `r8_islem.mp4` artık kullanılmıyor.
+  Klipler sessiz (aslında İngilizce anlatım var). "©老白干" filigranı bilerek kaldı. Klipteki sayılar cevabın
+  yalnızca bir kısmı (aslında daha uzun dizi), dikkatli izleyici toplamın tutmadığını görebilir.
+- **Yeni cümleler ve sayılar (28.10.2026, kullanıcı: "Reklam 7 ile aynı gönderi sayılıp daha az gösterilmesin,
+  aynı hiçbir cümle olmasın"):** kanca h0 + ders d1–d5 + büyük sayılar b1–b4 Reklam 8'e özel (metinler
+  `araclar/r8_sesler.mjs` SATIRLAR'da). Sayılar: ders 241 + 153 = 394 (uygulama öğreticisindeki örnek), 10 basamak
+  2.103.415.032 + 6.251.032.411, hayal 1.320.512.603 + 7.155.371.291 (hepsi kuralsız). Zamanlar sabit değil:
+  `src/modern/r8_zaman.json` (satır süresi + kelime kareleri) → SATIR, OLAY, etiketler oradan. ElevenLabs API'si
+  Bunty'yi ücretsiz planda vermiyor (kütüphane sesi, 402), anahtarda forced_alignment/history izni yok → kullanıcı
+  10 cümleyi web'den sırayla indiriyor; `node araclar/r8_sesler.mjs --indir` İndirilenler'deki en yeni 10
+  ElevenLabs mp3'ünü sıraya göre `reklam8\ses\` içine alır, Reklam 7 işlemini uygular (`public/r8d_*.wav`) ve kelime
+  zamanını sessizlik parçası + hece oranından tahmin eder. Kullanıcı kayıtları 28.10.2026 15:34–15:36 (UTC) alındı.
+- **Ders görünümü:** `src/modern/Abakus2D.jsx`: CSS çerçeve +
+  çubuklar + kiriş (birim noktaları), boncuk görseli, "kamera" = merkez + ölçek (derste sağdaki 3 çubuk, büyük
+  sayılarda 10 çubuk 1020 px), hayalde çerçeve söner, boncuklar saydam/sarı parlar. Geçiş çubuk başına.
+- **Son:** `Son.jsx`'e `yorum`, `cagriUst`, `hediye`, `hediyeSes`/`hediyeSure`, `sis` eklendi (varsayılanlar eski
+  kart: Reklam 6/7 süreleri değişmedi, 1059/1339 kare). Telefon altyazısı "Sorobit uygulaması bunu oyun oynar gibi
+  öğretir." (kullanıcı "çocuğunuza"yı çıkardı).
+- **Sesler (28.10.2026, ElevenLabs Bunty, asılları `reklam8\r8_*.mp3`):** 3 kayıt sürelerden/hece sayısından
+  eşleştirildi (yazıya dökme aracı yok): `r8_cagri` (113 kare) "Şu anda kapalı testte. Test kullanıcısı olmak için
+  yorumlara test yazın." (cümle arası 0,3 sn bırakıldı), `r8_hediye` (72) "İlk 100 test kullanıcısına bir ay Pro
+  hediye!" (rozet bu sesle gelir), `r8_sorobit` (80) telefon cümlesi (r6_8'in yerine). Eşleşme yanlışsa dosya
+  adlarını değiştirmek yeter. Toplam 1456 kare (48,5 sn).
+- **Zemin petrol** (kullanıcı "abaküsle uyumlu olmadı" dedi): `#22535F → #133540 → #06161B`, ışık petrol, kanca
+  zemini de petrol, kapanıştaki 3D boncukların sisi `#0B2229`. Mor kalanlar: yazı rengi `R.soluk`, gönder düğmesi.
+- Kısa kayıtlarda loudnorm hedefin altında kalıyor: `r8_sorobit` -18,2, `r8_hediye` -17,3 LUFS çıktı (kullanıcı
+  "kısık" dedi) → +4 / +3 dB ve `alimiter limit=0.84 level=disabled` ile -14,3 LUFS. Yeni kayıtta ölçerek kontrol et.
+- Müzik 36 sn, reklam 48 sn → `loop`. Kapanıştaki uçan boncuklar hâlâ 3D (Son'un ortak parçası).
+- **Müziksiz sürüm:** `npm run render:r8m` (`--props=muziksiz.json`, `muzik: false`) → `Sorobit_reklam8_muziksiz.mp4`.
+  Kullanıcı Instagram'da trend şarkı kullanmak istedi; telifli şarkı videoya gömülmez, Instagram editöründen
+  düşük seviyede eklenir (işletme hesabında yalnızca lisanslı kütüphane çıkar).
+- `npm run render:r8` → `out/Sorobit_reklam8.mp4` (kopya `reklam8\`). Proje git'te değil; Son.jsx yedeği yok.
+- **Pro hediyesi:** uygulama `plan` + `planExpiresAt` okuyor (`PlanStatus.kt`), iade akışı yalnızca kendi
+  token'ına dokunuyor → 30 günlük Pro elle/betikle yazılabilir. Önerim: "14 günlük testi tamamlayan ilk 100",
+  süre yayın günü başlasın (test sırasında Pro, enerji/reklam deneyimini ölçmeyi bozar). Karar kullanıcıda.
+
+## Türkiye'deki soroban kursu sayısı taraması (23.10.2026 — bitti, commit edilmedi)
+
+Resmî sayı yok; MEB'de soroban programı ya da adında "soroban" geçen kurs hiç yok (kurslar
+"kişisel gelişim" diye kayıtlı). Google Haritalar'da 81 il + büyük şehir ilçeleri tarandı: 144 kesin
+nokta (+25 olası), 24 ilde hiç yok; Menar 45 ilde 65 nokta, Mega Hafıza 13 ilde 24. Tahmin ~200–350
+fiziksel nokta. Ayrıntı ve il tablosu `docs/SOROBAN_KURS_PAZARI.md`, liste
+`docs/pazar/soroban_merkezleri_2026-10.csv`. Adana, Antalya, Mersin ilçe bazında taranmadı.
+İletişim listesi `docs/pazar/soroban_kurs_iletisim_2026-10.csv` (Excel için `;` + BOM): 172 satır,
+161 açık, 137'sinde telefon; 0533 603 81 18 sekiz Menar şubesinde ortak (merkez hattı olabilir).
+WhatsApp tanıtımı (26.10.2026): kullanıcı otomatik gönderim yerine tıkla-gönder seçti;
+`docs/pazar/kurs_whatsapp_gonderim.html` 41 cep numarası, günde 12, mesaj kurs adıyla kişisel,
+sonda "ilgilenmezseniz bir daha yazmam". Gönderilenler sayfada işaretleniyor (yalnızca o tarayıcıda
+saklanıyor). 69 sabit hat telefonla aranacak, henüz bir şey gönderilmedi.
+
+## Mental aritmetik kursuyla kapalı test görüşmesi (22.10.2026 — konuşuluyor, anlaşma yok)
+
+Bir kurs (soğuk mesajla ulaşıldı) "ekiple paylaşıp beraber çalışabiliriz" dedi; kullanıcı öğretmen ve
+öğrenci kullanımını anlatan 2 eğitim videosu gönderecek, sonra indirme bağlantısı. Tavsiye edilenler:
+öğretmenler kurs başlamadan önce versionCode 15 kapalı testte olmalı (14'te öğretmen kaydı öğrenciye
+inmiyor, yukarıdaki bölüm); öğretmen hesapları elle onaylanmalı (onaysız öğretmen hiçbir şey yapamaz);
+önce tek sınıf / 1–2 öğretmen; geri bildirim tek kişi (kurs sorumlusu) üzerinden; veliler mevcut 3
+formu alır (kurs grubu = "kursa giden çocuk" grubu, tabloda kurs adıyla işaretlenir), öğretmenlerle
+form yerine 10–14. günde görüşme. Ticari konu (pay, indirim) test verisinden sonra.
+
+**Kurs formları ve mesajları yazıldı (22.10.2026; formlar 22:50'de oluşturuldu, Ö1
+https://forms.gle/ij9QM6BcjgzsFi8Q9, Ö2 https://forms.gle/FgjRYeBeuWqBW1A88; mesajlara yazıldı;
+Ö2 e-posta bildirimi kullanıcı elle açacak):** kullanıcı
+öğretmenler için de form istedi. `docs/KAPALI_TEST_FORMLARI.md` "Kursla test" bölümü: Form Ö1
+öğretmen görüşü (10–12. gün, 23 soru; öncelik sinyali 18. soruda: "yalnızca biri olsa"), Form Ö2
+sorun/istek bildirimi (sürekli açık, dosya yükleme yok çünkü Google girişi istiyor), 20–30 dk
+öğretmen görüşmesi soru listesi (fiyat ve iş birliği yalnızca görüşmede, kendi teklifini söylemeden).
+Betik: `KAPALI_TEST_FORMLARI_OLUSTUR.gs` içinde yeni `kursFormlariOlustur` (sözdizimi `node --check` ile
+denetlendi, Apps Script'te ÇALIŞTIRILMADI; kullanıcı mevcut projede çalıştıracak, bağlantılar
+`[Form Ö1]`/`[Form Ö2]` yerlerine yazılacak). Mesajlar `docs/KAPALI_TEST_MESAJLARI.md` 11. bölüm
+(sorumluya ricalar, öğretmene ve veliye iletilecek kurulum, 7–10. gün, Ö1, görüşme daveti).
+Veli onayı notu: 13 yaş altında kayıtta veliye 30 dk geçerli kod gidiyor, kodsuz hesap açılmıyor.
+**Form 1K (22.10.2026 — 23:28 oluşturuldu, https://forms.gle/b6AaAaUwgc3T1sMX9, 11.3 mesajına yazıldı):** kurs velileri için kısa 1. gün formu,
+`kursVeliFormuOlustur` (çalıştırıldı).
+Form 1 kurs dışı testçiler için DEĞİŞMEDİ (kullanıcı önce Form 1'i kısaltmak istedi, sonra ayrı form
+istedi). Çıkarılanlar: telefon, şehir, son bir yıl, harcama; "neden denediniz" → "beklentiniz nedir";
+abaküs geçmişi → kursa gitme süresi; dert sorusu kullanıcı onayıyla kaldı. Hata, öneri ve istek
+için tek form (Ö2); ayrı öneri formu açılmadı (kullanıcıya önerildi, 11. bölümde gerekçe).
+**Kurs öğrencilerine elle Pro (22.10.2026 — betik yazıldı, canlı Firestore'da 1 hesapta denendi):**
+`tools/kapali-test/kurs_pro_ver.js` kullanıcı adı listesine `plan=Pro`, `planExpiresAt` (sayı, ms;
+varsayılan 30.11.2026 23:59 TR) ve `questionCredits` en az 999 yazar; varsayılan kuru çalışma, `--yaz`
+ile yazar, `--geri-al` ile Free + kredi 0. Yeni sürüm/deploy gerekmez: soru düğmesi yalnızca kredi ≥ 1'e,
+plan `plan`/`planExpiresAt`'e bakıyor; sunucuda kredi üst sınırı yok. Play abonesi
+(`planProductId`/`planPurchaseTokenHash` dolu) ve öğretmen atlanır. Kullanıcının kendi hesabı
+`835398VV` ("Ted") Pro yapıldı (önce Free, kredi 5); uygulamada
+görünüp görünmediği kullanıcıda. Kullanım: `docs/KAPALI_TEST_FORMLARI.md` son bölüm.
+
+## Öğretmenin uygulama içi kaydını öğrenci indiremiyordu (22.10.2026 — düzeltildi, cihazda denenmedi; versionCode 15 AAB derlendi, kapalı teste yüklenecek)
+
+Öğretmen kaydı CreateQuestion → soru seçimi → `MainActivity.handleTeacherSendToSelectedQuestion`
+yolundan gidiyor; bu yol servise `KEY_STUDENT_UID` vermiyordu, servis de `?: senderUid` ile öğretmenin
+uid'sini `studentUid` metadata'sına yazıyordu → `storage.rules` `ownsExistingFile()` öğrenciyi reddetti.
+Galeri/sohbet içi gönderim `QuestionChatFragment.startUploadService` üzerinden doğru uid'yi veriyordu.
+Artık `NotificationFragment` seçimde `question.studentUid`'yi geçiriyor, MainActivity saklayıp servise
+iletiyor (boşsa göndermiyor). **Daha önce gönderilmiş kayıtlar hâlâ indirilemez** (metadata yükleme
+anında yazıldı); kullanıcı bunlar için metadata düzeltme script'i istemedi.
+
+## Liderlik tablosuna gerçekçi sahte oyuncular (22.10.2026 — canlı Firestore'a yazıldı)
+
+`functions/scripts/seed-lesson-leaderboard-realistic.js`: tahtaya `seed_lb_000…` kimlikli, Türk/yabancı
+karışık isimli (çoğu yalnızca ad, yarısı küçük harf — gerçek profiller öyle) oyuncular yazar; her birine
+`publicProfiles/{seed_lb_xxx}.avatarConfig` ile rastgele Personas avatarı verir (`name`/`userId` yazılmaz →
+arkadaş aramasında çıkmazlar). Varsayılan puanlar en düşük gerçek puanın altında; `ALLOW_ABOVE_REAL=1`
+bu sınırı kaldırır. Geri alma: `REMOVE=1` (girişler + avatar dokümanları). Madalyalar `seed_lb_`'ye
+verilmez ama sıralamada sayılırlar.
+
+- 22.10.2026: `part_1_lesson_p1_i04_unite_maratonu_season_9` tahtasına 40 kişi, 400–1700, bilerek
+  `ALLOW_ABOVE_REAL=1` ile. Tek gerçek oyuncu Ted (1448) 1.'likten 6.'lığa indi; sezon sonunda
+  madalya değil 6. sıra kupası alacak (kullanıcı bunu bilerek seçti). Sezon kapanınca tahta silinir;
+  `publicProfiles/seed_lb_*` dokümanları kalır (zararsız, `REMOVE=1` tahta silinmeden önce çalışmalı).
+- Script commit edildi ama push edilmedi; `functions/` push'u bütün fonksiyonları deploy ediyor.
+
+## Zorunlu güncelleme: Remote Config `min_version_code` (21.10.2026 — debug'da telefonda doğrulandı; versionCode 14 AAB derlendi, kapalı teste yüklenecek)
+
+Play Console'da kurulu eski sürümü durdurmanın yolu yok; karar uygulamanın içinde veriliyor.
+`ForceUpdateManager.kt`: Remote Config'teki `min_version_code` (sayı, varsayılan 0) bu derlemenin
+`versionCode`'undan büyükse kapatılamayan "Güncelleme gerekli" penceresi çıkar (Güncelle / Çık).
+"Güncelle" önce Play In-App Update IMMEDIATE'i dener, olmazsa mağaza sayfasını açar
+(`com.google.android.play:app-update:2.1.0` eklendi).
+
+- **Nerede bakılıyor:** `SplashActivity` (çekme animasyonla paralel başlar; animasyondan sonra en
+  fazla 1 sn, bildirimden gelen açılışta 1,5 sn bekler, sonra önbellekteki değerle karar verir) ve
+  `MainActivity.onResume` (arka plandan dönen kullanıcı için; hiç bekletmez).
+- **Çekme aralığı:** release 15 dk, debug her açılış.
+- **Kullanım:** Firebase Console → Remote Config → `min_version_code` parametresi oluştur (Number).
+  **Yalnızca o sürüm %100 yayına çıktıktan sonra** yükselt: kademeli yayında sürümü alamayan ya da
+  henüz yayınlanmamış bir versionCode yazılınca herkes kilitlenir.
+- **Yalnızca bu kodu içeren sürümden (14+) itibaren çalışır**. 14, 13'e göre yalnızca bu değişikliği içeriyor (veri/Room/kural değişikliği yok); release'de IMMEDIATE akışı Play'den kurulunca denenmeli; 13 ve öncesi uzaktan durdurulamaz.
+- Cihazda denenecek: debug'da `min_version_code`'u mevcut versionCode'un üstüne koy → splash'te
+  pencere çıkmalı; uygulama açıkken değiştirip arka plana atıp dönünce de çıkmalı. Debug Play'den
+  kurulmadığı için "Güncelle" mağaza sayfasını açar; IMMEDIATE akışı ancak Play'den (dahili
+  uygulama paylaşımı ya da kapalı test) kurulmuş sürümde görülebilir. Sonra değeri 0'a geri al.
+
+## versionCode 13: yaş grubu, abaküs bilgisi, reCAPTCHA (19.10.2026 — Alpha İNCELEMESİNE GÖNDERİLDİ)
+
+**Durum (19.10.2026 akşam):** debug sürümü telefonda e-posta kaydıyla doğrulandı (yukarıdaki yol
+haritası notu). AAB (19.10 18:28) doğrudan Kapalı test - Alpha'ya yüklendi (Dahili test atlandı) ve
+Veri güvenliği güncellemesiyle birlikte "2 değişikliği incelemeye gönder" ile gönderildi. Veri
+güvenliği: Kişisel bilgiler → "Diğer bilgiler" zaten beyanlıydı (yaş); amaçlarına Analiz ve
+Sahtekarlığı önleme/güvenlik/uyumluluk eklendi (Hesap yönetimi + Uygulama işlevleri vardı).
+Release sürümde Google girişi ve 13 yaş altı veli onayı (yeni e-posta metni) henüz DENENMEDİ.
+"Deploy Cloud Functions" (428dc8c) BAŞARILI; hosting deploy edildi ve canlıda doğrulandı.
+Not: GitHub "Build Debug APK" iş akışı uzun süredir her push'ta "Setup Android SDK" adımında
+düşüyor (13'le ilgisi yok, uygulama yerelde derleniyor); ayrıca bakılmalı.
+
+- **Analytics:** `AnalyticsLogger.setAgeGroup(birthYear)` (`age_group`: 0-3/4-6/7-8/9-10/11-14/15-17/18+,
+  UTC yılı − doğum yılı) ve `setSorobanLevel` (`soroban_level`: none/some/good). İkisi de kayıtta
+  (hesap açılmadan) ve `MainActivity.checkSubscriptionAndUpdateEnergy`'deki kullanıcı dokümanı
+  okumasında her seferinde yazılıyor; alan yoksa temizleniyor. **GA4'te ikisi için kullanıcı
+  kapsamlı özel boyut tanımlanmalı (kullanıcı yapacak).**
+- **Kayıt:** öğrenci akışına `Step.SOROBAN` eklendi (kaynaktan sonra, hedeften önce; öğretmende yok),
+  `sourceContainer`'ı kullanıyor, ön seçim yok. Huni adımı `signup_stage = soroban`. Tanışmadaki
+  "N kısa sorum var" kendiliğinden bir arttı.
+- **Saklama (`SorobanLevel.kt`):** cevap kayıt zincirinden (sunucu fonksiyonları) GEÇMİYOR; cihazda
+  bekliyor, hesap açıldıktan sonra ilk doküman okumasında `users/{uid}.sorobanLevel`'a istemci yazıyor
+  (kurallar izin veriyor, kural değişikliği yok). Alan doluysa bekleyen cevap yazılmıyor; 24 saatten
+  eski bekleyen cevap atılıyor.
+- **Eski hesaplara sorulmuyor (bilinçli):** açılışa açılır pencere eklemek ana ekranın kutlama/ders
+  dönüşü kuyruğuyla çakışma riski taşıyordu ve gerçek eski hesap yok denecek kadar az. 12 ile katılan
+  testçilerin abaküs bilgisi 1. gün formundan alınacak; Analytics'te `(not set)` görünürler.
+- **Gizlilik:** `public/privacy-policy.html` (2, 5.2; tarih 19.10.2026): doğum yılı artık "yalnızca reklam
+  için" değil, Analytics'e yaş grubu olarak da gidiyor; kayıt cevapları eklendi. Veli onayı e-postası
+  (`functions/index.js` `collected`) ve uygulamadaki liste (`fragment_parent_consent_collected_list`)
+  güncellendi, `PARENTAL_CONSENT_VERSION = '2026-10-19.1'`. Hosting elle deploy:
+  `firebase deploy --only hosting`. Functions push'la deploy olur (BÜTÜN fonksiyonlar).
+- **reCAPTCHA:** `com.google.android.recaptcha:recaptcha:18.4.0` açıkça eklendi; çözülen sürüm
+  18.1.2 → 18.4.0 (BoM 32.7.0 kaldı). Telefonda denenmeli: e-posta kodu, Google girişi, veli onayı.
+- Telefonda bakılacak: öğrenci kaydında abaküs sorusu (geçiş animasyonu, geri tuşu), kayıttan sonra
+  Firestore'da `sorobanLevel`, DebugView'da `age_group`/`soroban_level`.
+
+## Reels güvenli alanı (21.10.2026 — iki reklam düzeltildi)
+
+Reels arayüzü üstte ~200 px, altta ~400 px (1520'den aşağısı), sağda x 940+ / y 980–1700 kaplıyor;
+kontrol için kareler bu kutular kırmızı çizilerek incelendi. Değişenler: `Baslik` y 150→270, `Marka`
+48→196; Mehmetcan sahnesi kâğıt+el 0,88–0,92 ölçekte, saydam abaküs (0,6) ve fiske eli kâğıdın altına
+(1205/1210) — önceden tamamen alt alandaydı; sır sahneleri telefon `EKRAN_W` 500→420, üst 420→520, iki
+çip aynı yerde sırayla (1430, `Cip`'e `bit`); kapanış çağrısı 1140→1100, yazı 76→66 (sağ düğmeler).
+Paylaşım önerisi verildi: Salı–Perşembe 20:30–22:00, iki reklam 3–4 gün arayla; her gün aynı reklam değil.
+
+## Reklam 5 yeni: ChatGPT çizimi öğretmen ve çocuk elleri (21.10.2026 — çıktı alındı, kullanıcı bakmadı)
+
+Kullanıcı `Downloads\tebeşir_öğretmen.png` (1199×1312 saydam, tebeşir ucu 240,98) ve
+`üç_çocuk_el_hareketi.png` (1536×1024, 3 panel: hazır / işaret parmağı yukarı / parmaklar aşağı;
+pembe kazak) verdi; kopyalar `reklam5\el\`. Paneller ayrı ayrı kesilip kol merkezine (y 700'deki kol
+genişliğinin ortası) hizalandı → `public/r5y_el1-3.png` (620×890), `public/r5y_ogretmen.png`.
+`Tahta.jsx`: `Reklam5` artık `yeni` alıyor, `Reklam5Yeni = <Reklam5 yeni />` (eski görünüm değişmedi).
+Çocuk eli: her boncuk olayında sayı artarsa poz 2, azalırsa poz 3, 6 kare sonra poz 1; itişte ±14 px.
+Sıralama: abaküs → el → masa (kolun düz kesiği masanın altında, el abaküsün önünde). Kompozisyon
+`Reklam5Yeni`, `npm run render:r5y` → `reklam5\Sorobit_reklam5_yeni.mp4`. ChatGPT'ye verilen el
+istemi: tek görselde 3 panel, kol/kazak birebir aynı, yalnızca parmaklar değişsin, saydam arka plan.
+**Abaküs de çizim oldu (22.10.2026):** `Downloads\Ahşap Çerçeveli Metal Çubuklu Panel.png` (boncuksuz
+çerçeve, saydam, 1024×1536) ve `Minimalist Ahşap Abaküs Boncuğu.png` (beyaz zemin, colorkey ile
+ayıklandı); kopyalar `reklam5\abakus\`. Çerçeve çok uzundu: alt bölümün ortasından 438 px (y 760–1198)
+kesilip birleştirildi, dış sınıra kırpıldı → `public/r5y_abakus.png` (675×941); boncuk →
+`public/r5y_boncuk.png`. `Tahta.jsx` `ResimAbakus`: boncuklar kodla dizilip kayar (4 kare), sayılan
+boncuk hafif sarı parlar; sahnede left 335 / top 975, scale .45, -6°. Yeni sürümde "245!" balonu
+x 640 / y 880 (sağ çubuğu kapatmasın). **Kapanış (22.10.2026):** yalnız Reklam 5 yeni'de slogan
+"İşlemleri zihinden yapmayı öğreten uygulama", ses `Downloads\ad5_6.mp3` (00:15 kaydı: "Sorobit.
+İşlemleri zihinden yapmayı öğreten uygulama.") → `public/r5_konusma5.wav` (99 kare, slogan 23. karede;
+"Sorobit"ten sonraki boşluk kısaltıldı, 1,1 kat, −14 LUFS). İlk denemede eski "…öğretir" kaydı
+kullanılmıştı; kullanıcı aynı adla yenisini koymuş. `Devam.jsx` `Kapanis` artık `k5` / `ses` / `slogan` alıyor; varsayılanı
+eski (Reklam 3/4/5 değişmedi). Abaküs ve boncuk için öneri: boncuksuz çerçeve + tek boncuk
+ayrı istenmeli, tam önden düz çizim.
+
+## Reklam 4 yeni: ChatGPT çizimi ellerle (21.10.2026 — çıktı alındı, kullanıcı bakmadı)
+
+Karar: yarınki 200 TL öne çıkarma Reklam 4 ile (annenin derdi, 15,8 sn); Reklam 6 anneler sonra
+karşılaştırma için. Eski Reklam 4'te eller (daire + çubuk parmak) kötüydü; kod çizimi denemesi
+(`src/deneme/ElDeneme.jsx`, `reklam4\el_denemesi.png`) yerine kullanıcı ChatGPT'ye çizdirdi:
+`Downloads\yeşil_ekranlı_telefon_çocuk.png` (940×1672, ekran #00FF00) ve `anne_eli.png` (saydam).
+Kopyalar `reklam4\yeni\`. Yeşil ffmpeg colorkey + despill ile ayıklandı → `public/r4y_sahne.png`
+(1080×1921); `public/r4y_anne_eli.png`. Ekran köşeleri kenar doğrularının kesişiminden ölçüldü
+(çizim pikseli: 206,230 / 647,189 / 286,1145 / 734,1102; ~5° eğik), içerik `matrix3d` ile oturuyor
+(%1,5 taşma). Kod `Telefon.jsx` sonunda `CizimSahnesi` + `Reklam4Yeni` (eski `Reklam4`'e dokunulmadı),
+`npm run render:r4y` → `reklam4\Sorobit_reklam4_yeni.mp4`. Telefon çevrilmiyor: kamera yavaş yaklaşır,
+"matematik!"te (T.ekran) ekran oyuna geçip telefona itilir; anne eli 40–68 uzanır, 80'de çekilir.
+Yazılar altta (y 1250). Anne elinin kolu da kırmızı (çocuğunkiyle aynı renk).
+
+## Reklam 6 anneler: ücretli öne çıkarma sürümü (21.10.2026 — kanca sessiz, 2 kayıt bekleniyor)
+
+Reklam 3 eski Facebook'ta 386 görüntülenme; izleyenlerin çoğu 35–64 yaş ERKEK (hedef: 28–45 anneler),
+1. sn %46, 2. sn %19, 10. sn %4 kaldı. Teşhis: önce kitle uyumsuzluğu, sonra çocuğun ağzından açılan
+kanca. Plan (kullanıcı onayladı): "Çocuğunuz hâlâ parmakla mı sayıyor?" kancalı sürüm, 200 TL öne
+çıkarma; öneri: kadın 28–45 Türkiye, ilgi ebeveynlik/ilkokul, amaç Etkileşim ("bilgi" yorumu),
+3–4 güne yay, FB + IG Reels; bakılacaklar 3 sn izlenme, ThruPlay maliyeti, "bilgi" yorumu sayısı.
+Kod `src/modern/Reklam6Anneler.jsx` (Reklam6.jsx'e dokunulmadı; onu Sequence içinde aynen kullanır),
+kompozisyon `Reklam6Anneler`, `npm run render:r6a` → `reklam6\Sorobit_reklam6_anneler.mp4`.
+Kanca 110 kare: 0–54 soru (ilk karede tam görünür) + "123 + 351 = ?" altında 10 parmak tek tek sayılır,
+54–110 "Japon abaküsüyle 30 saniyede göstereyim." + altyazı "Parmakla saymak doğal bir aşama; sonraki
+adım abaküs." (yumuşatma). Bekleyen kayıtlar: `ad7_0` "Çocuğunuz hâlâ parmakla mı sayıyor?" →
+`r7_0.wav`, `ad7_1` "Japon abaküsüyle otuz saniyede göstereyim." → `r7_1.wav`.
+
+## Reklam 6: abaküste kuralsız toplama/çıkarma (21.10.2026 — seslendirmeli sürüm, kullanıcı bakmadı)
+
+**Sesler geldi (22:00):** `Downloads\ad6_0-7.mp3` (kopyaları `reklam6\`) → `public/r6_1-8.wav`. Kullanıcı
+metni değiştirdi: 1 "Japon abaküsünde en sağdaki çubuk…", 3 "Boncuk kirişe itilince sayılır…",
+8 "Sorobit uygulaması çocuğunuza bunu oyun oynar gibi öğretir." "Tempoyu hızlandır" isteği:
+cümle içi duraklamalar 0,14 sn'ye indirildi (`silenceremove stop_periods=-1`), 1,2 kat hız, satır arası
+4 kare. Boncuk olayları kayıtlardaki "üç/beş/bir" ve "bir/beş/iki" kelimelerine oturtuldu (duraklama
+ölçümüyle). Toplam 1059 kare (~35,3 sn). Çıktı `reklam6\Sorobit_reklam6.mp4`; `_taslak` eski sessiz sürüm.
+Tek geçişli loudnorm kısa dosyada tutmadı (r6_2 −20 LUFS): r6_2/4/5/6/7'ye kazanç + alimiter verildi,
+hepsi −13,8…−14,8 LUFS. Sonraki kayıtlarda ebur128 ile ölçmek gerek.
+Aşağıdaki cümle listesi ilk taslağınki (1, 3 ve 8 değişti).
+
+Kullanıcı isteği: Reklam 5 modern'in 3D tasarımıyla, sıfırdan 3 basamaklı kuralsız toplama ve çıkarma
+öğreten, kısa, doğrudan konuya giren bir video; sonunda uygulamaya yönlendirme. Kararlar: kullanıcının
+kendi seslendirmesi, ~35 sn, çağrı "yorumlara bilgi yazın", ilk cümle doğrudan "Abaküste en sağdaki
+çubuk birler basamağıdır…". Örnekler: 123 + 351 = 474 ve 474 − 152 = 322 (her basamakta 5'lik/10'luk
+kural gerektirmez). Kod `src/modern/Reklam6.jsx` (kompozisyon `Reklam6`, `npm run render:r6`, tek sekme),
+taslak `Videos\Sorobit_tanitim\reklam6\Sorobit_reklam6_taslak.mp4`. `Abakus3D.jsx`'teki `Soroban` artık
+`olaylar` alıyor; `Son.jsx` `telefonSure` / `metin` / `ses` alıyor (Reklam 5 modern varsayılanlarla aynı).
+Zamanlar `SATIR` (satır başları), `OLAY` (boncuk değerleri), `ADIM` (+3/−1 etiketleri), `DENKLEM`.
+Beklenen kayıtlar `Downloads\ad6_sound1-8` → `public/r6_1-8.wav` (yoksa sessiz):
+1 "Abaküste en sağdaki çubuk birler basamağıdır; yanında onlar, solda yüzler."
+2 "Alttaki her boncuk bir, üstteki boncuk beş eder."
+3 "Boncuğu kirişe itince sayılır. İşte yüz yirmi üç."
+4 "Yüz yirmi üçe üç yüz elli bir ekleyelim. Soldan başla: üç, beş, bir."
+5 "Sonuç: dört yüz yetmiş dört."
+6 "Çıkarma da aynı: yüz elli iki çıkaralım. Bir, beş, iki boncuk indir."
+7 "Sonuç: üç yüz yirmi iki. Kural yok, sadece boncukları it."
+8 "Sorobit'te çocuğunuz bunu oyun oynar gibi öğrenir."
+Kapanış sesi konusma5 (mevcut). Kayıtlar gelince `SATIR` ve olay kareleri gerçek sürelere göre kayacak.
+
+## Reklam 5 modern: kufze akışında 3D sürüm (21.10.2026 — ilk tam çıktı, kullanıcı bakmadı)
+
+Kullanıcı Instagram'daki kufze anlatım videosunu (`Desktop\instagram1.mp4`, fermuar nasıl çalışır,
+89 sn) çok profesyonel buldu; "videolarımız bu akışta olsun" dedi. Kararlar: 3D, hiç insan yok, ~30 sn
+ve yazılı açıklama bölümü, alt satır "Sorobit · Matematiği bir üst seviyeye çıkaran uygulama"
+(Instagram kullanıcı adı yok). Kufze'nin logosu/sloganı/rengi kopyalanmadı: koyu mor zemin, sarı vurgu.
+Kod: `reklam3\proje\src\modern\` — `Sablon.jsx` (Inter yazı tipi `public/inter.ttf` [OFL], zemin, sol
+üst logo + değişen küçük not, alt yazı y 1262, imza y 1440, `Etiket` hapları, `yuvarlakKutu`,
+`Kamera` + `projeksiyon`: 3D noktanın ekran konumu, etiketler bununla 3D'ye oturur), `Tahta3D.jsx`
+(açılı 3D tahta, duvarda gölge, tebeşir yazısı katman, parlayan tebeşir ucu, "İlgisu · 85" hapları),
+`Abakus3D.jsx` (LatheGeometry boncuklu 3 çubuklu soroban; "Cevabı basit…" r5_konusma4; yüzler/onlar/
+birler, üst boncuk 5 / alt 1, 523 kur, −200/−70/−8 → 245, saydamlaşıp "zihne taşınır"), `Son.jsx`
+(CSS 3D telefonda oyun.mp4, süzülen 3D boncuklu kapanış kartı, konusma5, "bilgi" yorum çağrısı),
+`Reklam5Modern.jsx` (birleştirme + müzik). Kompozisyon `Reklam5Modern` (1015 kare, 33,9 sn),
+`npm run render:r5m` (`--gl=angle`, `--concurrency=1`; 2–4 sekmede Chrome belleği yetmiyor, ~5 dk)
+→ `out/Sorobit_reklam5_modern.mp4`, kopya
+`Videos\Sorobit_tanitim\reklam5\Sorobit_reklam5_modern.mp4`. Paketler: `@remotion/three@4.0.300`,
+`three@0.169.0`, `@react-three/fiber@8.17.10`. Müzik `public/muzik_uzun.m4a` (Way To Go 7.–43. sn;
+eski 20 sn'lik `muzik.m4a` yetmiyordu), baştan sona, tahtada kısık. "Daha eşittiri…" kaydı yine yok
+(altyazı anlatıcı diliyle yazıldı, ses gerekmiyor).
+**Yazı tipi hatası düzeltildi:** Kanca.jsx'teki modül düzeyi `delayRender('Baloo 2 yükleniyor')` yazı tipi
+yüklense de hiç temizlenmiyordu; render 118 sn'yi geçince zaman aşımıyla düşüyordu (eski reklamlar
+daha kısa sürdüğü için görülmemişti). Artık `balooHazir` / `interHazir` söz verileri dışa açılıyor,
+index.jsx'teki `yaziBekle` her kompozisyonu bileşen içi delayRender ile bekletiyor.
+
+## Reklam 5 animasyonu: "İlgisu, öğretmen yazarken cevaplıyor" (21.10.2026 — sessiz taslak hazır, seslendirme bekleniyor)
+
+Aynı Remotion projesi (`reklam3\proje`), `src/Tahta.jsx`, kompozisyon `Reklam5`, `npm run render:r5` →
+`out/Sorobit_reklam5.mp4`; kopyası `Videos\Sorobit_tanitim\reklam5\Sorobit_reklam5_taslak.mp4` (20,1 sn).
+0–3,3 sn tahta (38+47, 126+259; balon "85!"/"385!" "=" konmadan, öğretmen sonra sarı tebeşirle yazar),
+3,3–8 sn kamera iner, önde İlgisu'nun pembe kolu + saydam abaküs 523→323→253→245 rakam rakam, "245!",
+öğretmen eli donar; sonra Devam.jsx'in `Sir` sahnesi (artık `ad`/`ses`/`gecis` alıyor, Reklam 3 aynı) ve
+`Kapanis`. `Ses` yardımcısı Devam.jsx'e taşındı (Telefon.jsx oradan alıyor). Zamanlar `T` nesnesinde.
+Beklenen kayıtlar (`public/`, yoksa sessiz): `r5_ilgisu1-3.wav` ("85!", "385!", "245!"),
+`r5_konusma1.wav` ("Daha eşittiri koymadı bile…"), `r5_konusma2.wav` ("İlgisu bu işlemleri nasıl bu
+kadar hızlı yapıyor?!"), `r5_konusma4.wav` ("Cevabı basit: İlgisu her gün 10 dakika Sorobit'le Japon
+abaküs tekniğini öğrendi."). Kayıtlar gelince süreleri `T`'ye göre ayarlanacak.
+
+**Sesler geldi (21.10.2026, 19:00):** `Downloads\ad5_sound1-4.mp3` (kopyaları `reklam5\`) → `r5_ilgisu1`
+"85" (1,2 kat), `r5_ilgisu2` "385" (1,25), `r5_konusma2` soru (1,2; altyazı "?!" → "?"), `r5_konusma4`
+anlatıcı (1,15; "basit"ten sonraki 0,44 sn boşluk ~0,2'ye). Kullanıcı metni değiştirdi: "Cevabı basit.
+İlgisu, Sorobit uygulaması ile Japon abaküs tekniğini öğrendi." ("10 dakika" yok). `Sir` artık
+`k` (zamanlar) ve `yazilar` (üç altyazı) alıyor; Reklam 3'ün değerleri Devam.jsx'te varsayılan
+(`K4` anahtarları `ikinci`/`ucuncu`/`sure` oldu). Modül düzeyinde JSX "React is not defined" veriyor:
+altyazılar fonksiyonla çizimde kuruluyor. "Daha eşittiri koymadı bile…" KAYDEDİLMEDİ (altyazı sessiz).
+"245" sonradan geldi: `ad5_sound5.mp3` → `r5_ilgisu3.wav` (1,25 kat, 34 kare); soru 170 → 198. kareye
+kaydı, tahta sahnesi 274 kare. Çıktı `reklam5\Sorobit_reklam5.mp4` (21,2 sn); `Sorobit_reklam5_taslak.mp4`
+eski sessiz taslak.
+
+Senaryo notları:
+
+Kullanıcının fikri: öğretmen tahtaya işlem yazar, İlgisu cevaplar, bizim karakter "nasıl bu kadar hızlı?"
+diye sorar, sonra Reklam 3'teki "Cevabı basit…" sır sahnesi + kapanış. Öneriler: cevap son rakam
+yazılınca, "=" konmadan gelsin (soru yazılmadan cevap mantıksız, veli "sahte" der); üç işlemle
+tırmanma (38+47=85, 126+259=385, 523−278=245); öğretmen sırtı dönük/yalnızca eli (yüz yok); İlgisu'nun
+parmaklarında Reklam 3'teki saydam abaküs; kimse küçük düşürülmez. Gerekli kayıtlar: İlgisu'nun üç
+cevabı (kız çocuk sesi), bizim karakterin sorusu, konusma4'ün İlgisu'lu hâli; konusma5 ve müzik aynen.
+Sıklık önerisi: günde 2 değil, haftada 3–4 farklı reels; elde hazır Reklam 4 var.
+
+## Reklam 4 animasyonu: "Yine mi telefon?" (21.10.2026 — görüntü taslağı hazır, seslendirme bekleniyor)
+
+Kullanıcıya 4 senaryo önerildi (telefon / ödev 10 dakikada / market kasası / tahtada parmak), 1.
+seçildi. Aynı Remotion projesinde (`reklam3\proje`), `src/Telefon.jsx`, kompozisyon `Reklam4`,
+`npm run render:r4` → `out/Sorobit_reklam4.mp4`; taslak kopyası `reklam4\Sorobit_reklam4_taslak.mp4`
+(15,4 sn). Velinin gözünden koltuk: çocuğun elinde telefon (Kupa Yolu ekranı `public/tel_kupa.png`,
+kupa_toplama_1 0,3 sn), kenarda kapalı "Matematik ödev defteri", veli eli uzanır → çocuk telefonu
+çevirir, ekranda abaküs (oyun.mp4) → mor sır sahnesi (klip kaldığı yerden, "Aferin") → Reklam 3'ün
+kapanış kartı ve konusma5 aynen. Müzik "…matematik!"le girer. Bekleyen kayıtlar (dosya gelince
+`public/r4_konusma1-3.wav` olarak işlenecek; `Ses` bileşeni dosya yoksa sessiz geçer, zamanlar `V`):
+1 veli "Yine mi telefon? Hani ders çalışacaktın?!", 2 çocuk "Çalışıyorum ki anne… bak, matematik!",
+3 anlatıcı "Sorobit'le çocuğunuz oynarken Japon abaküs tekniğini öğrenir." Kupa Yolu ekranındaki
+dinozor/kartal Lottie'lerinin ticari lisansı hâlâ kontrol edilmedi.
+
+**Sesler geldi (21.10.2026, 09:30):** `Downloads\ad4_sound1.mp3` (veli) → `r4_konusma1.wav`,
+`ad4_sound2.mp3` (anlatıcı, "Sorobit ile…") → `r4_konusma3.wav`, ikisi 1,15 kat. Çocuğun repliği
+KAYDEDİLMEDİ (yalnızca altyazı). İlk ekran kullanıcının ekran görüntüsü oldu (eğitim: "İlk önce 241
+yazıyoruz", 241+153) → `public/tel_ders.png`, asıl `reklam4\ilk_ekran.jpg`; Kupa Yolu görüntüsü artık
+kullanılmıyor. Çıktı `reklam4\Sorobit_reklam4.mp4` (15,4 sn). `oyun.mp4` sık anahtar kareyle
+(`-g 10 -bf 0`) yeniden kodlandı: Remotion "No frame found at position" hatası veriyordu.
+
+**Son hâl (21.10.2026, 09:40):** veli sesi `ad4_sound3.mp3` ile değişti (`ad4_sound1` silindi: Downloads
+ve reklam4 kopyası), çocuk repliği `ad4_sound4.mp3` → `r4_konusma2.wav` ("anne" ile "bak" arası 0,46
+→ ~0,2 sn kısaltıldı). Müzik "matematik" kelimesiyle (132. kare) girer, sır sahnesi 150'de; toplam
+15,8 sn. Kullanılmayan `public/sayfa.wav` silindi; `public/tel_kupa.png` (resim) kullanılmıyor ama duruyor.
+
+## Reklam 3 animasyonu: "Mehmetcan arka sayfaya mı geçti?" (21.10.2026 — 20 sn taslak hazır, kullanıcı ilk 6 sn'yi beğendi, tamamına bakmadı)
+
+**Tam taslak:** `reklam3\Sorobit_reklam3.mp4` (20 sn; `npm run render:tam`, kompozisyon `Reklam` →
+`src/Devam.jsx`). 6–13 sn sır: mor zemin, telefonda gerçek oyun (`public/oyun.mp4` =
+`kupa_toplama_1.mp4` 22–33,6 sn, durum çubuğu kırpılmış, 1,8 kat hızlı; 5,8 sn'de "Aferin" karesinde
+donar çünkü sonrası ana ekran), "Mehmetcan'ın sırrı" → "Her gün 10 dakika Sorobit" + iki çip.
+13–17 sn dönüş: kendi kâğıdımız, biz de boncuk itip hızla yazıyoruz, HIŞIRT ile arka sayfaya
+geçiyoruz ("Arka sayfaya ben de geçtim!"). 17–20 sn kapanış: "Çocuğunuz da matematiği oyunla
+sevsin.", Sorobit, 7–14 yaş, "Ücretsiz kapalı teste katılın / Bağlantı açıklamada". Müzik yok.
+Eski ham kayıtların çoğu (ders_sesli, egitim_kesit…) silinmiş; elde yalnızca kupa_toplama_1 ve
+sobi_acilis tam ekran var.
+
+**Seslendirme (21.10.2026):** kullanıcının kayıtları `Downloads\ad3_sound1-3.mp3` + `page_flip.mp3`
+(kopyaları `reklam3\`). İşlenmiş hâlleri `public/konusma1-3.wav` (boşluk kırpıldı, 1,25/1,25/1,2 kat
+hız, loudnorm -14 LUFS) ve `public/page_flip.wav` (sentetik `sayfa.wav` artık kullanılmıyor).
+Kanca 200 kareye (6,7 sn) uzadı, tüm reklam 20,7 sn; zamanlar `Kanca.jsx` içindeki `T` nesnesinde,
+3. altyazı konuşmayla aynı: "Nasıl bu kadar hızlı olabilir?!". Sarsıntı hatası düzeltildi (hışırtıdan
+önce de sağda siyah şerit açıyordu).
+
+**Kurgu değişti (kullanıcı kararı, 21.10.2026):** "Şimdi sıra bende / Arka sayfaya ben de geçtim"
+dönüş sahnesi KALDIRILDI. Sır sahnesinde `Downloads\ad3_soun4.mp3` (adı böyle, "sound" değil) →
+`public/konusma4.wav` (1,15 kat): "Cevabı basit: Mehmetcan her gün 10 dakika Sorobit'le Japon abaküs
+tekniğini öğrendi." Altyazılar cümle parçalarına bağlı (`K4` nesnesi). Kapanış: Sorobit, "Matematiği
+bir üst seviyeye çıkaran uygulama", "7–14 yaş · Abaküsle zihinden hesap", "Ücretsiz kapalı teste
+katılmak için yorumlara “bilgi” yazın" + "bilgi" yazılan yorum kutusu animasyonu. Toplam 16,4 sn.
+Yorum çağrısı grup paylaşımı (organik) için; ücretli reklamda Meta düğmesi önerildi.
+
+**Müzik ve kapanış sesi (21.10.2026):** `Downloads\ad3_soun5.mp3` → `public/konusma5.wav` (1,1 kat):
+"Sorobit. Matematiği bir üst seviyeye çıkaran uygulama." Logo, slogan ve etiket sesle sırayla gelir,
+yorum çağrısı ses bitince (`K5` nesnesi). Müzik: `Downloads\Way To Go.mp4` 7. saniyeden itibaren
+→ `public/muzik.m4a` (kullanıcı önce 6 dedi, sonra 7'ye aldı). "Cevabı basit"le girer, konuşmalarda
+0,28'e (0,16 fazla kısık bulundu), diğer
+yerlerde 0,42'ye ayarlı (`muzikSesi`), son 1 sn'de söner. Kaynak dosyaların kopyaları `reklam3\`.
+Toplam 18,8 sn. Şarkının reklamda kullanım lisansı kontrol edilmedi.
+
+İlk 6 sn notları:
+
+Kullanıcının senaryosu gözden geçirildi; öneriler: "10 kat" iddiası çıkacak (kanıt yok), çocuğu
+yarıştıran ton yumuşayacak, kapanış veliye seslenecek, "yoruma bilgi yaz" yerine katılım linki.
+Oyuncu/ekipman yok, yapay zekâ videosu beğenilmedi → yüzsüz POV 2D animasyon, Remotion (kodla video).
+Proje: `C:\Users\ASUS\Videos\Sorobit_tanitim\reklam3\proje` (`npm run render`, `npm run studio`);
+sahne `src/Kanca.jsx`, sesler `public/*.wav` (ffmpeg ile sentezlendi, geçici). Çıktı:
+`reklam3\Sorobit_reklam3_kanca.mp4` (6 sn, 1080×1920). Akış: kendi kâğıdımız + "Daha ilk soruyu
+çözemedim…" → HIŞIRT → arkaya dönüş → Mehmetcan'ın kâğıdı çevriliyor → cevaplar yazılırken sol elin
+parmakları havada saydam abaküs boncuklarını itiyor, "Bu kadar hızlı nasıl?!". Sobi reklamda YOK
+(Freepik lisansı). Sıradaki: 6–20 sn (uygulama ekran kaydı, veliye kapanış, link).
+
+## Kapalı test yol haritası (19.10.2026 — taslak, kullanıcı onaylamadı; Faz 0 kodu 13'te yazıldı)
+
+**13 (1.0) Alpha'da YAYINDA (19.10.2026 20:55, gönderim 2; veri güvenliği anketi de güncellendi).**
+Katılım videosu hazır: `C:\Users\ASUS\Videos\Sorobit_tanitim\katilim\Sorobit_katilim.mp4` (34 sn;
+betikler `montaj\betikler\katilim_grafik.ps1`, `katilim_montaj.ps1`, açıklama `NASIL_KULLANILIR.txt`).
+Testçi bulma kararları (kullanıcı, 19.10.2026): hedef ~100 testçi, uygun kriterdeki herkese yazarak;
+kurslara SOĞUK mesaj (tanıdık mental aritmetik kursuna yazılmayacak); soroban bilmeyen grup için
+her şehirden, Facebook "N. sınıf anneleri" grupları (kullanıcı Bursa'da); teşvik (ücretsiz Pro)
+yalnızca katılım az olursa. Öneri: sayacı hemen başlatmak için önce 5-8 kişilik güvenilir çekirdek
+grup, yabancı testçiler paralelde; 100 kişide 1. gün formu herkese, telefon görüşmesi seçilmiş
+10-15 kişiye (A ve B'den).
+**Çevreye mesaj (21.10.2026):** kullanıcı önce tanıdıklarla 12 × 14 gün sayacını başlatacak (şu an
+çevresi dışında deneyen yok). Metin + 7. gün hatırlatması `docs/KAPALI_TEST_MESAJLARI.md` 10. bölüm;
+e-posta toplanmıyor, Google Group bağlantısıyla katılım. Bilgisayar mühendisliği grubu için toplu
+paylaşım metni de aynı bölümde (bağlantılar doğrudan gönderide, karşılıklı test teklifiyle). Kullanıcı Firestore'daki kayıtlı herkesi
+"testçi" işaretlemek istedi: UYARILDI, `isTester` Play'le ilgisiz ve yalnızca geliştiricinin kendi
+hesaplarını analizden ayırmak için (`--testci-haric`, GA4 `tester`); tanıdıklar gerçek testçi sayılıyor,
+ayrımları takip tablosundaki "Tanıdık mı" sütununda.
+**12 testçi tamam (27.10.2026'da görüldü):** Play Console Kontrol paneli → "Üretime erişim için başvuruda
+bulunma" listesinde "En az 12 test kullanıcısının kaydolması" işaretli; "12 kullanıcıyla 14 gün" adımı açık.
+Konsol gün sayısı göstermiyor; 14 gün dolunca adım kendiliğinden işaretlenir ve "Üretime başvur" açılır.
+12'nin altına düşülürse 2. adımın işareti kalkar, sayaç baştan başlar. En geç ~10.11.2026'da kontrol et.
+**Facebook sınıf grubu metinleri (19.10.2026, kullanıcı onayladı):** `docs/KAPALI_TEST_MESAJLARI.md`
+9. bölüm — 2–8. sınıf için kanca tablosu, ortak gövde, ilk yorum, yönetici izin mesajı. Vaat "10 kısa
+derste abaküste 5 basamaklı toplama" (`p1_i09`; "ilk haftasında" test verisiyle doğrulanacak). Genel
+taslaktaki "hiçbir ödeme yok" → "2 haftalık test için hiçbir ödeme gerekmiyor" (reklam + Pro var).
+**Formlar ve takip tablosu (19.10.2026):** Google Forms metinleri `docs/KAPALI_TEST_FORMLARI.md`
+(1. gün, 7-10. gün, bırakanlar + telefon görüşmesi rehberi; kullanıcı Google Forms'a kendisi girecek).
+Takip tablosu `docs/kapali_test/Sorobit_kapali_test_takip.xlsx` (GIT DIŞI, `.git/info/exclude`: veli
+adı/telefon içerecek; yeniden üretmek için aynı klasörde `takip_tablosu_uret.ps1`, Excel COM ile).
+A/B/C, tablodaki "Son kullanım günü"nden hesaplanıyor (katılımdan kaç gün sonra hâlâ kullanıyordu:
+A ≥ 7, B ≥ 1, eşikler Özet!C4:C5); bu sütun dışa aktarma CSV'sinin `son_kullanim_gunu`'su (aşağıda).
+Formlar `docs/KAPALI_TEST_FORMLARI_OLUSTUR.gs` (Apps Script; `formlariOlustur` 19.10.2026 22:09'da
+kullanıcının hesabında ÇALIŞTIRILDI, bağlantılar rehberde; bir daha çalıştırılmamalı). Sonra iki karar:
+telefon görüşmesi YOK (Form 1'deki soru ve tablodaki "Görüşme yapıldı" sütunu kaldırıldı), fiyat
+soruları açıkça "Pro üyelik" diyor (Lite ile karışmasın; gerçek fiyat yazılmıyor). Yayındaki formlara
+bu ikisi `duzeltme1` ile uygulandı (19.10.2026, kullanıcı çalıştırdı; formlar tarayıcıda kontrol edildi) ve günlük rutin
+`docs/KAPALI_TEST_FORMLARI.md` başında. DİKKAT: `dailyTimeSpent` yalnız son 14 günü tutuyor; CSV'de
+`son_kullanim_gunu` boş gelirse tablodaki eski tarih SİLİNMEMELİ (yoksa B olan C'ye düşer).
+**Toplu dışa aktarma (19.10.2026 — yazıldı, kullanıcının makinesinde çalıştı, 9 öğrenci):**
+`node tools/kapali-test/ilerleme_disa_aktar.js` → `docs/kapali_test/ilerleme_<tarih>.csv` (git dışı;
+noktalı virgüllü + BOM, Türkçe Excel'de çift tıkla açılıyor, tarihler gg.aa.yyyy). Yalnız `role`
+STUDENT; `--testci-haric` isTester'ları atar (varsayılan: `test_hesabi=evet`, en altta),
+`--kayit-sonrasi YYYY-AA-GG` süzer. Sütunlar: kullanıcı adı, yaş grubu (`ageGroupFor` dilimleri),
+doğum yılı, abaküs, kaynak, kayıt tarihi, `seri_son_gun` (streak/state.lastDay), seri,
+`hedef_gunu_son21` (recentDays), `son_kullanim_gunu` / `kullanim_gunu_son14` (`dailyTimeSpent`,
+hedef tamamlanmasa da; yalnız son 14 gün tutuluyor; `son_kullanim_gunu` → tablodaki "Son kullanım günü"), `toplam_sure_dk` (tablodaki
+"Toplam süre"), biten ders / maraton (`lessonProgress/{1..8}/items` içinde `stepIsFinish == true`;
+maraton = stableId `_unite_maratonu`, dokümanda tür alanı yok), en ileri biten stableId, uid.
+Deploy GEREKTİRMEZ: betik `functions/` dışında (orada olsaydı push BÜTÜN fonksiyonları deploy
+ederdi), firebase-admin'i `functions/node_modules`'tan alıyor; kimlik `~/.config/numigo/` altındaki
+servis hesabı anahtarı (ya da `GOOGLE_APPLICATION_CREDENTIALS`). Okuma maliyeti öğrenci başına ~10 +
+biten ders sayısı. İlk çıktıda görülen: **hiçbir hesapta `isTester` yok** (Faz 0c yapılmadı; 1960/
+2003/2004/2008 doğumlu 18+ hesaplar büyük ihtimalle geliştiricinin, Console'dan `isTester=true`
+yazılmalı); iki hesapta biten ders 0 ama maraton bitmiş (maraton dersleri atlayıp açılabiliyor
+olabilir, BAKILMADI). lastDay yalnız günlük hedef tamamlanınca ilerliyor; bu yüzden tablo
+A/B/C için `son_kullanim_gunu`'nu kullanıyor (19.10.2026'da değiştirildi).
+
+**Güncel (19.10.2026 akşam):** 13 debug sürümüyle telefonda doğrulandı (logda `age_group 11-14`,
+`soroban_level some`; GA4'te `age_group`, `soroban_level`, `tester` kullanıcı boyutları kullanıcı
+tarafından oluşturuldu). Testçiler 12 ile değil, **13 Alpha'da onaylandıktan sonra** davet edilecek.
+Kapalı testin amacı sırasıyla: (1) Play üretim şartı, (2) çocuk tek başına öğrenebiliyor mu / nerede
+takılıyor → düzeltme, (3) hedef kitle için HİPOTEZ (kesin karar yayından sonraki reklam testinde).
+Testçi grupları (kullanıcı kararı): soroban bilmeyen 7–14 yaş (~2/3; 19.10.2026 akşamı 5–14 yerine 7–14 = ilk ve ortaokul) ve kursa giden çocuk (~1/3);
+iki grup ayrı değerlendirilir. Hedef 20–25 testçi (12 şartı kesintisiz katılım istiyor, kopanlar
+için pay), en fazla yarısı tanıdık. Kriterler veri gelmeden yazılacak (ör. bilmeyen grubun yarısı
+14 günde 1. part'ı bitiriyor mu). Üretim başvurusunda Play testçi bulma ve geri bildirim sorularını
+soruyor: geri bildirim kayıtları tutulmalı.
+Kapalı test boyunca yeni özellik yok, yalnızca engelleyici hata düzeltmesi.
+- **Faz 0 — versionCode 13 (en geç ~1 hafta):**
+  a. `age_group` + `soroban_level` kullanıcı özellikleri (aşağıda 1. madde). Yalnızca kayıtta değil,
+     her açılışta Firestore'daki `birthYear`'dan yeniden yazılmalı (`setUserRole` gibi); yoksa 13'ten
+     önce kaydolan testçilerde boş kalır. `soroban_level` eski hesaplara SORULMUYOR (yukarıda, karar).
+     Yeni toplanan alan gizlilik politikasına ve veli onayı e-postasındaki veri listesine eklenmeli
+     (metin değişirse `PARENTAL_CONSENT_VERSION` de).
+  b. reCAPTCHA ≥18.4.0 (aşağıda SIRADAKİ İŞLER 4. madde; 90 gün sınırı, 13'e zaten planlı).
+  c. Kendi hesaplarına `isTester=true`, gerçek testçilere dokunma.
+  d. UTM için kod gerekmez (Firebase Play yükleme yönlendiricisini kendisi okur); bir deneme bağlantısıyla
+     `first_open` kaynağında göründüğü doğrulanmalı.
+- **Faz 1 — test günleri 0–14:** 1. gün form (neden denediniz, yaş/sınıf, abaküs geçmişi, son bir yıl
+  matematik harcaması), 7–10. gün telefon (nasıl kullanıyor, fark, arkadaşa anlatım cümlesi, Van
+  Westendorp fiyat), bırakanlara ayrıca (neden bıraktı, ne olsaydı devam ederdi). Formda kullanıcı adı
+  sorulur (Firestore ilerlemesiyle eşleştirmek için, veliye açıkça söylenerek). Haftada bir: takılınan
+  dersler (`lesson_step_fail`, `lesson_abandon`), öğretmene soru, Pro ekranına bakan var mı.
+  Paralelde 2–3 abaküs kursu/öğretmen görüşmesi.
+- **Faz 2 — gün 14–21, karar:** aile başına tablo, A (devam eden) / B (bırakan) / C (başlamayan). A'nın
+  yaş + abaküs geçmişi + önceki harcaması = hedef kitle; A'nın tekrar eden kelimeleri = mesaj adayları;
+  pahalı/ucuz eşikleri = fiyat bandı; B'nin sebepleri = ürün düzeltmeleri (reklamdan önce).
+- **Faz 3 — herkese açık yayın öncesi:** özgün ikon (Freepik kafası logo olamaz), uygulama içi atıf,
+  TÜRKPATENT başvurusu (yayından birkaç gün önce), mağaza sayfası metni kazanan dertle uyumlu.
+  Aday özellikler (kapalı test sonucuna göre): haftalık veli özeti (Veli Paneli var ama veli kendisi
+  açmalı; ödeyen anne değeri görmeli), "arkadaşına öner" paylaşımı (şu an yok).
+- **Faz 4 — yayın:** 5 mesajlık reklam testi (3–5 bin TL), mikro-influencer'lara ayrı bağlantı,
+  CAC/LTV takibi.
+
+## Hedef kitle ve pazarlama: sıradaki adımlar (19.10.2026 — konuşuldu, kod DEĞİŞMEDİ, "sonra yapalım")
+
+Hedef: Türkiye, orta-üst gelir, büyükşehir anneleri; çocuk oynar, reklamı anne görür. Yaş aralığı
+(5–10 mu, 11–14 mü) ve soroban bilen/bilmeyen ayrımı henüz bilinmiyor, test edilecek. Kapalı testte
+~12 testçi var: gruplara bölüp istatistik çıkarılamaz, yalnızca sert sinyallere bakılır, asıl bilgi
+annelerle görüşmeden gelir. Online ders uygulamasına dönüşülmeyecek (öneri): uygulama tek başına
+öğretir, öğretmene soru ve online ders üst katman.
+1. **versionCode 13 — `age_group` ve `soroban_level` kullanıcı özellikleri (kullanıcı kararı: soroban_level
+   kesin).** Yaş şu an yalnızca Firestore'da (`birthYear`); Analytics'e gitmiyor ve `setUserId` olmadığı
+   için birleştirilemiyor. GA4'teki `signup_stage` boyutu yaş DEĞİL, kayıt hunisindeki adımın adı
+   (`age` = "yaş ekranına gelindi"). Değerler metin: `age_group` "4-6/7-8/9-10/11-14/15+",
+   `soroban_level` "none/some/good" (kayıtta tek soru: "Abaküs kullanmayı biliyor musun? Hiç / Biraz /
+   İyi"). İkisi de GA4'te kullanıcı kapsamlı özel boyut olarak tanımlanmalı (orada yer var).
+2. **Testçi annelerle 15 dk görüşme:** "Neden denediniz?" (şıksız), çocuğun yaşı/sınıfı, abaküs
+   geçmişi, fiyat (Van Westendorp: "hangi fiyatta çok pahalı / şüpheli ucuz"), "arkadaşınıza nasıl
+   anlatırdınız?" (ilk reklam metni). Üç tura bölündü (yukarıda Faz 1); form metni henüz yazılmadı.
+3. **2–3 abaküs kursu + öğretmenle ön görüşme:** teklif = kursa ücretsiz öğretmen paneli, öğrencilerine
+   indirim, gelen abonelikten pay (%20–30). Öğretmen kendi öğrencilerini görme paneli istenip
+   istenmediği sorulacak, kurmadan önce.
+4. **Yayından sonra mesaj testi:** aynı görsel/bütçe, 5 başlık (matematik korkusu, faydalı ekran
+   süresi, kursa gitmeden evde, kursta öğrendiğini unutmasın, zihinden hızlı hesap). Her reklam ve her
+   mikro-influencer için ayrı UTM'li Play bağlantısı. Reklamda "Duolingo" adı kullanılmaz.
+5. **Ölçüm:** kurulum → ödeme dönüşümü ve ödeyenin kaç ay kaldığı (LTV); ödeyen başına harcama (CAC)
+   LTV'nin ~1/3'ünü geçmemeli. Huni olayları hazır (`pro_panel_shown` → `plan_shown` →
+   `purchase_started` → `purchase`), kaynak `acquisition_source` ile kırılıyor.
+
+## SIRADAKİ İŞLER: kapalı teste (Alpha) geçiş (18.10.2026)
+
+**SONUÇ (19.10.2026): 12 (1.0) Alpha'da YAYINDA** — "Belirli test kullanıcıları tarafından
+kullanılabilir", 18 Eki 20:17'de sunuldu; inceleme aynı gün bitti. Kanal: 1 ülke/bölge. Sırada:
+testçilere katılım bağlantısını göndermek (üretim şartı 12 testçi × 14 gün kesintisiz, sayaç
+katılımla başlar), Facebook paylaşımı, reCAPTCHA 90 gün süresi (aşağıda 4. madde → versionCode 13).
+
+11 yalnızca **Dahili test**te; Alpha'da eski 7'lik taslak duruyordu. Alpha'ya ilk sürüm Google
+incelemesinden geçecek ve şu engeller çıktı (Play "Önizle ve onayla"):
+1. **Fotoğraf/video izinleri — YAPILDI (18.10.2026, derlendi, cihazda DENENMEDİ, commit edilmedi):**
+   soru ekranındaki kendi galeri (`GalleryBottomSheetFragment` + iki düzen + string'leri) silindi;
+   `QuestionChatFragment.openMediaPicker()` artık `PickVisualMedia(ImageAndVideo)` açıyor, tür MIME'den.
+   `READ_MEDIA_IMAGES`/`READ_MEDIA_VIDEO`/`READ_EXTERNAL_STORAGE` manifest'te `tools:node="remove"`;
+   birleşmiş manifest'te üçü de yok. Cihazda bakılacak: fotoğraf ve video seçilip gönderilebiliyor mu.
+2. **Uygulama ikonu — YENİLENDİ (04.11.2026), aşağıdaki "Uygulama ikonu: yeni mavi tavşan" başlığına bak.**
+   Eski not: **ERTELENDİ (kullanıcı kararı 18.10.2026):** Sobi kafası (Freepik) logo olarak
+   kullanılamıyor (koşullar 8.1) ama kapalı testte böyle kalıyor; herkese açık yayından önce
+   düzeltilecek. Özgün abaküs ikonu denendi, kullanıcı istemedi (çizilmeyecek). `abacus_svg_ic`
+   (Flaticon) da logo olamaz, yedek plan olarak sayılmamalı. Bildirim ve 512 mağaza ikonu da ertelendi.
+   Atıf (3), versionCode 12 (4) ve ön plan hizmeti beyanı (5) da şimdilik ertelendi.
+   **Play inceleme hesabı (18.10.2026 — kod yazıldı, DEPLOY EDİLMEDİ, sınanmadı):** öğrenci girişi
+   yalnızca Google/e-posta koduyla olduğu için inceleyici giremiyordu. `functions/index.js`
+   `tryReviewLogin`: `serverConfig/reviewLogin` dokümanındaki (`email`, `codeSha256`) tek e-posta
+   için sabit kod kabul ediliyor, yalnızca var olan STUDENT hesabına token. İnceleme e-postası
+   öğrenci `seasa7961+@gmail.com` (öğretmen inceleme hesabı `seasa7961@gmail.com`, şifreyle); kod ve özeti depo kökündeki `inceleme_hesabi.txt`'de (git dışı,
+   `.git/info/exclude`). Yapılacaklar: o e-postayla uygulamada öğrenci hesabı açmak, dokümanı
+   Console'dan eklemek, deploy sonrası kodla girişi denemek, Play formuna yazmak.
+3. **Atıf (KOD):** Uygulamada hiç atıf yok; "Abaküs ikonu: Flaticon (Magnific) · Karakter çizimi: Freepik"
+   uygulama içinde (Hakkında/künye) gösterilmeli.
+4. **versionCode 12 — AAB DERLENDİ (18.10.2026):** `app/build/outputs/bundle/release/app-release.aab`
+   (69 MB, versionName hâlâ "1.0"), yükleme anahtarıyla imzalı (CN=Numigo, SHA1 74:F1:…:5A:C1, 11 ile
+   aynı). Birleşmiş release manifest'te READ_MEDIA_*/READ_EXTERNAL_STORAGE yok, consent mode
+   varsayılanları var. İçinde: fotoğraf seçicisi, inceleme hesabı girişi, Analytics reklam izni yaşa
+   bağlı, 13 yaş altı veli onayı, Google veli onayında seri cevapları düzeltmesi (kullanıcı telefonda
+   denedi, sorunsuz). Kullanıcı yükleyecek: Alpha taslağında 7'yi kaldır, 12'yi ekle, sürüm notu.
+   Play Console formları (uygulama erişimi, reklam, içerik derecelendirme, hedef kitle 6-8/9-12/13-15,
+   veri güvenliği, Öğretmen Onaylı katılımı) dolduruldu. 12 Alpha'da ve Dahili testte (11'in yerine).
+   Ön plan hizmeti beyanı dolduruldu: dataSync → Ağ işleme/Diğer, mediaProjection → Medya ve içerik
+   projeksiyonu, microphone → Diğer (yalnızca ekran kaydı; sohbetteki sesli mesaj FGS kullanmıyor,
+   yazılmadı). Tek video, YouTube liste dışı `https://www.youtube.com/watch?v=QDiJmHQB34Q`
+   (öğrenci ekran kaydı → gönder; sistem izin penceresi videoda YOK, Google isterse yeniden çekilecek).
+   Önizlemede hata kalmadı (18.10.2026). Kalan: Yayınlama özeti → incelemeye gönder.
+   Yayın özeti iki sorun gösterdi: (a) Reklam kimliği beyanı eksik (Uygulama içeriği; Evet →
+   Reklamcılık, Analiz, Sahtekarlık önleme) — kullanıcı dolduracak; (b) **reCAPTCHA 18.1.2 güvenlik
+   açığı uyarısı:** `firebase-bom 32.7.0 → firebase-auth 22.3.0 → recaptcha 18.1.2`. Gönderimi
+   engellemiyor; incelemeye gönderdikten sonra **90 gün** içinde düzelmeli, yoksa yayın engelleniyor.
+   versionCode 13'te: ya `com.google.android.recaptcha:recaptcha` ≥18.4.0'ı açıkça ekle ya da BoM'u
+   yükselt (o zaman giriş/Google/veli onayı/bildirimler telefonda yeniden denenmeli).
+5. **Play formları (kullanıcı dolduracak):** finans → yok, sağlık → yok, ön plan hizmeti (dataSync:
+   soru yükle/indir; mediaProjection+microphone: Hata Avcısı ekran kaydı) açıklama + video bağlantısı,
+   mağaza tam/kısa açıklama (metinler hazır, sohbette verildi).
+6. **Analytics reklam kimliği — YAPILDI (18.10.2026, derlendi, cihazda DENENMEDİ):** Aileler politikası
+   gereği manifest'te `google_analytics_default_allow_ad_storage` / `_ad_user_data` /
+   `_ad_personalization_signals` = false (birleşmiş manifest'te var). `AgeConsentManager` yaş TEEN
+   (rıza yaşı üstü) çıkınca `setConsent` ile üçünü GRANTED, CHILD/bilinmiyorsa DENIED yapıyor;
+   `NumiGooApplication`'da kurulan FirebaseAuth dinleyicisi hesap değişince/çıkışta DENIED'a
+   döndürüyor (izin diskte kalıcı). AdMob TFCD/TFUA ve `analytics_storage` değişmedi. AD_ID izni
+   manifest'te kalıyor (`adid_collection_enabled=false` bilerek konmadı, yetişkinlerde kalıcı
+   kapatırdı). Cihazda: `adb logcat -s AgeConsentManager` → "Analytics ad consent=..." satırı.
+7. **13 yaş altı veli onayı (18.10.2026 — derlendi, DEPLOY EDİLMEDİ, cihazda DENENMEDİ):**
+   Eşik temkinli: `UTC yılı − doğum yılı ≤ 13` → onay (2026'da 2013 doğumlular dahil). Formül
+   üç yerde aynı: `auth/ParentalConsentPolicy.kt`, `functions/index.js` `requiresParentalConsent`,
+   `firestore.rules` `noUnconsentedChild`. Biri değişirse üçü birden değişmeli. `AgeConsentManager`
+   reklam için hâlâ `yıl farkı < 13` kullanıyor (başka oturumun dosyası, hizalanmadı).
+   Onay olmadan hesap açılmıyor: kayıt kodu VELİYE gidiyor (30 dk), e-postada toplanan veriler ve
+   onay metni var (`parentalConsentEmail`, sürüm `PARENTAL_CONSENT_VERSION`; metin değişirse sürüm
+   de değişmeli). E-posta yolu: `RegisterActivity` → `ParentConsentFragment` →
+   `sendStudentVerificationCode(purpose=register_parental)` → `OtpVerificationFragment` (veli kipi) →
+   `verifyRegistrationCode` (doğum yılını kod dokümanından alıyor). Google yolu: `signInWithGoogle`
+   doküman yazmıyor, `PARENTAL_CONSENT_REQUIRED` dönüyor, oturum açık kalıyor →
+   `requestParentalConsent` / `confirmParentalConsent` dokümanı sunucuda yazıyor. Kurallar 13 yaş altı
+   doğum yılıyla istemci yazımını reddediyor; sunucu da veli kodu olmayan 13 yaş altı kaydı reddediyor
+   (eski sürümler artık 13 yaş altı hesap açamaz, mesaj "uygulamayı güncelleyin"). Onay kaydı
+   `parentalConsents/{uid}`'de (veli e-postası `users`'a yazılmıyor, öğretmenler okuyabildiği için);
+   hesap silinince `cleanupUserOnDelete` siliyor. Yeni saatlik `cleanupExpiredVerificationCodes`:
+   süresi 1 saatten eski BÜTÜN kodları siliyor (eskiden hiç silinmiyordu) ve onaysız kalan Google
+   Auth kaydını siliyor. Giriş ekranında Google seçilip hesap yoksa (`ACCOUNT_NOT_REGISTERED`) Auth
+   kaydı artık siliniyor. Veli Paneli'ne dokunulmadı (kullanıcı kararı). Gizlilik politikası
+   `public/privacy-policy.html` 5. bölüm yeniden yazıldı (Effective date 18.10.2026); hosting CI'da
+   değil, elle `firebase deploy --only hosting`. Sıra: önce functions + kurallar deploy, sonra cihazda
+   iki yolu da (e-posta, Google) 2013 doğumla dene. Veli e-postası çocuğunkiyle aynı olabilir (hesabı veli kendi adresiyle açıyor olabilir; kullanıcı kararı 18.10.2026).
+   Farklıysa önce çocuğun adresi doğrulanıyor: veli ekranı → sunucu `child_email_unverified` →
+   çocuğa normal kayıt kodu → `verifyRegistrationCode(parentalStep=true)` hesap açmadan
+   `verifiedChildEmails/{email}` yazar (30 dk) → veli kodu → hesap. Aynıysa tek kod (veli kodu).
+   Google veli kodu da `sendStudentVerificationCode(google=true)` üzerinden gidiyor: EMAIL_USER /
+   EMAIL_PASS depoda değil, yalnızca o fonksiyonun ortamında tanımlı; yeni fonksiyondan e-posta
+   gitmiyordu. Yeni bir fonksiyon e-posta gönderecekse aynı sorun çıkar.
+   Google yolunda Auth kaydı hesap seçilince, `users` belgesi veli onayında açılıyor: veli kodu
+   10 dk'dan geç girilince kayıt sorularının seri cevapları "mevcut hesap" sayılıp atılıyordu.
+   Artık `confirmGoogleParentalConsent` başarılı olunca `StreakRepository.markAccountCreated(uid)`
+   onay anını işaretliyor, `applyPendingSignup(uid, …)` aynı uid için Auth zamanı yerine onu
+   kullanıyor (yalnızca istemci, sunucuya dokunulmadı). E-posta yolunda sorun yok: Auth kaydı
+   veli koduyla birlikte sunucuda açılıyor. Telefonda: 2013 doğumla Google kaydı, kodu 10+ dk
+   sonra gir → hedef kayıtta seçilen olmalı, ilk ders sonunda yeni seri ekranı çıkmamalı.
+8. **OTP gönderim sınırları (18.10.2026 — 1f718d1 ile DEPLOY EDİLDİ, telefondan giriş kodu
+   geldi):** `functions/index.js` `checkOtpRateLimits` tek transaction'da: e-posta 5/saat ve
+   20/gün (değişmedi) + aynı alıcıya 30 sn bekleme (yeni; eskiden yalnızca istemcide 45 sn),
+   IP 10 → 40/saat (okul Wi-Fi'ı/CGNAT), günlük toplam 400 (kişisel Gmail ~500/gün) ve App Check
+   jetonsuz isteklere ayrı 100/gün kova (`context.app`; zorlama hâlâ kapalı). Tavan dolunca log'da
+   `OTP_GLOBAL_LIMIT` (Cloud Logging uyarısı kurulabilir; %80'de uyarı satırı). IP artık
+   `x-forwarded-for`'un SON değeri (ilki istemcinin uydurabileceği değerdi). Deploy sonrası
+   loglarda normal girişte "x-forwarded-for birden fazla değer" görünüyorsa seçim yanlış, bak.
+   Sınır artık hesap kontrollerinden sonra sayılıyor ("zaten kayıtlı" denemesi hak harcamıyor).
+   Veli kodunda bekleme veli adresinde, çocuk adresi yalnızca sayılıyor; adresler aynıysa tek sayım.
+   Öğrenci kodu 2 → 10 dk; kod `crypto.randomInt`, belge `create` ile (aynı kod çıkınca başkasının
+   kodu eziliyordu). **TTL hatası:** `otpRateLimits`/`otpWrongAttempts` TTL'i `updatedAt`
+   üzerindeydi, yani belge yazıldığı an silinmeye aday oluyordu (günlük sınır ve 15 dk kilit erken
+   kalkabiliyordu). Artık `expireAt` (sayaç 2 gün, kilit 1 gün) ve `firestore.indexes.json`
+   güncellendi; eski `updatedAt` alanı yazılırken siliniyor. Push iki workflow'u tetikler
+   (functions + kurallar/indeksler). Yapılmayanlar: `checkEmailRegistered` /
+   `findTeacherEmailByUserId` sınırsız ve kimliksiz; yanlış deneme kilidi başkasını dışarıda
+   bırakmakta kullanılabiliyor; sunucu hata mesajları Türkçe sabit.
+   Deploy notu: tek koleksiyonda yalnızca BİR TTL alanı olabiliyor; CI indeks deploy'u bu yüzden
+   düştü (429). Yerelden iki adımda yapıldı: önce `updatedAt` için `ttl: false`, sonra `expireAt`.
+   Canlıda `updatedAt` override'ları (TTL kapalı) duruyor, dosyada yok; CLI yalnızca uyarı verir.
+   x-forwarded-for doğrulandı: deploy sonrası istekte başlıkta tek değer vardı, seçim doğru.
+   Debug sürüm App Check jetonu göndermiyor (`"app":"MISSING"`, debug jetonu konsolda kayıtlı
+   değil); Play'den kurulan sürümde de MISSING görünürse App Check kurulumu incelenmeli.
+Hazır olanlar: Google Group `sorobit-test@googlegroups.com` (Alpha test kullanıcısı olarak eklendi; anne/kardeş
+gruba eklenmeli), katılım `https://play.google.com/apps/testing/com.numigo.app`, gizlilik
+`https://numigo-new.web.app/privacy-policy.html`. Tanıtım videosu, mağaza görselleri ve betikler:
+`C:\Users\ASUS\Videos\Sorobit_tanitim\` (`MONTAJ_NOTU.txt`, `magaza\`, `montaj\betikler\`).
+Facebook paylaşımı Alpha sürümü "Yayınlandı" olunca yapılacak.
+
+## Kapalı test sürümü: versionCode 11 (16.10.2026 — AAB derlendi, Play Console'a kullanıcı yükleyecek)
+
+`app/build/outputs/bundle/release/app-release.aab` (69 MB, versionName hâlâ "1.0"), yükleme
+anahtarıyla imzalı (CN=Numigo, SHA1 74:F1:…:5A:C1, 10 ile aynı anahtar; `keytool -printcert
+-jarfile` ile bakıldı). R8 mapping dosyası AAB'nin içinde, Play kendisi alıyor. 10'dan bu yana
+tek istemci değişikliği: uygulama ikonu Sobi oldu (mor zemin) ve bildirimler tek renkli küçük ikon
+kullanıyor (45c5a50 + zemin rengi commit'i; aşağıda "Uygulama ikonu" başlığı). AAB içindeki
+mipmap PNG'si açılıp mor olduğu görüldü. Sunucu tarafında (functions, kurallar) değişiklik yok.
+**Play Console'da ayrıca:** Ana mağaza girişi → Uygulama simgesi'ne
+`app/src/main/ic_launcher-playstore.png` (512×512) yüklenmeli; mağaza ikonu AAB'den gelmiyor.
+Sonraki yayın: versionCode 12.
+
+Önceki: versionCode 10 (1fcbbd7, aynı gün): ders sonu anketi kaldırıldı (27565db) ve ipucu paneli
+konuşma balonu oldu (ec3f934).
+
+Daha önce: versionCode 9 (bc5d267, aynı gün) 8'den (e6df925, 07.10.2026) bu yana gelen her şeyi
+4bc317a'ya kadar taşıdı: öğretici ölçümü ve adım kimlikleri, dil yapısı Aşama 1–2, Hata Avcısı +
+admin paneli, seri hatırlatması düzeltmesi, Android 14–15+ çubuk/yayın düzeltmeleri. Aşağıda
+"commit edilmedi" yazan eski başlıkların hepsi commit'li ve bu sürümlerde.
+
+## Uygulama ikonu: yeni mavi tavşan (04.11.2026 — derlendi, cihazda GÖRÜLMEDİ, commit edilmedi)
+
+Freepik kafası ikondan kalktı. Kullanıcı ChatGPT'ye saydam arka planlı mavi tavşan çizdirdi
+(`design/sobi_ikon_kaynak.png`, 1254²). Bütün ikon dosyaları bundan `tools\ikon_uret.ps1` ile
+üretiliyor (Python yok; System.Drawing + gömülü C#). İkon değişirse yalnızca kaynağı değiştirip
+betiği yeniden çalıştırmak yeterli: `powershell -ExecutionPolicy Bypass -File tools\ikon_uret.ps1`
+(`-Onizleme yol.png` ile önce maske önizlemesi).
+- Ön katman ve tek renk sürüm artık vektör değil PNG: `mipmap-*dpi/ic_launcher_foreground.png`,
+  `ic_launcher_monochrome.png`; `mipmap-anydpi-v26` XML'leri `@mipmap/...`'e bakıyor. Eski
+  `drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`, `ic_notification.xml` silindi;
+  bildirim ikonu `drawable-*dpi/ic_notification.png` (ad aynı, kod değişmedi).
+- İçerik 108dp tuvalde 33.5dp yarıçaplı daireye sığdırıldı (güvenli alan 33dp). Merkez sınır
+  kutusunun ortası (üst/alt boşluk eşit); ilk sürümde en küçük kapsayan dairenin merkeziydi ve iki
+  yana açık kulaklar yüzünden tavşan aşağıda kalıyordu (kullanıcı fark etti, yeniden çizim gerekmedi).
+  Kaynağın alfa artıkları temizleniyor.
+- Tek renk: gözler, burun, ağız ve sarı iç kulaklar delik. Zemin mor (#5B3FD9) aynı kaldı.
+- `app/src/main/ic_launcher-playstore.png` (512²) de yenilendi; Play Console'a elle yüklenmeli.
+- Uygulama İÇİNDEKİ Sobi çizimi (`BunnyMascotArt`) hâlâ Freepik; atıf/yeniden çizim konusu sürüyor.
+- MIUI eski ikonu önbellekten gösterebilir (aşağıdaki 18.10 notu); kaldırıp kurmak gerekebilir.
+
+## Uygulama ikonu: Sobi'nin kafası, mor zemin (16.10.2026 — commit'li, emülatörde görüldü, telefonda DENENMEDİ)
+
+Emülatöre (Android 14) sarı zeminli hâli kuruldu, uygulama çekmecesinde "Sorobit" adıyla Sobi ikonu
+görünüyor; mor hâli (yalnızca zemin rengi değişti) emülatörde ayrıca görülmedi.
+Telefona kurulamadı: telefondaki Play kapalı test sürümü (versionCode 9) farklı imzalı, debug
+APK üstüne kurulmuyor (INSTALL_FAILED_UPDATE_INCOMPATIBLE); kaldırmak yerel veriyi siler, sormadan
+yapılmadı. Telefonda versionCode 11 AAB'si Play'den gelince görülecek.
+
+Varsayılan Android robotu yerine Sobi'nin bekleme hâlindeki kafası (kullanıcı 7 ifade × 5 zemin
+arasından "sakin"i seçti; zemin önce sarıydı, sonra mor oldu, aşağıda). Katmanlar
+`BunnyMascotArt`'taki yollardan bir betikle üretildi (kulaklar, kafa, gözler, ağız, kafa ışığı;
+çizim sırası `drawBunny` ile aynı), elle çizilmedi:
+- `drawable/ic_launcher_foreground.xml`: 800'lük çizim koordinatları korunup tek bir grupla
+  (ölçek 0.36) 108'lik ikona taşındı; kafa ortası (388,134) → (54,55), kulak uçları 72'lik görünen
+  alanın içinde (daire, yuvarlak kare, damla maskelerinde denendi).
+- `drawable/ic_launcher_background.xml`: düz mor `#5B3FD9`. İlk seçim sarı `#FFCF4D`ti; kullanıcı
+  "Sobi belirgin durmuyor" dedi. Sebep ton değil açıklık: Sobi açık pastel mavi (`#91D8FF`), sarı da
+  aynı açıklıkta, kontrast 1.1:1. Karşılaştırılan zeminler (WCAG kontrastı): turuncu `#FF8A2B` 1.5,
+  pembe `#E5487A` 2.4, mor 4.3, lacivert `#1E3A6B` 7.2. Mor seçildi: yeterli kontrast, sarı iç
+  kulaklar da öne çıkıyor; lacivert çocuk uygulaması için ağır bulundu.
+- `drawable/ic_launcher_monochrome.xml` (yeni): Android 13+ temalı ikon. Eskiden `monochrome`
+  da foreground'a bakıyordu; renkli ön katmanla sistem bütün kafayı tek renk leke yapardı. Yeni
+  katmanda kafa/kulak/tüy dolu, gözler-burun-iç kulaklar `evenOdd` ile delik.
+- `mipmap-*/ic_launcher(.png|_round.png)`: API 24–25 için 48/72/96/144/192 px PNG (eski webp'ler
+  silindi; aynı adla ikisi birden olamıyor). `app/src/main/ic_launcher-playstore.png`: Play
+  Console → Ana mağaza girişi → Uygulama simgesi için 512×512 (APK'ya girmiyor).
+
+**Lisans uyarısı (kullanıcıya söylendi, kararı o verdi):** Sobi'nin çizimi Freepik'ten birebir
+alınma; Freepik koşulları (madde 8.1) içeriğin tamamen ya da kısmen bir markada kullanılmasını,
+aslıyla karıştırılmayacak kadar değiştirilmedikçe yasaklıyor; ikon fiilen logo. Marka planı da
+"logo/marka olarak kullanılamaz" diyor. Bu ikon geçici: herkese açık yayından önce Sobi özgün
+olarak yeniden çizdirilecek, yukarıdaki dosyalar o çizimden yeniden üretilecek.
+Ressam brifi hazır (17.10.2026, Claude Docs'ta "Sobi Çizim Brifi", bağlantı
+`docs/MARKA_VE_PAZAR_PLANI.md`'de); ressam henüz seçilmedi. Brif parçaları `BunnyMascotView`'deki
+kanallara göre istiyor (kulaklar, 4 göz, 7 ağız, 2 kaş, kollar ayrı; dönme noktaları işaretli,
+tek SVG). Yeni çizim gelince `BunnyMascotArt` yeniden üretilecek ve `BunnyMascotView`'deki
+koordinat sabitleri (omuz, boyun, kulak kökü, kalça; eşyaların yerleri) yeni çizime uyarlanacak.
+Karar (17.10.2026): ikon kapalı testte böyle kalıyor; ressam herkese açık yayına yakın başlatılacak
+(çizim + koda uyarlama ~1–1,5 ay sürer, yayın tarihinden geriye sayılmalı). Kullanıcının yedek
+fikri: ressam yetişmezse ikon `abacus_svg_ic` olur. O dosyanın kaynağı bilinmiyor (27afba1'de
+eklendi, not yok); bir ikon sitesindense lisansı logo kullanımına izin vermeyebilir. İçinde kendi
+yuvarlak köşeli çerçevesi var, ikon katmanına alınırken atılmalı. Herkese açık yayında Sobi hâlâ
+Freepik çizimiyse uygulama içinde Freepik atfı gerekli (ücretsiz lisans, madde 8.1); şu an hiç yok.
+Lisans sertifikası (18.10.2026, kullanıcının elinde PDF): öğe "selection of cute animals in flat
+design" (magnific.com, no. 1040416), lisans alan "KreyzMen", tür "Free for commercial use WITH
+ATTRIBUTION". Sertifika uygulamada kullanıma izin veriyor ama logo/marka konusunu hiç anmıyor ve
+"kullanım koşulları bu belgenin önüne geçer" diyor; yani 8.1'deki marka yasağı sertifikayla
+kalkmıyor. İstenen atıf metni: "designed by Freepik - Magnific.com" (görselin yanında, olmazsa
+künyede). Kesin cevap istenirse Magnific desteğine yazılı sorulabilir (www.magnific.com/ai/support).
+
+Play'de indirirken `com.numigo.app` görünmesi koddan değil: `app_name` zaten "Sorobit". Play
+Console'da Ana mağaza girişindeki uygulama adı ya da kapalı test incelemesinin bitmemesi
+(dahili testte paket adı her zaman görünür). `applicationId` DEĞİŞTİRİLMEMELİ.
+
+**Bildirim küçük ikonu da düzeltildi** (aynı gün): bildirimler `setSmallIcon(R.mipmap.ic_launcher)`
+kullanıyordu (`MyFirebaseMessagingService` 2 yer, `ScreenRecordingService`). Küçük ikon tek renkli
+olmalı; renkli uyarlanabilir ikon durum çubuğunda düz bir daire/kare lekesi oluyordu (Android
+8.0'da SystemUI'yi çökertebildiği de biliniyor). Yeni `drawable/ic_notification.xml`: monochrome
+katmanın yolları, görüntü alanı kafaya göre daraltılmış 24dp silüet; gözler/burun/iç kulaklar
+delik (delikli ve deliksiz hâl 24/48/72 px'te karşılaştırıldı, 48+ px'te delikli daha iyi
+okunuyor). Manifest'e `com.google.firebase.messaging.default_notification_icon` da eklendi:
+uygulama arka plandayken FCM "notification" yüklü mesajı kendisi gösteriyor ve ikon verilmezse
+uygulama ikonunu kullanıyordu. Soru yükleme/indirme servislerindeki
+`android.R.drawable.ic_menu_upload` zaten tek renkli, dokunulmadı. Derlendi, emülatörde uygulama
+çökmeden açılıyor; ikon durum çubuğunda henüz GÖRÜLMEDİ (emülatörde FCM ya da ekran kaydı
+bildirimi tetiklenemedi). İlk gerçek bildirimde bakılmalı.
+
+18.10.2026: Telefonda (MIUI 14) bildirimin AÇIK hâlinde küçük ikon doğru (Sobi silüeti), KAPALI
+hâlinde ise eski Android robotu görünüyor. MIUI kapalı bildirimde küçük ikonu değil uygulamanın
+kendi (renkli) ikonunu gösteriyor ve onu kendi önbelleğinden alıyor; 45c5a50'dan önceki ikon
+varsayılan robottu. Kod değişmedi; telefonu yeniden başlatmak önbelleği yenilemeli (doğrulanmadı).
+
+## İpucu düğmesi: panel konuşma balonu oldu (16.10.2026 — kullanıcı telefonda baktı, iyi; commit edildi)
+
+Ders ekranında (`fragment_abacus.xml`, `fragment_blinding_lesson.xml`) ampule basınca açılan
+panel, ampulün solunda bir konuşma balonuna dönüştü (`drawable/hint_bubble_background.xml`):
+düğmeyle aynı koyu yeşil (yeni `@color/side_button_background` = eski `#263C31`;
+`fab_background` da artık buna bakıyor, renk değişmedi), 16dp yuvarlak köşe, ampule bakan küçük
+kuyruk, rahat iç boşluk. Eski panelin altı düz kesikti: 55dp'lik metin 48dp'lik kabın içinde
+kırpılıyordu. Balon artık metne göre uzuyor ve düğmeye göre dikeyde ortalanıyor (kap 48dp kaldı,
+negatif dikey kenar boşluğu hilesi `dimens.xml`'de anlatılıyor). Açılış: kuyruğun ucundan küçük
+bir zıplamayla büyüme (`anim/hint_bubble_in.xml`), kapanış: ampule doğru küçülme
+(`hint_bubble_out.xml`). `slide_out_right_hint.xml` artık kullanılmadığı için silindi.
+`slide_in_right` başka ekranlarda da geçtiği için ona dokunulmadı. Ampul düğmesinin boyutu ve
+yeri, dokunma alanı, rehberin (guide) düğmeyi göstermesi ve `AbacusSideButtonFit` aynı kaldı.
+Kullanıcı telefonda (Android 13) baktı, "iyi görünüyor" dedi. Ayrıca denendiği söylenmeyenler:
+uzun ipuçları (ör. ilk dersin 91 harflik ipucu) 3–4 satıra çıkınca balonun tahtanın alt kenarına
+ya da abaküsün üstüne binip binmediği, Blinding dersindeki görünüm.
+
+## Ders sonu anketi kaldırıldı, yalnızca tutorial anketi kaldı (16.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
+
+Kullanıcı isteği: anket yalnızca tutorial'dan sonra çıksın. `AbacusFragment` ve
+`BlindingLessonFragment`'teki `showQuestionPanel` → `finishLesson` oldu; `QuestionPanelFragment`
+açılmıyor, son sorudan sonra doğrudan LessonResult / ChestResult / LessonResultFalse'a (ya da
+kupa modu, günlük soru, yarış dallarında eskiden anketten sonra ne oluyorsa ona) geçiliyor.
+Dallanma mantığı aynen korundu, yalnızca araya giren anket çıktı. `TutorialFragment` →
+`TutorialQuestionPanelFragment` akışına dokunulmadı.
+
+Anket açılırken ders fragment'i gizleniyordu, ikinci dokunma sonuca ulaşamıyordu; o kalkan
+gittiği için iki `finishLesson`'a da tek seferlik kapı (`lessonFinishStarted`) kondu.
+`QuestionPanelFragment`, `fragment_question_panel.xml` ve `SURVEY_LESSON` kodda duruyor ama
+kullanılmıyor (geri getirmek kolay olsun diye silinmedi). Denenecek: normal ders, sandık
+(500 puan altı/üstü), %75 altı ders, günlük soru doğru/yanlış, yarış dersi yanlış, kupa modu.
+Sonuç ekranı tek kez mi geliyor, ders ekranı düzgün kayarak mı çıkıyor?
+
+## Kayıt sorularında ilerleme çubuğu durum çubuğunun altında kalıyordu (16.10.2026 — derlendi, cihazda DENENMEDİ; 642fe78 + kayıt/öğretmen girişi düzeltmesi)
+
+Annenin ve kardeşin telefonlarında (Android 15+ olmalı) `fragment_user_info`'nun üstündeki
+çubuk saat/pil şeridinin altında kalıyordu. Sebep: `targetSdk 36` ile Android 15+ pencereyi
+zorla kenardan kenara çiziyor; `LoginStartActivity` ve `LoginActivity` buna hazır değildi
+(geliştiricinin telefonu daha eski sürüm olduğu için orada görünmüyordu). Düzeltme:
+`activity_login_start.xml` ve `activity_login.xml` köklerine `fitsSystemWindows="true"`
+(MainActivity'deki `activity_main` ile aynı yöntem). Alt düğmeler de artık gezinme çubuğunun
+üstünde kalıyor. Denenecek: Android 15+ cihazda giriş ekranı, kayıt soruları (yaş adımında
+klavye açıkken "Devam Et" görünüyor mu), e-posta giriş ekranındaki geri oku.
+
+Aynı sorun `RegisterActivity` ve `TeacherLoginActivity`'de de vardı (24dp dolgu şeritten kısa).
+Oralarda kök 24dp dolgulu olduğu için nitelik doğrudan köke konmadı (dolguyu silerdi); kök
+`fitsSystemWindows`'lu bir FrameLayout ile sarıldı.
+
+Taramada çıkıp sonradan düzeltilenler (derlendi, cihazda DENENMEDİ; fe60ecf):
+- Resim/video önizlemeleri (`dialog_image`, `dialog_video_player`, `dialog_video_fullscreen`):
+  pencere kamera deliğine kadar uzuyor, X deliğe denk gelebiliyor, video kontrolleri gezinme
+  tuşlarının arkasında kalabiliyordu. `PreviewSafeArea.apply` X'in kenar boşluğuna, oynatıcının
+  `exo_controller` katmanına da iç dolgu olarak çubuk + kamera deliği payını ekliyor; görsel ve
+  video tam ekran kalıyor. Yalnızca Android 15+'da çalışıyor. Soru sohbetindeki çubukları
+  gizleyen video gizli kalıyor, orada X yalnızca delikten uzaklaşıyor; `ImageAnnotateDialogFragment`'a
+  dokunulmadı. Denenecek: galeri önizlemesi (uzun bas), bildirim ve soru sohbeti resimleri,
+  soru sohbeti videosu, rapor videosu. X basılabiliyor mu, oynat/ilerleme çubuğu gezinme
+  tuşlarının üstünde mi?
+- `NewChestFragment` şerit rengini `window.statusBarColor` ile veriyordu, 15+ yok sayıyordu.
+  Android 15+'da `SystemBarStrips` üst ve alt çubuğun arkasına renkli şerit koyuyor (nadirlik
+  rengi + açılıştaki zemine geçiş), ekran kapanınca kaldırıyor. Eski sürümlerde şerit yok, eski
+  yol aynen çalışıyor. Denenecek: nadirlik yükselirken şeritler renk değiştiriyor mu, sandık
+  açılınca zemin rengine geçiyor mu, ekran kapanınca alttaki ekranın görünüşü geri geliyor mu?
+
+Taramada kalan, düzeltilmeyenler (Android 15+):
+- `MissionRewardRevealDialogFragment`, `EmailVerificationActivity`, `TeacherOtpActivity` aynı
+  sorunu taşıyor ama hiçbir yerden açılmıyor (ölü kod).
+
+## Android 14–16 taraması (16.10.2026 — geliştiricinin telefonu Android 13, bunların hiçbiri orada görünmez)
+
+Düzeltilen (derlendi, cihazda DENENMEDİ): soru sohbetinde yükleme/indirme durumu. Yükleme ve
+indirme servisleri yayınları paketsiz gönderiyordu; `QuestionChatFragment` alıcısı
+RECEIVER_NOT_EXPORTED. Android 14+ bu yayınları teslim etmeyebiliyor (ekran kaydı aynı hatayı
+yaşamış, `ScreenRecordingService.broadcastToApp`). İki serviste `sendAppBroadcast` artık
+`setPackage(packageName)` ile gönderiyor. Denenecek (Android 14+): soru sohbetinde resim/video
+gönderirken yüzde ilerliyor mu, iptal sohbete yansıyor mu, gelen medya indirilince açılıyor mu?
+
+Bulunup kullanıcı kararıyla ŞİMDİLİK bırakılanlar:
+- **Android 16 tabletler:** en kısa kenarı ≥600dp cihazlarda `screenOrientation="portrait"`
+  yok sayılıyor; tablet/yatay düzen yok (en büyük `values-sw480dp`). Geçici çıkış: manifeste
+  `android.window.PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` (targetSdk 37'de kalkıyor).
+- **Galeri izni:** Android 14+ "yalnızca seçilen fotoğraflar"da kendi galeri paneli yalnızca
+  onları gösteriyor, izin her seferinde soruluyor. Play, `READ_MEDIA_IMAGES/VIDEO` için gerekçe
+  istiyor; ara sıra seçim yapan uygulamalardan Photo Picker bekliyor (BugReportFragment zaten
+  kullanıyor). Kapalı test incelemesinde sorun çıkarabilir.
+- **Ders paneli karartması:** `LessonAdapter.dimSystemBars` 15+'da şeritleri karartmıyor;
+  `SystemBarStrips` ile çözülebilir.
+
+Temiz çıkanlar: geri tuşu (Android 16'nın öngörülü geri hareketi; yalnızca ölü koddaki dialog
+KEYCODE_BACK kullanıyor), ön plan servis türleri, MediaProjection sırası, PendingIntent ve alıcı
+kayıt bayrakları, tam zamanlı alarm yok, native kütüphane yok (16 KB sayfa şartı sorun değil).
+
+## Seri hatırlatması kırık seriye "N günlük serin devam etsin" diyordu (16.10.2026 — test geçti, cf05dd8 ile DEPLOY EDİLDİ)
+
+Ekranda seri 0 iken "Bugün 20 dakika çalış, 1 günlük serin devam etsin" bildirimi geldi.
+Sebep: sunucu kırılmayı yazmıyor, `streak.current` yeni gün bildirilene kadar bayat kalıyor;
+istemci ise kırılmayı okurken hesaplayıp 0 gösteriyor. Hatırlatma saklanan `current`'ı
+olduğu gibi kullanıyordu. Düzeltme `functions/streakReminder.js` → `liveStreak`: lastDay
+bugün/dün değilse seri 0 sayılıyor (evvelsi gün + uygun dondurma varsa canlı, dondurma
+harcanmış sayılır). Birinci hatırlatma kırık seride "Bugün başlamaya ne dersin?" metnine
+düşüyor; ikinci şans ("N günlük serin bugün kırılabilir") kırık seriye hiç gitmiyor.
+Tarama `freezeDay`'i de karara geçiriyor (index.js). Test: `node functions/scripts/test-streak-reminder.js`.
+
+## Hata bildirimi ("Hata Avcısı") + admin paneli (15.10.2026 — cihaza KURULDU; 06983ab ile commit + DEPLOY EDİLDİ)
+
+Kapalı test için: kullanıcı uygulamada gördüğü hatayı ekran görüntüsüyle bildiriyor, admin
+onaylarsa ödülü Görevler'deki karttan topluyor. Kullanıcı kararları: ödül kartta "Ödülünü
+topla" ile toplanır (onayda otomatik verilmez); admin onaylarken kademe seçer (büyük: 3
+danışma + 10.000 altın + 200 anahtar, küçük: 1.000 altın + 20 anahtar); aynı hatayı ilk
+bildiren tam ödülü alır (sonrakini admin reddeder ya da küçük ödül verir); panel uygulama içinde.
+
+- **Admin yetkisi = Auth custom claim `admin: true`** (istemci yazamaz, Storage kuralları da
+  okuyabiliyor). Verme: Console'da `users/{uid}` dokümanına `admin: true` (boolean) ekle →
+  `syncTeacherClaim` claim'e kopyalar (`admin` alanı kurallarda sunucu alanı, kullanıcı kendine
+  yazamaz). Geri alma: alanı `false` yap. Etkin olması için uygulamada çıkış/giriş. Yedek yol:
+  `node scripts/set-admin-claim.js <uid|e-posta>`. (Deploy edildi: 06983ab + sonraki commit.)
+- `syncTeacherClaim` ve `backfill-teacher-claims.js` artık mevcut claim'leri KORUYOR; eskiden
+  `setCustomUserClaims(uid, { teacherApproved })` tüm claim'leri eziyordu, admin'i silerdi.
+- Sunucu: `functions/bugReports.js` (saf karar, `npm run test:bug-reports` 25 test) +
+  index.js'te `submitBugReport` / `reviewBugReport` (yalnız admin claim) / `claimBugReportReward`.
+  Sınırlar: aynı anda 3 bekleyen, günde 3 gönderim, metin 10–1000. Ödül toplamada tek
+  transaction (`rewardClaimed`), iki kez verilemez. Karar bildirimi `account` türünde.
+  Hesap silinince bildirimler + görseller temizleniyor (`cleanupUserOnDelete`).
+- Kurallar: `bugReports` yazma tamamen kapalı, okuma sahibi + admin; `bugReportGuards` catch-all
+  ile kapalı (kural testleri 38/38). Storage `bug_reports/{uid}_{zaman}.jpg`: oluşturma/silme
+  sahibi, okuma sahibi + admin, 10 MB, yalnız görsel, üzerine yazma yok.
+- İstemci: `BugReports.kt` (repo), `BugReportFragment` (Photo Picker + mevcut
+  ImageAnnotateDialogFragment ile işaretleme + "Bildirimlerim"), Görevler'de
+  `BulletinRow.BugReport` kartı, admin claim'li hesapta "Hata Bildirimleri (Admin)" kartı →
+  `BugReportAdminFragment` → `BugReportReviewDialogFragment` (`ZoomImageView`: iki parmak/çift dokunuş).
+  Metinler `res/values/strings_bug_report.xml`.
+- Düzeltme: galeriden görsel seçip dönünce ekran kapanıyordu — Görevler'in `onResume`'u
+  `reconcileAbacusOverlayWhenTasksIsBase` ile açık overlay'i hayalet sayıp temizliyordu.
+  BugReport/BugReportAdmin fragment'leri AbacusPractice gibi muaf tutuldu (arka plandan dönüşte
+  de aynı sorun olurdu). Ekran görüntüsü artık İSTEĞE BAĞLI (kullanıcı kararı); boş `imagePath`.
+- **Sıradaki:** push = functions + kurallar deploy (önce sor) → kendi hesabına claim ver →
+  uçtan uca dene: gönder → panelde onayla → kartta topla → bakiye/kredi arttı mı.
+
+## JSON → Kotlin + dil yapısı Aşama 2: arayüz metinleri (15.10.2026 — derlendi, doğrulandı, cihaza KURULDU, kullanıcı bakacak; commit edilmedi)
+
+- 1–5 ve 100–103. öğreticiler JSON'dan Kotlin `TutorialStep`'e çevrildi (348 adım, alan alan
+  doğrulandı), `parseTutorialStepsFromJson` silindi. Artık ses/metin adı hatası derlemede çıkar.
+- Layout'lardaki 826 sabit metin → `res/values/strings_ui.xml` (anahtar
+  `<layout>_<view id>[_hint|_desc]`). Derlenmiş APK'de 1527 özniteliğin hepsi öncekiyle aynı.
+- Koddaki 850 arayüz metni → `res/values/strings_code.xml` (617 string + 11 plurals).
+  `appString(R.string.x, …)` / `appPlural(R.plurals.x, sayı, …)` (`AppStrings.kt`, uygulama
+  context'i; Toast/geri çağırımlarda ekran kapanmışken getString() çökerdi). Değişkenli metin
+  `%1$s`; aynı metin tek anahtar (AuthManager mesajları LoginActivity'de karşılaştırılıyor).
+  Doğrulama: çağrılar metne geri çevrilince 69 dosya HEAD ile birebir, kalan 7'de yalnızca
+  bilinçli farklar.
+- Bilinçli DOKUNULMAYANLAR: sunucu mesajıyla yapılan karşılaştırmalar (`LoginActivity`
+  "Kullanıcı bulunamadı", `OtpVerificationFragment` "15 dakika"/"Çok fazla yanlış"),
+  GoogleSignInDiagnostics, kayıt değerleri (UserInfoFragment kaynak çiftlerinin İLK elemanı),
+  log/tanılama metinleri, maskot deneme etiketleri, `callback("Free")`.
+- Rozet metinlerinde yer tutucu "x" → "%1$s" (`BadgeFragment`); gün baş harfleri tek string.
+- Çeviri aracı 4 dosyayı da kapsıyor: 2226 satır / 2785 anahtar; çoğullar ayrı satır
+  (`ad#one`/`ad#other`), yer tutucu ve [ ] kontrolü, özel notlar (`SPECIAL_NOTES`).
+- **Aşama 3 için açık konular:** (1) Cloud Functions hata mesajları ve bildirim metinleri
+  Türkçe — sunucu tarafı çevirisi gerekecek; (2) LoginActivity sunucu mesajını METİNLE
+  karşılaştırıyor → hata koduna (`NOT_FOUND`) geçilmeli; (3) Türkçe karakter içermeyen ve
+  arayüz çağrısında olmayan metinler kaçmış olabilir → İngilizce denemede gözle taranmalı;
+  (4) RegisterActivity şartlar cümlesi alt metin araması çeviriye bağlı (notu var).
+
+## Dil yapısı Aşama 1: öğretici ve ders metinleri strings'e taşındı (15.10.2026 — derlendi ve doğrulandı, cihazda DENENMEDİ, commit edilmedi)
+
+Plan: Aşama 1 öğretici/ders metinleri → Aşama 2 arayüz metinleri (layout'larda ~1159, kodda
+~150 sabit metin) → Aşama 3 dil seçimi + eksik çeviri/ses kontrolü + Play dil bölmesi
+doğrulaması → Aşama 4 İngilizce (çeviri bir kişiye yaptırılacak, sesler yapay zekâ).
+
+- `res/values/strings_tutorial.xml` (997 anahtar): öğretici adım metni, requestText, şıklar,
+  optionText, kural metni. Anahtar = sesli cümlede SES DOSYASININ ADI (tutorial12_17 →
+  raw/tutorial12_17.mp3), sessizlerde `tutorial_<txt|ipucu|sik|soru|kural>_NNN`. Aynı cümle
+  tek anahtar. Kotlin: `getString(R.string.x)`, JSON: `"@string/x"` (`resolveText`).
+- Kural metni renklendirmesi harf numarası yerine metin içi `[köşeli parantez]`
+  (`markedRuleText`); `rulesStepTextColorPositions` alanı KALDIRILDI. Soru metni
+  renklendirmesi (`questionTextColorPositions`) sayılarda olduğu için dile bağlı değil, duruyor.
+- `res/values/strings_lessons.xml` (323): ders title/hint/unit/race, anahtar
+  `lesson_<stableId>_<alan>`. `GlobalLessonData.str()` uygulama context'iyle okur
+  (`GlobalLessonData.init`, `NumiGooApplication.onCreate`'in ilk satırı).
+- Düzeltme: eski yerel önbellekten (`loadFromPreferences`) okunan derslerin ad/ipucu artık
+  şablondan yenileniyor (`withTemplateTexts`); önceden koddaki ad değişiklikleri o cihazlara
+  hiç ulaşmıyordu.
+- Doğrulama: 1270 öğretici adımının bütün metin alanları dönüşüm öncesiyle aynı; derlenmiş
+  APK'deki 1320 metin (aapt2 dump) amaçlananla birebir aynı.
+- **Çeviri aracı:** `node tools/ceviri/ceviri.js disa-aktar en` → `ceviri_en.csv` (1136 satır,
+  aynı Türkçe tek satır); `ice-aktar en <csv>` → `values-en/`; `ses-listesi en` → seslendirme
+  listesi (852 ses, `raw-en/<ad>.mp3`); `kontrol en` → eksikler. CSV'ler .gitignore'da.
+- Aşama 3 için not: dil değişince `GlobalLessonData.lessonItems` bellekte eski dilde kalır →
+  dil seçimi uygulamayı yeniden başlatmalı. Android 13 altında uygulama içi dil seçimi
+  Application context'ine yansımaz; `str()` için yerelleştirilmiş context gerekecek.
+
+## Öğretici adım kimlikleri + Remote Config bırakıldı (15.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
+
+- `TutorialStep.id`: 160 soru adımının hepsine elle kimlik verildi (`t16_23m6_5_gelir_4un`
+  gibi; kurallar `TutorialStep.id` KDoc'unda). Analytics `step_key` artık bu. Eski başlık
+  tabanlı kimlik yalnızca yedek (`TutorialStepAnalytics.legacyStepKey`). Kullanıcı kararı:
+  **temiz başlangıç** — Explore'daki eski satırlar (t16_1_…) ayrı kalır, veri zaten testti.
+- `buildStepAnalyticsInfo` denetliyor: kimliksiz / biçimi hatalı / tekrarlı soru adımı
+  **debug'da eğitimi açarken çökertir**, release'te Crashlytics'e non-fatal. Yeni soru adımı
+  eklerken `id` vermek ZORUNLU.
+- 1–5 ve 100–103 artık Remote Config'ten değil koddaki `TUTORIAL_<no>_JSON`'dan okunuyor
+  (konsol ile kod aynıydı, kullanıcı doğruladı). JSON'da soru adımlarına `"id"` eklendi.
+- Splash'teki Remote Config fetch + 8 sn bekleme kaldırıldı; yalnızca 2 sn animasyon.
+  `firebase-config-ktx` bağımlılığı bilerek duruyor (ileride küçük bayraklar için).
+  Konsoldaki `tutorial_step_*` parametreleri eski sürümler bitene kadar silinmemeli.
+- Sıradaki: dil yapısı (metinler `strings.xml`, sesler `raw-xx`, kimlik = anahtar).
+- **Cihazda denenecek:** 9 JSON öğreticisi (özellikle 1) ve birkaç Kotlin öğreticisi açılıp
+  soru adımları geçilmeli; debug'da çökme olmamalı.
+
+## Öğretici ölçümü: `tutorial_started` olayı (11–14.10.2026 — derlendi, cihazda DENENMEDİ, commit edilmedi)
+
+**Karar (kullanıcı, 14.10.2026):** Öğretici A/B testi YAPILMAYACAK. Önce yazılan Remote Config
+varyant altyapısı (`TutorialVariant`, `tutorial_exp_exposure`, `tutorial_variant` parametresi)
+kaldırıldı. Öğreticinin yeterliliğine öğretici içi + test başarısının diğer öğreticilerle
+kıyasına bakılarak karar verilecek; iyileştirme sonrası kıyas `app_version` ile önce/sonra.
+
+- Kalan: `tutorial_started` (tutorial_no, first_time, lesson_id) — `TutorialFragment.onCreate`'te,
+  `savedInstanceState == null` iken. İlk soru adımından önceki bırakmaları görmenin tek yolu.
+- `first_time` → `TutorialStepAnalytics.markStartedOnce` (cihazda `s:t<no>` işareti).
+- GA4'te `first_time` olay kapsamlı özel boyut olarak kaydedilmeli.
+- Asıl "anlaşıldı mı" ölçütü: dersin testinde `lesson_step_pass` + `fail_streak = 0` oranı.
+  Eğitimden hemen sonraki test = Ders `p2_i16_boncuk_cikarma_kurallar` + Adım `1` (16 için).
+- **Sayısal boyutlar "(not set)" çıkıyordu** (14.10.2026, Explore'da doğrulandı): GA4'te boyut
+  olarak kayıtlı ama sayı gönderilen 9 parametre (part_id, position, step, fail_streak,
+  tutorial_no, question_no, choice, chest_stars, at_tap) artık metin gönderiliyor. Eski olaylarda
+  boş kalır; düzelme yalnızca bu sürüm yayına çıktıktan sonraki olaylarda görünür.
+- `build_type` kullanıcı özelliği (debug/release), `NumiGooApplication.onCreate`'te yazılıyor:
+  geliştiricinin kendi denemelerini Explore'da `Build type does not exactly match debug` ile
+  ayıklamak için. GA4'te **kullanıcı kapsamlı** özel boyut olarak kaydedilmeli.
+- `tester` kullanıcı özelliği (true/false): `users/{uid}.isTester` alanından,
+  `MainActivity.checkSubscriptionAndUpdateEnergy`'de yazılıyor. Alan konsoldan ELLE konur,
+  uygulama yazmaz (Closed testing'deki kişiler işaretlenmesin). Play'den kurulan release
+  sürümüyle yapılan geliştirici denemelerini ayıklar. Kurallar `hasOnly` kullanmadığı için
+  alan güncellemeleri bozmaz; `PUBLIC_PROFILE_FIELDS`'de olmadığı için aynalanmaz.
+- Explore "Öğretici adım analizi" sekmeleri: 1) Kaçıncı denemede (arşivli boyut kaldırılmalı),
+  2) Yanlışken ne yazıyorlar, 3) Adımı geçebildiler mi (tamam). Eğitim sonrası test için
+  "Hangi ders çok zor?" sekmesine Adım eklenecek.
+
+## Sistem yazı boyutu büyükken tutorial metinleri tabloların üstüne biniyordu (10.10.2026 — derlendi, cihaza KURULAMADI: telefondaki sürümün imzası farklı)
+
+**Belirti:** Telefonun yazı boyutu büyütülünce `TutorialFragment`'te `tutorialText`, kural
+tabloları ve `rulesStepText` iç içe girdi. `values-h780dp`/`sw…` ayarları `dp`'ye baktığı için
+yazı ölçeğinden etkilenmiyor, koruma sağlamıyordu.
+
+**Kök neden:** `tutorialText` `wrap_content` + `verticalBias=1` idi; ConstraintLayout
+`wrap_content` görünümü bağlarıyla sınırlamaz, metin büyüyünce üst bağını aşıp yukarı taştı.
+
+**Yapılan:**
+- `FontScaleLimiter` (yeni): sistem `fontScale`'ini en fazla 1.15'e kırpar; 8 aktivitenin
+  hepsinde `attachBaseContext` içinden çağrılıyor. Yeni aktivite eklenirse ona da eklenmeli.
+- `tutorialText`: yükseklik `0dp` + `gravity=bottom` + `autoSize` (tutorial_text_size → 12sp).
+  Yükseklik 0dp olduğu için üst bağ hiç boş kalmamalı → `ensureTutorialTextTopConstraint`
+  (çapa yoksa parent top). Daktilo efekti artık tam metni yazıp gösterilmeyen kısmı saydam
+  boyuyor (`setTypewriterProgress`), böylece autoSize yazarken yazıyı büyütüp küçültmüyor.
+
+**Test:** Ayarlar → Yazı boyutu en büyük; tablolu tutorial adımları (5'lik/10'luk kural) ve
+"Testte tahtaya sıra sıra sayılar gelecek" adımı (bottom → blinding_tutorial1) kontrol edilmeli.
+Kullanıcı cihazda denedi, yapı çalışıyor.
+
+**Ek (aynı gün, derlendi; cihaz bağlı değildi, KURULMADI):** `tenRuleExtractionTableLayout`
+10 satır olduğu için görünürken tutorialText çok küçülüyordu. Önce 1-5 / 6-9 iki blok denendi;
+cihazda başlık hücreleri eşit boyda değildi, sütunlar dengesizdi ve 5-5 satırı sarkıyordu.
+Kullanıcının seçimiyle son hali: tek başlık ("Çıkarılacak sayı → Kardeşi") + 3x3 çift kartı
+("1 → 9"), kardeş sayı ve başlıktaki "Kardeşi" sarı. Tablo 4 satır. Ardından aynı tasarım
+`fiveRuleTable`, `extractionFiveRuleTable`, `tenRuleTableLinearLayout` (2x2) ve `tenRuleTable`
+(2x2 + ortalanmış 5→5 kartı, `weightSum=2`) tablolarına uygulandı (cihaza kuruldu). Bu tablolarda
+satırlar ağırlıklı `LinearLayout`; dış kutuda `minWidth=rules_fragment_table_width`, başlık daha
+genişse tablo onunla genişliyor. `tenRuleTable`'daki tek kartlık satırda `measureWithLargestChild`
+şart (yoksa ilk ölçümde kart yarı genişliğe sıkışıp satırı uzatıyor, açıklama kutusu aşağı
+kayıyordu). `BeadRuleTable` / `BeadRuleExtractionTable` ayrı tasarım aldı: başlık aynı stilde
+("… → İşlem"), her satır tek kart, işlem üç etikete bölünmüş (`rule_step_chip`; gelir yeşil
+`lesson_header_green`, gider kırmızı `lesson_header_red`). Satır sayısı değişmedi (başlık + 4).
+**Tabloların quitButton'a taşması:** yazı boyutu sınırı "Ekran boyutu/Yakınlaştırma" ayarını ve
+dar telefonları kapsamıyor. `applyTutorialViewScaling` artık tablo ölçeğini bir kez post{}'ta
+değil, her yerleşimde `fitRulesTable` ile veriyor: sağ-üst köşe sabit, tablo quitButton'un
+sağına sığmıyorsa taban ölçeğin (0.94 / kısa ekranda 0.58) de altına küçülüyor (alt sınır 0.3).
+Eski kodda tablolar post{} anında GONE olduğundan pivotX=0 kalıyor, sol-üstten küçülüyordu;
+bu da düzeldi (tablolar artık sağ kenara tam yaslı).
+**fragment_rules (kural kitabı paneli):** 7 kural tablosu (çarpım tabloları hariç) aynı kart
+tasarımına geçti: 5'lik / 10'luk 6-9 / 5'lik çıkarma 2x2, 10'luk 1-5 2x2 + ortalı 5→5,
+10'luk çıkarma 3x3, iki boncuk tablosu etiketli satırlar. Bölüm başlıkları ("5'lik Kural" vb.)
+ve açıklamalar yerinde. `RulesFragment.applyRulesTableHeaderTexts`'in kullandığı id'ler
+(`fiveText`, `tenText`, `tenTextSecond`, `beadText`, `extractionFiveText`; ayrıca
+`beadExtractionText`) başlığın ilk metninde korundu. Boncuk dış kutuları `match_parent` +
+16dp iç boşluktan `wrap_content`'e çevrildi (eskiden işlem sütunu sıkışıp "10 gelir" alt satıra
+kırılıyordu).
+**Ders içi kural paneli (`fragment_abacus.xml` / `fragment_blinding_lesson.xml`, 120dp yüksek
+`rulesPanelScrollView`):** buradaki 6 tablo da aynı kart tasarımına geçti (5'lik çıkarma tablosu
+yok; 5'lik tablo `applyRulesPanelFiveText` ile `fiveText` / `fiveRuleDescriptionText` metni
+değiştirilerek çıkarmada da kullanılıyor, id'ler korundu). Metinler eski tablodan okunarak
+üretildi; blinding'deki "Çıkarılacak Sayı" (büyük S) gibi farklar korundu. Artık uygulamada eski
+2 sütunlu kural tablosu kalmadı (çarpım tabloları hariç).
+**Dikkat (kart tablolarında genişlik):** dış dikey `LinearLayout` `wrap_content` iken bütün
+doğrudan çocukları `match_parent` olmalı. Tek bir `wrap_content` çocuk (fragment_rules'taki
+"Boncuk Kuralı" gibi bölüm başlığı) varsa LinearLayout `match_parent` satırları genişlik
+hesabına katmıyor; kutu başlık/minWidth (200dp) genişliğinde kalıyor, satırlar sıkışıp yüksekliği
+tek satırda kilitlendiği için "10 gelir"in "gelir"i kesiliyordu. fragment_rules'taki 7 bölüm
+başlığı `match_parent` yapıldı; tutorial'daki 3x3 tablonun `TableLayout`'u da aynı sebeple
+`match_parent` + dış kutuya `minWidth`.
+**fragment_ask_question_open:** `infoText` 20dp'lik `infoIcon`'a dikey ortalıydı; 4 satıra
+çıkınca beyaz kutunun üstünden taşıyordu (annenin telefonunda görüldü). Artık metin kutunun
+üstüne bağlı (32dp), ikon metnin ortasında; metin yalnızca aşağı uzuyor (cihaza kuruldu).
+**fragment_pro_diffirent:** alttaki beyaz bölüm üstü serbest `wrap_content` idi; satırlar
+(metin sütunu ekran genişliği − ~246dp kadar dar) 2-3 satıra kırılınca başlığın ve ekranın
+üstüne taşıyordu. Artık `bottomWhiteScroll` (ScrollView, beyaz zemin burada) içinde:
+`constrainedHeight` + `bias=1` ile en fazla başlığın altına kadar uzuyor, sığmazsa kayıyor.
+`bottomWhiteContainer` id'si içteki kutuda kaldı (`SystemBarColors` alt çubuk dolgusunu ona
+ekliyor). Derlendi; sonraki kurulumla (14:04) cihaza gitti.
+**Abaküs ekranlarındaki sağ düğme sütunu (AbacusFragment + BlindingLessonFragment):** ortalı
+abaküs (~273dp) + iki yanda 56dp düğme ~385dp istiyordu; 360dp telefonlarda düğmeler abaküsün
+üstüne biniyordu (font sınırı etkilemez, hepsi dp). Yapılan: düğmeler 48dp
+(`abacus_side_button_size`; ipucu, soru sor, sihirli değnek, ayarlar, blinding'de ayrıca sıfırla
+ve adım atla) + yeni `abacus/AbacusSideButtonFit`: her yerleşimde sütunun sol kenarına bakıp
+abaküsü (sütun + 6dp boşluk iki yanda kalacak şekilde) küçültüyor, alt sınır 0.6. Görünen ölçek =
+ayarlar panelindeki kullanıcı ölçeği × sığdırma payı; kaydedilen her zaman kullanıcı ölçeği.
+Pivot artık alt-orta (eskiden kullanıcı ölçeği merkezden büyütüyordu; büyütünce kontrol düğmesine
+binmesin diye bilerek değişti). Abaküsle aynı yükseklikte olmayan düğmeler hesaba katılmıyor.
+Kaydırılabilir alan bilerek seçilmedi: çocuk gizli satırı fark etmez ve ScrollView
+dokunuşu yutup root'taki "dokun → ilerle"yi bozar. Aynı 10 satırlık tablo `fragment_abacus.xml`,
+`fragment_blinding_lesson.xml` ve `fragment_rules.xml`'de hâlâ eski haliyle duruyor.
+**Açık kalan:** Kısa ekranlarda (<700dp) tablolar `scaleX/Y=0.58` ile yalnızca görsel küçülüyor,
+yerleşim boyu küçülmüyor; tablonun altında tutorialText'in kullanamadığı boşluk kalıyor.
+
+## Mağazada anahtarla can alımına günlük 5 sınırı (07.10.2026 — f289beb ile push edildi, fonksiyonlar otomatik deploy)
+
+`buyEnergyWithKeys` artık `rewardGuard.energyKeyBuys` sayacını aynı transaction'da artırıyor;
+UTC günü başına 5'i aşınca `resource-exhausted` ("Günlük sınıra ulaşıldı.") dönüyor ve ne
+anahtar düşüyor ne can ekleniyor. Sabit: `ENERGY_KEY_BUY_DAILY_LIMIT`. `ShopFragment.buyLifeWithKeys`
+bu kodu yakalayıp "Günlük sınıra ulaşıldı. Yarın tekrar deneyin." uyarısı gösteriyor.
+`rewardGuard` istemciye zaten kapalı (firestore.rules), kural değişikliği gerekmedi.
+
+## Kupa Yolu yönlendirmesinde ders panelin arkasında açılıyordu (07.10.2026 — derlendi, cihaza KURULAMADI: adb koptu)
+
+**Belirti:** Haritadan Tasks'a yönlendirmeyle açılan `panel_cup_path`'te karta basıp
+başlatınca `BlindingLessonFragment` panelin arkasında kaldı.
+
+**Kök neden:** Bu yol paneli `TasksFragment.displayCupPathDialogWithReveal` ile açıyor ve o
+fonksiyon `GlobalValues.cupPathDialogRef`'i hiç set etmiyordu. Zorluk panelindeki "Başla"
+paneli `cupPathDialogRef?.get()?.hide()` ile gizliyor → referans boş → panel (ayrı pencere,
+BottomSheetDialog) ekranda kaldı, ders fragment'ı altında açıldı. Normal yol
+(`displayCupPathDialog`) referansı set ediyor, orada sorun yok.
+
+**Yapılan:** Reveal paneline de aynı referans + dismiss dinleyicisi (referansı temizle,
+`releaseLaunchTouchBlocker`) eklendi. Yan etki olarak ders sonrası kupa tazelemesi
+(`loadAndShowCupPathDialogAfterCupUpdate`) bu yolda da gizli paneli bulup geri getiriyor.
+
+**Açık kalan:** Reveal panelinde yalnızca kart 1, 2 ve 5 ders başlatıyor; 3, 4, 6'da yalnızca
+kilit uyarısı var (normal panelde hepsi açılıyor). Bilinçli mi, belli değil.
+
+## Sandık sonrası 2 dk yükleme perdesi + tıklanamayan harita (07.10.2026 — kök sebep BULUNAMADI, güvenlik ağı kuruldu)
+
+**Belirti:** Bölüm 3 `p3_i19_unite_maratonu` (bölümün son sandığı → Kupa Yolu/Tasks beklenir)
+bitince ChestResult → sandık → ders sonrası perdesi (spinner) ~120 sn asılı kaldı; sonra
+harita geldi ama hiçbir yere dokunulamadı, Tasks'a gidilmedi.
+
+**Kanıt:** `updateMapProgress` çalışmış (bekleyen ilerleme `2_p3_i19_unite_maratonu` var),
+`map_chest` geri yığından düşmüş, ama `ChestFragment` hâlâ `abacusFragmentContainer`'da ekli
+ve VISIBLE (kökü görünmez, kabı tıklanabilir → bütün dokunuşları yutuyor). Kuyruk her turda
+`SKIP_BLOCKING_OVERLAY active=ChestFragment` deyip Kupa Yolu'nu açmadı; bekçi 120 sn sonra
+`bekci BIRAKTI` ile perdeyi indirdi. Yani claim bloğu `updateMapProgress` ile fragment
+geçişi arasında bir `IllegalStateException` ile kesildi ve `catch` yalnızca düğmeyi açıyordu.
+Hangi satır fırlattı bilinmiyor: telefonun main log arabelleği 256 KB idi, `gralloc4` spam'i
+18:42:36 öncesini sildi.
+
+**Yapılan:** `ChestFragment.claim` `catch`'i artık hatayı yığın iziyle
+`LessonProgressDiag`'a (`HATA ...`) yazıyor, `ChestFragment`'i kaldırıp
+`prepare/finalizeMapReturnAfterLessonClaim(caller="ChestFragment.claimFailed")` ile haritaya
+dönüyor. Telefonda `adb logcat -G 16M` yapıldı (yeniden başlatınca sıfırlanabilir).
+
+**Sıradaki:** Tekrar olursa `LessonProgressDiag` içinde `ChestFragment.claim | HATA` satırına
+bak, asıl fırlatan yeri düzelt.
+
+## Haritaya dönüşte kart ilerleme animasyonu görünmüyordu (07.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Ders bitince karttaki ilerleme çubuğu artışı (`LessonAdapter.applyStepSegmentsWithIncreaseAnimation`,
+~2 sn) `GlobalValues.canConsumePendingLessonProgressAnimations` true olduğu an tüketiliyor. Bu bayrak
+`MapFragment.notifyVisibleAfterOverlayDismiss`'te koşulsuz, `onResume`'da ise yalnızca abacus/result
+kaplarına bakılarak true yapılıyordu. O anda harita çoğu zaman hâlâ görünmüyordu: ders sonrası opak
+zemini (`postLessonBackdrop`, rozet Firestore'u / reklam kontrolü beklenirken), rozet ekranı, yeni
+seri, rating, tanıtım. Reklamdan dönüşte `onResume` zemin yukarıdayken tüketiyordu. "Sebepsiz"
+görünen durumlar: rozet çıkmasa da Firestore kontrolü sürerken zemin kalkık kalıyor.
+
+Düzeltme: karar tek yerde — `MainActivity.lessonProgressAnimationBlockReason()` (eski
+`shouldConsumeLessonProgressAnimationsOnMap` yerine). `MapFragment.tryConsumePendingLessonProgress`
+engel varsa bayrağı false tutup 250 ms'de bir yokluyor (yalnızca bekleyen animasyon varken ve
+activity önde iken), engel kalkınca bayrağı açıp listeyi yeniliyor. Zemin sönünce
+`hidePostLessonBackdrop` ayrıca dürtüyor. Kuyruğun sırasına/kilidine dokunulmadı. Rehber paneli
+bilerek engel sayılmıyor (kartları kapatmıyor).
+
+Teşhis: `adb logcat -s LessonProgressDiag` → `tryConsumeProgress BEKLIYOR ... block=...` ve
+`OYNAT ... oncekiEngel=...` satırları.
+
+**İkinci tur (aynı gün, kuruldu, kullanıcı deniyor):** NewChestFragment'ten doğrudan haritaya
+dönüşte de animasyon görünmüyordu. İkinci sebep: animasyon yalnızca ViewHolder'daki animator'da
+yaşıyordu. `notifyDataSetChanged` (stabil id yok) bütün holder'ları geri dönüşüme atıyor →
+`onViewRecycled` → `cancelProgressIncreaseAnimation(applyFinalState = true)` çubuğu anında son
+hâline atlatıyor; `notifyItemChanged` ise kartı yeni bir holder'a bağlıyor. Dönüşte liste 2 sn
+içinde birkaç kez yenileniyor. Artık başlangıç anı adapter düzeyinde
+(`LessonAdapter.runningProgressIncreases`) tutuluyor ve kart yeniden bağlanınca animasyon
+`currentPlayTime` ile kaldığı yerden sürüyor. Loglar: `LessonAdapter.progress` →
+`BIND / BASLAT / IPTAL / SURDUR / BITTI / SURE_DOLDU`; animasyon sürerken listeyi yenileyen
+yer `updateItems`/`updateLessonItem` satırlarında çağrı iziyle yazılıyor. ChestFragment'te
+`PENDING_PROGRESS` satırı bekleyen animasyonun kaydedildiğini gösteriyor.
+
+## Maraton rehberi ders panelinin arkasında kalmıyor (07.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Harita aşağı kaydırılmışsa ilk maraton kartı ekranın üstünde kalıyor, kartın altına açılan ders
+paneli (aktivitenin `coordinator_layout`'unda; rehber MapFragment'te, farklı ebeveyn olduğu için
+`elevation` işe yaramıyor) rehber balonunun üstüne biniyordu. İlk deneme (kartı sabit balonun
+altına kaydırmak) yetmedi: ilk maraton listenin başına yakın, kart balonun altına inemiyor.
+Şimdiki düzen yukarıdan aşağı **kart → ders paneli → balon**: `showGuidePanel` rehberi
+`GuidePanelView.prepareShow()` ile ekran dışında hazırlıyor (karartma açık), kartı
+`scrollToPositionWithOffset(chestIndex, 0)` ile üste getiriyor, ders panelini açıyor, panel
+yerleşince `placeGuideBalloonBelow` balonu panelin 12dp altına koyuyor (`translationY`; balonun
+düğmeleri ona bağlı olduğu için bütün görünüm kaydırılıyor) ve ancak o zaman `slideIn()`.
+Panel açılmazsa (çevrimdışı) rehber varsayılan yerinde geliyor. Sığmazsa balon ekranın altına
+dayanıyor; çok kısa ekranda panelle biraz çakışabilir.
+
+Aynı rehberde sol alttaki geri oku ilk adımda paneli kapatıyordu (`setOnBackClickListener` →
+`hide()`). Artık `GuidePanelView` geri okunda yalnızca `showPreviousContent()` çağırıyor; ilk
+adımda işlevsiz. Tek kullanıcısı MapFragment olan `setOnBackClickListener` kaldırıldı.
+
+Karartmalar koyulaştırıldı: ders paneli (`scrimView`, `addChromeDims`, sistem şeritleri)
+`LESSON_PANEL_DIM_ALPHA` = 0.7 (eskiden 0.5). Yarış panellerinin 0.5 karartması
+değiştirilmedi. Rehber eskiden yalnızca harita kökünün zemin rengini değiştiriyordu; kartlar
+zeminin önünde çizildiği için hiç karartma görünmüyordu. `GuidePanelView.dimCoordinatorLayout`
+artık rehberin hemen arkasına (elevation 50dp, rehber 100dp) %70 siyah bir katman ekleyip
+kapanınca kaldırıyor. Ders paneli aktivite koordinatöründe olduğu için üstte kalıyor; maraton
+kartının görüntüsü (`lessonPanelCardSnapshot`) artık rehber açıkken de karartmanın üstüne konuyor.
+Üst para paneli ve alt menü rehberde kararmıyor.
+
+## "Eğitimi tekrarla" da 1 enerji harcıyor (07.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Ders panelindeki "Eğitimi tekrarla" enerji kontrolünü atlıyordu; anlatım bitince doğrudan
+testine (Abacus/Blinding) geçtiği için ders bedavaya oynanabiliyordu. `LessonAdapter`'daki
+enerji bloğu `spendLessonEnergyThen` yardımcısına çıkarıldı; Başla/Devam et/Gözden geçir ve
+Eğitimi tekrarla aynı yolu kullanıyor (enerji yoksa mağaza açılıyor, sonsuz enerjide harcama yok).
+
+## Tutorial sonuç panelleri ekranın en altından geliyor (07.10.2026 — derlendi, cihaza kuruldu, BAKILMADI)
+
+Kök görünüm (`activity_main` `main`) `fitsSystemWindows` ile gezinme çubuğunun üstünde bittiği
+için doğru/yanlış paneli çubuğun üst sınırından çıkıyordu. `NavBarPanelExtension` çubuğun
+arkasına (`android.R.id.content`) panel zemininde bir şerit koyuyor ve her karede (OnPreDraw)
+panelin ötelemesine göre kaydırıyor; panel + şerit tek sayfa gibi alttan çıkıyor. Panelin gizli
+ötelemesi artık `resultPanelHiddenY` (= yükseklik + çubuk). İlk sürüm Android 13'te hiç
+görünmedi: opak `navigationBarColor` sistemce içeriğin üstüne çiziliyor; şerit görünürken çubuk
+şeffaf yapılıyor, panel kapanınca eski renk geri konuyor. Bağlı ekranlar: `TutorialFragment`, `AbacusFragment`, `BlindingLessonFragment`,
+`AbacusPracticeFragment`.
+
+## Seri: hesap yokken gün sayılmıyor (07.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Hata: kayıttan önceki ilk tutorial'da 5 dk geçilince gün varsayılan 5 dk hedefle sayılıyordu
+(kayıtta seçilen hedef `streak_signup_pending`'de bekliyor, giriş yapılınca uygulanıyor).
+Kayıtta 10 dk seçilse de gün geri alınmıyordu → seri 1, ekranda "6 / 10 dakika".
+Düzeltme: `StreakRepository.refresh` günü yalnızca `owner_uid` doluyken ilerletiyor; süre
+birikmeye devam ediyor ve hesap bağlanınca ilk tazelemede doğru hedefle değerlendiriliyor.
+Yan etki: "serin başladı" kutlaması tutorial içinde değil kayıttan sonra çıkıyor.
+
+## Liderlik tablosunda uygulama avatarı (06.10.2026 — derlendi, cihazda DENENMEDİ)
+
+Kayıt ekranı (`RecordFragment` + `RecordLeaderboardAdapter`) Google hesabının fotoğrafını
+(`entries.photoUrl`) değil `publicProfiles.avatarConfig`'i [AvatarView] ile çiziyor.
+`LessonLeaderboardRepository.listenLeaderboard` girişleri önce hemen yayıyor, eksik avatarları
+30'arlı `whereIn(documentId)` ile okuyup ikinci kez yayıyor; uid → avatar süreç boyunca
+önbellekte. Kendi satırımız yerel `AvatarStore`'dan. Avatarı olmayan → varsayılan PERSONAS.
+Sunucu (`submitLeaderboardScore`) artık `photoUrl` yazmıyor; rekor kırılan girişte alanı
+siliyor. Eski girişler için tek seferlik `functions/scripts/strip-leaderboard-photo-urls.js`
+(hizmet hesabı gerekiyor, önce `DRY_RUN=1`) — ÇALIŞTIRILMADI.
+
+## Ders kilitleri üretime çekildi (06.10.2026 — derlendi, cihazda DENENMEDİ)
+
+`GlobalLessonData.createLessonItems` 1–6: `p1_i01` dışındaki bütün ders/sandık item'leri
+`isCompleted = false`. Ayrıca 14 sandıkta kalmış test artığı `stepIsFinish = true` silindi:
+`withDerivedUnlocks` bitmiş sandığın arkasındaki dersi kendiliğinden açıyordu ve
+`PartSelectionFragment` 2. ve 3. bölümün son sandığı "bitmiş" göründüğü için 5. ve 6. bölümü
+1. bölüm biter bitmez açıyordu. Yeni sandık bitişinde ilk bitiş görev sayaçları da artık çalışır.
+
+**Yalnızca yeni hesapları etkiler.** `LessonProgressMerge` `isCompleted`'ı `local || remote`
+birleştiriyor; mevcut hesaplardaki açık dersler açık kalır. Denemek için yeni hesap gerekir.
+
+**4. ve 5. bölüm sandıkları** (kullanıcı onayıyla düzeltildi, cihazda DENENMEDİ):
+`ChestFragment.updateMapProgress` sonraki item'ı `cupPoint1 != null` ise +2 atlayarak
+buluyordu. 4. ve 5. bölüm sandıklarında `cupPoint1` yok, yani kilidi başlık alıyordu, sonraki
+ders değil. `withDerivedUnlocks` bunu ancak bölüm yeniden yüklenince kapatıyordu: gerçek
+zamanlı dinleyici `sameProgressState` eşit çıktığı için erken dönüyor. Artık "sonraki item
+başlık mı" kontrol ediliyor. 1–3 ve 6'da davranış aynı (şablon tarandı: her sandıktan sonra
+başlık geliyor, hiçbir dersten sonra gelmiyor); 7–9'da bütün item'ler `raceBusyLevel` taşıdığı
+için bu satıra hiç gelinmiyor; bölüm kilitleri (`PartSelectionFragment`) bu satıra bağlı değil.
+Cihazda bakılacak: 4. bölümün ilk sandığı bitince sıradaki ders haritaya dönüşte hemen açık mı.
+
+## Sıradaki iş 1 — güvenlik ağı sandık ekrandayken kilidi açıyor (teşhis tamam, düzeltme yapılmadı)
+
+**Belirti:** Görünür bir belirti gözlenmedi (sandık tam ekran ve alt barı örtüyor), ama sandık
+ekrandayken chrome kilidi teknik olarak açık. Asıl sorun şu: kilit sayacını fragment'ların
+`acquire`/`release` çiftleri değil, bu güvenlik ağı yönetiyor.
+
+**Kanıt** (`ChromeBlockerDbg`, 01.10.2026 20:58 — tek bir ders bitişi):
+
+```
+[ChestFragment.onViewCreated] acquire → depth=2
+[LessonResult.onDestroyView] release → depth=1
+[ensureUnlocked] force applyUnlock (depth was 1, release eksik kalmış)   ← sandık hâlâ ekranda
+[MissionChestRewardFragment.onViewCreated] acquire → depth=2
+[ChestFragment.onDestroyView] release → depth=1
+[ensureUnlocked] force applyUnlock (depth was 1, release eksik kalmış)   ← görev ödülü hâlâ ekranda
+[MapFragment.disableMainActivityViews] acquire → depth=1
+[ensureUnlocked] force applyUnlock (depth was 1, release eksik kalmış)   ← harita kilidi 1 ms sonra siliniyor
+```
+
+**Kök neden:** `MainActivity.ensureChromeUnlockedAfterMapReturn` (3205) "bloklayan overlay hâlâ
+aktif mi" kararını yalnızca `abacusFragmentContainer`'a bakarak veriyor. LessonResult →
+ChestFragment geçişinden sonra canlı overlay `resultFragmentContainer`'da duruyor; abacus kabı
+boş olduğu için `blockingOverlayStillActive=false` çıkıyor ve sayaç zorla 0'a çekiliyor. Aşağıda
+düzeltilen back stack dinleyicisiyle aynı türden eksik: `3722b05` öncesinde hayalet fragment bu
+kontrolü tesadüfen geçiriyordu.
+
+**Önerilen düzeltme** (uygulanmadı — ders sonu akışına dokunuyor, önce onay alınmalı):
+
+1. `blockingOverlay` hesabına `resultFragmentContainer` da girsin: host `VISIBLE` ve
+   `liveOverlayIn(R.id.resultFragmentContainer)` `fragmentBlocksSeasonLeaderboardGate`'i
+   sağlıyorsa bloklayan overlay var sayılsın (`reconcileAbacusOverlayWhenMapIsBase`'in başındaki
+   kontrolle aynı koşul).
+2. **Dikkat:** güvenlik ağı bugüne kadar eksik kalan release'leri örtüyor olabilir. Düzeltmeden
+   sonra sayaç gerçek `acquire`/`release` çiftleriyle yönetilecek; bir ders bitirip haritaya
+   dönüldüğünde `depth=0` olduğu ve `release ignored` satırlarının kaybolduğu logdan
+   doğrulanmalı. `depth>0` kalırsa gerçek bir eksik release ortaya çıkmış demektir — onu
+   bulup düzeltmek gerekir, güvenlik ağını geri gevşetmek değil.
+3. Haritanın soru promosu / rehber için aldığı kilidin (`MapFragment.disableMainActivityViews`)
+   neden hemen silindiği ayrıca incelenmeli: o anda hiçbir overlay yok, yani madde 1 onu
+   düzeltmez. `ensureUnlockedForMapReturn` haritanın kendi kilidinden habersiz.
+
+**Not — eski "chrome kilidi asimetrisi" işi:** `MapFragment`'teki çapraz eşleşme düzeltildi
+(bkz. Yakında yapılanlar), ama o teşhis doğrulanmadı. Haritanın kilidi çift alıp sayacı 2'de
+bıraktığı durum cihazdaki hiçbir koşuda oluşmadı; görülen `depth=2` her seferinde
+`LessonResult` + `ChestFragment` idi.
+
+## Maraton rehberi açıkken ekran tıklanabiliyordu (02.10.2026 — düzeltildi, cihazda doğrulandı)
+
+**Belirti:** 1. bölümün ilk sandığından sonra açılan rehber paneli (`MapFragment.showGuidePanel`)
+ekrandayken alt çubuğa, para paneline ve haritanın üst şeridine dokunulabiliyordu. Kullanıcı
+rehber açıkken alt çubuktan Görevler sekmesine geçebildi.
+
+**Kanıt** (`PostLessonQueue`, 18:14–18:15):
+
+```
+18:14:59.973 rehber | caller=RatingDialog.dismiss          ← kuyruk rehber adımını açtı
+18:15:00.057 tur | caller=watchdog ... rehber=false        ← rehber "gösterildi" işaretlendi
+18:15:00.057 kilit birakildi | caller=watchdog             ← 84 ms sonra kilit bırakıldı
+18:15:00.070 bekliyor | caller=watchdog block=guide_panel_visible
+18:15:01.897 StudyTime.ekran | ekran=MissionsFragment      ← kullanıcı sekme değiştirebildi
+```
+
+**Kök neden — 1 Ekim değil, 24 Eylül (`b13e3d0`).** Kullanıcı 1 Ekim'deki kilit
+düzeltmesinden şüphelendi; değil. `b13e3d0` kuyruğun kilit bırakmasını guard'lı
+`enableMapTouchRouting`'ten (rehber açıkken reddediyordu) guard'sız
+`releasePostLessonQueueTouchLock` → `forceEnableMapTouchRouting`'e çevirdi. Gerekçesi
+"ChromeBlocker sayıcılı, başkasının acquire'ı duruyor"du; bu fragment'lar ARASINDA doğru ama
+harita içindeki kilit tek ve paylaşılan bir kilit: `forceEnableMapTouchRouting` şeffaf
+katmanı kaldırıyor ve alt çubuğu DOĞRUDAN açıyor, sayaca bakmadan. Kuyruk, rehberi gösterdiği
+an boşaldığı için (`MarathonGuideStore.markShown`) bir sonraki turunda — bekçi yüzünden en geç
+1 sn içinde — kilidi bırakıyor. 1 Ekim öncesi kod (`be6cb48`) aynı yolda aynı şeyi yapıyordu
+(çift release + doğrudan açma); bu kod okunarak görüldü, eski sürüm cihazda denenmedi.
+
+**Düzeltme:** `MapFragment.releasePostLessonQueueTouchLock` rehber paneli görünürken kilidi
+açmıyor, rehbere devrediyor (logda `GuideDebug: releasePostLessonQueueTouchLock SKIP`). Panel
+kapanırken kendi dinleyicisi koşulsuz bırakıyor, yani `b13e3d0`'ın çözdüğü "bırakmayı reddedip
+bir daha kimsenin bırakmaması" sorunu geri gelmiyor. 1 Ekim'de yazılan hiçbir satıra
+dokunulmadı.
+
+**Aynı türden başka bozulma arandı** (haritanın kilidini kullanan bütün çağrılar tarandı):
+- 1 Ekim değişikliği: bozduğu başka bir senaryo bulunmadı. Kilidi açan bütün yollar
+  `enableMainActivityViews`'tan geçiyor; yalnızca `enableMapFragmentViews`'a güvenen yol yok.
+- Öğretmene sorma tanıtımı: kuyruk aynı şekilde kilidi tanıtım penceresi gelmeden bırakabiliyor,
+  ama aradaki süre bir iki kare (tanıtım aynı turda açılıyor). Dokunulmadı.
+- **Açık kalan:** rehber açıkken uygulama arka plana alınıp geri gelinirse
+  `MapFragment.onResume` → `sanitizeMapTouchSurface` → `ensureChromeUnlockedAfterMapReturn`
+  chrome sayacını zorla sıfırlıyor ve alt çubuk yine açılıyor (şeffaf katman kalıyor). Bu,
+  aşağıdaki "Sıradaki iş 1"in 3. maddesiyle aynı kök: güvenlik ağı haritanın kendi kilidinden
+  habersiz. Kullanıcıya soruldu, "sorun değil" dedi; DÜZELTİLMEDİ. İleride istenirse önerilen:
+  güvenlik ağı rehber paneli görünürken "bloklayan overlay var" saysın.
+
+**Cihazda doğrulandı (18:41–18:45, yeni hesap, kullanıcı "tıklayamadım" dedi):**
+
+```
+18:41:59.701 markShown
+18:42:00.376 kilit birakildi | caller=watchdog
+18:42:00.376 GuideDebug: releasePostLessonQueueTouchLock SKIP ...      ← kilit rehberde kaldı
+          (10,4 sn boyunca ekran değişimi ve kilit hareketi yok, sayaç depth=1)
+18:42:10.810 enableMainActivityViews releasing ChromeBlocker → depth=0  ← "Rekor" hedefine basıldı
+18:42:10.871 StudyTime.ekran | ekran=RecordFragment
+```
+
+Ardından 1 Ekim düzeltmesinin yerinde durduğu da denendi: sekmeler gezildi, üç ders bitirildi
+(yanlış sonuç, sandıklı ders, reklam + puanlama). Sandık kabı görünür kaldı
+(`block=result_overlay:NewChestFragment hostVisible=true`), her dönüşte kuyruk kilidi bırakıldı
+ve `bos` yazdı, dönüşten sonra mağaza/seri ekranı ve yeni ders açılabildi. Çökme yok.
+Rehber tek seferlik (yeni hesap + 1. bölümün ilk sandığı).
+
+## Sıradaki iş 2 — yetim back stack girişleri (`fmBackStack=11`)
+
+`LessonAdapter.continueWithLesson` dersi
+`replace(abacusFragmentContainer, ...).addToBackStack(null)` ile açıyor. Ders normal bitince
+(LessonResult → ChestFragment → NewChestFragment) yalnızca `"map_chest"` girişi pop ediliyor;
+ders açılışının girişi back stack'te kalıyor. Ölçülen değer: **11 giriş**.
+
+Sonuçları:
+
+1. O fragment örnekleri bellekte canlı kalıyor, her tamamlanan derste bir tane daha birikiyor.
+2. Haritada geri tuşuna basınca görünür hiçbir şey olmadan bu girişler tek tek pop ediliyor.
+3. `performAbacusDismiss` / `performTutorialDismiss` / `BlindingLessonFragment` gibi yerler
+   `fm.popBackStack()` ile **en üstteki** girişi atıyor ve o giriş artık kendilerinin değil.
+4. `findFragmentById` bu girişlerin tuttuğu fragment'ı container boş olsa bile döndürüyordu —
+   bu kısım `MainActivity.liveOverlayIn` (1878) ile kapatıldı, bkz. aşağıda.
+
+Kalıcı çözüm ders bitiş yolunda bu girişi de pop etmek; ama o yol hassas (bkz. Çalışma
+anlaşmaları). Ayrı bir turda, tek başına ve derleyerek yapılmalı. `docs/YAYIN_ONCESI_KONTROL.md`
+teknik borç bölümünde de yazılı.
+
+## Seri dondurma — yazıldı ve deploy edildi, cihazda DENENMEDİ (01.10.2026)
+
+Mağazada "Özel Teklifler"in en altında, 4000 altına satılan tek kullanımlık koruma.
+
+**Kurallar** (ürün kararları kullanıcıya soruldu, cevapları bunlar):
+
+- Kaçırılan **ilk** günü kapatır; kapatılan gün seriye **eklenmez** (5 günlük seri 5 kalır).
+- Aynı anda en fazla **1** tane tutulur; harcanınca yenisi alınabilir.
+- İki gün üst üste kaçarsa dondurma **yine harcanır** ve seri yine kırılır.
+- Satın alındığı günden **öncesini kurtarmaz** (dün kırılan seri bugün dondurma alınarak
+  onarılamaz). Bu kural olmadan sunucu seriyi diriltiyordu, çünkü sunucuda kırılma hiç
+  yazılmıyor: `current` yeni bir gün bildirilene kadar eski değerinde duruyor.
+
+**Nasıl çalışıyor:** kaçan gün "köprü" olarak serinin son günü yapılıyor ve `frozenDays`'e
+ekleniyor; ardışıklık kontrolünün hiçbir satırı değişmedi. Kural iki yerde, aynı girdiyle aynı
+sonucu vermek zorunda:
+
+| Taraf | Yer |
+|---|---|
+| Sunucu | `functions/index.js` → `settleStreakFreeze`, `applyStreakDays`, `buyStreakFreeze`, `submitStreakDay` |
+| İstemci | `StreakFreezeRules.settle` (yan etkisiz) + `StreakRepository.applyFreeze` / `adoptServerState` |
+
+İstemci dondurmayı kendi tarafında da harcıyor (çevrimdışı açılışta seri kırık görünmesin
+diye) ve `submitStreakDay` / `buyStreakFreeze` çağrılarında yerel gününü (`today`) gönderiyor;
+sunucu "dün kaçtı mı"yı o güne göre soruyor. Sunucu alanları: `freezes`, `freezeDay`,
+`frozenDays` (`users/{uid}/streak/state`).
+
+Fiyat iki yerde: `STREAK_FREEZE_COST` (sunucu, düşülen miktar) ve
+`StreakRepository.FREEZE_COST_GOLD` (istemci, kartta yazan). Biri değişirse diğeri de değişmeli.
+
+**Testler** (hepsi geçiyor):
+
+```powershell
+node functions/scripts/test-streak-freeze.js        # kural, kaynaktan çekilerek (48)
+node functions/scripts/test-streak-freeze-flow.js   # gerçek fonksiyonlar, sahte Firestore (47)
+.\gradlew testDebugUnitTest --tests "*StreakFreezeRulesTest"   # istemci ikizi (14)
+```
+
+**Doğrulanan:** derleme, yukarıdaki testler, deploy (`submitStreakDay` güncellendi,
+`buyStreakFreeze` oluşturuldu; ikisi de oturumsuz istekte `UNAUTHENTICATED` dönüyor, yani
+yükleniyorlar).
+
+**Cihazda doğrulanan (01.10.2026 23:30, kullanıcı elle denedi + log + ekran görüntüsü):**
+
+- Deploy sonrası `submitStreakDay` gerçek çağrılarda çalışıyor: günsüz bildirim
+  (`Sync.cevap | BASARILI current=0`) ve gün bildirimi (`BASARILI current=1 lastDay=2026-10-01`).
+- Satın alma: `Repo.dondurma | SATIN_ALINDI adet=1 gun=2026-10-01`; altın 4019 → 19; sonraki
+  sunucu okumalarında `dondurma=1` (uygulama yeniden başlatıldıktan sonra da).
+- Mağaza kartı "✓ HAZIR" hâlinde, seri ekranındaki satır "Hazır" (ok yok); satın almadan
+  hemen sonra seri ekranı yeniden çizildi (`RESULT_STREAK_FREEZE_BOUGHT`).
+- Seri ekranındaki "Yok ›" satırından mağazanın kartta açılması kullanıcı tarafından denendi.
+
+**Doğrulanmayan — dondurmanın HARCANMASI.** Yalnızca testlerle biliniyor; cihazda görmek için
+gerçekten gün atlamak gerekiyor:
+
+1. Dondurma eldeyken ertesi gün **hiç çalışma** → öbür gün aç. Beklenen: "seri dondurman
+   serini korudu" bildirimi, hafta şeridinde kaçan günde kar tanesi, seri sayısı aynı, seri
+   ekranında "Yok ›", mağazada düğme yeniden `4000`. Logda
+   `Repo.dondurma | HARCANDI … seriKurtuldu=true`. Aynı gün hedef tutturulunca seri +1.
+2. İki gün üst üste kaçırma: seri 0, dondurma gitmiş, "serin kırıldı" bildirimi.
+3. Geçmişi onarmama: dondurma yokken bir gün kaçır, ertesi gün dondurma al → seri geri
+   gelmemeli, o gün çalışınca 1'den başlamalı, dondurma "Hazır" kalmalı.
+
+**Saati ileri alarak deneme** — sunucu istemcinin gününü ±1 günden fazla sapınca kabul
+etmiyor, iki taraf ayrışır.
+
+**Yapılmayan, fikir olarak duran:** dondurma harcandığında toast yerine küçük bir kutlama
+ekranı; akşam hatırlatmasının "dondurman var" diyen bir çeşidi.
+
+## Harita dışı dönüşlerde yeni seri sorusu: kupa testi, günlük soru, yarış dersi (02-03.10.2026)
+
+Görevler ekranından açılan iki ders — kupa yolu kartlarındaki test (kupa modu, bölüm 9) ve
+günlük soru — nasıl kapanırsa kapansın (doğru, yanlış, çıkış düğmesi, geri tuşu) serisi olmayan
+kullanıcıya `NewStreakFragment` açılıyor. Koşul haritadaki ders dönüşüyle aynı
+(`StreakRepository.needsNewStreakPrompt`: seri 0 ve bugün sorulmadı). Önce kupa testi yazıldı
+(aşağıdaki maddeler onun hikâyesi), günlük soru aynı akşam eklendi (en alttaki bölüm).
+
+**İsimler:** mekanizma kupa testi için yazıldığında adları `cup…` ile başlıyordu
+(`requestNewStreakPromptAfterCupTest`, `isCupResultCovered`, `cupResultTouchBlocker`, log öneki
+`kupa yeni seri` / `kupa dokunma engeli`). Günlük soru eklenince ortak olanlar yeniden
+adlandırıldı: `requestNewStreakPromptOnTasks`, `isTasksReturnCovered`, `tasksReturnTouchBlocker`,
+`runWhenTasksReturnUncovered`, log öneki `gorevler …`. `7cc046a` commit'inde eski adlar duruyor;
+aşağıdaki doğrulama kayıtlarındaki log satırları o günkü önekle (`kupa …`) basılmıştı.
+
+**Neden ders sonrası kuyruğunun içinde değil:** kuyruk (`pumpPostLessonQueue`) yalnızca harita
+tabanında çalışıyor; kapısı ve adımlarının çoğu haritaya özel. Kupa testi Görevler'den açılıp
+oraya dönüyor. Kuyruğa dokunulmadı; `MainActivity`'de kendi küçük kapısı ve bekleyişi var
+(`requestNewStreakPromptOnTasks` → `runOffMapNewStreakPrompt` → `offMapNewStreakBlockReason`;
+iç adlar 03.10.2026'da değişti, bkz. "Yarış dersi dönüşü").
+
+**Sıra — kullanıcının kararları, üç turda oturdu:**
+
+    reklam → (Pro paneli) → yeni seri sorusu → kupa paneli ve sayacın akması → rozet kutlaması
+
+Her adım bir öncekinin KAPANMASINI bekliyor; hiçbiri bir diğerinin altında başlamıyor.
+**Bunu "düzeltip" haritadaki sıraya (rozet → yeni seri) döndürmeyin.** Nasıl buraya gelindi:
+
+1. İlk sürüm haritadaki sırayı koruyordu ve soruyu kupa sayacı + rozet listesinin arkasına
+   koyuyordu. Cihazda soru testten 1,7–3,4 sn sonra geldi (rozet listesi sunucudan geliyor,
+   süre her seferinde farklı); kullanıcı geç buldu ve "hemen" istedi.
+2. Soru hemen açılınca rozet kutlaması onun ALTINDA açıldı (cihazda görüldü, 10:43 ve 10:44).
+   Aynı şey eskiden beri reklamın ve Pro panelinin altında da oluyordu (10:29, 10:41):
+   kupa dönüşü, reklam olup olmadığına bakmadan her şeyi aynı anda başlatıyordu.
+3. Şimdi: `TasksFragment`'teki `cupModeResult` dinleyicisi her şeyi tek blokta
+   (`startCupResult`) ve `checkAndShowInterstitialAdIfAllowed`'ın geri çağrısında başlatıyor.
+   Blok önce yeni seri isteğini gönderiyor, sonra kupa panelini `runWhenTasksReturnUncovered`
+   ile bekletiyor (`MainActivity.isTasksReturnCovered`: soru sırada/ekranda ya da Pro paneli
+   açık). Rozet kutlaması sayaç oturduktan sonra açıldığı için ayrıca bekletilmiyor.
+
+4. İlk denemede rozet YİNE sorunun altında açıldı. Sebep: bekleyen kupa farkını tüketen üç
+   yer var — dinleyici, `TasksFragment.onResume` ve `onHiddenChanged` (son ikisi güvenlik
+   ağı). Sonuç bekletilince reklam kapanıp uygulama öne geldiğinde `onResume` farkı kendisi
+   tüketti ve paneli + rozeti soruyu beklemeden başlattı. `cupResultDeferred` bayrağı bekleme
+   boyunca o iki yolu kapatıyor. **Kupa sonucunu bekleten bir şey eklerseniz bu üç tüketiciyi
+   birlikte düşünün.**
+
+5. Sıra oturdu ama reklam → soru akışında soru kayarak gelirken ARKASINDA kupa paneli bozuk
+   göründü: eski görüntüsüyle, 88 px sağa-aşağı kaymış ve arkası karartılmış (ekran
+   görüntüsü 11:07). Sebep uygulamada değil, Android'in pencere yöneticisinde — ama onu
+   tetikleyen bizim bekletmemiz:
+   - Panel test boyunca kapatılmıyor, `Dialog.hide()` ile gizleniyor. Sistem gizlenen
+     pencerenin yüzeyini activity DURDURULANA kadar son karesiyle saklıyor (`mDestroying`).
+   - Reklam ekranı (`AdActivity`) yarı saydam: `MainActivity` duraklıyor ama durmuyor.
+     Dönüşte sistem `notifyAppResumed(wasStopped=false)` → `destroySurfaces(cleanupOnResume)`
+     ile `mDestroying`'i siliyor, yüzeyi YOK ETMEDEN. `WindowState.isOnScreen()` pencerenin
+     GONE olduğuna bakmıyor → eski yüzey yeniden gösteriliyor.
+   - 88 px, pencerenin gölge payı (`surfaceInsets`): gizlenirken oynayan çıkış animasyonu
+     konumu sıfırlıyor, pencere GONE olduğu için `updateSurfacePosition` geri koymuyor.
+   - Eskiden görülmüyordu çünkü panel reklamdan ÖNCE geri açılıyordu. Bekletme (madde 3)
+     paneli reklam boyunca gizli bıraktı.
+
+   Düzeltme (`TasksFragment.concealHiddenCupPanel` / `revealCupPanel`): gizli panelin
+   penceresi saydam yapılıyor (`alpha=0`) ve karartma bayrağı kaldırılıyor — yüzey geri gelse
+   de görülmüyor. İki yerden çağrılıyor: test kapanınca (reklamdan önce) ve `onResume`'da.
+   İkincisi pencereyi sisteme yeniden bildirdiği için geri gelmiş yüzey yeniden gizleniyor;
+   böylece panel açılırken giriş animasyonu da oynuyor (yoksa sistem onu "zaten ekranda"
+   sayıp atlıyordu). `revealCupPanel`, `show()`'dan hemen önce geri alıyor; "saydam mı"
+   bilgisi ayrı bir bayrakta değil pencerenin kendi `alpha` değerinde duruyor.
+   **Paneli `hide()` ile gizleyen başka bir yol eklerseniz bu ikiliyi de kullanın;** gizli
+   panel + yarı saydam bir activity (reklam, izin penceresi, paylaşım menüsü) aynı hayaleti
+   üretir. Bilinen, dokunulmayan hâli: test SIRASINDA böyle bir activity açılıp kapanırsa
+   hayalet artık kalıcı değil ama `onResume`'a kadar bir an görünebilir.
+
+   Pencerenin durumunu görmek için:
+   `adb shell dumpsys window com.numigo.app/com.example.app.MainActivity` — kupa paneli
+   `ty=APPLICATION` ve `surfaceInsets` olan pencere; `mAttrs` içinde `alpha=0.0`,
+   `fl=` içinde `DIM_BEHIND`, `mViewVisibility` (0x8 = gizli), `mHasSurface`,
+   `Surface: shown=`, `mDestroying=` alanlarına bakın.
+
+6. Sıra beklenirken ekrana dokunulabiliyordu; iki ayrı hata çıktı (cihazda görüldü, 17:38 ve
+   17:41):
+   - **Soru gelmeden karta basma.** Test kapanışı ile sorunun gelişi arasında (~0,25 sn +
+     sorunun kayması) Görevler ekranı açıkta. Kupa Yolu kartına basılınca İKİNCİ bir panel
+     açıldı ve sorunun üstünde kaldı; gizli bekleyen ilk panel de sahipsiz kaldı
+     (`showCupPathPanel`'deki "zaten açık mı" kontrolü `isShowing`'e bakıyor ve gizli panel
+     için false dönüyor). Sahipsiz panel pencere listesinde sonsuza dek duruyor.
+   - **Sayaç akarken sandığa basma.** Panel geri geldikten 0,45 sn sonra sandığa basıldı;
+     sandık ekranı Görevler'i gizlediği için bekleyen rozet kutlaması sessizce atlandı.
+
+   Düzeltme: `activity_main.xml`'e görünmez bir dokunma katmanı eklendi
+   (`tasksReturnTouchBlocker`, yükseklik 9.5dp). Görevler, alt çubuk ve para panelini kapatıyor
+   ama ders/sandık/rozet kaplarının (10dp) ve sezon kapısının (30dp) ALTINDA: sıra
+   beklenirken açılan bir kutlama ya da kapı dokunulabilir kalıyor, katman kilitlenmeye yol
+   açamıyor. **Yüksekliğini 10dp'nin üstüne çıkarmayın.** Katman iki sebeple açık:
+   - `cupResultDeferred` — test kapanışından panelin geri gelişine kadar (reklam, Pro
+     paneli ve soru kendi pencerelerinde, etkilenmiyorlar);
+   - `cupBadgeTouchHold` — panel geri geldikten sonra rozet kararına kadar. Bu sürede panelin
+     penceresi de dokunulmaz (`FLAG_NOT_TOUCHABLE`); dokunuşlar alttaki katmana düşüp
+     yutuluyor. Rozet yoksa karar gelir gelmez, varsa kutlama açılırken bitiyor.
+
+   Rozet listesi sunucudan geliyor ve gecikebiliyor. Karar `CUP_BADGE_TOUCH_HOLD_MS`
+   (sayaç + geçiş payı, 1,35 sn) içinde gelmezse dokunma AÇILIYOR — listeyi sonuna kadar
+   (5 sn) beklemek, internet zayıfken paneli her dönüşte ölü bırakırdı. Liste sonradan
+   rozetle gelirse kutlama yalnızca çocuk bir şeye başlamadıysa açılıyor (`isHidden` ya da
+   `isCupTestStarting`: zorluk paneli açık / test başlatılmış); başladıysa kutlama atlanıyor,
+   rozet yine kazanılmış oluyor. Kullanıcıya bu ödünleşim söylendi; "kutlama hiç kaçmasın"
+   denirse sabiti `CUP_BADGE_WAIT_MS` yapmak yeterli.
+
+   Güvenlik: katman açık unutulursa Görevler VE alt çubuk ölü kalır. Kapatan yollar: sonuç
+   bloğunun sonu, rozet kararı/süre dolması, `TasksFragment.onDestroyView`. Ayrıca katman her
+   dokunuşta `TasksFragment.needsTasksReturnTouchBlock()`'u soruyor; gerekmiyorsa kendini
+   kaldırıyor (logda `gorevler dokunma engeli SAHIPSIZ`). Normal açılıp kapanışı
+   `gorevler dokunma engeli ACIK / KAPALI` satırlarıyla görülüyor (`PostLessonQueue` etiketi).
+
+Ayrıntılar: soru test kapandıktan ~0,3 sn sonra açılıyor. `restorePartAfterCupLesson` hiçbir
+şeyi beklemiyor. Reklam kararı hiç gelmezse 2 sn sonra (reklam ekranda değilse) blok yine de
+başlıyor; örten pencere 3 dakikada kapanmazsa kupa sonucu yine de işleniyor (bekleyen kupa
+farkı tüketilmezse bir sonraki testte bayat okunurdu). Reklam da soru da yoksa — dönüşlerin
+çoğu — blok eskisi gibi aynı çağrının içinde çalışıyor. Yan etki: reklam aralığı dolmuş ama
+reklam çıkmayan dönüşlerde panel ~350 ms geç geliyor (karar bir ders listesi okumasını
+bekliyor).
+
+Soru için: istekten sonra araya girebilecekleri (Pro paneli, zaten açık bir rozet kutlaması,
+yeni bir test) kapı 400 ms'de bir yokluyor; üç dakikada açılamazsa ya da kullanıcı
+Görevler'den ayrılırsa soru düşürülüyor, koşullar sürdükçe bir sonraki dönüşte yeniden
+soruluyor.
+
+### Günlük soru dönüşü (02.10.2026 akşamı — cihazda doğrulandı, anahtar açık ve kapalı)
+
+Kullanıcı günlük soru kartından dönüşte de sorunun sorulmasını istedi. Günlük soru kupa
+testinden farklı kapanıyor: `BlindingLessonFragment.closeFragment` →
+`MainActivity.finishTasksOverlayAnimated("dailyQuestion.close", fromDailyQuestion = true)` →
+320 ms'lik kapanış animasyonu → `completeTasksOverlayDismiss` (reklam kontrolü BURADA, yani
+`MainActivity`'de). Bu yüzden iki haber `MainActivity`'den `TasksFragment`'e gidiyor:
+
+1. `onDailyQuestionClosing` — Görevler görünmeden ÖNCE. Soru sorulacaksa
+   (`needsNewStreakPrompt`) `dailyReturnDeferred` kuruluyor: kart tazelenmiyor, ekran dokunmaya
+   kapanıyor. Sorulmayacaksa HİÇBİR ŞEY değişmiyor; serisi olan kullanıcıda dönüş eskisiyle
+   birebir aynı (bilerek: çalışan yolu değiştirmemek için).
+2. `onDailyQuestionReturnSettled` — reklam kontrolünün geri çağrısında. Soru burada isteniyor,
+   kart `runWhenTasksReturnUncovered` ile soru (ve Pro paneli) kapanınca tazeleniyor.
+
+Sıra: reklam → (Pro paneli) → yeni seri sorusu → kartın tazelenmesi. Kart neden bekliyor:
+tazelenmesi iki TEK SEFERLİK animasyonu başlatıyor (ilerleme çubuğu 2,8 sn, yanlış cevapta
+kırık kalp); dönüş anında başlasalar sorunun altında oynar, çocuk kartını değişmiş bulur ama
+değişirken göremezdi. Kupa sayacındaki dersin aynısı. Kartı tazeleyen üç yer var
+(`onHiddenChanged`, `onResume`, bekletmenin sonu); ilk ikisi bekleme süresince kapalı.
+
+Güvenlik: reklam kararı hiç gelmezse 2 sn sonra (reklam ekranda değilse) yine de devam
+ediliyor; `onDestroyView` bekletmeyi sıfırlıyor; kapanış iki kez bildirilirse ikincisi yok
+sayılıyor.
+
+**Kapsam dışı (bilerek):** günlük sorunun ÖDÜL sandığı (kart 3/3 olunca "al"a basılıp açılan
+sandık). O bir ders dönüşü değil; istenen soru ekranından dönüştü. Reklamın kart animasyonunun
+üstüne gelmesi de (soru sorulmayan dönüşlerde) eskisi gibi duruyor.
+
+**Cihazda doğrulandı (19:02–19:04, test anahtarı açık, kullanıcı "sorunsuz" dedi):** dört
+günlük soru dönüşü ve bir kupa testi.
+- Reklamlı dönüş: engel 19:02:39.36'da açıldı, reklam 19:02:40.0–45.3, soru 19:02:45.41
+  (`block=not_resumed` bekleyip reklam kapanınca), soru kapandıktan 0,14 sn sonra engel kalktı.
+- Reklamsız dönüş: kapanıştan 0,34 sn sonra soru (`bekleme=0ms`; 0,32 sn kapanış animasyonu).
+- Çıkışla kapanan iki dönüşte de soru geldi; engel her seferinde soru kapandıktan sonra kalktı.
+- Kupa testi (`caller=cupModeResult`) yeniden adlandırmadan sonra da aynı çalışıyor.
+Çökme yok.
+
+Anahtar KAPALIYKEN de doğrulandı (19:12–19:13, üç günlük soru dönüşü, kullanıcı "sorunsuz"
+dedi): logda `gorevler yeni seri` ve `gorevler dokunma engeli` satırı hiç yok, yani dönüş
+eskisiyle aynı yoldan geçti.
+
+### Yarış dersi dönüşü (03.10.2026 — yeni seri ve rozet cihazda doğrulandı; harita dönüşü de sonrasında denendi)
+
+7-8. kısım dersleri haritadan değil, kısım seçimi ekranının (`PartSelectionFragment`) üstündeki
+yarış panelinden açılıyor (`LessonAdapter.showRacePanel` → `onRaceStartClicked` →
+`BlindingLessonFragment`, `raceBusyLevel != null`). Kullanıcı test anahtarı açıkken bu
+derslerden sonra sorunun gelmediğini, ardından rozet kutlamasının da açılmadığını bildirdi.
+
+**Neden gelmiyorlardı:** yarış dersi de haritadaki derslerle aynı dönüş fonksiyonundan geçiyor
+(`finalizeMapReturnAfterLessonClaim`); soru (`newStreakPromptQueued`) ve rozet
+(`pendingBadgePayloadsForAd`) ders sonrası kuyruğuna giriyordu. Kuyruğun kapısı ise harita
+tabanı istiyor (`marathonGuideMapBlockReason` → `base_not_map:PartSelectionFragment`), yani
+hiçbiri açılmıyordu. Bayraklar silinmediği için ikisi de, çocuk sonradan bir haritaya
+girdiğinde alakasız bir anda çıkıyordu. Rozet için cihaz logu:
+
+```
+00:15:11.516 tur | caller=enqueuePendingBadgePayloads rozet=2 …
+00:15:16.614 bekliyor | caller=watchdog block=base_not_map:ProfileFragment
+00:15:31.165 bekliyor | caller=watchdog block=base_not_map:PartSelectionFragment
+00:17:09.610 bekci BIRAKTI | sure doldu, harita kilidi aciliyor
+```
+
+**Yeni seri — kullanıcı onayladı (`finalizeMapReturnAfterLessonClaim`'e dokunuyor):**
+
+- `finalizeMapReturnAfterLessonClaim` içinde tek dal: taban `PartSelectionFragment` ise soru
+  kuyruğa girmiyor, `requestNewStreakPromptOnPartSelection` ile Görevler'deki bağımsız yoldan
+  isteniyor. Taban haritayken satırlar eskisiyle aynı.
+- Görevler mekanizması iki tabanı tanıyacak şekilde genişledi: istek hangi taban için
+  yapıldıysa (`offMapNewStreakBaseClass`) soru yalnızca o tabandayken açılıyor, taban
+  değişirse düşürülüyor.
+- Sıra: reklam → (Pro paneli) → yeni seri. Görevler'den farkı: istek dönüş anında gönderiliyor,
+  reklamı kapı bekliyor (`ad_check_in_progress`, `not_resumed`). Reklam kontrolü dönüşten bir
+  kare sonra başladığı için soru 250 ms'den önce açılmıyor (`RACE_NEW_STREAK_DELAY_MS`).
+- Dokunma: soru gelene kadar ekran kapalı, Görevler için eklenen katmanla
+  (`tasksReturnTouchBlocker`). Katmanın artık iki sahibi var ve ikisinden biri istediği sürece
+  açık. Yarış dönüşündeki engel en fazla 4 sn geçerli (`RACE_TOUCH_HOLD_MAX_MS`): reklam
+  kararı hiç gelmezse ilk dokunuş engeli kaldırıyor.
+
+**Cihazda doğrulandı (00:14–00:19, test anahtarı açık, kullanıcı "sorunsuz çıkıyor" dedi):**
+
+```
+00:14:46.493 yaris yeni seri SIRADA | caller=BlindingLessonFragment.quit bekleme=243ms
+00:14:46.493 yaris dokunma engeli ACIK
+00:14:46.747 yaris yeni seri ACILIYOR | caller=retry
+00:14:46.783 yaris dokunma engeli KAPALI
+   … reklamlı dönüş …
+00:15:59.208 yaris yeni seri SIRADA | caller=ChestFragment.claimAfterRemove bekleme=246ms
+00:15:59.454 yaris yeni seri bekliyor | caller=retry block=ad_check_in_progress
+00:15:59.535 START AdActivity
+00:15:59.869 yaris yeni seri bekliyor | caller=retry block=not_resumed
+00:16:05.179 yaris yeni seri bekliyor | caller=retry block=ad_skip_showing
+00:16:06.431 yaris yeni seri ACILIYOR | caller=retry
+```
+
+Dört yarış dönüşü (bir çıkış, üç bitirme). Aynı turda üç günlük soru ve iki kupa testi dönüşü
+de denendi; `gorevler …` satırları eskisiyle aynı, kullanıcı "sorunsuz" dedi.
+
+**Rozet — kullanıcı onayladı (`runPostLessonQueue`'ya dokunuyor), cihazda doğrulandı:**
+kuyruğun kapısı kapalıyken tek bir dal: `showBadgeOnPartSelectionStep`. Taban kısım seçimiyse
+ve rozet bekliyorsa, harita istemeyen kapıyla (`offMapNewStreakBlockReason`) yalnızca rozet
+adımı (`showBadgeStep`) çalışıyor. Yeni seri sorusu sıradayken ya da açıkken bekliyor; sıra
+reklam → yeni seri → rozet (haritadaki rozet → yeni seri sırasının tersi, kupa testindekinin
+aynısı: rozet listesi sunucudan ~2 sn geç geliyor). Bekçi kuyruğu saniyede bir dürttüğü için
+geç gelen liste de yakalanıyor. Taban haritayken dal hiçbir şey yapmıyor.
+
+Doğrulama (00:30–00:33, yeni test aboneliğiyle, kullanıcı "sorunsuz" dedi): dört yarış
+dönüşünde soru geldi; rozetli olanda sıra tuttu, çökme yok.
+
+```
+00:32:39.436 yaris yeni seri SIRADA | caller=MissionChestReward.continue bekleme=246ms
+00:32:39.449 tur | caller=finalizeMapReturn:MissionChestReward.continue rozet=1 …
+00:32:39.701 yaris yeni seri ACILIYOR | caller=retry
+00:32:41.729 rozet | caller=NewStreakFragment.dismiss        ← soru kapanınca
+00:32:41.785 ekran=BadgeFragment … 00:32:47.755 ekran=PartSelectionFragment
+```
+
+**Harita dönüşü bu iki değişiklikten sonra da aynı (00:34–00:37, beş dönüş, çökme yok):**
+kuyruk sırası tuttu ve kilit her seferinde bırakıldı. En dolu dönüş:
+
+```
+00:36:08.625 kilit aliniyor
+00:36:09.154 bekliyor | block=badge_firestore_pending
+00:36:10.351 rozet | caller=enqueuePendingBadgePayloads
+00:36:16.410 yeni seri | caller=BadgeFragment.onDestroyView
+00:36:18.641 rating | caller=NewStreakFragment.dismiss
+00:36:19.797 rehber | caller=RatingDialog.dismiss
+00:36:20.535 GuideDebug: releasePostLessonQueueTouchLock SKIP: rehber paneli acik, …
+```
+
+Yani rehber kilidi düzeltmesi (`3d6da7f`) de yerinde. Diğer dönüşler: rozetsiz bitirme,
+başarısız sonuç (`LessonResultFalse`), görev sandığı + rozet (iki kez).
+
+Aynı turda görülen, YENİ OLMAYAN iki şey:
+
+- Haritaya girer girmez öğretmene sorma tanıtımı açıldı (`00:34:35.904 ogretmene sorma |
+  caller=MapFragment.onResume`). Yarış dönüşlerinden kalan `promo=true` bayrağı; aşağıdaki
+  "DOKUNULMADI" maddesinin cihazdaki hâli. (Yerelde `AskQuestionPromoDebug.FORCE` açık olduğu
+  için tanıtım her seferinde açılıyor; gerçekte uygunluk ve sayaç kontrolünden geçer.)
+- Bir dönüşte yeni seri sorusunu rozet kapanırken bekçi açtı (`00:37:24.205 yeni seri |
+  caller=watchdog`, `BadgeFragment.onDestroyView` 0,37 sn sonra): soru, rozetin çıkış
+  animasyonu sürerken geldi. Görsel bir sorun bildirilmedi.
+
+Bilinen sınırlar: rozet beklenirken ekran dokunmaya kapalı DEĞİL (kupa testindeki 1,35 sn'lik
+bekletme burada yok); kullanıcı rozet gelmeden başka sekmeye geçerse kutlama bir sonraki
+dürtüde (ders dönüşü, uygulamanın öne gelmesi ya da bir haritaya giriş) açılıyor.
+
+**Denemek için Pro gerekiyor:** 7-8. kısım Pro'ya kilitli. Test aboneliği 5 dakikada bir
+kendiliğinden yenileniyor ve yaklaşık 30 dakikada bitiyor; kısım kilitlenirse abonelik
+bitmiştir, yenisini almak gerekir (bkz. "Pro'dayken reklam çıktı: test aboneliği bitmişti").
+
+**İsimler (ikinci kez):** mekanizmanın iç adları `tasksNewStreak…` idi; artık yarışı da
+taşıdığı için `offMapNewStreak…` oldu (`runOffMapNewStreakPrompt`, `offMapNewStreakBlockReason`,
+`OFF_MAP_NEW_STREAK_BUDGET_MS` …). Dışarıdan çağrılan adlar aynı kaldı
+(`requestNewStreakPromptOnTasks`, `isTasksReturnCovered`, `setTasksReturnTouchBlock`), yani
+`TasksFragment`'te kod değişmedi. Log öneki dönüşe göre: Görevler'de eskisi gibi `gorevler …`,
+yarışta `yaris yeni seri …` / `yaris dokunma engeli …`.
+
+**Öğretmene sorma tanıtımı — kullanıcı onayladı (`finalizeMapReturnAfterLessonClaim`'e
+dokunuyor), cihazda doğrulandı (00:47, kullanıcı "sorunsuz" dedi):** tanıtım haritaya bağlı. Yarış dönüşünde
+bayrağı (`pendingLessonTypeReturnForPromo`) kurulduğu için kısım seçimi ekranında açılamıyor,
+bekliyor ve çocuk bir haritaya girer girmez çıkıyordu (yukarıdaki 00:34:35 satırı). Artık
+taban kısım seçimiyken bayrak hiç kurulmuyor (`promoReturn`); taban haritayken aynı.
+Doğrulama: iki yarış dönüşünde (`00:47:18` bitirme + iki rozet, `00:47:36` çıkış) logda
+`promo=false`; ardından haritaya girişte `00:47:44.047 bos | caller=MapFragment.onResume`,
+yani tanıtım açılmadı. Hemen sonra görülen tanıtım (`00:47:48.99 AskQuestionOpenFragment`)
+başka bir yoldan: kullanıcı haritada bir eğitim (`TutorialFragment`) açıp kapattı, o dönüş
+tanıtımı kendi yolundan deniyor ve yerelde tanıtım anahtarı açık.
+
+Aynı turda bir harita dersi dönüşü de vardı (`00:48:09`, yeni seri → kupa yolu). Kupa yolu
+adımı Görevler'e geçince kuyruk 6 sn boyunca `kilit BIRAKILAMADI | reason=map_yok` yazdı,
+`00:48:19.999`'da bıraktı. Bu işin dokunduğu bir yer değil (`showCupPathStep` aynı) ve
+kullanıcı bir sorun bildirmedi; o 6 saniyede ekranın kilitli kalıp kalmadığı İNCELENMEDİ.
+
+**Aynı nedene bağlı, DOKUNULMADI:** rating adımı (`justFinishedChestForRating`) kısım seçimi
+tabanında hâlâ açılamıyor; kurulursa bir haritaya girilene kadar bekler. Yarış dönüşlerinde
+kurulduğu görülmedi (`rating=false`), ele alınmadı.
+
+### Test anahtarı ve kupa testi turlarının doğrulama kayıtları
+
+**Test anahtarı:** koşulları elde etmek zor (yeni hesapta kayıt akışı soruyu o gün için
+işaretliyor, serisi olan hesapta kırılmayı beklemek gerekiyor).
+`NewStreakPromptDebug.FORCE = true` iki koşulu da atlıyor; depoda `false` durmalı. Logda
+`PostLessonQueue` etiketiyle `gorevler yeni seri SIRADA / bekliyor | block=… / ACILIYOR /
+DUSURULDU` satırları.
+
+**Şu anki durum (03.10.2026 00:58):** kullanıcının isteğiyle üç yerel test anahtarı da
+**kapatıldı** ve bu hâliyle cihaza kuruldu: `NewStreakPromptDebug.FORCE`,
+`AskQuestionPromoDebug.FORCE`, `MissionProgressDebug.RESET_ON_LAUNCH` (kodda `= true` kalan
+başka anahtar yok). Son ikisi artık depodaki hâlleriyle aynı; `NewStreakPromptDebug.kt`'de
+yalnızca yorum düzeltmesi (günlük soru ve yarış dersi yolları) duruyor, commit edilebilir.
+Anahtar kapalıyken yarış dersi dönüşü denendi (01:04–01:05, kullanıcı "sorunsuz" dedi): iki
+dönüşte `yaris yeni seri GEREKMIYOR` (seri var), dokunma engeli hiç açılmadı; rozetli olanda
+kutlama liste gelir gelmez açıldı (`01:05:24.637 rozet | caller=enqueuePendingBadgePayloads`).
+Ardından haritaya girişte tanıtım çıkmadı (`bos | caller=MapFragment.onResume`). Sorunun
+gerçek koşulda (seri 0 ve bugün sorulmadı) açılması görülmedi.
+
+**Cihazda doğrulanan (anahtar açıkken, önceki turlarla):** sorunun test kapanışlarında
+açılması (kullanıcı dört kapanış yolunu denedi; log yolları ayırt etmiyor, ilk turda altı
+kapanışın beşinde açıldı); kullanıcı Görevler'den ayrılınca düşürülmesi
+(`neden=gorevlerden_ayrildi`);
+reklamlı dönüşte sorunun reklamı ve Pro panelini beklemesi (`block=ad_skip_showing`);
+"hemen" zamanlaması (kapanıştan ~0,26 sn sonra); kupa paneli ve rozetin soruyu beklemesi
+(11:03: soru 11:03:55.9'da kapandı, rozet 11:03:57.5'te açıldı — kullanıcı "yapı çalışıyor"
+dedi). Çökme yok.
+Madde 5 (hayalet panel) de doğrulandı — 17:34–17:41, kullanıcı reklamlı akışı rozetli ve
+rozetsiz denedi, "sorunsuz" dedi; pencere kaydı da aynısını gösteriyor: test kapanınca
+`alpha=0.0` ve `DIM_BEHIND` yok; reklam dönüşünde yüzey geri geliyor ama `Surface: alpha=0.0`
+(17:36:16.9), bir kare sonra yeniden `mDestroying=true`; soru kapanınca panel `alpha=1`,
+karartmalı ve görünür.
+Madde 6 (dokunma engeli) de doğrulandı — 18:03–18:04, kullanıcı "kusursuz" dedi; kayıtlar:
+rozetsiz dönüşte engel test kapanışında açıldı (18:03:08.0), soru kapandıktan 0,13 sn sonra
+kapandı (18:03:17.6) ve panel dokunulabilir geldi; rozetli dönüşte panel `NOT_TOUCHABLE`
+olarak geldi, engel kutlamayla aynı anda kapandı (18:04:06.55 / rozet 18:04:06.62). İkinci
+panel ya da sahipsiz pencere yok.
+Sorusuz dönüş de doğrulandı (test anahtarı KAPALI, 18:10–18:13, dokuz dönüş; kullanıcı
+"sorun yok" dedi): logda `gorevler yeni seri GEREKMIYOR`; reklamlı dönüşte panel reklam kapanır
+kapanmaz dokunulabilir geldi; rozetli dönüşte engel 1,36 sn sonra kutlamayla birlikte kalktı;
+çıkışla kapanan testte 9 ms'de kalktı. Rozetsiz dönüşlerde engel 0,9–1,36 sn sürdü: çocuk
+testi hızlı kapatınca rozet listesi henüz gelmemiş oluyor, üç dönüşte süre sınırı
+(`CUP_BADGE_TOUCH_HOLD_MS`) doldu. Yani o sınır nadir bir yedek değil, sık çalışan yol.
+Çökme, sahipsiz pencere ya da `SAHIPSIZ` kaydı yok.
+**Doğrulanmayan:** anahtar KAPALIYKEN gerçek koşullarla (seri 0 + bugün sorulmadı) sorunun
+açılması; rozet listesinin süre sınırından SONRA rozetle geldiği durum (kutlama, çocuk bir
+şeye başlamadıysa açılmalı, başladıysa atlanmalı — denk gelmedi).
+
+## Çalışma süresi kapanan ders ekranında takılı kalıyordu (02.10.2026 — düzeltildi, cihazda doğrulandı)
+
+**Belirti:** Görevler'den açılan bir ders ekranı (günlük soru, abaküs pratiği) çıkışla
+kapanınca çalışma süresi Görevler ekranında da işlemeye devam ediyordu — başka bir ekran
+açılana kadar. Günlük hedef bu süreye bağlı; çocuk ders çözmeden hedefi doldurabiliyordu
+(dokunmaya devam ettikçe sınırsız, bırakırsa 5 dk — `MAX_IDLE_MS`).
+
+**Kanıt** (eskiden beri var; günlük soruya dokunulmadan ÖNCEKİ sürümde de görüldü):
+
+```
+18:43:39.550 StudyTime.ekran | ekran=BlindingLessonFragment calismaSayilir=true bugun=12sn
+18:43:40.132 [reconcile.tasks:schedule.tasks]                 ← Görevler geri geldi
+18:43:44.148 StudyTime.parcaKapandi | hamSure=4sn             ← 3,7 sn'si Görevler'de geçti
+18:43:44.156 StudyTime.ekran | ekran=TasksFragment bugun=16sn ← ancak yeni ders açılınca
+```
+Abaküs pratiğinde aynısı (18:43:32 kapandı, 18:43:34'e kadar sayıldı). Soru cevaplanarak
+kapanan dönüşlerde ise ekran 25–70 ms içinde doğru yere dönüyor.
+
+**Kök neden:** ekran takibi (`NumiGooApplication`) bir ekranın gittiğini yalnızca
+`onFragmentViewDestroyed`'dan öğreniyordu. Çıkış animasyonuyla kaldırılan fragment'ın görünümü
+animasyon BİTİNCE yok ediliyor; Görevler dönüşünde ise
+`TasksFragment.onHiddenChanged` → `reconcileAbacusOverlayWhenTasksIsBase` kabı ~20 ms sonra
+`GONE` yapıyor, gizli kapta animasyon ilerlemiyor ve görünüm aynı kaba bir sonraki `replace`'e
+kadar yok edilmiyor. (1 Ekim'de LessonResult'ta görülen "çıkış animasyonu gizlenen kapta
+bitemiyor"un aynısı.) Görevler `show()` ile geri geldiği için resume da olmuyor; takip eski
+ekranda kalıyor.
+
+**Düzeltme (yalnızca takipte):** `onFragmentPaused` de dinleniyor ve fragment (ya da üstündeki
+bir fragment) `isRemoving` ise ekran o anda yığından çıkarılıyor. Arka plana geçişteki pause
+`isRemoving` olmadığı için etkilenmiyor. Yığın artık ad + fragment örneği tutuyor
+(`ScreenEntry`): kapanmış ama görünümü duran eski örneğin gecikmiş haberi, aynı sınıftan yeni
+açılan ekranın kaydını silemesin.
+
+**Dokunulmayan asıl sorun:** görünüm hâlâ bir sonraki `replace`'e kadar yok edilmiyor, yani
+kapanmış fragment o süre boyunca yarı canlı (`onDestroyView` çalışmamış). Düzeltmesi Görevler
+overlay kapanışının sırasını (`finishTasksOverlayAnimated` / `reconcileAbacusOverlayWhenTasksIsBase`)
+değiştirmek demek; kapanış animasyonunun görünümünü de değiştirir. Ayrı bir iş.
+
+**Cihazda doğrulandı (19:24–19:26, yeni hesapla):**
+
+```
+19:24:31.783 ekran=BlindingLessonFragment calismaSayilir=true bugun=0sn   ← günlük soru
+19:24:38.230 parcaKapandi hamSure=6sn
+19:24:38.253 ekran=TasksFragment calismaSayilir=false bugun=6sn           ← kapanış ANINDA
+   ... reklam, sonra Görevler'de 13 sn ...
+19:24:58.582 ekran=AbacusPracticeFragment calismaSayilir=true bugun=6sn   ← hâlâ 6
+19:25:11.677 ekran=TasksFragment calismaSayilir=false bugun=19sn          ← pratik kapanışı ANINDA
+   ... Görevler ve haritada 18 sn ...
+19:25:29.910 ekran=TutorialFragment calismaSayilir=true bugun=19sn        ← hâlâ 19
+```
+Ders içinde süre eskisi gibi sayıldı (eğitim 30 sn + abaküs 13 sn → `bugun=62sn`), anket ve
+sonuç ekranlarında durdu. Çökme yok.
+
+## Pro'dayken reklam çıktı: test aboneliği bitmişti (03.10.2026 — hata YOK; ilk teşhis yanlıştı)
+
+Kullanıcı Pro plandayken 7-8. kısım dersinden sonra reklam (ve ardından Pro paneli) gördü.
+Hata değil: test aboneliği o anda bitmişti.
+
+**Ne oldu:** abonelik 23:45:56'da alındı. Lisans testçisinde aylık abonelik 5 dakikada bir
+kendiliğinden YENİLENİR ve birkaç yenilemeden sonra kendiliğinden BİTER; bu abonelik
+alındıktan 30 dakika sonra, 00:15:56'da bitti. Aynı oturumda 00:14:46 ve 00:15:09'daki
+dönüşlerde reklam çıkmadı, 00:15:59'da çıktı; plan o arada Pro'dan Free'ye düştü — olması
+gerektiği gibi.
+
+**İlk teşhis yanlıştı, tekrar etmeyin.** Önce "uygulama her 5 dakikalık dönem sınırında planı
+Free'ye düşürüyor, çünkü `planExpiresAt`'i yalnızca açılışta yeniliyor" sonucuna varıldı ve
+bir düzeltme önerildi. Bu, yalnızca saatlerin örtüşmesinden çıkarılmıştı; sunucudaki RTDN
+dinleyicisi gözden kaçmıştı:
+
+- `functions/index.js` → `playSubscriptionNotification` (Pub/Sub konusu `play-rtdn`): Play her
+  yenilemede bildirim gönderiyor, sunucu `plan` / `planExpiresAt`'i güncelliyor.
+- İstemci bunu cüzdan dinleyicisinden öğreniyor: `UserWalletFirestore` planı süre kontrolüyle
+  okuyor (`PlanStatus.effectivePlan`), `MainActivity.applyWalletToUi` kayıtlı plandan farklıysa
+  `checkSubscriptionAndUpdateEnergy` çağırıyor.
+
+Yanlışlığı gösteren kanıt: ikinci test aboneliği 00:30'da alındı ve 20 dakika sonra, en az üç
+dönem sınırı geçmişken plan hâlâ `Pro` idi (`run-as com.numigo.app` ile
+`shared_prefs/energy_prefs_<uid>.xml` → `user_plan`; dosya 00:30'dan beri değişmedi). Arada
+sandık ödülleri cüzdanı defalarca değiştirdi, reklam da çıkmadı.
+
+**Kod değişikliği yapılmadı ve gerekmiyor.** Görülmeyen tek şey: yenileme bildirimi geç
+gelirse arada birkaç saniyelik bir "Free" penceresi oluşuyor mu — gözlenmedi.
+
+**Test ederken:** test aboneliği yaklaşık yarım saatte biter; Pro kısımlar kilitlenir ve reklam
+çıkmaya başlarsa önce aboneliğin bitip bitmediğine bak (Play Store → Ödemeler ve abonelikler).
+
+## Play satın alma ekranında "Bir şeyler ters gitti" (02.10.2026 — cihazda düzeltildi ve doğrulandı, kod değişmedi)
+
+"Pro'ya geç" düğmesine basınca test kartlı ödeme ekranı yerine Play'in kendi penceresinde
+"Hata — Bir şeyler ters gitti. Lütfen tekrar deneyin." çıkıyordu.
+
+**Play'in gerçek cevabı** pencere "Anladım" ile kapatılınca geliyor:
+
+```
+W/ProxyBillingActivity: Activity finished with resultCode 3 and billing's responseCode: 5
+W/BillingManager: Satın alma hatası: 5 Expired Product details. Please fetch product details
+                  again and use it to retry the call.
+```
+
+Kod 5 = `DEVELOPER_ERROR`. Yani Play, uygulamanın elindeki ürün bilgisini "süresi dolmuş"
+sayıyor — bilgi 13 saniye önce sorulmuş olsa bile.
+
+**Neden (düzeltmeyle doğrulandı):** cihaz saati 24-25 Eylül'de seri
+denemeleri için elle ~24 kez değiştirilmiş, en ileri **16.10.2026**'ya, bir kez de geriye
+(01.09) alınmış; son geri dönüş 25.09 21:06. Kanıt: `adb shell dumpsys time_detector` →
+`Set system clock … cause=Manual time suggestion` satırları. Saat ilerideyken Play ürün
+bilgisini önbelleğine almış; şimdi o bayat bilgiyi vermeye devam ediyor, sunucu da reddediyor.
+Bilinen bir durum: RevenueCat topluluğunda aynı mesaj için "cihaz tarihi ileri alındıktan
+sonra oluyor, cihaz o tarihe ulaşana kadar sürüyor; Play Store önbelleğini temizleyip cihazı
+yeniden başlatmak düzeltiyor" deniyor.
+
+Destekleyenler:
+
+- Bu kurulumda son başarılı satın alma 21.09 (Analytics `_ltv_TRY` zaman damgası) — saat
+  oynanmadan önce.
+- Ürün bilgisi sorgusu ~50 ms'de dönüyor; ağdan değil, Play'in önbelleğinden.
+- Her hatadan sonra `Finsky: Commerce cache was cleared.` yazıyor ama 10 dakika sonraki yeni
+  sorgu yine bayat geliyor; temizlenen, sorunlu önbellek değil.
+- Satın alma kodu 14.09'dan beri değişmedi. Play durum panosunda arıza yok.
+
+**Elenenler:**
+
+- *Yanlış hesap / lisans testçisi:* Play hem mağazada hem bu uygulamanın faturasında …2003
+  hesabını kullanıyor (`Finsky: com.numigo.app: Account from first account`; loglardaki hesap
+  özeti `base64url(sha256(hesap adı))`, bu yolla eşlendi). Telefondaki …tumturk2 hesabının
+  oturumu bozuk (`BAD_AUTHENTICATION`), ama satın almada kullanılmıyor.
+- *Ekran kilidi (PIN) yok:* telefonda kilit yok ve Play her satın almada
+  `AuthService: canAuthenticate … result: 11` alıyor; ilk aday buydu. Yanlış çıktı: kilit
+  kurulmadan, yalnızca önbellek temizliğiyle abonelik alınabildi.
+
+**Düzeltme (cihazda, kullanıcı yaptı):** Ayarlar → Uygulamalar → Google Play Store →
+*Önbelleği temizle*, ardından telefonu yeniden başlatmak. Hangisinin yettiği ayrıştırılmadı:
+23:31'deki deneme hâlâ `Expired Product details` verdi ama o an önbellek temizlenmiş miydi
+bilinmiyor. Tekrar olursa ve bu yetmezse sıradaki adım *Verileri temizle* (hesaplar silinmez,
+Play Store ayarları sıfırlanır); hiçbir şey yapılmasa 16 Ekim'den sonra kendiliğinden
+düzelmesi beklenirdi.
+
+**Doğrulama (yeniden başlatmadan sonra, 23:45):**
+
+```
+23:45:15 BillingManager: OFFERS pro_monthly …                ← yeni süreç, yeni ürün bilgisi
+23:45:20 START ProxyBillingActivity → Play ekranı            ← 1. akış: hata/iptal satırı yok
+23:45:51 START ProxyBillingActivity → Play ekranı            ← 2. akış (PlanFragment'ten)
+23:45:54 Finsky: Monetization gRPC call …                    ← kullanıcı onayladı
+23:45:56 Finsky: Commerce cache was cleared.
+23:45:56 Finsky: Applying library update: account=[…2003]    ← satın alma Play'e işlendi
+23:46:03 BpBinder … IInAppBillingService code=902 (1095 ms)  ← uygulamanın onay çağrısı
+23:46:03 Finsky: Applying library update: account=[…2003]
+```
+
+23:45:15'ten sonra `BillingManager` / `ProxyBillingActivity` etiketlerinde tek bir uyarı ya da
+hata yok. Sunucu doğrulaması (`redeemGooglePlaySubscription`) doğrudan görülmedi, çıkarım:
+uygulama onay çağrısını (902 = `acknowledgePurchase`) yalnızca sunucu "tamam" dedikten sonra
+yapıyor ve hata dalları log yazıyor. Hatalı denemelerde aynı yerde tek bir gRPC çağrısı ve
+~350 ms sonra `Commerce cache was cleared` vardı. 1. akışın ayrıntısı (hangi ürün) tampondan
+düşmüştü.
+
+**Ders:** cihaz saatini oynamak yalnızca seriyi değil, Play satın almalarını da haftalarca
+bozuyor. Seri için zaten yasaktı (bkz. "Saati ileri alarak deneme").
+
+**Koda dair, yapılmadı:** `BillingManager` ürün bilgisini süreç ömrü boyunca bellekte tutuyor
+ve bu hatadan sonra yeniden sormuyor. Bu olayda yeniden sormak işe yaramazdı (Play aynı bayat
+bilgiyi veriyordu); ama gerçek kullanıcıda uygulama günlerce bellekte kalırsa aynı hata
+çıkabilir. Sağlamlaştırma: `DEVELOPER_ERROR` gelince `queryProductDetails()` çağırmak.
+Cihazda denenemediği için kullanıcıya soruldu, beklemede.
+
+**Bir dahaki sefere teşhis sırası:** önce hata penceresini "Anladım" ile kapattırıp
+`adb logcat -s BillingManager:V ProxyBillingActivity:V` ile sonuç kodunu ve mesajını oku —
+bu olayda cevap o tek satırdaydı, ondan önceki adaylar (hesap, ekran kilidi) boşa çıktı.
+Play'in kendi satırları (`Finsky`, `AuthService`) için filtresiz kayıt gerekir; ana tampon bu
+cihazda ~4-5 dakikada dönüyor. Yeniden başlatma `log.tag.*` ayarlarını sıfırlar (`FA-SVC`
+ayrıntılı logu dahil).
+
+## Küçük düzenlemeler (03.10.2026 — kişileştirme fiyatını kullanıcı cihazda denedi; diğerleri için ayrıca bir sorun bildirmedi)
+
+- **Yarış dersi panelindeki "BAŞLAT" düğmesinden yıldırım ikonu kaldırıldı**
+  (`LessonAdapter.showRaceLessonBottomSheet`). `R.drawable.lighting__1_` artık hiçbir yerde
+  kullanılmıyor; dosya silinmedi.
+- **Sandık (CHEST) türü derslerde boncuk animasyonu diğer derslerle aynı hıza çekildi:**
+  50 ms → 300 ms. `AbacusFragment` (`BEAD_ANIMATION_MS`, beş yer) ve
+  `BlindingLessonFragment.setupAbacusController` (denetleyicinin varsayılanı). Dikkat: sandık
+  derslerinde puan süreye de bağlı (`calculateChestScore`); boncuk başına 250 ms'lik fark
+  sürelere yansıyabilir, cihazda bakılmadı.
+- **Atlama düğmesi (`skipStepButton`) de sayıyı bir an siliyor** (01:12'de kuruldu,
+  DENENMEDİ). `BlindingLessonFragment`'te sayılar kendiliğinden geçerken ekran 200 ms boş
+  kalıyor; art arda iki sayı aynıysa geçiş böyle anlaşılıyor. Düğme ise sıradaki sayıyı
+  doğrudan yazıyordu. Artık ikisi aynı yoldan gidiyor (`skipToNextSequenceNumber` →
+  `onShowNextNumberStep`). Boşluk sırasındaki basış yok sayılıyor (`sequenceBlankPending`):
+  boşluğu yeniden başlatsaydı hızlı basışlarda sıradaki sayı hiç gelmezdi. Rehberin zorunlu
+  tıklaması da aynı fonksiyonu kullanıyor.
+- **Anahtarla satılan iki boncuğun (ANIMAL3, ANIMAL8) renk kişileştirmesi de 40 anahtar**
+  (kullanıcı cihazda denedi: "sorunsuz çalıştı"). Diğer boncuklarda eskisi gibi 2000 altın.
+  `AbacusCustomizationFragment`: fiyat ve para birimi `getBeadColorFeaturePrice` /
+  `isKeyPricedBead`'den geliyor; hem Renk sekmesindeki kilit katmanı (etiket + ikon,
+  `tab2ColorLockIcon`) hem satın alma paneli (`showColorFeaturePurchasePanel`) bunu
+  kullanıyor. Sunucuda değişiklik gerekmedi (harcama `updateUserWallet`'tan serbest geçiyor).
+  Aynı panelde eksik olan geri iade de eklendi: ücret düşüp özellik kaydedilemezse
+  (`setColorFeatureActive` hatası) tutar artık iade ediliyor — altın için de.
+
+## Saati ileri alarak can doldurma (03.10.2026 — cihazda denendi; son sağlamlaştırma commit edildi ve kuruldu, ayrıca denenmedi)
+
+Kullanıcı, çocukların cihaz saatini ileri alarak canlarını doldurabildiğinden şüphelendi.
+Koddan teyit edildi (cihazda denenmedi — saatle oynamak seriyi ve Play satın almalarını
+bozuyor):
+
+- Can sunucuda (`energy_full_time`: canın dolacağı an) ve istemci yazımına kapalı; sunucu
+  kendi saatiyle hesaplıyor, harcamayı gerekirse `Yetersiz can` ile reddediyor.
+- Ama "şu an kaç can var" sorusunu istemci, o değeri CİHAZ saatiyle karşılaştırarak
+  cevaplıyordu (`EnergyManager.getCurrentEnergy`). Saat ileri alınınca can dolu görünüyor,
+  `hasEnoughEnergy` geçiyor ve ders başlıyor: `useEnergy` iyimser, sunucunun cevabını
+  beklemiyor. Sunucu reddedince yalnızca yeniden eşitleme yapılıyor, o da bir şey değiştirmiyor
+  (cihaz saati hâlâ ileride). Sonuç: sınırsız ders.
+
+**Düzeltme (yalnızca istemci, deploy yok):** can hesabındaki "şimdi" artık cihazın duvar
+saati değil, `TrustedClock.nowMs()`: sunucudan öğrenilen an + o zamandan beri MONOTON saatle
+(`SystemClock.elapsedRealtime`) geçen süre. Sunucu saati zaten alınıyordu
+(`SeasonClock.refreshFromServer` → `getSeasonInfo`, her açılışta ve saatte bir);
+`SeasonClock.onServerTime` aynı cevabı `TrustedClock`'a da veriyor. Çapa diske yazılıyor
+(`trusted_clock` tercihleri) ve açılış sayacıyla (`BOOT_COUNT`) hangi açılışa ait olduğu
+tutuluyor. Hesabın kendisi `TrustedClockRules.trustedNow` (Android'siz, 8 birim testi).
+Çapa değişince `EnergyManager` göstergeyi hemen tazeliyor.
+
+Yan fayda: saati yanlış olan dürüst cihazlarda can artık doğru anda doluyor.
+
+**Kapatmadığı (bilerek):** çapa yokken — cihaz yeniden başlatıldı VE internet yok — duvar
+saatine dönülüyor. "Saati ileri al, yeniden başlat, uçak modunda oyna" hâlâ mümkün. Tamamen
+kapatmak, ders başlatmayı sunucu onayına bağlamak demek (internetsiz ders açılamaz, her
+başlatış ~0,5-1 sn gecikir); kullanıcıya soruldu.
+
+**Cihazda denendi (01:33–01:35, kullanıcı saati ~1 saat ileri aldı: "sorunsuz çalıştı"):**
+
+```
+01:33:03.011 TrustedClock: capa kuruldu | cihazSaatiFarki=299ms
+01:33:55.612 TrustedClock: capa kuruldu | cihazSaatiFarki=375ms          ← yeni süreç
+02:34:10.092 TrustedClock: capa kuruldu | cihazSaatiFarki=3556005ms      ← saat +59 dk ilerideyken
+```
+
+Son satırın damgası cihazın (ileri alınmış) duvar saati; gerçek an 01:34:54. Uygulama saat
+ilerideyken yeniden açılmış, sunucu cevabı farkı (59 dk 16 sn) yakalamış; kullanıcı canın
+dolmadığını gördü. Etiketlerde hata ya da çökme satırı yok. Saat sonra otomatiğe döndü.
+
+**Bir şeyi bozdu mu — koddan gözden geçirildi, sorun bulunmadı:**
+
+- Cihaz saati doğruysa sonuç eskisiyle aynı (fark: sunucu cevabının gecikmesi, ~0,3 sn,
+  hep geriye doğru; can en fazla o kadar geç dolar).
+- Oturum açılmamışken sunucu saati istenmiyor, çapa kurulmuyor: misafirde eski davranış.
+- Canı değiştiren sunucu cevapları (`spendEnergy`, `claimAdEnergy`, `buyEnergyWithKeys`)
+  aynen benimseniyor; yalnızca "şimdi" değişti. Üst sınır kırpması (`getFullTime`) artık
+  sunucunun kırpmasıyla aynı saati kullanıyor.
+- Can API'sini duvar saatiyle karıştıran başka yer yok (`ShopFragment`, `TasksFragment`
+  göreli süreleri `EnergyManager`'dan alıyor). Sezon saati (`SeasonClock.nowUtcMs`), görevler
+  (`MissionsProgressStore`) ve seri kendi saatlerini kullanmaya devam ediyor; dokunulmadı.
+- `EnergyManager` tek yerde (MainActivity) kuruluyor ve `destroy()`'da dinleyicisini
+  bırakıyor.
+
+Gözden geçirmede bulunan ve kapatılan zayıflık (8 birim testi; giriş ekranı yenilemesiyle
+birlikte cihaza kuruldu, kendi başına denenmedi): açılış sayacı okunamazsa (0) diskteki çapanın
+bu açılışa ait olduğu kanıtlanamıyor. Cihaz yeniden başlatılıp eskisinden uzun süre açık
+kalmışsa çapa geçerli sanılır, "şimdi" gerçeğin gerisinde kalır ve can internet gelene kadar
+geç dolardı. Artık o durumda diskteki çapa yalnızca alt sınır. Bu cihazda `boot_count`'un
+okunup okunmadığına bakılmadı (`adb shell settings get global boot_count`).
+
+Testin kendisinden kalabilecek iz: uygulama saat ilerideyken açıldığı için Play ürün
+bilgisini o saatle önbelleğe almış olabilir. Satın alma ekranı "Bir şeyler ters gitti"
+derse çözüm aynı (Play Store önbelleği); fark 1 saat olduğu için kendiliğinden de geçer.
+
+`MissionsProgressStore.trustedNowMs` ve `SeasonClock.nowUtcMs` kendi yöntemleriyle duruyor;
+`TrustedClock`'a taşınmadılar.
+
+## Hesabını silen öğrencinin soruları (03.10.2026 — kod ve canlı loglar incelendi, veri İNCELENMEDİ)
+
+Kullanıcı, `questions` koleksiyonunda verilerin durduğunu gördü ve hesap silinince soruların
+silinip silinmediğini sordu.
+
+- **Kod siliyor:** `cleanupUserOnDelete` (Auth `onDelete` tetikleyicisi) → `deleteUserQuestions`:
+  `questions` içinde `studentUid == uid` olan her soruyu `messages` alt koleksiyonu ve
+  Storage medyasıyla (`mediaStoragePath`, `videoStoragePath`, `screenshotStoragePath`)
+  birlikte siliyor. Bekleyen (`status == 'pending'`) bir `messageReports` kaydı olan soru
+  kanıt olarak KORUNUYOR (gizlilik politikasında beyan edilmiş). Kod `a7bf88d` (06.09.2026).
+- **Canlıda da var:** `firebase functions:log --only cleanupUserOnDelete` çıktısında bu
+  adımın satırları görünüyor (`Silinen kullanıcının danışma soruları temizlendi { deleted,
+  skippedForReport, failed, mediaFailed }`). Görülen dört silmede (24.09) hepsi `deleted: 0`:
+  silinen hesapların sorusu yoktu. Log saklama süresi ~30 gün; öncesi görülemiyor.
+- **Kalan soruların olası sebepleri** (hangisi olduğu veriye bakılmadan bilinemez): soru
+  sahibinin hesabı hâlâ duruyor; hesap, silme kodu canlıya çıkmadan önce silindi; soruda
+  bekleyen bir şikâyet var; silme hata verdi (`failed`/`mediaFailed` > 0).
+- **Ayırt etmek için:** Firebase konsolunda kalan bir sorunun `studentUid`'ini
+  Authentication'da ara. Yoksa sahipsiz; bekleyen şikâyeti de yoksa tek seferlik bir
+  temizlik betiği gerekir (yazılmadı; çalıştırmak için yönetici kimliği — GitHub Actions'taki
+  `FIREBASE_SERVICE_ACCOUNT` gibi — gerekiyor, kullanıcı onayı şart).
+- Öğretmen hesabını silerse öğretmenin cevapladığı sorular silinmiyor (öğrenciye ait).
+
+Silmede ele alınmayan koleksiyonlar ve şişme incelemesi aşağıdaki bölümde.
+
+## Firestore şişme ve silmede kalan veri incelemesi (03.10.2026 — yalnızca okundu, kod değişmedi)
+
+Canlı veritabanı salt okunur sorgularla ölçüldü: belge SAYILARI (`count()` toplaması) ve
+belge/alan BOYUTLARI (alan adları ve bayt; değerler yazdırılmadı). Betikler oturum
+klasöründe: `firestore_sayim.js`, `firestore_boyut.js` (firebase CLI oturumuyla REST).
+
+**Bugün şişmiş bir şey yok.** 16 üst seviye koleksiyon, toplam ~1.000 belge, en büyük belge
+~1,3 KB (1 MiB sınırından çok uzak). Sayılar: `items` (ders ilerlemesi) 675,
+`processedPurchases` 81, `messages` 55, `lessonSuccessRateState` 31, `messageReports` 21,
+`text` 15, `adRewards` 14, `questions` 10, `cupHistory` 8, `feedback` 6, diğerleri ≤ 5.
+4 kullanıcı var, yani bunlar büyüme hızı hakkında fikir veriyor, ölçek hakkında değil.
+TTL politikaları canlıda açık: `otpRateLimits`, `otpWrongAttempts`, `studentVerificationCodes`
+(`firebase firestore:indexes`). Sezon liderlik tabloları sezon kapanınca siliniyor
+(`seasonLeaderboardFinalize.deleteLeaderboardBoard`).
+
+**Kullanıcı sayısıyla sınırsız büyüyenler:**
+
+| Koleksiyon | Büyüme | Temizlik | Değerlendirme |
+|---|---|---|---|
+| `adRewards` | izlenen her ödüllü reklam için bir belge (~150 B) | YOK, TTL yok | En hızlı büyüyen. 10 bin günlük aktif × 5 reklam ≈ günde 50 bin belge. Kullanıldıktan sonra yalnızca tekrar oynatmaya karşı kısa süre gerekli. Öneri: oluştururken `expireAt = createdAt + 7 gün`, o alana TTL (sunucu + index deploy'u). |
+| `cupHistory` | kullanıcı başına aktif gün başına bir belge (~100 B) | yok | Önemsiz; okuma zaten tarih penceresiyle. |
+| `users.dailyTimeSpent` | gün başına bir anahtar | yazılan günün 14 gün öncesi siliniyor | Aktif olunmayan günlerde budama atlanıyor, çok yavaş sızıntı; önemsiz. |
+| `questions` + `messages` | soru/mesaj başına | yanıtlanan soruların MEDYASI 30 gün sonra Storage'dan siliniyor, belgeler kalıyor | Saklama süresi bir politika kararı. |
+| `processedPurchases` | satın alma başına | yok | Kalmalı: tekrar kullanım koruması ve iade geri alımı. |
+| `messageReports` | şikâyet başına | yok | Küçük; inceleme kaydı. |
+
+**Hesap silinince kalan kişisel veri** (`cleanupUserOnDelete` yalnızca `users/{uid}` ağacını,
+`questions`'ı ve liderlik kayıtlarını siliyor; `publicProfiles` aynalama tetikleyicisiyle
+gidiyor):
+
+- `friendRequests` (2 belge): gönderen/alan ADLARI var. Kod hiç kullanmıyor (kurallar
+  `if false`, istemci ve sunucuda referans yok) — ölü koleksiyon, elle silinebilir.
+- `feedback` (6): e-posta, kullanıcı kimliği, mesaj, cihaz modeli.
+- `ratingFeedback` (3): kullanıcı kimliği + yıldız + metin.
+- `messageReports` (21): şikâyet eden ve şikâyet edilen kimlikleri, medya bağlantısı.
+- `adRewards` (14): kullanıcı kimliği (TTL önerisi bunu da çözer).
+- Bilinçli kalabilecekler: `processedPurchases` (iade/yasal), `welcomeCreditGrants`
+  (cihaz başına kredi kötüye kullanımı), `creditRefundAudit` (denetim). Geçiciler TTL'li
+  ya da boş: `studentVerificationCodes`, `otp*`, `pendingRegistrations`, `teacherInvites`.
+
+Karar kullanıcıda (gizlilik politikasıyla karşılaştırılmadı). Her öneri sunucu değişikliği,
+yani deploy demek (bkz. "Push = deploy").
+
+### Kullanıcı kararları ve yapılanlar (03.10.2026 — yazıldı, emülatörde test edildi, DEPLOY EDİLMEDİ)
+
+- **`adRewards` 7 gün sonra silinir:** `admobRewardCallback` kayda `expireAt` (oluşturma + 7
+  gün, `AD_REWARD_RECORD_RETENTION_MS`) yazıyor; `firestore.indexes.json`'da `adRewards.expireAt`
+  TTL'i (indekssiz). Güvenli: hak 24 saatte bozuluyor, 1 saatten eski callback reddediliyor.
+  Mevcut 14 kayıtta `expireAt` yok, TTL onlara dokunmaz (elle silinebilir; önemsiz).
+- **Kapanan sorular 30 gün sonra TAMAMEN silinir** (medya + mesajlar + soru): eskiden yalnızca
+  medya siliniyordu. `runClosedQuestionCleanup` — `cleanupResolvedQuestionMedia` adlı günlük
+  görevin içinde (ad değiştirilmedi: etkileşimsiz deploy, adı değişen fonksiyonun eskisini
+  silmek için onay isteyip yarıda kalırdı). `resolved` (`resolvedAt` > 30 gün; daha önce
+  yalnızca medyası silinmişler dahil) ve `expired` (`creditRefundedAt` > 30 gün). Açık
+  sorulara ve bekleyen şikâyetli sorulara dokunulmuyor. Yeni indeks: `questions`
+  (status, creditRefundedAt). Sorgular bağımsız (`Promise.allSettled`): indeks oluşmadan
+  çalışırsa yalnızca `expired` sorgusu düşer. Soru silme adımı hesap silmeyle ortak
+  (`deleteQuestionCompletely`, `hasPendingQuestionReport`).
+- **Testler:** `functions/scripts/test-closed-question-cleanup.js` (yeni) ve
+  `test-delete-user-questions.js` — ikisi de emülatörde geçiyor:
+  `firebase emulators:exec --only firestore --project numigo-new "node functions/scripts/test-closed-question-cleanup.js && node functions/scripts/test-delete-user-questions.js"`.
+  DİKKAT: `emulators:exec` ortama gerçek bucket adını ve CLI kimliğini koyuyor; ilk
+  çalıştırmada medya silme çağrıları CANLI Storage'a gitti (yollar sahte `q/...`, gerçek
+  dosyalar `question_media/…`, `question_screenshots/…`, `question_videos/…` altında — hiçbir
+  şey silinmedi). İki betik artık `FIREBASE_CONFIG` ve `GOOGLE_APPLICATION_CREDENTIALS`'ı
+  kendisi siliyor. Emülatör süreci bazen kapanmıyor (8080 meşgul) — `cloud-firestore-emulator`
+  java sürecini öldür.
+- **Gizlilik politikası** (`public/privacy-policy.html`, yürürlük tarihi 3 Ekim 2026): kapanan
+  danışmaların 30 gün sonra silindiği ve reklam ödülü kayıtlarının 7 gün tutulduğu yazıldı.
+  Hosting ayrı deploy ediliyor (iş akışı yok): `firebase deploy --only hosting`.
+- **`feedback` / `ratingFeedback`:** uygulama ve sunucu yalnızca YAZIYOR, hiçbir yer okumuyor —
+  geliştirici konsoldan okuyor. Öneri (yapılmadı): hesap silinince silmek yerine kimliksizleştirmek
+  (e-posta/uid kalksın, mesaj/puan kalsın).
+- **`messageReports`:** kalması teknik sorun değil (küçük); kişisel veri olarak silinen
+  kullanıcının kimliğini ve medya bağlantısını tutuyor. Öneri (yapılmadı): incelenmişleri
+  kimliksizleştirmek; acil değil.
+- **`friendRequests`:** kullanıcı kendisi sildi (`firebase firestore:delete friendRequests
+  --recursive`, 2 belge). Kurallardaki `match /friendRequests` bloğu duruyor (zararsız).
+- **Gizlilik politikası canlıda** (kullanıcı `firebase deploy --only hosting` yaptı, 03.10.2026).
+- **Deploy edildi (03.10.2026 ~09:56):** `0846e58` push'u iki iş akışını tetikledi, ikisi de
+  başarılı: "Deploy Cloud Functions" (bütün fonksiyonlar) ve "Deploy Firestore & Storage
+  Rules" (kurallar + indeksler + TTL). Politika ile sunucu artık uyumlu. İlk gerçek tarama
+  `cleanupResolvedQuestionMedia` günlük görevinin bir sonraki çalışmasında; sonucu
+  `firebase functions:log --only cleanupResolvedQuestionMedia` → `runClosedQuestionCleanup
+  tamamlandı { … }` satırında görülür (bakılmadı).
+- **Ayrı sorun:** "Build Debug APK" iş akışı en az 01.10'dan beri HER push'ta "Setup Android
+  SDK" adımında (`android-actions/setup-android@v3`) başarısız. Yerel derleme sağlam;
+  CI ortamı sorunu. Kayıtlar kimlik doğrulama istiyor, `gh` bu makinede yok. Ayrı göreve
+  bırakıldı.
+
+## Giriş başlangıç ekranı yenilendi (03.10.2026 — kullanıcı cihazda denedi, sorun bildirmedi; commit edilmedi)
+
+Kullanıcı `LoginStartActivity`'yi bir örnek görsele göre değiştirmek istedi: büyük çizim,
+başlık + motivasyon cümlesi, dolu "Başla" düğmesi, altında "Zaten hesabım var" bağlantısı.
+
+- **Düzen (`activity_login_start.xml`):** sağ üstte öğretmen/öğrenci geçişi (örnekte yoktu,
+  kullanıcı sağ üstü önerdi) → maskot (önce dinozor Lottie, sonra robot, su aygırı, en son tavşan; genişliğin
+  %70'i, en fazla 320dp, kare) → başlık (28sp) → metin (17sp, ikincil renk) → "Başla"
+  (56dp, `dark_primary`) → "Zaten hesabım var" (mavi metin bağlantısı). Örnekteki sayfa
+  noktaları eklenmedi (tek sayfa). Maskot geçici seçim; başka bir Lottie/görselle
+  değiştirilebilir.
+- **Kimlikler:** `tvQuestion`→`tvTitle`, `tvSubtitle`→`tvBody`, `btnSecondary`→`btnStart`
+  (kayıt, `showUserInfoFragment`), `btnPrimary`→`btnLogin` (giriş), `divider` kalktı,
+  `mascotView` eklendi. Davranış aynı; yalnızca ana eylem artık kayıt.
+- **`setMainContentVisible`** tek tek görünüm yerine `loginStartContent` katmanını gizliyor
+  (maskot gizlenince kendisi duruyor).
+- **Metinler:** öğrenci "Zihnini Güçlendir" / "Abaküsle oynayarak zihinden hesaplamayı öğren,
+  daha hızlı düşün ve matematikte kendine güven."; öğretmen "Öğrencilerine Yol Göster" /
+  "Öğrencilerinin sorularını yanıtla, abaküsle ilerlemelerine destek ol."; düğmeler "Başla",
+  "Zaten hesabım var". Eski `login_start_primary_button` / `secondary_button` silindi.
+- **Maskot → tavşan (`BunnyMascotView.kt` + `BunnyMascotArt.kt`, kuruldu, cihazda denendi;
+  sorunsuz):** su aygırı da "eksik" bulundu. Kullanıcı Freepik "Animal Collection"
+  çizimini `res/drawable/animal_maskot.xml` olarak ekledi (altı hayvan + yazı, 247 şekil;
+  APK'ya girmesin diye sonra `design/maskot/animal_maskot.xml`e taşındı).
+  Tavşanın şekilleri (2 ve 40–76 numaralı yollar) bir betikle `BunnyMascotArt.kt`'ye
+  aktarıldı; parça → yol eşlemesi o dosyanın başında. Betikler (`parse.js`, `gen.js`,
+  önizleme `proto*.js`) oturumun scratchpad'inde, depoda değil. View parçaları kendi dönme
+  noktalarında oynatıyor: nefes, kafa eğme, göz kırpma, bakış, kulak oynatma; `greet()`
+  zafer işaretli kolla selam, ağız KEDİNİN açık mutlu ağzı (konuşma yok); `cheer()` iki
+  zıplama, KEDİNİN dolgun kolları tavşan rengine boyalı, yana ve yukarı açık (sol 32°,
+  sağ 18° — kedinin kolları asimetrik), zafer işareti YOK, yanak kızarması YOK, gülen
+  gözler, kedi ağzı. Kedi parçaları (78–81, 102–103) `BunnyMascotArt`'ta kedinin yerinde
+  duruyor, view `CAT_DX = -213` ile kaydırıyor. Tavşanın kendi kolunu yana açmak
+  çelimsiz duruyordu; yukarı kaldırmak kolu kocaman kafanın arkasına sokuyordu.
+  Beklerken sağ kol, sol kolun aynası (özgün çizimde hep zafer işareti var), 2 birim sola
+  ve 2 aşağı kaydırılmış (tam aynada omzun sivri ucu dışarıda kalıyordu; 7/5 kaydırma
+  fazla içeride kaldı); kollar arası geçiş `saveLayerAlpha` ile. Gövde hareketi
+  (kullanıcı "gövde ve kafa çok sabit" dedi): selamda gövde kalçadan ±3° sallanıyor, kafa
+  geriden geliyor, öbür kol da sallanıyor (hepsi `peace` ile ağırlıklı); sevinçte
+  `updateCheerBody`: yere değerken ezilme (ayak tabanından), havada uzama, inişten sonra
+  sönen yaylanma, kafa gövdeyi 70 ms geriden izliyor (gecikmeli zıplama yüksekliği),
+  gövde ±4° kıvrılıp kafa ters fazda. Kullanıcı sevinçte kafayı fazla buldu: kafa
+  kıvrılması 3°→1,5°, gecikme 70→40 ms. Selamda iki ayak hafifçe sağa-sola açılıyor
+  (bacaklar `LEG_LEFT`/`LEG_RIGHT` olarak ayrıldı; her biri kalçasından 5° dışa, 1 yana;
+  önce tek ayağı öne atma denendi, kullanıcı iki ayağın açılmasını tercih etti, sonra
+  kaymayı azalttı). SELAM ARTIK ZAFER İŞARETİYLE DEĞİL: sağdaki kedi kolu 32° kalkıp ±12°
+  sallanıyor (46°'ye kadar kafanın arkasına girmediği önizlemede görüldü), sol kol sarkık.
+  `PEACE_ARM` çizimde duruyor ama kullanılmıyor — kullanıcı onu ileride ayrı bir hâl
+  (emote) için saklamak istedi.
+  Uzamada kulaklar ve adımda ayak kesilmesin diye görünür alan 314 birim, üst pay 6.
+  `autoGreetIntervalMs` (giriş ekranında 5 sn): beklerken kendiliğinden selam; sevinç
+  sayacı baştan başlatıyor. Açık konu: Freepik lisansı (kaynak gösterme yeri, yayından önce).
+  Diğer hâller aşağıdaki "Maskot hâlleri" bölümünde.
+- **(Önceki deneme) su aygırı prototipi (`HippoMascotView.kt`, SİLİNDİ):**
+  önce kodla çizilen bir "boncuk robot" yapıldı; kullanıcı animasyonu beğendi, görseli
+  beğenmedi ve bir örnek çizim gösterdi (düz renkli, gri-yeşil, geniş burunlu su aygırı
+  kafası). Robot silindi; yerine aynı tarzda, bütün bedeniyle duran bir su aygırı kodla
+  çiziliyor (örnek kopyalanmadı, tarzı alındı). Kendi kendine nefes alır gibi iner-kalkar,
+  göz kırpar, bakışını kaydırır, ara ara bir kulağını oynatır. Koddan: `greet()` (el sallar
+  + konuşur; ekran açılınca 400 ms sonra), `talk(ms)`, `cheer()` (iki zıplama, kollar
+  yukarı, gülen gözler, yanak kızarması, açık ağız, kıpırdayan kulaklar; dokununca).
+  Beklerken ağız çizilmiyor (örnekteki gibi yalnızca dişler). Görünmezken
+  (`onVisibilityAggregated`) kare çizmeyi bırakıyor. Çizim aynı geometriyle başsız Edge'de
+  resme döküldü ve kontrol edildi (scratchpad `hippo.html`).
+  Kullanıcıya önerilen kalıcı yol: animatöre Rive karakteri yaptırmak (durum makinesi:
+  bekleme/konuşma/sevinç/üzüntü/düşünme); bu view'in tetikleme API'si aynı kalabilir.
+  Ayrıca uygulamadaki hazır Lottie hayvanlarının ticari lisansı yayından önce kontrol
+  edilmeli.
+- **Gezinme çubuğu:** telefon (API 33) gece modunda; `values-night/themes.xml` çubuğu
+  `message_topbar` (#111416) yapıyor ve ekranın zemininden kopuk duruyordu. `onCreate`'te
+  Splash ile aynı şekilde `background_color`'a çekildi (kuruldu).
+- Aynı sırada kullanıcı `activity_login.xml` ve `activity_register.xml`'de arka planı
+  `dark_background`→`background_color` yaptı; kullanıcı bunların da aynı commit'e girmesini
+  istedi. Commit henüz istenmedi ("ekleyeceğimiz şeyler var"). Kullanıcı başka düzenleri de
+  düzenliyor (`fragment_user_info`, `activity_teacher_otp`, `fragment_offline`, …); commit
+  öncesi CRLF→LF çevrilmeli.
+
+## Maskot hâlleri ve deneme ekranı (03.10.2026 — kullanıcı cihazda denedi: "her şey sorunsuz"; commit edilmedi)
+
+Kullanıcı bekleme/selam/sevinçten sonra 13 yeni hâl daha istedi (tablodaki önerilerin hepsi) ve
+hepsini denemek için Görevler'e bir kart.
+
+- **`BunnyMascotView` yeniden yazıldı:** `play(Emote)` + 15 hâl (`GREET, CHEER, BALLOON,
+  SLEEP, POINT, PEACE, SAD, DANCE, THINK, CLAP, SURPRISED, SHY, WINK, HEART, ABACUS`); her
+  biri süresi dolunca beklemeye dönüyor, `onEmoteFinished` çağrılıyor. `greet()`, `cheer()`,
+  `autoGreetIntervalMs` aynı davranıyor (giriş ekranı değişmedi); `point(toLeft)` var.
+- **Duruş kanalları (`Ch`):** hâl her karede kanal HEDEFLERİNİ yazıyor (kol görünürlükleri ve
+  açıları, gövde/kafa, kulak, bakış, yanak, kaş, balon, abaküs), `cur`'da yumuşatılıyor →
+  hâller arası geçiş kendiliğinden yumuşak. Hızlı salınımlar (`osc`) yumuşatılmadan
+  ekleniyor (yumuşatılsa sönüyordu), hâlin zarfıyla girip çıkıyor. Göz/ağız türü ayrık.
+- **Yeni parçalar (`BunnyMascotArt`, betikle üretildi):** domuzun balonu (118–120,
+  144–146; renk aynen), köpeğin önde birleşik elleri + gövdeye düşen gölgeleri (201–207,
+  tavşan rengine boyalı). Eller iki yana açılınca gölgeler gövde dışına taşıp leke
+  bırakıyordu → açıldıkça siliniyor. Zafer işaretli kol (PEACE) artık kullanılıyor.
+- **Kodla çizilenler:** üzgün kaşlar, ters ağız, "O" ağız, kapalı/gülen göz yayları, "Z"ler,
+  düşünce balonu ve "?", alkış yıldızları, kalp, küçük soroban (ahşap çerçeve, 5 çubuk,
+  boncuklar kayıyor). Düşünmede kedi kolu kafanın ÖNÜNDE çeneye gidiyor.
+- Hepsi önizlemede (scratchpad `proto16/17`) sabit kare olarak kontrol edildi; HAREKET
+  cihazda görülmedi.
+- **Deneme ekranı:** `MascotPlaygroundFragment` + `fragment_mascot_playground.xml`; Görevler'de
+  "Karakter Animasyonu" kartı (`mascot_animation`, mor) → `openAbacusContainerFragment`.
+  Bekleme hep oynuyor, seçeneklerde yok; 15 çip (`ChipGroup`, tek seçim); hâl bitince seçim
+  kalkıyor. Kapatma `finishTasksOverlayAnimated` (FeedbackFragment ile aynı).
+- **Commit sonrası (kuruldu, commit edilmedi):** düşünce balonu ~1,5 kat büyüdü, beyaz +
+  mavi kenar (kullanıcı "daha büyük ve belirgin" istedi); kalp artık `heart_ic` ikonu
+  (`mutate()` ile kopya; boyut tuval ölçeğiyle, sınırlar sabit 100 — tam sayı sınırlar
+  atışta titretiyordu).
+- **Mesajlaşma hâli (`CHAT`, döngülü; kuruldu, cihazda görülmedi, commit edilmedi):**
+  `Emote.loops` eklendi (süre dolunca bitmiyor, baştan dönüyor; görünmezken geçen turlar
+  atlanıyor). Tavşan köpeğin elleriyle telefon tutuyor (kodla çizilen telefon, ekranda
+  sohbet satırları). 6 sn'lik tur: yazıyor (parmaklar kıpır) → 1,6 sn soru balonu ("?")
+  telefondan çıkıp sola yükseliyor → 2,3 sn sağda öğretmenin sarı balonu, zıplayan
+  "yazıyor" noktaları → 3,6 sn noktalar video ▶ oluyor, tavşan seviniyor (zıplama, gülen
+  göz/ağız, kulaklar) → 5,0 sn balonlar sönüyor. Balon = hap + kuyruk `Path.op(UNION)`.
+  Önizlemede (scratchpad `proto18`) sabit karelerle kontrol edildi.
+- **`fragment_ask_question_open`:** ortadaki Lottie (`chating_anim.json`, renkleri uymuyordu)
+  yerine `BunnyMascotView` (`mascotView`), `AskQuestionOpenFragment.onViewCreated`'da
+  `play(CHAT)`. Eski `centerGraphic` kodda kullanılmıyordu. `chating_anim.json` kullanıcının
+  onayıyla silindi (`git rm`, ~400 KB).
+- Kullanıcı: "telefonun önünü görüyoruz, mantıken arkasını görmeliyiz" → telefon ARKADAN
+  çiziliyor: kenarlı kılıf, sol üstte kamera adası (iki lens + flaş), ortada logo
+  (önizleme `proto19`).
+- **Yeni seri ekranı için iki aday (kuruldu, deneme kartında; kullanıcı seçecek):**
+  `NewStreakFragment`'taki alev Lottie'sinin (`fire_anim.json`) yerine. Alev seri simgesi
+  (üst bar, seri ekranı, ders paneli, kayıt akışı), bu yüzden ikisi de aleve bağlı.
+  - `FLAME` (döngülü): sağ elde meşale gibi `streak_flame_ic` + radyal hale (tek
+    gölgelendirici, ölçekle boyutlanıyor); titreme tabandan esneme + sallanma. Boy
+    `FLAME_H` (3 → 30, 5 → 38, 7 → 46 birim), her büyümede zıplama + sevinç. Avuçta tutma
+    da denendi (önizleme `proto20`): göğüste küçük kalıyordu.
+  - `CALENDAR` (döngülü): önde beyaz takvim (mavi bant, halkalar), seçilen gün kadar kutu
+    0,35 sn arayla işaretleniyor (baş sallama), hepsi dolunca köşede küçük alev + sevinç,
+    4,6 sn'de işaretler siliniyor.
+  - `streakDays`: −1 deneme (alev 2 sn'de bir 3 → 5 → 7; takvim her turda sıradaki),
+    0 seçim yok, 3/5/7 seçilen (değişince alev büyüyüp seviniyor, takvim baştan).
+  - **Kullanıcı ALEV'i seçti ve kayıt akışının da değişmesini istedi (kuruldu, cihazda
+    görülmedi, commit edilmedi):**
+    - `fragment_new_streak`: `newStreakLottie` (fire_anim) → `newStreakMascot` (190dp,
+      üst boşluk 72 → 48dp, toplam yükseklik ~aynı). `onViewCreated`: `streakDays = 0` +
+      `play(FLAME)`; seçenek seçilince `streakDays = value` → alev büyüyüp seviniyor.
+    - `fragment_user_info` niyet sayfası: `challengeIntroLottie` → `challengeIntroMascot`
+      (200dp); `bindStep(CHALLENGE_INTRO)`'da `play(FLAME)` (gizli kapta önceden
+      başlatılsa açılışta beliriş görünmezdi). Kayıt akışında gün sorusu ayrı kapta
+      (hedef sorusuyla ortak) ve orada maskot YOK; alevin seçimle büyümesi yalnızca yeni
+      seri ekranında.
+    - `fire_anim.json` başka yerlerde kullanılmaya devam ediyor (üst bar, seri ekranı,
+      ders paneli).
+    - **Kullanıcı düzeltmesi:** niyet sayfalarında ALEV YOK — tavşan iki kez selam verip
+      beklemeye geçiyor (`play(GREET, times = 2)`; `play`'e `times` eklendi, tekrarlar
+      arasında beklemeye dönmüyor). Alev gün sorusunda geliyor: yeni seri ekranında
+      `showQuestion`'da `streakDays = 0` + `play(FLAME)`; kayıt akışında gün sorusu
+      kabına (`streakContainer`, hedef sorusuyla ortak) `streakMascot` (150dp) eklendi,
+      yalnızca CHALLENGE adımında görünüyor (hedef adımında GONE, başlık tepeye çıkıyor);
+      `bindStep(CHALLENGE)`'da başlatılıyor (seçimde yeniden çizilen
+      `renderChallengeStep`'te değil, yoksa her seçimde baştan başlardı).
+- **Kayıt akışı hatası (kuruldu, cihazda denenmedi):** soruları cevaplayıp kayıt olmadan
+  geri dönen çocuk bir sonraki girişte seri sorularını görmüyordu (yalnızca yaş + kaynak).
+  Sebep: `markOnboardingDone` seri soruları cevaplanınca, kayıt BİTMEDEN konuyor;
+  `UserInfoFragment` `!isOnboardingDone` ise soruyordu; sahipsiz cihazda
+  `prepareForNewAccount` işareti silmiyor. Düzeltme: öğrenciye seri soruları her seferinde
+  soruluyor (`streakStepsEnabled = !forceTeacher`). Bu ekran yalnızca yeni hesap açarken
+  açıldığı için yeniden sormak her zaman doğru; `isOnboardingDone` artık yalnızca sunucu
+  eşitlemesinde (hedefi sunucudan alma) kullanılıyor.
+- **Pro ekranı (`fragment_pro_diffirent`, roket Lottie'si) için üç aday (kuruldu, deneme
+  kartında; kullanıcı karşılaştırıp seçecek, ekrana bağlanmadı):** hepsi döngülü.
+  - `JETPACK`: sırtta iki gümüş tüp (gövdenin iki yanından görünüyor), memelerden aşağı
+    yanan alev (`drawFlame` ters ölçekle), düşen kıvılcımlar; `LIFT` hedefi 14 (havada
+    süzülüyor, beklemeye dönünce yumuşakça iniyor), kollar açık, ayaklar sallanıyor.
+  - `HERO`: kırmızı pelerin (yanları rüzgârla açılıp kapanıyor, alt kenar dalgalı;
+    `cubicTo/quadTo` yolu), göğüste PRO rozeti (`bg_shop_super_badge`'in yeşil → mavi →
+    mor geçişi, `LinearGradient` bir kez kuruluyor), sağ kol 45° havada, sol kol kalçada.
+  - `CROWN`: kafayla dönen yan yatık altın taç (3 uç, mücevherli bant), uçlarda sırayla
+    parıltı; zafer işareti + göz kırpma.
+  - Önizleme: scratchpad `proto22`. (Bir ara "geri al" isteğiyle kaldırılmıştı; kullanıcı
+    kartta görmek istediğini söyleyince aynen geri eklendi.)
+  - **Kullanıcı TAÇ'ı seçti (kuruldu, cihazda görülmedi, commit edilmedi):**
+    `fragment_pro_diffirent`'taki `centerMascot` Lottie (roket) → `BunnyMascotView` (aynı
+    id; kodda zaten kullanılmıyordu), genişlik %50 → %75 (tavşan karesinin yarısı kadar),
+    üst 8dp / alt 24dp boşluk. `ProDiffirentFragment.onViewCreated`: `play(CROWN)`.
+    `rocket_anim.json` `PartCardAdapter`'da kullanıldığı için silinmedi. Jetpack ve süper
+    kahraman deneme kartında duruyor.
+- **Reklam atlama paneli (`fragment_ad_skip`, timsah Lottie'si; geçiş reklamı kapanınca
+  çıkıyor, "7 günlük ücretsiz PRO denemesiyle reklamları atla!") için üç aday (kuruldu,
+  deneme kartında; kullanıcı karşılaştırıp seçecek, ekrana bağlanmadı):** hepsi döngülü,
+  sahne nesneleri (`drawAdProps`) yerde sabit, tavşandan önce çiziliyor.
+  - `AD_JUMP` "Reklamı atla": sağdan REKLAM yazılı TV kayıyor, tavşan üstünden zıplıyor
+    (Türkçe "atla" kelime oyunu). Zıplama (yükseklik 42, 1,1 sn) TV gövdesi ve kısa antenler
+    ayak altındayken havada kalacak şekilde hesaplandı (node ile kontrol edildi);
+    kulaklar tepede görünümden taşmıyor. Önce TV'ye bakıp çömeliyor, inince uğurlayıp seviniyor.
+  - `AD_BUTTON` "Atla düğmesi": sağda "Atla ⏭" düğmesi; pati hazırda bekleyip basıyor,
+    düğme gömülüp maviye dönüyor, yıldızlar, sağa kayıp kayboluyor. **Kullanıcı değiştirdi
+    (zıplayarak sevinç yerine):** yukarıdan önce taç (1,45 sn), sonra havalı güneş gözlüğü
+    (1,7 sn) hızlanarak düşüyor, inişte küçük sekme + kafa sarsılması; tavşan yukarı bakıyor;
+    2,2 sn'den itibaren havalı poz: köpeğin elleriyle kavuşturulmuş kollar, arkaya yaslanma
+    (−4°), baş yana (−7°), açık ayaklar, yarım gülümseme; gözlük inince sağ camda parıltı;
+    4,0 sn'de taç ve gözlük sönüyor (tur 4,4 sn). Gözlük kullanıcının eklediği
+    `res/drawable/cool_glasses.xml`: kafa silinince gözlük 512'lik karenin üst yarısında
+    kalmıştı → görüntü alanı 512×196'ya daraltıldı, yollar bir `group translateY=-119` ile
+    ortalandı (yollara dokunulmadı). Camların ortası gözlerin ortasına oturacak şekilde
+    ölçekleniyor (`GLASSES_*`). Önizleme `proto25`.
+  - `AD_PUSH` "Reklamı itme": iki direkli REKLAM tabelası; kedi koluyla yaslanıp itiyor
+    (gövde 8° eğik, 8 birim kayık, gözler sıkılı, ağız "O"), tabela sallanarak hızlanıp
+    çıkıyor; sonra köpeğin elleriyle el çırpma + sevinç.
+  - Önizleme: scratchpad `proto23` (`make23.js`).
+- **Kayıt soruları ekranı (kuruldu, cihazda görülmedi, commit edilmedi):**
+  - "Başla"ya basınca `UserInfoFragment` artık kaymadan, doğrudan geliyor
+    (`LoginStartActivity.showUserInfoFragment`'tan `setCustomAnimations` kaldırıldı; geri
+    dönüş de animasyonsuz).
+  - Adım çubuğu görevlerdeki çubuk tasarımında: `ProgressBar` → `FrameLayout`
+    (`userInfoProgress`, kısıtlar aynı id'ye bağlı) + zemin/dolgu/parlama (18dp,
+    `mission_progress_track`), çizim `applyMissionProgressOverlayNow` (mavi). Adımlar arası
+    akış `ValueAnimator` ile korunuyor; ilk çizimde genişlik yoksa ölçüm sonrası
+    (`applyMissionProgressOverlay`). Animatör `onDestroyView`'da iptal.
+- **Kayıt bilgi soruları (yaş, kaynak, hedef) için üç aday (kuruldu, deneme kartında;
+  kullanıcı karşılaştırıp seçecek, ekrana bağlanmadı):** Duo'nun kâğıt-kalemi birebir
+  kopyalanmasın istendi. Hepsi döngülü.
+  - `BOARD` "Kara tahta": tavşan 14 sola kayıyor, sağında şövaleli yeşil tahta; tebeşirli
+    el tahtanın sol kenarında (kol kaydırılınca kökü gövdeden ayrılıyordu — o yüzden yazı
+    soldan sağa kırpmayla beliriyor, el yerinde yazma hareketi yapıyor), sonra altı çiziliyor,
+    baş sallama, sevinç, silme. Deneme örnekleri her turda: "9 yaş", "YouTube", "10 dk".
+  - `LISTEN` "Dinleyen tavşan": düşünme kolu 72°'de (el yüzün yanında), sağ kulak 26° eğik;
+    2. sn'de kulak dikiliyor, iki baş sallama, sağ üstte ✓ balonu.
+  - `NOTEBOOK` "Havuç kalem": köpeğin elleri tek tek kayabiliyor (`FRONT_L_X`, `FRONT_R_X/Y`;
+    kaydıkça el gölgeleri siliniyor). **Kullanıcı düzeltmesi:** "bize doğru yazıyormuş gibi"
+    duruyordu → defterin ARKA kapağını görüyoruz (kırmızı kapak, spiral, beyaz etiket, yıldız
+    çıkartması; yazı/satır yok). Çizim sırası: sağ el → havuç → defter → sol el
+    (`drawFrontHands(left/right)` tek eli çizebiliyor). Havuç kullanıcının
+    `res/drawable/carrot_ic.xml`'i (ikon zaten yazma açısında; uç ≈(55,505)); tutma noktası
+    gövdenin ortası (180,330), ölçek 0,08 — ucu kapağın arkasında, üst gövde ve yapraklar
+    kapağın üstünden görünüyor (havuç elin arkasındayken turuncu gövde hiç görünmüyordu).
+    El, kapağın arkasındaki iki "satırda" (y 222/230) gidip geliyor. Önizleme `proto27`.
+  - Önizleme: scratchpad `proto24` (`make24.js`, `proto24_parts.js`).
+- **Reklam paneli için iki değnek adayı (kuruldu, deneme kartında; kullanıcı seçecek):**
+  kullanıcı "Atla düğmesi" yerine sihirli değnek fikri getirdi; seçenek 1 ve 3 yapıldı.
+  Billboard kullanıcının `res/drawable/billboard.xml`'i (512'lik, tabela + direk; sahnede
+  yerde, tavşanın sağında ~87 birim). Değnek ve yasak işareti kodla çiziliyor.
+  - `AD_ZAP` "Değnek + yıldırım": değnek elde beliriyor, "abra kadabra" diye daire
+    çizerek sallanıyor (kol açısına iki frekanslı sinüs, ağız konuşuyor, uçta sönen yıldız
+    izi), billboarda doğrultuyor; yıldırım (zikzak, sarı + beyaz; yumuşak hale, ekranı
+    bembeyaz yapan flaş YOK) birkaç kez yanıp sönüyor; billboard kararıyor
+    (`LightingColorFilter`), tabandan çöküp kül yığınına dönüşüyor, közler ve duman.
+  - `AD_MAGIC` "Değnek + yasak işareti": aynı sallama; değnek ucundan billboarda yay
+    çizerek uçan parıltılar, kırmızı yasak işareti büyükten küçülerek "pat" diye basılıyor
+    (billboard sarsılıyor), billboard yıldız tozuna dönüşüp kayboluyor.
+  - İkisi de "Atla düğmesi"yle aynı finale bağlı: `coolFinale(e, crownS, fadeS)` (taç →
+    0,25 sn sonra gözlük → havalı poz; gözlük parıltısı `glassesSparkleT`). AD_BUTTON da
+    artık bunu kullanıyor.
+  - Önizleme `proto28` (`make28.js`).
+- **Kayıt bilgi soruları — havuç kalem seçildi (kuruldu, cihazda görülmedi, commit
+  edilmedi):** Duolingo'daki gibi sol üstte maskot, sağında konuşma balonunda soru.
+  Kullanıcı telif riskini sordu: kalıp (karakter + soru balonu) yaygın bir arayüz kalıbı,
+  karakter/çizim/renkler bizim; Duolingo yeşili ve baykuşa özgü öğe kullanılmadı.
+  - `fragment_user_info`: `questionHeader` (çubuğun altında) = `questionMascot` (108dp,
+    `play(NOTEBOOK)` döngüde) + `questionBubble` (arka plan `SpeechBubbleDrawable`: koyu
+    zemin, `missions_track` kenar, sola bakan kuyruk; kutu+kuyruk `Path.op(UNION)`).
+  - Yaş/kaynak/hedef soruları balonda (`bindQuestionHeader`); eski başlıklar (`tvTitle`,
+    `tvSourceTitle`, kodda kullanılmıyordu) kaldırıldı; hedef adımında `streakStepTitle`
+    gizli, gün sorusunda görünür. Soru değişince balon küçükten büyüyerek beliriyor.
+  - Niyet ve gün sorusu adımlarında başlık satırı GONE; kaplar `layout_goneMarginTop=40dp`
+    ile eskisi gibi çubuğun altına çıkıyor.
+- **Kayıt akışı maskot düzeltmeleri + reklam paneli (derlendi ve telefon bağlanınca
+  kuruldu; cihazda görülmedi; commit edilmedi):**
+  - Havuç kalem artık iki hâlli: `NOTEBOOK_HOLD` (döngü: defter ve havuç elde, kalem satır
+    başında havada, sana bakıyor) ve `NOTEBOOK_WRITE` (tek sefer ~2,3 sn: iki satır yazıp
+    baş sallıyor). `play(emote, times, then)`'e `then` eklendi: hâl bitince beklemeye değil
+    ona geçiliyor. UserInfoFragment: başta HOLD; yaş/kaynak/hedef "Devam Et"inde (geçerlilik
+    kontrolünden SONRA) `play(NOTEBOOK_WRITE, then = NOTEBOOK_HOLD)`. Başlık satırı kayan
+    kapların dışında olduğu için yazma, bir sonraki soru gelirken de sürüyor.
+  - Seri adımları: niyet ve gün sorusunda iki ayrı tavşan vardı ve kapla birlikte kayıyordu
+    (kullanıcı: "yeni tavşan yandan kayarak geliyor"). Artık tek ortak `streakMascot`
+    (170dp) kapların DIŞINDA; yalnızca yazılar kayıyor. Niyette `play(GREET, 2)`, gün sorusuna
+    geçince (yazılar değişirken, `bindStep`) `play(FLAME)`. Kaplar
+    `stepTopBarrier`'a bağlı (questionHeader + streakMascot'un altı; GONE olan çubuğun altına
+    çökmüş sayılıyor). `challengeIntroMascot` silindi.
+  - `fragment_ad_skip`: timsah Lottie (`centerGraphic`) → `BunnyMascotView` (aynı id,
+    genişlik %60 → %85), `AdSkipFragment.onViewCreated`'da `play(AD_MAGIC)`.
+    `crocodile_anim.json` rozet/kupa/görevlerde kullanıldığı için silinmedi.
+- **Kayıt ekranı küçük düzeltmeler (kuruldu, cihazda görülmedi, commit edilmedi):**
+  - Balondaki soru adım değişince daktilo gibi hızlı yazılıyor (`typeQuestion`, harf başına
+    22 ms; metin baştan tamamı konup yazılmamış kısım şeffaf `ForegroundColorSpan` — harf
+    harf eklense balon satır kaydıkça büyüyüp zıplardı). Önceki "küçükten büyüme" kaldırıldı.
+  - Kayıttaki niyet sayfasında tavşan iki kez selam yerine `SHY` (utangaç) oynuyor; yeni seri
+    ekranı (ders sonu) değişmedi, orada hâlâ iki kez selam.
+  - Kullanıcı isteği: niyet sayfasında tavşan sürekli utangaç kalsın (tek sefer oynayıp
+    beklemeye dönüyordu). `play(SHY, times = Int.MAX_VALUE)`: tekrarlar arasında hâl
+    bırakılmadığı için duruş korunuyor; yeni bir `loops` hâli eklemeye gerek olmadı.
+    Kuruldu, cihazda görülmedi.
+  - `login_start` (`LoginStartActivity.kt`, `activity_login_start.xml`) dosyalarında kullanıcının
+    kendi değişiklikleri var: dokunma, üzerine yazma.
+- **Kayıt akışı mevcut hesaba dokunmuyor (kuruldu, cihazda denenmedi, commit edilmedi):**
+  kullanıcı çıkış yapıp kayıt sorularını cevaplayıp Google ile ZATEN KAYITLI hesaba girdi
+  (logcat 23:00–23:01). İki sorun bulundu ve düzeltildi:
+  1. Kayıtta seçilen hedef (20 dk) mevcut hesabın hedefini (sunucuda 5 dk) sessizce
+     değiştiriyordu (yerel 20, ilk tutturulan günde sunucuya da gidecekti); meydan okuma ve
+     hatırlatma saati de aynı yoldan ezilebiliyordu.
+  2. Kayıt ekranı AÇILIR AÇILMAZ (`prepareForNewAccount`) önceki hesabın cihazdaki seri
+     verisi siliniyordu: bugünkü dakikalar ve gönderilmemiş günler gidiyordu.
+  Çözüm: kayıt cevapları ayrı dosyada bekliyor (`StreakRepository.savePendingSignup`,
+  `streak_signup_pending`); MainActivity `bindToUser`'dan hemen sonra `applyPendingSignup`:
+  Firebase hesabı son 10 dk'da açıldıysa (RegisterActivity'deki kayıt ölçümüyle aynı yöntem)
+  hedef/meydan okuma/saat + onboarding + yeni seri sorusu işareti uygulanıyor, değilse
+  atılıyor (StreakDiag `Repo.kayitCevaplari`). `prepareForNewAccount` kaldırıldı; silme artık
+  yalnızca `bindToUser`'da, oturum başka hesaba geçince. Kayıt seçimleri cihaz değerinden
+  değil varsayılandan (5 dk, 19:00) başlıyor.
+  - Bu telefonda önceki denemeden kalan uyumsuzluk: yerel hedef 20 dk, sunucu 5 dk.
+- **Çalışma süresi cihaza özel:** `StudyTimeTracker` yalnızca telefonda (`study_time`
+  prefs), sunucuya gitmiyor. Başka cihazda bugünkü süre 0 görünür; dakikalar cihazlar
+  arasında toplanmıyor, gün ancak tek cihaz hedefi tutturunca seriye işleniyor (sonra
+  sunucudan diğer cihaza geliyor). Aynı cihazda başka hesaba geçince de siliniyor. Veli
+  panelindeki `TimeTracker`/`dailyTimeSpent` ayrı bir ölçü (uygulama açık kalma süresi).
+- **Soru başlığındaki tavşan büyüdü (kuruldu, cihazda görülmedi):** `questionMascot`
+  108 → 140dp (kullanıcı: küçük görünüyor). Balon sağında kaldığı için daraldı (~180dp metin
+  genişliği, en uzun soru ~3 satır, tavşan boyunu geçmiyor). Tanışmadan kayan tavşan ölçeği
+  bu görünümden hesaplandığı için ayrıca bir değişiklik gerekmedi.
+- **Üç küçük düzeltme (kuruldu, cihazda görülmedi, commit edilmedi):**
+  - Giriş ekranı (`activity_login_start.xml`, kullanıcının kendi değişiklikleri korundu):
+    tavşan + başlık + metin tek dikey zincir (packed, bias 1), "Başla"nın hemen üstüne
+    yaslanıyor; metnin alt boşluğu 40 → 28dp. Tavşan tam ortaya sabitlenemedi: bu telefonda
+    (393×873dp) metin düğmeye biniyordu, küçük ekranda ~70dp. Şimdi merkezin ~35dp üstünde
+    (hesap, cihazda ölçülmedi). Tam orta istenirse tavşanı %70 → ~%62 küçültmek gerekiyor.
+  - "Bizi nereden duydun?" seçenekleri ikişerli kart ızgarası yerine günlük hedef satırlarının
+    aynısı (`StreakViews.buildOptionRows`, alt alta, gri); `renderSourceStep`. Kaydedilen
+    değerler aynı, istatistik anahtarları değişmedi. 8 kart XML'den silindi.
+    Sonra (kullanıcı isteği): `sources` = (kaydedilen değer → görünen ad) listesi; "Youtube"
+    değer olarak kaldı, ekranda "YouTube"; "Arkadaş/Aile"nin ardına yeni **"Okul/Öğretmen"**
+    (sunucu `acquisitionSource`'u serbest metin alıyor, izin listesi yok). Sıra karıştırılmıyor
+    (kullanıcı istemedi).
+  - Giriş ekranında `tvBody` alt boşluğunu kullanıcı kendisi 48dp yaptı; dokunma.
+- **Abonelik akışı ders sonrası kuyruğunu bekletiyor (04.10.2026; kuruldu, cihazda
+  denenmedi, commit edilmedi):** kullanıcı: ders sonu reklam → reklam atlama paneli → "Pro'ya
+  geç" → Pro paneli açılırken arkada rozet kutlaması ya da yeni seri sorusu başlıyordu.
+  Sebep: kapılar yalnızca `AdSkip`'e bakıyordu; panel Pro'yu açıp 500 ms sonra kendini
+  kapatınca kuyruk "engel yok" deyip sıradakini Pro'nun ALTINDA açıyordu.
+  - `MainActivity.subscriptionFlowBlockReason()`: `ProDiffirent` / `Plan` dialog'u açık ya da
+    `BillingManager.isPurchaseFlowActive()` (launchPurchase → onPurchasesUpdated arası; 2 dk
+    güvenlik sınırı). Eklendiği kapılar: `marathonGuideMapBlockReason` (harita kuyruğu,
+    tanıtım, rehber hepsi buradan geçiyor), `offMapNewStreakBlockReason` (Görevler/yarış
+    dönüşündeki yeni seri), `isTasksReturnCovered` (Görevler dönüş sonucu).
+  - Kuyruğu dürtenler: `ProDiffirentFragment.onDismiss`, `PlanFragment.onDismiss`,
+    `BillingManager.onPurchaseFlowEnded` (MainActivity'de bir kez kuruluyor;
+    `installDefaultBillingCallbacks` dokunmuyor). Log: `PostLessonQueue` →
+    `bekliyor | block=pro_panel_showing / plan_showing / purchase_flow`.
+  - Bilinen sınır: Görevler/yarış dönüşü yolları en fazla 3 dk bekliyor (eski bütçe); kullanıcı
+    abonelik ekranlarında daha uzun kalırsa o sonuçlar yine açılır. Harita kuyruğunda bekleyen
+    iş kaybolmuyor (bekçi 2 dk sonra yalnızca kilidi bırakıyor, kapanış dürtüsü sürdürüyor).
+- **Reklam atlama paneli iki sürümlü (04.10.2026; kuruldu, cihazda görülmedi, commit
+  edilmedi):** kullanıcı "denemeyi kullanmamışsa bugünkü gibi, kullanmışsa Pro aboneliği
+  anlatsın, müzik çalmayabilir, konfeti ikisinde" dedi. Koşul Play'in deneme hakkı:
+  `BillingManager.freeTrialDays(SUB_PRO)` (düğme metni `SubscriptionCta` de buna bakıyor).
+  - Hakkı var: "N günlük ücretsiz PRO / denemesiyle reklamları atla!" (N Play teklifinden),
+    zil + "Deneme süren sona ermeden önce bildirim alacaksın.", müzik + alkış.
+  - Hakkı yok: "PRO ile reklamsız, / kesintisiz öğren!", yeşil onay ikonu (tint kaldırılıyor) +
+    "Aboneliğini istediğin zaman iptal edebilirsin.", müzik ve alkış YOK; konfeti
+    (görsel) iki sürümde de; sesler (patlama dahil) yalnızca deneme sürümünde (kullanıcı: tek başına konfeti sesi amatör).
+  - Ölçüm: `ad_skip_shown`'a `trial_offer` = yes/no.
+  - Not: soru tanıtımının (AskQuestionOpen) otomatik açılma koşulu deneme hakkı DEĞİL; oturum
+    açık + öğretmen değil + Pro/Premium değil + cihaz hoş geldin kredisini almamış
+    (`WelcomeCreditEligibility`). Kullanıcıya açıklandı.
+- **Commit + deploy (03.10.2026 23:21):** kullanıcı isteğiyle bu bölümdeki her şey
+  `28d6c35`'te commit edilip push edildi (test anahtarları kapatıldı; `.firebase` önbelleği,
+  `.idea` ayarı ve `package-lock.json` dışarıda). "Deploy Cloud Functions" iş akışı başarılı
+  (run 37150948053) — seçilebilir hatırlatma saati sunucuda canlı. "Build Debug APK" bilinen
+  CI sorunuyla yine başarısız (yerel derleme sağlam). Cihazda uçtan uca denenmedi: ilk
+  gerçek kontrol, saati seçen bir hesabın `users/{uid}/streak/state` dokümanında
+  `reminderLocalHour` ve doğru `reminderHourUtc` görmek.
+- **Kayıtta hatırlatma sorusu + seçilebilir hatırlatma saati (kuruldu, cihazda görülmedi):**
+  kullanıcı önerilerin hepsini seçti.
+  - `Step.REMINDER` (gün sorusundan sonra, son soru; tanışma artık "5 kısa sorum" diyor).
+    Başlık "Sobi sana her gün hatırlatsın mı?", alt yazı "Saati istediğin zaman
+    değiştirebilirsin"; satırlar diğer sorularla aynı (`StreakViews.buildReminderRows`):
+    Okuldan sonra 16:00 / Akşamüstü 18:00 / Akşam 19:00 / Yemekten sonra 20:00, 19:00 seçili.
+    Düğmeler "Evet, hatırlat" (Android 13+ bildirim izni penceresi, sonuç ne olursa olsun
+    kayda devam) ve yeni `btnLater` "Şimdi değil" (izin sorulmaz). İkisinde de saat
+    kaydediliyor ve `MainActivity.markNotificationPermissionPrompted` ile ana ekranın ilk
+    açılıştaki bağlamsız izin isteği kapanıyor.
+  - Sobi yerinde (ortak `streakMascot`), yalnızca hâl değişiyor: yeni `Emote.ALARM` — önde
+    iki çanlı kırmızı çalar saat, patiler arkadan tutuyor (saat patilerin ÖNÜNDE çiziliyor),
+    kadranda seçili saat (`alarmHour`). Seçim değişince akrep yaylı dönüyor, yelkovan aradaki
+    her saat için bir tur atıyor, saat hemen çalıyor (titreme, çekiç, ses çizgileri, küçük
+    zıplama); her turda bir kez de kendiliğinden çalıyor. Önizleme: scratchpad
+    `maskot/make29.js` → `proto29.png`. Oyun alanında (Karakter Animasyonu) saatler kendi
+    kendine dönüyor (`alarmHour = -1`).
+  - Kullanıcı isteği: hazır saatlerin altına **"Başka bir saat"** satırı
+    (`StreakViews.buildReminderRows(..., onCustom)`); dokununca 24 tam saatlik ızgara penceresi
+    (`StreakViews.showHourPicker`, 4 sütun, 06:00'dan başlıyor, gece saatleri sonda, dakika
+    yok). Hazırlardan biri değilse o satır seçili ve sağında saat yazıyor. Kayıtta ve seri
+    ekranında aynı. Sunucu 0–23'ü zaten kabul ediyordu, değişiklik gerekmedi. Gün/hedef/
+    hatırlatma seçenekleri artık kaydırılabilir (`streakOptions` bir ScrollView içinde): 5
+    satır bu telefona ancak sığıyordu.
+  - Seri ekranı: "Günlük hedefi değiştir"in altına "Bildirim saatini değiştir · 19:00"
+    (`streakChangeReminder`, aynı pencere); izin yoksa orada da soruluyor.
+  - Saklama/eşitleme: `StreakRepository.reminderHour/setReminderHour` + "gönderilmedi"
+    işareti; saat YALNIZCA bu cihazda seçildiyse `submitStreakDay`'e `reminderHour` olarak
+    gidiyor (yeni cihazın varsayılanı sunucudaki seçimi ezmesin), sunucudaki
+    `reminderLocalHour` yanıttan ve doküman okumasından geri alınıyor.
+  - Sunucu (`functions/streakReminder.js`, `index.js`): `normalizeReminderHour`,
+    `reminderHourUtc(offset, localHour)`, `reminderPatch` önceliği seçilen > kayıtlı > 19:00,
+    `readStreakState.reminderLocalHour`, yanıtlarda `reminderLocalHour`. Günsüz çağrıda
+    doküman yoksa artık YALNIZCA saat seçildiyse oluşturuluyor (yeni kayıt olmuş, hedef
+    tutturmamış çocuk hatırlatmayı ilk günden alsın). Eski istemciler etkilenmiyor.
+    Testler: `node functions/scripts/test-streak-reminder.js` 32/32, diğer seri testleri geçti.
+  - Ölçüm: `STREAK_STAGE_REMINDER`, yeni olay `streak_reminder_set` (saat, kaynak, seçim
+    yes/later, izin granted/denied/not_needed/not_asked).
+  - Deploy edildi (yukarıya bkz.). Not: yayından önce kurulan sürümler saati göndermiyordu,
+    onlar 19:00'da kalır; `claude/**` dalına functions içeren push = deploy, önce sor.
+  - Alt sistem çubuğu: koyu temada (`values-night/themes.xml`) varsayılan
+    `navigationBarColor` `message_topbar`'dı (#111416, zeminden koyu); `background_color`
+    yapıldı. Kendi rengini koddan vermeyen 5 ekran düzeldi: Login, Register, TeacherLogin,
+    TeacherOtp, EmailVerification. Main/Splash/LoginStart zaten koddan aynı rengi veriyordu.
+- **Kayıtta maskotla tanışma (kuruldu, cihazda görülmedi, commit edilmedi):** Başla'dan sonra,
+  yaş sorusundan ÖNCE iki ekran (yalnızca öğrenci; öğretmen doğrudan yaştan başlıyor, "ilk
+  dersinden önce" ona uymuyor). Duolingo'nun tanışma ekranlarından esinlenildi (kullanıcı
+  ekran görüntüsü verdi); metin kendi sesimizle yazıldı, birebir değil.
+  - `Step.MEET`: ortada tavşan (180dp), üstünde aşağı kuyruklu balon (daktilo): "Selamlar!
+    Benim adım Sobi!"; `repeatWithPause(GREET, 2000)` = el salla, 2 sn bekle, tekrar.
+  - `Step.BRIEF`: "İlk dersinden önce seni tanımak için sadece **4 kısa sorum** var!" (sayı
+    `Step.asks` olan adımlardan: yaş, kaynak, hedef, gün); `repeatWithPause(CLAP, 2000)`.
+    İki tanışma ekranı arasında kayma yok, yalnızca yazı ve hâl değişiyor.
+  - Devam → `leaveIntro`: balon soluyor, tavşan `stop()` ile beklemeye dönerken küçülerek
+    soru başlığındaki maskotun yerine kayıyor (450 ms), varınca o maskot görünüp defterini
+    çıkarıyor (NOTEBOOK_HOLD), yaş sorusu balona yazılıyor. Geri tuşunda `returnToIntro` tersini
+    yapıyor. Soru başlığı tanışmada INVISIBLE (hedef konum ölçülü kalsın), tanışma kabı sonra
+    INVISIBLE (dönüşte orta konum ölçülü kalsın).
+  - İlerleme çubuğu tanışmada gizli ve sayılmıyor; `progressFor` artık `flowSteps` üzerinden.
+  - **İsim tek yerde:** `strings.xml` → `mascot_name` (şimdilik "Sobi", kullanıcıyla isim
+    kararı açık).
+  - Yeni: `BunnyMascotView.repeatWithPause/stop` (otomatik selam düzeneğinin genellemesi; giriş
+    ekranının `autoGreetIntervalMs` kullanımı değişmedi), `SpeechBubbleDrawable` alt kuyruk
+    (`TailSide.BOTTOM`; parametreler `tailLength/tailBase` oldu).
+  - Huni: öğrencide açılışta `SIGNUP_INTRO = "intro"`, `age` artık yaş sorusuna VARINCA
+    (tanışmadan devam edince) sayılıyor. GA4 hunisine "intro" adımı eklenmeli.
+- **Kayıtta yeni "ilerleme yolu" ekranı (kuruldu, cihazda görülmedi, commit edilmedi):**
+  GOAL ("Her gün ne kadar…") adımından hemen sonra, `Step.ROADMAP`. Mimo'nun benzer
+  ekranından esinlenildi; kullanıcı seçeneklerden **D + B1 + Z2**'yi seçti:
+  - Başlık balonda (daktilo): "Her gün **N dakikayla** buraya varacaksın!" (N altın, kalın).
+  - Adımlar: Abaküsü tanı (`abacus_svg_ic`, BUGÜN) · Serini büyüt (`streak_flame_ic`,
+    bugün+7 gün, ör. "10 EKİM") · Kafadan hesap ustası ol (`brain`, kullanıcının eklediği
+    çizim; ay+yıl, ör. "OCAK 2027"). Kullanıcı isteğiyle 2. adımdaki "Her gün N dakikayla"
+    kaldırıldı (başlıkta zaten var), 3. adımda kristal yerine beyin.
+  - Çizim `LearningPathView` (yeni): soldan yükselen basamaklı **abaküs teli** (mavi → yeşil →
+    altın), adımlar telin üstünde açık zeminli yuvarlak boncuklarda, yazılar altlarında, telin
+    ucunda altın **ok başı** (kullanıcı havuç yerine ok istedi; çentikli, köşeleri yuvarlak,
+    40° eğimli); altta zaman çizgisi + etiketler. Tel ve zaman çizgisi soldan çiziliyor
+    (900 ms), ok başı ucunda beliriyor, sonra her adımda boncuk → yazı → etiket 0→%120→%100
+    (toplam ~2,8 sn; kap kayarak gelince başlıyor, geri dönünce baştan oynuyor). Mimo'dan
+    ayrışma: basamaklı tel, mor-pembe yok, kendi metin/ikonlarımız.
+  - Tarih `LearningPathPlan` (yeni): 1–4. bölümlerin (körleme toplamanın sonuna kadar) ders
+    adımları müfredattan sayılıyor (şu an 190 adım) × **adım başına 4 dk** ÷ günlük hedef,
+    **haftada 5 gün** çalışma varsayımıyla. Bugün (3 Eki 2026) için: 20 dk → KASIM 2026,
+    10 dk → OCAK 2027, 5 dk → MAYIS 2027. **İki sayı da varsayım**; Analytics'teki
+    `lesson_step_pass` `elapsedMs` ortancasıyla `MINUTES_PER_STEP` düzeltilmeli.
+  - İlerleme çubuğu toplamı artık `Step.entries.size` (6); geri tuşu ROADMAP ↔ GOAL/niyet.
+    Huniye `STREAK_STAGE_ROADMAP = "roadmap"` eklendi (yeni ekran kayıp yaratıyor mu).
+  - Önizleme: scratchpad `yol/make.js` (yerleşim hesabının JS kopyası, headless Edge).
+- **Reklam atlama paneli her reklamdan sonra (geçici, test için):** kullanıcı "şimdilik her
+  reklamdan sonra gelsin" dedi. Seyreklik kuralları (4 reklamda bir, 2 saat ara, günde 2)
+  silinmedi; yeni `AdSkipDebug` anahtarı (`NewStreakPromptDebug` kalıbı, `BuildConfig.DEBUG`
+  ile çarpılıyor, release'e sızmaz) açıkken `AdSkipPolicy.onAdClosed` her UYGUN reklamda
+  true dönüyor (`eligible = false` kararları geçerli).
+- **Satış ekranlarında telefon çubuk renkleri (kuruldu, cihazda görülmedi, commit edilmedi):**
+  `fragment_ad_skip`, `fragment_pro_diffirent`, `fragment_ask_question_open` ve `fragment_plan`
+  `Theme_*_NoTitleBar_Fullscreen` dialog'ları: tema durum çubuğunu gizliyordu (tepede sistemin
+  siyah bandı) ve gezinme çubuğu sistem renginde kalıyordu. Yeni `SystemBarColors.applyToDialog`
+  (her ekranın `onViewCreated`'ında BİR kez — `onStart` her öne gelişte çalışıyor, Android 15+
+  dolguları üst üste eklenirdi): FLAG_FULLSCREEN temizleniyor, durum çubuğu görünür ve üst
+  renge, gezinme çubuğu alt renge boyanıyor, simgeler zemine göre açık/koyu. Üç lacivert
+  ekranda üst `paywall_navy` (#050C38, yeni renk kaynağı), alt beyaz; plan baştan sona
+  beyaz. Android 15+ (çubuk rengi yok sayılıyor, içerik çubukların altına uzanıyor) için
+  üst görünüme durum çubuğu, alt beyaz bölüme gezinme çubuğu kadar dolgu ekleniyor;
+  telefon Android 13 olduğu için o yol DENENMEDİ.
+- Test anahtarları (`AskQuestionPromoDebug`, `NewStreakPromptDebug`, `AdSkipDebug` FORCE)
+  04.10.2026'da kullanıcının isteğiyle yeniden KAPATILDI (false). `StreakDiag.ENABLED` bir test
+  anahtarı değil, teşhis logu; yayın öncesi listesinde.
+
+## Ders sonu Sobi sahneleri (04.10.2026 — oyun alanına eklendi, commit edilmedi)
+
+- Kullanıcı ders sonu ekranları (`fragment_lesson_result`, `fragment_lesson_result_false`,
+  `fragment_chest_result`) için seçenek tablosundaki BÜTÜN animasyonların Görevler →
+  "Karakter Animasyonu" kartına eklenmesini istedi; hangisinin hangi ekrana gideceğine
+  KENDİSİ karar verecek. Henüz hiçbir ekrana bağlanmadı.
+- `BunnyMascotView.Emote`'a eklenenler (ALARM'dan sonra): WEIGHTS (boncuk halteri), SKATE
+  (kaykay + ollie + havalı gözlük), SKATE_FALL (taşa takılıp düşüyor, sersem, kalkıp
+  silkeleniyor, kararlı yumruk, koşarak çıkış), FOOTBALL (3 sektirme + kafa golü),
+  BASKETBALL (2 sektirme + potaya atış, file sallanıyor), GUITAR (notalar), JUGGLE (3
+  soroban boncuğuyla kaskad), PERFECT (yıldız patlaması + taç + gözlük finali), STARS
+  (sandık yıldızları; `starCount` 0..3 verilirse o kadar, -1 = deneme için 3), DETERMINED
+  (üzgün → nefes → kararlı yumruk).
+- Yeni kanallar 49–59 (TILT gövde eğimi ayaklar etrafında, KICK_L/R bacak tekmesi, eşya
+  görünürlükleri, BROWS_DET kararlı kaşlar). Çizimler dosyanın "ders sonu sahneleri"
+  bölümünde; zaman/ölçü sabitleri companion'da W_ / SK_ / SF_ / FB_ / BB_ / JG_ / PF_ /
+  ST_ / DT_ önekli.
+- GITAR artık `guitar.xml` (elektro gitar) ile çiziliyor: gövde ekranda solda, sap sağa-yukarı;
+  soldaki pati tellere vuruyor (bunun için yeni kanal `FRONT_L_Y` = 60, COUNT 61), sağdaki
+  sapta. Cihazda kare kare görüldü, düzgün.
+- Kullanıcı "havalı/sert görünmeye çalışan ama tatlı" sahneler istiyor (örnek: kovboy
+  şapkası `cowboy_hat.xml`, yüz gizli → baş kalkar, gözler kısılır, el bele gider, silah
+  yerine havuç çıkarıp ısırır). Seçenekler sunuldu, kullanıcının seçimi bekleniyor.
+- Cihazda yalnızca halter ve yıldızlar kare kare görüldü; halter çubuğu/boncukları
+  büyütüldü, yıldızlar kulakların üstünden yanlara alındı — bu iki düzeltme derlendi
+  ama KURULMADI (kullanıcı o sırada telefonda sahneleri deniyordu). Diğer sekiz sahnenin
+  geometrisi (top–ayak/kafa hizası, pota yeri, düşmede yıldızların başın üstüne denk
+  gelmesi, gitar–pati hizası, hokkabazlık yüksekliği) kontrol edilmedi.
+
+## Havalı ama tatlı sahneler (04.10.2026 — yazıldı ve derlendi, CİHAZDA DENENMEDİ, commit edilmedi)
+
+- Yeni hâller: COWBOY (cowboy_hat.xml, eğik), COWBOY_FRONT (cowboy_hat_bandana.xml ikiye bölündü:
+  `cowboy_hat_front.xml` + `bandana.xml`), KARATE (bant ve tahta elle çizildi), NINJA (maske
+  elle çizildi), BOXER (boxing_gloves.xml), PIRATE (pirates_hat.xml; göz bandı ve dürbün elle).
+- Yeni kanallar 61–76 (HAT_A … SWEAT, COUNT 77), Mouth.CHEW / SMIRK, kısık göz (SQUINT).
+  Kod "havalı ama tatlı sahneler" bölümünde, sabitler CB_ / KR_ / NJ_ / BX_ / PR_.
+- Şapka/bant/maske yerleşimi bilgisayarda önizlemeyle ayarlandı (scratchpad hats*.js);
+  hareketler cihazda HİÇ görülmedi. Sıradaki iş: kurup altı sahneyi kare kare kontrol etmek
+  (özellikle kılıf–el hizası, havucun ağza denk gelmesi, karate vuruşunun tahtaya değmesi,
+  dürbünün göze oturması, kulak tokadı).
+
+## Bir kez oyna, son hâlde bekle (04.10.2026 — kuruldu, kullanıcı inceliyor)
+
+- `Emote.holdFromMs`: verilen hâl bir kez oynuyor, sonra yalnızca son bölümü (holdFromMs..süre)
+  döngüde. Bekleme bölümündeki salınımlar bölüm boyuna tam oturuyor (env kullanılmıyor).
+  Bekleyenler: PERFECT, COWBOY(+FRONT), KARATE, NINJA, BOXER, PIRATE, GLASSES, MUSCLE, RAPPER.
+  Ders sonu sahnelerinin ilk partisi (WEIGHTS…DETERMINED) hâlâ baştan dönüyor.
+- Korsan zıplamıyor, dürbünle bakmaya devam ediyor; ninja kaçmıyor, gergin sağa sola bakıyor;
+  Mükemmel: zıplama/yıldız patlaması yok, taç + gözlük düşüp zafer işaretiyle poz.
+- Yeni: GLASSES (gözlük kayıyor, baş hareketiyle yerine), MUSCLE (minicik kas tümsekleri),
+  RAPPER (`rap_hat.xml` aynalanıp yana çevrili kep, elle çizilmiş altın zincir; kep uçuyor,
+  yakalayıp geri atıyor).
+- Oyun alanı listesinin sonu alt çubuğun arkasında kalıyordu: ChipGroup paddingBottom 120dp.
+- Kullanıcı: telefonda kare kare kontrolü o istemedikçe YAPMA; o bakıp değişiklik/silme
+  listesini verecek.
+
+## Silinen ve düzeltilen sahneler (04.10.2026 — kuruldu, kullanıcı bakacak)
+
+- Kullanıcının isteğiyle SİLİNDİ: BOXER, COWBOY (eğik şapka), MUSCLE, SKATE_FALL, FOOTBALL,
+  BASKETBALL (kodları, kanalları, sabitleri). Kullanılmayan asset'ler de silindi:
+  `cowboy_hat.xml`, `boxing_gloves.xml`, `cowboy_hat_bandana.xml` (ondan bölünen
+  `cowboy_hat_front.xml` + `bandana.xml` kullanılıyor).
+- Kovboy önden: şapka inerken kafa öne eğiliyor — yeni `HEAD_PITCH` kanalı: kafa boyna doğru
+  basılıyor (PITCH_SQUASH), yüz aşağı kayıyor (PITCH_FACE_DY), kulaklar kısalıyor (PITCH_EAR).
+- Rapçi yeniden döngüde (6 sn = 12 vuruş). Ninja dumandan sonra kısık gözlerle sinsi sinsi
+  sağa sola süzülüyor (sneakyLook; ter damlası kaldırıldı). Gitar: tellere vuran pati omuzdan
+  açısal sallanıyor (yeni `FRONT_L_ROT` kanalı).
+
+## Ders sonu için seçilen sahneler (04.10.2026, kullanıcı)
+
+- BAĞLANDI: `LessonEndMascot` (yeni dosya). Başarılı ders (LessonResult) ve sandık sonucu
+  (ChestResult) dokuz sahneden (GUITAR, JUGGLE, PERFECT, COWBOY_FRONT, KARATE, NINJA, PIRATE,
+  GLASSES, RAPPER) TORBA usulü seçiyor: karışık sıra, torba bitmeden tekrar yok, iki ekran
+  aynı torbayı paylaşıyor, torba SharedPreferences `lesson_end_mascot`ta. Başarısız ders
+  (LessonResultFalse) hep DETERMINED; o artık kararlı pozda bekliyor (holdFromMs 3300).
+  Üç düzende Lottie alanı yerine 200dp `mascotView`; sahne ekran girişinden 450 ms sonra.
+  Kullanıcının kararı: Mükemmel de torbada eşit (yalnızca hatasız derse ayrılmadı), sandıkta
+  da torba (Korsan önceliği yok).
+- Bu üç ekrandan çıkan 11 Lottie (assets/animation_one + animaton_two…twelve, ~1,2 MB)
+  kullanıcının onayıyla SİLİNDİ; animaton_thirteen abaküs ve körleme ekranlarında kullanıldığı için duruyor.
+- PERFECT: pozdan sonra (bekleme bölümünde) sağdan soldan foto flaşları patlıyor, her
+  flaşta gözlükte parıltı (`drawPhotoFlashes`, FLASH_* sabitleri). Kuruldu, kullanıcı bakacak.
+- Flaşlar artık Sobi'nin üstünde (kafa/gövde) ve her flaşta tavşan bir an beyaza çekiliyor
+  (tavşan bir katmana çiziliyor, SRC_ATOP ile yalnızca çizili yerleri; `photoFlashTint`).
+- CROWN (Pro paneli de bunu oynatıyor): taç ve gözlük baştan takılı, Mükemmel'in zafer pozu,
+  aynı flaşlar; süre 4 sn (flaş döngüsü 2 sn'nin katı).
+- Flaş artık YALNIZCA tavşanın anlık beyazlaması (`photoFlashTint`, 0,18 sn; sırayla soldan ve
+  sağdan: gelen yan parlak, öbürü soluk — iki LinearGradient, `lastFlashFromLeft`): ışınlar, hale
+  ("dalga"), çekirdek, flaşta gözlük parıltısı ve CROWN'daki taç yıldızları kaldırıldı.
+- JUGGLE: palyaço burnu + yaka beğenilmedi, kaldırıldı; yerine `jester_hat.xml` soytarı şapkası
+  (JESTER_A, JESTER_* sabitleri). Kullanıcı yarıya küçülttürdü: 0,17 ölçek, kulakların
+  arasında 3° yatık (10° fazla eğik bulundu); kulaklar normal. Önizleme: scratchpad jester.js.
+
+## Seri ekranından dönüşte harita geri düğmesi kayboluyordu (04.10.2026 — düzeltildi, kuruldu)
+
+- `updateCurrencyPanelVisibility` lessonPartBackButton'ı harita/mağaza dışında gizliyordu;
+  seri ekranı da mağaza gibi haritanın üstüne ekleniyor ama istisnada yoktu. StreakFragment
+  istisnaya eklendi. Kullanıcı cihazda deneyecek.
+
+## Ders sonucu düzeni (04.10.2026 — kuruldu, kullanıcı bakacak)
+
+- fragment_lesson_result ve fragment_lesson_result_false: başlık(lar) ve kutular düğmenin
+  hemen üstünde; Sobi (mascotView) üstte kalan bütün yeri kaplıyor (weight=1, çizim kendini
+  kareye sığdırıyor), paddingTop 80→48dp. chest_result DEĞİŞMEDİ (istenmedi).
+
+## Öğretmen görselleri (teacher_emotes_*) yerine Sobi — sırayla (04.10.2026 başladı)
+
+- Kullanım yerleri: MapFragment.showGuidePanel (gpt4, gpt3; GuidePanelView), GuideHelper
+  rehberleri 1–6 (AbacusFragment + BlindingLessonFragment, ivGuideImage), varsayılan src
+  fragment_abacus.xml (stick) ve view_guide_panel.xml (gpt3). Üç PNG ~5,1 MB.
+- Yeni hâller: TEACH_TALK (anlatma), TEACH_POINT (havuçla aşağıyı gösterip iki kez dokunma),
+  TEACH_WARN (kararlı kaşlar, havucu "olmaz" diye sallama); hepsi elde havuç (THINK kolu,
+  HCARROT_*). Rehber sayfası için hâl RASTGELE değil, içeriğe göre seçiliyor (kullanıcı onayı).
+- `GuideContent.emote` + `GuideVisual.bind`: emote varsa resim gizlenip Sobi oynuyor. Düzenlerde
+  resim ve Sobi `guideVisual` FrameLayout'unda (kutu görünenin boyunu alıyor; Sobi 140dp,
+  `guide_mascot_size`), yazı kutuya göre ortalanıyor.
+- Kullanıcı düzeltmesi: Sobi konuşmuyor (Mouth.HAPPY, gülüyor); üç hâlde de tek hareket havucun
+  ağır ağır sağa sola sallanması (TEACH_SWAY_DEG); uyarı da güler yüzlü (kızma kaldırıldı).
+  Rehber 1'de yazma efekti ve ses kaldırıldı, guide1_0…4.mp3 silindi (başka yerde yoktu).
+  Rehber 6'nın sesi ve yazma efekti duruyor (guide6_0).
+- BİTEN: rehber 1 (toplama): anlat → göster → göster → göster → uyar.
+- BİTEN: rehber 2 (sihirli değnek / kural tablosu): anlat → göster; guide2_0/2_1.mp3 silindi.
+- BİTEN: rehber 3 (kurallar kitabı): anlat → göster; guide3_0/3_1.mp3 silindi.
+- BİTEN: rehber 4 (tabloyu abaküse alma): anlat → göster → göster; guide4_0…4_2.mp3 silindi.
+- BİTEN: rehber 5 (sayıyı geçme oku): göster → anlat; guide5_0/5_1.mp3 silindi.
+- BİTEN: rehber 6 (abaküs boyutu): göster; guide6_0.mp3 silindi. Artık hiçbir rehberde ses ve
+  yazma efekti kullanılmıyor (GuideContent alanları ve çalma kodu duruyor).
+- BİTEN: harita maraton rehberi (GuidePanelView): anlat → göster; GuidePanelData artık (emote, text).
+- TEMİZLİK: GuideContent.imageResource, GuideVisual, ivGuideImage ve resim kutusu (FrameLayout)
+  kaldırıldı; düzenlerde doğrudan `guideMascot`. Üç öğretmen PNG'si (~5,1 MB) SİLİNDİ. İş bitti.
+
+## Harita: ders/sandık daireleri yerine alt alta kartlar (05.10.2026 — kuruldu, kullanıcı bakacak)
+
+- Yeni `item_lesson_card.xml` + `SegmentBarView` (dilimli düz adım çubuğu; CircleProgressBar'ın
+  segment yöntemlerinin karşılığı). LessonAdapter.LessonViewHolder yeniden yazıldı; dolma
+  animasyonu (pendingLessonProgressAnimations), kalıcı altın (finalGoldVisualUnlocked) ve nefes
+  alma mantığı aynen taşındı. Nefes alma artık yalnızca AÇIK ve bitmemiş kartta (eskiden
+  kilitlilerde de vardı).
+- Durumlar: kilitli gri + kilit; açık mavi + beyaz kenar + ok; bitmiş: BÜTÜN KART ALTIN
+  (lesson_center_gold), yazı/dilim koyu kahve, onay (kullanıcı A seçeneğini seçti). Bitişte mavi→altın
+  renk geçişi; parlama şeritleri kullanıcının isteğiyle kaldırıldı (lesson_card_shine_* silindi).
+  Bitmiş sandıkta yıldızlar koyu kahve (star_on_ic altın zeminde görünmüyordu).
+  Sandık (27 sandığın hepsi tek adımlı): adım çubuğu yerine 3 yıldız (stepCupIcon → 0–3).
+  İkon şimdilik ders ve sandıkta `profile_book_ic3`. Tıklayınca yine showLessonBottomSheet.
+- Kaldırılanlar: DynamicOffsetDecoration.kt, item_lesson.xml, yalnız onlara ait 6 boyut.
+  LessonItem.offset verisi (169 satır) duruyor, kullanılmıyor. Basma animasyonu yeni
+  `lesson_card_press_animator` (0,97; daireninki 0,80 geniş kartta fazlaydı).
+
+## Ders paneli: alttan açılan panel yerine karta bağlı panel (05.10.2026 — derlendi, KURULMADI: telefon "unauthorized")
+
+- `lesson_popover.xml` + `PanelPointerView` (ok) + `LessonPanel` (dışarıdan kapatma). Panel tıklanan
+  kartın altında (sığmazsa üstünde) açılıyor, ok kartı gösteriyor, kartın görüntüsü karartmanın
+  üstüne konuyor (drawToBitmap); zemin ekranla aynı, çerçeve durum rengi (açık mavi, bitmiş
+  altın, kilitli gri). Karartma üst para panelini ve alt menüyü de örtüyor (addChromeDims, pencere
+  kökünde; dokununca kapanıyor); telefonun üst/alt sistem şeritleri de %50 koyulaşıp geri dönüyor
+  (dimSystemBars, LessonAdapter.savedBarColors). Düğmeler: Başla / Devam et / Gözden geçir / Tekrar dene (sandık) / Kilitli.
+- Kök hâlâ "bottom_sheet" etiketiyle (LessonPanel.TAG) bulunuyor; Rekor satırı (recordLayout)
+  kimliği korundu — maraton rehberinin son adımı onu yanıp söndürüp tıklatıyor, kapatma artık
+  LessonPanel.dismiss. Rehber açıkken karartma yok ve düğmeler kapalı (eskisi gibi).
+- Silindi: lesson_bottom_sheet.xml, record_background.xml. lesson_sheet_* boyutları DURUYOR
+  (race_lesson_bottom_sheet de kullanıyor — bir an silinip geri konuldu).
+
+## Harita: sabit bölüm başlığı kaldırıldı, soru düğmesi sağ altta (05.10.2026 — derlendi, KURULMADI: telefon offline)
+
+- StickyLinear (stickyHeader, kısım/ünite + bölüm adı) ve updateStickyHeader / safeColorRes kaldırıldı;
+  listedeki TYPE_HEADER başlıkları yetiyor (kullanıcı ünite bilgisini istemedi). Kullanılmayan
+  map_sticky_* boyutları silindi (map_sticky_padding_horizontal ve map_sticky_recycler_padding_top
+  başka yerde kullanıldığı için duruyor).
+- askQuestionButton sağ alt köşede (16dp); liste altına 92dp boşluk (map_list_padding_bottom) ki son
+  kart düğmenin altında kalmasın.
+
+## Alt bar: seçili sekme kutusu ve zıplama (05.10.2026 — kuruldu, kullanıcı bakacak; commit edilmedi)
+
+Kullanıcı sekme geçişini "hissedemediğini" söyledi: her menü öğesinin tek ikonu var ve
+`itemIconTint="@null"`, yani seçili/seçisiz hâl birebir aynıydı. Ara çözüm:
+- `drawable/bottom_nav_item_bg.xml` → `app:itemBackground`: seçili sekmenin arkasında
+  `bright_background_color` dolgulu, 2dp `bottom_nav_selected_stroke` (#49C0F8) çerçeveli, 14dp
+  köşeli kutu. Tema MaterialComponents olduğu için M3 active indicator yok; çerçeve onunla
+  zaten çizilemezdi.
+- `MainActivity.bounceBottomNavIcon`: seçimde ikon 0.85'ten Overshoot ile 1'e (280ms) + hafif titreşim.
+- Sonraki adım (kullanıcıyla konuşuldu): Duolingo tarzı renkli ikonlar; yalnızca drawable'lar değişecek.
+  İlki yapıldı: ev sekmesi `home_ic` yerine kullanıcının verdiği renkli `home_ic1` (kuruldu).
+  Sonra: görevler `missions_ic3`, mağaza `shop_ic1`, sohbet `chat_credit_ic2`, keşfet `explore_ic1`;
+  profil sekmesi kullanıcının avatarı. Eski `home_ic`, `tasks_ic`, `shop_ic`, `chat_ic`, `explore_ic` artık
+  hiçbir yerde kullanılmıyor (silinmedi).
+
+## Avatar: Personas (05.10.2026 — profile bağlandı; commit 7927804, functions+rules deploy edildi)
+
+**Profile bağlandı:** eski 12'li AvatarPickerFragment, fragment_avatar_picker, avatar_ic1-12 ve
+kullanılmayan profile_ic1/3/4/5 silindi (profile_ic1/3/4/5 index'te "A" olarak duruyordu; diskten
+silindi, index'ten değil). Profil fotoğrafına dokununca AvatarCustomFragment (replace + back stack).
+Kayıt: `users/{uid}.avatarConfig` + yerel kopya (uid'ye göre). Alt bar profil ikonu =
+avatar (`MainActivity.refreshProfileNavIcon`; açılışta checkSubscriptionAndUpdateEnergy'nin
+okuduğu users dokümanından eşitleniyor, ek okuma yok). Takipçi/arkadaş arama listeleri
+`publicProfiles.avatarConfig`'ten çiziyor. Görevler'deki test kartı kaldırıldı. Renk değerleri
+SVG'ye yazılmadan önce doğrulanıyor (başkasının yazdığı metin). Bekleyen deploy: aşağıda.
+
+**Profil üstü (Duolingo gibi):** avatar dairesiz, `avatarHeader` tam genişlikte avatarın arka plan
+rengiyle; ad + ayarlar `profileTopPanel`'de ScrollView DIŞINDA sabit, aynı renkte, yazı/ikon zemine
+göre koyu/beyaz; kaydırınca altta `profileTopDivider` çizgisi. Durum çubuğu
+`MainActivity.setStatusBarTint` ile boyanıyor (Android 15+ statusBarColor'ı yok saydığı için
+android.R.id.content'e şerit görünüm; currencyPanelDivider gizleniyor). Profil onResume/onPause/
+onHiddenChanged'da açıp kapatıyor. Başkasının profilinde sabit panel yerine geri düğmeli
+`otherUserProfileTopBar` var; o ve durum çubuğu da o kişinin avatar rengini alıyor (avatarı yoksa
+uygulamanın koyu rengi).
+
+**Son durum:** kullanıcı Personas'ı uygulamaya daha uygun buldu; Avataaars KALDIRILDI (parça dosyası,
+lisans, AvatarStyle girişi). Yapı çok stilli kaldı; tek stil varken tür çipleri gizli. Ücret
+önerisi: tüm stil değil, Personas içindeki bazı parçalar altın/Pro ile açılsın. "Yok" kutularında
+forbidden_ic. Aşağıdaki ayrıntıların Avataaars kısımları artık geçmiş.
+
+Kullanıcı cinsiyet sormak yerine özelleştirilebilir avatar istedi. Elle çizilen ilk deneme
+beğenilmedi, kaldırıldı. Şimdi DiceBear'ın iki stili (9.4.2), Görevler → "Avatar Custom" kartında;
+ekranın üstünde tür seçimi. Profile/alt bara bağlanması kullanıcının ONAYINI bekliyor.
+- Avatar = Avataaars (Pablo Stanley; kişisel+ticari ücretsiz). Personas = Draftbit, **CC BY 4.0:
+  ücretli satılabilir ama uygulamada "Personas by Draftbit" kaynak gösterimi ŞART** (henüz yok).
+  Lisanslar design/avatar/*_LICENSE.txt. Kullanıcı Personas'ı ücretli yapmayı düşünüyor.
+- Parçalar design/avatar/gen.mjs ile `assets/avatar/<stil>_parts.json`a çıkarıldı (renk
+  `{{c:..}}`, iç parça `{{p:..}}` yer tutucu). gen.mjs mix-blend-mode'u (AndroidSVG desteklemiyor)
+  yaklaşık normal karıştırmaya çeviriyor; Personas'ta yoğun kullanılıyordu.
+- `AvatarStyle` (AvatarArt.kt) her türün sekmelerini, varsayılanlarını, tuvalini tanımlar;
+  `AvatarArt.buildSvg` SVG kurar, `AvatarView` AndroidSVG (`com.caverock:androidsvg-aar:1.4`, YENİ
+  bağımlılık) ile Picture'a çizer. Avataaars'ta şapka/gözlük kıyafet rengini, sakal saç rengini alır.
+- `AvatarConfig(style, values)` seçenek ADLARINI tutar; `AvatarStore` her türün son hâlini ayrı +
+  etkin türü tutar (yalnızca SharedPreferences, Firestore yok).
+- Personas tarayıcıda (aynı SVG) kontrol edildi; AndroidSVG çıktısı telefonda görülmedi.
+
+## Görevler ve Kupa Yolu sekmeleri (05.10.2026 — kuruldu, telefonda DENENMEDİ; commit edilmedi)
+
+Keşfet sekmesi Kupa Yolu oldu; günlük soru, abaküs ve karakter kartı Görevler sekmesine geçti.
+**İki sekme de TasksFragment** (`newInstance(MODE_MISSIONS / MODE_CUP)`, `isCupTab`): dönüş
+altyapısı (finishTasksOverlayAnimated, yeni seri sorusu, reklam, tasksReturnTouchBlock,
+reconcileAbacusOverlayWhenTasksIsBase) "alttaki ekran TasksFragment" varsayıyor; aynı sınıf
+olunca akış kodu hiç taşınmadı (kullanıcıyla riskli yol olarak konuşuldu, seçilmedi).
+- Görevler modu: görev listeleri → günlük soru (eski MissionsFragment → `MissionsSection` +
+  `item_missions_sections.xml`, listede `BulletinRow.Missions`) → Abaküs → Karakter animasyonu.
+- Kupa modu: yalnızca Kupa Yolu kartı; panel bugünkü BottomSheet (kullanıcı panelin sekmeye
+  gömülmesini İSTEMEDİ, ileride başka kart eklenebilir diye kart kalsın dedi).
+- Kupa farkı tüketimi (`consumePendingCupDeltaIfCupTab`), otomatik kupa yolu açılışı ve
+  concealHiddenCupPanel yalnızca kupa modunda; günlük soru kartı tazelemesi yalnızca görev modunda.
+- Sandık animasyonu ve Bize Ulaşın kartları silindi. MissionsFragment ve fragment_missions silindi.
+- Görev sandığı artık TasksFragment tabanında kapanıyor → finishTasksOverlayAnimated'ın kayarak
+  kapanış yolu (eskiden MissionsFragment tabanında anlık kapanış yolu).
+- Denenecek: günlük soru dönüşü (yeni seri sorusu + kart tazelemesi sırası), abaküs pratiği
+  kapanışı (çalışma süresi duruyor mu), görev sandığı, kupa testi gidiş-dönüş, haritadan otomatik
+  kupa yolu yönlendirmesi, iki sekme arasında geçiş.
+
+## Onaysız öğretmen hesabı kısıtlamaları (06.10.2026 — commit 726b6fc, push edildi; cihaza KURULMADI)
+
+Kural: onaysız öğretmen hiçbir şey yapamaz. Karar tek yerde: `MainActivity.isUnapprovedTeacher()`
+(rol = AuthManager önbelleği, onay = energyManager'ın uid'ye özel kaydı; kayıt yoksa onaysız sayılır).
+- currencyPanel: altın/anahtar/can zaten tüm öğretmenlerde gizliydi; onaysızda ayrıca
+  `streakContainer`, `creditIcon/Text` ve **`energyIconFrame`** (∞ rozetinin kabı) gizli.
+  `applyTeacherCurrencyPanel()` her `checkSubscriptionAndUpdateEnergy` cevabında yeniden çalışır.
+- Altın/anahtar 0: `UserWalletFirestore.visibleBalance` — dinleyici ve önbellek düzeyinde, yani
+  panel, mağaza ve özelleştirme hep 0 görür ve harcayamaz. Sunucudaki bakiyeye dokunulmadı.
+- Can zaten 0'dı (EnergyManager.isEnergyBlocked + sunucu hasInfiniteEnergy).
+- Ders başlatma (normal ders, anlatımı tekrar izle, yarış) → `TeacherApprovalGate.showNotApprovedDialog`
+  (askQuestion ile aynı pencere, "Destek ile İletişime Geç" butonu eklendi; konu + kullanıcı ID dolu).
+- Kapı: `TeacherApprovalGate.blockIfUnapproved(context)` (uyarıyı gösterip true döner).
+- Mağaza hiç açılmıyor (`openShopFragment` kapısı); `BillingManager.launchPurchase` de son kapı
+  (Pro tanıtımı → plan ekranı yolu). Kullanıcının istediği `shopSuperCard` gizleme bu yüzden
+  gereksiz kaldı ve kaldırıldı.
+- Görevler/Kupa Yolu: kupa yolu, abaküs pratiği, günlük soru kartı ve günlük ödül alma kapıda.
+  Karakter animasyonu (MascotPlayground) bilerek açık: izleme ekranı, ödül/can yok.
+- Panelde "Hesabınız onay bekliyor" yazısı (`teacherApprovalPendingText`), dokununca aynı pencere.
+- Sunucu (functions/index.js, push ile deploy tetiklendi, sonucu doğrulanmadı): `assertNotUnapprovedTeacher` →
+  updateUserWallet (yalnız harcama), buyStreakFreeze, buyEnergyWithKeys. verifyRegistrationCode
+  öğretmene `keys: 0` veriyor. Play satın alma doğrulaması bilerek engellenmedi (para alınmışsa
+  ürün verilmeli). `AuthManager.registerTeacher` ölü kod (çağıran yok) — rules `keys == 1`
+  istediği için ona dokunulmadı.
+- Kurulmadı: telefon bağlantısı koptu, emülatörde yer yok.
+
+## Onaylı öğretmen hesabı (06.10.2026 — telefona kuruldu, kullanıcı bakacak; commit + push edildi)
+
+Karar: `MainActivity.isApprovedTeacher()`. Kullanıcı "para/anahtar 9999999, can sonsuz" istedi;
+9999999 hesaba YAZILMADI (harcadıkça azalır, onay geri alınınca elle silinir, iade/tavan
+denetimlerine karışır) — "sınırsız" kuralı kuruldu, kullanıcı bu öneriyi kabul etti.
+- Cüzdan kipi: `UserWalletFirestore` NORMAL / LOCKED (onaysız → 0) / UNLIMITED (onaylı →
+  `UNLIMITED_BALANCE` = 9_999_999, yalnızca görünen değer). Önbellek GERÇEK değeri tutar, kip
+  okurken uygulanır (`getCachedKeys/Currency`, dinleyici, `applyDelta` sonucu). Abaküs
+  özelleştirme başlığı `displayText` ile "∞" gösteriyor. Onaylı öğretmenin harcaması analitiğe
+  yazılmıyor.
+- Sunucu: `updateUserWallet` onaylı öğretmende bakiyeye dokunmadan başarılı döner (harcamada
+  kaydedilmeyen bir rollbackToken verir; geri alma da no-op). **Deploy edilmeden** onaylı
+  öğretmenin altınla/anahtarla aldığı şey sunucuda "yetersiz bakiye" ile düşer. Seri dondurma ve
+  anahtarla can sunucuda değişmedi: yalnızca mağazadan alınıyor, mağaza öğretmene kapalı.
+- Üst panel: bütün öğretmenlerde seri, kredi ve can kabı gizli; `teacherApprovalPendingText`
+  onaylıda "Öğretmen hesabı" (yeşil, `ic_teacher_verified`, tıklanmaz), onaysızda "Hesabınız onay
+  bekliyor" (turuncu, saat, tıklanınca destek uyarısı).
+- Mağaza ve `launchPurchase`: `TeacherApprovalGate.blockPurchasesForTeacher` — onaysıza onay
+  uyarısı, onaylıya "her şey sınırsız" mesajı.
+- Dersler: `GlobalLessonData.unlockLessonsForApprovedTeacherOnce` — 1–6'da ders/sandık
+  `isCompleted = true`, 7–8'de `raceBusyLevel` 2 → 1 (0'a, yani çözülmüşe dokunmaz). Bayrak
+  `users/{uid}.teacherLessonsUnlocked`, sekiz bölüm yazılınca konuyor; tetik
+  `checkSubscriptionAndUpdateEnergy`. `seedAllLessonProgressIfMissing` sürerken bekliyor
+  (`seedInFlight`/`afterSeed`), yoksa aynı boş bölümde sonra yazan kazanırdı. Bellekteki bölüm de
+  dönüştürülüyor (yarışta merge eşit ilerlemede belleği seçiyor).
+- PartSelection: onaylı öğretmende 1–8 hepsi açık (sandıklar bitmiş sayılmadığı için "önceki
+  bölümü bitir" kuralı kapalı tutardı).
+- Kupa yolu: `TasksFragment.cupPartActive` — onaylı öğretmende 6 kart açık (18 tekrar eden
+  "son sandık bitti mi" satırı bu fonksiyona toplandı). Not: 1–6 haritalarında yarış item'ı
+  YOK (şablonda TYPE_RACE yok); "yarış item'ları kapalı" demem yanlıştı, kullanıcıya düzeltildi.
+- Öğretmen ayrımı (madde 5), hepsi rol = TEACHER (onaylı + onaysız):
+  - Liderlik: `submitLeaderboardScore` öğretmende yazmadan `{success, skipped:'teacher'}` döner.
+    Tahta yalnızca sunucudan yazılıyor (rules `write: false`), tek kapı yeterli. Bu sezon
+    öğretmenin daha önce yazılmış kaydı varsa sezon sonunda tahtayla birlikte silinir.
+  - Bildirim: `sendUserNotification` öğretmene yalnızca `TEACHER_NOTIFICATION_TOPICS`
+    (`chat`, `teacher_pool`) gönderir — izin listesi, bilerek.
+  - Analitik: `AnalyticsLogger.setUserRole` → kullanıcı özelliği `user_role`
+    (student / teacher / teacher_pending), her `checkSubscriptionAndUpdateEnergy`'de. GA4'te
+    kullanıcı kapsamlı özel boyut olarak elle tanımlanmalı.
+- Görevler'deki "Karakter Animasyonu" kartı şimdilik yalnızca onaylı öğretmende listede
+  (`submitBulletinList`).
+
+## Yakında yapılanlar — tekrar etmeyin
+
+- **Sandık kabı gizleniyordu (`3722b05` regresyonu, cihazda doğrulandı):** `MainActivity`'deki
+  back stack dinleyicisi (466) yalnızca `abacusFragmentContainer`'a bakıyordu. LessonResult →
+  ChestFragment geçişinde abacus kabı boşalınca "ders kapandı" sanıp
+  `restoreMapUiAfterLessonOverlayDismiss` ile sandığın kabını `GONE` yapıyordu: sandık hiç
+  görünmüyor, ders ilerlemesi yazılmıyor, `LessonResult.onDestroyView` çalışmadığı için chrome
+  kilidi `depth=2`'de kalıyordu. Dinleyici artık `resultFragmentContainer`'daki canlı overlay'i
+  de sayıyor. Belirleyici log satırı: `backStackChanged->restoreMapUi SCHEDULED |
+  caller=backStackChanged.topOverlayNull` (etiket `FirstTutorialDbg`).
+- **`MapFragment` chrome kilidi çapraz eşleşmesi:** `mainActivityViewsLocked` bayrağı eklendi;
+  `disableMainActivityViews` kilidi en fazla bir kez alıyor, `release` `enableMapFragmentViews`'tan
+  `enableMainActivityViews`'a taşındı. `disableMainActivityViews` bayrak set olsa bile sayaç 0 ise
+  yeniden acquire ediyor — güvenlik ağı sayacı sıfırladığında bayrak bayat kalıyor ve bu kontrol
+  olmadan sonraki kilitler atlanıyordu (cihazda bu yol gerçekten çalıştı).
+- `be6cb48` **Seri donması:** `last_goal_day` bir günden fazla ileride ise (cihaz saati ileri
+  alınarak test edilmişti) `refresh()` artık o değeri atıyor. Saat dilimi payının meşru sınırı
+  ±1 gün; sunucu da `STREAK_DAY_TOLERANCE_DAYS = 1` kullanıyor.
+- `5ef1b37` + `3ac8615` **StreakDiag:** seri zincirinin beş halkası loglanıyor.
+- `3722b05` **Hayalet overlay:** `FragmentManager.findFragmentById` ekli olmayan, yalnızca bir
+  back stack girişinin tuttuğu fragment'ı da döndürüyor. `MainActivity.liveOverlayIn` (1878)
+  `isAdded` filtresi koyuyor ve "overlay açık mı?" kararı veren bütün yerler ona geçirildi.
+  Ayrıca `TutorialFragment` "Eğitimi atla" yolunda `activeMapTutorialOverlayFromLesson`
+  sıfırlanmıyordu; düzeltildi.
+- `4c1a77d` **`submitStreakDay` TDZ:** günsüz "buradayım" bildirimi her seferinde `INTERNAL`
+  atıyordu (`const` geçici ölü bölge). Düzeltildi ve deploy edildi.
+
+## Bekleyen deploy
+
+**Push = deploy (03.10.2026'da fark edildi):** (05.10: firestore.rules/indexes/storage değişikliği de push ile `deploy-rules.yml` üzerinden gidiyor.) `.github/workflows/deploy-functions.yml`,
+`functions/**` değişikliği içeren her push'ta (`claude/**` dalları; çalışma dalı dahil)
+`firebase-tools deploy --only functions` çalıştırıyor — yani seçici değil, BÜTÜN
+fonksiyonlar gidiyor. **28.10.2026'dan beri seçici:** `.github/scripts/deploy-plan.js` son başarılı
+deploy'un commit'iyle şimdiki kodu fonksiyon fonksiyon karşılaştırıyor (kendi kodu + kullandığı
+yardımcılar + yerel modüller) ve yalnızca değişenleri `--only functions:a,functions:b` ile gönderiyor;
+package.json/lock, silinen export, `db.settings(` gibi küresel satırlar ya da emin olunamayan her
+durumda yine hepsi gidiyor. Neden gerekti: firebase-tools'un "değişmeyeni atla" hash'i bütün
+functions/ klasöründen tek parça hesaplanıyor, tek satır değişince 64 fonksiyonun hepsi (~25 dk)
+gidiyordu. Elle çalıştırmada "hepsi" kutusu (varsayılan açık) eski davranış. Yerelden
+`firebase deploy` yapılırsa ardından bir kez "hepsi" ile çalıştırın. Cloud Functions denetim kayıtlarında deploy'lar
+`github-actions-deploy@numigo-new.iam.gserviceaccount.com` adına (ör. 2026-10-01T19:04Z).
+"Deploy etmeden önce sor" anlaşması bu yüzden functions/ dokunan commit'lerin PUSH'unu da
+kapsıyor. Aşağıdaki "yalnızca şu iki fonksiyon deploy edildi" ifadesi muhtemelen yanlıştı:
+o push hepsini göndermiş olmalı.
+
+**05.10.2026, avatar — DEPLOY EDİLDİ** (commit 7927804, push → "Deploy Cloud Functions" ve "Deploy Firestore & Storage Rules" iş akışları başarılı; rules push ile zaten gitmişti, elle deploy "up to date" dedi). Aşağısı o deploy'un içeriği:
+- `functions/index.js` → `mirrorPublicProfile`: `PUBLIC_PROFILE_FIELDS`'a `avatarConfig` eklendi,
+  `selectedAvatar` çıkarıldı. Deploy edilene kadar başkalarının avatarı listelerde/profilde
+  görünmez (harfli daire / non_user); kendi avatarın etkilenmez. Mevcut publicProfiles
+  dokümanları kullanıcı avatarını bir kez kaydedince güncellenir (trigger users yazımında).
+- `firestore.rules` → users update: `avatarConfig` string ve < 400 karakter. Rules ayrı deploy
+  (`firebase deploy --only firestore:rules`); push iş akışı yalnızca functions gönderiyor.
+
+`claimCupPathChest` (kupa yolu sandık enderliği) kullanıcı tarafından deploy edildi; bunu
+02.10.2026'da kullanıcı bildirdi, deploy zamanı Firebase konsolundan ayrıca **doğrulanmadı**.
+
+`submitStreakDay` ve `buyStreakFreeze` 01.10.2026'da deploy edildi (seri dondurma).
+
+`submitStreakDay`'in deploy edildiği **çıkarım** yoluyla saptandı, doğrudan görülmedi: seri
+dokümanında `lastSeenAt` (yalnızca `reminderPatch` yazıyor, iki dalda da) `updatedAt`'ten
+(yalnızca gün taşıyan transaction yazıyor) daha yeniydi — yani günsüz "buradayım" dalı
+başarıyla çalışmış. Düzeltme öncesi o dal her seferinde çöküyordu. Emin olmak istersen
+Firebase konsolundan fonksiyonun son deploy zamanına bak.
+
+**Deploy etmeden önce kullanıcıya sor.**
+
+## Bildirim altyapısı (05.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ, deploy EDİLMEDİ)
+
+Uygulamada iki bildirim vardı ve ikisi de kararını kendi içinde veriyordu: sohbet mesajı
+(`onMessageCreated`) ve akşam seri hatırlatması (`sendStreakReminders`). Yeni bildirim türleri
+eklenmeden önce altyapı kuruldu — her yeni tür bu işi pahalılaştırdığı için önce yapıldı.
+
+**Dört şey kuruldu:**
+
+1. **Tür bazlı tercih.** Eskiden tek anahtar (`notifications_enabled`) üç türü de kesiyordu;
+   oyun bildiriminden rahatsız olan kullanıcının kapatacağı şey ÖĞRETMEN MESAJLARI DAHİL her
+   şeydi. Artık `chat` / `streak` / `reward` ayrı. `account` (deneme bitişi, kredi iadesi,
+   sorunun durumu) bilerek kapatılamıyor — yalnızca Android kanal ayarından susturulabiliyor.
+2. **Sessiz saatler** — yerel 21:00–08:00. Sohbet sessiz kanala düşüyor (`messages_quiet`;
+   kanalın önem derecesi sonradan değiştirilemediği için ayrı kanal olmak zorunda), ödül
+   bildirimi düşürülüyor, seri hatırlatması etkilenmiyor (saati kullanıcı seçiyor).
+3. **Günlük tavan ve öncelik** — tavana tabi tek tür `reward`: günde 2, son yedi günde 5
+   (kayan pencere). `chat` ve `account` işlemsel olduğu için tavansız; `streak` de tavansız,
+   çünkü kullanıcının açıkça kurduğu alarm (saatini kendi seçti, günde bir).
+   Tavanın SON slotu öncelikli konulara ayrılmış (`RESERVED_FOR_PRIORITY = 1`), yani normal
+   bir ödül bildirimi günde 1'den fazla alamıyor. Öncelikli konu listesi şu an yalnızca
+   `season_ending` — **kullanıcı kararı (05.10.2026):** sezonun son günü "sezon bitiyor" ve
+   seri hatırlatması geçecek, madalya bildirimi düşecek.
+   Rezervasyon seçildi çünkü bildirimler gün içinde ayrı ayrı tetikleniyor; hepsini görüp
+   aralarından seçeceğimiz bir an yok ve rezervasyon olmadan tavan "ilk gelen geçer" demekti.
+4. **Ölçüm.** Bildirime dokunma hem Analytics'e (`notification_opened`) hem sunucudaki deftere
+   yazılıyor. Defter aynı zamanda karar veriyor: üst üste 5 kez açılmayan **konu** susuyor
+   (tür değil konu — "sezon bitiyor" ile "sandığın bekliyor" ikisi de `reward`).
+   Susturma YALNIZCA `reward`'da (`mutable` alanı). Ötekilerde ters çalışıyordu: bildirimi
+   görüp uygulamayı kendi açan kullanıcı "dokunmamış" sayılıyor, yani seri hatırlatması işini
+   düzgün yaptığı için beş günde kendini kapatırdı.
+
+**Dosyalar**
+
+- `functions/notifications.js` — saf karar: tür kataloğu, tercih çözümleme, sessiz saat,
+  tavan, susturma. Yan etkisiz olması kasıtlı (bkz. `streakReminder.js` aynı gerekçe).
+- `functions/index.js` — `sendUserNotification()` tek gönderim kapısı. Yeni bildirim ekleyen
+  kod bunu çağırmalı; doğrudan `admin.messaging()` çağırmak tercih ve tavanı atlar.
+  Ayrıca `recordNotificationOpen` callable ve ölü token temizliği (`pruneDeadToken`).
+- `app/.../NotificationPrefs.kt` — istemci tercihleri (SharedPreferences + Firestore).
+- `app/.../MyFirebaseMessagingService.kt` — tür/kanal kataloğu, `notifyType` ayrıştırma,
+  token ile birlikte `utcOffsetMinutes` yazımı (sessiz saat sunucuda buna bakıyor).
+- `firestore.rules` — `users/{uid}/notifyLedger/{doc}`: istemci okur, yazamaz.
+
+**GERİYE DÖNÜK UYUM — bozulmaması kritik olan iki yer**
+
+- Sunucu `notifyType` gönderiyor ama eski `type` alanına DOKUNMUYOR: sahadaki eski istemciler
+  seri hatırlatmasını `type == "streak_reminder"` ile tanıyor. Adı ezilse o cihazlarda
+  bildirim sessizce düşerdi.
+- Tercih önceliği: `notificationPrefs.<tür>` > eski `notificationsEnabled` > açık. Daha özel
+  olanın kazanması şart, yoksa evdeki eski sürümlü tablet kullanıcının seçimini geri alır.
+  Aynı kural iki tarafta: `notifications.js → notificationPrefsFor` ve
+  `NotificationPrefs.isEnabled`.
+
+**Test:** `cd functions && npm run test:notifications` — 64 kontrol, emülatör gerektirmiyor.
+Sezonun son günü senaryosu da burada, gün içindeki gerçek sırayla.
+Testler yazarken iki gerçek hata yakalandı:
+- `Number(null) === 0` olduğu için "saat dilimi bilinmiyor" ile "kullanıcı UTC'de" ayırt
+  edilemiyordu; farkı bilinmeyen kullanıcının gece bildirimi düşüyordu (`normalizeOffset`).
+- Seri hatırlatması susturulabilir türdeydi (yukarıdaki 4. madde).
+
+**DENENMEYEN.** Hiçbiri cihazda görülmedi ve deploy edilmedi:
+- Ayarlardaki üç yeni anahtar ve ana anahtarla iki yönlü bağı.
+- Sessiz saatte sohbet bildiriminin sessiz kanala düşmesi (cihaz saatini 22:00'ye almak
+  yeterli — sunucu `users/{uid}.utcOffsetMinutes` alanına bakıyor, o alan token ile birlikte
+  yazılıyor, yani uygulamayı bir kez açıp kapatmak gerekiyor).
+- Tavanın dolması ve rezerve slot. Pratikte ÖLÇÜLEMEZ durumda: tavana tabi tek tür `reward`
+  ve henüz tek bir ödül bildirimi yazılmadı. İlk ödül bildirimiyle birlikte denenmeli.
+- `recordNotificationOpen` çağrısı ve defterin dolması.
+
+**FCM token tavanı 2 → 3 cihaz** (kullanıcı kararı, 05.10.2026). Tipik kurulum ailede
+tablet + çocuğun telefonu + ebeveyn telefonu; 2 sınırıyla en eskisi listeden sessizce
+düşüyor ve o cihaz bildirim almayı tamamen kesiyordu — hiçbir hata üretmeden. Sınır iki
+yerde ve birlikte değişmek zorunda: sunucuda `FCM_MAX_DEVICES` (functions/index.js),
+istemcide `MAX_FCM_DEVICES`. Sunucu daha azını okursa istemcinin kaydettiği cihaz sessizce
+bildirim almaz. **Cihazda denenmedi** — üçüncü bir cihaz gerekiyor.
+
+**Sonraki adım (kullanıcıyla kararlaştırılan sıra):** deneme bitişi + öğretmen havuzu → soru
+durumu → seri dondurma + kırılma öncesi ikinci şans → ödüller (sandık, sezon, enerji).
+
+## Öğretmen havuzu bildirimi (06.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ)
+
+Öğretmen tarafı bu bildirime kadar tamamen sessizdi: soruyu SAHİPLENDİKTEN sonraki mesajları
+duyuyordu (`onMessageCreated`), havuza düşen soruyu duymuyordu — havuzu görmenin tek yolu
+uygulamayı açıp Havuz sekmesine bakmaktı. Boşluk doğrudan paraya dokunuyor: 48 saat içinde
+cevaplanmayan soru öğrencinin kredisini iade ediyor (`QUESTION_REFUND_AFTER_MS`).
+
+- `functions/index.js` → `notifyTeacherPool`, 10 dakikada bir. İmleç `system/teacherPoolNotify`
+  (`lastScanMs`). Soru başına tetikleyici DEĞİL, tarama: bir sınıfın aynı akşam soru sorması
+  öğretmene üst üste bildirim yığardı; aradaki bütün yeni sorular tek bildirimde.
+- İlk çalıştırmada bildirim GÖNDERİLMİYOR, yalnızca imleç kuruluyor — yoksa ilk tarama
+  havuzdaki birikmiş bütün eski soruları "yeni" sayardı.
+- Yeni tür `pool` (functions/notifications.js): `pref: null` (öğretmenin işi, öğrenciye
+  yönelik tercih listesinde yeri yok), tavansız, gece sessiz kanala düşüyor — düşürmek
+  olmazdı, 48 saatlik pencerede her saat önemli.
+- Sorgu `(status, createdAtMs)` indeksini kullanıyor. **BU İNDEKS YOKTU ve tarama ilk turunda
+  düştü** — bkz. yukarıdaki "Kredi iadesi bir aydır hiç çalışmıyormuş". İndeks 06.10.2026'da
+  eklendi; aynı eksik bir aydır kredi iadesini de durduruyordu.
+- Öğretmenler `role == 'TEACHER'` ile çekilip `teacherApproved` kodda filtreleniyor: iki
+  eşitlik filtresi yeni bir bileşik indeks isteyebilirdi, öğretmen sayısı küçük.
+- Metin `teacherPoolText` (saf, testli): toplam yeniye eşitse tekrar etmiyor, onun yerine
+  iade penceresini hatırlatıyor.
+
+- Bildirime dokunmak doğrudan **Havuz sekmesini** açıyor
+  (`NotificationFragment.newForTeacherPool`, `EXTRA_OPEN_TEACHER_POOL`). `teacherTab`
+  varsayılanı zaten POOL ama yetmiyordu: öğretmen son olarak Sohbetler sekmesinde kaldıysa
+  kaydedilmiş durum onu geri getiriyordu.
+
+**DENENMEYEN:** Cihazda hiç görülmedi. Denemek için bir öğrenci hesabından soru sor, 10 dakika
+içinde öğretmen cihazına bildirim düşmeli. **İlk deploy'dan sonraki İLK tarama imleci kurar ve
+bildirim göndermez** — ikinci turu beklemek gerekiyor.
+
+## KREDİ İADESİ BİR AYDIR HİÇ ÇALIŞMIYORMUŞ (06.10.2026 — eksik indeks, düzeltildi)
+
+Bildirim deploy'u sonrası logları okurken çıktı ve bildirimlerle ilgisi yok: **48 saatlik
+kredi iadesi taraması (`reconcileUnansweredQuestions`) 04.09.2026'dan beri her saat
+`FAILED_PRECONDITION` ile düşüyordu.**
+
+```
+Error: 9 FAILED_PRECONDITION: The query requires an index.
+```
+
+**Sebep:** `runUnansweredQuestionRefund` sorgusu `status == 'pending'` + `createdAtMs < cutoff`
+yapıyor ama `firestore.indexes.json`'da `createdAtMs` alanı için HİÇ indeks yoktu. Var olan
+indeks `(status, createdAt DESCENDING)` — `createdAt` bir Timestamp, `createdAtMs` ise sayı;
+ayrı alanlar, ayrı indeksler. `createdAtMs` sorgusu `8fc4e2e` (04.09.2026) ile geldi ve
+indeksi hiç eklenmemiş.
+
+**Sonucu:** cevapsız kalan soruların kredisi öğrencilere bir aydır geri verilmiyordu. Hata
+sessiz: fonksiyon düşüyor, kullanıcı tarafında hiçbir belirti yok, kimse şikâyet etmiyor
+çünkü krediyi beklediğini bilen yok.
+
+**Nasıl görüldü:** aynı eksik indeks yeni `notifyTeacherPool` taramasını da düşürdü (o da
+`(status, createdAtMs)` sorguluyor). Yeni fonksiyonun hatası, bir aydır duran eski hatanın
+üstünü açtı.
+
+**Düzeltme:** `(status ASC, createdAtMs ASC)` indeksi `firestore.indexes.json`'a eklendi.
+İndeksler `deploy-rules.yml` iş akışıyla gidiyor, yani push yeterli.
+
+**DİKKAT — indeks oluşunca biriken iadeler bir kerede işlenecek.** Bir aydır iade edilmemiş
+sorular varsa tarama hepsini aynı turda iade eder ve her biri için öğrenciye "kredin geri
+verildi" bildirimi gider (bildirim bugün eklendi, `account` türü tavansız). Tek test
+kullanıcısında sorun değil; yayında olsaydı bir kullanıcıya üst üste birkaç bildirim
+gidebilirdi.
+
+**DERS:** yeni bir Firestore sorgusu yazarken indeksin VAR OLDUĞUNU varsaymak yetmiyor,
+`firestore.indexes.json` içinde alan adıyla aranmalı. Bu turda ben de aynı hatayı yaptım —
+"(status, createdAtMs) indeksi zaten var, iade taraması kullanıyor" diye yazdım; iade
+taraması onu kullanmıyordu, çünkü indeks hiç yoktu.
+
+### İkinci eksik indeks: `secondReminderHourUtc` (aynı gün, aynı sebep)
+
+Yukarıdaki indeks eklendikten sonra canlı indeks listesi okunurken çıktı. İkinci şans
+hatırlatması `collectionGroup('streak').where('secondReminderHourUtc', '==', hourUtc)`
+sorguluyor ve **tek alanlı collectionGroup sorguları otomatik indekslenmiyor** — açıkça
+`fieldOverrides` içinde `queryScope: COLLECTION_GROUP` tanımlanmak zorunda. İkizi
+`reminderHourUtc` için tam bu yüzden bir override vardı; yeni alan için eklenmemişti.
+
+Tarama saatlik olduğu için henüz çalışmamıştı, yani hata loglara hiç düşmedi: ilk turunda
+`FAILED_PRECONDITION` verecekti. Override eklendi.
+
+**Kural olarak yazalım:** `streak` (ya da başka bir alt koleksiyon) üzerinde yeni bir
+collectionGroup sorgusu eklenirse, filtrelenen alan için `fieldOverrides`'a
+`COLLECTION_GROUP` kapsamlı indeks eklenmeli. Normal koleksiyon sorgularında bu gerekmiyor,
+tek alan indeksleri otomatik.
+
+## Kalan bildirimlerin hepsi (06.10.2026 — yazıldı ve derlendi, HİÇBİRİ cihazda DENENMEDİ)
+
+Kullanıcı "testlerle uğraşmak istemiyorum, sen bildirimleri ekle, ileride test'teyken zaten
+görürüz" dedi. Plandaki 4. ve 5. maddenin tamamı bir turda yazıldı. **Canlıda
+doğrulanacakların listesi `docs/YAYIN_ONCESI_KONTROL.md` → "Yayından sonra canlıda
+doğrulanacaklar" bölümünde.**
+
+### Seri: dondurma varyantı ve kırılma öncesi ikinci şans
+
+- **Dondurma varyantı** (`streakReminder.js` → `streakReminderText`): dondurması olan
+  kullanıcıya akşam hatırlatması "Bugün N dakika çalış, **dondurmanı yarına sakla**" diyor.
+  Dondurma 4000 altın ve yarın harcanacak; bilgi aynı, ton davet — "harcanacak" yerine
+  "sakla".
+- **İkinci şans** (`secondChanceDecision`): yerel **20:00**, sessiz saatlerin bir saat
+  öncesi. Dört şart birden: serisi ≥ 3, dondurması YOK, birinci hatırlatma bugün gitmiş,
+  hedef hâlâ tutturulmamış. Bu şartlar olmadan günde iki hatırlatma demek olurdu.
+- Saat ayrı bir alandan geliyor: `secondReminderHourUtc` (sabit yerel 20:00, kullanıcının
+  seçimine bağlı DEĞİL). `reminderPatch` yazıyor. **Mevcut kullanıcılarda alan yok**, bir kez
+  `submitStreakDay` çağrılınca doluyor — yani ikinci hatırlatma onlara hemen gitmiyor,
+  kendiliğinden düzeliyor.
+- Tarama tek fonksiyonda iki geçiş (`STREAK_REMINDER_PASSES`): aynı token/gönderim/işaretleme
+  gövdesini kopyalamamak için. İkisi de `data.type = streak_reminder` gönderiyor, yani eski
+  istemciler ikisini de tanıyor ve aynı bildirim kimliğini paylaşıyorlar — akşam gelen ikinci
+  hatırlatma birincinin yerini alıyor, çekmecede iki seri bildirimi yığılmıyor.
+
+### Sezon bitişi (`sendSeasonEndingNotices`, saatte bir)
+
+Kullanıcı tasarımı: "bitmesine 4 saat kala herkese, sıranı gözden geçir."
+
+**Metinde sabit "4 saat" YOK ve bu bilinçli.** Sezon bitişi sabit bir UTC anı
+(`SEASON_ANCHOR_UTC_MS`), yani "4 saat kala" herkes için aynı an: Endonezya (+7) için 15.05,
+Türkiye (+3) için 11.05, ABD batı yakası (-7) için **01.05**. Gece bildirimi bu özelliğin
+amacını bozar, ertelemek de işe yaramaz (sezon bitiyor). Çözüm: pencere 2–12 saat, gönderim
+kullanıcının yerel saatiyle 10.00–21.00 arasında, metin O ANDA kalan gerçek süreyi söylüyor
+("Sezon 4 saat sonra bitiyor"). Metin GÜN adı söylemiyor ("yarın"/"bugün"): aynı UTC anı bazı
+dilimlerde bugün, bazılarında yarın.
+
+Pencere dışındaysa **hiç okuma yapılmıyor** — bildirim herkese gittiği için tarama bütün
+kullanıcıları gezmek zorunda ve bu her saat yapılamaz. Sezon haftalık, pencere ~10 saat.
+
+Sezon başına tek gönderim: `notifyLedger.seasonNotice` = sezon numarası (bayrak değil, yani
+sonraki sezonda yeniden gidiyor). Öncelikli konu (`PRIORITY_TOPICS`), yani tavanın son slotu
+bunun için ayrılmış.
+
+### Sezon madalyası (`finalizeSeasonLeaderboardMedals` içinde)
+
+"Sezon bitti, madalyan hazır." **Yalnızca madalya KAZANANA** gidiyor; kazanmayana
+gönderilmiyor, çünkü açtığında hiçbir şey bulamayan kullanıcı o bildirime bir daha güvenmez.
+Ayrım bedava — kimin ne kazandığı zaten hesaplanıyor (`addedSomething`).
+
+Bildirim **transaction'ın DIŞINDA**: Firestore çakışmada transaction gövdesini yeniden
+çalıştırıyor, içeride gönderilse bildirim ikinci kez giderdi.
+`scheduleFinalize(functions, admin, db, notify)` — bildirim gönderici dışarıdan geçiyor,
+çünkü modül `index.js`'teki `sendUserNotification`'a erişemiyor.
+
+### Enerji doldu (`sendEnergyFullNotices`, saatte bir)
+
+Yerel **15.00–21.00** penceresi, yani okul sonrası. Bu kataloğun en açık "geri dön ve oyna"
+bildirimi ve kitle 7–10 yaş: okul saatinde çocuğun telefonunu titretmek savunulamaz ve Play
+Families tarafında risk. Sonsuz enerjisi olanlara (Pro, Premium, onaylı öğretmen)
+gönderilmiyor — onlar için dolum diye bir şey yok.
+
+Sorgu `energy_full_time` üzerinde aralık (son ~70 dakikada dolanlar); yeni indeks gerekmedi.
+"Enerjisi dolu olan herkes" sorgulanamazdı — çoğu kullanıcının enerjisi dolu.
+
+### Bekleyen kupa yolu sandığı (`sendPendingChestNotices`, GÜNDE BİR, UTC 14.00)
+
+Eşiği geçip sandığını açmamış kullanıcıya. Kataloğun en zararsız bildirimi: yeni bir iş
+istemiyor, zaten kazanılmış bir ödülü hatırlatıyor.
+
+**Neden günde bir:** tarama kullanıcı başına iki alt koleksiyon okuması gerektiriyor (kupa
+puanı + sandık defteri). Saatlik çalışsa aynı okumalar günde 24 kez yapılırdı ve bildirimin
+değeri bu maliyeti karşılamıyor. Yerel saat filtresi yok ve gerekmiyor: tür `reward`, yani
+sessiz saate denk gelen kullanıcıda kendiliğinden düşüyor.
+
+### Test
+
+`npm run test:notifications` 99'dan **126 kontrole** çıktı; `test:reminder` 32'den 48'e.
+Sunucu test takımının sekizi de geçiyor, istemci derlemesi temiz.
+
+Testleri yazarken `grabConst` yardımcısında bir tuzak çıktı ve düzeltildi: tek satırlık regex
+çok satırlı sabitleri (`const CUP_PATH_FIELDS = [` ... `];`) bulamıyordu. Artık parantez
+dengesi takip ediliyor.
+
+## Soru durumu bildirimleri (06.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ)
+
+Öğrenci sorusunun ne olduğunu yalnızca uygulamayı açarsa öğreniyordu. Üç geçiş de onun için
+bir haberdi ve üçü de sessizdi. Hepsi `account` türü: tavansız, uygulama içinden
+kapatılamaz — kaçırmak kullanıcının aleyhine ve yerine geçecek kanal yok.
+
+- `functions/index.js` → `questionStatusNotice` (saf, testli) + `notifyQuestionStatusChange`,
+  `onQuestionUpdated` trigger'ı içinden çağrılıyor.
+- **pending → claimed:** "Öğretmenin sorunu aldı / Cevap geldiğinde haber vereceğiz."
+- **→ resolved:** "Sorun çözüldü olarak işaretlendi / Öğretmenin cevabını sohbette
+  okuyabilirsin." Çözüldü işaretlemesi yalnızca ÖĞRETMENE açık (`updateTeacherClaimUi`,
+  `resolveButton` öğrenciye hiç görünmüyor), yani bildirim öğrenciye gidiyor ve doğru taraf.
+- **→ expired, `creditRefunded == true`:** "Soruna cevap gelemedi / 1 danışma kredin geri
+  verildi." `expired` tek başına yetmiyor: kredi harcanmadan oluşmuş eski sorular iade
+  edilmeden kapanabiliyor.
+
+**ÇÖZÜLDÜ BİLDİRİMİNDEKİ İNCELİK**
+Öğretmen çoğunlukla son cevabını yazıp hemen ardından soruyu kapatıyor; o mesaj için sohbet
+bildirimi ZATEN gitti. Son mesajın üstünden `RESOLVED_NOTICE_QUIET_MS` (5 dk) geçmediyse
+"çözüldü" bildirimi gönderilmiyor — aynı olayı iki kez haber vermemek için.
+
+**TRIGGER'A NASIL EKLENDİ — dikkat edilen yer**
+`onQuestionUpdated` silme işi yapıyor ve erken dönüşlerle dolu (yalnızca iki taraf da
+"listeden sil" dediyse çalışıyor). Bildirim çağrısı o mantığın İÇİNE değil ÖNÜNE konuldu;
+içine girseydi geçişlerin çoğunda hiç çalışmazdı. Silme mantığına dokunulmadı.
+
+**BİLDİRİM KİMLİĞİ ÇAKIŞMASI — kolayca gözden kaçacak bir tuzak**
+Soru durumu bildirimi `"account:$questionId".hashCode()` kullanıyor. Önek şart: soru sohbeti
+bildirimleri de `questionId.hashCode()` kullanıyor ve önek olmasa öğretmenin yazdığı mesajın
+bildirimi, peşinden gelen durum bildirimiyle SİLİNİRDİ. Aynı sorunun ardışık durum
+bildirimleri ise bilerek aynı kimliği paylaşıyor (sorunun güncel durumu tek bildirimde);
+farklı soruların bildirimleri birbirini ezmiyor.
+
+**DENENMEYEN.** Cihazda hiç görülmedi. Denemek için öğretmen hesabından bir soruyu sahiplen
+(öğrenci cihazına "öğretmenin sorunu aldı" düşmeli), sonra 5 dakika bekleyip çözüldü işaretle.
+Kredi iadesi 48 saat beklemek yerine Firestore Console'dan `createdAtMs` alanını 48 saatten
+eskiye çekip saatlik taramayı beklemekle denenebilir.
+
+## Deneme süresi bitiş bildirimi (06.10.2026 — yazıldı ve derlendi, cihazda DENENMEDİ)
+
+Bir büyüme fikri değil, kapatılan bir AÇIK: reklam atlama panelinde kullanıcıya "Deneme süren
+sona ermeden önce bildirim alacaksın" deniyor (`AdSkipFragment`, deneme hakkı olan sürüm) ama
+hiçbir bildirim gönderilmiyordu. `playSubscriptionNotification` planı güncelliyor, kullanıcıya
+hiçbir şey söylemiyordu. Ödeyen taraf ebeveyn; haber verilmeden başlayan ilk ödeme iade talebi
+ve mağaza yorumu üretir.
+
+- `functions/index.js` → `sendTrialEndingNotices`, saatte bir. Eşikler **3 gün ve 1 gün**
+  (`TRIAL_NOTICE_DAYS`), yalnızca kullanıcının yerel saati 10:00–21:00 arasındayken
+  (`TRIAL_NOTICE_LOCAL_HOURS`). Saatlik olmasının sebebi bu: günlük tarama tek bir UTC anında
+  herkese gönderir ve bazı kullanıcıda gece yarısına denk gelirdi.
+- Tür `account`: kapatılamıyor, tavansız.
+- Tekrar engelleme defterde: `notifyLedger.trialNotice = { "3": <bitiş ms>, "1": ... }`.
+  Bayrak değil BİTİŞ ZAMANI kaydediliyor — kullanıcı yeni bir deneme alırsa (farklı bitiş)
+  bildirim yeniden gidiyor.
+
+**DENEME TESPİTİ — kırılgan yer, bilinmesi gereken**
+Play Developer API v2 (`purchases.subscriptionsv2.get`) denemeyi söyleyen bir alan
+döndürmüyor; v1'deki `paymentState: 2` karşılığı yok (web'den doğrulandı). Elde olan tek
+sinyal `lineItems[].offerDetails.offerId`: bir teklif uygulanmışsa dolu.
+**Kullanıcı kararı (06.10.2026):** Play Console'da Pro aboneliğinde ücretsiz deneme dışında
+teklif olmadığı için `isTrialPeriod` "teklif uygulanmış = deneme" kabul ediyor.
+İleride indirimli ilk ay / tanıtım fiyatı gibi bir teklif eklenirse bu fonksiyon onları da
+deneme sayar ve o kullanıcılara yanlış bildirim gider. O gün yapılacak: deneme teklifine
+Console'da bir etiket vermek ve `offerTags`'e bakmak.
+
+`planTrialEndsAt` alanı `syncSubscriptionForToken` içinde yazılıyor — plan yazımının TEK yolu
+orası, yani hem satın alma doğrulaması hem Play RTDN kapsanıyor. Deneme bitip ilk ödeme
+alındığında Play artık teklif döndürmediği için alan kendiliğinden null'a dönüyor. Alan
+`firestore.rules` → `serverOnlyFields()` listesinde: istemci yazamaz.
+
+**Yenileme bildirimi bilerek YOK** (kullanıcı kararı): denemede olmayan abonelere "aboneliğin
+yenilenecek" gönderilmiyor. Play yenileme e-postasını zaten atıyor ve aylık abonede dönem
+başına iki bildirim değerli bir şey söylemiyor.
+
+**`planTrialEndsAt` NEDEN BOŞ GÖRÜNÜYOR** (kullanıcı 06.10.2026'da sordu)
+Alan geriye dönük YAZILMIYOR. Yalnızca bir abonelik doğrulaması çalıştığında yazılıyor:
+yeni satın alma, Play yenileme bildirimi (RTDN) ya da istemcinin yeniden doğrulatması. Yani
+mevcut bir abonelik varsa bile, deploy'dan sonra hiç doğrulama çalışmadıysa alan yok. Ayrıca
+alan yalnızca DENEME dönemindeyken doluyor; ödenmiş dönemde `null`.
+
+**NASIL TEST EDİLİR — yayını beklemek gerekmiyor, iş ikiye ayrılıyor**
+
+*Tespitin çalıştığı (şimdi, test aboneliğiyle):* Pro test aboneliği al ve Firestore →
+`users/{uid}` → `planTrialEndsAt`'e bak; Cloud Functions logunda "Abonelik senkronu" kaydında
+`trial` ve `offerId` yazıyor (06.10.2026'da log'a eklendi, tam bu yüzden). Deneme hakkı
+duruyorsa `trial: true` ve `offerId` dolu gelmeli — `isTrialPeriod`'un gerçek Play yanıtında
+çalıştığının kanıtı bu. Deneme hakkı tükenmişse `trial: false` gelir ve tespit doğrulanmaz.
+
+*Bildirimin gittiği (şimdi, elle):* Test aboneliğinde deneme 5 dakikada bitiyor, yani 3
+gün / 1 gün eşikleri HİÇ yakalanmıyor. Bildirimi görmek için Firestore Console'dan alanı elle
+yaz — `node -e "console.log(Date.now() + 2.5*86400000)"` çıktısını `users/{uid}` dokümanına
+`planTrialEndsAt` (number) olarak gir. Koşullar: `utcOffsetMinutes` dolu olmalı (uygulamayı
+bir kez aç), yerel saat 10.00–21.00 arasında olmalı, `notifyLedger/state` dokümanında
+`trialNotice` olmamalı. Tarama saatte bir çalışıyor, yani en fazla bir saat. 0.5 güne ayarlayıp
+"yarın bitiyor" varyantı da görülebilir (önce `trialNotice` silinmeli).
+
+*Uçtan uca (yayından sonra):* bkz. `docs/YAYIN_ONCESI_KONTROL.md` → "Yayından sonra canlıda
+doğrulanacaklar".
+
+**Test:** `npm run test:notifications` 88 kontrole çıktı (deneme tespiti, eşik seçimi, yerel
+saat penceresi, tekrar engelleme, havuz metni). Testleri yazarken `grabFunction`
+yardımcısında bir tuzak çıktı: destructuring parametresi (`function f({ a }, b)`) gövdenin ilk
+süslü parantezi sanılıyor ve fonksiyon parametre listesinin ortasında kesiliyor. Buradaki
+kopya düzeltildi; **`test-streak-freeze.js`'teki kopyada düzeltme YOK** — orada
+destructuring'li bir fonksiyon çekilirse aynı tuzağa düşer.
+
+**Sezon bitişi bildirimi — kullanıcının verdiği tasarım, henüz yazılmadı:**
+madalya alanlara "Sezon bitti, madalyan hazır"; bitişe 4 saat kala herkese "Sezon 4 saat sonra
+bitecek, sıranı gözden geçir". Susturma şartı zaten altyapıda (`UNOPENED_MUTE_AFTER = 5`).
+Yazılırken çözülmesi gereken: sezon bitişi sabit bir UTC anı (`SEASON_ANCHOR_UTC_MS`), yani
+"4 saat kala" bazı saat dilimlerinde gecenin bir yarısı — ertelemek işe yaramaz (sezon
+bitiyor), öne almak gerekir.
+
+## ÜRÜN YÖNÜ (kullanıcı kararı 01.11.2026)
+
+- Eğitmen / sınıf / ödev yapısı **büyük ihtimalle kullanılmayacak**. Kod ve ekranlar açık bir pencere olarak
+  kalıyor (silinmiyor, bozulmasın), ama yeni iş ona yatırılmıyor; talep gelirse kullanıcı yeniden açar.
+- Odak: uygulama çocuğun eksiklerini görüyor (kural başarısı: `SobiRuleStats` → `homeworkRuleStats/{uid}`) ve
+  **Sobi eksiğe göre ödev / test veriyor**. Yeni özellikler bu yönde tasarlanır.
+
+## Sobi'ye sor ve Sobi ekranı (28.10–01.11.2026 — telefona kuruldu, kullanıcı kısmen denedi)
+
+Ayrıntı ve kararlar: `docs/ANLAMADIM_YARDIM_PLANI.md` (Faz 1–4, A/B aşaması ve sonrası). Kısaca:
+- Sohbet sunucuda: `functions/sobi/` (Haiku 5.5, araçlar, guard, hazır açıklamalar, oy/bildir). Talimat
+  `prompt_tr.md`; deneme `node scripts/sobi-dene.js --senaryo adim|ornek`; test `node scripts/test-sobi.js`.
+- Uygulamada tek Sobi ekranı: `MistakeReviewDialog` (adı tarihsel; "Sobi ile analiz et" ve öğreticide "Sobi'ye
+  sor" ikisi de bunu açar). Kural motoru: `abacus/StepExplainer`, `MistakeAnalyzer` (flaş dizisi dahil),
+  `SubStepExplainer` (parça balonları), `ExamplePicker` (4 zorluk düzeyi). Sesli okuma `SobiSpeaker`.
+- Kural hafızası `SobiRuleStats` → `recordRuleTally` → `homeworkRuleStats/{uid}`; veli panelinde kartın adı
+  artık "Kural başarısı" (dersler + ödevler + Sobi tek toplamda).
+- Sobi'nin testi (haritadaki Sobi düğmesi, `SobiTestSheet` → `SobiDailyTest` → `SobiTestPlanner`): 20 seviye.
+- Sobi ekonomisi (01.11.2026): Free günde 2 / Lite 10 / Pro 20 ücretsiz yapay zekâ mesajı, sonrası Sobi kredisi
+  (`sobi_credits_20/50/120`, 12,99 / 24,99 / 49,99 TL, süresiz), ek test 3 anahtar (Pro ücretsiz). Kod
+  `functions/sobi/wallet.js`; ayrıntı ANLAMADIM_YARDIM_PLANI "Sobi ekonomisi". **Play Console'da 3 ürün açılmalı.**
+- Açık kalanlar: arka plandan dönüşte gri boncuk hatası (iki düzeltme yapıldı, kullanıcı doğrulamadı);
+  Haiku "3 basamaklı örnek"te bazen yalnızca ilk sayıyı 3 basamaklı seçiyor; kural başarısında
+  "Hepsi / Ödevler / Dersler" ayrımı önerildi, yapılmadı.
+
+## Teşhis logları
+
+| Etiket | Ne gösterir |
+|---|---|
+| `StreakDiag` | Günlük seri zinciri: süre sayımı, `refresh()` dalları, kuyruk, sunucu gidiş/dönüş, ekran; seri dondurma için `Repo.dondurma` (`SATIN_ALINDI` / `HARCANDI`) |
+| `MapTouchDbg` | Harita dokunma yüzeyi: overlay host'ları (`ekli=` alanı hayaleti ayırt eder), scrim, blocker'lar, `fmBackStack`, `chromeLockDepth` |
+| `ChromeBlockerDbg` | `acquire`/`release` zinciri ve derinlik; `STUCK_CHROME_LOCK?` |
+| `LessonProgressDiag` | Ders ilerlemesi, `LessonResult.claimButton` dalları (`SKIP_TO_MAP` / `GO_TO_CHEST`) |
+| `LessonProgress` | `updateLessonItem` → Firestore yazımı |
+| `PostLessonQueue` | Ders sonrası ekran kuyruğu: kilit, zemin, `bekliyor \| block=...`. Görevler'e dönüş (kupa testi, günlük soru) de burada: `gorevler yeni seri SIRADA / GEREKMIYOR / ACILIYOR / DUSURULDU`, `gorevler dokunma engeli ACIK / KAPALI / SAHIPSIZ` |
+
+Hepsini birlikte izlemek için:
+
+```powershell
+adb logcat -c
+adb logcat -s StreakDiag:V MapTouchDbg:V ChromeBlockerDbg:V LessonProgressDiag:V LessonProgress:V PostLessonQueue:V TouchDiag:V
+```
+
+**Dikkat:** `logMapTouchDiag`'ın etiketi `MapTouchDbg` (`MapTouchDiag` değil). Bir kez yanlış
+etiket filtrelendiği için "log yok" sanıldı ve bir tur kaybedildi.
+
+Cihazdaki seri durumunu loga hiç gerek kalmadan okumak için:
+
+```powershell
+adb shell run-as com.numigo.app cat /data/data/com.numigo.app/shared_prefs/streak_prefs.xml
+adb shell run-as com.numigo.app cat /data/data/com.numigo.app/shared_prefs/study_time.xml
+```
+
+## Yayın öncesi
+
+`docs/YAYIN_ONCESI_KONTROL.md` tek kaynak. Orada üç test anahtarı var; `StreakDiag.ENABLED`
+**`BuildConfig.DEBUG`'a bağlı değil**, elle `false` yapılmalı.
+
+## Derleyemeyen oturumun doğrulama yöntemleri
+
+Bu oturum derleyebiliyor, yani asıl doğrulama `.\gradlew compileDebugKotlin`. Yine de depoda
+bunlar kullanılıyor ve korunmalı:
+
+- `functions/scripts/test-*.js` — sunucu mantığını kaynaktan türetip kilitleyen testler
+  (`node functions/scripts/test-chest-rarity-table.js` gibi; tablo kopyalanmıyor, kaynaktan okunuyor)
+- `tools/rules-test/` — Firestore kuralları, emülatörle 22 test
+
+## Reklam 19–33: Sobi serileri (18.11.2026, paralel oturumlar)
+
+Viral video incelemelerinden (bkz. `docs/ICERIK_FIKIRLERI.md`: Duolingo, @gizlizekaegitim, Remix adayları) 16 video
+üretildi; hepsi `Videos\Sorobit_tanitim\reklamNN\Sorobit_reklamNN.mp4` + `SENARYO.md`, kod `reklam3\proje\src\rNN*`.
+Kurallar: `Videos\Sorobit_tanitim\REKLAM_19_28_ORTAK_KURALLAR.md`, `REKLAM_SOBI_TRIP_SERISI.md`, `REKLAM_SOBI_MEME_SERISI.md`.
+- 19–23 (ilk tur, geçici Tolga sesi): 19 hayal vs gerçek, 20 "DUR!" 3 tüyo, 21 Sobi dehşette (meme, sessiz), 22 Sobi trip, 23 son boncuk.
+- Kullanıcı 22 (trip) ve 21 (meme) tarzını beğendi. 22 v2 (abaküs dersi çıkarıldı) + 24–28 trip serisi (abaküs dersi yok,
+  beceri gündelik sahnelerle), 29–33 meme serisi (tek kısa soroban püf noktası, "matematikten korkmasın" sloganı).
+- Ses: ElevenLabs Jessica (`cgSgspJ2msm6clMCkdW9`); 33'te baba için Brian. 32'de seslendirme yok (yalnızca 2 efekt).
+  Yeni anahtar (18.11) ücretsiz plan, 10.000 karakter; ~2.700 karakter + ~10 efekt harcandı. Ücretsiz plan ticari
+  lisans vermez → paylaşmadan önce Starter ya da atıf. Hiçbiri yayınlanmadı; videolar insan gözüyle izlenmedi.
+- Resmî Remotion yeteneği `.claude/skills/remotion-best-practices` kuruldu (`.git/info/exclude`'da, commit edilmez).
+- **Güncelleme (18.11.2026 akşam):** kullanıcı kararıyla abaküs anlatımı 19, 20, 21, 29–33'ten kaldırıldı (yerine "soroban
+  tekniğiyle akıldan çok hızlı / matematikten korkmaz, eğlenerek öğrenir" fayda anı); 23 tamamen abaküs bulmacası, dokunulmadı.
+  33 v3: Sobi'nin soroban övgü tahtası, zorlaşan 3 soru (12 / 85 / 375), bölünmüş ekran + kronometre (v2 yedekte).
+  Yeni "Ya … olsaydın?" serisi (@utopia_3077 akışı; kurallar `Videos\Sorobit_tanitim\REKLAM_YA_OLSAYDIN_SERISI.md`):
+  34 matematik dehası (51,9 sn), 35 hesap makineleri bozulsa (56,9), 36 sınavda zaman yavaşlasa (58,0),
+  37 matematikten hiç korkmasaydın (54,4), 38 bir bakışta sayabilseydin (53,3); hepsi Jessica. ElevenLabs ücretsiz
+  kredisinden ~7.600 / 10.000 kullanıldı (yenileme 19.12.2026). Hiçbiri yayınlanmadı ve insan gözüyle izlenmedi.
+- **Reklam 39–61 (19–20.11.2026):** 39 (zihin ekranı) kullanıcının favorisi; 40 renkli sayılar, 41 sınıfa sen anlat.
+  42–61: 39 tarzında 20 video, 5 oturum × 4 (kurallar `Videos\Sorobit_tanitim\REKLAM_42_61_SERISI.md`): 42–45 her gün 2 katı
+  (IQ, harçlık, kâğıt katlama, satranç pirinci), 46–49 "bu sayı ne kadar büyük" kuleleri (tavşan, veli WhatsApp, kum/yıldız,
+  kalp atışı), 50–53 ya … olsaydın (beyin güncellemesi, rüyada ders, matematik oyun, hesap makinesine dönüşmek), 54–57 absürt
+  (dinozor, kedi, uzaylılar, rakamlar kaybolsa), 58–61 anne komedisi. Ses: kullanıcı erkek ses istedi; Reklam 7'nin Bunty'si
+  (`7b9mYhmnp0y2qSH1FnBL`) ücretsiz planda API'den 402 → **Liam** (`TX3LPaxmHKxFdv7VOQHJ`). Gerçek Liam sesli: 44, 47, 50,
+  55, 58; diğer 15'i geçici Tolga, `node araclar/rNN_sesler.mjs --uret` + render ile yenilenir. Anahtar 20.11'de değişti
+  (ücretsiz, kredi bitti; yenileme 20.12.2026). Hiçbiri yayınlanmadı, insan gözüyle izlenmedi.

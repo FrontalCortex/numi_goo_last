@@ -1,0 +1,247 @@
+/**
+ * firestore.rules regresyon testleri.
+ *
+ * Ders basari oranlari, edinim kaynagi sayaci ve anket sik sayaclari Firestore'dan
+ * Firebase Analytics'e tasindiginda guvenlik kurallari da daraltildi. Bu dosya iki seyi
+ * birden dogrular:
+ *
+ *   1. KAPATILANLAR gercekten kapali mi — tasinan koleksiyonlara artik yazilamiyor.
+ *   2. KORUNANLAR hala calisiyor mu — gunluk soru basari orani, anket serbest metni ve
+ *      cift sayim koruma dokumani bozulmadi.
+ *
+ * Calistirmak icin (bir kez):  cd firestore-rules-tests && npm install
+ * Sonra:                       npm test
+ *
+ * Emulator jar'ini ilk calistirmada indirir; internet gerekir.
+ */
+import { readFileSync } from 'node:fs';
+import {
+  initializeTestEnvironment, assertFails, assertSucceeds,
+} from '@firebase/rules-unit-testing';
+import {
+  doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, increment, deleteField,
+  collection, query, where,
+} from 'firebase/firestore';
+
+const testEnv = await initializeTestEnvironment({
+  projectId: 'demo-numigoo',
+  firestore: {
+    rules: readFileSync(new URL('../firestore.rules', import.meta.url), 'utf8'),
+    host: '127.0.0.1',
+    port: 8087,
+  },
+});
+
+const ali = testEnv.authenticatedContext('ali').firestore();
+const veli = testEnv.authenticatedContext('veli').firestore();
+
+let pass = 0;
+let fail = 0;
+async function check(name, promise) {
+  try {
+    await promise;
+    console.log(`  PASS  ${name}`);
+    pass++;
+  } catch (e) {
+    console.log(`  FAIL  ${name}\n        -> ${e.message.split('\n')[0]}`);
+    fail++;
+  }
+}
+
+console.log('\n-- KORUNMALI: gunluk soru basari orani (uygulama bunu OKUYOR) --');
+await check('gunluk soru sayaci yazilabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'successRate/dailyQuestionSuccessRate/generatorForPart1Chest/1-2'),
+    { easy_total: 1, easy_success: 1, easy_rate: 100 })));
+await check('gunluk soru sayaci okunabiliyor', assertSucceeds(
+  getDoc(doc(ali, 'successRate/dailyQuestionSuccessRate/generatorForPart1Chest/1-2'))));
+
+console.log('\n-- KAPATILDI: ders basari orani kuresel sayaclari (Analytics e tasindi) --');
+await check('lessonSuccessRate item yazimi reddediliyor', assertFails(
+  setDoc(doc(ali, 'successRate/lessonSuccessRate/part1/3'), { passUserCount: 999999 })));
+await check('lessonSuccessRate adim yazimi reddediliyor', assertFails(
+  setDoc(doc(ali, 'successRate/lessonSuccessRate/part1/3/steps/1'), { successRatePercent: 100 })));
+await check('lessonSuccessRate okumasi reddediliyor', assertFails(
+  getDoc(doc(ali, 'successRate/lessonSuccessRate/part1/3'))));
+
+console.log('\n-- KAPATILDI: edinim kaynagi sayaci (Analytics e tasindi) --');
+await check('appStatistics yazimi reddediliyor', assertFails(
+  setDoc(doc(ali, 'appStatistics/acquisition_sources'), { instagram: 50000 })));
+
+console.log('\n-- KAPATILDI: anket sik sayaclari (Analytics e tasindi) --');
+await check('questionPanel sik sayaci reddediliyor', assertFails(
+  setDoc(doc(ali, 'questionPanel/1/5/question1'), { choice1: 99999 })));
+await check('questionPanelTutorial sik sayaci reddediliyor', assertFails(
+  setDoc(doc(ali, 'questionPanelTutorial/1/5/question1'), { choice1: 99999 })));
+
+console.log('\n-- KORUNMALI: anket serbest metni (Firestore da kalir) --');
+await check('kendi metnini yazabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'questionPanel/1/5/question1/text/ali'), { uid: 'ali', text: 'ders guzeldi' })));
+await check('tutorial metnini yazabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'questionPanelTutorial/1/5/question3/text/ali'), { uid: 'ali', text: 'zor' })));
+await check('baskasinin metnini yazamiyor', assertFails(
+  setDoc(doc(veli, 'questionPanel/1/5/question1/text/ali'), { uid: 'ali', text: 'ezildi' })));
+await check('metin okumasi reddediliyor (gizlilik)', assertFails(
+  getDoc(doc(ali, 'questionPanel/1/5/question1/text/ali'))));
+
+console.log('\n-- KORUNMALI: cift sayim koruma dokumani --');
+await check('kendi lessonSuccessRateState yazimi', assertSucceeds(
+  setDoc(doc(ali, 'users/ali/lessonSuccessRateState/1_3_1'),
+    { attempted: true, passed: false, failStreak: 1 })));
+await check('kendi lessonSuccessRateState okumasi', assertSucceeds(
+  getDoc(doc(ali, 'users/ali/lessonSuccessRateState/1_3_1'))));
+await check('baskasinin state dokumani reddediliyor', assertFails(
+  getDoc(doc(veli, 'users/ali/lessonSuccessRateState/1_3_1'))));
+
+console.log('\n-- VELI PANELI: gunluk calisma suresi (TimeTracker.DAILY_FIELD) --');
+// Veli paneli gun->saniye haritasini users/{uid} uzerinde ALAN olarak okuyor; yazma
+// totalTimeSpent ile ayni update cagrisina biniyor. Kural sunucu alanlarina bakiyor,
+// dailyTimeSpent orada olmadigi icin gecmeli.
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await setDoc(doc(ctx.firestore(), 'users/ali'), {
+    uid: 'ali', role: 'STUDENT', keys: 1, currency: 0, totalTimeSpent: 0,
+  });
+});
+await check('gunluk sure alani yazilabiliyor', assertSucceeds(
+  updateDoc(doc(ali, 'users/ali'), {
+    totalTimeSpent: increment(120),
+    'dailyTimeSpent.20260911': increment(120),
+    'dailyTimeSpent.20260828': deleteField(),
+  })));
+await check('gunluk sure alani okunabiliyor', assertSucceeds(
+  getDoc(doc(ali, 'users/ali'))));
+await check('baskasinin gunluk suresi yazilamiyor', assertFails(
+  updateDoc(doc(veli, 'users/ali'), { 'dailyTimeSpent.20260911': increment(120) })));
+await check('gunluk sure yazimi cuzdani kurcalayamiyor', assertFails(
+  updateDoc(doc(ali, 'users/ali'), {
+    'dailyTimeSpent.20260911': increment(120),
+    keys: increment(999),
+  })));
+
+console.log('\n-- KALICI KIMLIK: anket ve liderlik artik stableId ile anahtarli --');
+// Anket yolunun orta segmenti artik liste konumu degil LessonItem.stableId.
+await check('anket metni stableId yoluna yazilabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'questionPanel/1/p1_i06_kuralsiz_toplama_1_basamakli/question1/text/ali'),
+    { uid: 'ali', text: 'kolaydi' })));
+await check('tutorial anketi stableId yoluna yazilabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'questionPanelTutorial/1/p1_i01_sayilari_abakuste_tanima/question1/text/ali'),
+    { uid: 'ali', text: 'anlasildi' })));
+await check('baskasinin anket metni stableId yolunda da reddediliyor', assertFails(
+  setDoc(doc(veli, 'questionPanel/1/p1_i06_kuralsiz_toplama_1_basamakli/question1/text/ali'),
+    { uid: 'ali', text: 'ezildi' })));
+
+// Tahta meta dokumanini yalnizca submitLeaderboardScore (Admin SDK) yazar.
+await check('liderlik tahtasi okunabiliyor', assertSucceeds(
+  getDoc(doc(ali, 'lessonLeaderboards/part_1_lesson_p1_i04_unite_maratonu_season_7'))));
+await check('istemci tahta uyduramiyor', assertFails(
+  setDoc(doc(ali, 'lessonLeaderboards/part_1_lesson_p1_i04_unite_maratonu_season_7'),
+    { partId: 1, lessonKey: 'p1_i04_unite_maratonu', season: 7, updatedAt: 'x' })));
+await check('istemci tahta kaydi yazamiyor', assertFails(
+  setDoc(doc(ali, 'lessonLeaderboards/part_1_lesson_p1_i04_unite_maratonu_season_7/entries/ali'),
+    { recordScore: 2000 })));
+
+console.log('\n-- HATA BILDIRIMLERI: yazma sunucuda, okuma sahibi + admin --');
+const yonetici = testEnv.authenticatedContext('yonetici', { admin: true }).firestore();
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await setDoc(doc(ctx.firestore(), 'bugReports/r1'), {
+    uid: 'ali', text: 'buton kayboluyor', imagePath: 'bug_reports/ali_1760000000000.jpg',
+    status: 'pending',
+  });
+});
+await check('sahibi kendi bildirimini okuyor', assertSucceeds(
+  getDoc(doc(ali, 'bugReports/r1'))));
+await check('sahibi kendi bildirimlerini sorguluyor', assertSucceeds(
+  getDocs(query(collection(ali, 'bugReports'), where('uid', '==', 'ali')))));
+await check('baskasi bildirimi okuyamiyor', assertFails(
+  getDoc(doc(veli, 'bugReports/r1'))));
+await check('baskasi tum bildirimleri sorgulayamiyor', assertFails(
+  getDocs(query(collection(veli, 'bugReports'), where('status', '==', 'pending')))));
+await check('admin bekleyenleri sorguluyor', assertSucceeds(
+  getDocs(query(collection(yonetici, 'bugReports'), where('status', '==', 'pending')))));
+await check('istemci bildirim olusturamiyor', assertFails(
+  setDoc(doc(ali, 'bugReports/r2'), { uid: 'ali', text: 'x', status: 'pending' })));
+await check('sahibi kendini onaylayamiyor', assertFails(
+  updateDoc(doc(ali, 'bugReports/r1'), { status: 'approved' })));
+await check('admin de istemciden yazamiyor (karar CF ile)', assertFails(
+  updateDoc(doc(yonetici, 'bugReports/r1'), { status: 'approved' })));
+await check('sahibi bildirimi silemiyor', assertFails(
+  deleteDoc(doc(ali, 'bugReports/r1'))));
+await check('gonderim sayaci istemciye kapali', assertFails(
+  setDoc(doc(ali, 'bugReportGuards/ali'), { dayKey: '2026-10-15', count: 0 })));
+// admin alani claim'e kopyalaniyor (syncTeacherClaim); istemci kendine yazabilseydi
+// kendini admin yapardi.
+await check('kullanici kendine admin alani yazamiyor', assertFails(
+  updateDoc(doc(ali, 'users/ali'), { admin: true })));
+await check('admin alaniyla kayit olunamiyor', assertFails(
+  setDoc(doc(veli, 'users/veli'), {
+    uid: 'veli', role: 'STUDENT', keys: 1, currency: 0, admin: true,
+  })));
+await check('admin alani olmadan kayit olunuyor', assertSucceeds(
+  setDoc(doc(veli, 'users/veli'), { uid: 'veli', role: 'STUDENT', keys: 1, currency: 0 })));
+
+// Yayin hediyesi (functions/launchGift.js): ilk 100 ogrenciye 1 ay Pro. Alanlar ve sayac
+// yalniz sunucuda; istemci yazabilseydi kendine sinirsiz Pro verir ya da sayaci doldururdu.
+console.log('\n-- YAYIN HEDIYESI: alanlar ve sayac sunucuya ait --');
+const ayse = testEnv.authenticatedContext('ayse').firestore();
+await check('giftProUntil ile kayit olunamiyor', assertFails(
+  setDoc(doc(ayse, 'users/ayse'), {
+    uid: 'ayse', role: 'STUDENT', keys: 1, currency: 0, giftProUntil: Date.now() + 1e10,
+  })));
+await check('giftProSource ile kayit olunamiyor', assertFails(
+  setDoc(doc(ayse, 'users/ayse'), {
+    uid: 'ayse', role: 'STUDENT', keys: 1, currency: 0, giftProSource: 'x',
+  })));
+await check('hediye alani olmadan kayit olunuyor', assertSucceeds(
+  setDoc(doc(ayse, 'users/ayse'), { uid: 'ayse', role: 'STUDENT', keys: 1, currency: 0 })));
+await check('kullanici kendine giftProUntil yazamiyor', assertFails(
+  updateDoc(doc(ayse, 'users/ayse'), { giftProUntil: Date.now() + 1e10 })));
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await updateDoc(doc(ctx.firestore(), 'users/ayse'), {
+    giftProUntil: Date.now() + 1e9, giftProSource: 'launch_2026_11',
+  });
+});
+await check('kullanici hediyesini uzatamiyor', assertFails(
+  updateDoc(doc(ayse, 'users/ayse'), { giftProUntil: Date.now() + 1e10 })));
+await check('kullanici hediyesini silemiyor', assertFails(
+  updateDoc(doc(ayse, 'users/ayse'), { giftProUntil: deleteField() })));
+await check('hediyeli kullanici baska alanini guncelleyebiliyor', assertSucceeds(
+  updateDoc(doc(ayse, 'users/ayse'), { name: 'Ayse' })));
+await check('kullanici kendi hediye alanini okuyabiliyor', assertSucceeds(
+  getDoc(doc(ayse, 'users/ayse'))));
+await check('sayac okunamiyor', assertFails(getDoc(doc(ayse, 'launchGift/counter'))));
+await check('sayac yazilamiyor', assertFails(
+  setDoc(doc(ayse, 'launchGift/counter'), { count: 100 })));
+await check('hediye defteri yazilamiyor', assertFails(
+  setDoc(doc(ayse, 'launchGiftClaims/ayse'), { uid: 'ayse' })));
+
+console.log('\n-- HAFTALIK KART: weeklyStats yalniz sunucu yazar, sahibi okur --');
+await testEnv.withSecurityRulesDisabled(async (ctx) => {
+  await setDoc(doc(ctx.firestore(), 'users/ali/weeklyStats/2026-W46'), { week: '2026-W46', cups: { addition_abacus_cup: 300 } });
+});
+await check('sahibi kendi kaydini okuyabiliyor', assertSucceeds(
+  getDoc(doc(ali, 'users/ali/weeklyStats/2026-W46'))));
+await check('sahibi kayit olusturamiyor', assertFails(
+  setDoc(doc(ali, 'users/ali/weeklyStats/2026-W47'), { cups: { addition_abacus_cup: 9999 } })));
+await check('sahibi kaydi degistiremiyor', assertFails(
+  updateDoc(doc(ali, 'users/ali/weeklyStats/2026-W46'), { cups: { addition_abacus_cup: 9999 } })));
+await check('baskasi okuyamiyor', assertFails(
+  getDoc(doc(veli, 'users/ali/weeklyStats/2026-W46'))));
+await check('baskasi yazamiyor', assertFails(
+  setDoc(doc(veli, 'users/ali/weeklyStats/2026-W48'), { x: 1 })));
+await check('sahibi silebiliyor (hesap silme akisi)', assertSucceeds(
+  deleteDoc(doc(ali, 'users/ali/weeklyStats/2026-W46'))));
+await check('ders kilometre tasi (lessonMilestones) sahibi yazabiliyor', assertSucceeds(
+  setDoc(doc(ali, 'users/ali/lessonMilestones/4_p4_x'), { finishedAtMs: 1 })));
+await check('ders kilometre tasi baskasi yazamiyor', assertFails(
+  setDoc(doc(veli, 'users/ali/lessonMilestones/4_p4_x'), { finishedAtMs: 1 })));
+
+console.log('\n-- REGRESYON: dokunulmayan yollar --');
+await check('kendi lessonProgress yazimi', assertSucceeds(
+  setDoc(doc(ali, 'users/ali/lessonProgress/1'), { x: 1 })));
+await check('publicProfiles okumasi', assertSucceeds(
+  getDoc(doc(ali, 'publicProfiles/veli'))));
+await check('tanimsiz koleksiyon reddediliyor', assertFails(
+  setDoc(doc(ali, 'rastgeleKoleksiyon/abc'), { x: 1 })));
+
+await testEnv.cleanup();
+console.log(`\n==== ${pass} gecti, ${fail} basarisiz ====`);
+process.exit(fail === 0 ? 0 : 1);

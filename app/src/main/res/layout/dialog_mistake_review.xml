@@ -1,0 +1,569 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "Sobi ile analiz et" ekranı (MistakeReviewDialog): yanlış cevaplanan ders sorusunu Sobi anlatarak
+  adım adım yeniden çözdürür. Her adım kendi sohbet sayfası (‹ › ile adımlar arasında geçiş); sayfanın
+  altında Sobi'ye yazma kutusu. Abaküs bloğu fragment_homework_player.xml'deki bloğun kopyası
+  (AbacusBeadController boncukları kimlikleriyle buluyor; kimlikler aynı kalmalı).
+-->
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/reviewRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color">
+
+    <ImageButton
+        android:id="@+id/reviewClose"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/sobi_close_desc"
+        android:padding="10dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_close_black"
+        android:tint="@color/dark_text_secondary"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Adım gezinmesi kapatmanın yanında: önceki / sonraki adım (yalnızca açılmış adımlar). Soru ve
+         çocuğun cevabı üstte yazmıyor (flaş dizisinde çok uzun, kalabalık); Sobi'nin ilk mesajında. -->
+    <ImageButton
+        android:id="@+id/reviewPrev"
+        android:layout_width="44dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="4dp"
+        android:background="@drawable/bg_hw_chip"
+        android:contentDescription="@string/review_prev"
+        android:paddingBottom="4dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_review_chevron_left"
+        android:tint="@color/dark_text"
+        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
+        app:layout_constraintStart_toEndOf="@id/reviewClose"
+        app:layout_constraintTop_toTopOf="@id/reviewClose" />
+
+    <TextView
+        android:id="@+id/reviewStepLabel"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginEnd="6dp"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textColor="@color/dark_text"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
+        app:layout_constraintEnd_toStartOf="@id/reviewSpeak"
+        app:layout_constraintStart_toEndOf="@id/reviewPrev"
+        app:layout_constraintTop_toTopOf="@id/reviewClose"
+        tools:text="Adım 2 / 3 · +22 işleniyor" />
+
+    <!-- Sesli okuma aç/kapat (Sobi'nin yeni mesajları kendiliğinden okunur; açıkken tam görünür). -->
+    <ImageButton
+        android:id="@+id/reviewSpeak"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="6dp"
+        android:background="@drawable/bg_hw_chip"
+        android:contentDescription="@string/sobi_auto_read"
+        android:paddingStart="8dp"
+        android:paddingTop="7dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="11dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/volume_up_ic"
+        android:tint="@color/dark_text"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
+        app:layout_constraintEnd_toStartOf="@id/reviewNext"
+        app:layout_constraintTop_toTopOf="@id/reviewClose" />
+
+    <ImageButton
+        android:id="@+id/reviewNext"
+        android:layout_width="44dp"
+        android:layout_height="40dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/bg_hw_chip"
+        android:contentDescription="@string/review_next"
+        android:paddingBottom="4dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_lesson_card_chevron"
+        android:tint="@color/dark_text"
+        app:layout_constraintBottom_toBottomOf="@id/reviewClose"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/reviewClose" />
+
+    <!-- Adımın sohbeti (tam genişlik). -->
+    <ScrollView
+        android:id="@+id/reviewSobiScroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="6dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/reviewInputRow"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/reviewClose">
+
+        <LinearLayout
+            android:id="@+id/reviewMessages"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
+
+    <!-- Sobi'ye yaz: bu adım hakkında soru (yapay zekâ). Üstünde bugünkü ücretsiz hak ve kredi
+         (functions/sobi/wallet.js); ikisi de bitince etiket "Kredi al" olur ve mağazayı açar. -->
+    <LinearLayout
+        android:id="@+id/reviewInputRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_marginEnd="10dp"
+        android:layout_marginBottom="6dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@id/abacusContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+    <TextView
+        android:id="@+id/reviewBalance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginBottom="3dp"
+        android:textColor="#8B949E"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <!-- Hak ve kredi bitince, denemeye uygun kullanıcıya ikinci yol: "1 hafta Pro'yu ücretsiz dene ›"
+         (MistakeReviewDialog.showBalance → SobiProTrialFragment). -->
+    <TextView
+        android:id="@+id/reviewProTrial"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="6dp"
+        android:layout_marginBottom="3dp"
+        android:textColor="#1CB0F6"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/reviewInputBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <EditText
+            android:id="@+id/reviewInput"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/chat_bubble_sobi"
+            android:hint="@string/review_input_hint"
+            android:imeOptions="actionSend"
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences"
+            android:maxLength="300"
+            android:maxLines="2"
+            android:paddingStart="14dp"
+            android:paddingTop="9dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="9dp"
+            android:textColor="@color/dark_text"
+            android:textSize="15sp" />
+
+        <ImageButton
+            android:id="@+id/reviewSend"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_hw_send"
+            android:contentDescription="@string/sobi_send_desc"
+            android:paddingStart="11dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="11dp"
+            android:paddingBottom="14dp"
+            android:scaleType="fitCenter"
+            android:src="@drawable/send_ic" />
+    </LinearLayout>
+
+    <!-- Oturumsuz (kayıttan önce oynanan ilk öğretici): yazma çubuğu yerine yalnızca bilgi. Sohbet
+         sunucusu (sobiChat) oturum istiyor; çocuk yapay zekâyla yazışmanın var olduğunu bilsin diye
+         satır gizlenmek yerine bu not görünüyor. Düğme bilerek yok (kullanıcı kararı 08.11.2026):
+         öğretici yarıda kesilip kayda yönlendirilmesin, kayıt öğreticinin sonundaki akışta kalsın. -->
+    <TextView
+        android:id="@+id/reviewLoginNote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:text="@string/sobi_chat_needs_account"
+        android:textColor="#8B949E"
+        android:textSize="13sp"
+        android:visibility="gone" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/abacusContainer"
+        android:layoutDirection="ltr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/abacus_frame_bg"
+        android:paddingTop="20dp"
+        android:paddingBottom="20dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:layout_marginBottom="@dimen/tutorial_abacus_linear_margin_bottom"
+        app:layout_constraintBottom_toTopOf="@id/reviewButtons"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:id="@+id/abacusLinear"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <FrameLayout
+                android:id="@+id/rod0"
+                android:layout_width="45dp"
+                android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+                <View
+                    android:layout_width="@dimen/tutorial_abacus_line_width"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:background="#1a1a1a" />
+
+                <ImageView
+                    android:id="@+id/rod0_bead_bottom4"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod0_bead_bottom3"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod0_bead_bottom2"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod0_bead_bottom1"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                    android:src="@drawable/soroban_bead" />
+
+                <View
+                    android:id="@+id/rod0_barrier"
+                    android:layout_width="match_parent"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                    android:background="@drawable/abacus_horizontal_bar" />
+
+                <ImageView
+                    android:id="@+id/rod0_bead_top"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="top|center_horizontal"
+                    android:src="@drawable/soroban_bead" />
+
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/rod1"
+                android:layout_width="45dp"
+                android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+                <View
+                    android:layout_width="@dimen/tutorial_abacus_line_width"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:background="#1a1a1a" />
+
+                <ImageView
+                    android:id="@+id/rod1_bead_bottom4"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod1_bead_bottom3"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod1_bead_bottom2"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod1_bead_bottom1"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                    android:src="@drawable/soroban_bead" />
+
+                <View
+                    android:id="@+id/rod1_barrier"
+                    android:layout_width="match_parent"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                    android:background="@drawable/abacus_horizontal_bar" />
+
+                <ImageView
+                    android:id="@+id/rod1_bead_top"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="top|center_horizontal"
+                    android:src="@drawable/soroban_bead" />
+
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/rod2"
+                android:layout_width="45dp"
+                android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+                <View
+                    android:layout_width="@dimen/tutorial_abacus_line_width"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:background="#1a1a1a" />
+
+                <ImageView
+                    android:id="@+id/rod2_bead_bottom4"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod2_bead_bottom3"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod2_bead_bottom2"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod2_bead_bottom1"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                    android:src="@drawable/soroban_bead" />
+
+                <View
+                    android:id="@+id/rod2_barrier"
+                    android:layout_width="match_parent"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                    android:background="@drawable/abacus_horizontal_bar" />
+
+                <ImageView
+                    android:id="@+id/rod2_bead_top"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="top|center_horizontal"
+                    android:src="@drawable/soroban_bead" />
+
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/rod3"
+                android:layout_width="45dp"
+                android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+                <View
+                    android:layout_width="@dimen/tutorial_abacus_line_width"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:background="#1a1a1a" />
+
+                <ImageView
+                    android:id="@+id/rod3_bead_bottom4"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod3_bead_bottom3"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod3_bead_bottom2"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod3_bead_bottom1"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                    android:src="@drawable/soroban_bead" />
+
+                <View
+                    android:id="@+id/rod3_barrier"
+                    android:layout_width="match_parent"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                    android:background="@drawable/abacus_horizontal_bar" />
+
+                <ImageView
+                    android:id="@+id/rod3_bead_top"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="top|center_horizontal"
+                    android:src="@drawable/soroban_bead" />
+
+            </FrameLayout>
+
+            <FrameLayout
+                android:id="@+id/rod4"
+                android:layout_width="45dp"
+                android:layout_height="@dimen/tutorial_abacus_rod_height">
+
+                <View
+                    android:layout_width="@dimen/tutorial_abacus_line_width"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_horizontal"
+                    android:background="#1a1a1a" />
+
+                <ImageView
+                    android:id="@+id/rod4_bead_bottom4"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_4"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod4_bead_bottom3"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_3"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod4_bead_bottom2"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_2"
+                    android:src="@drawable/soroban_bead" />
+
+                <ImageView
+                    android:id="@+id/rod4_bead_bottom1"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_bottom_bead_margin_1"
+                    android:src="@drawable/soroban_bead" />
+
+                <View
+                    android:id="@+id/rod4_barrier"
+                    android:layout_width="match_parent"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center"
+                    android:layout_marginBottom="@dimen/tutorial_abacus_barrier_margin_bottom"
+                    android:background="@drawable/abacus_horizontal_bar" />
+
+                <ImageView
+                    android:id="@+id/rod4_bead_top"
+                    android:layout_width="@dimen/tutorial_abacus_bead_size"
+                    android:layout_height="@dimen/tutorial_abacus_bead_size"
+                    android:layout_gravity="top|center_horizontal"
+                    android:src="@drawable/soroban_bead" />
+
+            </FrameLayout>
+
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Alt düğme: Kontrol Et (sonuç sayfasında Derse dön). Adımın gösterimi sohbetteki gri
+         "Abaküste göster" seçeneğinde (eskiden burada "Bana göster" vardı; aynı işi gören iki düğme
+         kafa karıştırıyordu, kullanıcı kararı 02.11.2026). -->
+    <LinearLayout
+        android:id="@+id/reviewButtons"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="16dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <TextView
+            android:id="@+id/reviewCheck"
+            android:layout_width="0dp"
+            android:layout_height="@dimen/tutorial_control_button_height"
+            android:layout_weight="1.4"
+            android:background="@drawable/bg_depth_tutorial_control"
+            android:gravity="center"
+            android:paddingBottom="4dp"
+            android:text="@string/review_check"
+            android:textColor="#000000"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

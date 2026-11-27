@@ -42,7 +42,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Bize Ulaşın"
+                android:text="@string/fragment_feedback_text"
                 android:gravity="center"
                 android:textColor="@color/dark_text"
                 android:textSize="22sp"
@@ -52,7 +52,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Bir sorun mu yaşadınız veya harika bir öneriniz mi var? Uygulamayı daha iyi hale getirmemize yardımcı olun."
+                android:text="@string/fragment_feedback_text_2"
                 android:gravity="center"
                 android:textColor="@color/dark_text_secondary"
                 android:textSize="14sp"
@@ -63,7 +63,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Mesajınız"
+                android:text="@string/fragment_feedback_text_3"
                 android:textColor="@color/dark_text"
                 android:textSize="15sp"
                 android:fontFamily="@font/font_regular"
@@ -75,7 +75,7 @@
                 android:layout_height="200dp"
                 android:gravity="top|start"
                 android:inputType="textMultiLine|textCapSentences"
-                android:hint="Buraya yazabilirsiniz..."
+                android:hint="@string/fragment_feedback_feedback_input_hint"
                 android:textSize="14sp"
                 android:padding="16dp"
                 android:background="@drawable/hint_background"
@@ -87,7 +87,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Size mail adresinizden ulaşacağız."
+                android:text="@string/fragment_feedback_text_4"
                 android:gravity="center"
                 android:textColor="@color/dark_text_secondary"
                 android:textSize="14sp">
@@ -112,7 +112,7 @@
                     android:id="@+id/closeButton"
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
-                    android:text="İptal"
+                    android:text="@string/fragment_feedback_close_button"
                     android:textAllCaps="false"
                     android:textSize="15sp"
                     android:textColor="@color/dark_text_secondary"
@@ -126,7 +126,7 @@
                     android:id="@+id/sendFeedbackButton"
                     android:layout_width="wrap_content"
                     android:layout_height="48dp"
-                    android:text="Gönder"
+                    android:text="@string/fragment_feedback_send_feedback_button"
                     android:textAllCaps="false"
                     android:textSize="15sp"
                     android:textColor="@color/button_text_enabled"

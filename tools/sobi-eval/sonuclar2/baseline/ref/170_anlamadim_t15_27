@@ -1,0 +1,1 @@
+Birler sütununda 0 var, o yüzden 4'ü doğrudan çıkaramayız. 4 çıkarmak, 10 çıkarıp 6 eklemekle aynıdır; bu yüzden önce 10 gider, sonra 4'ün kardeşi olan 6 gelir. Bu işlemde sonuç 496 olur.

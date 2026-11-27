@@ -1,0 +1,1 @@
+Onlar basamağındaki 6'ya 7 eklemek istiyoruz. Doğrudan ekleyecek 7 boncuk yok, 10'luk kuralla da 3'ü çıkaramıyoruz, o yüzden boncuk kuralını kullanıyoruz. Bu kural, 7'yi "2 gelir, 5 gider, 10 gelir" gibi parçalara ayırarak eklememizi sağlar.

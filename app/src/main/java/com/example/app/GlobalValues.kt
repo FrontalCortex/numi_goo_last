@@ -18,9 +18,23 @@ object GlobalValues {
      */
     var isTeacherApproved: Boolean = false
 
+    /**
+     * Derse girilince true; haritaya dönüşte geçiş reklamı sorulur
+     * ([MainActivity.checkAndShowInterstitialAdIfAllowed]).
+     *
+     * true'ya çekildiği an [onAdReturnArmed] çağrılıyor: geçiş reklamı artık açılışta herkese
+     * değil, ders başlarken ve yalnızca gösterilebilecek kullanıcıya yükleniyor; ders sürerken
+     * hazır olsun diye.
+     */
     var shouldShowAdOnReturn = false
+        set(value) {
+            field = value
+            if (value) onAdReturnArmed?.invoke()
+        }
+
+    /** [MainActivity] onCreate'te kurar, onDestroy'da kaldırır. */
+    var onAdReturnArmed: (() -> Unit)? = null
     var lastInterstitialAdShownTime: Long = 0L
-    var interstitialAdShownCount: Int = 0
     var scrollPosition = 0  // Scroll pozisyonunu global olarak tutacak değişken
     /** Tutorial 1 akışındayken 1; login gösterildikten veya başka tutorial'a geçildikten sonra 0. */
     var currentTutorialNumber: Int = 0
@@ -174,6 +188,31 @@ object GlobalValues {
 
     private const val PREFS_NAME = "GlobalValuesPrefs"
     private const val KEY_DOWNLOADED_MEDIA = "downloaded_media_by_message"
+    private const val KEY_ASK_QUESTION_PROMO_COUNT = "ask_question_promo_lesson_return_count"
+
+    /**
+     * Pro olmayan/öğretmen olmayan kullanıcıya AskQuestionOpenFragment'ı otomatik göstermek için:
+     * türü LESSON olan (chest hariç) bir item'dan haritaya her dönüşte 1 artırılır.
+     * MainActivity.maybeShowAskQuestionPromo bu sayaç 3'e ulaşınca göstermeyi dener; harita o an
+     * başka bir overlay ile doluysa sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
+     * Süreç yeniden başlasa bile sayı kaybolmasın diye SharedPreferences'ta saklanır.
+     */
+    /** Sayacı artırmadan okur — dönüş daha başlarken "bu dönüşte promo çıkacak mı" kararı için. */
+    fun peekAskQuestionPromoLessonReturnCount(context: Context): Int =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(KEY_ASK_QUESTION_PROMO_COUNT, 0)
+
+    fun incrementAskQuestionPromoLessonReturnCount(context: Context): Int {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val next = prefs.getInt(KEY_ASK_QUESTION_PROMO_COUNT, 0) + 1
+        prefs.edit().putInt(KEY_ASK_QUESTION_PROMO_COUNT, next).apply()
+        return next
+    }
+
+    fun resetAskQuestionPromoLessonReturnCount(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_ASK_QUESTION_PROMO_COUNT, 0).apply()
+    }
 
     fun loadDownloadedMediaCache(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

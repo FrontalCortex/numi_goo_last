@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ödev formunun alt paneli (Gelişmiş): formun zemin rengi; içindeki kartlar formdaki gibi açık. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/background_color" />
+    <corners android:topLeftRadius="24dp" android:topRightRadius="24dp" />
+</shape>

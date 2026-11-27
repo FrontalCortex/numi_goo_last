@@ -1,0 +1,7 @@
+Hiç sorun değil. Önce 9'u kendi kafanda düşün: 9 eklemek, 10 ekleyip 1 çıkarmak gibidir.
+
+Mesela abaküsünde 5 varsa ve 9 eklemek istersen, 1 çıkarmak için birlik boncuk yok. Bu yüzden 4 boncuk gelir, 5 gider, 10 gelir: 5 − 5 + 4 + 10 = 14.
+---
+Bunu adım adım düşünelim: önce 4 birlik boncuk gelir, böylece 5 + 4 = 9 olur. Sonra 5 gider, yani beşlik boncuk gider ve elimizde 4 kalır. Son olarak 10 gelir, yani soldaki onlar sütununa 1 eklenir ve sonuç 14 olur.
+---
+7 için 2 birlik boncuk gelir, 5 gider, sonra 10 gelir. Yani 2 − 5 + 10 = 7 olur. Gördüğün gibi, gelecek birlik sayısı hep (sayı − 5) kadardır: 6 için 1, 7 için 2, 9 için 4.

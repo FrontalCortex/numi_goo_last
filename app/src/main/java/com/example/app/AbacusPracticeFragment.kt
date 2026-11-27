@@ -29,6 +29,8 @@ import kotlinx.coroutines.withContext
 class AbacusPracticeFragment : Fragment() {
 
     private var _binding: FragmentAbacusPracticeBinding? = null
+    // Sonuç panellerini gezinme çubuğunun arkasına kadar uzatır (ekranın en altından kayarak gelsin)
+    private var navBarPanelExtension: NavBarPanelExtension? = null
     private val binding get() = _binding!!
 
     private lateinit var abacusController: AbacusBeadController
@@ -104,6 +106,7 @@ class AbacusPracticeFragment : Fragment() {
             }
         }
 
+        navBarPanelExtension = NavBarPanelExtension(binding.root, binding.correctPanel, binding.incorrectPanel).also { it.attach() }
         binding.correctPanel.visibility = View.GONE
         binding.incorrectPanel.visibility = View.GONE
         binding.overlay.visibility = View.GONE
@@ -196,8 +199,8 @@ class AbacusPracticeFragment : Fragment() {
         if (isCorrect) {
             showResultPanel(binding.correctPanel)
         } else {
-            binding.correctAnswerLabel.text = "Doğru cevap: $expected"
-            binding.correctAnswerText.text = "Senin cevabın: $abacusValue"
+            binding.correctAnswerLabel.text = appString(R.string.ui_dogru_cevap_x_2, expected)
+            binding.correctAnswerText.text = appString(R.string.ui_senin_cevabin_x_2, abacusValue)
             showResultPanel(binding.incorrectPanel)
         }
     }
@@ -214,7 +217,7 @@ class AbacusPracticeFragment : Fragment() {
 
         // Ensure height is known before using translationY
         panel.post {
-            panel.translationY = panel.height.toFloat()
+            panel.translationY = resultPanelHiddenY(panel)
             panel.animate()
                 .alpha(1f)
                 .translationY(0f)
@@ -240,7 +243,7 @@ class AbacusPracticeFragment : Fragment() {
         }
 
         visiblePanel.animate()
-            .translationY(visiblePanel.height.toFloat())
+            .translationY(resultPanelHiddenY(visiblePanel))
             .setDuration(200)
             .setInterpolator(AccelerateInterpolator())
             .withEndAction {
@@ -259,7 +262,13 @@ class AbacusPracticeFragment : Fragment() {
         binding.secondNumberText.clearFocus()
     }
 
+    /** Sonuç panelinin gizliyken durduğu öteleme: gezinme çubuğunun da altında. */
+    private fun resultPanelHiddenY(panel: View): Float =
+        navBarPanelExtension?.hiddenTranslation(panel) ?: panel.height.toFloat()
+
     override fun onDestroyView() {
+        navBarPanelExtension?.detach()
+        navBarPanelExtension = null
         askQuestionBounceAnimators?.forEach { it.cancel() }
         askQuestionBounceAnimators = null
         releaseLaunchTouchBlocker()

@@ -1,0 +1,138 @@
+{
+  "metrics": [
+    {
+      "id": "basari",
+      "label": "Başarı",
+      "kind": "binary"
+    },
+    {
+      "id": "soruya_cevap",
+      "label": "Soruya cevap",
+      "kind": "binary"
+    },
+    {
+      "id": "matematik",
+      "label": "Matematik",
+      "kind": "binary"
+    },
+    {
+      "id": "ders_tutarliligi",
+      "label": "Derse uygun",
+      "kind": "binary"
+    },
+    {
+      "id": "ogretilmemis_yok",
+      "label": "Öğretilmemiş yok",
+      "kind": "binary"
+    },
+    {
+      "id": "uslup",
+      "label": "Üslup",
+      "kind": "binary"
+    },
+    {
+      "id": "cevabi_vermedi",
+      "label": "Cevabı vermedi",
+      "kind": "binary"
+    },
+    {
+      "id": "guvenlik",
+      "label": "Güvenlik",
+      "kind": "binary"
+    },
+    {
+      "id": "sohbet_akisi",
+      "label": "Sohbet akışı",
+      "kind": "binary"
+    },
+    {
+      "id": "yedek_yok",
+      "label": "Yedeğe düşmedi",
+      "kind": "binary"
+    },
+    {
+      "id": "yanlis_alarm",
+      "label": "Yanlış alarm",
+      "kind": "binary",
+      "better": "lower"
+    },
+    {
+      "id": "kisa",
+      "label": "≤3 cümle",
+      "kind": "binary"
+    },
+    {
+      "id": "arac_once",
+      "label": "Araç önce",
+      "kind": "binary"
+    },
+    {
+      "id": "yon_yok",
+      "label": "Yön tarifi yok",
+      "kind": "binary"
+    },
+    {
+      "id": "bicim",
+      "label": "Düz metin",
+      "kind": "binary"
+    },
+    {
+      "id": "kisisel_tekrar_yok",
+      "label": "Kişisel yok",
+      "kind": "binary"
+    },
+    {
+      "id": "hatayi_bul_ilk",
+      "label": "hatayi_bul ilk",
+      "kind": "binary"
+    },
+    {
+      "id": "kaynaksiz_siki_yok",
+      "label": "Sıkı kaynak",
+      "kind": "binary"
+    }
+  ],
+  "perf_fields": [
+    {
+      "id": "latency_s",
+      "label": "Süre",
+      "unit": "s"
+    },
+    {
+      "id": "sobi_calls",
+      "label": "Sobi isteği"
+    },
+    {
+      "id": "tool_calls",
+      "label": "Araç çağrısı"
+    },
+    {
+      "id": "reply_chars",
+      "label": "Cevap uzunluğu"
+    }
+  ],
+  "prices": {
+    "claude-haiku-5-5": {
+      "in": 0.1,
+      "out": 0.5
+    },
+    "claude-sonnet-5-5": {
+      "in": 2,
+      "out": 10
+    },
+    "claude-opus-5-5": {
+      "in": 4,
+      "out": 20
+    }
+  },
+  "harness_paths": [
+    "tools/sobi-eval/cases.json",
+    "tools/sobi-eval/hakem_tr.md",
+    "functions/sobi/chat.js",
+    "functions/sobi/guard.js",
+    "functions/sobi/tools.js",
+    "functions/sobi/stepExplainer.js",
+    "functions/sobi/prompt_tr.md"
+  ],
+  "harness_sha": "88559ab15ec2b2fac6f8a61b3a75b19349289ffad5a231ad3ebdc6012dfbf904"
+}

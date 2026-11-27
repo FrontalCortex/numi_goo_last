@@ -1,0 +1,1 @@
+Bu adımda 8'i çıkarmak için üç parça kullanıyoruz: önce 10 gider, sonra 5 gelir, en son 3 gider. Bu son "3 gider" parçası: birler sütunundaki 3 birlik boncuğu geri gönderiyoruz. Böylece 8'in tamamı çıkmış olur.

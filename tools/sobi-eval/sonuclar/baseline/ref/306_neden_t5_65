@@ -1,0 +1,1 @@
+Birler sütununda 7 var ve bu sütun en fazla 9 tutabildiği için 3'ü doğrudan ekleyemiyoruz; 7 + 3 = 10 olurdu. Bunun yerine 3 eklemek, 10 ekleyip 7 çıkarmakla aynı. Bu yüzden onlara 10 geliyor (1 olan onlar 2 oluyor) ve birlerdeki 7'yi gidiyoruz; 10 − 7 = 3, sonuç 20.

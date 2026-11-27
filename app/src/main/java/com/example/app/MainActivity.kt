@@ -26,6 +26,8 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -38,6 +40,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Source
+import com.google.firebase.functions.FirebaseFunctions
 import com.google.android.gms.ads.MobileAds
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -51,6 +54,10 @@ import java.io.FileOutputStream
 import android.content.SharedPreferences
 
 class MainActivity : AppCompatActivity() {
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
+    }
+
     fun checkAndShowInterstitialAdIfAllowed(logContext: String, onDone: () -> Unit = {}) {
         if (FirebaseAuth.getInstance().currentUser == null) {
             Log.d("AdDiag", "Skipping Ad on $logContext: User is not logged in")
@@ -65,9 +72,16 @@ class MainActivity : AppCompatActivity() {
                 val now = System.currentTimeMillis()
                 // Reklam gösterim aralığı: 5 dakika (5 * 60 * 1000 ms)
                 if (now - GlobalValues.lastInterstitialAdShownTime >= 5 * 60 * 1000L) {
-                    GlobalLessonData.loadLessonItemsForPart(this, 1) { items ->
-                        val chests = items.filter { it.type == com.example.app.model.LessonItem.TYPE_CHEST }
-                        if (chests.size >= 2 && chests[1].stepIsFinish) {
+                    isPastInterstitialLessonGate { pastGate ->
+                        if (pastGate && !adManager.isInterstitialReady()) {
+                            // Reklam yüklü değil: gösterilemeyecek. Aralığı BAŞLATMA (eskiden başlıyordu ve
+                            // sonraki 5 dakikanın dersleri reklamsız geçiyordu); yüklemeyi başlat, bir sonraki
+                            // ders sonunda gösterilsin.
+                            Log.d("AdDiag", "Skipping Ad on $logContext: interstitial not loaded yet (aralık başlatılmadı)")
+                            AnalyticsLogger.logAdNotReady(AnalyticsLogger.AD_TYPE_INTERSTITIAL)
+                            adManager.ensureInterstitialLoading()
+                            onDone()
+                        } else if (pastGate) {
                             GlobalValues.lastInterstitialAdShownTime = System.currentTimeMillis()
                             Log.d("AdDiag", "Showing Interstitial Ad on $logContext")
                             val shouldShowSkip = GlobalValues.pendingCupPathRevealPartId == null
@@ -81,7 +95,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     return
                 } else {
-                    Log.d("AdDiag", "Skipping Interstitial Ad on $logContext due to 40 sec cooldown")
+                    Log.d("AdDiag", "Skipping Interstitial Ad on $logContext due to 5 min cooldown")
                 }
             } else {
                 Log.d("AdDiag", "Skipping Interstitial Ad on $logContext because user is Premium/Pro or Teacher Approved")
@@ -90,8 +104,140 @@ class MainActivity : AppCompatActivity() {
         onDone()
     }
 
+    /** Geçiş reklamı 1. bölümün 2. sandığı bitmeden hiç gösterilmiyor. */
+    private fun isPastInterstitialLessonGate(onResult: (Boolean) -> Unit) {
+        GlobalLessonData.loadLessonItemsForPart(this, 1) { items ->
+            val chests = items.filter { it.type == com.example.app.model.LessonItem.TYPE_CHEST }
+            onResult(chests.size >= 2 && chests[1].stepIsFinish)
+        }
+    }
+
+    /** AdMob rıza akışı bitip başlatıldı mı; öncesinde reklam isteği atılmamalı. */
+    private var adsInitialized = false
+
+    /**
+     * Geçiş reklamını yalnızca gösterilebilecek kullanıcıya önceden yükler.
+     *
+     * ## Neden açılışta herkese yüklenmiyor
+     * Eskiden her açılışta koşulsuz yükleniyordu: Pro, onaylı öğretmen ve 2. sandığa
+     * gelmemiş yeni kullanıcılar da istek atıyor, reklamı hiç görmeyecekleri hâlde AdMob'un
+     * dolgu veremediği her istek `ad_load_failed` olarak sayılıyordu. Hata oranı şişiyor,
+     * gerçek sorun (reklam istendiğinde hazır olmaması, `ad_not_ready`) gözden kaçıyordu.
+     *
+     * Kapı [checkAndShowInterstitialAdIfAllowed] ile aynı; 5 dakikalık aralık hariç, çünkü
+     * ders bitene kadar o süre dolabilir. Ders başlarken ([GlobalValues.shouldShowAdOnReturn])
+     * ve AdMob başlatılınca çağrılıyor. Pro durumu Firestore'dan geç gelebilir; o arada
+     * yüklenen tek reklam zararsız, gösterim kapısı yine Pro'yu ayırıyor.
+     */
+    private fun preloadInterstitialIfEligible() {
+        if (!adsInitialized || isFinishing || isDestroyed) return
+        if (FirebaseAuth.getInstance().currentUser == null) return
+        if (isInfiniteEnergy() || GlobalValues.isTeacherApproved) return
+        isPastInterstitialLessonGate { pastGate ->
+            if (pastGate && !isFinishing && !isDestroyed) adManager.preloadInterstitialAd()
+        }
+    }
+
+    private val adReturnArmedHook: () -> Unit = { preloadInterstitialIfEligible() }
+
 
     companion object {
+        /**
+         * Hedef kutlaması şeridinin ekranda kalma süresi.
+         *
+         * Okunacak kadar uzun, yolu kapatacak kadar değil; dokunulduğunda zaten seri
+         * ekranına gidiyor.
+         */
+        private const val STREAK_CELEBRATION_MS = 4000L
+
+        /** Kapı kapalıyken iki deneme arası. */
+        private const val STREAK_CELEBRATION_RETRY_MS = 400L
+        private const val TAG_QUEUE = "PostLessonQueue"
+
+        /** Kuyruk tıkalıyken ne sıklıkta yeniden denenecek. */
+        private const val QUEUE_WATCHDOG_INTERVAL_MS = 1_000L
+
+        /** Harita dışı dönüşlerdeki yeni seri sorusu: kapı kapalıyken iki deneme arası. */
+        private const val OFF_MAP_NEW_STREAK_RETRY_MS = 400L
+
+        /**
+         * Harita dışı dönüşlerdeki (kupa testi, günlük soru, yarış dersi) yeni seri
+         * sorusunun en fazla ne kadar bekleyeceği.
+         *
+         * Beklenen şeyler uzun sürebiliyor: geçiş reklamı, ardından Pro paneli, ardından
+         * çocuğun okuduğu bir rozet kutlaması. Üç dakika hepsini kapsıyor; daha uzun
+         * bekleyen bir soru artık "testten yeni çıktım" anına ait değil ve düşürülüyor —
+         * koşullar sürdükçe bir sonraki test ya da ders dönüşünde yeniden sorulur.
+         */
+        private const val OFF_MAP_NEW_STREAK_BUDGET_MS = 180_000L
+
+        /**
+         * Yarış dersi kapandıktan sonra sorunun en erken açılacağı an.
+         *
+         * Reklam kontrolü dönüşten bir kare sonra başlıyor; soru ondan önce davranırsa
+         * reklam sorunun üstüne açılır. Bu süre kontrolün başlamasına yetiyor, sonrasını
+         * kapı ([offMapNewStreakBlockReason]) bekliyor.
+         */
+        private const val RACE_NEW_STREAK_DELAY_MS = 250L
+
+        /**
+         * Yarış dönüşünde ekranın dokunmaya en fazla ne kadar kapalı kalacağı.
+         *
+         * Engel normalde soru açılınca ya da düşürülünce kalkıyor. Bu sınır, reklam kararı
+         * hiç gelmezse çocuğun ölü bir ekranda kalmaması için: süre dolunca ilk dokunuş
+         * engeli kaldırıyor (bkz. [returnTouchBlockStillOwned]).
+         */
+        private const val RACE_TOUCH_HOLD_MAX_MS = 4_000L
+
+        /** Zeminin sönüm süresi; harita "pat" diye belirmesin. */
+        private const val POST_LESSON_BACKDROP_FADE_MS = 200L
+
+        /**
+         * Bekleme göstergesi bu kadar gecikmeyle geliyor. Bir anlık spinner parlaması,
+         * beklemenin kendisinden daha rahatsız.
+         */
+        private const val POST_LESSON_SPINNER_DELAY_MS = 500L
+
+        /**
+         * Devir teslim penceresinin en uzun süresi.
+         *
+         * Normalde çok daha kısa: pencere `finalizeMapReturnAfterLessonClaim` çalışınca
+         * kapanıyor (ölçümde ~460 ms). Bu sınır yalnızca o hiç gelmezse zeminin asılı
+         * kalmaması için — sandığın kayma animasyonunu (300 ms) rahatça kapsıyor.
+         */
+        private const val POST_LESSON_HANDOFF_GRACE_MS = 1_500L
+
+        /**
+         * Açılan bir adımın ekrana YERLEŞMESİ için tanınan süre.
+         *
+         * Adımların çoğu ekranını `post` + `commit` ile açıyor, yani "gösterdim" dediği an
+         * ile fragment'in FragmentManager'da görünür olduğu an aynı değil. Arada kuyruğun
+         * bir turu daha çalışırsa kapı o ekranı HENÜZ göremiyor ve sıradakini de açıyor —
+         * ikisi üst üste biniyor (görev ödülünden sonra yeni seri ekranının rozetin
+         * üstünde açılması tam olarak buydu).
+         *
+         * Normalde bir kare yetiyor; pencere yalnızca üst sınır ve dolmasını beklemeye de
+         * gerek yok: adım yerleşince kapı gerçek sebebi ([postLessonQueueBlockReason])
+         * söylemeye başlıyor.
+         */
+        private const val POST_LESSON_STEP_SETTLE_MS = 400L
+
+        /**
+         * Bekçinin toplam süresi. Cömert: kullanıcı rating dialog'unu ya da rozet
+         * kutlamasını bir dakika açık bırakabilir ve bu bir tıkanma değil.
+         */
+        private const val QUEUE_WATCHDOG_BUDGET_MS = 120_000L
+
+        /**
+         * Yeniden denemelerin toplam süresi.
+         *
+         * Ders dönüşünde katmanların kapanması saniyeler sürebiliyor (reklam, sandık
+         * animasyonu, rozet kutlaması). Bu süre dolduğunda vazgeçiliyor: kutlama diskte
+         * duruyor ve bir sonraki doğal tetiklemede (ekran dönüşü, uygulama öne gelmesi)
+         * yine denenecek.
+         */
+        private const val STREAK_CELEBRATION_RETRY_BUDGET_MS = 20_000L
+
         const val EXTRA_FROM_LOGIN = "from_login"
         const val EXTRA_START_DESTINATION = "start_destination"
         const val START_DESTINATION_MAP = "map"
@@ -100,24 +246,83 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_OPEN_QUESTION_ID = "open_question_id"
         const val EXTRA_NOTIFICATION_RECIPIENT_UID = "notification_recipient_uid"
 
+        /**
+         * Dokunulan bildirimin konu etiketi (sunucudaki defterle aynı anahtar). Hangi
+         * bildirimin gerçekten açıldığını ölçmek için; bkz. [recordNotificationOpenIfAny].
+         */
+        const val EXTRA_NOTIFICATION_TOPIC = "notification_topic"
+
+        /** Havuz bildiriminden gelindi: öğretmene doğrudan Havuz sekmesi açılır. */
+        const val EXTRA_OPEN_TEACHER_POOL = "open_teacher_pool"
+
+        /** Sınıf daveti bildiriminden gelindi: öğrenciye Kurs ekranı (StudentClassFragment) açılır. */
+        const val EXTRA_OPEN_STUDENT_CLASS = "open_student_class"
+
+        /** Yeni ödev bildiriminden gelindi: öğrenciye Sorularım → Ödevlerim açılır. */
+        const val EXTRA_OPEN_HOMEWORKS = "open_homeworks"
+
+        /**
+         * Öğrenci ödevi bitirdi bildiriminden gelindi (öğretmen): o ödevin ayrıntısı açılır.
+         * Değer ödev kimliği; sınıf kimliği [EXTRA_OPEN_TEACHER_HOMEWORK_CLASS]'ta.
+         */
+        const val EXTRA_OPEN_TEACHER_HOMEWORK = "open_teacher_homework"
+        const val EXTRA_OPEN_TEACHER_HOMEWORK_CLASS = "open_teacher_homework_class"
+
+        /** [finishHomeworkOverlay]: slide_out_right süresinden biraz uzun. */
+        private const val HOMEWORK_OVERLAY_CLOSE_MS = 320L
+
         @Volatile
         var currentActivity: MainActivity? = null
         private const val PREFS_APP = "AppPrefs"
+        /** Haftalık kartın otomatik açılışı: ilk deneme, engel varken yoklama aralığı, en uzun bekleme. */
+        private const val WEEKLY_CARD_FIRST_DELAY_MS = 2_500L
+        private const val WEEKLY_CARD_RETRY_MS = 800L
+        private const val WEEKLY_CARD_WAIT_MS = 60_000L
+        /** Davet ödülü bildirimi en çok bu aralıkla okunur (bkz. maybeShowReferralReward). */
+        private const val REFERRAL_NOTICE_CHECK_MS = 30 * 60_000L
+        /** Başarı anı paneli ders sonu zincirini en çok bu kadar bekler; sonra bir sonraki öne gelişte. */
+        private const val SHARE_MOMENT_WAIT_MS = 3 * 60_000L
+        /** 2. ders bitince ödül bildiriminin yeniden okunduğu anlar (bkz. requestReferralRewardCheck). */
+        private const val REFERRAL_NOTICE_RECHECK_1_MS = 8_000L
+        private const val REFERRAL_NOTICE_RECHECK_2_MS = 30_000L
         private const val KEY_NOTIF_PERMISSION_PROMPTED = "notif_permission_prompted"
+
+        /**
+         * Bildirim izni kayıttaki hatırlatma sorusunda bağlamıyla soruldu (ya da çocuk "Şimdi
+         * değil" dedi): ana ekran ilk açılışta aynı izni bağlamsız bir daha sormasın.
+         */
+        fun markNotificationPermissionPrompted(context: android.content.Context) {
+            context.getSharedPreferences(PREFS_APP, MODE_PRIVATE).edit()
+                .putBoolean(KEY_NOTIF_PERMISSION_PROMPTED, true)
+                .apply()
+        }
         const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
+        /** Durum çubuğunu boyayan şeridin etiketi; bkz. [setStatusBarTint]. */
+        private const val STATUS_BAR_TINT_TAG = "status_bar_tint"
         const val LESSON_ACTION_TOUCH_BLOCKER_TAG = "lesson_action_touch_blocker"
         const val FIRST_TUTORIAL_LOG_TAG = "FirstTutorialDbg"
         /** Harita dokunma kilidi teşhisi — `adb logcat -s MapTouchDbg` */
         const val MAP_TOUCH_DIAG_LOG_TAG = MapTouchDiagnostics.LOG_TAG
         /** Görevler pratik / günlük soru overlay kapanışı — [finishOverlayReturnToTasks] ile temizlenir. */
         const val ABACUS_OVERLAY_BACK_STACK = "abacus_overlay"
+        /** Kaçıncı LESSON dönüşünde AskQuestionOpen promosu gösterilir. */
+        private const val ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD = 3
+        /** Harita temizlenene kadar promo denemesi bu aralıkla tekrarlanır. */
+        private const val ASK_QUESTION_PROMO_RETRY_INTERVAL_MS = 100L
+        private const val ASK_QUESTION_PROMO_MAX_ATTEMPTS = 40
+        /** Promo hiç gösterilemezse harita kalıcı kilitli kalmasın diye son güvenlik ağı. */
+        private const val ASK_QUESTION_PROMO_LOCK_WATCHDOG_MS = 15_000L
+
     }
 
     internal fun buildTouchDiagSnapshot(): String {
         if (!::binding.isInitialized) return "binding=false"
         val fm = supportFragmentManager
         val base = fm.findFragmentById(R.id.fragmentContainerID)?.javaClass?.simpleName ?: "null"
-        val abacusFrag = fm.findFragmentById(R.id.abacusFragmentContainer)?.javaClass?.simpleName ?: "null"
+        val rawAbacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val abacusFrag = rawAbacus?.javaClass?.simpleName ?: "null"
+        // ekli=false → back stack'in tuttuğu hayalet; ekranda yok (bkz. [liveOverlayIn]).
+        val abacusAdded = rawAbacus?.isAdded
         val abacusVis = when (binding.abacusFragmentContainer.visibility) {
             View.VISIBLE -> "VISIBLE"
             View.GONE -> "GONE"
@@ -126,6 +331,7 @@ class MainActivity : AppCompatActivity() {
         return buildString {
             append("base=").append(base)
             append(" abacusFrag=").append(abacusFrag)
+            append(" abacusEkli=").append(abacusAdded)
             append(" abacusVis=").append(abacusVis)
             append(" forceDismiss=").append(forcingAbacusOverlayDismissForSeasonGate)
             append(" lessonSheetDepth=").append(lessonSheetOverlayNavigationDepth)
@@ -146,7 +352,10 @@ class MainActivity : AppCompatActivity() {
         if (!::binding.isInitialized) return "caller=$caller binding=false"
         val fm = supportFragmentManager
         val base = fm.findFragmentById(R.id.fragmentContainerID)?.javaClass?.simpleName ?: "null"
-        val abacusFrag = fm.findFragmentById(R.id.abacusFragmentContainer)?.javaClass?.simpleName ?: "null"
+        val rawAbacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val abacusFrag = rawAbacus?.javaClass?.simpleName ?: "null"
+        // ekli=false → back stack'in tuttuğu hayalet; ekranda yok (bkz. [liveOverlayIn]).
+        val abacusAdded = rawAbacus?.isAdded
         val abacusVis = when (binding.abacusFragmentContainer.visibility) {
             View.VISIBLE -> "VISIBLE"
             View.GONE -> "GONE"
@@ -157,9 +366,10 @@ class MainActivity : AppCompatActivity() {
             append(" dest=").append(intent?.getStringExtra(EXTRA_START_DESTINATION) ?: "null")
             append(" fromLogin=").append(intent?.getBooleanExtra(EXTRA_FROM_LOGIN, false) == true)
             append(" auth=").append(auth.currentUser?.uid?.take(8) ?: "null")
-            append(" firstShown=").append(FirstTutorialShownStore.readLocal(this@MainActivity))
+            append(" hadAccount=").append(DeviceAccountStore.hasEverHadAccount(this@MainActivity))
             append(" base=").append(base)
             append(" abacusFrag=").append(abacusFrag)
+            append(" abacusEkli=").append(abacusAdded)
             append(" abacusVis=").append(abacusVis)
             append(" backStack=").append(fm.backStackEntryCount)
             append(" lessonSheetDepth=").append(lessonSheetOverlayNavigationDepth)
@@ -204,7 +414,7 @@ class MainActivity : AppCompatActivity() {
         if (granted) launchMediaProjectionForQuestion() else {
             isQuestionRecordingInProgress = false
             setAskQuestionButtonEnabled(true)
-            Toast.makeText(this, "Ses kaydı için izin gerekli.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_ses_kaydi_icin_izin_gerekli), Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -214,7 +424,7 @@ class MainActivity : AppCompatActivity() {
         if (result.resultCode != RESULT_OK || result.data == null) {
             isQuestionRecordingInProgress = false
             setAskQuestionButtonEnabled(true)
-            Toast.makeText(this, "Ekran kaydı başlatılamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_ekran_kaydi_baslatilamadi), Toast.LENGTH_SHORT).show()
             return@registerForActivityResult
         }
         maxRecordingSecForSession = if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) 180 else 60
@@ -223,6 +433,10 @@ class MainActivity : AppCompatActivity() {
             putExtra(ScreenRecordingService.EXTRA_RESULT_DATA, result.data)
             putExtra(ScreenRecordingService.EXTRA_MAX_DURATION_MS, maxRecordingSecForSession * 1000L)
         }
+        // Alıcı ve zaman aşımı servisten ÖNCE kurulmalı: servis ilk saniyede patlarsa
+        // gönderdiği RECORDING_FAILED yayınını kaçırmayalım (yoksa panel sessizce açık kalıyor).
+        registerRecordingReceiver()
+        armRecordingStartTimeout()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(serviceIntent)
         } else {
@@ -246,6 +460,8 @@ class MainActivity : AppCompatActivity() {
     private var teacherPendingAbacusContainerWasVisible: Boolean = false
     private var teacherSelectedQuestionId: String? = null
     private var teacherSelectedQuestionTitle: String? = null
+    // Seçilen sorunun sahibi öğrenci; yüklenen medyanın studentUid metadata'sına yazılır (bkz. storage.rules).
+    private var teacherSelectedQuestionStudentUid: String? = null
     private var notificationPermissionRequestInFlight = false
 
     private var seasonLeaderboardPendingListener: ListenerRegistration? = null
@@ -266,6 +482,19 @@ class MainActivity : AppCompatActivity() {
 
     /** Reklam gösterilirken/sonrasında açılacak rozet payloads (BadgeLevelUpPayload listesi). */
     private var pendingBadgePayloadsForAd: List<com.example.app.BadgeLevelUpPayload> = emptyList()
+    /**
+     * Türü LESSON olan bir item'dan harita dönüşü başladı mı? Rozet payload'larıyla aynı
+     * "bekleyen" deseni: reconcile yolu notifyMapVisibleAfterLessonClaim'i parametresiz
+     * çağırıp adCheckForBadgeInProgress'i true yapabildiği için, isLessonTypeReturn bilgisi
+     * doğrudan parametreyle taşındığında kaybolabiliyor. Burada biriktirilip onDone'da tüketilir.
+     */
+    private var pendingLessonTypeReturnForPromo = false
+    /**
+     * AskQuestionOpen promosunun bu dönüşte gösterileceği belli, ama içerik henüz ekranda değil
+     * (reklam kontrolü + harita temizlenme beklemesi). Rozet/rehberdeki desenin aynısı: bayrak
+     * açıkken harita kilitli tutulur ve [MapFragment.enableMapTouchRouting] kilidi açmaz.
+     */
+    private var askQuestionPromoPendingLock = false
     /** Reklam gösterilirken/sonrasında açılacak rozet payloads (String listesi). */
     private var pendingBadgeStringPayloadsForAd: List<String> = emptyList()
     /** Reklam kontrolü zaten uçuştayken ikinci çağrının onDone'ını tetiklemesini önler. */
@@ -302,6 +531,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Pencere (decor) kurulumu ve setContentView her şeyden önce: Play vitals'ta sürüm 26'da
+        // tablette (Galaxy Tab A11+, Android 16) yeniden başlatmada (döndürme/yeniden boyutlandırma)
+        // enableEdgeToEdge → getDecorView → generateLayout içinde "Window couldn't find content
+        // container view" çöküşü vardı. Önceden AdMob/UMP başlatması (MobileAds.initialize WebView'ı
+        // arka planda yükleyip uygulamanın kaynaklarına yol ekliyor) decor şişirilmeden önce
+        // çalışıyordu; ikisi çakışınca decor düzeni eksik kurulabiliyor. Androidx'in önerdiği düzen de
+        // enableEdgeToEdge'in super.onCreate'ten hemen sonra çağrılması (26.11.2026).
+        enableEdgeToEdge()
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
         Log.d("ScreenDebug", "screenHeightDp=${resources.configuration.screenHeightDp} screenWidthDp=${resources.configuration.screenWidthDp}")
 
         // adManager'ı burada init et; AgeConsentManager'ın asenkron callback'i
@@ -312,28 +552,34 @@ class MainActivity : AppCompatActivity() {
         // satın almaları yeniden gönder (ödeme sonrası çökme senaryosunu kurtarır).
         billingManager = BillingManager(this)
         installDefaultBillingCallbacks()
+        // Ödeme penceresi kapanınca ders sonrası ekranları (rozet, yeni seri…) bekliyorsa
+        // sıradakini aç; akış sürerken kuyruğun kapısı kapalıydı (bkz. subscriptionFlowBlockReason).
+        billingManager.onPurchaseFlowEnded = { pumpPostLessonQueue("purchase_flow_ended") }
         billingManager.start()
 
         // Yaşa ve ülkeye göre reklam muamelesi (TFAT) altyapısıyla AdMob'u başlat.
         // adManager preload işlemleri bu callback'in içinde yapılır;
         // böylece Firestore'dan birthYear gelmeden reklam isteği atılmaz (Claude planı).
+        GlobalValues.onAdReturnArmed = adReturnArmedHook
         AgeConsentManager.initializeAdMobWithAgeConsent(this) {
+            adsInitialized = true
             adManager.preloadAd()
-            adManager.preloadInterstitialAd()
+            preloadInterstitialIfEligible()
         }
-        
-        enableEdgeToEdge()
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
 
         supportFragmentManager.addOnBackStackChangedListener {
-            if (supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) == null) {
+            if (liveOverlayIn(R.id.createQuestionOverlayContainer) == null) {
                 binding.createQuestionOverlayContainer.visibility = View.GONE
                 binding.root.post {
                     if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is MapFragment) {
                         requestSeasonLeaderboardRewardGateIfPending()
                     }
                 }
+            }
+            // Üst katmanda açılan mağaza kapandı (bkz. openShopFragment): kap boş ama görünür
+            // kalırsa tıklanabilir olduğu için alttaki dersin bütün dokunuşlarını yutardı.
+            if (liveOverlayIn(R.id.shopOverlayContainer) == null) {
+                binding.shopOverlayContainer.visibility = View.GONE
             }
         }
 
@@ -360,9 +606,20 @@ class MainActivity : AppCompatActivity() {
             // Re-evaluate bottom nav visibility with current fragment state.
             binding.bottomNavigationID.requestApplyInsets()
             updateCurrencyPanelVisibility()
+            // Seri ekranında hedef değiştirilmiş olabilir: hedef düşünce bugün zaten
+            // tutturulmuş sayılabiliyor ve alev orada yanıyor. Üst bar geri dönüşte
+            // güncel olmalı; activity onResume'a girmediği için tek yer burası.
+            refreshStreakUi()
 
             // FM transaction ortasında çağrılır — restore'u bir sonraki kareye ertele.
-            val topOverlay = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer)
+            // resultFragmentContainer da sayılmalı: LessonResult → ChestFragment geçişinde abacus
+            // kabı boşalıyor ve NewChestFragment'in "map_chest" girişi bu dinleyiciyi tetikliyor.
+            // Yalnızca abacus'a bakınca "ders kapandı" sanılıp restoreMapUi sandığın kabını GONE
+            // yapıyordu: sandık hiç görünmüyor, ders ilerlemesi yazılmıyor, chrome kilidi depth=2'de
+            // kalıyordu. Eskiden ham findFragmentById'nin döndürdüğü hayalet bu kontrolü tesadüfen
+            // geçiriyordu; [liveOverlayIn]'e geçince o koruma kalktı.
+            val topOverlay = liveOverlayIn(R.id.abacusFragmentContainer)
+                ?: liveOverlayIn(R.id.resultFragmentContainer)
             if (topOverlay == null) {
                 val baseFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
                 if (baseFragment is MapFragment) {
@@ -429,26 +686,20 @@ class MainActivity : AppCompatActivity() {
             logFirstTutorial(
                 "onCreate.deleteAllLessonItems",
                 "after clear lessonItems=${GlobalLessonData.lessonItems.size} " +
-                    "first_tutorial_shown=${FirstTutorialShownStore.readLocal(this)}",
+                    "account_ever_created=${DeviceAccountStore.hasEverHadAccount(this)}",
             )
         }
         coin = binding.currencyText
-        binding.currencyText.text = UserWalletFirestore.getCachedCurrency(this).toString()
-        binding.keyText.text = UserWalletFirestore.getCachedKeys(this).toString()
-        auth.currentUser?.uid?.let { refreshWalletFromFirestore() }
 
-        // Öğretmen hesabında currencyPanel içindeki diamond/coin, anahtar ve enerji ikonlarını gizle
-        if (authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER) {
-            binding.diamondID.visibility = View.GONE
-            binding.currencyText.visibility = View.GONE
-            binding.keyIcon.visibility = View.GONE
-            binding.keyText.visibility = View.GONE
-            binding.energyIcon.visibility = View.GONE
-            binding.energyText.visibility = View.GONE
-        }
-        
-        // Enerji sistemini başlat — callback ayarlandığında zaten ilk değeri çeker
+        // Onay durumu (isUnapprovedTeacher) energyManager'ın yerel kaydından okunuyor; panel
+        // ondan sonra çizilmeli.
         energyManager = EnergyManager(this)
+
+        refreshWalletUi()
+        auth.currentUser?.uid?.let { refreshWalletFromFirestore() }
+        applyTeacherCurrencyPanel()
+
+        // Enerji sistemini başlat — callback ayarlandığında zaten ilk değeri çeker
         energyManager.setEnergyUpdateCallback { energy ->
             updateEnergyDisplay(energy)
         }
@@ -458,6 +709,10 @@ class MainActivity : AppCompatActivity() {
         
         // Abonelik durumunu kontrol et ve enerji gösterimini güncelle
         checkSubscriptionAndUpdateEnergy()
+
+        // "Bu cihaz hoş geldin kredisini alabilir mi" cevabını tazele; promo kapısı bu
+        // önbelleğe bakıyor (bkz. WelcomeCreditEligibility).
+        WelcomeCreditEligibility.refresh(applicationContext)
 
         // Girişli kullanıcı: tüm part'larda eksik lessonProgress dokümanlarını arka planda doldur (idempotent).
         if (auth.currentUser != null) {
@@ -485,57 +740,19 @@ class MainActivity : AppCompatActivity() {
                 }
                 else -> {
                     logFirstTutorial("onCreate.route", "prepared=null -> fallback auth check")
-                    val currentUser = auth.currentUser
-                    if (currentUser == null) {
-                        val firstTutorialShown = FirstTutorialShownStore.readLocal(this)
-                        if (firstTutorialShown) {
-                            logFirstTutorial("onCreate.route", "guest first_tutorial_shown=true -> Map only")
-                            supportFragmentManager.beginTransaction().apply {
-                                replace(R.id.fragmentContainerID, PartSelectionFragment())
-                                addToBackStack(null)
-                                commit()
-                            }
-                        } else {
-                            logFirstTutorial("onCreate.route", "guest first_tutorial_shown=false -> showFirstTutorial")
-                            showFirstTutorial()
+                    // Tek şart: bu cihazda daha önce hesap açıldı mı. Girişli kullanıcıda
+                    // zaten true döner, yani ayrı bir dal gerekmiyor.
+                    val hadAccount = DeviceAccountStore.hasEverHadAccount(this)
+                    if (hadAccount) {
+                        logFirstTutorial("onCreate.route", "account_ever_created=true -> Map only")
+                        supportFragmentManager.beginTransaction().apply {
+                            replace(R.id.fragmentContainerID, PartSelectionFragment())
+                            addToBackStack(null)
+                            commit()
                         }
                     } else {
-                        logFirstTutorial("onCreate.route", "uid=${currentUser.uid.take(8)} -> Firestore first_tutorial_shown")
-                        firestore.collection("users")
-                            .document(currentUser.uid)
-                            .get()
-                            .addOnSuccessListener { doc ->
-                                val firestoreRaw =
-                                    if (doc.exists()) doc.getBoolean("first_tutorial_shown") else null
-                                val firstTutorialShown = FirstTutorialShownStore.resolveShown(
-                                    this@MainActivity,
-                                    firestoreRaw,
-                                    "Main.onCreate.firestore",
-                                )
-                                if (firstTutorialShown) {
-                                    FirstTutorialShownStore.repairFirestoreIfLocalShown(
-                                        this@MainActivity,
-                                        "Main.onCreate.firestore",
-                                    )
-                                }
-                                logFirstTutorial(
-                                    "onCreate.firestore",
-                                    "exists=${doc.exists()} firestoreRaw=$firestoreRaw resolved=$firstTutorialShown",
-                                )
-                                if (firstTutorialShown) {
-                                    supportFragmentManager.beginTransaction().apply {
-                                        replace(R.id.fragmentContainerID, PartSelectionFragment())
-                                        addToBackStack(null)
-                                        commit()
-                                    }
-                                } else {
-                                    showFirstTutorial()
-                                }
-                            }
-                            .addOnFailureListener { e ->
-                                logFirstTutorial("onCreate.firestore", "FAIL -> showFirstTutorial err=${e.message}")
-                                showFirstTutorial()
-                            }
+                        logFirstTutorial("onCreate.route", "account_ever_created=false -> showFirstTutorial")
+                        showFirstTutorial()
                     }
                 }
             }
@@ -559,6 +776,10 @@ class MainActivity : AppCompatActivity() {
             )
             itemRippleColor = android.content.res.ColorStateList.valueOf(android.graphics.Color.TRANSPARENT)
         }
+        refreshProfileNavIcon()
+        applySobiTab()
+        // Üst panelin altındaki çizgi, panel görünürlüğü nereden değişirse değişsin eşitlensin.
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener { syncCurrencyPanelDivider() }
 
         // Geri tuşu: Sadece kökte (geri gidilecek ekran yokken) çift basınca çıkış; yoksa bir önceki ekrana dön
         val backCallback = object : OnBackPressedCallback(true) {
@@ -570,8 +791,8 @@ class MainActivity : AppCompatActivity() {
                 //    - Eğer öğretmen seçim akışından dönülmüş CreateQuestion ise:
                 //      onTeacherCreateQuestionDismissedByBack() + fragment'i gerçekten kapat.
                 //    - Diğer CreateQuestion durumlarında sadece fragment'i kapat (backButton ile aynı).
-                val createQuestionOverlay = supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
-                val createQuestionAbacus = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer) as? CreateQuestionFragment
+                val createQuestionOverlay = liveOverlayIn(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
+                val createQuestionAbacus = liveOverlayIn(R.id.abacusFragmentContainer) as? CreateQuestionFragment
                 if (createQuestionOverlay != null || createQuestionAbacus != null) {
                     val fragment = createQuestionOverlay ?: createQuestionAbacus
                     if (fragment?.isStudentSendingInProgress() == true) {
@@ -608,15 +829,15 @@ class MainActivity : AppCompatActivity() {
                     finish()
                 } else {
                     lastBackPressTime = now
-                    Toast.makeText(this@MainActivity, "Çıkmak için tekrar bas", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, appString(R.string.ui_cikmak_icin_tekrar_bas), Toast.LENGTH_SHORT).show()
                 }
             }
         }
         onBackPressedDispatcher.addCallback(this, backCallback)
         supportFragmentManager.addOnBackStackChangedListener {
             val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-            val createQuestionOverlay = supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
-            val createQuestionAbacus = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer) as? CreateQuestionFragment
+            val createQuestionOverlay = liveOverlayIn(R.id.createQuestionOverlayContainer) as? CreateQuestionFragment
+            val createQuestionAbacus = liveOverlayIn(R.id.abacusFragmentContainer) as? CreateQuestionFragment
             val createQuestionVisible = createQuestionOverlay != null || createQuestionAbacus != null
             val teacherSelectingQuestion = teacherPendingMediaPath != null && current is NotificationFragment
             val seasonRewardGateVisible =
@@ -744,7 +965,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.abacusFragmentContainer.visibility = View.VISIBLE
         supportFragmentManager.beginTransaction()
-            .replace(R.id.abacusFragmentContainer, TutorialFragment(item.tutorialNumber))
+            .replace(R.id.abacusFragmentContainer, TutorialFragment.newInstance(item.tutorialNumber))
             .addToBackStack(null)
             .commit()
         logFirstTutorial(
@@ -765,6 +986,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun setupClickListeners() {
         binding.bottomNavigationID.setOnItemSelectedListener {
+            bounceBottomNavIcon(it.itemId)
             requireOnlineAndLoggedInOrLogin {
                 closeBottomSheet()
                 val currentFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
@@ -799,19 +1021,27 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     }
+                    // İki sekme de TasksFragment, yalnızca modu farklı (gerekçe: TasksFragment.MODE_MISSIONS).
                     R.id.tasks ->
-                        if (currentFragment is MissionsFragment) return@requireOnlineAndLoggedInOrLogin
-                        else changeFragment(MissionsFragment())
+                        if (currentFragment is TasksFragment && !currentFragment.isCupTab) return@requireOnlineAndLoggedInOrLogin
+                        else changeFragment(TasksFragment.newInstance(TasksFragment.MODE_MISSIONS))
                     R.id.explore ->
-                        if (currentFragment is TasksFragment) return@requireOnlineAndLoggedInOrLogin
-                        else changeFragment(TasksFragment())
+                        if (currentFragment is TasksFragment && currentFragment.isCupTab) return@requireOnlineAndLoggedInOrLogin
+                        else changeFragment(TasksFragment.newInstance(TasksFragment.MODE_CUP))
                     R.id.profile ->
                         if (currentFragment is ProfileFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(ProfileFragment())
                     R.id.shop ->
                         if (currentFragment is AbacusCustomizationFragment) return@requireOnlineAndLoggedInOrLogin
                         else changeFragment(AbacusCustomizationFragment())
-                    R.id.notification -> {
+                    // Öğrencide (danışma kapalıyken) bu sekme Sobi: bkz. applySobiTab.
+                    R.id.notification -> if (sobiTabActive) {
+                        if (currentFragment is SobiChatFragment) return@requireOnlineAndLoggedInOrLogin
+                        changeFragment(SobiChatFragment())
+                    } else if (isTeacherClassesTab()) {
+                        if (currentFragment is TeacherClassesFragment) return@requireOnlineAndLoggedInOrLogin
+                        changeFragment(TeacherClassesFragment.newAsTab())
+                    } else {
                         if (currentFragment is NotificationFragment) return@requireOnlineAndLoggedInOrLogin
                         // CreateQuestion'dan Gönder ile açılan seçim modu fragment'ı üzerine yazma
                         if (teacherPendingMediaPath != null) return@requireOnlineAndLoggedInOrLogin
@@ -822,11 +1052,21 @@ class MainActivity : AppCompatActivity() {
             true
         }
         
-        // Enerji test için uzun basma
-        binding.energyText.setOnLongClickListener {
-            // Test için enerjiyi sıfırla
-            energyManager.useEnergy(energyManager.getCurrentEnergy())
-            true
+        // Can sayacına uzun basınca canı sıfırlayan test kısayolu — SADECE debug derlemesinde.
+        //
+        // Release'de de açıktı ve yıkıcıydı: useEnergy() sunucuya spendEnergy çağrısı gönderip
+        // energy_full_time'ı yetkili olarak ileri itiyor, yani geri alınamıyor. Çocuklar ekranda
+        // gördükleri her şeye uzun basar; Free planda tek bir kazayla 50 dakikalık oyun hakkı
+        // gidiyordu. Üstelik bu, enerjinin gelir kaldıracı olduğu bir üründe kullanıcıya
+        // "uygulama canımı yedi" dedirtecek türden bir hata.
+        //
+        // BuildConfig.DEBUG derleme zamanı sabiti olduğu için blok release APK'sinde hiç yer
+        // almaz; çalışma zamanı kontrolü (FLAG_DEBUGGABLE) kodu APK'de bırakırdı.
+        if (BuildConfig.DEBUG) {
+            binding.energyText.setOnLongClickListener {
+                energyManager.useEnergy(energyManager.getCurrentEnergy())
+                true
+            }
         }
 
         // lessonPartBackButton: MapFragment'i kapat, PartSelectionFragment'e dön
@@ -845,6 +1085,146 @@ class MainActivity : AppCompatActivity() {
         binding.currencyText.setOnClickListener(openShop)
         binding.keyIcon.setOnClickListener(openShop)
         binding.keyText.setOnClickListener(openShop)
+        // Kredi göstergesi Sobi kredisi: mağaza doğrudan Sobi paketlerinde açılsın.
+        val openSobiCredits = View.OnClickListener { openShopFragment(focusSobiCredits = true) }
+        binding.creditIcon.setOnClickListener(openSobiCredits)
+        binding.creditText.setOnClickListener(openSobiCredits)
+
+        // Alev: seri ekranını aç. Üst bardaki diğer göstergeler mağazaya gidiyor, bu
+        // gitmiyor — seri bir bakiye değil, kendi ekranı var.
+        binding.streakContainer.setOnClickListener { openStreakFragment() }
+    }
+
+    /**
+     * currencyPanelDivider yalnızca üstte bir panel (currencyPanel ya da teacherSendTopBar)
+     * varken görünür. Çizgi bu panellerin alt kenarına bağlı; ikisi de gizliyken (mağaza,
+     * ayarlar, abaküs özelleştirme, bildirimler, profil...) en üste kayıp durum çubuğunun hemen
+     * altında ayıracak bir şey olmayan bir çizgi olarak kalıyordu.
+     *
+     * Paneller birçok yerden (MainActivity, ders ve harita kodu) açılıp kapandığı için her
+     * düzende (global layout) bakılıyor; görünürlük değişikliği zaten yeni bir düzen tetikliyor.
+     */
+    private fun syncCurrencyPanelDivider() {
+        if (!::binding.isInitialized) return
+        val hasTopBar = binding.currencyPanel.visibility == View.VISIBLE ||
+            binding.teacherSendTopBar.visibility == View.VISIBLE
+        val target = if (hasTopBar) View.VISIBLE else View.GONE
+        if (binding.currencyPanelDivider.visibility != target) binding.currencyPanelDivider.visibility = target
+    }
+
+    /**
+     * Telefonun durum çubuğunu (saat, pil) [color]'a boyar; null eski hâline döndürür. Profil,
+     * avatarın arka plan rengini en üste kadar uzatmak için kullanıyor.
+     *
+     * Kök görünüm fitsSystemWindows ile durum çubuğu kadar aşağıdan başlıyor ve uygulama kenardan
+     * kenara (enableEdgeToEdge) çizildiği için şerit şeffaf. Android 15+ window.statusBarColor'ı
+     * yok saydığından şeridin arkasına renkli bir görünüm konuyor; eski sürümlerde ikisi de
+     * aynı rengi veriyor. İkonlar zemine göre koyu ya da açık. (Şeridin altındaki çizgi
+     * currencyPanelDivider; üst panel yokken zaten gizli, bkz. [syncCurrencyPanelDivider].)
+     */
+    fun setStatusBarTint(color: Int?) {
+        val content = findViewById<android.widget.FrameLayout>(android.R.id.content) ?: return
+        var strip = content.findViewWithTag<View>(STATUS_BAR_TINT_TAG)
+        val controller = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
+        if (color == null) {
+            strip?.visibility = View.GONE
+            window.statusBarColor = ContextCompat.getColor(this, R.color.background_color)
+            controller.isAppearanceLightStatusBars = false
+            return
+        }
+        if (strip == null) {
+            strip = View(this).apply { tag = STATUS_BAR_TINT_TAG }
+            content.addView(
+                strip,
+                android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, android.view.Gravity.TOP),
+            )
+        }
+        val top = ViewCompat.getRootWindowInsets(binding.root)
+            ?.getInsets(WindowInsetsCompat.Type.statusBars())?.top ?: 0
+        strip.layoutParams = strip.layoutParams.apply { height = top }
+        strip.setBackgroundColor(color)
+        strip.visibility = View.VISIBLE
+        window.statusBarColor = color
+        controller.isAppearanceLightStatusBars = androidx.core.graphics.ColorUtils.calculateLuminance(color) > 0.5
+    }
+
+    /**
+     * Alt bardaki profil sekmesinin ikonu kullanıcının avatarı. Avatar kaydedildiğinde
+     * (AvatarCustomFragment) ve Firestore'dan farklı bir avatar geldiğinde yeniden çiziliyor.
+     */
+    fun refreshProfileNavIcon() {
+        val sizePx = resources.getDimensionPixelSize(R.dimen.main_bottom_nav_icon_size)
+        val bitmap = AvatarView.toBitmap(this, AvatarStore.loadActive(this), sizePx * 2)
+        binding.bottomNavigationID.menu.findItem(R.id.profile)?.icon =
+            android.graphics.drawable.BitmapDrawable(resources, bitmap)
+    }
+
+    /**
+     * Sobi'nin "… derslerine git" düğmesi: ana ekrana geçip [partId] bölümünün haritasını açar (kilit
+     * kuralı ana ekranınki, [PartSelectionFragment.openingPart]). Alt menüde ana sayfa işaretlenir;
+     * işaretleme dinleyiciyi tetiklemiyor.
+     */
+    fun openLessonPart(partId: Int) {
+        binding.bottomNavigationID.menu.findItem(R.id.map)?.isChecked = true
+        changeFragment(PartSelectionFragment.openingPart(partId))
+    }
+
+    /** Sohbet sekmesi şu an Sobi sekmesi mi ([applySobiTab]). */
+    private var sobiTabActive = false
+
+    /**
+     * Öğrencide eski "Sohbet" (öğretmene soru) sekmesinin yerinde Sobi sekmesi ([SobiChatFragment];
+     * kullanıcı kararı 02.11.2026). Menüde yeni öğe yok (alt menü en çok 6 öğe alıyor, 6'sı dolu):
+     * aynı öğenin simgesi Sobi'nin kafası olur ve dokununca Sobi açılır. Öğretmen gelen soruları bu
+     * sekmeden cevapladığı için öğretmende eski ekran kalıyor; [TeacherQuestionsFeature.ENABLED]
+     * açılırsa öğrencide de geri geliyor. [role]: users belgesindeki rol (yoksa son bilinen).
+     */
+    /**
+     * Öğretmende sohbet sekmesi doğrudan Sınıflarım ([TeacherClassesFragment]; kullanıcı kararı 19.11.2026):
+     * soru gönderme (ekran kaydı) yapısı kullanılmıyor, havuz/sohbet/rapor sekmeleri boş kalıyordu.
+     * Onay bekleyen öğretmen eski ekranda kalıyor: "onayın bekleniyor" ve destek düğmesi orada
+     * (sınıf açmak zaten onay ve kurs bağlantısı istiyor). [TeacherQuestionsFeature.ENABLED] açılırsa
+     * öğretmen yine eski ekrana döner; Sınıflarım oradaki düğmeden açılır.
+     */
+    private fun isTeacherClassesTab(): Boolean =
+        !TeacherQuestionsFeature.ENABLED && isApprovedTeacher()
+
+    private fun applySobiTab(role: String = authManager.getCurrentUserType()) {
+        sobiTabActive = !TeacherQuestionsFeature.ENABLED && role != AuthManager.ROLE_TEACHER
+        val item = binding.bottomNavigationID.menu.findItem(R.id.notification) ?: return
+        if (sobiTabActive) {
+            val sizePx = resources.getDimensionPixelSize(R.dimen.main_bottom_nav_icon_size)
+            item.icon = android.graphics.drawable.BitmapDrawable(resources, SobiHeadView.toBitmap(this, sizePx * 2))
+            androidx.core.view.MenuItemCompat.setContentDescription(item, getString(R.string.sobi_tab_title))
+        } else if (role == AuthManager.ROLE_TEACHER && !TeacherQuestionsFeature.ENABLED) {
+            // Öğretmende sekme Sınıflarım ([isTeacherClassesTab]); onay bekleyen öğretmende de aynı simge.
+            item.setIcon(R.drawable.class_ic)
+            androidx.core.view.MenuItemCompat.setContentDescription(item, appString(R.string.class_list_title))
+        } else {
+            item.setIcon(R.drawable.chat_pair_ic)
+            androidx.core.view.MenuItemCompat.setContentDescription(item, null)
+        }
+    }
+
+    /**
+     * Alt barda seçilen sekmenin ikonunu kısa bir zıplatma ile büyütüp geri bırakır ve hafif
+     * titreşim verir. Seçili kutu (bottom_nav_item_bg) tek başına sessiz kalıyordu; geçişin
+     * "hissedilmesini" bu hareket sağlıyor.
+     */
+    private fun bounceBottomNavIcon(itemId: Int) {
+        val itemView = binding.bottomNavigationID.findViewById<View>(itemId) ?: return
+        val icon = itemView.findViewById<View>(com.google.android.material.R.id.navigation_bar_item_icon_view)
+            ?: return
+        Haptics.click(itemView)
+        icon.animate().cancel()
+        icon.scaleX = 0.85f
+        icon.scaleY = 0.85f
+        icon.animate()
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(280)
+            .setInterpolator(android.view.animation.OvershootInterpolator(3f))
+            .start()
     }
 
     fun setBottomPanelEnabled(enabled: Boolean) {
@@ -908,7 +1288,7 @@ class MainActivity : AppCompatActivity() {
                     if (view != null) {
                         view.post { captureViewAndOpenCreateQuestion(view, containerId) }
                     } else {
-                        Toast.makeText(this, "Görüntü alınamadı.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this, appString(R.string.ui_goruntu_alinamadi), Toast.LENGTH_SHORT).show()
                     }
                 }
                 QuestionMediaPickerDialogFragment.PICK_VIDEO -> requestQuestionScreenRecording(containerId)
@@ -959,6 +1339,7 @@ class MainActivity : AppCompatActivity() {
         teacherPendingDescription = description
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
+        teacherSelectedQuestionStudentUid = null
 
         // 2) Alt panel + geri butonu; soru seçilirken alt navigasyon gizlensin
         binding.teacherSendToQuestionBar.visibility = View.VISIBLE
@@ -981,7 +1362,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // 3) CreateQuestion overlay'ini kapat (varsa)
-        supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer)?.let {
+        liveOverlayIn(R.id.createQuestionOverlayContainer)?.let {
             supportFragmentManager.popBackStackImmediate()
         }
         binding.createQuestionOverlayContainer.visibility = View.GONE
@@ -1005,9 +1386,10 @@ class MainActivity : AppCompatActivity() {
      * NotificationFragment'te bir sohbet seçildiğinde çağrılır.
      * Seçilen soru alt panelde gösterilir ve send butonu aktifleşir.
      */
-    fun onTeacherChatSelectedFromNotification(questionId: String, title: String) {
+    fun onTeacherChatSelectedFromNotification(questionId: String, title: String, studentUid: String) {
         teacherSelectedQuestionId = questionId
         teacherSelectedQuestionTitle = title
+        teacherSelectedQuestionStudentUid = studentUid
         binding.teacherSendQuestionTitle.text = title
         binding.teacherSendButton.isEnabled = true
         binding.teacherSendButton.alpha = 1f
@@ -1027,6 +1409,7 @@ class MainActivity : AppCompatActivity() {
         binding.bottomNavigationID.visibility = View.VISIBLE
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
+        teacherSelectedQuestionStudentUid = null
 
         // CreateQuestion'a geri dön (medya ve açıklama korunur, düzenlenebilir)
         val mediaPath = teacherPendingMediaPath
@@ -1046,6 +1429,7 @@ class MainActivity : AppCompatActivity() {
         teacherPendingDescription = null
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
+        teacherSelectedQuestionStudentUid = null
         binding.teacherSendToQuestionBar.visibility = View.GONE
         binding.teacherSendTopBar.visibility = View.GONE
         binding.teacherSendBackButton.visibility = View.GONE
@@ -1062,13 +1446,16 @@ class MainActivity : AppCompatActivity() {
         val mediaType = teacherPendingMediaType
         val mediaPath = teacherPendingMediaPath
         val description = teacherPendingDescription
-        if (questionId.isNullOrEmpty() || mediaType.isNullOrEmpty() || mediaPath.isNullOrEmpty()) {
-            Toast.makeText(this, "Lütfen bir soru seçin.", Toast.LENGTH_SHORT).show()
+        val studentUid = teacherSelectedQuestionStudentUid
+        // studentUid olmadan gönderilirse servis gönderenin (öğretmenin) uid'sini metadata'ya yazar
+        // ve storage.rules öğrencinin bu medyayı indirmesini reddeder.
+        if (questionId.isNullOrEmpty() || mediaType.isNullOrEmpty() || mediaPath.isNullOrEmpty() || studentUid.isNullOrEmpty()) {
+            Toast.makeText(this, appString(R.string.ui_lutfen_bir_soru_secin), Toast.LENGTH_SHORT).show()
             return
         }
         val uid = auth.currentUser?.uid
         if (uid.isNullOrEmpty()) {
-            Toast.makeText(this, "Oturum açık değil.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_oturum_acik_degil), Toast.LENGTH_SHORT).show()
             return
         }
         val role = authManager.getCurrentUserType()
@@ -1107,6 +1494,7 @@ class MainActivity : AppCompatActivity() {
             putExtra(QuestionUploadForegroundService.KEY_CLIENT_ID, mediaClientId)
             putExtra(QuestionUploadForegroundService.KEY_SENDER_UID, uid)
             putExtra(QuestionUploadForegroundService.KEY_SENDER_ROLE, role)
+            putExtra(QuestionUploadForegroundService.KEY_STUDENT_UID, studentUid)
             putExtra(QuestionUploadForegroundService.KEY_FILE_PATH, mediaPath)
             if (!description.isNullOrBlank()) {
                 putExtra(QuestionUploadForegroundService.KEY_CAPTION, description)
@@ -1121,7 +1509,7 @@ class MainActivity : AppCompatActivity() {
             .update("lastMessageAt", Timestamp.now())
 
         // Temizlik: overlay, bar, geri butonu, alt nav tekrar göster, geçici state (dosyayı servis silecek)
-        supportFragmentManager.findFragmentById(R.id.createQuestionOverlayContainer)?.let {
+        liveOverlayIn(R.id.createQuestionOverlayContainer)?.let {
             supportFragmentManager.popBackStack()
         }
         // NotificationFragment az sonra QuestionChatFragment ile replace edilecek; oradan geri
@@ -1141,8 +1529,9 @@ class MainActivity : AppCompatActivity() {
         teacherPendingDescription = null
         teacherSelectedQuestionId = null
         teacherSelectedQuestionTitle = null
+        teacherSelectedQuestionStudentUid = null
 
-        Toast.makeText(this, "Sohbete gönderildi.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, appString(R.string.ui_sohbete_gonderildi), Toast.LENGTH_SHORT).show()
 
         supportFragmentManager.beginTransaction()
             .replace(R.id.fragmentContainerID, QuestionChatFragment.newInstance(questionId))
@@ -1176,6 +1565,12 @@ class MainActivity : AppCompatActivity() {
     private var isRecordingPaused = false
     private var maxRecordingSecForSession = 60
 
+    /** Servis ACTION_RECORDING_STARTED gönderdi mi? Gönderilmezse panel kapatılıp hata gösterilir. */
+    private var recordingStartConfirmed = false
+    private var recordingStartTimeoutRunnable: Runnable? = null
+    /** MediaProjection izni + encoder kurulumu için rahat bir pay; aşılırsa kayıt başlamamıştır. */
+    private val RECORDING_START_TIMEOUT_MS = 8_000L
+
     private fun showRecordingOverlay() {
         recordingStartTimeMs = System.currentTimeMillis()
         totalPausedDurationMs = 0L
@@ -1207,7 +1602,8 @@ class MainActivity : AppCompatActivity() {
             val controlsParams = android.widget.FrameLayout.LayoutParams(
                 android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
                 android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply { gravity = Gravity.START or Gravity.CENTER_VERTICAL }
+            // Çekmece soldan kayıyor (translationX eksi): Arapçada da solda, içi soldan sağa (overlay layout'u).
+            ).apply { gravity = Gravity.LEFT or Gravity.CENTER_VERTICAL }
             binding.recordingOverlayContainer.addView(drawingControlsView, controlsParams)
 
             binding.recordingOverlayContainer.isClickable = false
@@ -1216,7 +1612,7 @@ class MainActivity : AppCompatActivity() {
             val btnPauseResume =
                 recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnPauseResume)
             btnPauseResume.setImageResource(R.drawable.pause_video_ic)
-            btnPauseResume.contentDescription = "Durdur"
+            btnPauseResume.contentDescription = appString(R.string.ui_durdur)
             btnPauseResume.setOnClickListener {
                 if (isRecordingPaused) {
                     startService(
@@ -1371,7 +1767,7 @@ class MainActivity : AppCompatActivity() {
             val btnPauseResume =
                 recordingOverlayView!!.findViewById<ImageButton>(R.id.recordingBtnPauseResume)
             btnPauseResume.setImageResource(R.drawable.pause_video_ic)
-            btnPauseResume.contentDescription = "Durdur"
+            btnPauseResume.contentDescription = appString(R.string.ui_durdur)
             isRecordingPaused = false
 
             // Her yeni kayıtta kalem pasif ve arka plan şeffaf yuvarlak başlasın
@@ -1404,9 +1800,39 @@ class MainActivity : AppCompatActivity() {
         }
         binding.recordingOverlayContainer.visibility = View.VISIBLE
         updateRecordingTimerText(0)
+        registerRecordingReceiver()
+        recordingTimerRunnable = object : Runnable {
+            override fun run() {
+                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
+                updateRecordingTimerText(elapsedSec)
+                if (elapsedSec < maxRecordingSecForSession && !isRecordingPaused) recordingHandler.postDelayed(this, 1000L)
+            }
+        }
+        recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
+        setQuitButtonEnabled(false)
+        setAskQuestionButtonEnabled(false)
+    }
+
+    /**
+     * Kayıt yayınlarının alıcısını kurar. Servis başlatılmadan ÖNCE çağrılır: servis daha
+     * ilk saniyede patlarsa (startForeground / encoder hatası) gönderdiği RECORDING_FAILED
+     * yayını, alıcı henüz kayıtlı olmadığı için kaybolabiliyordu. Zaten kayıtlıysa no-op.
+     */
+    private fun registerRecordingReceiver() {
+        if (recordingReceiver != null) return
         recordingReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 when (intent?.action) {
+                    ScreenRecordingService.ACTION_RECORDING_STARTED -> {
+                        recordingStartConfirmed = true
+                        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+                        recordingStartTimeoutRunnable = null
+                        // Sayaç, panelin açıldığı andan değil kaydın gerçekten başladığı
+                        // andan işlesin (MediaProjection kurulumu birkaç yüz ms sürebiliyor).
+                        recordingStartTimeMs = System.currentTimeMillis()
+                        totalPausedDurationMs = 0L
+                        updateRecordingTimerText(0)
+                    }
                     ScreenRecordingService.ACTION_RECORDING_FINISHED -> {
                         val path = intent.getStringExtra(ScreenRecordingService.EXTRA_OUTPUT_PATH)
                         hideRecordingOverlay()
@@ -1416,7 +1842,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     ScreenRecordingService.ACTION_RECORDING_FAILED -> {
                         hideRecordingOverlay()
-                        Toast.makeText(this@MainActivity, "Kayıt başarısız.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, appString(R.string.ui_kayit_basarisiz), Toast.LENGTH_SHORT).show()
                     }
                     ScreenRecordingService.ACTION_RECORDING_PAUSED -> {
                         isRecordingPaused = true
@@ -1425,7 +1851,7 @@ class MainActivity : AppCompatActivity() {
                         recordingTimerRunnable = null
                         recordingOverlayView?.findViewById<ImageButton>(R.id.recordingBtnPauseResume)?.apply {
                             setImageResource(R.drawable.play_video_ic)
-                            contentDescription = "Devam et"
+                            contentDescription = appString(R.string.ui_devam_et)
                         }
                     }
                     ScreenRecordingService.ACTION_RECORDING_RESUMED -> {
@@ -1433,7 +1859,7 @@ class MainActivity : AppCompatActivity() {
                         isRecordingPaused = false
                         recordingOverlayView?.findViewById<ImageButton>(R.id.recordingBtnPauseResume)?.apply {
                             setImageResource(R.drawable.pause_video_ic)
-                            contentDescription = "Durdur"
+                            contentDescription = appString(R.string.ui_durdur)
                         }
                         recordingTimerRunnable = object : Runnable {
                             override fun run() {
@@ -1450,39 +1876,54 @@ class MainActivity : AppCompatActivity() {
             }
         }
         val filter = IntentFilter().apply {
+            addAction(ScreenRecordingService.ACTION_RECORDING_STARTED)
             addAction(ScreenRecordingService.ACTION_RECORDING_FINISHED)
             addAction(ScreenRecordingService.ACTION_RECORDING_FAILED)
             addAction(ScreenRecordingService.ACTION_RECORDING_PAUSED)
             addAction(ScreenRecordingService.ACTION_RECORDING_RESUMED)
         }
         ContextCompat.registerReceiver(this, recordingReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-        recordingTimerRunnable = object : Runnable {
-            override fun run() {
-                val elapsedSec = ((System.currentTimeMillis() - recordingStartTimeMs - totalPausedDurationMs) / 1000).toInt().coerceAtMost(maxRecordingSecForSession)
-                updateRecordingTimerText(elapsedSec)
-                if (elapsedSec < maxRecordingSecForSession && !isRecordingPaused) recordingHandler.postDelayed(this, 1000L)
-            }
+    }
+
+    /**
+     * Servisten "kayıt başladı" sinyali gelmezse paneli kapatıp kullanıcıyı uyarır.
+     * Bu olmadan, kayıt hiç başlamamışken panel açık kalıp sayaç işliyor; kaydet ve duraklat
+     * butonları da yanıtı servisten bekledikleri için hiçbir şey yapmıyor gibi görünüyordu.
+     */
+    private fun armRecordingStartTimeout() {
+        recordingStartConfirmed = false
+        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+        val runnable = Runnable {
+            recordingStartTimeoutRunnable = null
+            if (recordingStartConfirmed) return@Runnable
+            startService(
+                Intent(this, ScreenRecordingService::class.java)
+                    .setAction(ScreenRecordingService.ACTION_STOP_AND_DISCARD)
+            )
+            hideRecordingOverlay()
+            Toast.makeText(this, appString(R.string.ui_ekran_kaydi_bu_cihazda_baslatilamadi), Toast.LENGTH_LONG).show()
         }
-        recordingHandler.postDelayed(recordingTimerRunnable!!, 1000L)
-        setQuitButtonEnabled(false)
-        setAskQuestionButtonEnabled(false)
+        recordingStartTimeoutRunnable = runnable
+        recordingHandler.postDelayed(runnable, RECORDING_START_TIMEOUT_MS)
     }
 
     private fun updateRecordingTimerText(elapsedSec: Int) {
         val maxM = maxRecordingSecForSession / 60
         val maxS = maxRecordingSecForSession % 60
         recordingOverlayView?.findViewById<TextView>(R.id.recordingTimerText)?.text =
-            "${String.format("%d:%02d", elapsedSec / 60, elapsedSec % 60)} / $maxM:${String.format("%02d", maxS)}"
+            RtlSupport.ltr("${String.format("%d:%02d", elapsedSec / 60, elapsedSec % 60)} / $maxM:${String.format("%02d", maxS)}")
     }
 
     private fun hideRecordingOverlay() {
         recordingTimerRunnable?.let { recordingHandler.removeCallbacks(it) }
         recordingTimerRunnable = null
+        recordingStartTimeoutRunnable?.let { recordingHandler.removeCallbacks(it) }
+        recordingStartTimeoutRunnable = null
+        recordingStartConfirmed = false
         recordingReceiver?.let { receiver ->
             try {
                 unregisterReceiver(receiver)
             } catch (_: IllegalArgumentException) { /* zaten kaldırılmış */ }
-            recordingReceiver = null
         }
         recordingReceiver = null
         binding.recordingOverlayContainer.visibility = View.GONE
@@ -1544,10 +1985,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateCurrencyPanelVisibility() {
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-        binding.currencyPanel.visibility = if (current is MapFragment || current is PartSelectionFragment || current is TasksFragment || current is MissionsFragment) View.VISIBLE else View.GONE
+        binding.currencyPanel.visibility = if (current is MapFragment || current is PartSelectionFragment || current is TasksFragment) View.VISIBLE else View.GONE
         
-        // MapFragment'ten çıkıldıysa (başka bir tab'a vs geçildiyse) lessonPartBackButton'u gizle
-        if (current !is MapFragment && current !is ShopFragment) {
+        // MapFragment'ten çıkıldıysa (başka bir tab'a vs geçildiyse) lessonPartBackButton'u gizle.
+        // Mağaza ve seri ekranı haritanın ÜSTÜNE ekleniyor (openShopFragment / openStreakFragment):
+        // kapanınca altta aynı harita kalıyor, düğmeyi geri açan bir yol yok — gizlenmemeli.
+        if (current !is MapFragment && current !is ShopFragment && current !is StreakFragment) {
             binding.lessonPartBackButton.visibility = View.GONE
         }
     }
@@ -1585,6 +2028,9 @@ class MainActivity : AppCompatActivity() {
         fm.executePendingTransactions()
 
         // Abacus veya ana container'da hâlihazırda fragment varsa, ekstra bir şey yapma.
+        // Burada bilinçli olarak [liveOverlayIn] DEĞİL ham findFragmentById kullanılıyor: soğuk
+        // açılışta hayalet bile olsa bir fragment varsa başlangıç akışını ikinci kez kurmak
+        // (Map/Tutorial'ı yeniden açmak) daha büyük risk.
         val hasMainFragment =
             fm.findFragmentById(R.id.fragmentContainerID) != null ||
                 fm.findFragmentById(R.id.abacusFragmentContainer) != null
@@ -1593,7 +2039,7 @@ class MainActivity : AppCompatActivity() {
         // Hiç fragment yoksa, bu muhtemelen uygulamanın offline olarak açıldığı ilk durumdur.
         // Normal başlangıç akışını tekrar uygula (Map/Tutorial).
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
-        val firstTutorialShown = FirstTutorialShownStore.readLocal(this)
+        val firstTutorialShown = DeviceAccountStore.hasEverHadAccount(this)
 
         if (firstTutorialShown) {
             fm.beginTransaction().apply {
@@ -1624,7 +2070,19 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener(null)
         }
         val coordinator = findViewById<CoordinatorLayout>(R.id.coordinator_layout)
-        coordinator?.findViewWithTag<View>("bottom_sheet")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
+        coordinator?.findViewWithTag<View>(LessonPanel.TAG)?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
+        // Ders panelinin üst panel / alt menü karartmaları pencere kökünde; onlar da kalkmalı.
+        findViewById<ViewGroup>(android.R.id.content)?.let { content ->
+            while (true) {
+                val dim = content.findViewWithTag<View>(LessonAdapter.CHROME_DIM_TAG) ?: break
+                content.removeView(dim)
+            }
+        }
+        LessonAdapter.savedBarColors?.let { saved ->
+            window.statusBarColor = saved[0]
+            window.navigationBarColor = saved[1]
+            LessonAdapter.savedBarColors = null
+        }
         coordinator?.findViewWithTag<View>("race_panel")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
         coordinator?.findViewWithTag<View>("race_lesson_bottom_sheet")?.let { sheet -> (sheet.parent as? ViewGroup)?.removeView(sheet) }
     }
@@ -1654,7 +2112,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         fm.executePendingTransactions()
-        val active = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val active = liveOverlayIn(R.id.abacusFragmentContainer)
         val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
         if (hostVisible && active != null && fragmentBlocksSeasonLeaderboardGate(active) &&
             !forcingAbacusOverlayDismissForSeasonGate &&
@@ -1695,13 +2153,34 @@ class MainActivity : AppCompatActivity() {
         logTouchDiag("sanitizeMapTouchSurface:$caller")
     }
 
+    /**
+     * Container'da GERÇEKTEN duran overlay. Ham [androidx.fragment.app.FragmentManager.findFragmentById]
+     * yetmiyor: o çağrı önce ekli fragment'lara, bulamazsa "bilinen bütün fragment'lara" bakıyor.
+     * Ders/tutorial ekranları `replace(...).addToBackStack(null)` ile açıldığı için, `replace` onları
+     * container'dan kaldırdıktan sonra bile o back stack girişi onları canlı tutuyor ve bu ikinci
+     * taramada bulunuyorlar.
+     *
+     * Bildirilen hatanın kökü buydu: ders bitişinde (LessonResult → ChestFragment) LessonResult
+     * abacusFragmentContainer'dan kaldırılıyor, host VISIBLE kalıyor ve container EKLİ hiçbir şey
+     * içermiyor; ama ders açılışının `addToBackStack(null)` girişi başarılı bitiş yolunda hiç pop
+     * edilmediği için findFragmentById hâlâ o TutorialFragment'ı döndürüyordu. Sonuç:
+     * "bekliyor | block=abacus_overlay:TutorialFragment hostVisible=true" ile kuyruk kilitleniyor,
+     * boş ama görünür host (clickable + match_parent + elevation 10dp) bütün harita dokunuşlarını
+     * yutuyor ve ders adımı animasyonu hiç oynamıyordu. Geri tuşu o girişi pop edip hayaleti
+     * düşürdüğü an ekran kendiliğinden düzeliyordu — kullanıcının gördüğü tam olarak buydu.
+     *
+     * Ekranda gerçekten duran bir overlay HER ZAMAN [Fragment.isAdded]'dir; hayalet değildir.
+     */
+    private fun liveOverlayIn(containerId: Int): Fragment? =
+        supportFragmentManager.findFragmentById(containerId)?.takeIf { it.isAdded }
+
     /** Harita tabanındayken bilinçli tutorial oturumu yoksa hayalet [TutorialFragment] sayılır. */
     private fun isStaleTutorialGhostOverlay(overlay: Fragment?): Boolean {
         if (overlay !is TutorialFragment) return false
         if (firstTutorialOverlayBootstrapActive) return false
         if (activeMapTutorialOverlayFromLesson) return false
         // İlk tutorial henüz bitmediyse (renderFirstTutorial) hayalet sayma.
-        if (!FirstTutorialShownStore.readLocal(this)) return false
+        if (!DeviceAccountStore.hasEverHadAccount(this)) return false
         return true
     }
 
@@ -1715,8 +2194,20 @@ class MainActivity : AppCompatActivity() {
         val fm = supportFragmentManager
         var steps = 0
         while (steps++ < 8) {
-            fm.executePendingTransactions()
-            val overlay = fm.findFragmentById(R.id.abacusFragmentContainer) ?: break
+            // FragmentManager kendi işlemlerini yürütürken çağrıldıysak (ör. bir fragment-result
+            // dinleyicisinin içinden: ChestFragment chest_closed → ödül hatası → harita dönüşü)
+            // executePendingTransactions ve commitNow "already executing transactions" ile çöküyor
+            // (Crashlytics, sürüm 21). Temizliği bir sonraki kareye ertele; kaplar şimdiden gizlenir.
+            try {
+                fm.executePendingTransactions()
+            } catch (busy: IllegalStateException) {
+                logMapTouchDiag("purgeAbacus", "DEFERRED_FM_BUSY", "caller=$caller")
+                binding.root.post {
+                    if (!isFinishing && !isDestroyed) purgeAbacusOverlayHosts("$caller.deferred")
+                }
+                break
+            }
+            val overlay = liveOverlayIn(R.id.abacusFragmentContainer) ?: break
             if (firstTutorialOverlayBootstrapActive && overlay is TutorialFragment) break
             if (overlay is TutorialFragment && activeMapTutorialOverlayFromLesson) break
             if (!fragmentBlocksSeasonLeaderboardGate(overlay)) break
@@ -1765,18 +2256,30 @@ class MainActivity : AppCompatActivity() {
         context.getSharedPreferences("auth_prefs", Context.MODE_PRIVATE).edit().clear().apply()
         */
 
-        // Offline kullanılmayacağı için görev local cache'ini temizle. Bu kod hep kalacak.
-        //MissionsProgressStore.clearLocalCache(context)
-        // 1) Mevcut görev ilerlemesini sıfırla (daily/weekly counters + claimed flags)
-        //MissionsProgressStore.resetAllProgress(context)
-        // 2) Günlük/haftalık görev kombinasyonunu yeniden seçtir
-        //MissionsProgressStore.forceReselectMissions(context)
-        // 3) Seçilen yeni görevleri hemen üretip state'e yazdır (isteğe bağlı ama önerilir)
-        //MissionsProgressStore.selectedMissionsForDaily(context)
-        //MissionsProgressStore.selectedMissionsForWeekly(context)
-        // Cloud'daki eski mission state'in geri hydrate edilmesini engellemek için
-        // resetlenmiş local state'i doğrudan cloud'a overwrite et.
-        //MissionsProgressStore.forceUploadStateToCloud(context)
+        // Görev ilerlemesini sıfırla — yalnızca [MissionProgressDebug] anahtarı açıkken.
+        // Sırası önemli, açıklaması o dosyada.
+        if (MissionProgressDebug.resetOnLaunch) {
+            // 1) Yerel önbellek: ilerleme önce buradan okunuyor.
+            MissionsProgressStore.clearLocalCache(context)
+            // 2) Sayaçlar ve "ödül alındı" işaretleri.
+            MissionsProgressStore.resetAllProgress(context)
+            // 3) Günlük/haftalık görev kombinasyonunu yeniden seçtir.
+            MissionsProgressStore.forceReselectMissions(context)
+            // 4) Seçilen görevleri hemen üretip state'e yazdır.
+            val daily = MissionsProgressStore.selectedMissionsForDaily(context)
+            val weekly = MissionsProgressStore.selectedMissionsForWeekly(context)
+            // 5) Sıfırlanmış durumu buluta yaz. Bu olmadan bir sonraki okumada
+            //    buluttaki ESKİ değerler geri hydrate ediliyor ve sıfırlama boşa gidiyor.
+            MissionsProgressStore.forceUploadStateToCloud(context)
+            // Seçilen görevler log'a yazılıyor: ödül paneli ancak bir görev TAMAMLANINCA
+            // açılıyor, yani kaç ders gerektiğini bilmeden test etmek tahmine kalıyor.
+            android.util.Log.w(
+                "MissionProgressDebug",
+                "gorev ilerlemesi sifirlandi | gunluk=" +
+                    daily.joinToString { "${it.id}(hedef=${it.target})" } +
+                    " haftalik=" + weekly.joinToString { "${it.id}(hedef=${it.target})" },
+            )
+        }
         // Kullanıcıya özel lesson verilerini local'den temizler.
         //GlobalLessonData.clearCurrentUserLessonData(context)
         // Kullanıcı lesson verilerini Firestore'den siler (uid geç gelirse bekleyip tekrar dener)
@@ -1844,24 +2347,27 @@ class MainActivity : AppCompatActivity() {
         val fragment = AbacusFragment()
 
         // Animasyon için slide-in efekti
-        val slideIn = android.R.anim.slide_in_left
-        val slideOut = android.R.anim.slide_out_right
+        // Sağdan girer, sola çıkar — uygulamadaki bütün ekran geçişleriyle aynı.
+        // android.R.anim.slide_in_left SOLDAN getiriyordu, yani zincirin tersi yöne.
+        val slideIn = R.anim.queue_screen_in
+        val slideOut = R.anim.queue_screen_out
 
         // Fragment'ı container'a ekle
         supportFragmentManager.beginTransaction()
-            .setCustomAnimations(slideIn, slideOut)
+            .setCustomAnimations(slideIn, slideOut, slideIn, slideOut)
             .replace(R.id.abacusFragmentContainer, fragment)
             .addToBackStack(null)
             .commit()
     }
+    // Önbellek dosyası kullanıcıya özeldir; adını UserWalletFirestore belirler. Buradan
+    // doğrudan "app_prefs" açmak, hesap değişiminde önceki kullanıcının bakiyesini
+    // gösterilmesine yol açıyordu.
     fun saveCurrency(context: Context, value: Int) {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("currency", value).apply()
+        UserWalletFirestore.cacheCurrency(context, value)
     }
 
     fun saveKeys(context: Context, value: Int) {
-        val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-        prefs.edit().putInt("keys", value).apply()
+        UserWalletFirestore.cacheKeys(context, value)
     }
 
     fun getCurrency(context: Context): Int = UserWalletFirestore.getCachedCurrency(context)
@@ -1883,11 +2389,151 @@ class MainActivity : AppCompatActivity() {
     private fun applyWalletToUi(wallet: UserWallet) {
         binding.currencyText.text = wallet.currency.toString()
         binding.keyText.text = wallet.keys.toString()
+        // Panelde Sobi kredisi (öğretmen danışma kredisi şimdilik kullanılmıyor). Yerel
+        // önbellekte tutulmuyor; değeri yalnızca bu canlı dinleyici besliyor. Böylece sunucu
+        // tarafındaki değişiklikler (paket alma, Sobi mesajı, iade) panele kendiliğinden
+        // yansıyor. İade eksiye düşürebilir; çocuğa "-3" göstermek yerine 0.
+        binding.creditText.text = wallet.sobiCredits.coerceAtLeast(0).toString()
+
+        // Plan sunucuda değişmiş olabilir (abonelik yenilendi, iptal edildi, süresi doldu
+        // ya da başka bir cihazdan işlem yapıldı). Bunların hiçbiri istemcide bir satın
+        // alma geri çağrısı üretmez; tek haber kanalı bu dinleyicidir. Yalnızca gerçekten
+        // değiştiğinde tam güncellemeyi çalıştırıyoruz ki her snapshot'ta gereksiz iş olmasın.
+        if (wallet.plan != energyManager.getUserPlan()) {
+            checkSubscriptionAndUpdateEnergy()
+        }
     }
 
     fun refreshWalletUi() {
         binding.currencyText.text = UserWalletFirestore.getCachedCurrency(this).toString()
         binding.keyText.text = UserWalletFirestore.getCachedKeys(this).toString()
+    }
+
+    /**
+     * Rol öğretmen ama hesap henüz onaylanmamış.
+     *
+     * Onay, energyManager'ın kullanıcıya özel yerel kaydından okunuyor; ilk girişte o kayıt
+     * boş olduğu için hesap Firestore cevabı gelene kadar onaysız sayılır. Yanlış yön bu
+     * değil: yeni öğretmen hesapları zaten onaysız açılıyor, onaylı biri ise ilk girişte
+     * bir anlığına kısıtlı panel görür ve [checkSubscriptionAndUpdateEnergy] düzeltir.
+     */
+    fun isUnapprovedTeacher(): Boolean {
+        if (authManager.getCurrentUserType() != AuthManager.ROLE_TEACHER) return false
+        if (!::energyManager.isInitialized) return true
+        return !energyManager.isTeacherApproved()
+    }
+
+    /** Onaylı öğretmen: altın, anahtar ve can sınırsız. Kaynak [isUnapprovedTeacher] ile aynı. */
+    fun isApprovedTeacher(): Boolean =
+        authManager.getCurrentUserType() == AuthManager.ROLE_TEACHER && !isUnapprovedTeacher()
+
+    /**
+     * Öğretmen hesabında currencyPanel'in hangi parçalarının görüneceği.
+     *
+     * Onay durumu oturum ortasında değişebildiği için (destek hesabı onaylar) yalnızca
+     * onCreate'te değil, her [checkSubscriptionAndUpdateEnergy] cevabında yeniden çalışır;
+     * bu yüzden iki yön de açıkça yazılır.
+     */
+    private fun applyTeacherCurrencyPanel() {
+        if (!::binding.isInitialized) return
+        if (authManager.getCurrentUserType() != AuthManager.ROLE_TEACHER) return
+        // Öğretmenin altını, anahtarı ve canı yok; bunlar onaydan bağımsız gizli.
+        binding.diamondID.visibility = View.GONE
+        binding.currencyText.visibility = View.GONE
+        binding.keyIcon.visibility = View.GONE
+        binding.keyText.visibility = View.GONE
+        binding.energyIcon.visibility = View.GONE
+        binding.energyText.visibility = View.GONE
+        // Kredi: öğretmen soru sormuyor, gönderiyor. Seri: ödülü altın ve öğretmenin altını
+        // ya yok ya sınırsız. Can: ya hep 0 ya sınırsız; onaylıda üç tane "∞" göstermek bilgi
+        // vermez. Kabın tamamı gizleniyor; yalnızca ikon gizlenince "∞" rozeti boşlukta
+        // tek başına kalıyordu.
+        binding.streakContainer.visibility = View.GONE
+        binding.creditIcon.visibility = View.GONE
+        binding.creditText.visibility = View.GONE
+        binding.energyIconFrame.visibility = View.GONE
+        // Panelde yalnızca hesabın durumu kalıyor. Onaysızda yazıya dokunmak destek butonlu
+        // uyarıyı açıyor: panel boş kalınca öğretmen neden hiçbir şey yapamadığını ancak bir
+        // yere dokununca öğreniyordu.
+        val unapproved = isUnapprovedTeacher()
+        val label = binding.teacherApprovalPendingText
+        label.visibility = View.VISIBLE
+        label.setText(if (unapproved) R.string.teacher_approval_pending_banner else R.string.teacher_account_banner)
+        val color = android.graphics.Color.parseColor(if (unapproved) "#FFB74D" else "#81C784")
+        label.setTextColor(color)
+        androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(
+            label,
+            android.content.res.ColorStateList.valueOf(color),
+        )
+        label.setCompoundDrawablesRelativeWithIntrinsicBounds(
+            if (unapproved) R.drawable.ic_schedule_clock else R.drawable.ic_teacher_verified, 0, 0, 0,
+        )
+        if (unapproved) {
+            label.setOnClickListener { TeacherApprovalGate.showNotApprovedDialog(this) }
+        } else {
+            label.setOnClickListener(null)
+            label.isClickable = false
+        }
+    }
+
+    /**
+     * Üst bardaki günlük seri göstergesini tazeler.
+     *
+     * Seri kırıkken alev gri ve sayı 0: "bugün yapılacak bir şey var" mesajı, hiç
+     * göstermemekten daha etkili. Gizlemek yerine söndürmek, Duolingo ve Mimo'nun da
+     * yaptığı şey.
+     */
+    fun refreshStreakUi() {
+        if (!::binding.isInitialized) return
+        // Yerel seri verisi cihaza ait, uid'ye değil. Oturumdaki hesap değiştiyse önceki
+        // kullanıcının verisi burada siliniyor — yoksa yeni hesap onun serisini devralırdı.
+        StreakRepository.bindToUser(this, auth.currentUser?.uid)
+        // Kayıt sorularının seri cevapları: hesap yeni açıldıysa uygulanıyor, kayıt ekranında
+        // mevcut bir hesaba girildiyse atılıyor (o hesabın kendi ayarları geçerli).
+        auth.currentUser?.let {
+            StreakRepository.applyPendingSignup(this, it.uid, it.metadata?.creationTimestamp)
+        }
+        val state = StreakRepository.refresh(this)
+        // refresh() hedefi tutturan günü burada ilerletiyor; kutlama da aynı yerden
+        // kuyruğa giriyor. Tek tazeleme noktası olduğu için kutlamayı denemenin doğru yeri de
+        // burası: ekran dönüşleri, geri yığını değişimi ve süre değişimi hepsi buradan geçiyor.
+        maybeShowStreakCelebration()
+        // Seri dondurma refresh() içinde, kullanıcı hiçbir şey yapmadan harcanıyor. Haber
+        // verilmezse çocuk 4000 altınının nereye gittiğini ancak mağazaya girince fark eder —
+        // "serin kurtuldu" ise hiç söylenmemiş olur. Toast, çünkü tek tazeleme noktası
+        // burası ve ders ekranları dahil her yerden geçiliyor: ekran açan bir şey ders
+        // sonrası zincirine karışırdı.
+        when (StreakRepository.takeFreezeNotice(this)) {
+            StreakRepository.FreezeNotice.SAVED -> Toast.makeText(
+                this,
+                appString(R.string.ui_dun_calisamadin_ama_seri_dondurman_serini),
+                Toast.LENGTH_LONG,
+            ).show()
+            StreakRepository.FreezeNotice.LOST -> Toast.makeText(
+                this,
+                appString(R.string.ui_seri_dondurman_bir_gunu_kapatti_ama),
+                Toast.LENGTH_LONG,
+            ).show()
+            null -> Unit
+        }
+        // Ödüller sunucudaki sayaca bakıyor. Eşitleme burada tetikleniyor çünkü gün ders
+        // ekranındayken tutturuluyor ve activity o sırada onResume'a girmiyor; kuyruk boşsa
+        // ya da bir deneme sürüyorsa çağrı kendini eliyor.
+        StreakSyncService.syncPendingDays(this)
+        binding.streakText.text = state.current.toString()
+        val alive = state.current > 0
+        binding.streakIcon.alpha = if (alive) 1f else 0.45f
+        binding.streakIcon.colorFilter = if (alive) {
+            null
+        } else {
+            android.graphics.PorterDuffColorFilter(
+                android.graphics.Color.parseColor("#78909C"),
+                android.graphics.PorterDuff.Mode.SRC_IN,
+            )
+        }
+        binding.streakText.setTextColor(
+            android.graphics.Color.parseColor(if (alive) "#FF9800" else "#78909C"),
+        )
     }
 
 
@@ -1903,7 +2549,11 @@ class MainActivity : AppCompatActivity() {
         billingManager.onPricesReady = null
         billingManager.onError = null
         billingManager.onPurchaseGranted = { resyncWalletFromServer() }
-        billingManager.onSubscriptionUpdated = { checkSubscriptionAndUpdateEnergy() }
+        billingManager.onSubscriptionUpdated = {
+            checkSubscriptionAndUpdateEnergy()
+            // Kredi bu doğrulamada verilmiş olabilir; cihaz artık uygun olmayabilir.
+            WelcomeCreditEligibility.refresh(applicationContext)
+        }
     }
 
     /**
@@ -1926,8 +2576,12 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    /** Üst paneldeki elmas bakiyesinden düşer (Firestore `users.currency`). */
-    fun spendDiamonds(amount: Int): Boolean {
+    /**
+     * Üst paneldeki elmas bakiyesinden düşer (Firestore `users.currency`).
+     *
+     * @param itemId Neye harcandığı; ölçüme aynen gider (bkz. [AnalyticsLogger.logGoldSpent]).
+     */
+    fun spendDiamonds(amount: Int, itemId: String): Boolean {
         if (amount <= 0) return true
         val current = binding.currencyText.text.toString().toIntOrNull()
             ?: UserWalletFirestore.getCachedCurrency(this)
@@ -1943,6 +2597,7 @@ class MainActivity : AppCompatActivity() {
                 uid = uid,
                 delta = -amount,
                 reason = WalletReason.SPEND,
+                itemId = itemId,
                 onSuccess = { wallet -> applyWalletToUi(wallet) },
                 onFailure = { resyncWalletFromServer() },
             )
@@ -1950,8 +2605,12 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    /** Üst paneldeki anahtar bakiyesinden düşer (Firestore `users.keys`). */
-    fun spendKeys(amount: Int): Boolean {
+    /**
+     * Üst paneldeki anahtar bakiyesinden düşer (Firestore `users.keys`).
+     *
+     * @param itemId Neye harcandığı; ölçüme aynen gider (bkz. [AnalyticsLogger.logKeySpent]).
+     */
+    fun spendKeys(amount: Int, itemId: String): Boolean {
         if (amount <= 0) return true
         val current = binding.keyText.text.toString().toIntOrNull()
             ?: UserWalletFirestore.getCachedKeys(this)
@@ -1966,10 +2625,49 @@ class MainActivity : AppCompatActivity() {
                 uid = uid,
                 delta = -amount,
                 reason = WalletReason.SPEND,
+                itemId = itemId,
                 onSuccess = { wallet -> applyWalletToUi(wallet) },
                 onFailure = { resyncWalletFromServer() },
             )
         }
+        return true
+    }
+
+    /**
+     * [spendKeys]'in sunucu onaylı hâli: karşılığı geri alınamayan bir şey verilecekse
+     * (ör. ders kilidi açmak) kullanılır. [onSuccess] ancak anahtar sunucuda GERÇEKTEN
+     * düşüldükten sonra çağrılır; [spendKeys] iyimser olduğu için reddedilen harcamada da
+     * karşılığı verirdi ve kullanıcı bedavaya ders açardı.
+     *
+     * @return Bakiye yetmiyorsa false (hiçbir çağrı yapılmaz), aksi halde true.
+     */
+    fun spendKeysConfirmed(
+        amount: Int,
+        itemId: String,
+        onSuccess: () -> Unit,
+        onFailure: () -> Unit,
+    ): Boolean {
+        val uid = auth.currentUser?.uid ?: return false
+        val current = (if (::binding.isInitialized) binding.keyText.text.toString().toIntOrNull() else null)
+            ?: UserWalletFirestore.getCachedKeys(this)
+        if (current < amount) return false
+        // Anlık (iyimser) gösterim; sunucu reddederse bakiye sunucudan yeniden okunur.
+        if (::binding.isInitialized) binding.keyText.text = (current - amount).toString()
+        UserWalletFirestore.applyKeyDelta(
+            context = this,
+            uid = uid,
+            delta = -amount,
+            reason = WalletReason.SPEND,
+            itemId = itemId,
+            onSuccess = { wallet ->
+                if (::binding.isInitialized) applyWalletToUi(wallet)
+                onSuccess()
+            },
+            onFailure = {
+                resyncWalletFromServer()
+                onFailure()
+            },
+        )
         return true
     }
 
@@ -1980,19 +2678,25 @@ class MainActivity : AppCompatActivity() {
         // adımda dallanan) bir Firestore fetch döngüsüne yol açıp uygulamayı kilitliyordu.
         // Burada sadece zaten bilinen yerel duruma göre UI'ı güncelliyoruz.
         if (!::binding.isInitialized) return
-        binding.energyText.text = when {
-            energyManager.isEnergyBlocked() -> "0/${energyManager.getMaxEnergy()}"
-            energyManager.isInfiniteEnergy() -> "∞"
-            else -> "$energy/${energyManager.getMaxEnergy()}"
-        }
+        EnergyDisplay.apply(
+            text = binding.energyText,
+            infiniteBadge = binding.energyInfiniteBadge,
+            icon = binding.energyIcon,
+            isInfinite = !energyManager.isEnergyBlocked() && energyManager.isInfiniteEnergy(),
+            isPremium = PlanStatus.isProPlan(energyManager.getUserPlan()),
+            value = if (energyManager.isEnergyBlocked()) {
+                "0/${energyManager.getMaxEnergy()}"
+            } else {
+                "$energy/${energyManager.getMaxEnergy()}"
+            },
+        )
     }
     
     fun checkSubscriptionAndUpdateEnergy() {
         val currentUser = auth.currentUser
         if (currentUser == null) {
             // Kullanıcı giriş yapmamış, normal gösterim
-            val energy = energyManager.getCurrentEnergy()
-            binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+            updateEnergyDisplay(energyManager.getCurrentEnergy())
             return
         }
         
@@ -2004,41 +2708,65 @@ class MainActivity : AppCompatActivity() {
                     // planExpiresAt: doğrulanmış Play aboneliğinin bitiş zamanı (ms).
                     // Süresi geçmişse kullanıcı Free'ye düşer — abonelik iptal edildiğinde
                     // sunucudan yeni bir doğrulama gelmese bile Pro süresiz kalmasın diye.
-                    val storedPlan = doc.getString("plan") ?: "Free"
-                    val planExpiresAt = doc.getLong("planExpiresAt")
-                    val planExpired = planExpiresAt != null && planExpiresAt < System.currentTimeMillis()
-                    val plan = if (planExpired) "Free" else storedPlan
+                    // Yayın hediyesi (giftProUntil) de burada sayılıyor, bkz. PlanStatus.
+                    val plan = PlanStatus.effectivePlan(doc)
                     val role = doc.getString("role") ?: ""
                     val teacherApproved = doc.getBoolean("teacherApproved") == true
+                    // Avatar başka cihazda değişmiş ya da hesap değişmiş olabilir; alt bar ikonu
+                    // kullanıcının avatarına çekiliyor. Aynı dokümandan, ayrı okuma yok.
+                    AvatarStore.applyRemote(this, doc.getString(AvatarStore.FIRESTORE_FIELD))
+                    refreshProfileNavIcon()
+                    applySobiTab(role)
                     GlobalValues.isTeacherApproved = teacherApproved
                     energyManager.setUserPlan(plan)
                     energyManager.setUserRoleApproval(role, teacherApproved)
-
-                    when {
-                        // Onaysız öğretmen: plan ne olursa olsun enerji her zaman 0
-                        energyManager.isEnergyBlocked() -> {
-                            binding.energyText.text = "0/${energyManager.getMaxEnergy()}"
-                        }
-                        // teacherApproved=true veya Pro/Premium plan: sonsuz enerji
-                        energyManager.isInfiniteEnergy() -> {
-                            binding.energyText.text = "∞"
-                        }
-                        else -> {
-                            val energy = energyManager.getCurrentEnergy()
-                            binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
-                        }
+                    // Onay şimdi öğrenilmiş ya da değişmiş olabilir. Bakiyeyi cüzdan
+                    // dinleyicisi kendisi düzeltiyor (bkz. UserWalletFirestore.visibleBalance).
+                    applyTeacherCurrencyPanel()
+                    AnalyticsLogger.setUserRole(
+                        when {
+                            role != AuthManager.ROLE_TEACHER -> AnalyticsLogger.USER_ROLE_STUDENT
+                            teacherApproved -> AnalyticsLogger.USER_ROLE_TEACHER
+                            else -> AnalyticsLogger.USER_ROLE_TEACHER_PENDING
+                        },
+                    )
+                    // Geliştiricinin test hesabı; alan konsoldan elle yazılır (bkz. setTester).
+                    AnalyticsLogger.setTester(doc.getBoolean("isTester") == true)
+                    // Kapalı test kırılımları (bkz. setAgeGroup, SorobanLevel): her okumada,
+                    // bu sürümden önce kaydolanlarda da dolsun ve hesap değişince yenilensin.
+                    AnalyticsLogger.setAgeGroup(doc.getLong("birthYear")?.toInt())
+                    SorobanLevel.applyFromUserDoc(applicationContext, currentUser.uid, doc)
+                    // Onaylı öğretmenin dersleri ilk seferde açılır; bayrak aynı dokümanda,
+                    // ayrı okuma yok.
+                    if (role == AuthManager.ROLE_TEACHER && teacherApproved &&
+                        doc.getBoolean(GlobalLessonData.FIELD_TEACHER_LESSONS_UNLOCKED) != true
+                    ) {
+                        GlobalLessonData.unlockLessonsForApprovedTeacherOnce(applicationContext, currentUser.uid)
                     }
+
+                    // Onaysız öğretmende enerji her zaman 0'dır ve sonsuz sayılmaz;
+                    // bu yüzden kilit kontrolü sonsuzdan önce gelir.
+                    EnergyDisplay.apply(
+                        text = binding.energyText,
+                        infiniteBadge = binding.energyInfiniteBadge,
+                        icon = binding.energyIcon,
+                        isInfinite = !energyManager.isEnergyBlocked() && energyManager.isInfiniteEnergy(),
+                        isPremium = PlanStatus.isProPlan(energyManager.getUserPlan()),
+                        value = if (energyManager.isEnergyBlocked()) {
+                            "0/${energyManager.getMaxEnergy()}"
+                        } else {
+                            "${energyManager.getCurrentEnergy()}/${energyManager.getMaxEnergy()}"
+                        },
+                    )
                 } else {
                     // Firestore'da kayıt yok, normal gösterim
-                    val energy = energyManager.getCurrentEnergy()
-                    binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                    updateEnergyDisplay(energyManager.getCurrentEnergy())
                 }
             }
             .addOnFailureListener { e ->
                 Log.e("MainActivity", "Abonelik durumu kontrol edilemedi", e)
                 // Hata durumunda normal gösterim
-                val energy = energyManager.getCurrentEnergy()
-                binding.energyText.text = "$energy/${energyManager.getMaxEnergy()}"
+                updateEnergyDisplay(energyManager.getCurrentEnergy())
             }
     }
     
@@ -2108,29 +2836,66 @@ class MainActivity : AppCompatActivity() {
         fragmentBlocksSeasonLeaderboardGate(f)
 
     /**
-     * Harita kartındaki progress halkası animasyonu yalnızca kullanıcı haritayı gerçekten görürken tüketilmeli.
-     * Overlay (Chest, görev paneli vb.) açıkken [MapFragment.onResume] erken tüketim yapmasın.
+     * Harita kartındaki ilerleme animasyonu şu an oynatılamıyorsa sebebi; null = harita
+     * kullanıcının gözü önünde.
+     *
+     * ## Neden yalnızca ders katmanlarına bakmak yetmiyordu
+     * Eskiden yalnızca abacus/result kapları kontrol ediliyordu. Ders bitip bu kaplar
+     * kaldırıldığı an animasyon tüketiliyordu, ama harita o anda hâlâ görünmüyordu:
+     *   • ders sonrası zemini ([postLessonBackdrop]) rozet/reklam/yeni seri beklenirken
+     *     haritayı opak bir perdeyle kapatıyor,
+     *   • rozet ekranı, yeni seri sorusu, rating, tanıtım haritanın üstüne açılıyor,
+     *   • reklam ayrı bir activity — dönüşte [MapFragment.onResume] çalışıyor ve zemin
+     *     hâlâ yukarıdayken tüketiyordu.
+     * Animasyon ~2 sn sürdüğü için perde kalktığında bitmiş oluyordu; kullanıcı yalnızca
+     * son hâli görüyordu.
+     *
+     * Rehber paneli BİLEREK listede yok: haritanın içinde, kartları kapatmıyor.
      */
-    fun shouldConsumeLessonProgressAnimationsOnMap(): Boolean {
-        if (!::binding.isInitialized) return false
-        val fm = supportFragmentManager
-        if (fm.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return false
-        val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
-        if (abacusHostVisible) {
-            val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
-            if (isBlockingLessonOverlayFragment(abacus)) return false
+    fun lessonProgressAnimationBlockReason(): String? {
+        if (!::binding.isInitialized) return "binding_not_initialized"
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            return "not_resumed"
         }
-        val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
-        if (resultHostVisible) {
-            val result = fm.findFragmentById(R.id.resultFragmentContainer)
-            if (isBlockingLessonOverlayFragment(result)) return false
-        }
-        return true
+        // Ders katmanları, rozet, yeni seri, abonelik akışı, rozet Firestore beklemesi,
+        // reklam kontrolü ve sezon kapısı orada zaten listeli.
+        marathonGuideMapBlockReason()?.let { return it }
+        // Kuyruk ekranları arasında haritayı kapatan perde. Sönerken de (200 ms) bekliyoruz;
+        // söndüğü an [hidePostLessonBackdrop] haritayı kendisi dürtüyor.
+        if (binding.postLessonBackdrop.visibility == View.VISIBLE) return "post_lesson_backdrop"
+        if (supportFragmentManager.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        if (dialogStillShowing("RatingDialog")) return "rating_showing"
+        if (dialogStillShowing("AskQuestionOpen")) return "promo_showing"
+        // Tanıtım zemin tutmuyor ([hasPostLessonBackdropWork]), yani harita açıkken gelebilir.
+        // Gelecekse beklenmezse animasyon onun altında kalıyor.
+        if (pendingLessonTypeReturnForPromo || askQuestionPromoPendingLock) return "promo_pending"
+        return null
     }
 
     internal fun isForcingAbacusOverlayDismiss(): Boolean =
         forcingAbacusOverlayDismissForSeasonGate
 
+    /**
+     * Bu fragment `abacusFragmentContainer`/`resultFragmentContainer` üstünde TAM EKRAN
+     * duran bir overlay mi.
+     *
+     * Liste dört ayrı yerde iş görüyor ve dördü de aynı cevabı istiyor:
+     *   • sezon kapısı bunlardan biri açıkken gösterilmiyor,
+     *   • ders sonrası kuyruğu bunlardan birinin üstüne ekran açmıyor,
+     *   • harita ilerleme animasyonları bunlar açıkken tüketilmiyor,
+     *   • [purgeAbacusOverlayHosts] haritaya/Tasks'a dönerken bunları KALDIRIYOR.
+     *
+     * Son maddesi listeyi eksik bırakmanın bedelini anlatıyor: listede olmayan bir
+     * fragment kaldırılmıyor, yalnızca kabı gizleniyor. Fragment FragmentManager'da
+     * kalıyor ve kap bir sonraki sefer görünür olduğunda -- yeni bir ekran kayarak
+     * gelirken -- eski görünüm bir anlığına ortaya çıkıyor. CupPathRoadFragment'te tam
+     * olarak bu yaşandı: telefonun orta tuşuyla çıkıp dönünce ekran kapanıyor ama
+     * kaldırılmıyordu.
+     *
+     * Yani buraya eklenmesi gereken ölçüt "ders akışının parçası mı" değil, "o kapta tam
+     * ekran duruyor mu". [AbacusPracticeFragment] bilerek dışarıda: kabı açıkken
+     * temizlenmemesi için [reconcileAbacusOverlayWhenTasksIsBase] onu ayrıca ayıklıyor.
+     */
     private fun fragmentBlocksSeasonLeaderboardGate(f: Fragment?): Boolean = when (f) {
         is TutorialFragment,
         is AbacusFragment,
@@ -2142,8 +2907,10 @@ class MainActivity : AppCompatActivity() {
         is ChestFragment,
         is NewChestFragment,
         is RecordFragment,
-        is DailyQuestionRewardFragment,
         is CreateQuestionFragment,
+        is CupPathRoadFragment,
+        is QuestionPanelFragment,
+        is TutorialQuestionPanelFragment,
         -> true
         else -> false
     }
@@ -2170,9 +2937,9 @@ class MainActivity : AppCompatActivity() {
         if (isQuestionAskFlowBlockingSeasonLeaderboardGate()) return true
         val fm = supportFragmentManager
         val base = fm.findFragmentById(R.id.fragmentContainerID)
-        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
-        val result = fm.findFragmentById(R.id.resultFragmentContainer)
-        val createQuestion = fm.findFragmentById(R.id.createQuestionOverlayContainer)
+        val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
+        val result = liveOverlayIn(R.id.resultFragmentContainer)
+        val createQuestion = liveOverlayIn(R.id.createQuestionOverlayContainer)
         // Ders overlay'i kapalıyken (GONE) FM'de hayalet Abacus kalabiliyor; haritadayken sezon kapısını kilitleme.
         val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
         val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
@@ -2300,10 +3067,10 @@ class MainActivity : AppCompatActivity() {
         binding.abacusFragmentContainer.visibility = View.VISIBLE
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_right,
-                R.anim.slide_out_left,
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .replace(R.id.abacusFragmentContainer, fragment)
             .apply { configure?.invoke(this) }
@@ -2333,24 +3100,68 @@ class MainActivity : AppCompatActivity() {
         finishTasksOverlayAnimated(caller)
     }
 
-    /** Görevler overlay'i (abaküs pratik, günlük soru / BlindingLesson) sağa kayarak kapatır. */
-    fun finishTasksOverlayAnimated(caller: String) {
+    /**
+     * Ödev oynatıcısının (Sorularım → Ödevlerim, [showAbacusOverlayFragment] ile açılıyor)
+     * kapanışı. [finishTasksOverlayAnimated]'ı KULLANMIYOR: o yol Görevler'e özgü (dönüşte
+     * reklam, seri sorusu, Görevler'i yeniden gösterme). Ödevden dönen çocuğa reklam çıkmıyor ve
+     * altta Sorularım duruyor; yalnızca katman kayarak kalkıyor.
+     *
+     * @param showInterstitialAd Sobi testinden çıkış: kayma bitince derslerdeki geçiş reklamı kapısı
+     *   ([checkAndShowInterstitialAdIfAllowed]; aralık, Pro ve ilk sandık kuralları aynı). Kullanıcı
+     *   kararı 02.11.2026. Test sandıkla bittiyse reklamı sandığın kapanışı soruyor, burası değil.
+     */
+    fun finishHomeworkOverlay(caller: String, showInterstitialAd: Boolean = false) {
+        if (!::binding.isInitialized) return
+        val fm = supportFragmentManager
+        fm.executePendingTransactions()
+        val overlay = liveOverlayIn(R.id.abacusFragmentContainer)
+        if (overlay is com.example.app.homework.HomeworkPlayerFragment) {
+            fm.beginTransaction()
+                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
+                .remove(overlay)
+                .commitAllowingStateLoss()
+        }
+        // Host kayma bitince gizleniyor; hemen gizlenseydi kapanış animasyonu görünmezdi.
+        binding.root.postDelayed({
+            if (!::binding.isInitialized) return@postDelayed
+            if (liveOverlayIn(R.id.abacusFragmentContainer) == null) {
+                binding.abacusFragmentContainer.visibility = View.GONE
+            }
+            releasePracticeTouchBlocker()
+            ensureChromeUnlockedAfterOverlayDismiss("finishHomeworkOverlay:$caller")
+            if (showInterstitialAd) checkAndShowInterstitialAdIfAllowed("finishHomeworkOverlay:$caller")
+        }, HOMEWORK_OVERLAY_CLOSE_MS)
+    }
+
+    /**
+     * Görevler overlay'i (abaküs pratik, günlük soru / BlindingLesson) sağa kayarak kapatır.
+     *
+     * @param fromDailyQuestion Kapanan ekran günlük soru. Görevler'e bu dönüşte de yeni seri
+     *   sorusu sorulabiliyor; [TasksFragment] kapanışın başladığını ve bittiğini buradan
+     *   öğreniyor (bkz. [TasksFragment.onDailyQuestionClosing]).
+     */
+    fun finishTasksOverlayAnimated(caller: String, fromDailyQuestion: Boolean = false) {
         if (!::binding.isInitialized) return
         practiceOverlayDismissRunnable?.let { binding.root.removeCallbacks(it) }
         practiceOverlayDismissRunnable = null
         val fm = supportFragmentManager
         fm.executePendingTransactions()
-        val overlay = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val overlay = liveOverlayIn(R.id.abacusFragmentContainer)
         val tasksFragment = fm.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
         val overlayToRemove = when (overlay) {
-            is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment, is NewChestFragment -> overlay
+            is AbacusPracticeFragment, is BlindingLessonFragment, is FeedbackFragment, is NewChestFragment,
+            is CupPathRoadFragment, is BugReportFragment, is BugReportAdminFragment,
+            is com.example.app.homework.HomeworkPlayerFragment -> overlay
             else -> null
         }
         if (tasksFragment == null || overlayToRemove == null) {
-            finishOverlayReturnToTasks(caller)
+            finishOverlayReturnToTasks(caller, fromDailyQuestion)
             return
         }
         logTouchDiag("finishTasksOverlayAnimated.BEFORE:$caller")
+        // Görevler GÖRÜNMEDEN ÖNCE: kart tazelemesi ve dokunma, dönüşün ilk karesinden
+        // itibaren beklemeye alınmış olmalı.
+        if (fromDailyQuestion) tasksFragment.onDailyQuestionClosing()
         val tx = fm.beginTransaction()
             .setCustomAnimations(
                 R.anim.slide_in_left,
@@ -2364,7 +3175,7 @@ class MainActivity : AppCompatActivity() {
         tx.remove(overlayToRemove).commitAllowingStateLoss()
         val completeRunnable = Runnable {
             practiceOverlayDismissRunnable = null
-            completeTasksOverlayDismiss("finishTasksOverlayAnimated:$caller")
+            completeTasksOverlayDismiss("finishTasksOverlayAnimated:$caller", fromDailyQuestion)
         }
         practiceOverlayDismissRunnable = completeRunnable
         binding.root.postDelayed(completeRunnable, practiceOverlayExitAnimMs)
@@ -2374,7 +3185,7 @@ class MainActivity : AppCompatActivity() {
      * Görevler sekmesinden açılan abacus overlay (günlük soru vb.) kapandığında:
      * host GONE, back stack, Tasks show, touch blocker ve chrome kilidi.
      */
-    fun finishOverlayReturnToTasks(caller: String) {
+    fun finishOverlayReturnToTasks(caller: String, fromDailyQuestion: Boolean = false) {
         if (!::binding.isInitialized) return
         practiceOverlayDismissRunnable?.let { binding.root.removeCallbacks(it) }
         practiceOverlayDismissRunnable = null
@@ -2384,17 +3195,19 @@ class MainActivity : AppCompatActivity() {
         beginAbacusOverlayDismissForSeasonGate()
         purgeAbacusOverlayHosts("finishOverlayReturnToTasks:$caller")
         val tasks = fm.findFragmentById(R.id.fragmentContainerID)
+        // [finishTasksOverlayAnimated]'daki ile aynı sebep: Görevler görünmeden önce.
+        if (fromDailyQuestion) (tasks as? TasksFragment)?.onDailyQuestionClosing()
         if (tasks is TasksFragment && tasks.isHidden) {
             fm.beginTransaction().show(tasks).commitAllowingStateLoss()
             fm.executePendingTransactions()
         }
         binding.abacusFragmentContainer.visibility = View.GONE
         binding.root.post {
-            completeTasksOverlayDismiss("finishOverlayReturnToTasks:$caller")
+            completeTasksOverlayDismiss("finishOverlayReturnToTasks:$caller", fromDailyQuestion)
         }
     }
 
-    private fun completeTasksOverlayDismiss(caller: String) {
+    private fun completeTasksOverlayDismiss(caller: String, fromDailyQuestion: Boolean = false) {
         checkAndShowInterstitialAdIfAllowed("completeTasksOverlayDismiss") {
             if (!::binding.isInitialized) return@checkAndShowInterstitialAdIfAllowed
             forcingAbacusOverlayDismissForSeasonGate = false
@@ -2404,6 +3217,15 @@ class MainActivity : AppCompatActivity() {
             releaseLessonActionTouchBlocker()
             ensureChromeUnlockedAfterOverlayDismiss(caller)
             logTouchDiag("completeTasksOverlayDismiss:$caller")
+            // Reklam akışı bitti (ya da hiç reklam yoktu): yeni seri sorusunun sırası.
+            // Reklamdan ÖNCE sorulsaydı reklam sorunun üstüne açılırdı.
+            if (fromDailyQuestion) {
+                // Geri çağrı ders listesi yüklemesinin içinden de gelebiliyor.
+                runOnUiThread {
+                    (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? TasksFragment)
+                        ?.onDailyQuestionReturnSettled()
+                }
+            }
         }
     }
 
@@ -2422,10 +3244,16 @@ class MainActivity : AppCompatActivity() {
         val fm = supportFragmentManager
         if (fm.findFragmentById(R.id.fragmentContainerID) !is TasksFragment) return
         fm.executePendingTransactions()
-        val active = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val active = liveOverlayIn(R.id.abacusFragmentContainer)
         val hostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
-        if (active is AbacusPracticeFragment && hostVisible) {
-            Log.d(MainActivityTouchDiag.LOG_TAG, "[$caller] skip — active AbacusPractice")
+        // Bu kontrol Görevler'in onResume'unda da çalışıyor, yani ekran bir dış etkinlikten
+        // (galeri/Photo Picker) ya da arka plandan dönünce. Kullanıcının açık tuttuğu gerçek
+        // ekranlar hayalet sayılmamalı: hata bildirimi ekranı görsel seçilip dönülünce
+        // kapanıyordu.
+        if (hostVisible && (active is AbacusPracticeFragment || active is BugReportFragment ||
+                active is BugReportAdminFragment || active is com.example.app.homework.HomeworkPlayerFragment)
+        ) {
+            Log.d(MainActivityTouchDiag.LOG_TAG, "[$caller] skip — active ${active.javaClass.simpleName}")
             return
         }
         purgeAbacusOverlayHosts(caller)
@@ -2483,32 +3311,11 @@ class MainActivity : AppCompatActivity() {
     ) {
         if (badgePayloads.isNotEmpty()) pendingBadgePayloadsForAd = badgePayloads
         if (badgeStringPayloads.isNotEmpty()) pendingBadgeStringPayloadsForAd = badgeStringPayloads
-        if (!adCheckForBadgeInProgress) {
-            val resolvedBadgePayloads = pendingBadgePayloadsForAd
-            val resolvedBadgeStringPayloads = pendingBadgeStringPayloadsForAd
-            pendingBadgePayloadsForAd = emptyList()
-            pendingBadgeStringPayloadsForAd = emptyList()
-            if (resolvedBadgePayloads.isNotEmpty()) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
-                }
-            } else if (resolvedBadgeStringPayloads.isNotEmpty()) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(
-                            R.anim.slide_in_right,
-                            R.anim.slide_out_left,
-                            R.anim.slide_in_left,
-                            R.anim.slide_out_right,
-                        )
-                        .replace(
-                            R.id.badgeFragmentContainter,
-                            BadgeFragment.newLevelUpSequenceInstance(resolvedBadgeStringPayloads, 0)
-                        )
-                        .commit()
-                }
-            }
-        }
+        // Eskiden rozet burada DOĞRUDAN açılıyordu ve bu, kuyruktan habersiz ikinci bir
+        // yoldu — yeni seri ekranının reklamın altında kalması gibi çakışmaların
+        // kaynaklarından biri. Artık yalnızca bayrak yazılıp kuyruk dürtülüyor; açma
+        // kararı tek yerde.
+        pumpPostLessonQueue("enqueuePendingBadgePayloads")
     }
 
     /** [prepareMapReturnAfterLessonClaim] sonrası: chrome + sezon reconcile (tek kaynak). */
@@ -2516,16 +3323,70 @@ class MainActivity : AppCompatActivity() {
         caller: String,
         badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
         badgeStringPayloads: List<String> = emptyList(),
+        // true: bu dönüş türü LESSON olan (chest hariç) bir item'ın claim'inden geliyor —
+        // öğretmene sorma tanıtımı yalnızca bu durumda deneniyor.
+        isLessonTypeReturn: Boolean = false,
+        // false: bu çağrı bir ders/sandık bitişinden DEĞİL, başka bir overlay'in
+        // kapanışından geliyor (bkz. RecordFragment). Ayrım şart: bu fonksiyon liderlik
+        // tablosu kapatılınca da çağrılıyor ve o zaman "ders bitti" ekranları açılmamalı.
+        fromLessonFinish: Boolean = true,
+        // false: ders YARIDA BIRAKILDI, ardından hiçbir ödül ekranı gelemez.
+        // Tek etkisi zemin kararı; bkz. [postLessonRewardScreensPossible].
+        rewardScreensPossible: Boolean = true,
     ) {
-        android.util.Log.d("DEBUG_BADGE", "MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
+        postLessonRewardScreensPossible = rewardScreensPossible
+        // Devir teslim penceresi burada kapanıyor: artık ne gösterileceği belli (rozet
+        // kontrolü başladıysa bayrağı set edilmiş durumda). Bundan sonra zeminin ömrünü
+        // normal kural belirliyor: bekleyen iş varsa duruyor, yoksa iniyor.
+        postLessonHandoffUntilMs = 0L
+        // Yeni tur sorusu burada KUYRUĞA giriyor, açılmıyor. Açma kararı kuyruğun
+        // ([pumpPostLessonQueue]) — sırası gelip kapı açıldığı anda.
+        //
+        // Yarış dersleri (7-8. kısım) istisna: harita yerine kısım seçimi ekranının
+        // üstündeki panelden açılıyorlar ve kuyruk harita tabanı istiyor. Soru kuyruğa
+        // girseydi kapı hiç açılmaz, soru sırada asılı kalır ve çocuk sonradan bir
+        // haritaya girdiğinde alakasız bir anda çıkardı. O dönüşte soru Görevler'deki
+        // bağımsız yoldan soruluyor; taban haritayken hiçbir şey değişmiyor.
+        val returnsToPartSelection =
+            supportFragmentManager.findFragmentById(R.id.fragmentContainerID) is PartSelectionFragment
+        if (fromLessonFinish) {
+            if (returnsToPartSelection) {
+                requestNewStreakPromptOnPartSelection(caller)
+            } else if (StreakRepository.needsNewStreakPrompt(this)) {
+                newStreakPromptQueued = true
+            }
+        }
+        BadgeDiagnostics.log("MainActivity finalizeMapReturnAfterLessonClaim received payloads: badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}")
         logMapTouchDiag("finalizeMapReturn", "BEFORE", "caller=$caller")
         logTouchDiag("finalizeMapReturnAfterLessonClaim.BEFORE:$caller")
+        // Öğretmene sorma tanıtımı haritaya bağlı (kapısı harita tabanı istiyor). Yarış
+        // dersi dönüşünde bayrak kurulursa kısım seçimi ekranında açılamıyor, bekliyor ve
+        // çocuk bir haritaya GİRER GİRMEZ, ortada biten bir ders yokken çıkıyordu (cihazda
+        // görüldü). O dönüşte bayrak hiç kurulmuyor.
+        val promoReturn = isLessonTypeReturn && !returnsToPartSelection
+        // scheduleSeasonGate'in post'u bizim post'umuzdan ÖNCE çalışıp reconcile üzerinden
+        // notifyMapVisibleAfterLessonClaim'i parametresiz tetikleyebiliyor; bayrağı burada
+        // (senkron) biriktir ki hangi çağrı kazanırsa kazansın kaybolmasın.
+        if (promoReturn) {
+            pendingLessonTypeReturnForPromo = true
+            lockTouchForPendingAskQuestionPromo("finalizeMapReturn:$caller")
+        }
         ensureChromeUnlockedAfterMapReturn(caller)
         scheduleSeasonGateAfterAbacusOverlayDismissed()
+        // Kuyrukta gösterilecek bir şey varsa harita ERKENDEN kilitleniyor: ekranlar
+        // asenkron gecikmelerle (reklam kontrolü, Firestore) geldiği için aradaki boşlukta
+        // harita tıklanabilir kalıyordu. Kilidi kuyruk boşalınca bırakıyor
+        // (bkz. runPostLessonQueue).
+        //
+        // Şart önceden yalnızca "rozet ya da rehber var mı" idi; yeni seri ya da rating
+        // gösterilecekken kilit hiç uygulanmıyor ve iki pencere arasında harita açık
+        // kalıyordu. Burada TEK acquire var — ChromeBlocker sayıcılı, ikinci bir kilit
+        // noktası eklemek dengesizlik üretirdi.
+        acquirePostLessonQueueTouchLock()
         binding.root.post {
             logMapTouchDiag("finalizeMapReturn", "AFTER_POST", "caller=$caller")
             logTouchDiag("finalizeMapReturnAfterLessonClaim.AFTER:$caller")
-            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads)
+            notifyMapVisibleAfterLessonClaim("finalizeMapReturn:$caller", badgePayloads, badgeStringPayloads, promoReturn)
             tryShowPendingMarathonGuideOnMap("finalizeMapReturn:$caller")
         }
     }
@@ -2537,66 +3398,42 @@ class MainActivity : AppCompatActivity() {
     fun notifyMapVisibleAfterLessonClaim(
         caller: String,
         badgePayloads: List<com.example.app.BadgeLevelUpPayload> = emptyList(),
-        badgeStringPayloads: List<String> = emptyList()
+        badgeStringPayloads: List<String> = emptyList(),
+        isLessonTypeReturn: Boolean = false,
     ) {
-        android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim CALLED! caller=$caller, badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}, adCheckInProgress=$adCheckForBadgeInProgress")
+        BadgeDiagnostics.log("notifyMapVisibleAfterLessonClaim CALLED! caller=$caller, badgePayloads=${badgePayloads.size}, badgeStringPayloads=${badgeStringPayloads.size}, adCheckInProgress=$adCheckForBadgeInProgress")
         // Gelen payloads'ları biriktirir — hangi onDone tetiklenirse tetiklensin rozet kaybedilmez.
         if (badgePayloads.isNotEmpty()) pendingBadgePayloadsForAd = badgePayloads
         if (badgeStringPayloads.isNotEmpty()) pendingBadgeStringPayloadsForAd = badgeStringPayloads
+        // Aynı gerekçe: erken return'e takılsak bile lesson dönüşü bilgisi kaybolmasın.
+        if (isLessonTypeReturn) {
+            pendingLessonTypeReturnForPromo = true
+            lockTouchForPendingAskQuestionPromo("notifyMapVisible:$caller")
+        }
         // Eğer reklam kontrolü zaten uçuştaysa ikinci çağrı sadece payload biriktirir, onDone tekrar tetiklenmez.
         if (adCheckForBadgeInProgress) {
-            android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim SKIPPING checkAndShowInterstitialAdIfAllowed (ad already in progress), caller=$caller")
+            BadgeDiagnostics.log("notifyMapVisibleAfterLessonClaim SKIPPING checkAndShowInterstitialAdIfAllowed (ad already in progress), caller=$caller")
             return
         }
         adCheckForBadgeInProgress = true
         checkAndShowInterstitialAdIfAllowed("notifyMapVisibleAfterLessonClaim") {
             adCheckForBadgeInProgress = false
             if (!::binding.isInitialized) return@checkAndShowInterstitialAdIfAllowed
-            // Biriktirilen payloads'ı oku ve temizle
+            // Bayraklar burada TÜKETİLMİYOR: artık her birini kuyruktaki kendi adımı
+            // okuyup siliyor. Burada silinselerdi kuyruk sırası gelince gösterecek bir şey
+            // bulamazdı.
             val resolvedBadgePayloads = pendingBadgePayloadsForAd
             val resolvedBadgeStringPayloads = pendingBadgeStringPayloadsForAd
-            pendingBadgePayloadsForAd = emptyList()
-            pendingBadgeStringPayloadsForAd = emptyList()
-            android.util.Log.d("DEBUG_BADGE", "notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
-            if (resolvedBadgePayloads.isNotEmpty()) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, resolvedBadgePayloads)
-                }
-            } else if (resolvedBadgeStringPayloads.isNotEmpty()) {
-                android.os.Handler(android.os.Looper.getMainLooper()).post {
-                    android.util.Log.d("DEBUG_BADGE", "MainActivity successfully opening BadgeFragment with STRING payloads: ${resolvedBadgeStringPayloads.size}")
-                    supportFragmentManager.beginTransaction()
-                        .setCustomAnimations(
-                            R.anim.slide_in_right,
-                            R.anim.slide_out_left,
-                            R.anim.slide_in_left,
-                            R.anim.slide_out_right,
-                        )
-                        .replace(
-                            R.id.badgeFragmentContainter,
-                            BadgeFragment.newLevelUpSequenceInstance(resolvedBadgeStringPayloads, 0)
-                        )
-                        .commit()
-                }
-            } else if (justFinishedChestForRating) {
-                val isAdSkipShowing = supportFragmentManager.findFragmentByTag("AdSkip") != null
-                val isTasksRedirectionPending = GlobalValues.pendingCupPathRevealPartId != null
-                if (isAdSkipShowing || isTasksRedirectionPending) {
-                    justFinishedChestForRating = false
-                } else {
-                    val mapFragment = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
-                    val isGuideActiveOrPending = MarathonGuideStore.isPending(this@MainActivity) ||
-                        (mapFragment != null && mapFragment.isAdded && mapFragment.view != null &&
-                            (mapFragment.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE))
-
-                    if (!isGuideActiveOrPending) {
-                        justFinishedChestForRating = false
-                        android.os.Handler(android.os.Looper.getMainLooper()).post {
-                            AppRatingManager.checkAndShowRatingPrompt(this@MainActivity, 1)
-                        }
-                    }
-                }
+            val resolvedLessonTypeReturn = pendingLessonTypeReturnForPromo
+            BadgeDiagnostics.log("notifyMapVisibleAfterLessonClaim onDone: resolvedBadgePayloads=${resolvedBadgePayloads.size}, resolvedStringPayloads=${resolvedBadgeStringPayloads.size}")
+            // Promo kilidi: promo HİÇ çalışmayacaksa burada bırakılıyor, yoksa harita
+            // kilitli kalır. Eskiden rozet ya da rating varsa da bırakılıyordu çünkü o
+            // durumda promo ATLANIYORDU; kuyrukta atlanmıyor, sırasını bekliyor.
+            if (!resolvedLessonTypeReturn) {
+                releaseAskQuestionPromoLock("noPromoBranch:$caller")
             }
+            // Ne gösterileceğine ve hangi sırayla gösterileceğine tek yer karar veriyor.
+            pumpPostLessonQueue("notifyMapVisible:$caller")
             val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
             if (map == null || !map.isAdded) {
                 LessonProgressDiag.log("MainActivity.notifyMapVisible", "SKIP caller=$caller map=null or not added")
@@ -2615,6 +3452,38 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Abonelik akışı ekranda mı: Pro karşılaştırma paneli, plan seçimi ya da Play'in ödeme
+     * penceresi (başlatıldı, sonucu henüz gelmedi). Açıksa sebebi, değilse null.
+     *
+     * ## Neden
+     * Reklam sonrası paneldeki "Pro'ya geç" bu akışı açıyor ve panel kendini kapatıyor.
+     * Kapılar yalnızca reklam paneline bakıyordu: panel kapandığı an ders sonrası kuyruğu
+     * "engel yok" deyip rozet kutlamasını ya da yeni seri sorusunu Pro panelinin ALTINDA
+     * açıyordu — kullanıcı abonelikten çıkınca kutlamayı yarısından görüyordu.
+     *
+     * Rozet, yeni seri, tanıtım, rehber ve Görevler dönüşü bu yüzden akış bitene kadar
+     * bekliyor. Kapanan Pro/plan ekranı kuyruğu dürtüyor, ödeme akışının bitişini
+     * [BillingManager.onPurchaseFlowEnded] haber veriyor.
+     *
+     * Pro → plan geçişinde boşluk yok: plan açıldıktan 500 ms SONRA Pro kendini kapatıyor,
+     * reklam paneli de Pro'yu açtıktan sonra kapanıyor.
+     */
+    private fun subscriptionFlowBlockReason(): String? {
+        if (dialogStillShowing("ProDiffirent")) return "pro_panel_showing"
+        if (dialogStillShowing("Plan")) return "plan_showing"
+        // Plan ekranındaki "arkadaşını davet et"ten açılan pencere (09.11.2026): kuyruk onun üstüne açılmasın,
+        // kapanınca dürtülüyor (InviteFragment.onDismiss).
+        if (dialogStillShowing(InviteFragment.TAG)) return "invite_showing"
+        // Başarı anı paneli açıkken geç gelen bir rozet kutlaması onun altına açılmasın; panel kapanınca
+        // (ShareMomentDialog.onDismiss) kuyruk dürtülüyor. Panelin kendisi kuyruk boşken açılıyor.
+        if (dialogStillShowing(ShareMomentDialog.TAG)) return "share_moment_showing"
+        if (::billingManager.isInitialized && billingManager.isPurchaseFlowActive()) {
+            return "purchase_flow"
+        }
+        return null
+    }
+
     /** Harita tabanı görünür; ders/sandık/görev/rozet/sezon kapısı overlay'i yok. */
     fun marathonGuideMapBlockReason(): String? {
         if (!::binding.isInitialized) return "binding_not_initialized"
@@ -2625,13 +3494,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         val abacusHostVisible = binding.abacusFragmentContainer.visibility == View.VISIBLE
-        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
         if (abacusHostVisible && abacus != null && isBlockingLessonOverlayFragment(abacus)) {
             return "abacus_overlay:${abacus.javaClass.simpleName} hostVisible=$abacusHostVisible"
         }
 
         val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
-        val result = fm.findFragmentById(R.id.resultFragmentContainer)
+        val result = liveOverlayIn(R.id.resultFragmentContainer)
         if (resultHostVisible && result != null && isBlockingLessonOverlayFragment(result)) {
             return "result_overlay:${result.javaClass.simpleName} hostVisible=$resultHostVisible"
         }
@@ -2640,6 +3509,14 @@ class MainActivity : AppCompatActivity() {
         if (badge != null) {
             return "badge_overlay:${badge.javaClass.simpleName}"
         }
+
+        // Kuyruğun açtığı yeni seri ekranı da burada listeli: listelenmeseydi rehber
+        // onun üstüne açılırdı — ilk denemede tam bu oldu.
+        if (dialogStillShowing(NewStreakFragment.TAG)) {
+            return "new_streak_prompt"
+        }
+
+        subscriptionFlowBlockReason()?.let { return it }
 
         if (GlobalValues.pendingBadgeFirestoreOperation) {
             return "badge_firestore_pending"
@@ -2667,48 +3544,182 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    fun tryShowPendingMarathonGuideOnMap(caller: String) {
-        if (!::binding.isInitialized) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=binding_not_initialized")
-            return
-        }
-
-        // Kupa yolu panel açılış emri varsa, tüm ödül/görev/rozet overlay'leri kapandığında
-        // haritada maraton rehberi göstermek yerine 0.5 saniye bekleyip TasksFragment'a (explore sekmesine) geç.
-        if (GlobalValues.pendingCupPathRevealPartId != null && isMapBaseReadyForMarathonGuide()) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow ROUTE | caller=$caller routing to TasksFragment for Cup Path in 500ms")
-            // Dokunmaları Activity düzeyinde (Pencere - Window seviyesinde) engelle
-            window.setFlags(
-                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
-                android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-            )
-
-            binding.root.postDelayed({
-                binding.bottomNavigationID.selectedItemId = R.id.explore
-            }, 500L)
-            return
-        }
-
-        MarathonGuideStore.logPrefsSnapshot(this, "tryShow:$caller")
+    /**
+     * [marathonGuideMapBlockReason]'a ek olarak, chest akışından (guide/rating/tasks yönlendirmesi)
+     * kalan gecikmeli/kuyruktaki durumları da kapsar. null → harita tamamen temiz, AskQuestionOpenFragment
+     * güvenle gösterilebilir.
+     */
+    private fun askQuestionPromoMapBlockReason(): String? {
+        marathonGuideMapBlockReason()?.let { return it }
+        if (GlobalValues.pendingCupPathRevealPartId != null) return "cup_path_pending"
+        if (MarathonGuideStore.isPending(this)) return "guide_pending"
+        if (justFinishedChestForRating) return "rating_pending"
+        if (supportFragmentManager.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        if (supportFragmentManager.findFragmentByTag("AskQuestionOpen") != null) return "already_showing"
         val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
-        if (map == null) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_fragment_missing")
-            return
+        if (map != null && map.isAdded && map.view != null &&
+            map.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE
+        ) {
+            return "guide_panel_visible"
         }
-        if (!map.isAdded) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_not_added")
-            return
-        }
-        if (map.view == null) {
-            Log.d(MarathonGuideStore.LOG_TAG, "tryShow WAIT | caller=$caller reason=map_view_null → post")
-        }
-        map.view?.post {
-            if (map.isAdded) {
-                map.maybeShowPendingMarathonGuide(caller)
-            } else {
-                Log.d(MarathonGuideStore.LOG_TAG, "tryShow SKIP | caller=$caller reason=map_detached_before_post")
+        return null
+    }
+
+    /**
+     * Yalnızca AskQuestionOpen promosunu dener — harita dönüş akışının hiçbir parçasını
+     * (rozet, rehber, rating, reklam, sezon kapısı, tasks yönlendirmesi) çalıştırmaz.
+     * TutorialFragment → harita gibi, [finalizeMapReturnAfterLessonClaim]'in bilinçli olarak
+     * çağrılmadığı yollar için.
+     */
+    fun tryShowAskQuestionPromoOnly(caller: String) {
+        if (!::binding.isInitialized) return
+        lockTouchForPendingAskQuestionPromo(caller)
+        binding.root.post { maybeShowAskQuestionPromo(caller) }
+    }
+
+    /**
+     * Pro deneme tanıtımına ([SobiProTrialFragment]) uygun mu: Pro/Premium olmayan, öğretmen
+     * olmayan, oturumu açık kullanıcı — VE bu cihaz hoş geldin hediyesini henüz almamış olmalı.
+     *
+     * Son koşul öğretmen tanıtımından kalma (eskiden vaat danışma kredisiydi); kullanıcı kararıyla
+     * (02.11.2026) aynı kişiler korunuyor: hediyeyi daha önce almış cihaz, aynı telefonda ikinci
+     * hesapla denemeyi yeniden yaşamaya çalışan kullanıcı demek.
+     *
+     * Ders dönüşü tanıtımı ve Sobi ekranındaki deneme bağlantısı (MistakeReviewDialog) bu kapıyı
+     * paylaşıyor. Öğretmen düğmesinden açılan yol (AskQuestionButtonBinder) bu koşula tabi değil.
+     */
+    fun isProTrialPromoEligible(): Boolean {
+        if (FirebaseAuth.getInstance().currentUser == null) return false
+        if (energyManager.getUserRole() == "TEACHER") return false
+        // Test anahtarı: plan ve cihaz kredisi kapılarını atlar. Release'de hep false,
+        // sebebi [AskQuestionPromoDebug]'da yazıyor.
+        if (AskQuestionPromoDebug.forceShow) return true
+        val plan = energyManager.getUserPlan()
+        if (plan == "Pro" || plan == "Premium") return false
+        return WelcomeCreditEligibility.isEligible(applicationContext)
+    }
+
+    /**
+     * Tanıtımın açılması için gereken LESSON dönüş sayısı.
+     *
+     * Test anahtarı açıkken 1: her dönüşte açılsın, üç ders çözmek gerekmesin.
+     */
+    private val askQuestionPromoThreshold: Int
+        get() = if (AskQuestionPromoDebug.forceShow) 1
+        else ASK_QUESTION_PROMO_LESSON_RETURN_THRESHOLD
+
+    fun isAskQuestionPromoPending(): Boolean = askQuestionPromoPendingLock
+
+    /**
+     * Bu lesson dönüşünde promo gösterileceği sayaçtan belliyse haritayı daha reklam kontrolü
+     * başlamadan kilitler — rozet/rehberdeki eager lock deseninin aynısı. Promo ekrana gelene
+     * (ya da gelmeyeceği netleşene) kadar kilit [releaseAskQuestionPromoLock] ile açılmaz.
+     */
+    fun lockTouchForPendingAskQuestionPromo(caller: String) {
+        if (!::binding.isInitialized || askQuestionPromoPendingLock) return
+        if (!isProTrialPromoEligible()) return
+        val nextCount = GlobalValues.peekAskQuestionPromoLessonReturnCount(this) + 1
+        if (nextCount < askQuestionPromoThreshold) return
+
+        askQuestionPromoPendingLock = true
+        logMapTouchDiag("askQuestionPromo", "LOCK", "caller=$caller nextCount=$nextCount")
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+            ?.lockTouchForPendingOverlay()
+        scheduleAskQuestionPromoLockWatchdog()
+    }
+
+    private fun releaseAskQuestionPromoLock(caller: String) {
+        if (!askQuestionPromoPendingLock) return
+        askQuestionPromoPendingLock = false
+        logMapTouchDiag("askQuestionPromo", "UNLOCK", "caller=$caller")
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+            ?.enableMapTouchRouting()
+    }
+
+    private fun scheduleAskQuestionPromoLockWatchdog() {
+        binding.root.postDelayed({
+            if (!askQuestionPromoPendingLock) return@postDelayed
+            // Reklam açıkken kilidi bırakmak, reklam kapanışıyla promo arasında tıklanabilir
+            // pencere açar; kontrol bitene kadar bekle.
+            if (adCheckForBadgeInProgress) {
+                scheduleAskQuestionPromoLockWatchdog()
+                return@postDelayed
             }
-        } ?: map.maybeShowPendingMarathonGuide(caller)
+            releaseAskQuestionPromoLock("watchdog")
+        }, ASK_QUESTION_PROMO_LOCK_WATCHDOG_MS)
+    }
+
+    /**
+     * Pro olmayan/öğretmen olmayan kullanıcıya, türü LESSON olan (chest hariç) bir item'dan haritaya
+     * her dönüşte 1 artan sayaç 3'e ulaşınca Sobi'nin Pro deneme tanıtımını ([SobiProTrialFragment];
+     * eskiden AskQuestionOpenFragment) otomatik gösterir. Adlardaki "AskQuestionPromo" o günden kalma.
+     * Guide/rozet/rating/tasks yönlendirmesiyle üst üste binmesin diye [askQuestionPromoMapBlockReason]
+     * ile kapılanır; harita o an temiz değilse sayaç sıfırlanmaz — sonraki lesson dönüşünde tekrar denenir.
+     */
+    private fun maybeShowAskQuestionPromo(caller: String) {
+        if (!::binding.isInitialized) return
+        if (!isProTrialPromoEligible()) {
+            releaseAskQuestionPromoLock("notEligible:$caller")
+            return
+        }
+
+        val count = GlobalValues.incrementAskQuestionPromoLessonReturnCount(this)
+        if (count < askQuestionPromoThreshold) {
+            releaseAskQuestionPromoLock("belowThreshold:$caller")
+            return
+        }
+        tryShowAskQuestionPromo(caller, count, attempt = 0)
+    }
+
+    /**
+     * Promoyu göstermeyi dener. Blok sebebi geçici olabileceği için (rozet Firestore kontrolü,
+     * reklam kontrolü, görev paneli kapanışı) kısa aralıklarla tekrar denenir; harita temizlenir
+     * temizlenmez promo ~[ASK_QUESTION_PROMO_RETRY_INTERVAL_MS] içinde açılır. Her denemede kapı
+     * yeniden değerlendirildiği için gerçekten bir overlay açıldıysa (rozet/rehber/rating) promo
+     * hiç gösterilmez, sayaç da sıfırlanmaz.
+     */
+    private fun tryShowAskQuestionPromo(caller: String, count: Int, attempt: Int) {
+        if (!::binding.isInitialized) return
+        // Gecikmeli denemede activity kapanmış/state kaydedilmiş olabilir; show() o durumda çöker.
+        if (isFinishing || isDestroyed || supportFragmentManager.isStateSaved) {
+            releaseAskQuestionPromoLock("activityGone:$caller")
+            return
+        }
+        val blockReason = askQuestionPromoMapBlockReason()
+        if (blockReason != null) {
+            if (attempt >= ASK_QUESTION_PROMO_MAX_ATTEMPTS) {
+                logMapTouchDiag("askQuestionPromo", "GIVE_UP", "caller=$caller reason=$blockReason count=$count")
+                releaseAskQuestionPromoLock("retriesExhausted:$caller")
+                return
+            }
+            if (attempt == 0) {
+                logMapTouchDiag("askQuestionPromo", "WAIT", "caller=$caller reason=$blockReason count=$count")
+            }
+            binding.root.postDelayed(
+                { tryShowAskQuestionPromo(caller, count, attempt + 1) },
+                ASK_QUESTION_PROMO_RETRY_INTERVAL_MS,
+            )
+            return
+        }
+        GlobalValues.resetAskQuestionPromoLessonReturnCount(this)
+        logMapTouchDiag("askQuestionPromo", "SHOW", "caller=$caller count=$count attempt=$attempt")
+        SobiProTrialFragment
+            .newInstance(AnalyticsLogger.PROMO_TRIGGER_SOBI_AUTO)
+            .show(supportFragmentManager, SobiProTrialFragment.TAG)
+        // Dialog penceresi bir sonraki frame'de öne gelir; kilidi ondan önce bırakma.
+        binding.root.post { releaseAskQuestionPromoLock("shown:$caller") }
+    }
+
+    /**
+     * Eskiden yalnızca maraton rehberini denerdi; artık ders sonrası kuyruğunu dürtüyor.
+     *
+     * Adı ve imzası korundu: bu fonksiyon DOKUZ ayrı yerden çağrılıyor (MapFragment,
+     * BadgeFragment, ChestFragment, ChestResult…) ve hepsi aslında aynı şeyi söylüyor:
+     * "bir şeyler yatıştı, sırada ne varsa gösterilebilir". Dokuz çağrı yerini
+     * değiştirmek yerine anlamı tek yerde genişletmek hem daha az riskli hem daha doğru.
+     */
+    fun tryShowPendingMarathonGuideOnMap(caller: String) {
+        pumpPostLessonQueue(caller)
     }
 
     /** LessonResult → ChestFragment: result overlay host'u görünür yap. */
@@ -2783,7 +3794,7 @@ class MainActivity : AppCompatActivity() {
         val base = fm.findFragmentById(R.id.fragmentContainerID)
         if (base !is MapFragment && base !is PartSelectionFragment) return
         fm.executePendingTransactions()
-        val abacus = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
         val blockingOverlay =
             binding.abacusFragmentContainer.visibility == View.VISIBLE &&
                 abacus != null &&
@@ -2797,7 +3808,7 @@ class MainActivity : AppCompatActivity() {
         if (firstTutorialOverlayBootstrapActive) return false
         if (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) !is MapFragment) return false
         if (forcingAbacusOverlayDismissForSeasonGate) return true
-        val orphan = supportFragmentManager.findFragmentById(R.id.abacusFragmentContainer)
+        val orphan = liveOverlayIn(R.id.abacusFragmentContainer)
         val result = binding.abacusFragmentContainer.visibility == View.VISIBLE ||
             (orphan != null && fragmentBlocksSeasonLeaderboardGate(orphan))
         logFirstTutorial(
@@ -2830,7 +3841,7 @@ class MainActivity : AppCompatActivity() {
         // resultFragmentContainer (ChestFragment) GONE yapılıp direkt haritaya dönülüyordu — ders ilerlemesi
         // hiç kaydedilmeden. resultFragmentContainer'ı da abacusFragmentContainer ile aynı şekilde kontrol et.
         if (!forcingAbacusOverlayDismissForSeasonGate) {
-            val resultOverlay = fm.findFragmentById(R.id.resultFragmentContainer)
+            val resultOverlay = liveOverlayIn(R.id.resultFragmentContainer)
             val resultHostVisible = binding.resultFragmentContainer.visibility == View.VISIBLE
             if (resultOverlay != null && resultHostVisible && fragmentBlocksSeasonLeaderboardGate(resultOverlay)) {
                 logMapTouchDiag(
@@ -2846,7 +3857,7 @@ class MainActivity : AppCompatActivity() {
                 return
             }
         }
-        val activeOverlay = fm.findFragmentById(R.id.abacusFragmentContainer)
+        val activeOverlay = liveOverlayIn(R.id.abacusFragmentContainer)
         if (activeOverlay is RecordFragment &&
             binding.abacusFragmentContainer.visibility == View.VISIBLE
         ) {
@@ -2912,7 +3923,7 @@ class MainActivity : AppCompatActivity() {
         )
         for (step in 0 until 6) {
             fm.executePendingTransactions()
-            val orphan = fm.findFragmentById(R.id.abacusFragmentContainer)
+            val orphan = liveOverlayIn(R.id.abacusFragmentContainer)
             if (orphan == null || !fragmentBlocksSeasonLeaderboardGate(orphan)) break
             fm.beginTransaction().remove(orphan).commitNowAllowingStateLoss()
             fm.executePendingTransactions()
@@ -2962,9 +3973,36 @@ class MainActivity : AppCompatActivity() {
             }
     }
     
+    /**
+     * Her dokunuş ve tuş olayı buradan geçiyor; çalışma süresi sayacı bunu kullanıyor.
+     *
+     * Ders ekranlarının içine tek tek kanca koymanın alternatifiydi: dört ekranda dört ayrı
+     * doğruluk sorusu yerine tek kapı. Ders ekranlarının hepsi bu activity'de yaşıyor
+     * (abacusFragmentContainer / resultFragmentContainer / fragmentContainerID), yani başka
+     * bir activity'de aynı kancaya ihtiyaç yok.
+     */
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        StudyTimeTracker.onUserInteraction()
+    }
+
     override fun onResume() {
         super.onResume()
         currentActivity = this
+        // Arka plandan dönen kullanıcı splash'ten geçmiyor; zorunlu güncelleme burada da bakılır.
+        ForceUpdateManager.checkOnResume(this)
+        // Güvenlik ağı: kuyruk reklam açıkken (activity duraklatılmışken) dürtüldüyse
+        // "not_resumed" deyip durmuş olabilir. Reklam kapanınca buradan devam ediyor.
+        pumpPostLessonQueue("MainActivity.onResume")
+        // Harita dışı dönüşlerdeki (kupa testi, günlük soru, yarış dersi) yeni seri sorusu
+        // da aynı sebeple burada sürüyor.
+        pumpOffMapNewStreakPrompt()
+        refreshStreakUi()
+        // Seri sunucuda tutuluyor (ödüller ona bakıyor). Uygulama öne geldiğinde oradan
+        // tazeleniyor: cihaz değişmiş olabilir, ya da seri başka bir cihazda ilerlemiş.
+        StreakSyncService.refreshFromServer(this) { runOnUiThread { refreshStreakUi() } }
+        // Ders ekranından çıkıldığında çalışma süresi yazılıyor; alev o anda güncellensin.
+        StudyTimeTracker.setOnChangedListener { runOnUiThread { refreshStreakUi() } }
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
         val hasExistingLogin = auth.currentUser != null
@@ -2977,6 +4015,9 @@ class MainActivity : AppCompatActivity() {
         }
         if (hasExistingLogin) {
             refreshWalletFromFirestore()
+            // Sezon saatini sunucuya göre düzelt. Saatte bir defadan sık istek atmıyor,
+            // bu yüzden her onResume'da çağırmak serbest.
+            SeasonClock.refreshFromServer()
             SessionDeviceManager.requireLoggedInAndSingleDevice(this) {
                 SessionDeviceManager.startSessionHeartbeat(this)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -3000,12 +4041,19 @@ class MainActivity : AppCompatActivity() {
         checkSubscriptionAndUpdateEnergy()
         attachSeasonLeaderboardPendingListenerIfLoggedIn()
         refreshPendingSeasonLeaderboardRewardFromFirestore()
+        maybeAutoOpenWeeklyCard()
+        maybeShowReferralReward()
+        requestShareMomentCheck()
+        // Davetle kurulduysa (Install Referrer'da kod) ve hesap artık varsa davet edene bağla.
+        ReferralAttribution.claimIfPending(this)
     }
-    
+
     override fun onPause() {
         super.onPause()
         SessionDeviceManager.stopSessionHeartbeat()
         currentActivity = null
+        // Dinleyici Activity'ye referans tutuyor; ekran arkaya geçerken bırakılıyor.
+        StudyTimeTracker.setOnChangedListener(null)
         // Uygulama background'a geçtiğinde süre takibini durdur
         TimeTracker.stopTracking()
     }
@@ -3026,8 +4074,88 @@ class MainActivity : AppCompatActivity() {
         handleOpenQuestionIdFromIntent()
     }
 
+    /**
+     * Bildirime dokunulduğunu sunucuya ve Analytics'e bildirir.
+     *
+     * NEDEN ÖLÇÜLÜYOR
+     *   Hangi bildirimin açıldığını bilmeden yeni bildirim eklemek körlemesine gidiyor:
+     *   gönderilmiş ama kimsenin dokunmadığı bir bildirim hata üretmiyor, yalnızca
+     *   kullanıcıyı yoruyor. Sunucudaki sayaç aynı zamanda karar veriyor — üst üste
+     *   açılmayan konu kendiliğinden susuyor (functions/notifications.js).
+     *
+     *   Sunucu çağrısı sessizce başarısız olabilir; ölçüm hiçbir zaman kullanıcı akışını
+     *   bozmamalı.
+     */
+    private fun recordNotificationOpenIfAny() {
+        val topic = intent?.extras?.getString(EXTRA_NOTIFICATION_TOPIC) ?: return
+        if (topic.isEmpty()) return
+        intent?.removeExtra(EXTRA_NOTIFICATION_TOPIC)
+
+        AnalyticsLogger.notificationOpened(topic)
+        FirebaseFunctions.getInstance().getHttpsCallable("recordNotificationOpen")
+            .call(mapOf("topic" to topic))
+            .addOnFailureListener { e ->
+                Log.w("MainActivity", "recordNotificationOpen başarısız (topic=$topic)", e)
+            }
+    }
+
     /** Opens QuestionChatFragment when launched from FCM notification (EXTRA_OPEN_QUESTION_ID). */
     private fun handleOpenQuestionIdFromIntent() {
+        recordNotificationOpenIfAny()
+
+        // Havuz bildirimi: öğretmeni doğrudan Havuz sekmesine götür. Bildirim "havuzda yeni
+        // soru var" diyorsa açılan ekranın havuz olması gerekiyor; yalnızca uygulamayı açmak
+        // öğretmeni iki dokunuş uzakta bırakıyordu.
+        if (intent?.extras?.getBoolean(EXTRA_OPEN_TEACHER_POOL) == true) {
+            intent?.removeExtra(EXTRA_OPEN_TEACHER_POOL)
+            if (auth.currentUser != null) {
+                changeFragment(NotificationFragment.newForTeacherPool())
+            }
+            return
+        }
+
+        // Yeni ödev: öğrenciye Sorularım → Ödevlerim (havuz bildirimindeki yolla aynı). Alt barda
+        // Sorularım işaretleniyor; işaretleme dinleyiciyi tetiklemiyor.
+        if (intent?.extras?.getBoolean(EXTRA_OPEN_HOMEWORKS) == true) {
+            intent?.removeExtra(EXTRA_OPEN_HOMEWORKS)
+            if (auth.currentUser != null) {
+                changeFragment(NotificationFragment.newForStudentHomework())
+                binding.bottomNavigationID.menu.findItem(R.id.notification)?.isChecked = true
+            }
+            return
+        }
+
+        // Öğrenci ödevi bitirdi (öğretmen): ödevin ayrıntısı, geri tuşuyla kapanabilsin diye yığına.
+        val teacherHomeworkId = intent?.extras?.getString(EXTRA_OPEN_TEACHER_HOMEWORK)
+        if (!teacherHomeworkId.isNullOrEmpty()) {
+            val classId = intent?.extras?.getString(EXTRA_OPEN_TEACHER_HOMEWORK_CLASS).orEmpty()
+            intent?.removeExtra(EXTRA_OPEN_TEACHER_HOMEWORK)
+            intent?.removeExtra(EXTRA_OPEN_TEACHER_HOMEWORK_CLASS)
+            if (auth.currentUser != null && classId.isNotEmpty()) {
+                supportFragmentManager.beginTransaction()
+                    .replace(
+                        R.id.fragmentContainerID,
+                        com.example.app.homework.TeacherHomeworkDetailFragment.newInstance(teacherHomeworkId, classId),
+                    )
+                    .addToBackStack(null)
+                    .commit()
+            }
+            return
+        }
+
+        // Sınıf daveti: Kurs ekranı geri tuşuyla kapanabilsin diye haritanın ÜSTÜNE ekleniyor
+        // (sohbet bildirimiyle aynı), alt menü sekmesi değiştirilmiyor.
+        if (intent?.extras?.getBoolean(EXTRA_OPEN_STUDENT_CLASS) == true) {
+            intent?.removeExtra(EXTRA_OPEN_STUDENT_CLASS)
+            if (auth.currentUser != null) {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragmentContainerID, StudentClassFragment())
+                    .addToBackStack(null)
+                    .commit()
+            }
+            return
+        }
+
         val extras = intent?.extras
         Log.d("MainActivity", "handleOpenQuestionIdFromIntent extras = $extras")
         val questionId = extras?.getString(EXTRA_OPEN_QUESTION_ID)
@@ -3066,6 +4194,10 @@ class MainActivity : AppCompatActivity() {
     }
     
     override fun onDestroy() {
+        // Yeniden yaratılan activity kendi kancasını kurmuş olabilir; yalnızca bizimkini kaldır.
+        if (GlobalValues.onAdReturnArmed === adReturnArmedHook) GlobalValues.onAdReturnArmed = null
+        // Bekleyen reklam yükleme denemeleri ölü activity'nin bağlamıyla istek atmasın.
+        adManager.release()
         seasonLeaderboardGateRetryLifecycleCallbacks?.let {
             supportFragmentManager.unregisterFragmentLifecycleCallbacks(it)
         }
@@ -3086,19 +4218,1550 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    fun openShopFragment() {
+    // ── Günlük hedef kutlaması ──────────────────────────────────────────
+
+    /** Şerit ekranda mı; otomatik gizleme zamanlayıcısı bununla birlikte yönetiliyor. */
+    private var streakCelebrationShowing = false
+
+    private val streakCelebrationHideRunnable = Runnable { hideStreakCelebration() }
+
+    // ── Ders sonrası ekran kuyruğu ───────────────────────────────────────────
+    //
+    // NEDEN VAR
+    //   Ders bitince haritaya dönüşe kadar sekiz ayrı şey açılabiliyor. Her biri kendi
+    //   yolundan, kendi guard'ıyla tetikleniyordu: rozet İKİ ayrı yoldan, rating ÜÇ ayrı
+    //   yerden, maraton rehberi DOKUZ ayrı yerden. Kimse kimseden haberdar değildi, yani
+    //   hangisinin görüneceği "kim önce yetişirse"ye kalıyordu: ekranlar birbirinin
+    //   üstüne biniyor, reklamın altında kalıyor ya da hiç görünmüyordu.
+    //
+    // NASIL ÇALIŞIYOR
+    //   Her ekranın zaten bir "bekliyor" durumu var (rozet payload'ları,
+    //   justFinishedChestForRating, MarathonGuideStore.isPending…). Kuyruk bunları okuyup
+    //   SIRAYLA tek tek gösteriyor. Bir şey açıkken kapı ([postLessonQueueBlockReason])
+    //   kapalı oluyor ve kuyruk bekliyor; o ekran kapanınca kuyruk yeniden dürtülüyor.
+    //
+    //   Tetikleme noktası ekranların zaten çağırdığı yerler: tryShowPendingMarathonGuideOnMap
+    //   dokuz yerden çağrılıyordu ve artık doğrudan kuyruğu dürtüyor. Yani "işler yatıştı"
+    //   sinyali bedavaya geldi, dokuz çağrı yerinin hiçbirine dokunulmadı.
+    //
+    // SIRA (kullanıcının belirlediği)
+    //   reklam → sezon kapısı → rozet → yeni seri → öğretmene sorma → rating →
+    //   maraton rehberi → kupa yolu/Tasks
+    //
+    //   İlk ikisi kuyruğun İÇİNDE değil, ÖNÜNDE: reklam kontrolü
+    //   (adCheckForBadgeInProgress) ve sezon kapısı zaten kapıda listeli, yani ikisi de
+    //   varken kuyruk hiç başlamıyor. Kendi akışları doğru çalışıyordu; sırayı bozmadan
+    //   dokunmamak en az riskli yol.
+
+    /** Ders/sandık bitti, serisi olmayan kullanıcıya yeni tur sorulacak. */
+    private var newStreakPromptQueued = false
+
+    /**
+     * Kuyruk şu an bir şey gösterebilir mi; gösteremiyorsa sebebi.
+     *
+     * [marathonGuideMapBlockReason] üzerine kuruluyor — ders katmanları, rozet, reklam
+     * kontrolü, sezon kapısı ve Firestore beklemesi orada zaten listeli. Üzerine kuyruğun
+     * kendi açtığı ekranlar ekleniyor.
+     *
+     * DİKKAT: burada yalnızca "şu an bir şey GÖRÜNÜYOR" durumları var. "Bekliyor"
+     * durumları (rating bekliyor, rehber bekliyor, kupa yolu bekliyor) BURAYA GİRMEZ —
+     * onlar kuyruğun göstereceği şeyler; kapıya koysaydık kuyruk kendi işini kendisi
+     * engellerdi.
+     */
+    private fun postLessonQueueBlockReason(): String? {
+        if (!::binding.isInitialized) return "binding_not_initialized"
+        // Reklam açıkken activity duraklatılıyor; bu kontrol olmadan ekranlar reklamın
+        // ALTINDA açılıp reklam kapanınca ortaya çıkıyordu.
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            return "not_resumed"
+        }
+        if (isFinishing || isDestroyed) return "activity_gone"
+        val fm = supportFragmentManager
+        if (fm.isStateSaved) return "state_saved"
+        marathonGuideMapBlockReason()?.let { return it }
+        if (fm.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        if (dialogStillShowing("RatingDialog")) return "rating_showing"
+        if (dialogStillShowing("AskQuestionOpen")) return "promo_showing"
+        val map = fm.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map != null && map.isAdded && map.view != null &&
+            map.requireView().findViewById<View>(R.id.guidePanel)?.visibility == View.VISIBLE
+        ) {
+            return "guide_panel_visible"
+        }
+        return null
+    }
+
+    /**
+     * Bu etiketli dialog GERÇEKTEN ekranda mı.
+     *
+     * `findFragmentByTag != null` yetmiyor: `onDismiss`, fragment'i kaldıran işlem commit
+     * EDİLMEDEN ÖNCE çalışıyor. Kapanan ekran kuyruğu dürttüğünde kendisini hâlâ
+     * FragmentManager'da buluyor ve "açığım" diyerek sıradakini engelliyordu.
+     *
+     * Pencerenin kendisine bakılıyor: dialog kapandığı anda `isShowing` false oluyor, yani
+     * kare saymaya gerek kalmıyor.
+     */
+    private fun dialogStillShowing(tag: String): Boolean {
+        val fragment = supportFragmentManager.findFragmentByTag(tag) ?: return false
+        if (fragment.isRemoving) return false
+        val dialog = (fragment as? androidx.fragment.app.DialogFragment)?.dialog ?: return true
+        return dialog.isShowing
+    }
+
+    /** Bir sonraki karede çalışacak kuyruk turu; bkz. [pumpPostLessonQueue]. */
+    private var postLessonQueuePendingCaller = ""
+    private val postLessonQueueRunnable = Runnable {
+        runPostLessonQueue(postLessonQueuePendingCaller)
+    }
+
+    /**
+     * Kuyruğu dürter: kapı açıksa sıradaki bekleyen ekranı açar.
+     *
+     * "Bir şeyler yatıştı" diyen her yerden çağrılabilir; boşa çağrılması zararsız.
+     *
+     * ## Neden bir sonraki kare
+     * Ekranlar kapanırken dürtüyor (onDismiss / onDestroyView) ama o anda FragmentManager
+     * kaldırma işlemini HENÜZ yapmamış oluyor — işlem kuyruğa alındı, çalışmadı. Kapı
+     * kontrolü de kapanmakta olan o ekranı "açık" sayıp kuyruğu durduruyordu ve bir daha
+     * kimse dürtmediği için sıradaki ekran HİÇ gösterilmiyordu (yeni seri ekranından sonra
+     * maraton rehberinin kaybolması tam olarak buydu).
+     *
+     * Bir kare beklemek FragmentManager'ın işlemini bitirmesine yetiyor. Aynı karedeki
+     * birden fazla dürtü de tek tura indiriliyor.
+     */
+    fun pumpPostLessonQueue(caller: String) {
+        if (!::binding.isInitialized) return
+        postLessonQueuePendingCaller = caller
+        binding.root.removeCallbacks(postLessonQueueRunnable)
+        binding.root.post(postLessonQueueRunnable)
+    }
+
+    private fun runPostLessonQueue(caller: String) {
+        // Tek satırda bütün tablo: kim bekliyor, kapı açık mı. Bir ekranın neden
+        // çıkmadığı sorusunun cevabı burada — "bekleyen yok" ile "kapı kapalı" apayrı
+        // sorunlar ve ikisini ayırt etmeden tahmin yürütmek zaman kaybettiriyor.
+        //
+        // Bekçi turları saniyede bir geldiği için yalnızca DEĞİŞEN durum yazılıyor: aynı
+        // satırın yetmiş kez tekrarı log'u okunmaz hale getiriyor ve asıl olayı gömmüş oluyor.
+        val snapshot = "rozet=${pendingBadgePayloadsForAd.size + pendingBadgeStringPayloadsForAd.size} " +
+            "yeniSeri=$newStreakPromptQueued " +
+            "promo=$pendingLessonTypeReturnForPromo " +
+            "rating=$justFinishedChestForRating " +
+            "rehber=${MarathonGuideStore.isPending(this)} " +
+            "kupaYolu=${GlobalValues.pendingCupPathRevealPartId != null}"
+        if (snapshot != lastQueueSnapshot) {
+            lastQueueSnapshot = snapshot
+            Log.d(TAG_QUEUE, "tur | caller=$caller $snapshot")
+        }
+        // Kilit kararı KAPIDAN ÖNCE veriliyor.
+        //
+        // Eskiden kilit yalnızca kuyruk "bos" dalına ulaştığında bırakılıyordu. Son ekran
+        // kapanırken kapı onu hâlâ "açık" saydığı için erken dönülüyor, bekleyen iş de
+        // kalmadığı için bekçi kendini iptal ediyor ve kilidi bırakacak kimse kalmıyordu —
+        // kullanıcı haritaya hiç dokunamıyordu.
+        //
+        // Kural tek cümle: kilit, bekleyen iş VARKEN duruyor. Kapının ne dediğinden
+        // bağımsız.
+        // Kilit/zemin her turda yeniden değerlendiriliyor. Yalnızca `finalizeMapReturn`
+        // anında karar vermek yetmiyordu: o an boş görünen kuyruğa bir saniye sonra rozet
+        // düşüyor ve aradaki boşlukta harita ortaya çıkıyordu.
+        if (postLessonQueueBusy()) {
+            acquirePostLessonQueueTouchLock()
+        } else {
+            releasePostLessonQueueTouchLock(caller)
+        }
+
+        // Kapı iki aşamalı: önce GÖRÜNEN engeller, sonra AÇILMAKTA olan adım.
+        //
+        // İkincisi olmadan şu oluyordu: rozet adımı ekranını `post` + `commit` ile açıyor,
+        // aradan geçen bir tur ise fragment'i FragmentManager'da henüz bulamadığı için
+        // kapıyı açık sanıp sıradaki adımı (yeni seri) da açıyordu. İkisi üst üste
+        // biniyordu.
+        var block = postLessonQueueBlockReason()
+        var settleDelayMs = 0L
+        if (block == null) {
+            settleDelayMs = postLessonStepSettlingRemainingMs()
+            if (settleDelayMs > 0L) block = "step_settling:$postLessonStepLaunchedName"
+        }
+        if (block != null) {
+            // Yarış dersi dönüşü istisnası: taban kısım seçimiyken kapı hep kapalı
+            // (harita tabanı istiyor), ama rozet kutlamasının haritaya ihtiyacı yok.
+            // Yalnızca o adım, kendi kapısıyla deneniyor; bkz. [showBadgeOnPartSelectionStep].
+            if (showBadgeOnPartSelectionStep(caller)) {
+                queueLoggedEmpty = false
+                return
+            }
+            if (block != lastQueueBlockReason) {
+                lastQueueBlockReason = block
+                Log.d(TAG_QUEUE, "bekliyor | caller=$caller block=$block")
+            }
+            if (settleDelayMs > 0L) {
+                // Pencere dolar dolmaz bir tur: bekçinin saniyelik turunu beklemek,
+                // açılmayan bir adımdan (ör. uygun olmayan tanıtım) sonra sıradakini
+                // gereksiz yere geciktiriyor.
+                binding.root.removeCallbacks(postLessonStepSettleRunnable)
+                binding.root.postDelayed(postLessonStepSettleRunnable, settleDelayMs)
+            }
+            schedulePostLessonQueueWatchdog()
+            return
+        }
+        lastQueueBlockReason = null
+        // Bir adım çalıştıysa ilerleme var: bekçinin süresi baştan başlasın.
+        postLessonQueueWatchdogDeadlineMs = 0L
+        // `||` kısa devre yaptığı için sıra aynen korunuyor: ilk true dönen adım
+        // gösteriyor, alttakiler o tur hiç denenmiyor.
+        val shown = showBadgeStep(caller) ||
+            showNewStreakStep(caller) ||
+            showAskQuestionPromoStep(caller) ||
+            showRatingStep(caller) ||
+            showMarathonGuideStep(caller) ||
+            showCupPathStep(caller)
+        if (shown) {
+            queueLoggedEmpty = false
+            // Ekran geldi: artık beklemiyoruz, gösterge zeminin üzerinde asılı kalmasın.
+            hidePostLessonSpinner()
+            return
+        }
+        // Hiçbir adım açılmadı. Denenen ama açılmayan bir adım (ör. uygunluk kontrolünde
+        // elenen rating) pencereyi kurmuş olabilir; açılan ekran yoksa beklenecek bir şey
+        // de yok, zemin fazladan asılı kalmasın.
+        postLessonStepLaunchedAtMs = 0L
+        // Kilit yukarıda bırakıldı (bekleyen iş yoktu), burada yalnızca iz düşüyor.
+        if (!queueLoggedEmpty) {
+            queueLoggedEmpty = true
+            Log.d(TAG_QUEUE, "bos | caller=$caller")
+        }
+    }
+
+    /** Log tekrarını önleyen son durumlar; teşhis değeri aynı, gürültü yok. */
+    private var lastQueueSnapshot = ""
+    private var lastQueueBlockReason: String? = null
+    private var queueLoggedEmpty = false
+
+    /**
+     * Harita dokunma kilidini bırakır ve bekçiyi durdurur.
+     *
+     * Ölçüt süre değil kuyruğun kendisi: kuyrukta iş varken kilit duruyor, iş bitince
+     * bırakılıyor. Boşa çağrılması zararsız — [MapFragment.enableMapTouchRouting] kendi
+     * guard'larını da uyguluyor ve ChromeBlocker fazladan release'i yok sayıyor.
+     */
+    /**
+     * Kuyruğun harita kilidi şu anda BİZİM tarafımızdan tutuluyor mu.
+     *
+     * [MainActivityChromeBlocker] sayıcılı: acquire ve release birebir eşleşmeli. Bu bayrak
+     * olmadan kuyruk, başka bir akışın (sandık, görev paneli) kilidini düşürebilirdi —
+     * boş bir kuyruk turu her ekran dönüşünde yaşanabiliyor.
+     */
+    private var postLessonQueueLockHeld = false
+
+    /**
+     * Kuyruk meşgul mü — henüz ELDE OLMAYAN ama yolda olanlar dahil.
+     *
+     * [hasPostLessonQueueWork] yalnızca "şu an gösterilmeyi bekleyen" şeyleri sayar.
+     * Rozetler ise asenkron geliyor: `finalizeMapReturn` anında payload'lar henüz boş,
+     * Firestore işlemi uçuşta ve rozet bir saniye sonra düşüyor. Zemin kararı yalnızca
+     * eldekine bakınca, sandık + rozet olan bir derste zemin hiç açılmıyor ve rozet
+     * gelene kadar harita görünüyordu.
+     *
+     * Reklam kontrolü de burada: reklam kapanıp rozet açılana kadarki boşluk da aynı
+     * pencerenin parçası.
+     */
+    private fun postLessonQueueBusy(): Boolean =
+        postLessonHandoffActive() ||
+            // Açılmakta olan adım da "elde" sayılıyor: adım bekleyen işi tükettiği an
+            // kuyruk boş görünüyor ama ekran henüz gelmemiş oluyor. Zemin o aralıkta
+            // inerse harita bir kare görünüp kayboluyor.
+            (postLessonStepHoldsBackdrop && postLessonStepSettlingRemainingMs() > 0L) ||
+            hasPostLessonBackdropWork() ||
+            GlobalValues.pendingBadgeFirestoreOperation ||
+            // Reklam kontrolü zemini tutuyor çünkü reklam kapanıp rozet açılana kadarki
+            // boşluk da aynı pencerenin parçası — o aralıkta harita görünmemeli.
+            //
+            // Ama ders YARIDA bırakıldıysa reklamdan sonra gelecek bir şey yok. Kontrol
+            // yine de çalışıyor ve bir an sürüyor; zemin ona göre kalkınca kullanıcı
+            // haritayı değil önce düz zemini görüyor, zemin sonra iniyordu. Log'daki
+            // "block=ad_check_in_progress" satırı tam olarak bu.
+            (postLessonRewardScreensPossible && adCheckForBadgeInProgress)
+
+    /**
+     * Zeminin kalkmasını gerektiren iş var mı.
+     *
+     * [hasPostLessonQueueWork]'ten tek farkı öğretmene sorma tanıtımını SAYMAMASI.
+     *
+     * O tanıtım bir "belki": uygunluk ve sayaç eşiği ancak adım çalışınca belli oluyor ve
+     * çoğu dönüşte hiç açılmıyor. Zemin ona göre kalkınca, türü LESSON olan bir dersten
+     * çıkan kullanıcı haritayı değil önce düz zemini görüyor, zemin sonra iniyordu —
+     * gösterilecek hiçbir şey olmadan. Türü CHEST olanlarda bu yaşanmıyordu çünkü orada
+     * tanıtım sıraya hiç girmiyor.
+     *
+     * Açıldığında zemine ihtiyacı da yok: kendi penceresi olan bir dialog, haritanın
+     * üstüne kendi çizimiyle geliyor. Kuyruk sırasında yerini koruyor ([hasPostLessonQueueWork]
+     * onu hâlâ sayıyor), yalnızca zemin kararının dışında.
+     */
+    private fun hasPostLessonBackdropWork(): Boolean =
+        pendingBadgePayloadsForAd.isNotEmpty() ||
+            pendingBadgeStringPayloadsForAd.isNotEmpty() ||
+            newStreakPromptQueued ||
+            justFinishedChestForRating ||
+            MarathonGuideStore.isPending(this) ||
+            GlobalValues.pendingCupPathRevealPartId != null
+
+    /**
+     * Zemini ve kilidi ERKEN kaldırır; sandık rozet işlemini başlatırken çağırıyor.
+     *
+     * Kuyruk zemini `finalizeMapReturn` anında kaldırıyordu ama sandığın kendi ekranı daha
+     * ÖNCE görünmez oluyor (bkz. ChestFragment'teki chest_closed dinleyicisi). Aradaki
+     * birkaç karede harita açığa çıkıyor ve rozet gelene kadar görünüyordu.
+     *
+     * İş yolda değilse hiçbir şey yapmıyor, iki kez çağırmak da zararsız.
+     */
+    fun raisePostLessonQueueOverlayEarly() {
+        acquirePostLessonQueueTouchLock()
+    }
+
+    /**
+     * Ders sonrası bir ekran KAPANMAYA BAŞLARKEN zemini devir teslim olarak kaldırır.
+     *
+     * ## Neden koşulsuz
+     * Kapanış bir kayma animasyonu ve bu sırada arkada bilerek harita gösteriliyordu
+     * (bkz. NewChestFragment, LessonResult). O anda kuyrukta henüz hiçbir şey "yolda"
+     * görünmüyor — rozet kontrolü daha başlamamış — dolayısıyla koşullu kaldırma işe
+     * yaramıyordu.
+     *
+     * Mantık tersine çevrildi: artık haritayı KAPATMAYA çalışmıyoruz, ne göstereceğimiz
+     * belli olana kadar HİÇ AÇMIYORUZ. Gösterilecek bir şey yoksa kuyruk bir sonraki
+     * turunda zemini indiriyor ve harita yumuşakça geliyor.
+     *
+     * ## Ne zaman çağrılmalı
+     * Kapanış animasyonu BAŞLAMADAN ÖNCE. Animasyon bittikten sonra çağrılırsa zemin
+     * haritanın üstüne GEÇ geliyor: kullanıcı önce haritayı görüyor, sonra zemin kapatıyor,
+     * sonra tekrar açılıyor — tamamlanmış bir dersin sonuç ekranında yaşanan buydu.
+     *
+     * @param caller Log'da görünecek çağrı yeri.
+     */
+    fun raisePostLessonBackdropForHandoff(caller: String) {
+        // Devir teslim penceresi: bu süre boyunca kuyruk "boş" görünse bile zemin inmiyor.
+        //
+        // Bu olmadan devir teslim kendi kuralımıza takılıyordu: zemin kalkıyor, hemen
+        // ardından kuyruk "bekleyen bir şey yok" deyip 12 ms sonra indiriyor, rozet kontrolü
+        // ise ancak 300 ms sonra başlıyordu. Aradaki boşlukta harita açığa çıkıyordu.
+        //
+        // Pencere ne olacağı BELİRLENİNCE kapanıyor ([finalizeMapReturnAfterLessonClaim]);
+        // buradaki süre yalnızca o hiç gelmezse (ör. mağaza sandığı) zeminin asılı
+        // kalmaması için.
+        postLessonHandoffUntilMs =
+            android.os.SystemClock.elapsedRealtime() + POST_LESSON_HANDOFF_GRACE_MS
+        acquirePostLessonQueueTouchLock(force = true)
+        pumpPostLessonQueue(caller)
+    }
+
+    /**
+     * Bu dönüşün ardından bir ödül ekranı gelebilir mi.
+     *
+     * Ders yarıda bırakıldığında false: ortada bitmiş bir şey yok, yani rozet de sandık da
+     * gelmeyecek. Tek etkisi zemin kararı — [postLessonQueueBusy] içindeki reklam kontrolü
+     * terimi buna bakıyor, sebebi orada yazıyor.
+     */
+    private var postLessonRewardScreensPossible = true
+
+    /** Devir teslim penceresinin bitiş anı (monoton saat); 0 = pencere kapalı. */
+    private var postLessonHandoffUntilMs = 0L
+
+    /** Son açılan adımın başlangıç anı (monoton saat); 0 = yerleşme penceresi kapalı. */
+    private var postLessonStepLaunchedAtMs = 0L
+
+    /** Son açılan adımın adı; yalnızca log ve teşhis için. */
+    private var postLessonStepLaunchedName = ""
+
+    /** Son açılan adım yerleşirken zeminin de durması gerekiyor mu; bkz. [logStepLaunch]. */
+    private var postLessonStepHoldsBackdrop = true
+
+    /**
+     * Açılmakta olan adımın yerleşmesine kalan süre; 0 = yerleşmiş ya da pencere yok.
+     *
+     * Durum DEĞİŞTİRMİYOR: hem kapı hem de zemin kararı bunu okuyor ve birinin okuması
+     * diğerinin cevabını değiştirmemeli.
+     */
+    private fun postLessonStepSettlingRemainingMs(): Long {
+        if (postLessonStepLaunchedAtMs == 0L) return 0L
+        val remaining = postLessonStepLaunchedAtMs + POST_LESSON_STEP_SETTLE_MS -
+            android.os.SystemClock.elapsedRealtime()
+        return if (remaining > 0L) remaining else 0L
+    }
+
+    /**
+     * Bir adımın açıldığını log'a yazar ve yerleşme penceresini kurar.
+     *
+     * @param settles Adımın ekranı bir kare sonra gelecekse true; pencere boyunca kuyruk
+     *   sıradakini açmıyor. Rehber ve kupa yolu false: ikisi zemini bilerek indiriyor
+     *   (rehber paneli haritanın içinde yaşıyor, kupa yolu ise haritadan çıkıyor), pencere
+     *   kurulsaydı zemin onların üstüne geri gelirdi.
+     * @param holdsBackdrop Adım yerleşirken zeminin de durması gerekiyor mu. Öğretmene
+     *   sorma tanıtımı false: sıra beklemesi gerekiyor (kendi penceresi commit edilene
+     *   kadar üstüne başka ekran açılmamalı) ama zemine ihtiyacı yok — kendi çizimiyle
+     *   haritanın üstüne geliyor. True olsaydı zemin, hiçbir şey gösterilmeyen dönüşlerde
+     *   de bir anlığına kalkardı.
+     */
+    private fun logStepLaunch(
+        step: String,
+        caller: String,
+        settles: Boolean = true,
+        holdsBackdrop: Boolean = true,
+    ) {
+        postLessonStepLaunchedName = step
+        postLessonStepHoldsBackdrop = holdsBackdrop
+        postLessonStepLaunchedAtMs =
+            if (settles) android.os.SystemClock.elapsedRealtime() else 0L
+        Log.d(TAG_QUEUE, "$step | caller=$caller")
+    }
+
+    /** Yerleşme penceresi dolduğunda tam zamanında bir tur daha; bkz. [runPostLessonQueue]. */
+    private val postLessonStepSettleRunnable = Runnable {
+        runPostLessonQueue("stepSettled:$postLessonStepLaunchedName")
+    }
+
+    private fun postLessonHandoffActive(): Boolean =
+        postLessonHandoffUntilMs > 0L &&
+            android.os.SystemClock.elapsedRealtime() < postLessonHandoffUntilMs
+
+    private fun acquirePostLessonQueueTouchLock(force: Boolean = false) {
+        if (postLessonQueueLockHeld) return
+        if (!force && !postLessonQueueBusy()) return
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+            ?: return
+        postLessonQueueLockHeld = true
+        Log.d(TAG_QUEUE, "kilit aliniyor")
+        map.lockTouchForPendingOverlay()
+        showPostLessonBackdrop()
+    }
+
+    /**
+     * Haritanın üzerini kapatan opak zemini açar.
+     *
+     * Kuyruktaki ekranlar ayrı kaplarda yaşıyor (rozet bu layout'ta, yeni seri ve rating
+     * kendi pencerelerinde), dolayısıyla aralarındaki geçişlerde harita görünüp
+     * kayboluyordu. Hepsini tek bir kaba taşımak haftalarca süren bir iş; zemin aynı
+     * hissi tek bir View ile veriyor.
+     *
+     * Açılış ANINDA, sönüş yumuşak: geçiş başlarken harita bir kare bile görünmemeli,
+     * ama kuyruk bittiğinde haritanın aniden "pat" diye belirmesi de sert duruyor.
+     */
+    private fun showPostLessonBackdrop() {
+        if (!::binding.isInitialized) return
+        val view = binding.postLessonBackdrop
+        view.animate().cancel()
+        view.alpha = 1f
+        view.visibility = View.VISIBLE
+        // Zeminin GERÇEK durumu. "Gösteriyorum" demek yetmiyor: haritanın görünmesinin
+        // iki apayrı sebebi olabilir ve çözümleri de farklı — zemin haritanın ALTINDA
+        // kalıyor olabilir (z-sırası) ya da çizilmeden önce harita bir süre görünüyor
+        // olabilir (zamanlama). Bu satır ikisini ayırıyor.
+        view.post {
+            Log.d(
+                TAG_QUEUE,
+                "zemin | gorunur=${view.isShown} olcu=${view.width}x${view.height} " +
+                    "z=${view.elevation} alpha=${view.alpha} " +
+                    "ekli=${view.isAttachedToWindow}",
+            )
+        }
+        // Bekleme göstergesi gecikmeli: kuyruk hızlı çözülürse hiç görünmüyor.
+        view.removeCallbacks(postLessonSpinnerRunnable)
+        view.postDelayed(postLessonSpinnerRunnable, POST_LESSON_SPINNER_DELAY_MS)
+    }
+
+    /** Zemin açıkken henüz bir ekran gösterilmediyse beklemeyi görünür kılar. */
+    private val postLessonSpinnerRunnable = Runnable {
+        if (::binding.isInitialized && postLessonQueueLockHeld) {
+            binding.postLessonBackdropSpinner.visibility = View.VISIBLE
+        }
+    }
+
+    private fun hidePostLessonSpinner() {
+        if (!::binding.isInitialized) return
+        binding.postLessonBackdrop.removeCallbacks(postLessonSpinnerRunnable)
+        binding.postLessonBackdropSpinner.visibility = View.GONE
+    }
+
+    private fun hidePostLessonBackdrop() {
+        if (!::binding.isInitialized) return
+        hidePostLessonSpinner()
+        val view = binding.postLessonBackdrop
+        if (view.visibility != View.VISIBLE) return
+        view.animate().cancel()
+        view.animate()
+            .alpha(0f)
+            .setDuration(POST_LESSON_BACKDROP_FADE_MS)
+            .withEndAction {
+                view.visibility = View.GONE
+                view.alpha = 1f
+                // Perde kalktı: bekleyen ilerleme animasyonu artık görülebilir.
+                (supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment)
+                    ?.tryConsumePendingLessonProgress("backdropHidden")
+            }
+            .start()
+    }
+
+    /**
+     * Harita dokunma kilidini bırakır ve bekçiyi durdurur.
+     *
+     * Ölçüt süre değil kuyruğun kendisi: kuyrukta iş varken kilit duruyor, iş bitince
+     * bırakılıyor. Yalnızca kendi aldığımız kilit bırakılıyor (bkz.
+     * [postLessonQueueLockHeld]).
+     */
+    private fun releasePostLessonQueueTouchLock(caller: String) {
+        if (!::binding.isInitialized) return
+        if (!postLessonQueueLockHeld) {
+            binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
+            postLessonQueueWatchdogDeadlineMs = 0L
+            return
+        }
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map == null) {
+            Log.d(TAG_QUEUE, "kilit BIRAKILAMADI | caller=$caller reason=map_yok")
+            schedulePostLessonQueueWatchdog()
+            return
+        }
+        // Bırakma guard'SİZ ve koşulsuz: çağrı kuyruğun kendi acquire'ıyla birebir
+        // eşleşiyor. İki denemem de yanlıştı:
+        //
+        //   • Guard'lı enableMapTouchRouting bırakmayı reddedince borç ödenmemiş kalıyordu.
+        //   • Sayaca bakarak "bırakıldı mı" anlamaya çalışmak da tutmadı:
+        //     ensureUnlockedForMapReturn sayacı zorla sıfırlayabiliyor, o zaman fark
+        //     oluşmuyor ve bekçi boşa saniyede bir dönüp duruyordu.
+        //
+        // ChromeBlocker sayıcılı olduğu için tek bir release yalnızca BİZİM kilidi düşürüyor;
+        // başka bir akış kilidi hâlâ istiyorsa kendi acquire'ı sayacı ayakta tutuyor.
+        postLessonQueueLockHeld = false
+        Log.d(TAG_QUEUE, "kilit birakildi | caller=$caller")
+        map.releasePostLessonQueueTouchLock()
+        hidePostLessonBackdrop()
+    }
+
+    /**
+     * Kuyrukta gösterilmeyi bekleyen bir şey var mı.
+     *
+     * Harita dokunma kilidi de buna bakıyor ([MapFragment.enableMapTouchRouting]): kuyrukta
+     * iş varken harita tıklanabilir olmamalı, yoksa çocuk sıradaki ekran gelmeden bir derse
+     * girebiliyor.
+     */
+    fun hasPostLessonQueueWork(): Boolean =
+        pendingBadgePayloadsForAd.isNotEmpty() ||
+            pendingBadgeStringPayloadsForAd.isNotEmpty() ||
+            newStreakPromptQueued ||
+            pendingLessonTypeReturnForPromo ||
+            justFinishedChestForRating ||
+            MarathonGuideStore.isPending(this) ||
+            GlobalValues.pendingCupPathRevealPartId != null
+
+    private var postLessonQueueWatchdogDeadlineMs = 0L
+    private val postLessonQueueWatchdogRunnable =
+        Runnable { runPostLessonQueue("watchdog") }
+
+    /**
+     * Kapı kapalıyken kuyruğu canlı tutar.
+     *
+     * ## Neden gerekli
+     * Kuyruk, açılan ekranın kapanırken kendisini dürtmesine güveniyor. Bir ekran bunu
+     * yapmayı unutursa sıradaki ekran SONSUZA KADAR asılı kalıyor — rating dialog'unda
+     * tam olarak bu oldu ve maraton rehberi hiç gösterilmedi. Her ekranın kancasını tek
+     * tek doğru kurmak yetmiyor; yarın eklenecek bir ekran aynı hatayı tekrarlar.
+     *
+     * Bekçi sıralamaya karışmıyor, yalnızca "kuyruk tıkandı mı" diye bakıyor. Bekleyen
+     * iş yoksa hiç kurulmuyor; bir adım çalıştığında süresi sıfırlanıyor.
+     */
+    private fun schedulePostLessonQueueWatchdog() {
+        if (!::binding.isInitialized) return
+        // Bekçi yalnızca bekleyen ekran için değil, BİRAKILMAMIŞ KİLİT için de çalışıyor:
+        // kilit askıda kalırsa kullanıcı haritaya hiç dokunamıyor ve bu, bir ekranın
+        // gösterilememesinden daha kötü.
+        if (!postLessonQueueBusy() && !postLessonQueueLockHeld) {
+            postLessonQueueWatchdogDeadlineMs = 0L
+            binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
+            return
+        }
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (postLessonQueueWatchdogDeadlineMs == 0L) {
+            postLessonQueueWatchdogDeadlineMs = now + QUEUE_WATCHDOG_BUDGET_MS
+        }
+        if (now >= postLessonQueueWatchdogDeadlineMs) {
+            // Pes ederken haritayı kilitli bırakmamak şart: bekleyen ekran hiç açılamadıysa
+            // ve kilit de açılmazsa kullanıcı hiçbir yere dokunamayan bir haritada kalır.
+            Log.w(TAG_QUEUE, "bekci BIRAKTI | sure doldu, harita kilidi aciliyor")
+            if (postLessonQueueLockHeld) {
+                postLessonQueueLockHeld = false
+                val map =
+                    supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+                map?.releasePostLessonQueueTouchLock()
+                hidePostLessonBackdrop()
+            }
+            return
+        }
+        binding.root.removeCallbacks(postLessonQueueWatchdogRunnable)
+        binding.root.postDelayed(postLessonQueueWatchdogRunnable, QUEUE_WATCHDOG_INTERVAL_MS)
+    }
+
+    /** B4 — rozet kutlaması. */
+    private fun showBadgeStep(caller: String): Boolean {
+        val payloads = pendingBadgePayloadsForAd
+        val stringPayloads = pendingBadgeStringPayloadsForAd
+        if (payloads.isEmpty() && stringPayloads.isEmpty()) return false
+        pendingBadgePayloadsForAd = emptyList()
+        pendingBadgeStringPayloadsForAd = emptyList()
+        logStepLaunch("rozet", caller)
+        if (payloads.isNotEmpty()) {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                BadgeProgressFirestore.openBadgeCelebration(supportFragmentManager, payloads)
+            }
+        } else {
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                supportFragmentManager.beginTransaction()
+                    // Yeni seri ekranıyla aynı çizimler: kuyruktaki ekranlar art arda
+                    // geliyor ve farklı hızda hareket etmeleri akışı koparıyordu.
+                    .setCustomAnimations(
+                        R.anim.queue_screen_in,
+                        R.anim.queue_screen_out,
+                        R.anim.queue_screen_in,
+                        R.anim.queue_screen_out,
+                    )
+                    .replace(
+                        R.id.badgeFragmentContainter,
+                        BadgeFragment.newLevelUpSequenceInstance(stringPayloads, 0),
+                    )
+                    .commit()
+            }
+        }
+        return true
+    }
+
+    /**
+     * Yarış dersi (7-8. kısım) dönüşünde rozet kutlaması.
+     *
+     * Yarış dersleri kısım seçimi ekranının üstündeki panelden açılıyor; kuyruğun kapısı
+     * ise harita tabanı istiyor. Rozet yine de kuyruğa düşüyor (aynı dönüş fonksiyonundan
+     * geçiyor), kapı hiç açılmadığı için kutlama gösterilmiyor ve çocuk sonradan bir
+     * haritaya girdiğinde alakasız bir anda çıkıyordu — cihazda görüldü.
+     *
+     * Kuyruğun geri kalanı (zemin, harita kilidi, tanıtım, rehber) haritaya özel olduğu
+     * için o tabana taşınmadı; yalnızca bu adım, harita istemeyen kapıyla
+     * ([offMapNewStreakBlockReason]) çalışıyor. Bekçi kuyruğu saniyede bir dürttüğü için
+     * rozet listesi geç gelse de yakalanıyor.
+     *
+     * Sıra: reklam → yeni seri sorusu → rozet. Haritadaki sıranın (rozet → yeni seri)
+     * tersi, kupa testindekinin aynısı: rozet listesi sunucudan geç geliyor, soru onu
+     * beklemiyor.
+     */
+    private fun showBadgeOnPartSelectionStep(caller: String): Boolean {
+        if (pendingBadgePayloadsForAd.isEmpty() && pendingBadgeStringPayloadsForAd.isEmpty()) return false
+        val base = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+            as? PartSelectionFragment ?: return false
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return false
+        // Soru sıradaysa önce o açılacak; açıkken de kapı (aşağıda) bekletiyor.
+        if (offMapNewStreakPromptPending) return false
+        if (offMapNewStreakBlockReason(base) != null) return false
+        return showBadgeStep(caller)
+    }
+
+    /** B9 — seri kırıksa yeni tur sorusu. */
+    private fun showNewStreakStep(caller: String): Boolean {
+        if (!newStreakPromptQueued) return false
+        newStreakPromptQueued = false
+        if (!StreakRepository.needsNewStreakPrompt(this)) return false
+        logStepLaunch("yeni seri", caller)
+        NewStreakFragment().showNow(supportFragmentManager, NewStreakFragment.TAG)
+        return true
+    }
+
+    /**
+     * B8 — öğretmene sorma tanıtımı (yalnızca LESSON türü dönüşlerde).
+     *
+     * Kendi uygunluk kontrolü ve sayacı var; uygun değilse hiç açılmıyor ve harita
+     * kilidini kendisi bırakıyor. Bu yüzden "açıldı mı" bilgisi burada yok: denendikten
+     * sonra kuyruk bir kez daha dürtülüyor, açılmışsa kapı kapalı olduğu için zaten
+     * duruyor, açılmamışsa sıradakine geçiliyor.
+     */
+    private fun showAskQuestionPromoStep(caller: String): Boolean {
+        if (!pendingLessonTypeReturnForPromo) return false
+        pendingLessonTypeReturnForPromo = false
+        logStepLaunch("ogretmene sorma", caller, holdsBackdrop = false)
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            maybeShowAskQuestionPromo("queue:$caller")
+            pumpPostLessonQueue("afterPromo:$caller")
+        }
+        return true
+    }
+
+    /** B7 — uygulamayı puanlama. Gösterilmediyse kuyruk devam ediyor. */
+    private fun showRatingStep(caller: String): Boolean {
+        if (!justFinishedChestForRating) return false
+        justFinishedChestForRating = false
+        logStepLaunch("rating", caller)
+        return AppRatingManager.checkAndShowRatingPrompt(this, 1)
+    }
+
+    /** B11 — maraton rehberi (yalnızca haritada). */
+    private fun showMarathonGuideStep(caller: String): Boolean {
+        if (!MarathonGuideStore.isPending(this)) {
+            // Bekleyen rehber YOK. Kuyruk onu engellemedi — hiç sıraya girmemiş.
+            // Sebebi MarathonGuide etiketindeki "schedule REJECT" satırında yazıyor
+            // (rehber tek seferlik ve yalnızca 1. bölümün ilk sandığında).
+            return false
+        }
+        MarathonGuideStore.logPrefsSnapshot(this, "queue:$caller")
+        val map = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? MapFragment
+        if (map == null || !map.isAdded) {
+            Log.d(TAG_QUEUE, "rehber ATLANDI | caller=$caller reason=map_yok")
+            return false
+        }
+        logStepLaunch("rehber", caller, settles = false)
+        // Rehber paneli MapFragment'in İÇİNDE yaşıyor, yani zeminin ALTINDA kalır.
+        // Haritada duran adımlar zemini kaldırmak zorunda.
+        hidePostLessonBackdrop()
+        val show = Runnable {
+            if (map.isAdded) map.maybeShowPendingMarathonGuide(caller)
+        }
+        map.view?.post(show) ?: show.run()
+        return true
+    }
+
+    /** B6 — kupa yolu açıldıysa Tasks sekmesine geç. Kuyruğun sonu: haritadan çıkıyoruz. */
+    private fun showCupPathStep(caller: String): Boolean {
+        if (GlobalValues.pendingCupPathRevealPartId == null) return false
+        if (!isMapBaseReadyForMarathonGuide()) return false
+        logStepLaunch("kupa yolu", caller, settles = false)
+        // Tasks sekmesine geçiliyor; zemin kalkmazsa yeni ekranın üzerinde asılı kalır.
+        hidePostLessonBackdrop()
+        // Geçiş sırasında dokunmaları pencere düzeyinde engelle.
+        window.setFlags(
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            android.view.WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+        )
+        binding.root.postDelayed({
+            binding.bottomNavigationID.selectedItemId = R.id.explore
+        }, 500L)
+        return true
+    }
+
+    /** Yeni tur ekranı kapandı: kuyruğa devam. [NewStreakFragment.onDismiss] çağırıyor. */
+    fun onNewStreakPromptClosed() {
+        pumpPostLessonQueue("NewStreakFragment.dismiss")
+    }
+
+    // ── Harita dışı dönüşlerde yeni seri sorusu (kupa testi, günlük soru, yarış dersi) ──
+    //
+    // NE
+    //   Haritadan açılmayan üç ders var: Görevler ekranındaki kupa yolu testi (kupa modu,
+    //   bölüm 9) ile günlük soru, ve kısım seçimi ekranının üstündeki yarış panelinden
+    //   açılan yarış dersleri (7-8. kısım). Nasıl kapanırlarsa kapansınlar (doğru, yanlış,
+    //   çıkış düğmesi, geri tuşu) serisi olmayan kullanıcıya haritadaki ders dönüşünde
+    //   sorulan soru burada da soruluyor. Koşul aynı
+    //   ([StreakRepository.needsNewStreakPrompt]): seri yok ve bugün sorulmadı.
+    //
+    // NEDEN KUYRUĞUN İÇİNDE DEĞİL
+    //   Ders sonrası kuyruğu ([pumpPostLessonQueue]) yalnızca HARİTA tabanında çalışıyor:
+    //   kapısı [marathonGuideMapBlockReason] ve adımlarının çoğu (zemin, harita kilidi,
+    //   rehber, tanıtım) haritaya özel. Bu dersler ise Görevler'e ya da kısım seçimine
+    //   dönüyor. Kuyruğa ikinci bir taban öğretmek, uzun uğraşla dengelenmiş o akışın her
+    //   adımını yeniden düşünmek demekti. Burada tek bir ekran açılıyor; kendi kapısı ve
+    //   kendi bekleyişi var, kuyruğun hiçbir alanına dokunmuyor.
+    //
+    // YARIŞ DERSİNİN FARKI
+    //   Görevler dönüşünde isteği [TasksFragment] gönderiyor ve reklamın bitmesini kendisi
+    //   bekliyor. Yarış dersi ise haritadaki derslerle aynı dönüş fonksiyonundan
+    //   ([finalizeMapReturnAfterLessonClaim]) geçiyor; reklam kontrolü oradan bir kare sonra
+    //   başlıyor. İstek hemen gönderiliyor, reklamı kapı bekliyor
+    //   ([offMapNewStreakBlockReason] → `ad_check_in_progress`, `not_resumed`). Ekranı
+    //   dokunmaya kapatan da [TasksFragment] değil burası ([offMapNewStreakTouchHold]).
+    //
+    // SIRA
+    //   reklam → (Pro paneli) → yeni seri → dönüşün sonucu.
+    //   Sonuç, kupa testinde panel + sayacın akması + rozet kutlaması; günlük soruda kartın
+    //   tazelenmesi (ilerleme çubuğu, kırık kalp). Soru ders kapanır kapanmaz açılıyor;
+    //   beklediği tek şey reklam akışı (isteği [TasksFragment] reklam bitince gönderiyor).
+    //   Sonuç ise SORUYU bekliyor ([isTasksReturnCovered]): hiçbiri bir diğerinin altında
+    //   başlamıyor.
+    //
+    //   Haritadaki sıradan (reklam → rozet → yeni seri) BİLEREK ayrılıyor: kupa testinde
+    //   rozet listesi sunucudan geliyor ve soruyu onun arkasına koymak 1,7–3,4 sn
+    //   geciktiriyordu. Kullanıcının kararı — gerekçesi TasksFragment'teki dinleyicide.
+
+    /** Harita dışı bir tabana dönüldü, yeni seri sorusu uygun anı bekliyor. */
+    private var offMapNewStreakPromptPending = false
+
+    /**
+     * Soru hangi taban ekranı için istendi ([TasksFragment] ya da [PartSelectionFragment]).
+     *
+     * Soru "dersten yeni çıktım" anına ait: taban değişirse başka bir ekranın üstüne
+     * açılmasın diye düşürülüyor. Log öneki de buna göre seçiliyor ([offMapNewStreakLabel]).
+     */
+    private var offMapNewStreakBaseClass: Class<out Fragment> = TasksFragment::class.java
+
+    /** Bu andan önce açılmaz (monoton saat): ders ekranının kaldırılması bitiyor. */
+    private var offMapNewStreakNotBeforeMs = 0L
+
+    /** Bu andan sonra vazgeçilir (monoton saat); bkz. [OFF_MAP_NEW_STREAK_BUDGET_MS]. */
+    private var offMapNewStreakDeadlineMs = 0L
+
+    private val offMapNewStreakRunnable = Runnable { runOffMapNewStreakPrompt("retry") }
+
+    /**
+     * Yarış dönüşünde soru sıradayken ekranı dokunmaya kapalı tutan engel bizde mi.
+     *
+     * Görevler dönüşünde engelin sahibi [TasksFragment] (bkz. [setTasksReturnTouchBlock]);
+     * yarış panelinin ise böyle bir sahibi yok, o yüzden burada tutuluyor. Olmasaydı ders
+     * kapandıktan soru açılana kadarki aralıkta panelden yeni bir yarış başlatılabilirdi.
+     */
+    private var offMapNewStreakTouchHold = false
+
+    /** [offMapNewStreakTouchHold]'un geçerliliğinin bittiği an; bkz. [RACE_TOUCH_HOLD_MAX_MS]. */
+    private var offMapNewStreakTouchHoldUntilMs = 0L
+
+    /** Log öneki: sorunun hangi dönüşe ait olduğu satırdan okunabilsin. */
+    private fun offMapNewStreakLabel(baseClass: Class<out Fragment> = offMapNewStreakBaseClass): String =
+        if (baseClass == PartSelectionFragment::class.java) "yaris" else "gorevler"
+
+    /**
+     * Görevler'den açılan bir ders (kupa testi ya da günlük soru) kapandı; koşullar
+     * tutuyorsa yeni seri sorusunu sıraya alır.
+     *
+     * [TasksFragment] çağırıyor — reklam akışı bittikten sonra.
+     *
+     * @param notBeforeElapsedMs Sorunun en erken açılabileceği an (monoton saat).
+     */
+    fun requestNewStreakPromptOnTasks(caller: String, notBeforeElapsedMs: Long) {
+        requestOffMapNewStreakPrompt(caller, notBeforeElapsedMs, TasksFragment::class.java, holdTouch = false)
+    }
+
+    /**
+     * Yarış panelinden açılan bir ders (7-8. kısım) kapandı; koşullar tutuyorsa yeni seri
+     * sorusunu sıraya alır ve soru gelene kadar ekranı dokunmaya kapatır.
+     *
+     * [finalizeMapReturnAfterLessonClaim] çağırıyor — taban kısım seçimi ekranıyken.
+     */
+    private fun requestNewStreakPromptOnPartSelection(caller: String) {
+        requestOffMapNewStreakPrompt(
+            caller = caller,
+            notBeforeElapsedMs = android.os.SystemClock.elapsedRealtime() + RACE_NEW_STREAK_DELAY_MS,
+            baseClass = PartSelectionFragment::class.java,
+            holdTouch = true,
+        )
+    }
+
+    private fun requestOffMapNewStreakPrompt(
+        caller: String,
+        notBeforeElapsedMs: Long,
+        baseClass: Class<out Fragment>,
+        holdTouch: Boolean,
+    ) {
+        if (!::binding.isInitialized) return
+        val label = offMapNewStreakLabel(baseClass)
+        // Test çalışma süresine sayılıyor ve hedef tam bu testte tutmuş olabilir; o zaman
+        // seri az önce 1 oldu ve sorulacak bir şey yok. Kayıtlı değer tazelenmeden
+        // bakılsaydı "serin başladı" kutlamasıyla "seri başlatalım" sorusu aynı anda çıkardı.
+        StreakRepository.refresh(this)
+        if (!StreakRepository.needsNewStreakPrompt(this)) {
+            Log.d(TAG_QUEUE, "$label yeni seri GEREKMIYOR | caller=$caller (seri var ya da bugun soruldu)")
+            return
+        }
+        offMapNewStreakPromptPending = true
+        offMapNewStreakBaseClass = baseClass
+        offMapNewStreakNotBeforeMs = notBeforeElapsedMs
+        val now = android.os.SystemClock.elapsedRealtime()
+        offMapNewStreakDeadlineMs = now + OFF_MAP_NEW_STREAK_BUDGET_MS
+        Log.d(TAG_QUEUE, "$label yeni seri SIRADA | caller=$caller bekleme=${(notBeforeElapsedMs - now).coerceAtLeast(0L)}ms")
+        if (holdTouch) {
+            offMapNewStreakTouchHold = true
+            offMapNewStreakTouchHoldUntilMs = now + RACE_TOUCH_HOLD_MAX_MS
+            applyReturnTouchBlock()
+        }
+        binding.root.removeCallbacks(offMapNewStreakRunnable)
+        binding.root.postDelayed(offMapNewStreakRunnable, (notBeforeElapsedMs - now).coerceAtLeast(0L))
+    }
+
+    /**
+     * Yarış dönüşünde tuttuğumuz dokunma engelini bırakır.
+     *
+     * Bekleyişi bitiren her yol (soru açıldı, düşürüldü, vazgeçildi) buradan geçmeli: engel
+     * yalnızca soru sıradayken anlamlı. Görevler dönüşünde engel bizde olmadığı için
+     * orada hiçbir şey yapmıyor.
+     */
+    private fun releaseOffMapNewStreakTouchHold() {
+        if (!offMapNewStreakTouchHold) return
+        offMapNewStreakTouchHold = false
+        applyReturnTouchBlock()
+    }
+
+    /**
+     * Görevler'e dönüşün sonucu (kupa paneli + sayaç + rozet kutlaması ya da günlük soru
+     * kartının tazelenmesi) şu an başlasa bir pencerenin ALTINDA mı kalırdı.
+     *
+     * [TasksFragment] soruyor ve sonucu bunlar kapanana kadar bekletiyor. Örtenler kendi
+     * penceresinde açılan iki şey: reklamdan sonra çıkan Pro paneli ve yeni seri sorusu.
+     * Soru SIRADAYKEN de örtüyor sayılıyor — henüz açılmadı ama açılacak; sayılmasaydı
+     * sonuç o kısa aralıkta başlar, soru üstüne binerdi.
+     */
+    fun isTasksReturnCovered(): Boolean =
+        offMapNewStreakPromptPending ||
+            dialogStillShowing(NewStreakFragment.TAG) ||
+            supportFragmentManager.findFragmentByTag("AdSkip") != null ||
+            // Reklam panelinden açılan abonelik akışı da örtüyor (bkz. subscriptionFlowBlockReason).
+            subscriptionFlowBlockReason() != null
+
+    /**
+     * Görevler'e dönüş (kupa testi, günlük soru) sürerken ekranı dokunmaya kapatır ya da açar.
+     *
+     * [TasksFragment] çağırıyor: ders kapanınca kapatıyor; dönüşün sonucu geldiğinde (kupa
+     * paneli, rozet bekleniyorsa kutlama, günlük soruda kartın tazelenmesi) açıyor. Neden
+     * gerektiği ve katmanın neden o yükseklikte durduğu `activity_main.xml`'deki
+     * `tasksReturnTouchBlocker` açıklamasında.
+     *
+     * ## Güvenlik ağı
+     * Katman açık unutulursa Görevler ekranı VE alt çubuk ölü kalır; çocuk uygulamayı
+     * kapatmadan çıkamaz. Kapatan yolların hepsi [TasksFragment]'te; yine de biri atlanırsa
+     * diye katman her dokunuşta "hâlâ gerekli miyim" diye soruyor. Gerekmiyorsa kendini
+     * kaldırıyor: o dokunuş yutuluyor, bir sonraki alttaki ekrana ulaşıyor.
+     *
+     * ## İkinci sahip
+     * Aynı katmanı yarış dersi dönüşü de kullanıyor ([offMapNewStreakTouchHold]). İki
+     * istek ayrı tutuluyor ve katman ikisinden biri istediği sürece açık: Görevler'in
+     * "kapat" demesi yarış dönüşünün engelini, yarış dönüşününki de Görevler'inkini
+     * düşüremesin.
+     */
+    fun setTasksReturnTouchBlock(blocked: Boolean) {
+        tasksReturnTouchBlockRequested = blocked
+        applyReturnTouchBlock()
+    }
+
+    /** [TasksFragment]'in son isteği; bkz. [setTasksReturnTouchBlock]. */
+    private var tasksReturnTouchBlockRequested = false
+
+    /** Katmanı en son kimin açtığı; kapanış ve "sahipsiz" satırları aynı öneki taşısın diye. */
+    private var returnTouchBlockLabel = "gorevler"
+
+    /** Katmanı iki sahibin isteğine göre açar ya da kapatır. */
+    @android.annotation.SuppressLint("ClickableViewAccessibility")
+    private fun applyReturnTouchBlock() {
+        if (!::binding.isInitialized) return
+        val blocked = tasksReturnTouchBlockRequested || offMapNewStreakTouchHold
+        val blocker = binding.tasksReturnTouchBlocker
+        if (blocked) {
+            blocker.setOnTouchListener { view, event ->
+                if (event.actionMasked == MotionEvent.ACTION_DOWN && !returnTouchBlockStillOwned()) {
+                    Log.d(TAG_QUEUE, "$returnTouchBlockLabel dokunma engeli SAHIPSIZ, kaldirildi")
+                    tasksReturnTouchBlockRequested = false
+                    offMapNewStreakTouchHold = false
+                    view.visibility = View.GONE
+                }
+                true
+            }
+        }
+        if ((blocker.visibility == View.VISIBLE) != blocked) {
+            if (blocked) {
+                returnTouchBlockLabel = if (tasksReturnTouchBlockRequested) "gorevler" else "yaris"
+            }
+            Log.d(TAG_QUEUE, "$returnTouchBlockLabel dokunma engeli ${if (blocked) "ACIK" else "KAPALI"}")
+        }
+        blocker.visibility = if (blocked) View.VISIBLE else View.GONE
+    }
+
+    /**
+     * Katmanın hâlâ bir sahibi var mı; [applyReturnTouchBlock]'taki güvenlik ağı soruyor.
+     *
+     * Kayıtlı isteklere değil sahiplerin ŞU ANKİ durumuna bakılıyor: güvenlik ağının işi,
+     * isteğini geri almayı unutan bir yolu yakalamak.
+     */
+    private fun returnTouchBlockStillOwned(): Boolean {
+        val tasks = supportFragmentManager.findFragmentById(R.id.fragmentContainerID) as? TasksFragment
+        if (tasks?.needsTasksReturnTouchBlock() == true) return true
+        // Yarış dönüşü: soru sıradayken ve süre dolmadıysa. Süre sınırı, reklam kararı hiç
+        // gelmezse ekranın ölü kalmaması için (bkz. [RACE_TOUCH_HOLD_MAX_MS]).
+        return offMapNewStreakTouchHold &&
+            offMapNewStreakPromptPending &&
+            android.os.SystemClock.elapsedRealtime() < offMapNewStreakTouchHoldUntilMs
+    }
+
+    /**
+     * Bekleyen soru varsa bir sonraki karede yeniden dener.
+     *
+     * [onResume] çağırıyor: reklam açıkken activity duraklatılıyor ve [runOffMapNewStreakPrompt]
+     * o sırada beklemeyi bırakıyor (bkz. oradaki not). Reklam kapanınca buradan sürüyor.
+     * Bir sonraki kare, çünkü `onResume` içinde yaşam döngüsü henüz RESUMED değil.
+     */
+    private fun pumpOffMapNewStreakPrompt() {
+        if (!offMapNewStreakPromptPending || !::binding.isInitialized) return
+        binding.root.removeCallbacks(offMapNewStreakRunnable)
+        binding.root.post(offMapNewStreakRunnable)
+    }
+
+    // ── Haftalık ilerleme kartı: haftanın ilk açılışında bir kez (kullanıcı kararı 08.11.2026) ──
+    //
+    // Ders sonu akışına (kuyruk, harita dönüşü) DOKUNMUYOR: yalnızca harita boşta ve hiçbir panel
+    // açık değilken, ayrı bir tam ekran pencere olarak açılıyor. Engeller yeni seri sorusunun kapısıyla
+    // aynı ([offMapNewStreakBlockReason]) + ders sonu kuyruğu. Engel [WEEKLY_CARD_WAIT_MS] içinde
+    // kalkmazsa o açılışta vazgeçiliyor; hafta işaretlenmediği için bir sonraki uygulama açılışında yeniden.
+    // Yalnızca İLERLEME VARSA açılıyor: boş haftayı çocuğun önüne zorla koymanın anlamı yok (kart
+    // ilerleme sayfasından yine açılabiliyor).
+
+    /** Süreç başına bir okuma: her onResume'da Firestore'a gidilmesin. */
+    private var weeklyCardCheckStarted = false
+    private var weeklyCardPending: WeeklyCardRepository.Data? = null
+    private var weeklyCardDeadlineMs = 0L
+    /** Aynı engel her yoklamada loga yazılmasın diye. */
+    private var lastWeeklyCardBlock: String? = null
+    private val weeklyCardRunnable = Runnable { tryShowWeeklyCard() }
+
+    private fun weeklyCardPrefKey(): String? = auth.currentUser?.uid?.let { "weekly_card_auto_week_$it" }
+
+    private fun maybeAutoOpenWeeklyCard() {
+        if (!::binding.isInitialized) return
+        if (weeklyCardPending != null) {
+            // Ekran kapalıyken / arka plandayken geçen süre sayılmasın: öne her gelişte yeni süre.
+            weeklyCardDeadlineMs = android.os.SystemClock.elapsedRealtime() + WEEKLY_CARD_WAIT_MS
+            binding.root.removeCallbacks(weeklyCardRunnable)
+            binding.root.postDelayed(weeklyCardRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+            return
+        }
+        if (weeklyCardCheckStarted) return
+        val prefKey = weeklyCardPrefKey() ?: return
+        weeklyCardCheckStarted = true
+        lifecycleScope.launch {
+            val data = runCatching { WeeklyCardRepository.load() }
+                .onFailure { Log.w(WeeklyCardFragment.TAG, "otomatik kart okunamadı", it) }
+                .getOrNull() ?: return@launch
+            val shownWeek = getSharedPreferences(PREFS_APP, MODE_PRIVATE).getString(prefKey, null)
+            Log.d(WeeklyCardFragment.TAG, "otomatik: hafta=${data.card.week.week} ilerleme=${data.card.hasProgress} gösterilen=$shownWeek")
+            if (!data.card.hasProgress || shownWeek == data.card.week.week) return@launch
+            weeklyCardPending = data
+            weeklyCardDeadlineMs = android.os.SystemClock.elapsedRealtime() + WEEKLY_CARD_WAIT_MS
+            // Harita açılışındaki diğer panellere (seri, puanlama, hediye) önce sıra versin diye kısa pay.
+            binding.root.postDelayed(weeklyCardRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+        }
+    }
+
+    private fun tryShowWeeklyCard() {
+        val data = weeklyCardPending ?: return
+        if (isFinishing || isDestroyed || !::binding.isInitialized) return
+        if (android.os.SystemClock.elapsedRealtime() > weeklyCardDeadlineMs) {
+            weeklyCardPending = null
+            // Bir sonraki öne gelişte yeniden okunsun (süreç başına tek okuma kuralını yalnızca burada esnetiyoruz).
+            weeklyCardCheckStarted = false
+            Log.d(WeeklyCardFragment.TAG, "otomatik: süre doldu, bir sonraki öne gelişte")
+            return
+        }
+        // Duraklatılmışken (reklam, arka plan) beklenmiyor; onResume yeniden dürtüyor.
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        val fm = supportFragmentManager
+        val block = homeIdleBlockReason()
+        if (block != null) {
+            if (block != lastWeeklyCardBlock) {
+                lastWeeklyCardBlock = block
+                Log.d(WeeklyCardFragment.TAG, "otomatik: bekliyor block=$block")
+            }
+            binding.root.postDelayed(weeklyCardRunnable, WEEKLY_CARD_RETRY_MS)
+            return
+        }
+        weeklyCardPending = null
+        weeklyCardPrefKey()?.let { getSharedPreferences(PREFS_APP, MODE_PRIVATE).edit().putString(it, data.card.week.week).apply() }
+        Log.d(WeeklyCardFragment.TAG, "otomatik: açılıyor hafta=${data.card.week.week}")
+        WeeklyCardFragment.showAuto(fm, data)
+    }
+
+    /**
+     * Ana ekran (harita ya da bölüm seçimi) boşta mı; değilse engelin adı. Haftalık kartın ve davet ödülü
+     * panelinin ortak kapısı: ders sonu kuyruğu, seri soruları/kutlaması, reklam, abonelik, sezon kapısı ve
+     * birbirleri açıkken açılmıyorlar (ders sonu akışına dokunmadan, yalnızca bekleyerek).
+     */
+    private fun homeIdleBlockReason(): String? {
+        val fm = supportFragmentManager
+        val base = fm.findFragmentById(R.id.fragmentContainerID)
+        return when {
+            // Uygulama açılışta bölüm seçiminde (PartSelectionFragment) başlıyor, harita ondan sonra;
+            // ikisi de "boşta ana ekran" (08.11.2026 cihazda: yalnızca harita beklenince kart hiç açılmadı).
+            base !is MapFragment && base !is PartSelectionFragment -> "ana_ekran_degil:${base?.javaClass?.simpleName}"
+            postLessonQueueBusy() || postLessonHandoffActive() -> "ders_sonu_kuyrugu"
+            offMapNewStreakPromptPending -> "yeni_seri_bekliyor"
+            streakCelebrationShowing -> "seri_kutlamasi"
+            fm.findFragmentByTag(WeeklyCardFragment.TAG) != null -> "haftalik_kart_acik"
+            referralRewardDialogShowing -> "davet_odulu_acik"
+            fm.findFragmentByTag(ShareMomentDialog.TAG) != null -> "paylasim_ani_acik"
+            else -> offMapNewStreakBlockReason(base)
+        }
+    }
+
+    // ── Başarı anı paylaşım paneli (ShareMoments; kullanıcı kararı 09.11.2026) ──
+    //
+    // An kaydedilince ve öne her gelişte denenir; ana ekran boşalana kadar (ders sonu zinciri, seri şeridi,
+    // haftalık kart, ödül paneli…) bekler. Ders sonu zinciri uzun sürebildiği için bekleme süresi daha uzun.
+    private var shareMomentDeadlineMs = 0L
+    /** Aynı engel her yoklamada loga yazılmasın (adb logcat -s ShareMoment). */
+    private var lastShareMomentBlock: String? = null
+    private val shareMomentRunnable = Runnable { tryShowShareMoment() }
+
+    fun requestShareMomentCheck() = runOnUiThread {
+        if (!::binding.isInitialized || auth.currentUser == null) return@runOnUiThread
+        val pending = ShareMoments.pendingToShow(this) ?: return@runOnUiThread
+        Log.d(ShareMomentDialog.TAG, "deneniyor an=${pending.key}")
+        lastShareMomentBlock = null
+        shareMomentDeadlineMs = android.os.SystemClock.elapsedRealtime() + SHARE_MOMENT_WAIT_MS
+        binding.root.removeCallbacks(shareMomentRunnable)
+        binding.root.postDelayed(shareMomentRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+    }
+
+    private fun tryShowShareMoment() {
+        if (isFinishing || isDestroyed || !::binding.isInitialized) return
+        val m = ShareMoments.pendingToShow(this) ?: return
+        if (android.os.SystemClock.elapsedRealtime() > shareMomentDeadlineMs) return
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        val block = homeIdleBlockReason() ?: if (streakCelebrationShowing) "seri_seridi" else null
+        if (block != null) {
+            if (block != lastShareMomentBlock) {
+                lastShareMomentBlock = block
+                Log.d(ShareMomentDialog.TAG, "bekliyor block=$block an=${m.key}")
+            }
+            binding.root.postDelayed(shareMomentRunnable, WEEKLY_CARD_RETRY_MS)
+            return
+        }
+        Log.d(ShareMomentDialog.TAG, "açılıyor an=${m.key}")
+        ShareMoments.markShown(this, m)
+        ShareMomentDialog.show(supportFragmentManager, m)
+    }
+
+    // ── Davet ödülü paneli: "1 hafta Pro kazandın" (kullanıcı kararı 09.11.2026) ──
+    //
+    // Sunucu ödülü verince users/{uid}.referralRewardNotice = {role, days, atMs} yazıyor (referrals.js).
+    // Görülen atMs cihazda saklanıyor; aynı ödül iki kez gösterilmiyor. Okuma, öne her gelişte değil en çok
+    // REFERRAL_NOTICE_CHECK_MS'de bir (bir kullanıcı belgesi okuması).
+    private var referralNoticeLastCheckMs = 0L
+    private var referralRewardDialogShowing = false
+    private var referralNoticePending: Map<*, *>? = null
+    private var referralNoticeDeadlineMs = 0L
+    private val referralNoticeRunnable = Runnable { tryShowReferralReward() }
+
+    /**
+     * 2. ders bitince (LessonMilestones) çağrılıyor: sunucu ödülü birkaç saniye içinde yazıyor; 30 dakikalık
+     * okuma aralığını sıfırlayıp iki kez bakılıyor (tetikleyici gecikirse ikincisi yakalar). Panel yine
+     * [homeIdleBlockReason] boşalınca açılıyor: ders sonu ekranları bitmeden araya girmiyor.
+     */
+    fun requestReferralRewardCheck() = runOnUiThread {
+        if (!::binding.isInitialized) return@runOnUiThread
+        for (delay in longArrayOf(REFERRAL_NOTICE_RECHECK_1_MS, REFERRAL_NOTICE_RECHECK_2_MS)) {
+            binding.root.postDelayed({
+                if (referralNoticePending == null) referralNoticeLastCheckMs = 0L
+                maybeShowReferralReward()
+            }, delay)
+        }
+    }
+
+    private fun maybeShowReferralReward() {
+        val uid = auth.currentUser?.uid ?: return
+        if (!::binding.isInitialized) return
+        if (referralNoticePending != null) {
+            referralNoticeDeadlineMs = android.os.SystemClock.elapsedRealtime() + WEEKLY_CARD_WAIT_MS
+            binding.root.removeCallbacks(referralNoticeRunnable)
+            binding.root.postDelayed(referralNoticeRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+            return
+        }
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (referralNoticeLastCheckMs != 0L && now - referralNoticeLastCheckMs < REFERRAL_NOTICE_CHECK_MS) return
+        referralNoticeLastCheckMs = now
+        com.google.firebase.firestore.FirebaseFirestore.getInstance().collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                val n = doc.get("referralRewardNotice") as? Map<*, *> ?: return@addOnSuccessListener
+                val at = (n["atMs"] as? Number)?.toLong() ?: return@addOnSuccessListener
+                val seen = getSharedPreferences(PREFS_APP, MODE_PRIVATE).getLong("referral_reward_seen_$uid", 0L)
+                if (at <= seen) return@addOnSuccessListener
+                referralNoticePending = n
+                referralNoticeDeadlineMs = android.os.SystemClock.elapsedRealtime() + WEEKLY_CARD_WAIT_MS
+                binding.root.postDelayed(referralNoticeRunnable, WEEKLY_CARD_FIRST_DELAY_MS)
+            }
+    }
+
+    private fun tryShowReferralReward() {
+        val n = referralNoticePending ?: return
+        val uid = auth.currentUser?.uid ?: return
+        if (isFinishing || isDestroyed || !::binding.isInitialized) return
+        if (android.os.SystemClock.elapsedRealtime() > referralNoticeDeadlineMs) {
+            referralNoticePending = null
+            referralNoticeLastCheckMs = 0L
+            return
+        }
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) return
+        if (homeIdleBlockReason() != null) {
+            binding.root.postDelayed(referralNoticeRunnable, WEEKLY_CARD_RETRY_MS)
+            return
+        }
+        referralNoticePending = null
+        val at = (n["atMs"] as? Number)?.toLong() ?: 0L
+        getSharedPreferences(PREFS_APP, MODE_PRIVATE).edit().putLong("referral_reward_seen_$uid", at).apply()
+        AnalyticsLogger.logSimpleEvent("referral_reward_shown")
+        referralRewardDialogShowing = true
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(appString(R.string.referral_reward_title))
+            .setMessage(appString(if (n["role"] == "referrer") R.string.referral_reward_referrer else R.string.referral_reward_invitee))
+            .setPositiveButton(appString(R.string.referral_reward_ok), null)
+            .setOnDismissListener {
+                referralRewardDialogShowing = false
+                // Pro rozeti / can paneli hemen güncellensin (hediye giftProUntil ile geldi).
+                checkSubscriptionAndUpdateEnergy()
+            }
+            .show()
+    }
+
+    private fun runOffMapNewStreakPrompt(caller: String) {
+        if (!offMapNewStreakPromptPending || !::binding.isInitialized) return
+        binding.root.removeCallbacks(offMapNewStreakRunnable)
+
+        val label = offMapNewStreakLabel()
+
+        fun drop(reason: String) {
+            offMapNewStreakPromptPending = false
+            releaseOffMapNewStreakTouchHold()
+            Log.d(TAG_QUEUE, "$label yeni seri DUSURULDU | caller=$caller neden=$reason")
+        }
+
+        if (isFinishing || isDestroyed) return drop("activity_gone")
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now >= offMapNewStreakDeadlineMs) return drop("sure_doldu")
+        // Kullanıcı sorunun istendiği ekrandan (Görevler ya da kısım seçimi) ayrıldı: soru
+        // "dersten yeni çıktım" anına ait, başka bir ekranın üstüne açılmamalı. Koşullar
+        // sürdükçe bir sonraki dönüşte yeniden sorulur.
+        val base = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+        if (base == null || base.javaClass != offMapNewStreakBaseClass) {
+            val left = if (label == "yaris") "kisim_seciminden_ayrildi" else "gorevlerden_ayrildi"
+            return drop("$left:${base?.javaClass?.simpleName}")
+        }
+
+        // Duraklatılmışken (reklam açık ya da uygulama arkada) zamanlayıcı kurulmuyor:
+        // reklam dakikalarca sürebilir ve o sırada yoklamanın anlamı yok. [onResume] dürtüyor.
+        if (!lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)) {
+            Log.d(TAG_QUEUE, "$label yeni seri bekliyor | caller=$caller block=not_resumed")
+            return
+        }
+
+        // Zamanlayıcı bir iki milisaniye erken dönebiliyor. Bu aşağıdaki kapıya bir "engel"
+        // olarak girseydi yoklama aralığı (400 ms) kadar boşuna beklenirdi; kalan süre
+        // kadar bekleniyor.
+        val waitMs = offMapNewStreakNotBeforeMs - now
+        if (waitMs > 0L) {
+            binding.root.postDelayed(offMapNewStreakRunnable, waitMs)
+            return
+        }
+
+        val block = offMapNewStreakBlockReason(base)
+        if (block != null) {
+            if (block != lastOffMapNewStreakBlock) {
+                lastOffMapNewStreakBlock = block
+                Log.d(TAG_QUEUE, "$label yeni seri bekliyor | caller=$caller block=$block")
+            }
+            // Bu engellerin hepsi kapanırken haber vermiyor (Pro paneli, rozet kutlaması);
+            // kutlama şeridindeki gibi bütçeli yoklama, hangisi kapanırsa kapansın çalışıyor.
+            binding.root.postDelayed(offMapNewStreakRunnable, OFF_MAP_NEW_STREAK_RETRY_MS)
+            return
+        }
+        lastOffMapNewStreakBlock = null
+        offMapNewStreakPromptPending = false
+
+        // Beklerken koşul değişmiş olabilir: seri başka bir yoldan başlamış ya da soru
+        // haritadaki kuyruktan sorulmuş olabilir.
+        StreakRepository.refresh(this)
+        if (!StreakRepository.needsNewStreakPrompt(this)) {
+            releaseOffMapNewStreakTouchHold()
+            Log.d(TAG_QUEUE, "$label yeni seri VAZGECILDI | caller=$caller (beklerken kosul degisti)")
+            return
+        }
+        Log.d(TAG_QUEUE, "$label yeni seri ACILIYOR | caller=$caller")
+        NewStreakFragment().showNow(supportFragmentManager, NewStreakFragment.TAG)
+        // Önce pencere, sonra engel: soru penceresi gelmeden bırakılsaydı alttaki yarış
+        // paneli bir kare dokunulabilir kalırdı.
+        releaseOffMapNewStreakTouchHold()
+    }
+
+    /** Log tekrarını önleyen son engel; yoklama 400 ms'de bir dönüyor. */
+    private var lastOffMapNewStreakBlock: String? = null
+
+    /**
+     * Harita dışı dönüşteki soru şu an açılamıyorsa sebebi; açılabiliyorsa null.
+     *
+     * [marathonGuideMapBlockReason] ile aynı şeylere bakıyor ama harita tabanı istemiyor.
+     * Yalnızca "şu an bir şey GÖRÜNÜYOR" durumları var; hepsi kendiliğinden kapanan şeyler.
+     *
+     * @param base Sorunun istendiği taban ekranı ([TasksFragment] ya da [PartSelectionFragment]).
+     */
+    private fun offMapNewStreakBlockReason(base: Fragment): String? {
+        val fm = supportFragmentManager
+        if (fm.isStateSaved) return "state_saved"
+        // Taban başka bir tam ekranın altında gizlenmiş (ayarlar, kupa yolu haritası…).
+        // Sebep adı Görevler'den kalma; loglarda ve notlarda bu adla geçtiği için duruyor.
+        if (!base.isAdded || base.isHidden) return "gorevler_gizli"
+        // Yarış dersi haritadaki derslerle aynı reklam kontrolünden geçiyor ve o kontrol
+        // dönüşten sonra başlıyor; soru onu beklemezse reklam sorunun üstüne açılır.
+        // Görevler dönüşünde bakılmıyor: orada isteği [TasksFragment] zaten reklam bitince
+        // gönderiyor ve bu bayrak başka bir akışa (harita dönüşü) ait.
+        if (base is PartSelectionFragment && adCheckForBadgeInProgress) return "ad_check_in_progress"
+
+        val abacus = liveOverlayIn(R.id.abacusFragmentContainer)
+        if (binding.abacusFragmentContainer.visibility == View.VISIBLE &&
+            abacus != null && isBlockingLessonOverlayFragment(abacus)
+        ) {
+            // Çocuk hemen yeni bir teste girdi; soru onun bitişini bekliyor.
+            return "abacus_overlay:${abacus.javaClass.simpleName}"
+        }
+        val result = liveOverlayIn(R.id.resultFragmentContainer)
+        if (binding.resultFragmentContainer.visibility == View.VISIBLE &&
+            result != null && isBlockingLessonOverlayFragment(result)
+        ) {
+            return "result_overlay:${result.javaClass.simpleName}"
+        }
+        fm.findFragmentById(R.id.badgeFragmentContainter)?.let {
+            return "badge_overlay:${it.javaClass.simpleName}"
+        }
+        if (dialogStillShowing(NewStreakFragment.TAG)) return "new_streak_prompt"
+        if (fm.findFragmentByTag("AdSkip") != null) return "ad_skip_showing"
+        subscriptionFlowBlockReason()?.let { return it }
+        if (dialogStillShowing("RatingDialog")) return "rating_showing"
+        if (dialogStillShowing("AskQuestionOpen")) return "promo_showing"
+        val gate = fm.findFragmentById(R.id.seasonLeaderboardRewardGateContainer)
+        if (binding.seasonLeaderboardRewardGateContainer.visibility == View.VISIBLE && gate != null) {
+            return "season_gate:${gate.javaClass.simpleName}"
+        }
+        return null
+    }
+
+    /** Kapı kapalıyken yeniden deneme; bkz. [scheduleStreakCelebrationRetry]. */
+    private val streakCelebrationRetryRunnable =
+        Runnable { maybeShowStreakCelebration(fromRetry = true) }
+
+    /** Yeniden denemenin biteceği an (monoton saat); 0 = deneme sürmüyor. */
+    private var streakCelebrationDeadlineMs = 0L
+
+    /**
+     * Hedef tutturulduysa kutlama şeridini uygun anda gösterir.
+     *
+     * Kutlama ders ekranındayken hak ediliyor ama orada gösterilmiyor: soru çözen çocuğun
+     * önünü kesmek, kutlamayı ödül olmaktan çıkarıp engel yapardı. Bunun yerine
+     * [StreakRepository] kuyruğa alıyor, burası güvenli bir ekrana dönüldüğünde açıyor.
+     */
+    /**
+     * @param fromRetry Yeniden deneme zamanlayıcısından geldiyse true; süre bütçesi
+     *   yalnızca yeni bir tetiklemede sıfırlanmalı.
+     */
+    private fun maybeShowStreakCelebration(fromRetry: Boolean = false) {
+        if (!::binding.isInitialized) return
+        if (!fromRetry) streakCelebrationDeadlineMs = 0L
+
+        val blocked = streakCelebrationBlockReason() != null
+        if (streakCelebrationShowing) {
+            // Şerit açıkken üstüne bir ders/rozet ekranı geldiyse çekilsin.
+            if (blocked) hideStreakCelebration()
+            return
+        }
+        if (blocked) {
+            scheduleStreakCelebrationRetry()
+            return
+        }
+        streakCelebrationDeadlineMs = 0L
+        binding.streakCelebration.removeCallbacks(streakCelebrationRetryRunnable)
+
+        val streak = StreakRepository.pendingCelebration(this)
+        if (streak <= 0) return
+        StreakRepository.clearPendingCelebration(this)
+        showStreakCelebration(streak)
+    }
+
+    /**
+     * Kapı kapalıyken kısa aralıklarla yeniden dener.
+     *
+     * ## Neden gerekli
+     * Kutlama ders ekranında hak ediliyor ve dönüşte gösteriliyor. Ama ders katmanlarının
+     * kapanması EŞZAMANSIZ: geri yığını değiştiğinde ders/sonuç kapları hâlâ görünür
+     * oluyor, kapı kapalı kalıyor ve bir daha denenmiyordu. Kutlama ancak kullanıcı başka
+     * bir ekrana gidip dönünce — yani tesadüfen yeni bir tetikleme olunca — çıkıyordu.
+     *
+     * ## Neden zamanlayıcı, kanca değil
+     * Katmanların kapanışı tek bir yerden akmıyor (ders, sandık, rozet, sezon kapısı
+     * kendi yollarından kapanıyor). Hepsine kanca takmak, yarın eklenecek bir katmanı
+     * unutmak demekti. Bütçeli yeniden deneme hangi yoldan gelinirse gelinsin çalışıyor
+     * ve bekleyen kutlama yoksa hiç kurulmuyor.
+     */
+    private fun scheduleStreakCelebrationRetry() {
+        if (StreakRepository.pendingCelebration(this) <= 0) return
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (streakCelebrationDeadlineMs == 0L) {
+            streakCelebrationDeadlineMs = now + STREAK_CELEBRATION_RETRY_BUDGET_MS
+        }
+        if (now >= streakCelebrationDeadlineMs) return
+        binding.streakCelebration.removeCallbacks(streakCelebrationRetryRunnable)
+        binding.streakCelebration.postDelayed(
+            streakCelebrationRetryRunnable,
+            STREAK_CELEBRATION_RETRY_MS,
+        )
+    }
+
+    /**
+     * Kutlamanın şu an gösterilememe sebebi; gösterilebiliyorsa null.
+     *
+     * İlk koşul listeyi büyük ölçüde gereksiz kılıyor: `currencyPanel` yalnızca harita,
+     * bölüm seçimi, görevler ve misyonlar ekranlarında görünüyor — yani kullanıcının
+     * "ev"inde. Yine de ders ve kutlama katmanları ayrıca eleniyor, çünkü bunlar taban
+     * ekranın ÜSTÜNDE açılıyor ve tabanı değiştirmiyor.
+     */
+    private fun streakCelebrationBlockReason(): String? {
+        val fm = supportFragmentManager
+        if (binding.currencyPanel.visibility != View.VISIBLE) return "not_home_screen"
+        if (binding.abacusFragmentContainer.visibility == View.VISIBLE) return "lesson_overlay"
+        if (binding.resultFragmentContainer.visibility == View.VISIBLE) return "result_overlay"
+        if (fm.findFragmentById(R.id.badgeFragmentContainter) != null) return "badge_overlay"
+        if (binding.seasonLeaderboardRewardGateContainer.visibility == View.VISIBLE) return "season_gate"
+        if (binding.createQuestionOverlayContainer.visibility == View.VISIBLE) return "create_question"
+        return null
+    }
+
+    private fun showStreakCelebration(streak: Int) {
+        // 7/30/100 gün: paylaşım anı kaydı (ShareMoments); panel şerit ve ders sonu zinciri bitince.
+        ShareMoments.recordStreak(this, streak)
+        val view = binding.streakCelebration
+        streakCelebrationShowing = true
+        binding.streakCelebrationTitle.text = appString(R.string.ui_bugunku_hedefini_tamamladin)
+        binding.streakCelebrationSub.text =
+            if (streak <= 1) appString(R.string.ui_serin_basladi) else appString(R.string.ui_x_gunluk_seri, streak)
+        binding.streakCelebrationLottie.playAnimation()
+
+        view.setOnClickListener {
+            hideStreakCelebration()
+            openStreakFragment()
+        }
+
+        view.animate().cancel()
+        view.alpha = 0f
+        view.translationY = -40f * resources.displayMetrics.density
+        view.visibility = View.VISIBLE
+        view.animate().alpha(1f).translationY(0f).setDuration(260).start()
+
+        view.removeCallbacks(streakCelebrationHideRunnable)
+        view.postDelayed(streakCelebrationHideRunnable, STREAK_CELEBRATION_MS)
+    }
+
+    private fun hideStreakCelebration() {
+        if (!::binding.isInitialized) return
+        val view = binding.streakCelebration
+        view.removeCallbacks(streakCelebrationHideRunnable)
+        if (!streakCelebrationShowing) return
+        streakCelebrationShowing = false
+        view.animate()
+            .alpha(0f)
+            .translationY(-40f * resources.displayMetrics.density)
+            .setDuration(200)
+            .withEndAction {
+                // Gizlenme animasyonu biterken şerit yeniden açılmış olabilir; o durumda
+                // burada gizlemek az önce gösterilen şeridi kapatırdı.
+                if (!streakCelebrationShowing) {
+                    view.visibility = View.GONE
+                    binding.streakCelebrationLottie.cancelAnimation()
+                }
+            }
+            .start()
+    }
+
+    /**
+     * Günlük seri ekranını açar.
+     *
+     * Mağaza ile aynı yol: üstüne ekleniyor (altındaki ekran canlı kalsın) ve geri yığınına
+     * giriyor, böylece telefonun geri tuşu doğal olarak kapatıyor.
+     */
+    fun openStreakFragment() {
         if (MainActivityChromeBlocker.currentLockDepth() > 0) return
         val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
-        if (current is ShopFragment) return
-        
+        if (current is StreakFragment) return
+
         dismissMapLessonOverlayChrome()
-        
+
         supportFragmentManager.beginTransaction()
             .setCustomAnimations(R.anim.slide_down, R.anim.slide_up, R.anim.slide_down, R.anim.slide_up)
-            .add(R.id.fragmentContainerID, ShopFragment())
+            .add(R.id.fragmentContainerID, StreakFragment())
             .addToBackStack(null)
             .commit()
         binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }
+    }
+
+    /**
+     * @param focusStreakFreeze true ise mağaza seri dondurma kartında açılır; seri
+     *   ekranındaki "Seri dondurma: Yok" satırı böyle çağırıyor.
+     * @return mağaza açıldıysa (ya da zaten açıksa) true; kilit ya da öğretmen engeli varsa false.
+     */
+    fun openShopFragment(focusStreakFreeze: Boolean = false, focusSobiCredits: Boolean = false): Boolean {
+        val overTopLayer = isTopLayerScreenOpen()
+        // Kilit ders sürerken alt menü / üst panel ile ekrandan kaçılmasın diye; mağazayı da
+        // haritadaki yerine açtırmıyor. Ders açıkken mağaza dersin ÜSTÜNE açıldığı (ve kapanınca
+        // derse dönüldüğü) için orada kilit engel değil: eskiden Sobi'deki "Kredi al" sessizce
+        // hiçbir şey yapmıyordu.
+        if (!overTopLayer && MainActivityChromeBlocker.currentLockDepth() > 0) return false
+        // Öğretmenin satın alacağı bir şey yok (bkz. TeacherApprovalGate.blockPurchasesForTeacher).
+        // Mağazanın her girişi (üst panel, kupa yolu canı, özelleştirme) buradan geçiyor.
+        if (TeacherApprovalGate.blockPurchasesForTeacher(this)) return false
+
+        if (overTopLayer) {
+            // fragmentContainerID üst katmandaki ekranların ALTINDA; mağaza oraya eklenirse
+            // arkada kalıyordu (öğretici, abaküs, flaş, kupa yolu). Alttaki ekrana dokunulmuyor:
+            // öğreticinin adımı, dersin sorusu olduğu gibi bekliyor.
+            if (isShopOpen()) return true
+            binding.shopOverlayContainer.visibility = View.VISIBLE
+            supportFragmentManager.beginTransaction()
+                .setCustomAnimations(R.anim.slide_down, R.anim.slide_up, R.anim.slide_down, R.anim.slide_up)
+                .add(R.id.shopOverlayContainer, ShopFragment.newInstance(focusStreakFreeze, focusSobiCredits))
+                .addToBackStack(null)
+                .commit()
+            return true
+        }
+
+        val current = supportFragmentManager.findFragmentById(R.id.fragmentContainerID)
+        if (current is ShopFragment) return true
+
+        dismissMapLessonOverlayChrome()
+
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(R.anim.slide_down, R.anim.slide_up, R.anim.slide_down, R.anim.slide_up)
+            .add(R.id.fragmentContainerID, ShopFragment.newInstance(focusStreakFreeze, focusSobiCredits))
+            .addToBackStack(null)
+            .commit()
+        binding.fragmentContainerID.post { updateCurrencyPanelVisibility() }
+        return true
+    }
+
+    /**
+     * fragmentContainerID'nin üstündeki kaplardan birinde canlı bir ekran görünüyor mu
+     * (ders, öğretici, flaş, kupa yolu, sonuç, rozet, menü, soru oluşturma).
+     * Görünürlük de şart: boş ya da gizli kapta kalmış bir fragment ekranı kapatmıyor.
+     */
+    private fun isTopLayerScreenOpen(): Boolean {
+        if (!::binding.isInitialized) return false
+        return listOf(
+            binding.abacusFragmentContainer,
+            binding.resultFragmentContainer,
+            binding.badgeFragmentContainter,
+            binding.menuFragmentContainer,
+            binding.createQuestionOverlayContainer,
+        ).any { it.visibility == View.VISIBLE && liveOverlayIn(it.id) != null }
+    }
+
+    /**
+     * Mağaza hangi kapta olursa olsun açık mı. findFragmentById değil: mağazanın üstünde reklam
+     * sandığı açıkken kabın en üstteki fragment'i sandık oluyor.
+     */
+    private fun isShopOpen(): Boolean = supportFragmentManager.fragments.any { it is ShopFragment }
+
+    /** [action]'ı mağaza kapanınca bir kez çalıştırır (mağaza [openShopFragment] ile açılmış olmalı). */
+    fun doAfterShopClosed(action: () -> Unit) {
+        val fm = supportFragmentManager
+        fm.addOnBackStackChangedListener(object : FragmentManager.OnBackStackChangedListener {
+            private var done = false
+            override fun onBackStackChanged() {
+                // İlk tetiklenme mağazanın eklenmesi; sandık gibi mağaza içi girişler de buraya düşer.
+                if (done || isShopOpen()) return
+                done = true
+                // Dinleyici listesi dolaşılırken çıkarmak sıradaki dinleyiciyi atlatabiliyor; sonraki karede.
+                binding.root.post { fm.removeOnBackStackChangedListener(this) }
+                action()
+            }
+        })
     }
 
 }

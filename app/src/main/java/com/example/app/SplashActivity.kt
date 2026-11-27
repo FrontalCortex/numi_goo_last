@@ -1,30 +1,39 @@
 package com.example.app
 
+import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.view.View
+import android.view.animation.DecelerateInterpolator
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.splashscreen.SplashScreenViewProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.remoteconfig.FirebaseRemoteConfig
-import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 
 class SplashActivity : AppCompatActivity() {
 
-    companion object {
-        // Splash animasyonunun minimum süresi (mevcut davranış).
-        private const val SPLASH_ANIMATION_MS = 2000L
-        // Remote Config fetch'i bu süreden uzun sürerse, daha fazla bekletmeden devam edilir
-        // (uygulama zaten internetsiz çalışmadığı için burada güncel veriyi garantilemek adına
-        // yüksek bir üst sınır tutuluyor; süre dolunca yine de pes edip devam eder, sonsuza kadar beklemez).
-        private const val SPLASH_MAX_EXTRA_WAIT_MS = 8000L
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(FontScaleLimiter.wrap(newBase))
     }
 
-    private var splashTimerDone = false
-    private var remoteConfigFetchDone = false
+    companion object {
+        // Açılışın en kısa süresi (onCreate'ten). Eskiden 2 sn'ydi ve bir şey yüklenmediği hâlde
+        // çark dönüyordu (10.11.2026); şimdi marka bir kez okunacak kadar: sistem ikonu + yazının
+        // gelişi (~450 ms) + kısa bekleme.
+        private const val SPLASH_ANIMATION_MS = 1200L
+        private const val BRAND_REVEAL_MS = 450L
+        // Zorunlu güncelleme kontrolü animasyon bittikten sonra en fazla bu kadar bekletir;
+        // çekme genelde animasyon sürerken biter. Bkz. ForceUpdateManager.runIfAllowed.
+        private const val FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS = 1000L
+        // Bildirimden gelen açılışta animasyon beklenmediği için süre biraz daha uzun.
+        private const val FORCE_UPDATE_MAX_WAIT_DEEP_LINK_MS = 1500L
+    }
+
     private var proceededPastSplash = false
 
     private fun logFirstTutorial(event: String, details: String = "") {
@@ -32,56 +41,23 @@ class SplashActivity : AppCompatActivity() {
         Log.d(MainActivity.FIRST_TUTORIAL_LOG_TAG, msg)
     }
 
-    // Tutorial içeriği artık Remote Config'ten geliyor (bkz. TutorialFragment.createTutorialSteps1).
-    // Kullanıcı map'ten bir tutorial'a girdiğinde (LessonAdapter, MainActivity) güncel veriyi ilk
-    // seferde görebilsin diye, uygulama açılışında (burada, tek merkezi yerde) bir kez fetch
-    // ediyoruz. fetchAndActivate() session boyunca cache'lendiği için, buradan sonraki her okuma
-    // (hangi ekrandan olursa olsun) zaten güncel değeri kullanır.
-    private fun startTutorialRemoteConfigFetch() {
-        try {
-            val remoteConfig = FirebaseRemoteConfig.getInstance()
-            val isDebuggable = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-            // setConfigSettingsAsync() de asenkron - fetchAndActivate()'i onun bitmesini BEKLEMEDEN
-            // çağırmak (eskiden burada bir race vardı), o anki fetch'in hangi throttle ayarıyla
-            // çalışacağını belirsizleştiriyordu. Şimdi sıraya koyuyoruz: önce ayar, o bitince fetch.
-            remoteConfig.setConfigSettingsAsync(
-                FirebaseRemoteConfigSettings.Builder()
-                    .setMinimumFetchIntervalInSeconds(if (isDebuggable) 0L else 3600L)
-                    .build()
-            ).addOnCompleteListener {
-                remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
-                    logFirstTutorial(
-                        "Splash.remoteConfig",
-                        "fetch tamamlandı başarılı=${task.isSuccessful} sonuç=${task.result} " +
-                            "lastFetchStatus=${remoteConfig.info.lastFetchStatus} " +
-                            "fetchTimeMillis=${remoteConfig.info.fetchTimeMillis}",
-                    )
-                    remoteConfigFetchDone = true
-                    maybeProceedPastSplash()
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(MainActivity.FIRST_TUTORIAL_LOG_TAG, "Splash Remote Config başlatılamadı", e)
-            remoteConfigFetchDone = true
-            maybeProceedPastSplash()
-        }
-    }
-
-    private fun maybeProceedPastSplash() {
-        if (proceededPastSplash) return
-        if (splashTimerDone && remoteConfigFetchDone) {
-            proceededPastSplash = true
-            checkLoginStatus()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
+        // super'den ve setContentView'dan önce: sistemin açılış ekranı (Theme.App.Starting) buradan
+        // sonra Theme.NumiGoo'ya geçiyor.
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         
         // Navigation bar rengini background_color yap
         window.navigationBarColor = androidx.core.content.ContextCompat.getColor(this, R.color.background_color)
         
         setContentView(R.layout.activity_splash)
+        splashScreen.setOnExitAnimationListener { provider -> revealBrand(provider) }
+
+        // Davet bağlantısı (/d/<kod>) uygulama yüklüyken açıldı (App Links). Atıf yok: bu kişi zaten
+        // kullanıcı; yalnızca "paylaşılan bağlantıya basıldı" sayılıyor. Uygulama normal akışla açılır.
+        if (intent?.action == android.content.Intent.ACTION_VIEW && intent?.data?.path?.startsWith("/d/") == true) {
+            AnalyticsLogger.logSimpleEvent("ref_link_open")
+        }
 
         // Daha önce indirilmiş medya dosyalarının cache'ini belleğe yükle
         GlobalValues.loadDownloadedMediaCache(applicationContext)
@@ -90,39 +66,81 @@ class SplashActivity : AppCompatActivity() {
         val hasDeepLinkQuestion =
             intent?.getStringExtra(MainActivity.EXTRA_OPEN_QUESTION_ID)?.isNullOrEmpty() == false
 
+        // Zorunlu güncelleme için Remote Config'i animasyonla paralel çekmeye başla.
+        ForceUpdateManager.startFetch()
+
         if (hasDeepLinkQuestion) {
-            checkLoginStatus()
+            ForceUpdateManager.runIfAllowed(this, FORCE_UPDATE_MAX_WAIT_DEEP_LINK_MS) {
+                checkLoginStatus()
+            }
         } else {
-            // Tutorial Remote Config fetch'i, splash animasyonuyla paralel başlatılır.
-            startTutorialRemoteConfigFetch()
-
-            // Normal açılış: kısa bir splash animasyonu için minimum bekleme
+            // Normal açılış: splash animasyonu kadar beklenir.
+            //
+            // Eskiden burada öğretici içeriği için Remote Config indiriliyor ve açılış onu
+            // 8 saniyeye kadar bekliyordu; öğreticiler artık uygulamanın içinden okunuyor
+            // (bkz. TutorialFragment.createTutorialSteps1). Remote Config'ten yalnızca zorunlu
+            // güncelleme eşiği okunuyor ve o da açılışı en fazla ~1 sn uzatabiliyor.
             Handler(Looper.getMainLooper()).postDelayed({
-                splashTimerDone = true
-                maybeProceedPastSplash()
+                if (proceededPastSplash) return@postDelayed
+                proceededPastSplash = true
+                ForceUpdateManager.runIfAllowed(this, FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS) {
+                    checkLoginStatus()
+                }
             }, SPLASH_ANIMATION_MS)
-
-            // Güvenlik ağı: fetch bu süreye kadar bitmezse (yavaş/yok internet), daha fazla
-            // bekletmeden devam et.
-            Handler(Looper.getMainLooper()).postDelayed({
-                splashTimerDone = true
-                remoteConfigFetchDone = true
-                maybeProceedPastSplash()
-            }, SPLASH_ANIMATION_MS + SPLASH_MAX_EXTRA_WAIT_MS)
         }
     }
     
+    /**
+     * Sistemin açılış ekranından bizimkine geçiş: kendi ikonumuzu sistem ikonunun tam üstüne
+     * (aynı yer ve boy) koyup sistem ekranını kaldırıyoruz; sonra ikon yukarı kayıyor ve altından
+     * "Sorobit" beliriyor. Kullanıcı tek bir ekran görüyor.
+     *
+     * Sistem ekranı gösterilmediyse (ör. uygulama zaten açıkken bağlantıyla gelme) bu çağrılmıyor;
+     * düzen o zaman doğrudan son hâliyle görünüyor.
+     */
+    private fun revealBrand(provider: SplashScreenViewProvider) {
+        val brand = findViewById<View>(R.id.splashBrand)
+        val icon = findViewById<View>(R.id.splashIcon)
+        val wordmark = findViewById<View>(R.id.splashWordmark)
+        runCatching {
+            val sys = provider.iconView
+            if (sys.width == 0 || icon.width == 0) return@runCatching
+            val s = IntArray(2).also { sys.getLocationInWindow(it) }
+            val o = IntArray(2).also { icon.getLocationInWindow(it) }
+            // Android 12+ ikon kutusu görünen maske boyunda (192dp), resim onun 1,5 katı çiziliyor
+            // (uyarlanabilir ikondaki 108/72 gibi); kutu genişliğiyle hesaplayınca ikonumuz ⅔ boyda
+            // başlayıp büyüyordu (10.11.2026 MIUI 14 kaydı). Eski sürümlerde (kütüphanenin kendi
+            // çizimi) kutu resmin boyunda.
+            val drawn = sys.width * (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) 1.5f else 1f)
+            val scale = drawn / icon.width
+            brand.pivotX = icon.left + icon.width / 2f
+            brand.pivotY = icon.top + icon.height / 2f
+            brand.scaleX = scale
+            brand.scaleY = scale
+            brand.translationX = (s[0] + sys.width / 2f) - (o[0] + icon.width / 2f)
+            brand.translationY = (s[1] + sys.height / 2f) - (o[1] + icon.height / 2f)
+            wordmark.alpha = 0f
+            wordmark.translationY = 12 * resources.displayMetrics.density
+        }
+        provider.remove()
+        val ease = DecelerateInterpolator(1.6f)
+        brand.animate().translationX(0f).translationY(0f).scaleX(1f).scaleY(1f)
+            .setDuration(BRAND_REVEAL_MS).setInterpolator(ease).start()
+        wordmark.animate().alpha(1f).translationY(0f)
+            .setStartDelay(BRAND_REVEAL_MS / 3).setDuration(BRAND_REVEAL_MS).setInterpolator(ease).start()
+    }
+
     private fun checkLoginStatus() {
         val prefs = getSharedPreferences("AppPrefs", MODE_PRIVATE)
         val loginStartEverShown = prefs.getBoolean("login_start_ever_shown", false)
         val hasExistingLogin = FirebaseAuth.getInstance().currentUser != null
-        val firstTutorialShownLocal = FirstTutorialShownStore.readLocal(this)
+        val hadAccount = DeviceAccountStore.hasEverHadAccount(this)
         val questionId = intent?.getStringExtra(MainActivity.EXTRA_OPEN_QUESTION_ID)
         val recipientUid = intent?.getStringExtra(MainActivity.EXTRA_NOTIFICATION_RECIPIENT_UID)
         logFirstTutorial(
             "Splash.checkLoginStatus",
             "online=${isOnline()} loginStartEverShown=$loginStartEverShown hasAuth=$hasExistingLogin " +
-                "first_tutorial_shown(local)=$firstTutorialShownLocal questionId=${questionId?.take(8)}",
+                "account_ever_created=$hadAccount questionId=${questionId?.take(8)}",
         )
         if (!isOnline()) {
             logFirstTutorial("Splash.route", "offline -> MainActivity (no start_destination)")
@@ -177,15 +195,17 @@ class SplashActivity : AppCompatActivity() {
         }
 
         if (!hasExistingLogin) {
-            val firstTutorialShown = FirstTutorialShownStore.readLocal(this)
-            val destination = if (firstTutorialShown) {
+            // Şart tek: bu cihazda daha önce hesap açıldı mı. Açıldıysa oturum kapalı olsa
+            // bile tutorial gösterilmiyor.
+            val hadAccount = DeviceAccountStore.hasEverHadAccount(this)
+            val destination = if (hadAccount) {
                 MainActivity.START_DESTINATION_MAP
             } else {
                 MainActivity.START_DESTINATION_TUTORIAL
             }
             logFirstTutorial(
                 "Splash.prepareStartup.guest",
-                "first_tutorial_shown=$firstTutorialShown destination=$destination",
+                "account_ever_created=$hadAccount destination=$destination",
             )
             prepareTutorialDataIfNeededAndLaunch(destination, questionId, recipientUid)
             return
@@ -214,43 +234,32 @@ class SplashActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
                 
-                val firestoreRaw = doc.getBoolean("first_tutorial_shown")
-                val firstTutorialShown = FirstTutorialShownStore.resolveShown(
-                    this@SplashActivity,
-                    firestoreRaw,
-                    "Splash.firestore",
-                )
-                if (firstTutorialShown) {
-                    FirstTutorialShownStore.repairFirestoreIfLocalShown(this@SplashActivity, "Splash.firestore")
-                }
-                val destination = if (firstTutorialShown) {
-                    MainActivity.START_DESTINATION_MAP
-                } else {
-                    MainActivity.START_DESTINATION_TUTORIAL
-                }
+                // Oturum açık: bu cihazda hesap var, yani tutorial gösterilmiyor. Firestore
+                // okuması artık yalnızca yukarıdaki "hesap silinmiş mi" kontrolü için
+                // yapılıyor; hedef kararı ona bağlı değil.
+                DeviceAccountStore.hasEverHadAccount(this@SplashActivity)
                 logFirstTutorial(
                     "Splash.prepareStartup.firestore",
-                    "uid=${uid.take(8)} exists=${doc.exists()} firestoreRaw=$firestoreRaw " +
-                        "resolved=$firstTutorialShown destination=$destination",
+                    "uid=${uid.take(8)} exists=${doc.exists()} -> MAP",
                 )
-                prepareTutorialDataIfNeededAndLaunch(destination, questionId, recipientUid)
+                prepareTutorialDataIfNeededAndLaunch(
+                    MainActivity.START_DESTINATION_MAP,
+                    questionId,
+                    recipientUid,
+                )
             }
             .addOnFailureListener { e ->
-                val firstTutorialShown = FirstTutorialShownStore.resolveShown(
-                    this@SplashActivity,
-                    firestoreValue = null,
-                    logSource = "Splash.firestore.FAIL",
-                )
-                val destination = if (firstTutorialShown) {
-                    MainActivity.START_DESTINATION_MAP
-                } else {
-                    MainActivity.START_DESTINATION_TUTORIAL
-                }
+                // Okuma başarısız oldu ama oturum açık; hesabın varlığından şüphe yok.
+                DeviceAccountStore.hasEverHadAccount(this@SplashActivity)
                 logFirstTutorial(
                     "Splash.prepareStartup.firestore",
-                    "FAIL resolved=$firstTutorialShown destination=$destination err=${e.message}",
+                    "FAIL -> MAP err=${e.message}",
                 )
-                prepareTutorialDataIfNeededAndLaunch(destination, questionId, recipientUid)
+                prepareTutorialDataIfNeededAndLaunch(
+                    MainActivity.START_DESTINATION_MAP,
+                    questionId,
+                    recipientUid,
+                )
             }
     }
 

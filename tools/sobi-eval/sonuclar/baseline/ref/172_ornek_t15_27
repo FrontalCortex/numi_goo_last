@@ -1,0 +1,1 @@
+Yeni bir örnek alalım: 17'den 8 çıkaralım. Birler sütununda 7 var, 8'i doğrudan çıkaramayız. Bu yüzden 10 gider (onlar sütunundaki 1 boncuk gider) ve 8'in kardeşi olan 2 gelir. Sonuçta 7 + 2 = 9 olur ve işlem biter.

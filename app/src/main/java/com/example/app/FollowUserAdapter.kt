@@ -14,15 +14,24 @@ data class FollowUser(
     val firebaseUid: String,
     val name: String,
     val userId: String,
-    /** 1–12 → show avatar_ic{N} drawable; 0 → show letter circle */
-    val selectedAvatar: Int = 0,
+    /** publicProfiles.avatarConfig; null → harfli daire. */
+    val avatarConfig: String? = null,
     /** true → this person is NOT followed back yet → show "+" button */
-    val showFollowButton: Boolean = false
+    val showFollowButton: Boolean = false,
+    /**
+     * true → bu kişiyi takip ediyorum → "X" (takibi bırak) butonu görünsün.
+     *
+     * Yalnızca "Takip Edilen" sekmesinde açılır. "Takipçi" sekmesinde de açılsaydı X,
+     * "bu takipçiyi listemden çıkar" gibi okunurdu — oysa yaptığı şey benim onu takip
+     * etmeyi bırakmam. İki sekme, iki net anlam: X = takibi bırak, + = geri takip et.
+     */
+    val showUnfollowButton: Boolean = false
 )
 
 class FollowUserAdapter(
     private val onFollowClick: (FollowUser) -> Unit,
-    private val onItemClick: (FollowUser) -> Unit = {}
+    private val onItemClick: (FollowUser) -> Unit = {},
+    private val onUnfollowClick: (FollowUser) -> Unit = {}
 ) : ListAdapter<FollowUser, FollowUserAdapter.ViewHolder>(DiffCallback) {
 
     private val avatarColors = listOf(
@@ -40,24 +49,12 @@ class FollowUserAdapter(
 
         fun bind(item: FollowUser, position: Int) {
             binding.root.setOnClickListener { onItemClick(item) }
-            if (item.selectedAvatar in 1..12) {
-                // Show the actual avatar drawable; hide the letter TextView
-                binding.tvAvatarLetter.visibility = View.INVISIBLE
-                val resId = binding.root.context.resources.getIdentifier(
-                    "avatar_ic${item.selectedAvatar}", "drawable",
-                    binding.root.context.packageName
-                )
-                if (resId != 0) {
-                    binding.tvAvatarLetter.background = null
-                    // Reuse the TextView's size as a frame; overlay via ImageView trick:
-                    // Since item_follow_user uses a single TextView for the avatar slot,
-                    // we set a drawable as background and clear the text.
-                    binding.tvAvatarLetter.visibility = View.VISIBLE
-                    binding.tvAvatarLetter.text = ""
-                    binding.tvAvatarLetter.setBackgroundResource(resId)
-                } else {
-                    showLetterAvatar(item, position)
-                }
+            val avatar = AvatarView.drawableFor(
+                binding.root.context, item.avatarConfig, binding.tvAvatarLetter.layoutParams.width,
+            )
+            if (avatar != null) {
+                binding.tvAvatarLetter.text = ""
+                binding.tvAvatarLetter.background = avatar
             } else {
                 showLetterAvatar(item, position)
             }
@@ -77,6 +74,16 @@ class FollowUserAdapter(
                 }
             } else {
                 binding.btnFollowBack.visibility = View.GONE
+            }
+
+            if (item.showUnfollowButton) {
+                binding.btnUnfollow.visibility = View.VISIBLE
+                // Buton burada KAPATILMIYOR ("+" butonunun aksine): araya onay diyaloğu
+                // giriyor ve kullanıcı iptal ederse buton kapalı kalırdı. Diyalog zaten
+                // modal, yani ikinci dokunuş satıra inmiyor.
+                binding.btnUnfollow.setOnClickListener { onUnfollowClick(item) }
+            } else {
+                binding.btnUnfollow.visibility = View.GONE
             }
         }
 

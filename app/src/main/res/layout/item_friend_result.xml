@@ -64,7 +64,7 @@
         android:layout_width="44dp"
         android:layout_height="44dp"
         android:background="@drawable/bg_add_friend_btn"
-        android:contentDescription="Arkadaş Ekle"
+        android:contentDescription="@string/item_friend_result_btn_add_friend_desc"
         android:padding="10dp"
         android:src="@drawable/ic_person_add"
         app:tint="@android:color/white" />

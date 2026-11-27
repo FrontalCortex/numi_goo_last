@@ -1,0 +1,420 @@
+package com.example.app
+
+import android.content.Context
+import android.graphics.Color
+import android.graphics.Typeface
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+
+/**
+ * Seri ekranlarının ortak parçaları: seçenek satırları ve hafta şeridi.
+ *
+ * İkisi de hem kayıt akışındaki seri adımlarında ([UserInfoFragment]) hem seri ekranında
+ * ([StreakFragment]) görünüyor. XML'de tutulsalardı her satır için ayrı kimlik gerekirdi ve
+ * iki ekranda iki kopya olurdu; burada tek kaynak.
+ */
+object StreakViews {
+
+    private const val COLOR_MUTED = "#93A5B3"
+    private const val COLOR_ACCENT = "#FF9800"
+
+    /** Sağ taraftaki metin bir ÖDÜL olduğunda; sönük gri onu açıklama gibi gösterirdi. */
+    const val COLOR_GOLD = "#FFC107"
+
+    /** "19:00" biçiminde saat. */
+    fun hourText(hour: Int): String = String.format(Locale.US, "%02d:00", hour)
+
+    /**
+     * Hatırlatma saatinin günlük hayattaki karşılığı (kayıttaki soru ve seri ekranı aynı
+     * satırları gösteriyor). Çocuk "18:00"dan çok "okuldan sonra"yı tanıyor.
+     */
+    fun reminderHourLabel(hour: Int): String = when (hour) {
+        16 -> "Okuldan sonra"
+        18 -> appString(R.string.ui_aksamustu)
+        19 -> appString(R.string.ui_aksam)
+        20 -> "Yemekten sonra"
+        else -> hourText(hour)
+    }
+
+    /** "Başka bir saat" satırının değeri; gerçek bir saat değil, saat penceresini açıyor. */
+    private const val CUSTOM_HOUR_ROW = -1
+
+    /**
+     * Hatırlatma saati satırları: solda açıklama, sağda saat; en altta "Başka bir saat".
+     *
+     * Hazır saatler çocukların çoğuna uyuyor ama herkese değil (ör. sabah çalışmak isteyen);
+     * son satır [showHourPicker]'ı açıyor. Seçili saat hazırlardan biri değilse o satır seçili
+     * görünüyor ve sağında saati yazıyor.
+     *
+     * @param onCustom "Başka bir saat"e dokunuldu; çağıran [showHourPicker]'ı açar.
+     */
+    fun buildReminderRows(
+        container: ViewGroup,
+        selected: Int,
+        onPick: (Int) -> Unit,
+        onCustom: () -> Unit,
+    ) {
+        val hours = StreakRepository.REMINDER_HOUR_OPTIONS
+        val custom = selected !in hours
+        buildOptionRows(
+            container = container,
+            values = hours + CUSTOM_HOUR_ROW,
+            labels = hours.map { reminderHourLabel(it) } + appString(R.string.ui_baska_bir_saat),
+            trailing = hours.map { hourText(it) } +
+                (if (custom && selected in 0..23) hourText(selected) else appString(R.string.ui_sec)),
+            selected = if (custom) CUSTOM_HOUR_ROW else selected,
+        ) { value -> if (value == CUSTOM_HOUR_ROW) onCustom() else onPick(value) }
+    }
+
+    /**
+     * Tam saat penceresi: 24 saat, 4 sütunlu ızgara, satırlarla aynı görünüm. Dokununca seçilip
+     * kapanıyor.
+     *
+     * Sabah 06:00'dan başlıyor, gece saatleri en sonda: arayan çoğunlukla sabah ya da öğlen
+     * saati arıyor. Dakika yok, sunucu hatırlatmaları saatte bir tarıyor. Gece saatleri de
+     * seçilebiliyor; hazır satırlarda yoklar, burada seçen bilerek seçiyor.
+     */
+    fun showHourPicker(
+        context: Context,
+        inflater: LayoutInflater,
+        selected: Int,
+        onPick: (Int) -> Unit,
+    ) {
+        val view = inflater.inflate(R.layout.dialog_streak_options, null)
+        val dialog = AlertDialog.Builder(context).setView(view).create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        view.findViewById<TextView>(R.id.streakOptionsTitle).text = appString(R.string.ui_saat_sec)
+        view.findViewById<TextView>(R.id.streakOptionsSubtitle).text =
+            appString(R.string.ui_sobi_sana_her_gun_bu_saatte)
+
+        val container = view.findViewById<LinearLayout>(R.id.streakOptionsContainer)
+        val density = context.resources.displayMetrics.density
+        val gap = (8 * density).toInt()
+        for (row in 0 until 6) {
+            val line = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { if (row > 0) topMargin = gap }
+            }
+            for (col in 0 until 4) {
+                val hour = (HOUR_GRID_START + row * 4 + col) % 24
+                line.addView(
+                    TextView(context).apply {
+                        text = hourText(hour)
+                        gravity = Gravity.CENTER
+                        setTextColor(Color.WHITE)
+                        textSize = 15f
+                        setTypeface(typeface, Typeface.BOLD)
+                        setBackgroundResource(
+                            if (hour == selected) R.drawable.bg_streak_option_selected
+                            else R.drawable.bg_streak_option,
+                        )
+                        layoutParams = LinearLayout.LayoutParams(0, (44 * density).toInt(), 1f)
+                            .apply { if (col > 0) marginStart = gap }
+                        setOnClickListener {
+                            dialog.dismiss()
+                            onPick(hour)
+                        }
+                    },
+                )
+            }
+            container.addView(line)
+        }
+        dialog.show()
+    }
+
+    /** Saat ızgarasının ilk saati (sabah). */
+    private const val HOUR_GRID_START = 6
+
+    /**
+     * Seçenek satırlarını [container] içine üretir (önce içini boşaltır).
+     *
+     * Kayıttaki "Bizi nereden duydun?" sorusu da bunu kullanıyor: kayıt soruları tek tip
+     * görünsün diye (orada sağ tarafta açıklama yok, [trailing] boş).
+     *
+     * @param values Satırların taşıdığı değerler; seçim bunlarla bildiriliyor.
+     * @param labels Sol taraftaki ana metin.
+     * @param trailing Sağ taraftaki açıklama.
+     * @param selected Seçili değer; hiçbiri seçili değilse [values] dışında bir sayı verin.
+     * @param trailingColor Sağ taraftaki metnin rengi; ödül yazıyorsa [COLOR_GOLD].
+     */
+    fun buildOptionRows(
+        container: ViewGroup,
+        values: List<Int>,
+        labels: List<String>,
+        trailing: List<String>,
+        selected: Int,
+        trailingColor: String = COLOR_MUTED,
+        onPick: (Int) -> Unit,
+    ) {
+        container.removeAllViews()
+        val context = container.context
+        val density = context.resources.displayMetrics.density
+        values.forEachIndexed { index, value ->
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundResource(
+                    if (value == selected) R.drawable.bg_streak_option_selected
+                    else R.drawable.bg_streak_option,
+                )
+                val pad = (16 * density).toInt()
+                setPadding(pad, pad, pad, pad)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { if (index > 0) topMargin = (12 * density).toInt() }
+                setOnClickListener { onPick(value) }
+            }
+            row.addView(
+                TextView(context).apply {
+                    text = labels.getOrElse(index) { "" }
+                    setTextColor(Color.WHITE)
+                    textSize = 17f
+                    setTypeface(typeface, Typeface.BOLD)
+                    layoutParams =
+                        LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                },
+            )
+            row.addView(
+                TextView(context).apply {
+                    text = trailing.getOrElse(index) { "" }
+                    setTextColor(Color.parseColor(trailingColor))
+                    textSize = 15f
+                },
+            )
+            container.addView(row)
+        }
+    }
+
+    /**
+     * Kilometre taşı satırlarını çizer.
+     *
+     * Toplanmış taşlar listelenmiyor: ekranda yer kaplayıp ilgiyi asıl iki şeyden —
+     * toplanacak ödül ve sıradaki hedef — uzaklaştırırlardı.
+     *
+     * @param streak SUNUCUNUN bildiği seri. Yerel sayaç değil: ödülü veren taraf sunucu,
+     *   bu yüzden "toplanabilir" kararı da onun değerine bakmalı, yoksa kullanıcıya
+     *   basılabilir ama her seferinde hata veren bir düğme göstermiş oluruz.
+     */
+    fun buildMilestoneRows(
+        container: ViewGroup,
+        streak: Int,
+        claimed: Set<Int>,
+        onClaim: (Int) -> Unit,
+    ) {
+        container.removeAllViews()
+        val context = container.context
+        val density = context.resources.displayMetrics.density
+
+        StreakMilestones.visible(streak, claimed).forEach { milestone ->
+            val reward = StreakMilestones.rewardFor(milestone) ?: return@forEach
+            val claimable = milestone <= streak
+
+            val row = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundResource(
+                    if (claimable) R.drawable.bg_streak_option_selected
+                    else R.drawable.bg_streak_option,
+                )
+                val pad = (14 * density).toInt()
+                setPadding(pad, pad, pad, pad)
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = (10 * density).toInt() }
+            }
+
+            val texts = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                layoutParams =
+                    LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            texts.addView(
+                TextView(context).apply {
+                    text = appPlural(R.plurals.ui_x_gun, milestone, milestone)
+                    setTextColor(Color.WHITE)
+                    textSize = 15f
+                    setTypeface(typeface, Typeface.BOLD)
+                },
+            )
+            texts.addView(rewardStrip(context, reward, claimable))
+            row.addView(texts)
+
+            if (claimable) {
+                row.addView(
+                    TextView(context).apply {
+                        text = appString(R.string.ui_topla)
+                        setTextColor(Color.parseColor("#1B2B31"))
+                        textSize = 14f
+                        setTypeface(typeface, Typeface.BOLD)
+                        gravity = Gravity.CENTER
+                        setBackgroundResource(R.drawable.bg_streak_claim)
+                        val padH = (18 * density).toInt()
+                        val padV = (8 * density).toInt()
+                        setPadding(padH, padV, padH, padV)
+                        setOnClickListener { onClaim(milestone) }
+                    },
+                )
+            } else {
+                row.addView(
+                    TextView(context).apply {
+                        val left = milestone - streak
+                        text = appPlural(R.plurals.ui_x_gun_kaldi, left, left)
+                        setTextColor(Color.parseColor(COLOR_MUTED))
+                        textSize = 13f
+                    },
+                )
+            }
+            container.addView(row)
+        }
+    }
+
+    /**
+     * Ödülü ikonla yazar: [🔑] 3 ya da [🪙] 5000.
+     *
+     * "3 anahtar" yazısı yerine ikon kullanılıyor çünkü kitle 7-10 yaş ve çocuk anahtarı
+     * üst bardan zaten bu ikonla tanıyor. Aynı çizimler kullanılıyor (`key`, `gold_ic`);
+     * başka bir ikon seçmek "bu başka bir şey mi" sorusunu doğurudu.
+     *
+     * İki türü birden veren bir basamak şu anki merdivende yok ama kod ikisini de çiziyor:
+     * tablo değiştiğinde burasının da değişmesi gerekmesin.
+     */
+    private fun rewardStrip(
+        context: Context,
+        reward: StreakMilestones.Reward,
+        claimable: Boolean,
+    ): LinearLayout {
+        val density = context.resources.displayMetrics.density
+        val strip = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = (3 * density).toInt() }
+        }
+        val parts = listOfNotNull(
+            if (reward.keys > 0) R.drawable.key to reward.keys else null,
+            if (reward.gold > 0) R.drawable.gold_ic to reward.gold else null,
+        )
+        parts.forEachIndexed { index, (iconRes, amount) ->
+            strip.addView(
+                ImageView(context).apply {
+                    setImageResource(iconRes)
+                    contentDescription = null
+                    layoutParams = LinearLayout.LayoutParams(
+                        (18 * density).toInt(),
+                        (18 * density).toInt(),
+                    ).apply { if (index > 0) marginStart = (10 * density).toInt() }
+                },
+            )
+            strip.addView(
+                TextView(context).apply {
+                    text = amount.toString()
+                    setTextColor(Color.parseColor(if (claimable) COLOR_ACCENT else COLOR_MUTED))
+                    textSize = 14f
+                    setTypeface(typeface, Typeface.BOLD)
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ).apply { marginStart = (5 * density).toInt() }
+                },
+            )
+        }
+        return strip
+    }
+
+    /**
+     * Haftanın günlerini pazartesiden pazara [container] içine çizer.
+     *
+     * Son 7 gün değil TAKVİM HAFTASI gösteriliyor: kullanıcı "bu hafta neredeyim" diye
+     * bakıyor, "son yedi günde" diye değil.
+     *
+     * @param frozenDays Seri dondurmanın kapattığı günler: tutturulmadı ama seri kırılmadı.
+     *   Ayrı çiziliyor, çünkü boş bırakılsaydı yaşayan bir serinin ortasında açıklanamayan
+     *   bir delik görünürdü; tik konsaydı çocuğa çalışmadığı bir gün çalışmış denirdi.
+     */
+    fun buildWeekStrip(
+        container: ViewGroup,
+        achievedDays: Set<String>,
+        frozenDays: Set<String> = emptySet(),
+    ) {
+        container.removeAllViews()
+        val context = container.context
+        val density = context.resources.displayMetrics.density
+        val today = StudyTimeTracker.dayId()
+        val format = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+
+        val cal = Calendar.getInstance()
+        cal.firstDayOfWeek = Calendar.MONDAY
+        // Calendar.DAY_OF_WEEK: Pazar=1 … Cumartesi=7. Pazartesi başlangıcı için kaydırma.
+        val shift = (cal.get(Calendar.DAY_OF_WEEK) + 5) % 7
+        cal.add(Calendar.DAY_OF_YEAR, -shift)
+
+        // Pazartesiden başlayan gün baş harfleri, boşlukla ayrılmış (çeviride de 7 harf).
+        val letters = appString(R.string.ui_week_initials_monday_first).split(" ")
+        for (i in 0 until 7) {
+            val dayId = format.format(Date(cal.timeInMillis))
+            val done = dayId in achievedDays
+            // Tutturulmuş gün önce gelir: iki cihazlı kullanıcıda aynı gün bir cihazda
+            // tutturulmuş, öbüründe dondurmayla kapatılmış görünebiliyor.
+            val frozen = !done && dayId in frozenDays
+            val isToday = dayId == today
+
+            val cell = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
+                layoutParams =
+                    LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            cell.addView(
+                TextView(context).apply {
+                    text = if (done) "✓" else ""
+                    gravity = Gravity.CENTER
+                    setTextColor(Color.WHITE)
+                    textSize = 14f
+                    setBackgroundResource(
+                        when {
+                            done -> R.drawable.bg_streak_day_done
+                            frozen -> R.drawable.bg_streak_day_frozen
+                            isToday -> R.drawable.bg_streak_day_today
+                            else -> R.drawable.bg_streak_day_empty
+                        },
+                    )
+                    if (frozen) contentDescription = appString(R.string.ui_seri_dondurma_kullanildi)
+                    layoutParams = LinearLayout.LayoutParams(
+                        (28 * density).toInt(),
+                        (28 * density).toInt(),
+                    )
+                },
+            )
+            cell.addView(
+                TextView(context).apply {
+                    text = letters[i]
+                    gravity = Gravity.CENTER
+                    setTextColor(Color.parseColor(if (isToday) COLOR_ACCENT else COLOR_MUTED))
+                    textSize = 12f
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ).apply { topMargin = (6 * density).toInt() }
+                },
+            )
+            container.addView(cell)
+            cal.add(Calendar.DAY_OF_YEAR, 1)
+        }
+    }
+}

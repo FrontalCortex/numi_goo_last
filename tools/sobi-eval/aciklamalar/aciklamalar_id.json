@@ -1,0 +1,62 @@
+{
+ "t3_p1": {
+  "konu": "Kapan memakai penjumlahan teman kecil",
+  "basit": "Kadang manik satu yang kosong tidak cukup untuk angka yang mau kita tambahkan. Saat itulah kita memakai penjumlahan teman kecil: kita menambahkan angka itu dengan bantuan manik lima.",
+  "neden": "Setiap kolom hanya punya 4 manik satu. Kalau sudah tidak ada tempat, manik lima yang membantu."
+ },
+ "t3_p2": {
+  "konu": "Kenapa 1 tidak bisa langsung ditambahkan ke 4",
+  "basit": "Saat kamu memasang 4 di sempoa, keempat manik satu sudah masuk. Tidak ada manik satu yang kosong untuk menambah 1, jadi kita tidak bisa menambah 1 secara langsung.",
+  "neden": "Tidak ada manik satu yang kosong, padahal kita butuh 1."
+ },
+ "t3_p3": {
+  "konu": "Teman kecil dan rumus teman kecil",
+  "basit": "Dalam penjumlahan teman kecil, setiap angka punya teman: kalau digabung jadi 5. Teman kecil 1 adalah 4, teman kecil 2 adalah 3, teman kecil 3 adalah 2, teman kecil 4 adalah 1. Kalau sebuah angka tidak bisa ditambahkan langsung, kita bilang \"tambah 5, kurangi temannya\".",
+  "neden": "Menambah sebuah angka sama dengan menambah 5 lalu mengurangi temannya. Misalnya, menambah 1 berarti menambah 5 dan mengurangi 4."
+ },
+ "t3_p4": {
+  "konu": "Mengerjakan 4 + 1 dengan teman kecil",
+  "basit": "Sempoa menunjukkan 4 dan tidak ada manik satu yang kosong, jadi kita tidak bisa menambah 1 secara langsung. Tambah 5, kurangi teman kecil 1, yaitu 4. Jawabannya 5.",
+  "neden": "Menambah 1 sama dengan menambah 5 dan mengurangi 4. Karena itu kita tambah 5 dan kurangi temannya, 4."
+ },
+ "t3_p5": {
+  "konu": "Mengerjakan 4 + 2 dengan teman kecil",
+  "basit": "Sempoa menunjukkan 4; tidak ada manik satu yang kosong untuk menambah 2. Jadi kita tambah 5 dan kurangi teman kecil 2, yaitu 3. Jawabannya 6.",
+  "neden": "Menambah 2 sama dengan menambah 5 dan mengurangi 3. Karena itu kita tambah 5 dan kurangi temannya, 3."
+ },
+ "t3_p6": {
+  "konu": "Mengerjakan 3 + 3 dengan teman kecil",
+  "basit": "Sempoa menunjukkan 3; hanya 1 manik satu yang kosong, jadi kita tidak bisa menambah 3 secara langsung. Jadi kita tambah 5 dan kurangi teman kecil 3, yaitu 2. Jawabannya 6.",
+  "neden": "Menambah 3 sama dengan menambah 5 dan mengurangi 2. Karena itu kita tambah 5 dan kurangi temannya, 2."
+ },
+ "t3_p7": {
+  "konu": "Mengerjakan 2 + 4 dengan teman kecil",
+  "basit": "Sempoa menunjukkan 2; ada 2 manik satu yang kosong, tetapi kita butuh 4. Jadi kita tambah 5 dan kurangi teman kecil 4, yaitu 1. Jawabannya 6.",
+  "neden": "Menambah 4 sama dengan menambah 5 dan mengurangi 1. Karena itu kita tambah 5 dan kurangi temannya, 1."
+ },
+ "t3_p8": {
+  "konu": "Rumus teman kecil sama di setiap kolom",
+  "basit": "Rumus teman kecil bekerja dengan cara yang sama di kolom puluhan dan ratusan, bukan hanya di kolom satuan. Di kolom puluhan kita juga bilang \"tambah 5, kurangi temannya\"; hanya saja kita mengerjakannya di kolom puluhan.",
+  "neden": null
+ },
+ "t3_p9": {
+  "konu": "Mengerjakan 30 + 40 dengan teman kecil di kolom puluhan",
+  "basit": "Sempoa menunjukkan 30 dan di kolom puluhan hanya 1 manik satu yang kosong. Menambah 40 berarti menambah 4 di kolom puluhan, jadi di kolom puluhan kita tambah 5 dan kurangi teman kecil 4, yaitu 1. Jawabannya 70.",
+  "neden": "Menambah 4 sama dengan menambah 5 dan mengurangi 1. Karena itu di kolom puluhan kita juga tambah 5 dan kurangi temannya, 1."
+ },
+ "t3_p10": {
+  "konu": "Mengerjakan contoh bersama",
+  "basit": "Sekarang kita akan mencoba penjumlahan teman kecil bersama di beberapa soal. Kalau sebuah angka tidak bisa ditambahkan langsung, ingat rumusnya: \"tambah 5, kurangi temannya\".",
+  "neden": null
+ },
+ "t3_p11": {
+  "konu": "Mengerjakan 4 + 4 dengan teman kecil",
+  "basit": "Sempoa menunjukkan 4; tidak ada manik satu yang kosong, jadi kita tidak bisa menambah 4 secara langsung. Jadi kita tambah 5 dan kurangi teman kecil 4, yaitu 1. Jawabannya 8.",
+  "neden": "Menambah 4 sama dengan menambah 5 dan mengurangi 1. Karena itu kita tambah 5 dan kurangi temannya, 1."
+ },
+ "t3_p12": {
+  "konu": "Mengerjakan 3 + 2 dengan teman kecil",
+  "basit": "Sempoa menunjukkan 3; ada 1 manik satu yang kosong, tetapi kita butuh 2. Jadi kita tambah 5 dan kurangi teman kecil 2, yaitu 3. Jawabannya 5.",
+  "neden": "Menambah 2 sama dengan menambah 5 dan mengurangi 3. Karena itu kita tambah 5 dan kurangi temannya, 3."
+ }
+}

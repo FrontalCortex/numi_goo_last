@@ -1,5 +1,7 @@
 package com.example.app.abacus
 
+import com.example.app.appString
+import com.example.app.R
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
@@ -163,12 +165,12 @@ object AbacusPreferences {
     )
 
     /** Human-readable labels for soroban paths (used in Tab 2 UI). */
-    val SOROBAN_PATH_LABELS = arrayOf("Dış çerçeve", "İç zemin", "Sağ yansıma")
+    val SOROBAN_PATH_LABELS = arrayOf(appString(R.string.ui_dis_cerceve), appString(R.string.ui_ic_zemin), appString(R.string.ui_sag_yansima))
 
     /** Human-readable labels for rabbit color groups (used in Tab 2 UI). */
     val RABBIT_COLOR_LABELS = arrayOf(
-        "Kulak (dış)", "Kulak (iç)", "Gövde",
-        "Beyaz alanlar", "Burun", "Ağız", "Gözler"
+        appString(R.string.ui_kulak_dis), appString(R.string.ui_kulak_ic), appString(R.string.ui_govde),
+        appString(R.string.ui_beyaz_alanlar), appString(R.string.ui_burun), appString(R.string.ui_agiz), appString(R.string.ui_gozler)
     )
 
     /**
@@ -193,7 +195,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL_COLOR_LABELS = arrayOf(
-        "Kafa", "Göz çevresi", "Kulak/Dudak", "Göz/Ağız"
+        appString(R.string.ui_kafa), appString(R.string.ui_goz_cevresi), appString(R.string.ui_kulak_dudak), appString(R.string.ui_goz_agiz)
     )
 
     /**
@@ -221,7 +223,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL2_COLOR_LABELS = arrayOf(
-        "Kafa", "Yüz", "Gözler", "Burun", "Ağız"
+        appString(R.string.ui_kafa), appString(R.string.ui_yuz), appString(R.string.ui_gozler), appString(R.string.ui_burun), appString(R.string.ui_agiz)
     )
 
     private val ANIMAL3_COLOR_KEYS = arrayOf(
@@ -245,7 +247,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL3_COLOR_LABELS = arrayOf(
-        "Kafa", "Göz/Burun", "İç Kulak", "Ağız Çevresi", "Çizgiler"
+        appString(R.string.ui_kafa), appString(R.string.ui_goz_burun), appString(R.string.ui_ic_kulak), appString(R.string.ui_agiz_cevresi), appString(R.string.ui_cizgiler)
     )
 
     private val ANIMAL4_COLOR_KEYS = arrayOf(
@@ -267,7 +269,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL4_COLOR_LABELS = arrayOf(
-        "Gövde/Kafa", "Gözler/Burun", "Yüz/Ağız", "Kulak İçi/Detay"
+        appString(R.string.ui_govde_kafa), appString(R.string.ui_gozler_burun), appString(R.string.ui_yuz_agiz), appString(R.string.ui_kulak_ici_detay)
     )
 
     private val ANIMAL5_COLOR_KEYS = arrayOf(
@@ -293,7 +295,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL5_COLOR_LABELS = arrayOf(
-        "Göz", "Kulak içi", "Kulak dışı", "Kafa", "Burun", "Diş"
+        appString(R.string.ui_goz), appString(R.string.ui_kulak_ici), appString(R.string.ui_kulak_disi), appString(R.string.ui_kafa), appString(R.string.ui_burun), appString(R.string.ui_dis)
     )
 
     private val ANIMAL6_COLOR_KEYS = arrayOf(
@@ -313,7 +315,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL6_COLOR_LABELS = arrayOf(
-        "Göz/Burun", "Kulak/Ağız", "Kafa"
+        appString(R.string.ui_goz_burun), appString(R.string.ui_kulak_agiz), appString(R.string.ui_kafa)
     )
 
     private val ANIMAL7_COLOR_KEYS = arrayOf(
@@ -337,7 +339,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL7_COLOR_LABELS = arrayOf(
-        "Göz/Burun", "Kulak", "Ağız", "Kafa", "Bıyık"
+        appString(R.string.ui_goz_burun), appString(R.string.ui_kulak), appString(R.string.ui_agiz), appString(R.string.ui_kafa), appString(R.string.ui_biyik)
     )
 
     private val ANIMAL8_COLOR_KEYS = arrayOf(
@@ -361,7 +363,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL8_COLOR_LABELS = arrayOf(
-        "Göz/Burun", "Kafa", "Çene", "Ağız", "Diş"
+        appString(R.string.ui_goz_burun), appString(R.string.ui_kafa), appString(R.string.ui_cene), appString(R.string.ui_agiz), appString(R.string.ui_dis)
     )
 
     private val ANIMAL9_COLOR_KEYS = arrayOf(
@@ -383,7 +385,7 @@ object AbacusPreferences {
     )
 
     val ANIMAL9_COLOR_LABELS = arrayOf(
-        "Göz", "Kafa", "Burun", "Ağız"
+        appString(R.string.ui_goz), appString(R.string.ui_kafa), appString(R.string.ui_burun), appString(R.string.ui_agiz)
     )
 
     private val BOWLING_COLOR_KEYS = arrayOf(
@@ -407,7 +409,7 @@ object AbacusPreferences {
     )
 
     val BOWLING_COLOR_LABELS = arrayOf(
-        "Ana Renk", "Gölgeler", "Parlaklık", "Çizgiler", "Delik İçi"
+        appString(R.string.ui_ana_renk), appString(R.string.ui_golgeler), appString(R.string.ui_parlaklik), appString(R.string.ui_cizgiler), appString(R.string.ui_delik_ici)
     )
 
     private val BALL1_COLOR_KEYS = arrayOf(
@@ -731,7 +733,7 @@ object AbacusPreferences {
     }
 
     // ── SOROBAN 6 (Neumorphic)
-    val SOROBAN6_COLOR_LABELS = arrayOf("Gövde", "Işık", "Gölge")
+    val SOROBAN6_COLOR_LABELS = arrayOf(appString(R.string.ui_govde), appString(R.string.ui_isik), appString(R.string.ui_golge))
     private val SOROBAN6_COLOR_KEYS = arrayOf("soroban6_color_0", "soroban6_color_1", "soroban6_color_2")
     private val SOROBAN6_DEFAULT_COLORS = intArrayOf(
         0xFF9AE2C6.toInt(),

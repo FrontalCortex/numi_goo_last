@@ -1,0 +1,1 @@
+Çünkü 2'yi doğrudan çıkaramıyoruz: sütunda sadece 1 birlik boncuk gelmiş, 2 tane gitmesi gerekiyor. 2 çıkarmak, 5 çıkarıp 3 eklemekle aynı, o yüzden 5 gider ve kardeşi olan 3 gelir. Bu adımda beşlik boncuğu gidermek için 5 gider, sonra 3 gelir ile sonucu bulursun.

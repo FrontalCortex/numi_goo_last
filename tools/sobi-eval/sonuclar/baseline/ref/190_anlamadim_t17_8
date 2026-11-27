@@ -1,0 +1,1 @@
+Birler sütununda 4 var, bu yüzden 6'yı doğrudan çıkaramayız. Bunun yerine önce 10 gider, sonra 5 gelir ve kardeşi 1 gider. Yani eksi 10, artı 5, eksi 1 yapınca toplam eksi 6 olur ve sonuç 348 çıkar.

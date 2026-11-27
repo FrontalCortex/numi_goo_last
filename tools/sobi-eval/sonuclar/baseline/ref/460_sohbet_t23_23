@@ -1,0 +1,5 @@
+Birlikte bakalım! Binler basamağında 5'lik kural: 5 gelir, kardeşi 1 gider. İstersen "Bana göster"e dokun.
+---
+Bu adımda 3460'a 4800 ekliyoruz; abaküsünde gösterdim. İlk hamle binler sütunundaki 4: 4 doğrudan gidemiyor, çünkü boşta yeterli birlik boncuk yok. Bu yüzden 5 gelir, kardeşi olan 1 gider; 4 eklemek, 5 ekleyip 1 çıkarmakla aynıdır.
+---
+Abaküsünde adımı baştan oynattım. İkinci hamle yüzler sütunundaki 8: 8 doğrudan gidemez, bu yüzden 10 gelir ve büyük kardeşi olan 2 gider. Sonuçta 8 eklemek, 10 ekleyip 2 çıkarmakla aynıdır.

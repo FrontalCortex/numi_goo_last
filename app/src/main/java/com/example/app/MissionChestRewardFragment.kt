@@ -23,6 +23,8 @@ class MissionChestRewardFragment : Fragment() {
     private val binding get() = _binding!!
     private var isVideoFlowOpen = false
     private var popBackStackOnContinue = false
+    /** Bu görev paneli türü LESSON olan bir item'ın bitişinden mi açıldı? (bkz. ChestFragment) */
+    private var isLessonTypeReturn = false
     private lateinit var beforeSnapshot: MissionsProgressStore.Snapshot
     private lateinit var afterSnapshot: MissionsProgressStore.Snapshot
     private var shouldOpenBadgeAfterContinue: Boolean = false
@@ -43,11 +45,21 @@ class MissionChestRewardFragment : Fragment() {
     )
 
     fun setBadgePayloads(payloads: List<String>) {
-        if (payloads.isNotEmpty()) {
-            shouldOpenBadgeAfterContinue = true
-            badgePayloadQueue.addAll(payloads)
+        if (payloads.isEmpty()) return
+        // "Devam"a basıldıktan SONRA gelen rozet (Firestore sonucu geç döndü): kuyruğun kopyası basışta
+        // alındığı için buraya eklenen kayboluyor, kutlama hiç gösterilmiyordu (09.11.2026 cihazda, Kusursuz
+        // Odak). Haritanın rozet kuyruğuna gidiyor: görev ekranı yokken ChestFragment/ChestResult'ın kullandığı yol.
+        if (continueTapped) {
+            BadgeDiagnostics.log("MissionChestRewardFragment late badge payloads after continue, size=${payloads.size} -> enqueuePendingBadgePayloads")
+            (activity as? MainActivity ?: MainActivity.currentActivity)?.enqueuePendingBadgePayloads(badgeStringPayloads = payloads)
+            return
         }
+        shouldOpenBadgeAfterContinue = true
+        badgePayloadQueue.addAll(payloads)
     }
+
+    /** "Devam"a basıldı mı: sonra gelen rozet bu ekranın kuyruğuna değil haritanınkine gider. */
+    private var continueTapped = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -69,6 +81,7 @@ class MissionChestRewardFragment : Fragment() {
 
         MainActivityChromeBlocker.acquire(requireActivity())
         popBackStackOnContinue = requireArguments().getBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, false)
+        isLessonTypeReturn = requireArguments().getBoolean(ARG_IS_LESSON_TYPE_RETURN, false)
         shouldOpenBadgeAfterContinue = requireArguments().getBoolean(ARG_OPEN_BADGE_AFTER_CONTINUE, false)
         badgePayloadQueue = requireArguments().getStringArrayList(ARG_BADGE_PAYLOAD_QUEUE) ?: arrayListOf()
         val args = requireArguments()
@@ -110,6 +123,7 @@ class MissionChestRewardFragment : Fragment() {
         }, 500)
 
         binding.missionChestRewardContinue.setOnClickListener {
+            continueTapped = true
             val openBadgeAfter = shouldOpenBadgeAfterContinue && badgePayloadQueue.isNotEmpty()
             val queueCopy = ArrayList(badgePayloadQueue)
             val activityFm = requireActivity().supportFragmentManager
@@ -132,23 +146,31 @@ class MissionChestRewardFragment : Fragment() {
                             .commitNowAllowingStateLoss()
                     }
                     main?.prepareMapReturnAfterLessonClaim()
-                    android.util.Log.d("DEBUG_BADGE", "MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
+                    BadgeDiagnostics.log("MissionChestRewardFragment routing badge string payloads to finalizeMapReturnAfterLessonClaim, size=${queueCopy.size}, openBadgeAfter=$openBadgeAfter")
                     main?.finalizeMapReturnAfterLessonClaim(
                         caller = "MissionChestReward.continue",
-                        badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList()
+                        badgeStringPayloads = if (openBadgeAfter) queueCopy else emptyList(),
+                        // Görev ilerlemesi paneli gösterildiğinde haritaya dönüş buradan oluyor;
+                        // bilgi ChestFragment'ten argümanla geliyor.
+                        isLessonTypeReturn = isLessonTypeReturn,
                     )
                 }
             }
+            // Zemin, kayma BAŞLAMADAN kalkıyor; bkz. [LessonResult]'taki aynı düzeltme.
+            // Zemini completeMapReturn'e bırakmak, yani animasyon BİTTİKTEN sonraya,
+            // haritanın önce görünüp sonra zeminle kapatılmasına yol açıyor.
+            main?.raisePostLessonBackdropForHandoff("MissionChestReward.continue")
             val rootView = binding.root
             rootView.animate()
-                .translationX(rootView.width.toFloat())
-                .setDuration(300L)
+                // Sola çıkıyor: ders sonrası zincirindeki bütün ekranlar gibi.
+                .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
+                .setDuration(400L)
                 .withEndAction { completeMapReturn() }
                 .start()
             // Animasyon kesintiye uğrar da withEndAction hiç çalışmazsa (arka plana alma,
             // view'ın penceresinden kopması vb.) haritaya dönüşü garantiye alan yedek.
             android.os.Handler(android.os.Looper.getMainLooper())
-                .postDelayed({ completeMapReturn() }, 600L)
+                .postDelayed({ completeMapReturn() }, 700L)
         }
     }
 
@@ -316,7 +338,13 @@ class MissionChestRewardFragment : Fragment() {
 
                 val containerId = (requireView().parent as View).id
                 parentFragmentManager.beginTransaction()
-                    .add(containerId, NewChestFragment.newInstance(startRarity))
+                    .add(
+                        containerId,
+                        NewChestFragment.newInstance(
+                            startRarity,
+                            source = AnalyticsLogger.CHEST_SOURCE_MISSION_CHEST,
+                        ),
+                    )
                     .addToBackStack("mission_chest")
                     .commit()
             }
@@ -336,11 +364,11 @@ class MissionChestRewardFragment : Fragment() {
                 progressText.setTextColor(labelDone)
             } else {
                 title.setTextColor(titleNormal)
-                progressText.text = ctx.getString(
+                progressText.text = RtlSupport.ltr(ctx.getString(
                     R.string.mission_progress_format,
                     curEst.coerceAtMost(target),
                     target,
-                )
+                ))
                 progressText.setTextColor(labelPending)
             }
         }
@@ -425,6 +453,7 @@ class MissionChestRewardFragment : Fragment() {
         private const val ARG_POP_BACKSTACK_ON_CONTINUE = "pop_backstack_on_continue"
         private const val ARG_OPEN_BADGE_AFTER_CONTINUE = "open_badge_after_continue"
         private const val ARG_BADGE_PAYLOAD_QUEUE = "badge_payload_queue"
+        private const val ARG_IS_LESSON_TYPE_RETURN = "is_lesson_type_return"
 
         fun newInstance(
             before: MissionsProgressStore.Snapshot,
@@ -432,6 +461,7 @@ class MissionChestRewardFragment : Fragment() {
             popBackStackOnContinue: Boolean = false,
             openBadgeAfterContinue: Boolean = false,
             badgePayloadQueue: List<String> = emptyList(),
+            isLessonTypeReturn: Boolean = false,
         ) =
             MissionChestRewardFragment().apply {
                 arguments = Bundle().apply {
@@ -462,6 +492,7 @@ class MissionChestRewardFragment : Fragment() {
                     putBoolean(ARG_POP_BACKSTACK_ON_CONTINUE, popBackStackOnContinue)
                     putBoolean(ARG_OPEN_BADGE_AFTER_CONTINUE, openBadgeAfterContinue)
                     putStringArrayList(ARG_BADGE_PAYLOAD_QUEUE, ArrayList(badgePayloadQueue))
+                    putBoolean(ARG_IS_LESSON_TYPE_RETURN, isLessonTypeReturn)
                 }
             }
     }

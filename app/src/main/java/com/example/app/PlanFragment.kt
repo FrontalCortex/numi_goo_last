@@ -37,12 +37,35 @@ class PlanFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Ekran baştan sona beyaz: telefonun üst ve alt çubukları da beyaz (koyu simgeler).
+        dialog?.window?.let { w ->
+            SystemBarColors.applyToDialog(
+                w,
+                top = android.graphics.Color.WHITE,
+                bottom = android.graphics.Color.WHITE,
+                topView = view,
+                bottomView = view,
+            )
+        }
+
+        AnalyticsLogger.logPlanShown()
+
+        // Hoş geldin kredisi CİHAZ başına bir kez veriliyor (sunucuda welcomeCreditGrants).
+        // Cihaz krediyi tükettiyse "Hoş geldin: 20 Sobi kredisi" satırı yerine getirilemeyecek
+        // bir vaat olur: kullanıcı abone olur, krediyi alamaz, geldiği işi yapamaz. Düğme
+        // metninde düzelttiğimiz sorunun aynısı, sadece fayda listesinde.
+        if (!WelcomeCreditEligibility.isEligible(requireContext())) {
+            binding.welcomeCreditRow.visibility = View.GONE
+        }
+
         binding.cardBireysel.setOnClickListener {
             selectedPlan = "Pro"
             binding.cardBireysel.setBackgroundResource(R.drawable.bg_plan_bireysel)
             binding.cardLite.setBackgroundResource(R.drawable.bg_plan_lite)
             binding.imgBadgeBireysel.visibility = View.VISIBLE
             binding.imgBadgeLite.visibility = View.GONE
+            // Deneme uygunluğu ürüne göre değişebilir; düğme metni seçimi takip etmeli.
+            applyLivePrices()
         }
 
         binding.cardLite.setOnClickListener {
@@ -51,8 +74,29 @@ class PlanFragment : DialogFragment() {
             binding.cardBireysel.setBackgroundResource(R.drawable.bg_plan_lite)
             binding.imgBadgeLite.visibility = View.VISIBLE
             binding.imgBadgeBireysel.visibility = View.GONE
+            applyLivePrices()
         }
 
+        applyLivePrices()
+
+        // Kapatma tuşu (kullanıcı isteği 09.11.2026): önceden yalnızca geri tuşuyla kapanıyordu.
+        binding.btnPlanClose.setOnClickListener { dismiss() }
+
+        // Pro almayana ücretsiz yol (kullanıcı kararı 09.11.2026): satın alma düğmesinin altında küçük bir
+        // bağlantı; düğmeyle yarışmasın diye yalnızca metin. Davet ekranı pencere olarak açılıyor (bkz.
+        // InviteFragment.showAsDialog). Oturum yoksa davet kodu alınamaz, bağlantı gizli.
+        if (com.google.firebase.auth.FirebaseAuth.getInstance().currentUser == null) {
+            binding.tvPlanInvite.visibility = View.GONE
+        } else {
+            binding.tvPlanInvite.setOnClickListener {
+                AnalyticsLogger.logSimpleEvent("plan_invite_tap")
+                val fm = parentFragmentManager
+                dismiss()
+                InviteFragment.showAsDialog(fm)
+            }
+        }
+
+        DepthButtons.style(binding.btnTryFree, 0xFF3D4DFF.toInt(), 12f)
         binding.btnTryFree.setOnClickListener {
             // `plan` alanını istemci yazamaz (firestore.rules kilitli tutuyor). Play'den gelen
             // abonelik token'ı sunucuda doğrulandıktan sonra Admin SDK ile yazılır.
@@ -61,6 +105,65 @@ class PlanFragment : DialogFragment() {
             mainActivity.billingManager.launchPurchase(mainActivity, productId)
             dismiss()
         }
+    }
+
+    /**
+     * Fiyatları Play'den gelen değerlerle yazar.
+     *
+     * XML'deki rakamlar yalnızca yer tutucudur: Play fiyatı kullanıcının ülkesine ve para
+     * birimine göre yerelleştirir, sabit metin yabancı kullanıcıya yanlış tutar gösterir.
+     * Ürün bilgisi henüz gelmediyse yer tutucu korunur.
+     */
+    private fun applyLivePrices() {
+        val billing = (activity as? MainActivity)?.billingManager ?: return
+
+        billing.formattedPrice(BillingCatalog.SUB_PRO)?.let {
+            binding.tvBireyselPriceRight.text = getString(R.string.plan_price_monthly, it)
+        }
+        billing.formattedPrice(BillingCatalog.SUB_LITE)?.let {
+            binding.tvLitePriceRight.text = getString(R.string.plan_price_monthly, it)
+        }
+
+        applyYearlyEquivalent(billing, BillingCatalog.SUB_PRO, binding.tvBireyselPriceSub)
+        applyYearlyEquivalent(billing, BillingCatalog.SUB_LITE, binding.tvLitePriceSub)
+
+        // Düğme metni de fiyat gibi Play'den geliyor: deneme yalnızca uygun kullanıcıya
+        // vaat edilmeli (bkz. SubscriptionCta).
+        SubscriptionCta.apply(
+            billing,
+            binding.btnTryFreeText,
+            BillingCatalog.subscriptionForPlanName(selectedPlan),
+        )
+    }
+
+    /** Aylık tutarın 12 ile çarpımı; satın alınabilir bir yıllık plan değil, karşılaştırma. */
+    private fun applyYearlyEquivalent(
+        billing: BillingManager,
+        productId: String,
+        target: android.widget.TextView,
+    ) {
+        val (micros, currencyCode) = billing.subscriptionPriceAmount(productId) ?: return
+        val yearly = micros * 12.0 / 1_000_000.0
+        val formatter = java.text.NumberFormat.getCurrencyInstance()
+        formatter.currency = runCatching { java.util.Currency.getInstance(currencyCode) }.getOrNull()
+            ?: return
+        target.text = getString(R.string.plan_price_yearly, formatter.format(yearly))
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Ürün bilgisi uygulama açılışında yükleniyor; ekran o tamamlanmadan açılmış olabilir.
+        applyLivePrices()
+    }
+
+    /**
+     * Ders sonrası kuyruğu bu ekran açıkken bekliyordu (MainActivity.subscriptionFlowBlockReason);
+     * kapanınca sıradaki ekran açılsın. Satın almaya basılarak kapandıysa ödeme akışı sürdüğü
+     * için kuyruk beklemeye devam ediyor; akış bitince BillingManager haber veriyor.
+     */
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        (activity as? MainActivity)?.pumpPostLessonQueue("Plan.dismiss")
     }
 
     override fun onDestroyView() {

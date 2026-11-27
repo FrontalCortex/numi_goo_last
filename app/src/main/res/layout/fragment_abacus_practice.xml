@@ -16,18 +16,26 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
+    <!--
+      Sayı kartı (eski kara tahta görseli yerine; ödev oynatıcısıyla aynı, bg_flash_card). Kimlik eski
+      adıyla kaldı: sayılar ona bağlı.
+    -->
     <ImageView
         android:id="@+id/blackboardImage"
-        android:layout_width="@dimen/abacus_fragment_blackboard_width"
-        android:layout_height="@dimen/abacus_fragment_blackboard_height"
-        android:scaleType="fitXY"
-        android:src="@drawable/class_board"
-        app:layout_constraintTop_toTopOf="parent"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/flash_card_height"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="24dp"
+        android:background="@drawable/bg_flash_card"
+        android:importantForAccessibility="no"
+        app:layout_constraintTop_toBottomOf="@id/quitButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
     <EditText
         android:id="@+id/firstNumberText"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="@dimen/abacus_fragment_equation_text_size"
@@ -38,17 +46,18 @@
         android:inputType="number"
         android:maxLength="5"
         android:imeOptions="actionDone"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="4dp"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
-        app:layout_constraintStart_toStartOf="@id/blackboardImage"
-        app:layout_constraintEnd_toStartOf="@id/secondNumberText"/>
+        app:layout_constraintLeft_toLeftOf="@id/blackboardImage"
+        app:layout_constraintRight_toLeftOf="@id/secondNumberText"/>
 
     <TextView
         android:id="@+id/operator"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="4dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:clickable="true"
         android:focusable="true"
@@ -60,12 +69,13 @@
         android:textSize="@dimen/abacus_fragment_equation_text_size"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
-        app:layout_constraintEnd_toStartOf="@id/secondNumberText"
-        app:layout_constraintStart_toEndOf="@id/firstNumberText"
+        app:layout_constraintRight_toLeftOf="@id/secondNumberText"
+        app:layout_constraintLeft_toRightOf="@id/firstNumberText"
         app:layout_constraintTop_toTopOf="@id/blackboardImage" />
 
     <EditText
         android:id="@+id/secondNumberText"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="@dimen/abacus_fragment_equation_text_size"
@@ -76,14 +86,15 @@
         android:inputType="number"
         android:maxLength="5"
         android:imeOptions="actionDone"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="4dp"
         app:layout_constraintTop_toTopOf="@id/blackboardImage"
         app:layout_constraintBottom_toBottomOf="@id/blackboardImage"
-        app:layout_constraintStart_toEndOf="@id/firstNumberText"
-        app:layout_constraintEnd_toEndOf="@id/blackboardImage"/>
+        app:layout_constraintLeft_toRightOf="@id/firstNumberText"
+        app:layout_constraintRight_toRightOf="@id/blackboardImage"/>
 
     <FrameLayout
         android:id="@+id/abacusContainer"
+        android:layoutDirection="ltr"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@drawable/abacus_frame_bg"
@@ -428,7 +439,7 @@
         android:layout_marginEnd="@dimen/tutorial_control_button_side_margin"
         android:layout_marginBottom="@dimen/tutorial_bottom_panel_margin_bottom"
         android:fontFamily="@font/font_regular"
-        android:text="Kontrol Et"
+        android:text="@string/fragment_abacus_practice_kontrol_button"
         android:textAllCaps="false"
         android:textSize="@dimen/tutorial_control_button_text_size"
         android:textStyle="bold"
@@ -488,7 +499,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/tutorial_result_item_margin"
             android:layout_marginStart="@dimen/tutorial_result_title_start_margin"
-            android:text="Yanlış"
+            android:text="@string/fragment_abacus_practice_incorrect_text"
             android:textColor="#FF4B4B"
             android:textSize="@dimen/tutorial_result_title_text_size"
             android:textStyle="bold"
@@ -501,7 +512,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="@dimen/tutorial_result_item_margin"
             android:layout_marginTop="@dimen/tutorial_result_label_top_margin"
-            android:text="Talimata uygun işlemi yap"
+            android:text="@string/fragment_abacus_practice_correct_answer_label"
             android:textColor="#FF4B4B"
             android:textSize="@dimen/tutorial_result_body_text_size"
             app:layout_constraintStart_toStartOf="parent"
@@ -524,7 +535,7 @@
             android:layout_height="@dimen/tutorial_result_button_height"
             android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
             android:backgroundTint="#FF4B4B"
-            android:text="Tekrar Dene"
+            android:text="@string/fragment_abacus_practice_okay_button"
             android:layout_marginHorizontal="@dimen/tutorial_result_item_margin"
             android:textAllCaps="false"
             android:textColor="#000000"
@@ -567,7 +578,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="@dimen/tutorial_result_title_start_margin"
-            android:text="Aferin!"
+            android:text="@string/fragment_abacus_practice_correct_text"
             android:textColor="#8CC63F"
             android:textSize="@dimen/tutorial_result_title_text_size"
             android:textStyle="bold"
@@ -580,7 +591,7 @@
             android:layout_height="@dimen/tutorial_result_button_height"
             android:layout_marginTop="@dimen/tutorial_result_button_top_margin"
             android:backgroundTint="#8CC63F"
-            android:text="Devam et"
+            android:text="@string/fragment_abacus_practice_continue_button"
             android:textAllCaps="false"
             android:textColor="#000000"
             android:textSize="@dimen/tutorial_result_button_text_size"

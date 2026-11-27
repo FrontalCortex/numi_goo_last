@@ -1,0 +1,1 @@
+Abaküsündeki birler sütununda 3 var, 6'yı doğrudan çıkaramayız. 10'luk kural da olmuyor, çünkü 4 gelmesi gerekirdi ama boşta sadece 1 birlik boncuk var. Bu yüzden 6 çıkarmak yerine 10 çıkarıp 4 ekliyoruz, 4 eklemek de 5 ekleyip 1 çıkarmak gibi. Yani 10 gider, 5 gelir, 1 gider ve sonuç 17 olur.

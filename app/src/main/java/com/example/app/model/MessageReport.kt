@@ -1,5 +1,7 @@
 package com.example.app.model
 
+import com.example.app.appString
+import com.example.app.R
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 
@@ -30,10 +32,10 @@ data class MessageReport(
         const val REASON_OTHER = "other"
 
         fun reasonLabel(reason: String): String = when (reason) {
-            REASON_HARASSMENT -> "Taciz veya zorbalık"
+            REASON_HARASSMENT -> appString(R.string.ui_taciz_veya_zorbalik)
             REASON_SPAM -> "Spam"
-            REASON_INAPPROPRIATE -> "Uygunsuz içerik"
-            REASON_OTHER -> "Diğer"
+            REASON_INAPPROPRIATE -> appString(R.string.ui_uygunsuz_icerik)
+            REASON_OTHER -> appString(R.string.ui_diger)
             else -> "Belirtilmedi"
         }
     }

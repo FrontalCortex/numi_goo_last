@@ -1,0 +1,1 @@
+Önce abaküsünde 18'i kur: onlar sütununa 1, birler sütununa 8 (beşlik ve üç birlik). Sonra 4'ü doğrudan ekleyemeyiz, çünkü 8 ile 4'ü toplayınca 12 olur ve bir sütun en fazla 9 tutar. Bu yüzden 10'luk kuralı kullanıyoruz: önce onlar sütununa 1 gelsin, sonra birler sütunundan büyük kardeş olan 6 gitsin.

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Haftalık kart paylaşımı ve veli kapısı; ayrıntı values/strings_share.xml. -->
+<resources>
+    <string name="weekly_card_share">Share</string>
+    <string name="weekly_share_chooser">Share the week in review</string>
+    <string name="weekly_share_text">My progress on Sorobit this week 🎉 Abacus and mental math. Install with this link and get 1 week of Pro: %1$s</string>
+
+    <string name="parent_gate_title">For parents</string>
+    <string name="parent_gate_question">Sharing needs an adult. Type the answer in digits: %1$s times %2$s</string>
+    <string name="parent_gate_wrong">That is not right, please try again.</string>
+    <string name="parent_gate_continue">Continue</string>
+    <string name="parent_gate_cancel">Cancel</string>
+    <string-array name="parent_gate_numbers">
+        <item>zero</item><item>one</item><item>two</item><item>three</item><item>four</item>
+        <item>five</item><item>six</item><item>seven</item><item>eight</item><item>nine</item>
+        <item>ten</item><item>eleven</item><item>twelve</item><item>thirteen</item><item>fourteen</item>
+        <item>fifteen</item><item>sixteen</item><item>seventeen</item><item>eighteen</item><item>nineteen</item>
+    </string-array>
+
+    <string name="ui_baska_veli_whatsapp">Another parent / WhatsApp group</string>
+
+    <string name="share_reward_hint">When a friend joins with this link and finishes lesson 2, you both get 1 week of Pro.</string>
+    <string name="invite_title">Invite a friend</string>
+    <string name="invite_entry_desc">You both get 1 week of Pro</string>
+    <string name="invite_hero_title">I\'m learning the abacus on Sorobit</string>
+    <string name="invite_hero_desc">Try it too: 1 week of Pro free 🎁</string>
+    <string name="invite_how_title">How does it work?</string>
+    <string name="invite_how_steps">1. Share your invite link.\n2. Your friend installs Sorobit from the link and creates an account.\n3. When your friend finishes lesson 2, you both get 1 week of Pro.</string>
+    <string name="invite_stats">Friends invited: %1$d · Earned: %2$d days of Pro</string>
+    <string name="invite_limit_note">Pro can be earned from up to 10 invites a year. Each phone counts as invited once.</string>
+    <string name="invite_share_button">Invite</string>
+    <string name="invite_share_text">I\'m learning abacus and mental math on Sorobit 🎉 Install with this link and get 1 week of Pro: %1$s</string>
+    <string name="referral_reward_title">You earned 1 week of Pro 🎉</string>
+    <string name="referral_reward_referrer">The friend you invited finished lesson 2 on Sorobit. You both earned 1 week of Pro!</string>
+    <string name="referral_reward_invitee">You joined with an invite and finished lesson 2. 1 week of Pro is yours, and your friend earned it too!</string>
+    <string name="referral_reward_ok">Great</string>
+
+    <!-- Pro plan ekranı (PlanFragment): kapatma tuşu ve davet bağlantısı (09.11.2026). -->
+    <string name="plan_close_desc">Close</string>
+    <string name="plan_invite_link">Or invite a friend: you both get 1 week of Pro ›</string>
+
+    <string name="moment_streak_title">%1$d-day streak! 🔥</string>
+    <string name="moment_streak_desc">%1$d days of practice in a row</string>
+    <string name="moment_badge_title">New badge! 🏅</string>
+    <string name="moment_later">Not now</string>
+    <string name="moment_share_text_streak">A %1$d-day streak on Sorobit 🔥 Abacus and mental math. Install with this link and get 1 week of Pro: %2$s</string>
+    <string name="moment_share_text_badge">New badge on Sorobit: %1$s 🏅 Abacus and mental math. Install with this link and get 1 week of Pro: %2$s</string>
+    <!-- Paylaş düğmesi: davet bağlantısı beklenirken (ShareMomentDialog, WeeklyCardFragment). -->
+    <string name="share_preparing">Preparing…</string>
+</resources>

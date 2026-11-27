@@ -39,7 +39,7 @@ class ImageAnnotateDialogFragment : DialogFragment() {
 
         val imagePath = arguments?.getString(ARG_IMAGE_PATH).orEmpty()
         if (imagePath.isBlank() || !File(imagePath).exists()) {
-            Toast.makeText(requireContext(), "Resim bulunamadı.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), appString(R.string.ui_resim_bulunamadi), Toast.LENGTH_SHORT).show()
             dismiss()
             return
         }
@@ -157,7 +157,7 @@ class ImageAnnotateDialogFragment : DialogFragment() {
                     out.compress(Bitmap.CompressFormat.JPEG, 95, fos)
                 }
             }.onFailure {
-                Toast.makeText(requireContext(), "Kaydedilemedi.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_kaydedilemedi), Toast.LENGTH_SHORT).show()
                 // geri göster
                 drawerRoot.visibility = View.VISIBLE
                 doneButton.visibility = View.VISIBLE

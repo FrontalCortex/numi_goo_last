@@ -1,0 +1,3 @@
+Sebep şu: senin abaküsünde birler ve onlar sütunları boş, yani 4'ü doğrudan çıkaramıyoruz. Bu yüzden 4 çıkarmak yerine 10 çıkarıp 6 ekliyoruz, ama onlar sütununda da 10 yok. Onun için yüzler sütunundan 1 almamız gerekiyor.
+
+Yüzler sütununda 1 almak için beşlik boncuk işimize yarıyor: 5 gider, yerine kardeşi 4 gelir. Bu, 5'ten 1 eksiltmek demek.

@@ -31,7 +31,7 @@ fun AppCompatActivity.requireOnlineOrShowOffline(onOnline: () -> Unit) {
     } else if (this is MainActivity) {
         showOfflineFragment()
     } else {
-        Toast.makeText(this, "İnternet bağlantınız yok.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, appString(R.string.ui_internet_baglantiniz_yok), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -41,7 +41,7 @@ fun Fragment.requireOnlineOrShowOffline(onOnline: () -> Unit) {
         onOnline()
     } else {
         (activity as? MainActivity)?.showOfflineFragment()
-            ?: Toast.makeText(ctx, "İnternet bağlantınız yok.", Toast.LENGTH_SHORT).show()
+            ?: Toast.makeText(ctx, appString(R.string.ui_internet_baglantiniz_yok), Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -56,7 +56,7 @@ fun AppCompatActivity.requireOnlineAndLoggedInOrLogin(onOnline: () -> Unit) {
         if (this is MainActivity) {
             showOfflineFragment()
         } else {
-            Toast.makeText(this, "İnternet bağlantınız yok.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, appString(R.string.ui_internet_baglantiniz_yok), Toast.LENGTH_SHORT).show()
         }
         return
     }
@@ -68,7 +68,7 @@ fun Fragment.requireOnlineAndLoggedInOrLogin(onOnline: () -> Unit) {
     val ctx = context ?: return
     if (!ctx.isOnline()) {
         (activity as? MainActivity)?.showOfflineFragment()
-            ?: Toast.makeText(ctx, "İnternet bağlantınız yok.", Toast.LENGTH_SHORT).show()
+            ?: Toast.makeText(ctx, appString(R.string.ui_internet_baglantiniz_yok), Toast.LENGTH_SHORT).show()
         return
     }
 

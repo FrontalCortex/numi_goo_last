@@ -31,7 +31,7 @@
                     android:layout_gravity="center"
                     android:src="@drawable/lock_ic"
                     app:tint="@color/dark_primary"
-                    android:contentDescription="Kısıtlama" />
+                    android:contentDescription="@string/dialog_restriction_detail_text_desc" />
             </FrameLayout>
 
             <LinearLayout
@@ -44,7 +44,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Kısıtlama Detayı"
+                    android:text="@string/dialog_restriction_detail_text"
                     android:textSize="17sp"
                     android:textStyle="bold"
                     android:textColor="@color/dark_text" />
@@ -52,7 +52,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Kısıtlama nedeni ve içeriği"
+                    android:text="@string/dialog_restriction_detail_text_2"
                     android:textSize="12sp"
                     android:textColor="@color/dark_text_secondary"
                     android:layout_marginTop="1dp" />
@@ -66,7 +66,7 @@
                 android:background="@drawable/bg_report_action_row"
                 android:src="@drawable/ic_close_black"
                 app:tint="@color/dark_text_secondary"
-                android:contentDescription="Kapat" />
+                android:contentDescription="@string/dialog_restriction_detail_restriction_dialog_close_desc" />
         </LinearLayout>
 
         <!-- Kullanıcı ve durum -->
@@ -150,7 +150,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="centerCrop"
-                    android:contentDescription="Bildirilen medya" />
+                    android:contentDescription="@string/dialog_restriction_detail_report_dialog_media_thumb_desc" />
 
                 <ImageView
                     android:id="@+id/reportDialogPlayOverlay"
@@ -162,7 +162,7 @@
                     android:src="@drawable/play_video_ic"
                     app:tint="@android:color/white"
                     android:visibility="gone"
-                    android:contentDescription="Videoyu oynat" />
+                    android:contentDescription="@string/dialog_restriction_detail_report_dialog_play_overlay_desc" />
             </FrameLayout>
 
             <!-- Ses kaydı çalar -->
@@ -184,7 +184,7 @@
                     android:padding="4dp"
                     android:src="@android:drawable/ic_media_play"
                     app:tint="@color/dark_primary"
-                    android:contentDescription="Sesi oynat" />
+                    android:contentDescription="@string/dialog_restriction_detail_report_dialog_audio_play_pause_desc" />
 
                 <TextView
                     android:id="@+id/reportDialogAudioTime"
@@ -192,7 +192,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="10dp"
-                    android:text="Ses kaydını dinlemek için oynat"
+                    android:text="@string/dialog_restriction_detail_report_dialog_audio_time"
                     android:textSize="13sp"
                     android:textColor="@color/dark_text_secondary" />
             </LinearLayout>
@@ -222,13 +222,13 @@
                 android:layout_height="16dp"
                 android:src="@drawable/unlock_ic"
                 app:tint="@color/dark_primary"
-                android:contentDescription="Kaldır" />
+                android:contentDescription="@string/dialog_restriction_detail_text_desc_2" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Kısıtlamayı Kaldır"
+                android:text="@string/dialog_restriction_detail_text_3"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/dark_primary" />
@@ -240,7 +240,7 @@
             android:layout_height="40dp"
             android:layout_marginTop="4dp"
             android:gravity="center"
-            android:text="Kapat"
+            android:text="@string/dialog_restriction_detail_restriction_dialog_close_text"
             android:textSize="14sp"
             android:textColor="@color/dark_text_secondary"
             android:background="?attr/selectableItemBackground" />

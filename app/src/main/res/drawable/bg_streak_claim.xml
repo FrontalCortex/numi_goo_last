@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Topla" düğmesi: toplanmayı bekleyen ödülün rengi, üst bardaki alevle aynı turuncu. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#FF9800" />
+    <corners android:radius="20dp" />
+</shape>

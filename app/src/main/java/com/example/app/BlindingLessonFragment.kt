@@ -1,6 +1,5 @@
 package com.example.app
 
-import android.animation.Animator
 import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
@@ -37,6 +36,9 @@ import com.example.app.GlobalValues.lessonStep
 import com.example.app.GlobalValues.mapFragmentStepIndex
 import com.example.app.MapFragment.Companion.getLessonOperationsBlinding
 import com.example.app.abacus.AbacusBeadController
+import com.example.app.abacus.AbacusSettingsPanel
+import com.example.app.abacus.LessonRulesPanel
+import com.example.app.abacus.LessonSideButtons
 import com.example.app.auth.AuthManager
 import com.example.app.databinding.FragmentBlindingLessonBinding
 import com.example.app.model.LessonItem
@@ -45,11 +47,15 @@ import androidx.core.view.isInvisible
 
 class BlindingLessonFragment : Fragment() {
     companion object {
+        /** Flaş dizisi değer kaydının sınırı (uzun dizide bile yeter; sunucuya gitmiyor). */
+        private const val FLASH_LOG_MAX = 1500
         private const val ARG_DAILY_MODE = "daily_mode"
         private const val ARG_DAILY_PERIOD_KEY = "daily_period_key"
         private const val ARG_DAILY_SLOT_INDEX = "daily_slot_index"
         private const val ARG_DAILY_INTERVAL_MS = "daily_interval_ms"
         private const val ARG_DAILY_PART_ID = "daily_part_id"
+        private const val ARG_DAILY_TITLE_UNIT = "daily_title_unit"
+        private const val ARG_DAILY_ITEM_INDEX = "daily_item_index"
         private const val PRACTICE_TOUCH_BLOCKER_TAG = "practice_touch_blocker"
 
         fun newDailyQuestionInstance(
@@ -58,6 +64,8 @@ class BlindingLessonFragment : Fragment() {
             slotIndex: Int,
             displayIntervalMs: Long?,
             partId: Int,
+            titleUnit: String = "",
+            itemIndex: Int = -1,
         ): BlindingLessonFragment {
             return BlindingLessonFragment().apply {
                 arguments = Bundle().apply {
@@ -66,6 +74,8 @@ class BlindingLessonFragment : Fragment() {
                     putString(ARG_DAILY_PERIOD_KEY, periodKey)
                     putInt(ARG_DAILY_SLOT_INDEX, slotIndex)
                     putInt(ARG_DAILY_PART_ID, partId)
+                    putString(ARG_DAILY_TITLE_UNIT, titleUnit)
+                    putInt(ARG_DAILY_ITEM_INDEX, itemIndex)
                     displayIntervalMs?.let { putLong(ARG_DAILY_INTERVAL_MS, it) }
                 }
             }
@@ -77,6 +87,9 @@ class BlindingLessonFragment : Fragment() {
 
     private var mediaPlayer: MediaPlayer? = null
     private var learningSessionStartMs: Long? = null
+    /** lessonSuccessRate telemetrisi için: bu soru ekranına giriş anı ve en az bir cevap verilip verilmediği. */
+    private var questionSessionStartMs: Long = 0L
+    private var hasSubmittedAnyAnswer: Boolean = false
     private var operations: List<Any> = emptyList()
     private lateinit var numberText: TextView
     private var currentIndex = 0
@@ -94,6 +107,8 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var correctAnswerLabel: TextView
     private lateinit var controlButton: Button
     private lateinit var incorrectPanel: View
+    // Sonuç panellerini gezinme çubuğunun arkasına kadar uzatır (ekranın en altından kayarak gelsin)
+    private var navBarPanelExtension: NavBarPanelExtension? = null
     private lateinit var correctPanel: View
     private lateinit var lottieView: LottieAnimationView
 
@@ -105,26 +120,7 @@ class BlindingLessonFragment : Fragment() {
     private lateinit var rulesBookButton: ImageView
     private lateinit var rulesPanelButton: ImageView
 
-    private enum class RulesPanelTableType {
-        NONE, FIVE, TEN_FIVE, TEN, BEAD, BEAD_EXTRACTION, TEN_EXTRACTION, MULTIPLICATION
-    }
-
-    private var activeRulesPanelTable = RulesPanelTableType.NONE
-    private var selectedMultiplicationDigit: Int? = null
-    private var inflatedMultiplicationDigit: Int? = null
-
-    private fun multiplicationLayoutForDigit(digit: Int): Int = when (digit) {
-        1 -> R.layout.multiplication_table_1
-        2 -> R.layout.multiplication_table_2
-        3 -> R.layout.multiplication_table_3
-        4 -> R.layout.multiplication_table_4
-        5 -> R.layout.multiplication_table_5
-        6 -> R.layout.multiplication_table_6
-        7 -> R.layout.multiplication_table_7
-        8 -> R.layout.multiplication_table_8
-        9 -> R.layout.multiplication_table_9
-        else -> R.layout.multiplication_table_1
-    }
+    private lateinit var rulesPanel: LessonRulesPanel
 
     private fun usesRulesTablePicker(): Boolean = globalPartId in 4..9 || isDailyQuestionMode
     private var resultDialog: Dialog? = null
@@ -138,11 +134,15 @@ class BlindingLessonFragment : Fragment() {
     private val binding get() = _binding!!
     private var currentTime: String = "0:00"
     private var isDailyQuestionMode = false
-    private var isAbacusSettingsPanelOpen = false
+    /** Bir yarış için tek sonuç kaydedilir; bkz. [logCupRaceResultOnce]. */
+    private var cupResultLogged = false
+    /** Kartın üstünde görünen ünite adı; ankette hangi soruya cevap verildiğini bu söyler. */
+    private var dailyQuestionTitleUnit: String = ""
+    /** Kaynağın ders listesindeki sırası; [dailyQuestionPartId] ile birlikte kalıcı kimliği verir. */
+    private var dailyQuestionItemIndex: Int = -1
     
     // Guide UI Variables
     private lateinit var panelContent: View
-    private lateinit var ivGuideImage: ImageView
     private lateinit var tvGuideText: TextView
     private lateinit var stepDotsContainer: LinearLayout
     private var currentBubbleAnimator: android.animation.ValueAnimator? = null
@@ -156,19 +156,27 @@ class BlindingLessonFragment : Fragment() {
     private var fabHintTouchAreaListener: View.OnClickListener? = null
     private val guideContentList = mutableListOf<GuideContent>()
     private var currentGuideIndex = 0
-    private var savedAbacusScaleX = 1.0f
-    private var savedAbacusScaleY = 1.0f
-    private var savedAbacusMarginBottomDp = 0f
-    private var savedBeadScaleX = 1.0f
-    private var savedBeadScaleY = 1.0f
-    private var savedBeadMarginTopDp = 0f
-    private var savedBeadMarginBottomDp = 0f
+    private var abacusSettings: AbacusSettingsPanel? = null
     /** Kart açılırken kilitlenen periyot; ödül bu anahtarla eşleşmeli. */
     private var dailyQuestionSessionPeriodKey: String? = null
     /** Bu oturumdaki soru indeksi (0..2). */
     private var dailyQuestionSlotIndex: Int = 0
     private var dailyQuestionPartId: Int = -1
     private var lessonStarted = false
+
+    /**
+     * Kupa sonucu bu tur için gönderildi mi.
+     *
+     * Üç ayrı yol aynı turun sonucunu göndermeye çalışabiliyor: cevap verme, çıkış düğmesi
+     * ve geri tuşu. [lessonStarted] cevaptan sonra da true kaldığı için, cevabını verip
+     * ekranı geri tuşuyla kapatan kullanıcı kupasını hem kazanıp hem kaybediyordu — üstelik
+     * çıkış için ikinci kez enerji ödüyordu.
+     *
+     * Sunucudaki hız koruması ikinci çağrıyı reddedip logda "Çok hızlı gönderildi"
+     * bırakıyordu; yani hata görünür oldu ama sebebi burada. İki çağrı arasında 3 saniyeden
+     * fazla geçseydi ikisi de uygulanacaktı.
+     */
+    private var cupResultSubmitted = false
 
     private var isShowingSequence = false
     private var currentSequenceIndex = 0
@@ -177,13 +185,39 @@ class BlindingLessonFragment : Fragment() {
     private val showNextNumberRunnable: Runnable = Runnable { onShowNextNumberStep() }
     private val restartSequenceRunnable: Runnable = Runnable { onRestartSequenceAfterReset() }
 
+    /**
+     * Sayı az önce silindi ve sıradaki 200 ms içinde gelecek mi.
+     *
+     * Atlama düğmesi bu sırada basılırsa yok sayılıyor: basış boşluğu yeniden başlatsaydı
+     * hızlı basışlarda ekran boş kalır, sıradaki sayı hiç gelmezdi.
+     */
+    private var sequenceBlankPending = false
+
+    /**
+     * Flaş dizisinde abaküsün değer kaydı (abaküslü derste): "Sobi ile analiz et" yalnızca yanlış
+     * yapılan işlemleri çözdürsün diye (MistakeAnalyzer.findSequenceMistakes; kullanıcı kararı
+     * 31.10.2026). Her sayı göründüğü anda o anki değer de eklenir; [flashMarks] onların sırası.
+     * Dizi her başladığında (yeniden başlatma dahil) sıfırlanır.
+     */
+    private val flashLog = ArrayList<Int>()
+    private val flashMarks = ArrayList<Int>()
+
+    private fun markFlashNumber() {
+        if (lessonItem.isBlinding != null || !::abacusController.isInitialized) return
+        if (flashLog.size >= FLASH_LOG_MAX) return
+        flashLog += abacusController.getCurrentValue()
+        flashMarks += flashLog.lastIndex
+    }
+
     private fun onSequenceRevealStep() {
+        sequenceBlankPending = false
         if (!isShowingSequence) return
         if (currentSequenceIndex >= currentSequence.size) {
             finishSequencePlayback()
             return
         }
         numberText.text = currentSequence[currentSequenceIndex].toString()
+        markFlashNumber()
         currentSequenceIndex++
         if (currentSequenceIndex < currentSequence.size) {
             handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod?.toLong() ?: 1000L)
@@ -199,7 +233,24 @@ class BlindingLessonFragment : Fragment() {
             return
         }
         numberText.text = ""
+        sequenceBlankPending = true
         handler.postDelayed(sequenceRevealRunnable, 200L)
+    }
+
+    /**
+     * Atlama düğmesi: süresini beklemeden sıradaki sayıya geçer.
+     *
+     * Kendiliğinden geçişle AYNI yoldan gidiyor (sayı silinir, 200 ms sonra sıradaki gelir).
+     * Eskiden sıradaki sayı doğrudan yazılıyordu; art arda iki sayı aynıysa ekranda hiçbir
+     * şey değişmiyor ve çocuk geçildiğini anlayamıyordu.
+     */
+    private fun skipToNextSequenceNumber() {
+        if (!isShowingSequence) return
+        binding.skipStepButton.playAnimation()
+        if (sequenceBlankPending) return
+        handler.removeCallbacks(showNextNumberRunnable)
+        handler.removeCallbacks(sequenceRevealRunnable)
+        onShowNextNumberStep()
     }
 
     private fun onRestartSequenceAfterReset() {
@@ -212,12 +263,13 @@ class BlindingLessonFragment : Fragment() {
         handler.removeCallbacks(sequenceRevealRunnable)
         handler.removeCallbacks(restartSequenceRunnable)
         isShowingSequence = false
+        sequenceBlankPending = false
     }
 
     private fun finishSequencePlayback() {
         isShowingSequence = false
+        // Renk arka planın durumundan (bg_depth_hw_control); setBackgroundColor göçen düğmeyi düz dikdörtgene çeviriyordu.
         controlButton.isEnabled = true
-        controlButton.setBackgroundColor(resources.getColor(R.color.button_enabled, null))
         controlButton.setTextColor(resources.getColor(R.color.button_text_enabled, null))
     }
 
@@ -235,6 +287,8 @@ class BlindingLessonFragment : Fragment() {
                 ?: DailyQuestionPeriod.currentPeriodKey()
             dailyQuestionSlotIndex = arguments?.getInt(ARG_DAILY_SLOT_INDEX, 0)?.coerceIn(0, 2) ?: 0
             dailyQuestionPartId = arguments?.getInt(ARG_DAILY_PART_ID, -1) ?: -1
+            dailyQuestionTitleUnit = arguments?.getString(ARG_DAILY_TITLE_UNIT).orEmpty()
+            dailyQuestionItemIndex = arguments?.getInt(ARG_DAILY_ITEM_INDEX, -1) ?: -1
         }
         
         // Initialize operations first so we can check it
@@ -243,8 +297,13 @@ class BlindingLessonFragment : Fragment() {
         lessonItem = if (isDailyQuestionMode) {
             val hasMathOperation = operations.firstOrNull() is MathOperation
             LessonItem(
+                // Günlük soru bir ders item'ı değil, ilerlemesi saklanmaz — ama kaynağı
+                // bellidir: hangi bölümün hangi sandığından üretildiği. Sabit bir yer tutucu
+                // kullanılsaydı bütün günlük soru anketleri tek kovada toplanır ve hangi
+                // soruya ait oldukları ayırt edilemezdi.
+                stableId = "daily_p${dailyQuestionPartId}_i$dailyQuestionItemIndex",
                 type = LessonItem.TYPE_LESSON,
-                title = "Günlük Soru",
+                title = dailyQuestionTitleUnit.ifEmpty { appString(R.string.ui_gunluk_soru) },
                 offset = 0,
                 isCompleted = false,
                 stepCount = 1,
@@ -256,22 +315,36 @@ class BlindingLessonFragment : Fragment() {
         } else if (globalPartId == 9) {
             arguments?.getSerializable("cup_lesson_item") as? LessonItem 
                 ?: LessonManager.getLessonItem(0) ?: LessonItem(
+                    // Kalıcı değil: kupa modu item'ı bulunamazsa son çare.
+                    stableId = "transient_cup_mode_fallback",
                     type = LessonItem.TYPE_LESSON,
-                    title = "Kupa Modu",
+                    title = appString(R.string.ui_kupa_modu),
                     offset = 0,
                     isCompleted = false,
                     stepCount = 1,
                     currentStep = 1,
                     tutorialIsFinish = true,
                     raceBusyLevel = 1,
-                    raceTitle = "Kupa Zorluğu",
+                    raceTitle = appString(R.string.ui_kupa_zorlugu),
                 )
         } else {
             LessonManager.getLessonItem(mapFragmentStepIndex)!!
         }
 
+        questionSessionStartMs = System.currentTimeMillis()
+        hasSubmittedAnyAnswer = false
+        cupResultSubmitted = false
+        if (isLessonSuccessRateScope()) {
+            LessonSuccessRateRepository.recordQuestionEntry(globalPartId, mapFragmentStepIndex, lessonItem.currentStep)
+        }
+
         uploadLessonData()
     }
+
+    /** Günlük soru ve Kupa Modu (part 9) lessonSuccessRate'e dahil değil — bkz. [LessonSuccessRateRepository]. */
+    private fun isLessonSuccessRateScope(): Boolean =
+        !isDailyQuestionMode && globalPartId != 9 &&
+            (lessonItem.type == LessonItem.TYPE_LESSON || lessonItem.type == LessonItem.TYPE_CHEST)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -316,7 +389,6 @@ class BlindingLessonFragment : Fragment() {
 
     private fun initializeGuideSystem() {
         panelContent = binding.guidePanelInclude.panelContent
-        ivGuideImage = binding.guidePanelInclude.ivGuideImage
         tvGuideText = binding.guidePanelInclude.tvGuideText
         stepDotsContainer = binding.guidePanelInclude.stepDotsContainer
 
@@ -452,6 +524,7 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun setupStartButton() {
+        com.example.app.homework.DepthPress.attach(binding.startButton)
         binding.startButton.setOnClickListener {
             if (lessonStarted) return@setOnClickListener
             lessonStarted = true
@@ -469,12 +542,12 @@ class BlindingLessonFragment : Fragment() {
             if (binding.numberInput.visibility == View.VISIBLE) {
                 if (imeVisible) {
                     rulesPanelVisibleBeforeKeyboard =
-                        binding.rulesPanelScrollView.visibility == View.VISIBLE
-                    binding.rulesPanelScrollView.visibility = View.GONE
+                        binding.rulesPanelScrollView.root.visibility == View.VISIBLE
+                    binding.rulesPanelScrollView.root.visibility = View.GONE
                     rulesPanelButton.isEnabled = false
                 } else {
                     if (rulesPanelVisibleBeforeKeyboard) {
-                        binding.rulesPanelScrollView.visibility = View.VISIBLE
+                        binding.rulesPanelScrollView.root.visibility = View.VISIBLE
                     }
                     rulesPanelButton.isEnabled = true
                 }
@@ -489,10 +562,10 @@ class BlindingLessonFragment : Fragment() {
             binding.numberInput.visibility = View.VISIBLE
             binding.abacusContainer.visibility = View.INVISIBLE
 
-            val params = binding.rulesPanelScrollView.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            val params = binding.rulesPanelScrollView.root.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
             params.height = (160 * resources.displayMetrics.density).toInt()
             params.bottomToTop = R.id.numberInput
-            binding.rulesPanelScrollView.layoutParams = params
+            binding.rulesPanelScrollView.root.layoutParams = params
             params.bottomMargin = (5 * resources.displayMetrics.density).toInt()
         } else {
             binding.numberInput.visibility = View.INVISIBLE
@@ -515,9 +588,9 @@ class BlindingLessonFragment : Fragment() {
     }
     private fun findsId(){
         timerTextView = binding.timerTextView
-        binding.resetButton.frame = 20
         rulesBookButton = binding.rulesBookButton
         rulesPanelButton = binding.rulesPanelButton
+        rulesPanel = LessonRulesPanel(binding.rulesPanelScrollView, layoutInflater, ::rulesPanelFiveIsSubtraction)
         fabHint = binding.fabHint
         tvHint = binding.tvHint
         fabHintTouchArea = binding.fabHintTouchArea
@@ -527,6 +600,7 @@ class BlindingLessonFragment : Fragment() {
         correctAnswerLabel = binding.correctAnswerLabel
         incorrectPanel = binding.incorrectPanel
         correctPanel = binding.correctPanel
+        navBarPanelExtension = NavBarPanelExtension(binding.root, correctPanel, incorrectPanel).also { it.attach() }
         numberText = binding.firstNumberText
         controlButton = binding.kontrolButton
         totalQuestions = operations.size
@@ -535,25 +609,7 @@ class BlindingLessonFragment : Fragment() {
         operatorText = binding.operator
         secondNumberText = binding.secondNumberText
         timeStarter()
-
-        binding.abacusModeButton.setOnClickListener {
-            abacusModeButtonClick()
-        }
     }
-    private fun abacusModeButtonClick() {
-        if (!isAbacusSettingsPanelOpen) {
-            // Panelı aç: 0 → 25. frame
-            binding.abacusModeButton.setMinAndMaxFrame(0, 25)
-            binding.abacusModeButton.playAnimation()
-            showAbacusSettingsPanel()
-        } else {
-            // Panelı kapat: 25 → 45. frame
-            binding.abacusModeButton.setMinAndMaxFrame(25, 45)
-            binding.abacusModeButton.playAnimation()
-            hideAbacusSettingsPanel()
-        }
-    }
-
     private fun abacusModeVisibility(){
         if(globalPartId in listOf(7,8,9)){
             binding.abacusModeButton.visibility= View.VISIBLE
@@ -567,320 +623,24 @@ class BlindingLessonFragment : Fragment() {
         }
     }
 
-    private fun showAbacusSettingsPanel() {
-        resetAbacus()
-        abacusController.setEnabled(false)
-        isAbacusSettingsPanelOpen = true
-        binding.abacusSettingsPanel.animate()
-            .translationX(0f)
-            .setDuration(300)
-            .setInterpolator(android.view.animation.DecelerateInterpolator())
-            .start()
-    }
-
-    private fun hideAbacusSettingsPanel() {
-        abacusController.setEnabled(true)
-        isAbacusSettingsPanelOpen = false
-        val offset = binding.abacusSettingsPanel.width.toFloat() + (100f * resources.displayMetrics.density)
-        binding.abacusSettingsPanel.animate()
-            .translationX(offset)
-            .setDuration(300)
-            .setInterpolator(android.view.animation.AccelerateInterpolator())
-            .start()
-    }
-
-    private fun setAllBeadsScale(scaleX: Float?, scaleY: Float?) {
-        val allViews = getAllChildren(binding.abacusContainer)
-        for (v in allViews) {
-            if (v.id != View.NO_ID) {
-                try {
-                    val idName = resources.getResourceEntryName(v.id)
-                    if (idName.contains("bead") && v is ImageView) {
-                        scaleX?.let { v.scaleX = it }
-                        scaleY?.let { v.scaleY = it }
-                    }
-                } catch (e: Exception) {
-                    // Ignore views without resource names
-                }
-            }
-        }
-    }
-
-    private fun setAllBeadsMargins(marginTopDp: Float?, marginBottomDp: Float?) {
-        val density = resources.displayMetrics.density
-        val allViews = getAllChildren(binding.abacusContainer)
-        for (v in allViews) {
-            if (v.id != View.NO_ID) {
-                try {
-                    val idName = resources.getResourceEntryName(v.id)
-                    if (idName.contains("bead") && v is ImageView) {
-                        if (marginTopDp != null && idName.contains("top")) {
-                            val params = v.layoutParams as? android.view.ViewGroup.MarginLayoutParams
-                            params?.topMargin = (marginTopDp * density).toInt()
-                            v.layoutParams = params
-                        }
-                        if (marginBottomDp != null && idName.contains("bottom")) {
-                            val params = v.layoutParams as? android.view.ViewGroup.MarginLayoutParams
-                            val baseMarginDp = when {
-                                idName.contains("bottom1") -> 82f
-                                idName.contains("bottom2") -> 58f
-                                idName.contains("bottom3") -> 34f
-                                idName.contains("bottom4") -> 10f
-                                else -> 0f
-                            }
-                            params?.bottomMargin = ((baseMarginDp + marginBottomDp) * density).toInt()
-                            v.layoutParams = params
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Ignore views without resource names
-                }
-            }
-        }
-    }
-
-
-    private fun getAllChildren(v: View): List<View> {
-        val visited = ArrayList<View>()
-        val unvisited = ArrayList<View>()
-        unvisited.add(v)
-        while (unvisited.isNotEmpty()) {
-            val child = unvisited.removeAt(0)
-            visited.add(child)
-            if (child is ViewGroup) {
-                for (i in 0 until child.childCount) {
-                    unvisited.add(child.getChildAt(i))
-                }
-            }
-        }
-        return visited
-    }
-
-
-    private fun loadAbacusSettings() {
-        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
-        savedAbacusScaleX = prefs.getFloat("savedAbacusScaleX", 1.0f)
-        savedAbacusScaleY = prefs.getFloat("savedAbacusScaleY", 1.0f)
-        savedAbacusMarginBottomDp = prefs.getFloat("savedAbacusMarginBottomDp", 0f)
-        savedBeadScaleX = prefs.getFloat("savedBeadScaleX", 1.0f)
-        savedBeadScaleY = prefs.getFloat("savedBeadScaleY", 1.0f)
-        savedBeadMarginTopDp = prefs.getFloat("savedBeadMarginTopDp", 0f)
-        savedBeadMarginBottomDp = prefs.getFloat("savedBeadMarginBottomDp", 0f)
-    }
-
-    private fun saveAbacusSettings() {
-        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
-        prefs.edit().apply {
-            putFloat("savedAbacusScaleX", savedAbacusScaleX)
-            putFloat("savedAbacusScaleY", savedAbacusScaleY)
-            putFloat("savedAbacusMarginBottomDp", savedAbacusMarginBottomDp)
-            putFloat("savedBeadScaleX", savedBeadScaleX)
-            putFloat("savedBeadScaleY", savedBeadScaleY)
-            putFloat("savedBeadMarginTopDp", savedBeadMarginTopDp)
-            putFloat("savedBeadMarginBottomDp", savedBeadMarginBottomDp)
-            apply()
-        }
-    }
-
-    private fun clearAbacusSettings() {
-        val prefs = requireContext().getSharedPreferences("AbacusUISettings", android.content.Context.MODE_PRIVATE)
-        prefs.edit().clear().apply()
-        savedAbacusScaleX = 1.0f
-        savedAbacusScaleY = 1.0f
-        savedAbacusMarginBottomDp = 0f
-        savedBeadScaleX = 1.0f
-        savedBeadScaleY = 1.0f
-        savedBeadMarginTopDp = 0f
-        savedBeadMarginBottomDp = 0f
-    }
-
     private fun setupAbacusSettingsPanel() {
-        loadAbacusSettings()
-        val density = resources.displayMetrics.density
-
-        binding.abacusContainer.scaleX = savedAbacusScaleX
-        binding.abacusContainer.scaleY = savedAbacusScaleY
-        val initParams = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
-        if (savedAbacusMarginBottomDp > 0f) {
-            initParams?.bottomMargin = (savedAbacusMarginBottomDp * density).toInt()
-            binding.abacusContainer.layoutParams = initParams
-        }
-
-        if (savedAbacusMarginBottomDp == 0f) {
-            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
-            savedAbacusMarginBottomDp = (params?.bottomMargin ?: 0) / density
-        }
-
-        // Abacus boyutları (0.5x ile 2.0x aralığında ayarlansın, progress 0-100)
-        binding.seekBarScaleX.progress = ((savedAbacusScaleX - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
-        binding.seekBarScaleY.progress = ((savedAbacusScaleY - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
-        binding.seekBarMarginBottom.progress = savedAbacusMarginBottomDp.toInt().coerceIn(0, 100)
-        
-        // Boncuk boyutları (0.5x ile 2.0x aralığında ayarlansın, progress 0-100)
-        binding.seekBarBeadScaleX.progress = ((savedBeadScaleX - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
-        binding.seekBarBeadScaleY.progress = ((savedBeadScaleY - 0.5f) * (100f / 1.5f)).toInt().coerceIn(0, 100)
-        
-        binding.seekBarBeadMarginTop.progress = savedBeadMarginTopDp.toInt().coerceIn(0, 30)
-        binding.seekBarBeadMarginBottom.progress = savedBeadMarginBottomDp.toInt().coerceIn(0, 50)
-
-        // Panel açıldığında kaydedilmiş boncuk boyutlarını ve boşluklarını uygula
-        setAllBeadsScale(savedBeadScaleX, savedBeadScaleY)
-        setAllBeadsMargins(savedBeadMarginTopDp, savedBeadMarginBottomDp)
-
-        binding.seekBarScaleX.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                val scale = 0.5f + (progress / 100f) * 1.5f
-                binding.abacusContainer.scaleX = scale
-            }
-            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-        })
-
-        binding.seekBarScaleY.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                val scale = 0.5f + (progress / 100f) * 1.5f
-                binding.abacusContainer.scaleY = scale
-            }
-            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-        })
-
-        binding.seekBarMarginBottom.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
-                params?.bottomMargin = (progress * density).toInt()
-                binding.abacusContainer.layoutParams = params
-            }
-            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-        })
-
-        binding.seekBarBeadScaleX.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                // 0-100 -> 0.5 - 2.0
-                val scale = 0.5f + (progress / 100f) * 1.5f
-                setAllBeadsScale(scale, null)
-            }
-            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-        })
-
-        binding.seekBarBeadScaleY.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                val scale = 0.5f + (progress / 100f) * 1.5f
-                setAllBeadsScale(null, scale)
-            }
-            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-        })
-        
-        binding.seekBarBeadMarginTop.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                setAllBeadsMargins(progress.toFloat(), null)
-                binding.abacusContainer.post {
-                    if (::abacusController.isInitialized) {
-                        val topOffsetPx = progress * density
-                        val bottomOffsetPx = binding.seekBarBeadMarginBottom.progress * density
-                        abacusController.setBeadMarginOffsets(bottomOffsetPx, topOffsetPx)
-                        abacusController.computeMovementDistancesFromLayout(force = true)
-                    }
-                }
-            }
-            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-        })
-
-        binding.seekBarBeadMarginBottom.setOnSeekBarChangeListener(object : android.widget.SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: android.widget.SeekBar?, progress: Int, fromUser: Boolean) {
-                setAllBeadsMargins(null, progress.toFloat())
-                binding.abacusContainer.post {
-                    if (::abacusController.isInitialized) {
-                        val topOffsetPx = binding.seekBarBeadMarginTop.progress * density
-                        val bottomOffsetPx = progress * density
-                        abacusController.setBeadMarginOffsets(bottomOffsetPx, topOffsetPx)
-                        abacusController.computeMovementDistancesFromLayout(force = true)
-                    }
-                }
-            }
-            override fun onStartTrackingTouch(sb: android.widget.SeekBar?) {}
-            override fun onStopTrackingTouch(sb: android.widget.SeekBar?) {}
-        })
-        
-        binding.abacusSettingsResetButton.setOnClickListener {
-            // Default progress for 1.0f on 0.5-2.0 scale is 33
-            val defaultProgress = ((1.0f - 0.5f) * (100f / 1.5f)).toInt()
-            
-            // Abacus default: 1.0f, 1.0f
-            binding.seekBarScaleX.progress = defaultProgress
-            binding.seekBarScaleY.progress = defaultProgress
-            
-            // Margin bottom default
-            val defaultMarginPx = resources.getDimensionPixelSize(R.dimen.tutorial_abacus_linear_margin_bottom)
-            binding.seekBarMarginBottom.progress = (defaultMarginPx / density).toInt()
-            
-            // Bead default: 1.0f, 1.0f
-            binding.seekBarBeadScaleX.progress = defaultProgress
-            binding.seekBarBeadScaleY.progress = defaultProgress
-            
-            binding.seekBarBeadMarginTop.progress = 0
-            binding.seekBarBeadMarginBottom.progress = 0
-            
-            binding.abacusContainer.scaleX = 1.0f
-            binding.abacusContainer.scaleY = 1.0f
-            
-            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
-            params?.bottomMargin = defaultMarginPx
-            binding.abacusContainer.layoutParams = params
-            
-            setAllBeadsScale(1.0f, 1.0f)
-            setAllBeadsMargins(0f, 0f)
-            
-            clearAbacusSettings()
-            
-            binding.abacusContainer.post {
-                if (::abacusController.isInitialized) {
-                    abacusController.setBeadMarginOffsets(0f, 0f)
-                    abacusController.computeMovementDistancesFromLayout(force = true)
-                }
-            }
-        }
-
-        binding.abacusSettingsSaveButton.setOnClickListener {
-            // Mevcut değerleri kaydet
-            savedAbacusScaleX = binding.abacusContainer.scaleX
-            savedAbacusScaleY = binding.abacusContainer.scaleY
-            val params = binding.abacusContainer.layoutParams as? android.view.ViewGroup.MarginLayoutParams
-            savedAbacusMarginBottomDp = ((params?.bottomMargin ?: 0) / density)
-            
-            savedBeadScaleX = 0.5f + (binding.seekBarBeadScaleX.progress / 100f) * 1.5f
-            savedBeadScaleY = 0.5f + (binding.seekBarBeadScaleY.progress / 100f) * 1.5f
-            
-            savedBeadMarginTopDp = binding.seekBarBeadMarginTop.progress.toFloat()
-            savedBeadMarginBottomDp = binding.seekBarBeadMarginBottom.progress.toFloat()
-            
-            // Offset'leri controller'a kaydet
-            if (::abacusController.isInitialized) {
-                abacusController.setBeadMarginOffsets(
-                    savedBeadMarginBottomDp * density,
-                    savedBeadMarginTopDp * density
-                )
-                abacusController.computeMovementDistancesFromLayout(force = true)
-                abacusController.forceRecaptureInitialPositions()
-            }
-            
-            saveAbacusSettings()
-            
-            hideAbacusSettingsPanel()
-            binding.abacusModeButton.setMinAndMaxFrame(25, 45)
-            binding.abacusModeButton.playAnimation()
-        }
+        abacusSettings?.detach()
+        abacusSettings = AbacusSettingsPanel(
+            panel = binding.abacusSettingsPanel,
+            abacusContainer = binding.abacusContainer,
+            modeButton = binding.abacusModeButton,
+            sideButtons = listOf(binding.fabHint, binding.askQuestionButton, binding.resetButton, binding.rulesPanelButton, binding.skipStepButton, binding.abacusModeButton),
+            controller = { if (::abacusController.isInitialized) abacusController else null },
+            onOpen = {
+                resetAbacus()
+                abacusController.setEnabled(false)
+            },
+            onClose = { abacusController.setEnabled(true) },
+        ).also { it.attach() }
     }
 
     private fun resetClickListener() {
-        // İlk başta 20. frame'de başlat
-
-        binding.resetButton.setOnClickListener {
-            binding.resetButton.playAnimation()
+        LessonSideButtons.setupReset(binding.resetButton) {
             controlNumber = 0
             when {
                 lessonItem.isBlinding == null -> resetAbacus()
@@ -892,20 +652,6 @@ class BlindingLessonFragment : Fragment() {
                 handler.postDelayed(restartSequenceRunnable, 200L)
             }
         }
-
-        // Animasyon bitince tekrar 20. frame'e getir
-        binding.resetButton.addAnimatorListener(object : Animator.AnimatorListener {
-            override fun onAnimationStart(animation: Animator) {}
-            override fun onAnimationCancel(animation: Animator) {}
-            override fun onAnimationRepeat(animation: Animator) {}
-
-            override fun onAnimationEnd(animation: Animator) {
-                // Eskiden korumasızdı: view yok edildikten sonra tetiklenirse ölü view'a yazıyordu.
-                postDelayedSafely(1000) { // 1000 ms = 1 saniye
-                    binding.resetButton.frame = 20
-                }
-            }
-        })
     }
     private fun fubHintClickListener(){
         fabHintTouchArea.setOnClickListener {
@@ -925,21 +671,21 @@ class BlindingLessonFragment : Fragment() {
         fabHint.playAnimation()
         fabHint.setFrame(25)
 
-        // Show and animate TextView
+        // Balon ampulün yanından, kuyruğundan büyüyerek açılır
         tvHint.visibility = View.VISIBLE
-        tvHint.startAnimation(AnimationUtils.loadAnimation(context, R.anim.slide_in_right))
+        tvHint.startAnimation(AnimationUtils.loadAnimation(context, R.anim.hint_bubble_in))
 
         isHintVisible = true
     }
     private fun hideHint() {
-        // Sağa kayma animasyonunu başlat
+        // Balon ampule doğru küçülerek kapanır
         fabHint.cancelAnimation()
         fabHint.setFrame(0)
 
-        val slideOutAnimation = AnimationUtils.loadAnimation(context, R.anim.slide_out_right_hint)
+        val closeAnimation = AnimationUtils.loadAnimation(context, R.anim.hint_bubble_out)
 
         // Animasyon bittiğinde TextView'ı gizle
-        slideOutAnimation.setAnimationListener(object : Animation.AnimationListener {
+        closeAnimation.setAnimationListener(object : Animation.AnimationListener {
             override fun onAnimationStart(animation: Animation?) {}
 
             override fun onAnimationEnd(animation: Animation?) {
@@ -950,7 +696,7 @@ class BlindingLessonFragment : Fragment() {
         })
 
         // Animasyonu başlat
-        tvHint.startAnimation(slideOutAnimation)
+        tvHint.startAnimation(closeAnimation)
         isHintVisible = false
     }
     private fun splitTextEqually(text: String): String {
@@ -965,8 +711,103 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun fillIncorrectPanelAnswers() {
-        correctAnswerLabel.text = "Doğru cevap $answerNumber"
-        correctAnswerText.text = "Senin cevabın $controlNumber"
+        correctAnswerLabel.text = appString(R.string.ui_dogru_cevap_x, answerNumber)
+        correctAnswerText.text = appString(R.string.ui_senin_cevabin_x, controlNumber)
+        lastWrongAnswer = controlNumber
+        // Kontrol Et anındaki kayıt: panel açıkken oynanan boncuklar analize karışmasın.
+        lastFlashLog = flashLog.toList()
+        lastFlashMarks = flashMarks.toList()
+    }
+
+    private var lastFlashLog: List<Int> = emptyList()
+    private var lastFlashMarks: List<Int> = emptyList()
+
+    /** Son yanlış cevap: controlNumber denetimden sonra sıfırlanıyor, analiz ekranı bunu kullanıyor. */
+    private var lastWrongAnswer = 0
+
+    /**
+     * Yanlış cevap panelindeki "Sobi ile analiz et": soru abaküste adım adım yeniden çözülür, Sobi
+     * hatanın yerini bulur ([MistakeReviewDialog]; kullanıcı kararı 31.10.2026). Abaküsle cevaplanan
+     * flaş dizisinde değer kaydı gider: yalnızca yanlış yapılan işlemler çözdürülür. Klavyeyle
+     * cevaplananda kayıt yok; bütün dizi yeniden çözülür, hatayı o çözüş bulur. Kupa modunda da var
+     * (kullanıcı kararı 01.11.2026; kupa sonucu Kontrol Et anında yazıldı, analiz onu değiştirmez).
+     * Sandık dersinde ekran açıkken süre durur.
+     */
+    private fun bindReviewButton() {
+        val button = incorrectPanel.findViewById<View>(R.id.incorrectSobiAnalyze) ?: return
+        @Suppress("UNCHECKED_CAST")
+        val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>()
+        if (!MistakeReviewDialog.canReview(numbers) || !SobiAccess.isAllowed(requireContext())) {
+            button.visibility = View.GONE
+            return
+        }
+        val answer = lastWrongAnswer
+        button.visibility = View.VISIBLE
+        com.example.app.homework.DepthPress.attach(button)
+        childFragmentManager.setFragmentResultListener(MistakeReviewDialog.RESULT_CLOSED, viewLifecycleOwner) { _, _ ->
+            if (isTimerStarted && _binding != null) {
+                handler.removeCallbacks(runnable)
+                handler.postDelayed(runnable, 1000)
+            }
+        }
+        button.setOnClickListener {
+            if (childFragmentManager.findFragmentByTag(MistakeReviewDialog.TAG) != null) return@setOnClickListener
+            if (isTimerStarted) handler.removeCallbacks(runnable)
+            // Kayıt yalnızca bu dizinin tamamı izlendiyse (her sayı bir kez işaretli).
+            val complete = lastFlashMarks.size == numbers!!.size
+            MistakeReviewDialog.newInstance(
+                numbers, answer,
+                log = if (complete) lastFlashLog else emptyList(), lessonItem.title,
+                marks = if (complete) lastFlashMarks else emptyList(),
+            )
+                .show(childFragmentManager, MistakeReviewDialog.TAG)
+        }
+    }
+
+    /**
+     * Sobi'nin kural hafızası ([SobiRuleStats]): flaş dizisinin kuralları. Yanlışta yalnızca abaküs
+     * kaydından bulunan hatalı işlemler.
+     *
+     * Körlemede (abaküs gizli, cevap klavyeyle; Part 4–5 dersleri ve körleme kupa yolu) abaküssüz başarıya
+     * gider, soru başına ([SobiRuleStats.recordMental]; kullanıcı kararı 07.11.2026). Eskiden körleme de
+     * abaküslü toplama yazılıyordu, ama yalnızca doğrular (klavyede hatanın yeri bulunamıyor): abaküslü
+     * oranı şişiriyor, zihinden eksiği hiç göstermiyordu. Sobi testi zihinden soruyu bu sayımla seçiyor.
+     *
+     * Çarpma ([MathOperation]; 08.11.2026, eskiden yazılmıyordu): basamak çifti, soru başına. Körlemede
+     * (Part 6) zihinden "mulM_", abaküs açıkken (kupa yolu, günlük soru) "mulA_".
+     */
+    private fun recordRuleStats(isCorrect: Boolean) {
+        (operations.getOrNull(currentIndex) as? MathOperation)?.let { op ->
+            val a = op.firstNumber ?: return
+            val b = op.secondNumber ?: return
+            if (isCorrect && !isDailyQuestionMode) {
+                LessonMilestones.noteCorrect(
+                    globalPartId, lessonItem.stableId, lessonItem.currentStep,
+                    LessonMilestoneRules.binary(a, op.operator, b),
+                )
+            }
+            if (op.operator == "x") {
+                SobiRuleStats.recordMultiplication(requireContext(), a, b, isCorrect, withAbacus = lessonItem.isBlinding != true)
+            }
+            return
+        }
+        @Suppress("UNCHECKED_CAST")
+        val numbers = (operations.getOrNull(currentIndex) as? List<*>)?.filterIsInstance<Int>() ?: return
+        // Haftalık kartın "çözdüğü bir işlem"i (günlük soru bir ders bitişi değil).
+        if (isCorrect && !isDailyQuestionMode) {
+            LessonMilestones.noteCorrect(
+                globalPartId, lessonItem.stableId, lessonItem.currentStep, LessonMilestoneRules.sequence(numbers),
+            )
+        }
+        if (lessonItem.isBlinding == true) {
+            SobiRuleStats.recordMental(requireContext(), numbers, isCorrect)
+            return
+        }
+        val complete = lastFlashMarks.size == numbers.size
+        SobiRuleStats.recordSequence(
+            requireContext(), numbers, isCorrect,
+            if (complete) lastFlashLog else emptyList(), if (complete) lastFlashMarks else emptyList(), lastWrongAnswer,
+        )
     }
 
     private fun cupWay(){
@@ -986,49 +827,42 @@ class BlindingLessonFragment : Fragment() {
         controlButtonListener = View.OnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    v.animate()
-                        .scaleX(0.85f)
-                        .scaleY(0.85f)
-                        .setDuration(100)
-                        .setInterpolator(AccelerateDecelerateInterpolator())
-                        .start()
+                    com.example.app.homework.DepthPress.down(v)
+                    true
+                }
+
+                // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                MotionEvent.ACTION_MOVE -> {
+                    com.example.app.homework.DepthPress.move(v, event)
                     true
                 }
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    // Önce çıksın: hızlı çift dokunuşta ve çevrimdışıyken de düğme aşağıda kalmasın.
+                    com.example.app.homework.DepthPress.up(v)
                     val currentTime = System.currentTimeMillis()
                     if (currentTime - lastClickTime >= 100) {
                         lastClickTime = currentTime
 
-                        v.animate()
-                            .scaleX(1f)
-                            .scaleY(1f)
-                            .setDuration(400)
-                            .setInterpolator(BounceInterpolator())
-                            .start()
+                        // Son sorudan sonra (ders kapanırken) gelen dokunuş: soru kalmadı, yok say.
+                        // Sürüm 21'de operations[currentIndex] burada listenin dışına çıkıp çöktü
+                        // (Crashlytics, 08.11.2026: "Index 1 out of bounds for length 1").
+                        if (currentIndex !in operations.indices) return@OnTouchListener true
 
                         // Tıklama işlemini gerçekleştir (cevabı tek kez hesapla)
+                        hasSubmittedAnyAnswer = true
                         val isCorrect = stepAnswerAlgorithm()
+                        recordRuleStats(isCorrect)
                         updateProgressBar(isCorrect)
                         
                         if (globalPartId == 9) {
                             val winDelta = lessonItem.cupWinDelta ?: 10
                             val lossDelta = lessonItem.cupLossDelta ?: 30
-                            val delta = if (isCorrect) winDelta else -lossDelta
-                            if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
-                                GlobalValues.pendingBlindingImpactCupDelta = delta
-                            } else if (lessonItem.isMultiplication == true) {
-                                GlobalValues.pendingImpactCupDelta = delta
-                            } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
-                                GlobalValues.pendingBlindingExtractionCupDelta = delta
-                            } else if (lessonItem.isExtraction == true) {
-                                GlobalValues.pendingExtractionCupDelta = delta
-                            } else if (lessonItem.isBlinding == true) {
-                                GlobalValues.pendingBlindingCupDelta = delta
-                            } else {
-                                GlobalValues.pendingCupDelta = delta
-                            }
-                            BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
+                            submitCupResultOnce(if (isCorrect) winDelta else -lossDelta)
+                            logCupRaceResultOnce(
+                                if (isCorrect) AnalyticsLogger.CUP_RESULT_WIN
+                                else AnalyticsLogger.CUP_RESULT_LOSS,
+                            )
                             showResultPanel(isCorrect)
                             controlNumber = 0
                             binding.numberInput.setText("")
@@ -1092,15 +926,34 @@ class BlindingLessonFragment : Fragment() {
         }
     }
     private fun setupSkipStepButton() {
-        binding.skipStepButton.setMinFrame(10) // Animasyonun 10. frame'den başlamasını sağla
-        
-        binding.skipStepButton.setOnClickListener {
-            if (!isShowingSequence) return@setOnClickListener
-            binding.skipStepButton.playAnimation()
-            handler.removeCallbacks(showNextNumberRunnable)
-            handler.removeCallbacks(sequenceRevealRunnable)
-            onSequenceRevealStep()
+        LessonSideButtons.setupSkip(binding.skipStepButton) { skipToNextSequenceNumber() }
+    }
+
+    /**
+     * Kupa sonucunu tur başına bir kez bildirir.
+     *
+     * Kupa alanı seçimi üç çağrı yerinde birebir aynı if-else zinciriyle tekrarlanıyordu;
+     * artık tek yerde. Miktarı sunucu hesaplıyor (bkz. [CupScoreService]), buradan yalnızca
+     * işaret ve hangi yol olduğu gidiyor.
+     */
+    private fun submitCupResultOnce(delta: Int) {
+        if (cupResultSubmitted) return
+        cupResultSubmitted = true
+        when {
+            lessonItem.isMultiplication == true && lessonItem.isBlinding == true ->
+                GlobalValues.pendingBlindingImpactCupDelta = delta
+            lessonItem.isMultiplication == true ->
+                GlobalValues.pendingImpactCupDelta = delta
+            lessonItem.isExtraction == true && lessonItem.isBlinding == true ->
+                GlobalValues.pendingBlindingExtractionCupDelta = delta
+            lessonItem.isExtraction == true ->
+                GlobalValues.pendingExtractionCupDelta = delta
+            lessonItem.isBlinding == true ->
+                GlobalValues.pendingBlindingCupDelta = delta
+            else ->
+                GlobalValues.pendingCupDelta = delta
         }
+        BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
     }
 
     private fun setupQuitButton() {
@@ -1109,23 +962,12 @@ class BlindingLessonFragment : Fragment() {
                 handleDailyQuestionWrongAnswer()
                 return@setOnClickListener
             }
-            if (globalPartId == 9 && lessonStarted) {
-                val lossDelta = lessonItem.cupLossDelta ?: 30
-                if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
-                    GlobalValues.pendingBlindingImpactCupDelta = -lossDelta
-                } else if (lessonItem.isMultiplication == true) {
-                    GlobalValues.pendingImpactCupDelta = -lossDelta
-                } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
-                    GlobalValues.pendingBlindingExtractionCupDelta = -lossDelta
-                } else if (lessonItem.isExtraction == true) {
-                    GlobalValues.pendingExtractionCupDelta = -lossDelta
-                } else if (lessonItem.isBlinding == true) {
-                    GlobalValues.pendingBlindingCupDelta = -lossDelta
-                } else {
-                    GlobalValues.pendingCupDelta = -lossDelta
-                }
-                BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
-                (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
+            // cupResultSubmitted: cevabını verip ekranı kapatan kullanıcı "terk etti"
+            // sayılmamalı — ne ikinci kez kupa kaybetmeli ne de ikinci kez enerji ödemeli.
+            if (globalPartId == 9 && lessonStarted && !cupResultSubmitted) {
+                submitCupResultOnce(-(lessonItem.cupLossDelta ?: 30))
+                logCupRaceResultOnce(AnalyticsLogger.CUP_RESULT_QUIT)
+                spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_QUIT)
             }
             closeFragment()
         }
@@ -1147,32 +989,39 @@ class BlindingLessonFragment : Fragment() {
                         handleDailyQuestionWrongAnswer()
                         return
                     }
-                    if (globalPartId == 9 && lessonStarted) {
-                        val lossDelta = lessonItem.cupLossDelta ?: 30
-                        if (lessonItem.isMultiplication == true && lessonItem.isBlinding == true) {
-                            GlobalValues.pendingBlindingImpactCupDelta = -lossDelta
-                        } else if (lessonItem.isMultiplication == true) {
-                            GlobalValues.pendingImpactCupDelta = -lossDelta
-                        } else if (lessonItem.isExtraction == true && lessonItem.isBlinding == true) {
-                            GlobalValues.pendingBlindingExtractionCupDelta = -lossDelta
-                        } else if (lessonItem.isExtraction == true) {
-                            GlobalValues.pendingExtractionCupDelta = -lossDelta
-                        } else if (lessonItem.isBlinding == true) {
-                            GlobalValues.pendingBlindingCupDelta = -lossDelta
-                        } else {
-                            GlobalValues.pendingCupDelta = -lossDelta
-                        }
-                        BadgePrecalcHelper.executeCupDeltaUpdateAsync(lessonItem)
-                        (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
+                    // cupResultSubmitted: cevabını verip ekranı kapatan kullanıcı "terk etti"
+                    // sayılmamalı — ne ikinci kez kupa kaybetmeli ne de ikinci kez enerji ödemeli.
+                    if (globalPartId == 9 && lessonStarted && !cupResultSubmitted) {
+                        submitCupResultOnce(-(lessonItem.cupLossDelta ?: 30))
+                        logCupRaceResultOnce(AnalyticsLogger.CUP_RESULT_QUIT)
+                        spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_QUIT)
                     }
                     closeFragment()
                 }
             },
         )
     }
+    /** Kapanış kayması sürüyor mu; ikinci bir çıkış hareketi araya girmesin. */
+    private var isBlindingClosing = false
+
+    /** [finishLesson] bir kez çalışsın; ikinci çağrı ikinci bir sonuç ekranı açmasın. */
+    private var lessonFinishStarted = false
+
+    /** Kapanış kaymasının süresi; [AbacusFragment] ve çizimlerle aynı. */
+    private val blindingDismissSlideMs = 400L
+
     private fun closeFragment() {
+        // Fragment zaten kaldırılmışsa çık.
+        //
+        // Buraya iki yoldan birden gelinebiliyor: kullanıcının çıkış/geri hareketi ve sonuç
+        // panelinin kapanış animasyonunun bitiş geri çağrısı. Kullanıcı animasyon sürerken
+        // (200 ms) çıkarsa fragment önce kalkıyor, sonra geri çağrı çalışıyor ve
+        // `parentFragmentManager` "fragment manager'a bağlı değil" diye patlıyordu.
+        if (!isAdded || isBlindingClosing) return
+
         if (isDailyQuestionMode) {
-            (activity as? MainActivity)?.finishTasksOverlayAnimated("dailyQuestion.close")
+            (activity as? MainActivity)
+                ?.finishTasksOverlayAnimated("dailyQuestion.close", fromDailyQuestion = true)
                 ?: parentFragmentManager.popBackStack()
             return
         }
@@ -1181,6 +1030,32 @@ class BlindingLessonFragment : Fragment() {
             parentFragmentManager.popBackStack()
             return
         }
+
+        // Ekran sola kayarak kapanıyor ([AbacusFragment.closeFragment] ile aynı çözüm).
+        //
+        // Pop'un kendi animasyonu burada işe yaramıyor: [performBlindingDismiss] hemen
+        // ardından `executePendingTransactions` ile pop'u senkron yapıyor ve
+        // `prepareMapReturnAfterLessonClaim` konteyneri GONE'a çekiyor — ikisi de animasyonu
+        // öldürüyor. Bu yüzden view elle kaydırılıyor, harita dönüşü de kayma bitince
+        // başlıyor.
+        val rootView = view
+        if (rootView == null) {
+            performBlindingDismiss()
+            return
+        }
+        isBlindingClosing = true
+        binding.quitButton.isEnabled = false
+        rootView.animate().cancel()
+        rootView.animate()
+            .translationX(-resources.displayMetrics.widthPixels.toFloat() * RtlSupport.endSign(rootView))
+            .setDuration(blindingDismissSlideMs)
+            .setInterpolator(android.view.animation.AccelerateDecelerateInterpolator())
+            .withEndAction { if (isAdded) performBlindingDismiss() }
+            .start()
+    }
+
+    /** [closeFragment] kayma animasyonu bittikten sonra: haritaya dönüş akışı. */
+    private fun performBlindingDismiss() {
         val main = activity as? MainActivity
         val fm = parentFragmentManager
         if (fm.backStackEntryCount > 0) {
@@ -1188,12 +1063,21 @@ class BlindingLessonFragment : Fragment() {
             fm.executePendingTransactions()
         } else if (isAdded) {
             fm.beginTransaction()
-                .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_left)
+                .setCustomAnimations(R.anim.queue_screen_in, R.anim.queue_screen_out)
                 .remove(this@BlindingLessonFragment)
                 .commitNowAllowingStateLoss()
         }
         main?.prepareMapReturnAfterLessonClaim()
-        main?.finalizeMapReturnAfterLessonClaim("BlindingLessonFragment.quit")
+        // Yarıda bırakma da türü LESSON olan bir item'dan haritaya dönüş sayılır.
+        // Derse girerken yakalanan lessonItem kullanılıyor (global index aramasına güvenilmiyor).
+        main?.finalizeMapReturnAfterLessonClaim(
+            "BlindingLessonFragment.quit",
+            isLessonTypeReturn = ::lessonItem.isInitialized &&
+                lessonItem.type == LessonItem.TYPE_LESSON,
+            // Ders yarıda bırakıldı: ardından rozet/sandık gelmeyecek, zemin reklam
+            // kontrolü için boşuna kalkmasın.
+            rewardScreensPossible = false,
+        )
     }
     private fun rulesBookButtonClick() {
         rulesBookButton.setOnClickListener {
@@ -1217,22 +1101,11 @@ class BlindingLessonFragment : Fragment() {
         toggleRulesPanelTable()
     }
 
-    private fun hasRulesPanelContentToShow(): Boolean {
-        if (activeRulesPanelTable == RulesPanelTableType.NONE) return false
-        if (activeRulesPanelTable == RulesPanelTableType.MULTIPLICATION && selectedMultiplicationDigit == null) {
-            return false
-        }
-        return true
-    }
+    private fun hasRulesPanelContentToShow(): Boolean = rulesPanel.hasContentToShow()
 
-    private fun isRulesPanelVisible(): Boolean =
-        binding.rulesPanelScrollView.visibility == View.VISIBLE
+    private fun isRulesPanelVisible(): Boolean = rulesPanel.isVisible
 
-    private fun closeRulesPanelIfOpen() {
-        if (isRulesPanelVisible()) {
-            hideAllRulesPanelTables()
-        }
-    }
+    private fun closeRulesPanelIfOpen() = rulesPanel.closeIfOpen()
 
     private fun closeHintIfVisible() {
         if (isHintVisible) {
@@ -1243,104 +1116,36 @@ class BlindingLessonFragment : Fragment() {
     private fun updateActiveRulesPanelTable() {
         if (usesRulesTablePicker()) return
         val index = lessonItem.mapFragmentIndex ?: return
-        activeRulesPanelTable = when {
-            index > 28 && globalPartId == 1 -> RulesPanelTableType.BEAD
-            index > 22 && globalPartId == 1 -> RulesPanelTableType.TEN
-            index > 16 && globalPartId == 1 -> RulesPanelTableType.TEN_FIVE
-            index >= 12 && globalPartId == 1 -> RulesPanelTableType.FIVE
-            index > 10 && globalPartId == 2 -> RulesPanelTableType.TEN_EXTRACTION
-            index > 5 && globalPartId == 2 -> RulesPanelTableType.FIVE
-            else -> RulesPanelTableType.NONE
+        rulesPanel.activeTable = when {
+            index > 28 && globalPartId == 1 -> LessonRulesPanel.Table.BEAD
+            index > 22 && globalPartId == 1 -> LessonRulesPanel.Table.TEN
+            index > 16 && globalPartId == 1 -> LessonRulesPanel.Table.TEN_FIVE
+            index >= 12 && globalPartId == 1 -> LessonRulesPanel.Table.FIVE
+            index > 10 && globalPartId == 2 -> LessonRulesPanel.Table.TEN_EXTRACTION
+            index > 5 && globalPartId == 2 -> LessonRulesPanel.Table.FIVE
+            else -> LessonRulesPanel.Table.NONE
         }
     }
 
     private fun applyRulesTableSelection(selection: RulesFragment.RulesTableSelection) {
-        when (selection) {
-            RulesFragment.RulesTableSelection.FIVE -> activeRulesPanelTable = RulesPanelTableType.FIVE
-            RulesFragment.RulesTableSelection.EXTRACTION_FIVE -> activeRulesPanelTable = RulesPanelTableType.FIVE
-            RulesFragment.RulesTableSelection.TEN_FIVE -> activeRulesPanelTable = RulesPanelTableType.TEN_FIVE
-            RulesFragment.RulesTableSelection.TEN -> activeRulesPanelTable = RulesPanelTableType.TEN
-            RulesFragment.RulesTableSelection.TEN_EXTRACTION -> activeRulesPanelTable = RulesPanelTableType.TEN_EXTRACTION
-            RulesFragment.RulesTableSelection.BEAD -> activeRulesPanelTable = RulesPanelTableType.BEAD
-            RulesFragment.RulesTableSelection.BEAD_EXTRACTION -> activeRulesPanelTable = RulesPanelTableType.BEAD_EXTRACTION
-            is RulesFragment.RulesTableSelection.MULTIPLICATION -> {
-                activeRulesPanelTable = RulesPanelTableType.MULTIPLICATION
-                selectedMultiplicationDigit = selection.digit
-            }
-        }
+        rulesPanel.select(selection)
         showActiveRulesPanelTable()
     }
 
-    private fun ensureMultiplicationInSlot(digit: Int) {
-        val slot = binding.rulesPanelMultiplicationSlot
-        if (inflatedMultiplicationDigit != digit) {
-            slot.removeAllViews()
-            layoutInflater.inflate(multiplicationLayoutForDigit(digit), slot, true)
-            inflatedMultiplicationDigit = digit
-        }
-    }
+    private fun hideAllRulesPanelTables() = rulesPanel.hideAll()
 
-    private fun hideAllRulesPanelTables() {
-        binding.rulesPanelScrollView.visibility = View.GONE
-        binding.fiveRuleTableLinearLayout.visibility = View.GONE
-        binding.tenRuleFiveTableLayout.visibility = View.GONE
-        binding.tenRuleTableLinearLayout.visibility = View.GONE
-        binding.BeadRuleTable.visibility = View.GONE
-        binding.BeadRuleExtractionTable.visibility = View.GONE
-        binding.tenRuleExtractionTableLayout.visibility = View.GONE
-        binding.rulesPanelMultiplicationSlot.visibility = View.GONE
-    }
-
-    private fun applyRulesPanelFiveText() {
-        val index = lessonItem.mapFragmentIndex ?: return
-        if ((globalPartId == 2 && index > 5) || globalPartId == 5) {
-            binding.fiveText.text = "Çıkarılacak Sayı"
-            binding.fiveRuleDescriptionText.text = "5 gider. Kardeş gelir."
-        } else {
-            binding.fiveText.text = "Eklenecek sayı"
-            binding.fiveRuleDescriptionText.text = "5 gelir. Kardeş gider."
-        }
+    /** 5'li tablonun başlığı çıkarma diliyle mi; ders sırası bilinmiyorsa null (başlık değişmez). */
+    private fun rulesPanelFiveIsSubtraction(): Boolean? {
+        val index = lessonItem.mapFragmentIndex ?: return null
+        return (globalPartId == 2 && index > 5) || globalPartId == 5
     }
 
     private fun showActiveRulesPanelTable() {
         closeHintIfVisible()
-        hideAllRulesPanelTables()
-        val activeTable = when (activeRulesPanelTable) {
-            RulesPanelTableType.FIVE -> {
-                applyRulesPanelFiveText()
-                binding.fiveRuleTableLinearLayout
-            }
-            RulesPanelTableType.TEN_FIVE -> binding.tenRuleFiveTableLayout
-            RulesPanelTableType.TEN -> binding.tenRuleTableLinearLayout
-            RulesPanelTableType.BEAD -> binding.BeadRuleTable
-            RulesPanelTableType.BEAD_EXTRACTION -> binding.BeadRuleExtractionTable
-            RulesPanelTableType.TEN_EXTRACTION -> binding.tenRuleExtractionTableLayout
-            RulesPanelTableType.MULTIPLICATION -> {
-                val digit = selectedMultiplicationDigit
-                if (digit != null) {
-                    ensureMultiplicationInSlot(digit)
-                    binding.rulesPanelMultiplicationSlot
-                } else {
-                    null
-                }
-            }
-            RulesPanelTableType.NONE -> null
-        }
-        activeTable?.let {
-            binding.rulesPanelScrollView.visibility = View.VISIBLE
-            it.visibility = View.VISIBLE
-            binding.rulesPanelScrollView.bringToFront()
-        }
+        rulesPanel.show()
     }
 
-    private fun toggleRulesPanelTable() {
-        if (activeRulesPanelTable == RulesPanelTableType.NONE) return
-        if (binding.rulesPanelScrollView.visibility == View.VISIBLE) {
-            hideAllRulesPanelTables()
-        } else {
-            showActiveRulesPanelTable()
-        }
-    }
+    private fun toggleRulesPanelTable() = rulesPanel.toggle(::showActiveRulesPanelTable)
 
     private fun rulesBookVisibility() {
         if (usesRulesTablePicker()) {
@@ -1367,14 +1172,7 @@ class BlindingLessonFragment : Fragment() {
         if (usesRulesTablePicker()) {
             rulesBookButton.visibility = View.VISIBLE
             rulesPanelButton.visibility = View.VISIBLE
-            rulesFragment?.setActiveRulesContentSection(RulesFragment.RulesContentSection.ADDITION)
-            rulesFragment?.updateFiveRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateTenRuleFiveTableVisibility(View.VISIBLE)
-            rulesFragment?.updateBeadRuleTableVisibility(View.VISIBLE)
-            rulesFragment?.updateMultiplicationTablesVisibility(View.GONE)
-            rulesFragment?.setRulesTablePickerEnabled(true)
-            rulesFragment?.setOnRulesTableSelectedListener { selection ->
+            LessonRulesPanel.enableTablePicker(rulesFragment) { selection ->
                 applyRulesTableSelection(selection)
             }
         } else {
@@ -1463,7 +1261,7 @@ class BlindingLessonFragment : Fragment() {
                 lottieView.visibility = View.VISIBLE
                 lottieView.playAnimation()
             }
-            correctPanel.translationY = correctPanel.height.toFloat()
+            correctPanel.translationY = resultPanelHiddenY(correctPanel)
             correctPanel.visibility = View.VISIBLE
             correctPanel.alpha = 0f
 
@@ -1492,26 +1290,27 @@ class BlindingLessonFragment : Fragment() {
                     if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
+                            true
+                        }
+
+                        // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            com.example.app.homework.DepthPress.up(v)
                             true
                         }
 
                         MotionEvent.ACTION_UP -> {
                             if (globalPartId == 9) {
-                                v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(400)
-                                    .setInterpolator(BounceInterpolator())
-                                    .start()
+                                com.example.app.homework.DepthPress.up(v)
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 correctPanel.animate()
-                                    .translationY(correctPanel.height.toFloat())
+                                    .translationY(resultPanelHiddenY(correctPanel))
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                     .withEndAction {
@@ -1529,12 +1328,7 @@ class BlindingLessonFragment : Fragment() {
                                 addExitTouchBlocker()
                             }
                             currentIndex++
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
 
                             binding.root.postDelayed({
@@ -1548,7 +1342,7 @@ class BlindingLessonFragment : Fragment() {
                             }, 200)
 
                             correctPanel.animate()
-                                .translationY(correctPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(correctPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -1562,7 +1356,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                showQuestionPanel()
+                                finishLesson()
                             }
                             true
                         }
@@ -1583,9 +1377,10 @@ class BlindingLessonFragment : Fragment() {
         } else {
             // Yanlış cevap durumu
             playSound(R.raw.incorrect_answer_sound)
-            incorrectPanel.translationY = incorrectPanel.height.toFloat()
+            incorrectPanel.translationY = resultPanelHiddenY(incorrectPanel)
             incorrectPanel.visibility = View.VISIBLE
             incorrectPanel.alpha = 0f
+            bindReviewButton()
             binding.root.findViewById<View>(R.id.overlay).visibility = View.VISIBLE
 
             controlButton.isClickable = false
@@ -1609,29 +1404,32 @@ class BlindingLessonFragment : Fragment() {
                     if (isResultPanelAnimating) return@setOnTouchListener true
                     when (event.action) {
                         MotionEvent.ACTION_DOWN -> {
-                            v.animate()
-                                .scaleX(0.85f)
-                                .scaleY(0.85f)
-                                .setDuration(100)
-                                .setInterpolator(AccelerateDecelerateInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.down(v)
+                            true
+                        }
+
+                        // Kayınca basılı durum ve göçme birlikte değişsin (bkz. DepthPress.move).
+                        MotionEvent.ACTION_MOVE -> {
+                            com.example.app.homework.DepthPress.move(v, event)
+                            true
+                        }
+
+                        MotionEvent.ACTION_CANCEL -> {
+                            com.example.app.homework.DepthPress.up(v)
                             true
                         }
 
                         MotionEvent.ACTION_UP -> {
                             if (globalPartId == 9) {
-                                v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(400)
-                                    .setInterpolator(BounceInterpolator())
-                                    .start()
+                                com.example.app.homework.DepthPress.up(v)
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
-                                    .translationY(incorrectPanel.height.toFloat())
+                                    .translationY(resultPanelHiddenY(incorrectPanel))
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                     .withEndAction {
+                                        // Animasyon fragment kapandıktan sonra da bitebilir.
+                                        if (!isAdded || _binding == null) return@withEndAction
                                         incorrectPanel.visibility = View.GONE
                                         showLessonResultFalse()
                                     }
@@ -1641,39 +1439,29 @@ class BlindingLessonFragment : Fragment() {
                             if (isDailyQuestionMode) {
                                 v.isEnabled = false
                                 addExitTouchBlocker()
-                                v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(400)
-                                    .setInterpolator(BounceInterpolator())
-                                    .start()
+                                com.example.app.homework.DepthPress.up(v)
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
-                                    .translationY(incorrectPanel.height.toFloat())
+                                    .translationY(resultPanelHiddenY(incorrectPanel))
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                       .withEndAction {
                                           incorrectPanel.visibility = View.GONE
-                                          showQuestionPanel(isWrongDailyQuestion = true)
+                                          finishLesson(isWrongDailyQuestion = true)
                                       }
                                     .start()
                                 return@setOnTouchListener true
                             }
                             if (isRacePanelLesson()) {
-                                v.animate()
-                                    .scaleX(1f)
-                                    .scaleY(1f)
-                                    .setDuration(400)
-                                    .setInterpolator(BounceInterpolator())
-                                    .start()
+                                com.example.app.homework.DepthPress.up(v)
                                 binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
                                 incorrectPanel.animate()
-                                    .translationY(incorrectPanel.height.toFloat())
+                                    .translationY(resultPanelHiddenY(incorrectPanel))
                                     .setDuration(200)
                                     .setInterpolator(AccelerateInterpolator())
                                       .withEndAction {
                                           incorrectPanel.visibility = View.GONE
-                                          showQuestionPanel(isWrongRaceLesson = true)
+                                          finishLesson(isWrongRaceLesson = true)
                                       }
                                     .start()
                                 return@setOnTouchListener true
@@ -1681,12 +1469,7 @@ class BlindingLessonFragment : Fragment() {
                             if (isResultPanelAnimating) return@setOnTouchListener true
                             isResultPanelAnimating = true
                             currentIndex++
-                            v.animate()
-                                .scaleX(1f)
-                                .scaleY(1f)
-                                .setDuration(400)
-                                .setInterpolator(BounceInterpolator())
-                                .start()
+                            com.example.app.homework.DepthPress.up(v)
                             binding.root.findViewById<View>(R.id.overlay).visibility = View.GONE
 
                             binding.root.postDelayed({
@@ -1700,7 +1483,7 @@ class BlindingLessonFragment : Fragment() {
                             }, 700)
 
                             incorrectPanel.animate()
-                                .translationY(incorrectPanel.height.toFloat())
+                                .translationY(resultPanelHiddenY(incorrectPanel))
                                 .setDuration(200)
                                 .setInterpolator(AccelerateInterpolator())
                                 .withEndAction {
@@ -1714,7 +1497,7 @@ class BlindingLessonFragment : Fragment() {
                             if (currentIndex <= operations.size - 1) {
                                 showCurrentOperation()
                             } else {
-                                showQuestionPanel()
+                                finishLesson()
                             }
                             true
                         }
@@ -1816,17 +1599,21 @@ class BlindingLessonFragment : Fragment() {
 
 
     private fun setupAbacusController() {
+        // Animasyon süresi varsayılanda (300 ms) bırakılıyor: eskiden sandık (CHEST) türünde
+        // 50 ms'ydi ve boncuklar diğer derslerdekinden çok daha hızlı hareket ediyordu.
         abacusController = AbacusBeadController(
             context = requireContext(),
             root = binding.root,
-            animationDurationMs = if (lessonItem.type == 2) 50L else 300L,
         )
         abacusController.setup()
-        val density = resources.displayMetrics.density
-        abacusController.setBeadMarginOffsets(
-            savedBeadMarginBottomDp * density,
-            savedBeadMarginTopDp * density,
-        )
+        abacusController.onValueChanged = {
+            // Sıfırlamanın ara değerleri ve dizi dışındaki oynamalar kayda girmez.
+            if (flashMarks.isNotEmpty() && !abacusController.isResetInProgress() && flashLog.size < FLASH_LOG_MAX) {
+                val v = abacusController.getCurrentValue()
+                if (flashLog.lastOrNull() != v) flashLog += v
+            }
+        }
+        abacusSettings?.applyBeadOffsets(abacusController)
         ensureAbacusMetricsIfVisible()
         syncAbacusTouchEnabled()
     }
@@ -1860,7 +1647,7 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun stepAnswerAlgorithm(): Boolean {
-        if (operations.isEmpty()) {
+        if (currentIndex !in operations.indices) {
             return false
         }
         val currentOperation = operations[currentIndex]
@@ -1955,10 +1742,23 @@ class BlindingLessonFragment : Fragment() {
     private fun raceLessonPassed(): Boolean =
         totalQuestions > 0 && correctAnswer == totalQuestions
 
-    private fun showQuestionPanel(
+    /**
+     * Son soru (ya da dersi bitiren yanlış cevap) sonrası sonuç akışını başlatır.
+     *
+     * Eskiden önce ders sonu anketi ([QuestionPanelFragment]) açılıyor, aşağıdaki dallar anket
+     * kapanınca çalışıyordu. Anket artık yalnızca tutorial sonunda var
+     * ([TutorialQuestionPanelFragment]); buradan doğrudan sonuca geçiliyor.
+     *
+     * Anket araya girerken bu fragment gizleniyordu, ikinci bir dokunma buraya ulaşamıyordu.
+     * Artık öyle bir kalkan yok; ikinci çağrı ikinci bir sonuç ekranı açmasın diye kapı var.
+     */
+    private fun finishLesson(
         isWrongDailyQuestion: Boolean = false,
         isWrongRaceLesson: Boolean = false
     ) {
+        if (!isAdded || lessonFinishStarted) return
+        lessonFinishStarted = true
+
         releaseLaunchTouchBlocker()
         try {
             if (::runnable.isInitialized) {
@@ -1966,41 +1766,13 @@ class BlindingLessonFragment : Fragment() {
             }
         } catch (e: Exception) {}
 
-        val successRate = if (totalQuestions > 0) {
-            (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100
+        if (isWrongDailyQuestion) {
+            handleDailyQuestionWrongAnswer()
+        } else if (isWrongRaceLesson) {
+            showLessonResultFalse()
         } else {
-            0f
+            finishLessonAfterLastQuestion()
         }
-        val dersPuani = (successRate * 5f).toInt()
-        val worstCupTime = com.example.app.LessonManager.getLessonItem(mapFragmentStepIndex)?.worstCupTime ?: 0
-
-        val fragment = QuestionPanelFragment.newInstance(
-            correctAnswers = correctAnswer,
-            totalQuestions = totalQuestions,
-            successRate = successRate,
-            dersPuani = dersPuani,
-            globalPartId = globalPartId,
-            mapFragmentIndex = mapFragmentStepIndex,
-            lessonType = lessonItem.type,
-            currentTime = currentTime,
-            worstCupTime = worstCupTime
-        )
-
-        parentFragmentManager.setFragmentResultListener("questionPanelResult", viewLifecycleOwner) { _, _ ->
-            if (isWrongDailyQuestion) {
-                handleDailyQuestionWrongAnswer()
-            } else if (isWrongRaceLesson) {
-                showLessonResultFalse()
-            } else {
-                finishLessonAfterLastQuestion()
-            }
-        }
-
-        parentFragmentManager.beginTransaction()
-            .setCustomAnimations(R.anim.slide_in_left, R.anim.slide_out_right)
-            .add(R.id.abacusFragmentContainer, fragment)
-            .hide(this)
-            .commit()
     }
 
     private fun finishLessonAfterLastQuestion() {
@@ -2028,10 +1800,18 @@ class BlindingLessonFragment : Fragment() {
                 // Başarı oranını hesapla
                 val successRate = if (totalQuestions > 0) (correctAnswer.toFloat() / totalQuestions.toFloat()) * 100 else 0f
 
-                // Eğer başarı %50'den düşükse başarısız ekranına, değilse sandığa gönder
-                if (successRate < 50f) {
+                // Eğer başarı %75'ten düşükse başarısız ekranına, değilse sandığa gönder
+                if (successRate < 75f) {
                     showLessonResultFalse()
                 } else {
+                    // Haftalık kart için sandık süresi: Part 4–5 sandıkları ChestResult'a uğramıyor (puan
+                    // yok, sonuç LessonResult), süre kaydı burada. Arka planda ve ayrı belgeye; %80 eşiği
+                    // LessonMilestones içinde (geçiş eşiği 75, rekor eşiği 80 — bilerek ayrı).
+                    if (lessonItem.type == LessonItem.TYPE_CHEST) {
+                        LessonMilestones.recordChestRun(
+                            globalPartId, lessonItem.stableId, successRate, parseTimeToSeconds(currentTime),
+                        )
+                    }
                     showLessonResult()
                 }
             }
@@ -2052,14 +1832,88 @@ class BlindingLessonFragment : Fragment() {
             putFloat("successRate", successRate)
             putInt("dersPuani", dersPuani)
             putBoolean("isChestFailure", isChestFailure)
+            putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
+            // Tip bilgisi burada kesin; sonuç ekranında GlobalLessonData listesi asenkron
+            // yenilenmiş olabildiği için indeks aramasına güvenilmiyor.
+            putBoolean("isLessonTypeItem", lessonItem.type == LessonItem.TYPE_LESSON)
         }
     }
 
+    /**
+     * Kupa modunda (bölüm 9) can harcar ve ölçüme bildirir.
+     *
+     * Üç çağrı yeri var ve ikisi "yarışı yarıda bıraktı", biri "yanlış cevap verdi" demek.
+     * Ayrımı [spendSource] taşıyor: canların çoğu hangi yoldan gidiyor sorusu, duvarın
+     * çocuğu nerede vurduğunu söylüyor.
+     */
+    /**
+     * Yarışın sonucunu bir kez bildirir.
+     *
+     * Cevap verildikten sonra sonuç paneli açıkken geri tuşuna basılırsa bırakma dalı da
+     * çalışabiliyor; korumasız bırakılsa aynı yarış hem `loss` hem `quit` sayılır ve bırakma
+     * oranı olduğundan yüksek görünürdü.
+     */
+    private fun logCupRaceResultOnce(result: String) {
+        if (cupResultLogged) return
+        cupResultLogged = true
+        AnalyticsLogger.logCupRaceResult(result, cupModeName(), cupQuestionShape())
+    }
+
+    /**
+     * Sorunun şekli: kupa aralığı + basamak + sayı adedi + sayılar arası süre.
+     *
+     * Aynı modda bile soru kupa skoruna göre değişiyor ([CupRuleEngine]); mod tek başına
+     * "körleme zor" demekten öteye gitmiyor, hangi şeklin zor olduğunu söylemiyor.
+     *
+     * Aralık, skorun yüzlüğe yuvarlanmasıyla bulunuyor — tablodaki bütün aralıklar 100 geniş.
+     * `CupRuleEngine.resolveConfigs` körleme modunda tabloyu hiç kullanmıyor, aralığı formülle
+     * hesaplıyor; yüzlük yuvarlama iki yolda da doğru sonucu veriyor.
+     */
+    private fun cupQuestionShape(): String {
+        val floor = ((GlobalValues.currentLessonOldCupScore ?: 0) / 100) * 100
+        return "r${floor}" +
+            "_d${lessonItem.cupDigitSize ?: 0}" +
+            "_n${lessonItem.cupNumberCount ?: 0}" +
+            "_i${lessonItem.timePeriod ?: 0L}"
+    }
+
+    /**
+     * Kupa modunun ölçüm adı.
+     *
+     * Sıralama, delta atayan if/else zincirleriyle BİREBİR aynı: körleme birleşimleri önce
+     * kontrol ediliyor, yoksa `isBlinding` tek başına eşleşip çarpma/çıkarma modlarını yutar.
+     */
+    private fun cupModeName(): String = when {
+        lessonItem.isMultiplication == true && lessonItem.isBlinding == true -> "blinding_multiplication"
+        lessonItem.isMultiplication == true -> "multiplication"
+        lessonItem.isExtraction == true && lessonItem.isBlinding == true -> "blinding_extraction"
+        lessonItem.isExtraction == true -> "extraction"
+        lessonItem.isBlinding == true -> "blinding"
+        else -> "normal"
+    }
+
+    private fun spendCupEnergy(spendSource: String) {
+        val energyManager = (activity as? MainActivity)?.getEnergyManager() ?: return
+        energyManager.useEnergy(1)
+        AnalyticsLogger.logEnergySpent(
+            spendSource = spendSource,
+            energyLeft = energyManager.getCurrentEnergy(),
+            lessonsThisSession = EnergySessionCounter.bucket(),
+            partId = globalPartId,
+            lessonId = if (::lessonItem.isInitialized) lessonItem.stableId else null,
+        )
+    }
+
     private fun showLessonResultFalse(isChestFailure: Boolean = false) {
+        // Sonuç ekranları animasyon/gecikme geri çağrılarından da açılıyor; o sırada
+        // fragment kapanmış olabilir. [closeFragment] kendi kapısını koruyor ama buradaki
+        // doğrudan transaction'lar da aynı korumaya muhtaç.
+        if (!isAdded) return
+
         // Kupa modu: yanlış yapıldı — -5 delta bırak ve kapat
         if (globalPartId == 9) {
             // Delta ve Firestore yazma işlemi controlButtonListener'da optimistic UI olarak zaten yapıldı.
-            (activity as? MainActivity)?.getEnergyManager()?.useEnergy(1)
+            spendCupEnergy(AnalyticsLogger.ENERGY_SPEND_CUP_FAIL)
             closeFragment()
             return
         }
@@ -2071,8 +1925,8 @@ class BlindingLessonFragment : Fragment() {
         lessonResultFalse.arguments = lessonResultArgs(isChestFailure)
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .replace(R.id.abacusFragmentContainer, lessonResultFalse)
             .commit()
@@ -2102,14 +1956,15 @@ class BlindingLessonFragment : Fragment() {
             putInt("worstCupTime", worstCupTime)
             putFloat("carpan", carpan)
             putInt("toplamPuan", toplamPuan)
+            putLong("questionElapsedMs", System.currentTimeMillis() - questionSessionStartMs)
         }
         chestResultFragment.arguments = args
 
         // Yeni fragment'ı abacus container'a ekle
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out
             )
             .replace(R.id.abacusFragmentContainer, chestResultFragment)
             .commit()
@@ -2171,6 +2026,10 @@ class BlindingLessonFragment : Fragment() {
             return
         }
         
+        AnalyticsLogger.logDailyQuestionResult(
+            questionNo = dailyQuestionSlotIndex + 1,
+            isCorrect = false,
+        )
         DailyQuestionRepository.recordQuestionResult(requireContext(), periodKey, dailyQuestionSlotIndex, isSuccess = false)
         
         DailyQuestionRepository.markPendingDiamondContinue(
@@ -2195,6 +2054,10 @@ class BlindingLessonFragment : Fragment() {
             return
         }
         
+        AnalyticsLogger.logDailyQuestionResult(
+            questionNo = dailyQuestionSlotIndex + 1,
+            isCorrect = true,
+        )
         DailyQuestionRepository.recordQuestionResult(requireContext(), periodKey, dailyQuestionSlotIndex, isSuccess = true)
         
         DailyQuestionRepository.incrementSolvedCount(requireContext(), periodKey) { _ ->
@@ -2205,12 +2068,17 @@ class BlindingLessonFragment : Fragment() {
     }
 
     private fun showLessonResult() {
+        // Sonuç ekranları animasyon/gecikme geri çağrılarından da açılıyor; o sırada
+        // fragment kapanmış olabilir. [closeFragment] kendi kapısını koruyor ama buradaki
+        // doğrudan transaction'lar da aynı korumaya muhtaç.
+        if (!isAdded) return
+
         val lessonResultFragment = LessonResult()
         lessonResultFragment.arguments = lessonResultArgs()
         parentFragmentManager.beginTransaction()
             .setCustomAnimations(
-                R.anim.slide_in_left,
-                R.anim.slide_out_right,
+                R.anim.queue_screen_in,
+                R.anim.queue_screen_out,
             )
             .replace(R.id.abacusFragmentContainer, lessonResultFragment)
             .commit()
@@ -2223,17 +2091,34 @@ class BlindingLessonFragment : Fragment() {
         currentSequenceIndex = 0
         isShowingSequence = true
         controlButton.isEnabled = false
-        controlButton.setBackgroundColor(resources.getColor(R.color.button_disabled, null))
         controlButton.setTextColor(resources.getColor(R.color.button_text_disabled, null))
 
+        flashLog.clear()
+        flashMarks.clear()
         numberText.text = currentSequence[0].toString()
+        markFlashNumber()
         currentSequenceIndex = 1
         handler.postDelayed(showNextNumberRunnable, lessonItem.timePeriod ?: 1000L)
     }
 
+    /** Sonuç panelinin gizliyken durduğu öteleme: gezinme çubuğunun da altında. */
+    private fun resultPanelHiddenY(panel: View): Float =
+        navBarPanelExtension?.hiddenTranslation(panel) ?: panel.height.toFloat()
+
     override fun onDestroyView() {
+        navBarPanelExtension?.detach()
+        navBarPanelExtension = null
+        if (!hasSubmittedAnyAnswer && ::lessonItem.isInitialized && isLessonSuccessRateScope()) {
+            LessonSuccessRateRepository.recordAbandonWithoutAnswer(
+                globalPartId,
+                mapFragmentStepIndex,
+                lessonItem.currentStep,
+            )
+        }
         stopLearningSessionTracking()
         releaseLaunchTouchBlocker()
+        abacusSettings?.detach()
+        abacusSettings = null
         super.onDestroyView()
         stopSequencePlayback()
         // Bu fragment'in kendi handler'ına planlanmış tüm gecikmeli işleri iptal et;
@@ -2461,14 +2346,7 @@ class BlindingLessonFragment : Fragment() {
         when (content.requiredClickTarget) {
             rulesBookButton -> openRulesBook()
             rulesPanelButton -> openRulesPanelTableForGuide()
-            binding.skipStepButton -> {
-                if (isShowingSequence) {
-                    binding.skipStepButton.playAnimation()
-                    handler.removeCallbacks(showNextNumberRunnable)
-                    handler.removeCallbacks(sequenceRevealRunnable)
-                    onSequenceRevealStep()
-                }
-            }
+            binding.skipStepButton -> skipToNextSequenceNumber()
         }
         if (content.requiredClickAdvancesGuide) {
             when (content.requiredClickTarget) {
@@ -2749,7 +2627,7 @@ class BlindingLessonFragment : Fragment() {
         val content = guideContentList[index]
         
         // ImageView ve TextView içeriğini güncelle
-        ivGuideImage.setImageResource(content.imageResource)
+        binding.guidePanelInclude.guideMascot.play(content.emote)
         applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle
@@ -2791,7 +2669,7 @@ class BlindingLessonFragment : Fragment() {
         val content = guideContentList[index]
         
         // ImageView ve TextView içeriğini güncelle
-        ivGuideImage.setImageResource(content.imageResource)
+        binding.guidePanelInclude.guideMascot.play(content.emote)
         applyGuideTextAndSound(content)
         
         // Adım göstergesini güncelle
@@ -3029,7 +2907,7 @@ class BlindingLessonFragment : Fragment() {
             val widthToUse = if (panelWidth > 0) panelWidth else panelContent.rootView.width
             
             // Panel'i ekranın soluna taşı (genişliği kadar sola)
-            panelContent.translationX = -widthToUse.toFloat()
+            panelContent.translationX = -widthToUse.toFloat() * RtlSupport.endSign(panelContent)
             
             // Şimdi panel'i görünür yap
             panelContent.visibility = View.VISIBLE
@@ -3060,7 +2938,7 @@ class BlindingLessonFragment : Fragment() {
         
         // Sola kayarak gizle
         panelContent.animate()
-            .translationX(-panelWidth.toFloat())
+            .translationX(-panelWidth.toFloat() * RtlSupport.endSign(panelContent))
             .setDuration(300)
             .setInterpolator(AccelerateDecelerateInterpolator())
             .withEndAction {

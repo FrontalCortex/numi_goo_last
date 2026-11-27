@@ -20,21 +20,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 class LessonResultFalse : Fragment() {
     private var _binding: FragmentLessonResultFalseBinding? = null
     private val binding get() = _binding!!
-    private val animations = listOf(
-        "animation_one.json",
-        "animaton_two.json",
-        "animaton_three.json",
-        "animaton_four.json",
-        "animaton_five.json",
-        "animaton_six.json",
-        "animaton_eight.json",
-        "animaton_nine.json",
-        "animaton_ten.json",
-        "animaton_eleven.json",
-        "animaton_twelve.json",
-        "animaton_thirteen.json"
-    )
-    private var currentAnimIndex = 0
     private var correctAnswers: Int = 0
     private var totalQuestions: Int = 0
     private var succsessRate: Float = 0F
@@ -42,21 +27,77 @@ class LessonResultFalse : Fragment() {
     private var lessonScore: Int = 0
     private var isChestFailure: Boolean = false
     private var failRecorded: Boolean = false
+    /** Bu başarısızlık ekranı türü LESSON olan bir item'dan mı geldi? Args ile geliyor. */
+    private var isLessonTypeItem: Boolean = false
 
     private lateinit var loginLauncher: ActivityResultLauncher<Intent>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         loginLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
-            val main = activity as? MainActivity
-            if (isAdded) {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .remove(this@LessonResultFalse)
-                    .commitNowAllowingStateLoss()
-            }
-            main?.prepareMapReturnAfterLessonClaim()
-            main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.loginReturn")
+            closeWithSlideAndReturnToMap("LessonResultFalse.loginReturn")
         }
+    }
+
+    /**
+     * Ekranı sola kaydırarak kapatır ve haritaya döner.
+     *
+     * ## Neden kayarak
+     * Bu ekran haritaya ANINDA dönüyordu; zincirdeki diğer ekranlar (sandık, sonuç,
+     * rozet) kayarak gidiyor ve tek sert kesme buydu.
+     *
+     * ## Zemin neden önce kalkıyor
+     * Kayma sırasında ekranın arkasında harita duruyor. Zemin ancak animasyon bittikten
+     * sonra kalksaydı kullanıcı önce haritayı görür, sonra zemin üstünü kapatır, sonra
+     * tekrar açılırdı — [LessonResult]'ta düzeltilen sorunun aynısı. Bu yüzden zemin
+     * kaymadan ÖNCE kaldırılıyor.
+     *
+     * ## Yedek yol
+     * Animasyon kesintiye uğrarsa (arka plana alma, view'ın penceresinden kopması)
+     * `withEndAction` hiç çalışmayabiliyor; gecikmeli çağrı haritaya dönüşü garantiye
+     * alıyor. İki yoldan hangisi önce gelirse o çalışıyor, ikincisi yok sayılıyor.
+     *
+     * Görünüm yoksa (login dönüşünde view yok edilmiş olabilir) kaydıracak bir şey de
+     * yok: eski davranışa, anında dönüşe düşüyor.
+     */
+    private fun closeWithSlideAndReturnToMap(caller: String) {
+        val main = activity as? MainActivity
+        var mapReturnHandled = false
+        val completeMapReturn: () -> Unit = {
+            if (!mapReturnHandled) {
+                mapReturnHandled = true
+                if (isAdded) {
+                    requireActivity().supportFragmentManager.beginTransaction()
+                        .remove(this@LessonResultFalse)
+                        .commitNowAllowingStateLoss()
+                }
+                main?.prepareMapReturnAfterLessonClaim()
+                // LessonResultFalse hem lesson hem chest/race başarısızlığı için
+                // kullanılıyor; kararı tek kaynaktan (item türü) veriyoruz.
+                main?.finalizeMapReturnAfterLessonClaim(
+                    caller,
+                    isLessonTypeReturn = isLessonTypeItem,
+                )
+            }
+        }
+        val rootView = _binding?.root
+        if (rootView == null || !isAdded) {
+            completeMapReturn()
+            return
+        }
+        main?.raisePostLessonBackdropForHandoff(caller)
+        rootView.animate()
+            .translationX(-rootView.width.toFloat() * RtlSupport.endSign(rootView))
+            .setDuration(EXIT_ANIM_DURATION_MS)
+            .withEndAction { completeMapReturn() }
+            .start()
+        android.os.Handler(android.os.Looper.getMainLooper())
+            .postDelayed({ completeMapReturn() }, EXIT_ANIM_DURATION_MS + 300L)
+    }
+
+    private companion object {
+        /** Çıkış kaymasının süresi; zincirdeki diğer ekranlarla aynı. */
+        const val EXIT_ANIM_DURATION_MS = 400L
     }
 
     override fun onCreateView(
@@ -77,6 +118,8 @@ class LessonResultFalse : Fragment() {
             correctAnswers = bundle.getInt("correctAnswers", 0)
             totalQuestions = bundle.getInt("totalQuestions", 0)
             isChestFailure = bundle.getBoolean("isChestFailure", false)
+            // Dersi başlatan fragment'tan geliyor (indeks aramasına güvenilmiyor).
+            isLessonTypeItem = bundle.getBoolean("isLessonTypeItem", false)
             Log.d("mesi","$correctAnswers, $totalQuestions")
             succsessRate = if (totalQuestions > 0) {
                 (correctAnswers.toFloat() / totalQuestions.toFloat()) * 100
@@ -96,21 +139,24 @@ class LessonResultFalse : Fragment() {
                     GlobalLessonData.globalPartId,
                     GlobalValues.mapFragmentStepIndex,
                     item.currentStep,
+                    succsessRate,
                 )
             }
         }
 
         val prefs = requireContext().getSharedPreferences("AppPrefs", Context.MODE_PRIVATE)
 
-        binding.claimButton.setOnClickListener {
+        // Göçen düğme (bg_depth_result_continue): basılıyken dudak kadar iner.
 
-            if (GlobalValues.currentTutorialNumber == 1) {
-                FirstTutorialShownStore.markShown(requireContext(), "LessonResultFalse.claim")
-            }
+        com.example.app.homework.DepthPress.attach(binding.claimButton)
+
+        binding.claimButton.setOnClickListener {
 
             // Tutorial 1'de bu açılışta sadece 1 kez: login start ekranına yönlendir (aynı açılışta tekrar gelmesin)
             if (GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.getInstance().currentUser == null) {
                 GlobalValues.currentTutorialNumber = 0
+
+                // Seri kurulumu artık kayıt akışının içinde (bkz. UserInfoFragment).
                 loginLauncher.launch(
                     Intent(requireContext(), LoginStartActivity::class.java)
                         .putExtra(LoginStartActivity.EXTRA_BLOCK_BACK, true)
@@ -118,18 +164,11 @@ class LessonResultFalse : Fragment() {
                 return@setOnClickListener
             }
 
-            val main = activity as? MainActivity
-            if (isAdded) {
-                requireActivity().supportFragmentManager.beginTransaction()
-                    .remove(this@LessonResultFalse)
-                    .commitNowAllowingStateLoss()
-            }
-            main?.prepareMapReturnAfterLessonClaim()
-            main?.finalizeMapReturnAfterLessonClaim("LessonResultFalse.claim")
+            closeWithSlideAndReturnToMap("LessonResultFalse.claim")
         }
 
         // Animasyonları başlat
-        showRandomAnimation()
+        playEndMascot()
 
 
     }
@@ -149,24 +188,19 @@ class LessonResultFalse : Fragment() {
         binding.totalScore.text = lessonScore.toString()
         
         if (isChestFailure) {
-            binding.resultTitleComment.text = "Puan 500'den düşük!"
+            binding.resultTitleComment.text = appString(R.string.ui_puan_500_den_dusuk)
         } else {
-            binding.resultTitleComment.text = "Başarı oranı %80'den düşük!"
+            binding.resultTitleComment.text = appString(R.string.ui_basari_orani_75_ten_dusuk)
         }
-
-        // Başarı durumuna göre farklı animasyon gösterebilirsiniz
-        /*if (correctAnswers >= totalQuestions * 0.8) { // %80 ve üzeri başarı
-            binding.lottieView.setAnimation("success.json")
-        } else {
-            binding.lottieView.setAnimation("try_again.json")
-        }
-        binding.lottieView.playAnimation()*/
     }
 
-    private fun showRandomAnimation() {
-        val randomAnim = animations.random()
-        binding.lottieView.setAnimation(randomAnim)
-        binding.lottieView.playAnimation()
+    /**
+     * Ders sonu Sobi'si: başarısız derste hep üzgün → kararlı ([LessonEndMascot]).
+     * Ekran sağdan kayarak girerken Sobi bekliyor; giriş bitince sahne başlıyor.
+     */
+    private fun playEndMascot() {
+        val emote = LessonEndMascot.FAILURE
+        binding.mascotView.postDelayed({ _binding?.mascotView?.play(emote) }, LessonEndMascot.ENTER_DELAY_MS)
     }
 
 

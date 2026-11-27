@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ulaşılmış eşik satırının zemini.
+
+  Referans tasarımdaki açık mavi bant BİLEREK alınmadı: uygulamanın tamamı koyu
+  (@color/background_color) ve araya açık bir bant girseydi ekran geri kalanından kopuk
+  dururdu. Aynı işi zeminin bir tık açılması görüyor — sınır tek bakışta okunuyor,
+  ekran kendi kimliğinde kalıyor.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#18262F" />
+</shape>

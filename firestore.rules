@@ -25,6 +25,80 @@ service cloud.firestore {
       return request.resource.data.diff(resource.data).affectedKeys();
     }
 
+    // İstek atanın kullanıcı dokümanı. isTeacher() ile aynı yol: kurallar aynı get()'i bir
+    // istekte bir kez okur, ikinci çağrı ek okuma maliyeti çıkarmaz.
+    function myUser() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // ── Soru havuzları (kurs sınıfları, bkz. functions/classes.js) ──────────
+    //
+    // Kurs öğretmeni (`courseId` dolu) yalnızca kendi sınıflarının sorularını görür; genel
+    // havuzu ancak `helpsGeneralPool` açıksa. Kursu olmayan öğretmen yalnızca genel havuzu.
+    // Sorunun havuzunu askTeacherQuestion yazar, kimse sonradan değiştiremez.
+    function seesGeneralPool() {
+      return myUser().get('courseId', null) == null
+        || myUser().get('helpsGeneralPool', false) == true;
+    }
+
+    // Öğretmen bu soruya erişebilir mi: sahiplendiği, sınıfının, ya da görebildiği genel
+    // havuzdaki soru.
+    //
+    // DİKKAT — `q.pool == 'general'` KATI yazılmalı, `q.get('pool', 'general')` DEĞİL.
+    // Kurallar bir liste sorgusunu dokümanlara bakmadan, sorgunun filtrelerinden kanıtlıyor;
+    // `pool`'u filtrelemeyen bir sorguda motor alanı "yok" varsayıp varsayılanı kullanıyor ve
+    // sorguyu KABUL ediyor. Yani varsayılanlı yazımda genel öğretmen `status == pending`
+    // (ya da başkasının uid'siyle `classTeacherUids`) sorgusuyla bütün sınıf sorularını
+    // listeleyebiliyordu (emülatörde görüldü, bkz. firestore-rules-tests/class-pools.test.mjs).
+    // Bedeli: `pool` alanı olmayan eski sorular okuma ayrımı açılınca yalnızca sahiplenen
+    // öğretmene açık; bekleyenler bu yüzden önce işaretleniyor (tools/kurs/eski_sorulari_isaretle.js).
+    function teacherReaches(q) {
+      return isTeacher() && (
+        q.get('claimedByTeacherUid', null) == request.auth.uid
+        || request.auth.uid in q.get('classTeacherUids', [])
+        || (q.pool == 'general' && seesGeneralPool())
+      );
+    }
+
+    // Yazma (sahiplenme, çözme) için: yukarıdakine ek olarak `pool` alanı olmayan eski soru
+    // genel sayılır. Burada güvenli, çünkü yazım TEK dokümanda değerlendiriliyor; sorgu
+    // kanıtındaki gevşeklik yok. Bu dal olmasaydı deploy ile eski soruların işaretlenmesi
+    // arasındaki dakikalarda bekleyen eski sorular sahiplenilemezdi.
+    function teacherMayWrite(q) {
+      return teacherReaches(q)
+        || (isTeacher() && !('pool' in q) && seesGeneralPool());
+    }
+
+    // OKUMA AYRIMININ AÇMA ANAHTARI: `system/questionPools.enforced`.
+    //
+    // Kurallar sorguyu süzmez; bir sorgu izinsiz tek bir dokümana bile çarpabiliyorsa
+    // TAMAMEN reddedilir. Eski öğretmen sürümü (≤15) havuzu `status == pending` ile, havuz
+    // filtresi olmadan dinliyor — ayrım hemen açılsaydı o öğretmenlerin havuzu boş kalırdı.
+    // Bu yüzden okuma ayrımı, öğretmenler yeni sürüme geçince Console'dan (ya da
+    // tools/kurs/havuz_ayrimi.js ile) açılıyor. Kapalıyken onaylı her öğretmen eskisi gibi
+    // her soruyu okuyabilir; YAZMA (sahiplenme, mesaj) her durumda ayrıma tabi.
+    function questionPoolsEnforced() {
+      return exists(/databases/$(database)/documents/system/questionPools)
+        && get(/databases/$(database)/documents/system/questionPools).data.get('enforced', false) == true;
+    }
+
+    function teacherCanRead(q) {
+      return isTeacher() && (!questionPoolsEnforced() || teacherReaches(q));
+    }
+
+    // Öğretmen bu öğrencinin sınıfında mı (ilerleme raporu için). Liste öğrencinin
+    // dokümanında, yalnızca sunucu yazar (classes.membershipFields).
+    function isTeacherOfStudent(userId) {
+      return isTeacher()
+        && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.get('classTeacherUids', []);
+    }
+
+    // Bir sorunun dokümanı — mesaj alt koleksiyonu kurallarında tekrar tekrar get()
+    // yazmamak için.
+    function questionOf(questionId) {
+      return get(/databases/$(database)/documents/questions/$(questionId)).data;
+    }
+
     // ── Kullanıcılar ───────────────────────────────────────────────────────
     //
     // OKUMA: Yalnızca kişinin kendisi ve onaylı öğretmenler.
@@ -48,13 +122,33 @@ service cloud.firestore {
           'keys', 'currency',            // cüzdan → yalnız updateUserWallet / satın alma CF'leri
           'walletGuard', 'rewardGuard',  // ödül tavanı sayaçları
           'energy_full_time',            // can → yalnız spendEnergy/claimAdEnergy/buyEnergyWithKeys
+          'questionCredits',             // danışma kredisi → yalnız satın alma / askTeacherQuestion
+          'sobiCredits',                 // Sobi kredisinin gösterim kopyası → yalnız satın alma / sobiChat
           'teacherApproved',             // öğretmen onayı → yalnız admin
-          'plan', 'planExpiresAt', 'planProductId', // yalnız doğrulanmış Play aboneliği
+          'admin',                       // admin yetkisi → yalnız Console (syncTeacherClaim claim'e kopyalar)
+          // yalnız doğrulanmış Play aboneliği
+          'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
+          'planTrialEndsAt',             // deneme bitişi → yalnız syncSubscriptionForToken
+          'giftProUntil', 'giftProSource', // yayın hediyesi → yalnız grantLaunchGiftOnSignup
           'followersCount', 'followingCount',       // yalnız takip trigger'ı (bkz. onFollowerWrite)
+          'longestStreak',               // en uzun seri → yalnız submitStreakDay
           'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
           'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
-          'restrictedAt', 'restrictedByUid'
+          'restrictedAt', 'restrictedByUid',
+          'parentalConsentAt', 'parentalConsentVersion', // veli onayı → yalnız onay CF'leri
+          // Kurs: öğrencinin sınıf üyeliği (sınıf CF'leri) ve öğretmenin kursu (yönetici).
+          // Öğrenci yazabilseydi sorusunu istediği öğretmene düşürür, öğretmen yazabilseydi
+          // kendini bir kursa bağlayıp sınıf açabilirdi.
+          'classId', 'courseId', 'classTeacherUids', 'classJoinedAt'
         ];
+      }
+
+      // 13 yaş altı hesabı yalnızca sunucu, veli onayıyla açar (functions/index.js "Veli
+      // onayı"). Elimizde yalnız doğum yılı var; "UTC yılı − doğum yılı ≤ 13" olan çocuk
+      // hâlâ 12 yaşında olabileceği için temkinli tarafta kalıyoruz. Uygulamadaki
+      // ParentalConsentPolicy ve sunucudaki requiresParentalConsent aynı formülü kullanıyor.
+      function noUnconsentedChild(year) {
+        return request.time.year() - year > 13;
       }
 
       allow read: if isSelf(userId) || isTeacher();
@@ -67,19 +161,23 @@ service cloud.firestore {
         && request.resource.data.currency == 0
         // keys/currency yukarıda değeriyle sabitlendi; geri kalan sunucu alanları yasak.
         && !request.resource.data.keys().hasAny([
-             'walletGuard', 'rewardGuard', 'energy_full_time', 'teacherApproved',
-             'plan', 'planExpiresAt', 'planProductId',
-             'followersCount', 'followingCount',
+             'walletGuard', 'rewardGuard', 'energy_full_time', 'questionCredits', 'sobiCredits', 'teacherApproved', 'admin',
+             'plan', 'planExpiresAt', 'planProductId', 'planPurchaseTokenHash',
+             'planTrialEndsAt', 'giftProUntil', 'giftProSource',
+             'followersCount', 'followingCount', 'longestStreak',
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
              'restrictionMessageType', 'restrictionMediaUrl', 'restrictionThumbnailUrl',
-             'restrictedAt', 'restrictedByUid'
+             'restrictedAt', 'restrictedByUid',
+             'parentalConsentAt', 'parentalConsentVersion',
+             'classId', 'courseId', 'classTeacherUids', 'classJoinedAt'
            ])
         // birthYear yalnızca KAYIT ANINDA yazılabilir (reklam yaş koruması bu alana bakıyor);
         // sonradan değiştirilemez, bkz. aşağıdaki update kuralı.
         && (!('birthYear' in request.resource.data)
             || (request.resource.data.birthYear is int
                 && request.resource.data.birthYear > 1900
-                && request.resource.data.birthYear < 2100));
+                && request.resource.data.birthYear < 2100
+                && noUnconsentedChild(request.resource.data.birthYear)));
 
       // birthYear reklam yaş korumasını (TFCD/TFUA) belirlediği için BİR KEZ yazılabilir,
       // sonra DEĞİŞTİRİLEMEZ. Aksi halde çocuk, doğum yılını büyüterek çocuk korumasından
@@ -90,7 +188,8 @@ service cloud.firestore {
           || (!('birthYear' in resource.data)
               && request.resource.data.birthYear is int
               && request.resource.data.birthYear > 1900
-              && request.resource.data.birthYear < 2100);
+              && request.resource.data.birthYear < 2100
+              && noUnconsentedChild(request.resource.data.birthYear));
       }
 
       allow update: if
@@ -98,7 +197,11 @@ service cloud.firestore {
         (isSelf(userId)
           && !changed().hasAny(serverOnlyFields())
           && !changed().hasAny(['userId', 'uid', 'email', 'createdAt', 'role'])
-          && birthYearSetOnce())
+          && birthYearSetOnce()
+          // Avatar başkalarının ekranında çiziliyor (publicProfiles); kısa bir metin olmalı.
+          && (!changed().hasAny(['avatarConfig'])
+              || (request.resource.data.avatarConfig is string
+                  && request.resource.data.avatarConfig.size() < 400)))
         // Onaylı öğretmen: yalnızca kısıtlama/yasaklama alanları.
         || (isTeacher() && changed().hasOnly([
              'banned', 'restrictedUntil', 'restrictionReason', 'restrictionMessagePreview',
@@ -120,20 +223,230 @@ service cloud.firestore {
     }
 
     // Kullanıcının kendi alt koleksiyonları (lessonProgress, missionProgress, dailyQuestion vb.)
+    //
+    // ALTI ALT KOLEKSİYON BU KURALIN DIŞINDA, çünkü altısını da yalnızca sunucu üretebilmeli:
+    //   • `badgeProgress`   — sezon madalyaları
+    //   • `cupPathRewards`  — kupa yolunda hangi sandığın alındığı defteri
+    //   • `cupWayProgress`  — kupa puanı
+    //   • `cupHistory`      — kupa puanının günlük geçmişi
+    //   • `streak`          — günlük seri sayacı ve toplanan kilometre taşları
+    //   • `notifyLedger`    — bildirim gönderim/açılma sayaçları
+    //   • `weeklyStats`     — haftalık ilerleme kartının anlık kayıtları (snapshotWeeklyStats)
+    // Ayrı kuralları aşağıda. (Firestore kuralları VEYA'lı: daha özel bir eşleşme, geniş bir
+    // kuralın verdiği izni GERİ ALAMAZ — bu yüzden istisna burada, kaynağında yazılı olmak
+    // zorunda.)
     match /users/{userId}/{subcollection}/{document=**} {
-      allow read, write: if isSelf(userId);
+      allow read: if isSelf(userId);
+      allow write: if isSelf(userId)
+        && !(subcollection in [
+          'badgeProgress', 'cupPathRewards', 'cupWayProgress', 'cupHistory', 'streak',
+          'notifyLedger', 'weeklyStats'
+        ]);
     }
 
-    // Rozet, Kupa Yolu ve Ders İlerlemesi: başkasının profilini görüntülemek için okunabilir.
-    // Bu dokümanlar kişisel veri içermez (yalnızca ilerleme sayaçları).
-    match /users/{userId}/badgeProgress/{doc} {
-      allow read: if isSignedIn();
+    // Haftalık ilerleme kartının anlık kayıtları: Pazartesi sunucu yazıyor (snapshotWeeklyStats).
+    // İstemci yazamaz — kart "geçen hafta → bu hafta" kıyasını bunlarla yapacak ve paylaşılabilir
+    // olacak; kendi geçmişini elle düzeltmek kartı yalana çevirirdi. Okuma yalnızca sahibine
+    // (kart, çocuğun kendi uygulamasında veliye/çocuğa gösteriliyor). Silme hesap silme akışı için.
+    match /users/{userId}/weeklyStats/{week} {
+      allow read: if isSelf(userId);
+      allow create, update: if false;
+      allow delete: if isSelf(userId);
     }
+
+    // Rozet ilerlemesi: başkasının profilini görüntülemek için okunabilir.
+    //
+    // YAZMA İKİYE BÖLÜNDÜ. Bu dokümanda iki farklı sahibi olan alanlar bir arada duruyor:
+    //
+    //   • İlerleme sayaçları (`user*Progress`, seri alanları): istemci hesaplıyor ve yazıyor.
+    //   • SEZON ÖDÜLLERİ (`goldMedalPiece`, `silverMedalPiece`, `bronzeMedalPiece`,
+    //     `cupPiece`): sezon sonunda finalizeSeasonLeaderboardMedals (Admin SDK, kuralları
+    //     atlar) yazıyor.
+    //
+    // İkincisi istemciye açık kalamaz. Liderlik tahtaları ve girişleri zaten kapalı ve skor
+    // yalnızca submitLeaderboardScore üzerinden yazılıyor; ama ÖDÜLÜN İNDİĞİ doküman açık
+    // olsaydı bir kullanıcı hiç yarışmadan kendine her sezon için altın madalya yazabilirdi —
+    // rozetler başkalarının profilinde de göründüğü için bunun bir karşılığı da var.
+    //
+    // `pendingLeaderboardRewardSeason` bilerek AÇIK: ödülü toplayan istemci onu siliyor
+    // (MainActivity.onSeasonLeaderboardBadgeCelebrationFinished). Uydurulması zararsız,
+    // çünkü kutlama kuyruğu madalya SATIRLARINDAN üretiliyor: satır yoksa kapı boş açılıp
+    // kendini kapatıyor.
+    match /users/{userId}/badgeProgress/{doc} {
+      // finalizeSeasonLeaderboardMedals'ın yazdığı, istemcinin dokunamayacağı alanlar.
+      function seasonAwardFields() {
+        return ['goldMedalPiece', 'silverMedalPiece', 'bronzeMedalPiece', 'cupPiece'];
+      }
+
+      // ── Sayaçların korunması ──────────────────────────────────────────
+      //
+      // İlerleme sayaçlarını istemci hesaplıyor, çünkü girdileri (ders bitirme, günlük soru)
+      // de istemcide. Sunucuya taşımak sorunu çözmezdi: sunucunun doğrulayacak bir şeyi yok,
+      // yalnızca aynı güveni başka bir yere taşırdık.
+      //
+      // Bu yüzden kural, yazmayı engellemek yerine ŞEKLİNİ kısıtlıyor:
+      //   • Sayaçlar geri gidemez  → "sıfırla, baştan çiftle" tekrarı kapanıyor.
+      //   • Tek yazımda en fazla COUNTER_MAX_STEP artabilir → "99999 yaz" tek hamlede
+      //     bitiyor; rozeti doldurmak için onlarca kasıtlı yazım gerekiyor.
+      //
+      // KUPA TABANLI ROZETLER AYRI: onların kaynağı sunucunun yazdığı kupa puanı, yani
+      // gerçekten doğrulanabiliyorlar. Aşağıda kupa zirvesiyle karşılaştırılıyorlar.
+      //
+      // Rozetler para vermiyor; kazanç yalnızca profilde görünen bir rozet. Bu yüzden
+      // "tam koruma" değil "ucuz ve oransal koruma" hedefleniyor.
+
+      function COUNTER_MAX_STEP() { return 10; }
+
+      /** Kupa puanının zirvesini saklayan rozetler. */
+      function cupCounterFields() {
+        return [
+          'userDinoProgress', 'userCrocodileProgress', 'userGoatProgress',
+          'userEagleProgress', 'userFlyProgress', 'userTurtleProgress',
+        ];
+      }
+
+      /**
+       * Bir sayaç geri gitmiyor ve adım sınırını aşmıyor mu.
+       *
+       * Alan dokümanda HENÜZ YOKSA serbest: hesabın ilk yazımı sıfırdan başlıyor ve
+       * sınırlamanın oraya bir faydası yok.
+       */
+      function counterOk(field) {
+        return !(field in resource.data)
+          || (request.resource.data.get(field, 0) >= resource.data.get(field, 0)
+              && request.resource.data.get(field, 0)
+                 <= resource.data.get(field, 0) + COUNTER_MAX_STEP());
+      }
+
+      function activityCountersOk() {
+        return counterOk('userDartProgress')
+          && counterOk('userKarateProgress')
+          && counterOk('userGolfProgress')
+          && counterOk('userBowlingProgress')
+          && counterOk('userFishingProgress')
+          && counterOk('userRocketProgress')
+          && counterOk('userTornadoProgress')
+          && counterOk('userVolcanoProgress');
+      }
+
+      /**
+       * Kupa yolu ilerlemesi — tek yerden okunup altı rozete birden bakılıyor.
+       *
+       * `max_*` alanlarını submitCupResult yazıyor ve koleksiyon istemciye kapalı, yani bu
+       * sayı uydurulamaz. Rozet tanım gereği kupa puanının zirvesi olduğu için meşru yazım
+       * her zaman bu sınırın altında kalıyor.
+       *
+       * Doküman yoksa boş map dönülüyor: o kullanıcının hiç kupa sonucu yok demektir, yani
+       * sıfırdan büyük bir kupa rozeti de olamaz.
+       */
+      function cupPeaks() {
+        return exists(/databases/$(database)/documents/users/$(userId)/cupWayProgress/progress)
+          ? get(/databases/$(database)/documents/users/$(userId)/cupWayProgress/progress).data
+          : {};
+      }
+
+      function cupCounterOk(field, cupField, peaks) {
+        return !(field in request.resource.data)
+          || request.resource.data.get(field, 0) <= peaks.get('max_' + cupField, 0);
+      }
+
+      function cupCountersOk(peaks) {
+        return cupCounterOk('userDinoProgress', 'addition_abacus_cup', peaks)
+          && cupCounterOk('userCrocodileProgress', 'extraction_abacus_cup', peaks)
+          && cupCounterOk('userGoatProgress', 'impact_abacus_cup', peaks)
+          && cupCounterOk('userEagleProgress', 'blinding_addition_abacus_cup', peaks)
+          && cupCounterOk('userFlyProgress', 'blinding_extraction_abacus_cup', peaks)
+          && cupCounterOk('userTurtleProgress', 'blinding_impact_abacus_cup', peaks);
+      }
+
+      allow read: if isSignedIn();
+      // Doküman yokken: ödül alanları hiç gönderilmemeli (changed() burada kullanılamaz,
+      // resource.data yok). Sayaç kuralları da burada işlemiyor; ilk yazım zaten sıfırdan
+      // başlıyor, kupa rozetleri ise yine zirveyle sınırlı.
+      allow create: if isSelf(userId)
+        && !request.resource.data.keys().hasAny(seasonAwardFields())
+        && (!request.resource.data.keys().hasAny(cupCounterFields())
+            || cupCountersOk(cupPeaks()));
+      allow update: if isSelf(userId)
+        && !changed().hasAny(seasonAwardFields())
+        && activityCountersOk()
+        // get() yalnızca gerçekten kupa rozeti değiştiyse çalışsın; && kısa devre yapıyor.
+        && (!changed().hasAny(cupCounterFields())
+            || cupCountersOk(cupPeaks()));
+      // Hesap silme akışı (AccountDeletionHelper) bu dokümanı siliyor.
+      allow delete: if isSelf(userId);
+    }
+
     match /users/{userId}/cupWayProgress/{doc} {
       allow read: if isSignedIn();
     }
+
+    // Kupa yolu sandık defteri: her yolda en son hangi kupa eşiğinin ödülü alındığı.
+    //
+    // YAZMA TAMAMEN KAPALI. Defteri yalnızca claimCupPathChest (Admin SDK, kuralları atlar)
+    // ilerletiyor ve bunu sandığı verdiği transaction'ın içinde yapıyor.
+    //
+    // SİLME DE KAPALI — bu önemli: defteri silebilen biri `lastClaimed`'i başlangıca
+    // döndürüp bütün eşikleri yeniden ödetebilirdi. Hesap silindiğinde temizliği
+    // cleanupUserOnDelete yapıyor (recursiveDelete, Admin SDK).
+    //
+    // Okuma yalnızca sahibine: ilerleme çubuğu ve kupa yolu ekranı bu defteri gösteriyor.
+    // Başkasının kaçıncı sandığı aldığını görmesi gerekmiyor.
+    match /users/{userId}/cupPathRewards/{doc} {
+      allow read: if isSelf(userId);
+      allow write: if false;
+    }
+
+    // Günlük seri: sayaç, en uzun seri ve toplanan kilometre taşları.
+    //
+    // YAZMA TAMAMEN KAPALI. Sayacı yalnızca submitStreakDay, defteri yalnızca
+    // claimStreakReward ilerletiyor (ikisi de Admin SDK, kuralları atlar). İstemci yazabilse
+    // "serim 30" demek on anahtar demek olurdu.
+    //
+    // SİLME DE KAPALI: `claimed` listesini silebilen biri bütün kilometre taşlarını yeniden
+    // ödetebilirdi — kupa yolu defterindeki ile birebir aynı tuzak. Hesap silindiğinde
+    // temizliği cleanupUserOnDelete yapıyor (recursiveDelete, Admin SDK).
+    //
+    // Okuma yalnızca sahibine: seri ekranı ve ödül düğmesi buradan besleniyor.
+    match /users/{userId}/streak/{doc} {
+      allow read: if isSelf(userId);
+      allow write: if false;
+    }
+    // Bildirim defteri: hangi bildirim kaç kez gönderildi, kaç kez açıldı, günlük tavan
+    // sayacı (bkz. functions/notifications.js).
+    //
+    // NEDEN İSTEMCİ YAZAMIYOR
+    //   Burada iki şey var ve ikisi de istemcinin elinde olmamalı. Tavan sayacını sıfırlayan
+    //   biri kendine sınırsız bildirim açardı — bu kendine zarar, ama "üst üste açılmayan
+    //   konu susar" kuralı aynı deftere bakıyor ve onu istemci yazabilseydi kural hiç
+    //   işlemezdi. Açılma kaydı sunucuya `recordNotificationOpen` ile bildiriliyor.
+    //
+    //   Okuma sahibine açık: istemcinin ayarlar ekranında "hangi bildirimleri alıyorsun"
+    //   özetini gösterebilmesi için.
+    match /users/{userId}/notifyLedger/{doc} {
+      allow read: if isSelf(userId);
+      allow write: if false;
+    }
+    // Kupa puanı: yalnızca sunucudaki `submitCupResult` yazar.
+    //
+    // NEDEN: puan sadece bir skor değil, bir musluk. Kupa yolu sandıkları (claimCupPathChest)
+    // ve kupa rozetleri ona bakıyor; istemci doğrudan yazabildiği sürece "kupamı 999999 yap"
+    // demek bedava sandık demekti.
+    //
+    // SİLME AÇIK: hesap silme akışı bu dokümanı istemciden siliyor
+    // (AccountDeletionHelper). Silmek bir kazanç sağlamıyor — puan varsayılana döner, alınmış
+    // sandıkların defteri (cupPathRewards) ayrı ve silinemez durumda.
+    match /users/{userId}/cupWayProgress/{doc} {
+      allow create, update: if false;
+      allow delete: if isSelf(userId);
+    }
+
+    // Kupa puanının günlük geçmişi: kaydı puanla aynı transaction'da sunucu yazıyor.
+    // Okuma imzalı herkese açık (başkasının grafiği), silme yine hesap silme akışı için.
     match /users/{userId}/cupHistory/{doc} {
       allow read: if isSignedIn();
+      allow create, update: if false;
+      allow delete: if isSelf(userId);
     }
     match /users/{userId}/lessonProgress/{doc} {
       allow read: if isSignedIn();
@@ -143,6 +456,13 @@ service cloud.firestore {
     }
     match /users/{userId}/abacusCustomization/{doc} {
       allow read: if isSignedIn();
+    }
+    // Deneme sayıları (veli paneli / öğrenci ilerlemesi raporu, ParentReportRepository).
+    // Sahibinin okuması yukarıdaki genel alt koleksiyon kuralından geliyor; burası yalnızca
+    // öğrencinin kendi sınıfındaki öğretmeni ekliyor. Raporun öteki kaynakları
+    // (kullanıcı dokümanı, badgeProgress, lessonProgress) öğretmene zaten açık.
+    match /users/{userId}/lessonSuccessRateState/{doc} {
+      allow read: if isTeacherOfStudent(userId);
     }
 
     // ── Takip sistemi ──────────────────────────────────────────────────────
@@ -171,6 +491,14 @@ service cloud.firestore {
       allow read, write: if false; // Sadece Cloud Functions
     }
 
+    // Veli onayı kayıtları (veli e-postası, metin sürümü, zaman). Yalnızca onay CF'leri
+    // yazar; çocuk kendi kaydını okuyabilir. Öğretmenler `users` dokümanını okuyabildiği için
+    // veli e-postası oraya değil buraya yazılıyor.
+    match /parentalConsents/{uid} {
+      allow read: if isSelf(uid);
+      allow write: if false;
+    }
+
     // Bekleyen kayıtlar: TAMAMEN KAPALI.
     //   Eskiden `allow write: if true` idi ve istemci buraya DÜZ METİN ŞİFRE yazıyordu.
     //   Kimliği doğrulanmamış herkes başkasının kayıt dokümanını kendi şifresiyle ezip
@@ -196,16 +524,182 @@ service cloud.firestore {
 
     // ── Sorular ve mesajlar ────────────────────────────────────────────────
     match /questions/{questionId} {
-      allow read, update: if isSignedIn() && (resource.data.studentUid == request.auth.uid || isTeacher());
-      allow create: if isSignedIn();
+      // Soru YALNIZCA askTeacherQuestion Cloud Function'ı tarafından oluşturulur; kredi
+      // düşümüyle aynı transaction'da yazılır. Eskiden burası `if isSignedIn()` idi, yani
+      // değiştirilmiş bir istemci kredi harcamadan sınırsız soru gönderebiliyordu ve
+      // cevaplanan her soru gerçek para maliyeti doğuruyordu.
+      allow create: if false;
+
+      // Kredi muhasebesi alanlarına ne öğrenci ne öğretmen dokunabilir; aksi halde iade
+      // mekanizması (reconcileUnansweredQuestions) manipüle edilebilirdi.
+      //
+      // Havuz alanları (`pool`, `classId`, `courseId`, `classTeacherUids`) da aynı şekilde
+      // kapalı: öğrenci sorusunu başka bir öğretmene, öğretmen başka bir havuza taşıyamaz.
+      //
+      // SAHİPLENME YARIŞI: `claimedByTeacherUid` yalnızca boşken ve yalnızca kendi uid'siyle
+      // yazılabilir. Eskiden kontrol yoktu; iki öğretmen aynı soruyu birkaç saniye arayla
+      // sahiplenince ikincisi birincinin üstüne yazıyor, öğrenci iki öğretmenle konuşuyordu.
+      allow read: if isSignedIn()
+        && (resource.data.studentUid == request.auth.uid || teacherCanRead(resource.data));
+      allow update: if isSignedIn()
+        && (resource.data.studentUid == request.auth.uid || teacherMayWrite(resource.data))
+        && !changed().hasAny(['creditSpent', 'creditRefunded', 'creditRefundedAt',
+                              'createdAtMs', 'studentUid',
+                              'pool', 'classId', 'courseId', 'classTeacherUids'])
+        && (!changed().hasAny(['claimedByTeacherUid'])
+            || (resource.data.get('claimedByTeacherUid', null) == null
+                && request.resource.data.claimedByTeacherUid == request.auth.uid));
       allow delete: if isSignedIn() && resource.data.studentUid == request.auth.uid;
 
       match /messages/{messageId} {
-        allow read, create, update: if isSignedIn() && (
-          get(/databases/$(database)/documents/questions/$(questionId)).data.studentUid == request.auth.uid ||
-          isTeacher()
+        // Okuma: soru sahibi öğrenci veya onaylı bir öğretmen (öğretmenler henüz
+        // sahiplenmedikleri soruları kuyrukta önizleyebilir/okunmamış sayısını görebilir —
+        // bkz. NotificationFragment.refreshUnreadCounts/attachMessageListeners).
+        // Havuz ayrımı açıkken yalnızca soruya erişebilen öğretmen (teacherCanRead).
+        allow read: if isSignedIn() && (
+          questionOf(questionId).studentUid == request.auth.uid
+          || teacherCanRead(questionOf(questionId))
         );
+
+        // Yazma (create/update): SADECE sorunun öğrencisi veya soruyu SAHİPLENEN öğretmen.
+        // Eskiden burası salt `isTeacher()` idi — yani sahiplenmemiş HERHANGİ bir öğretmen
+        // başka bir öğrencinin sohbetine mesaj yazabiliyor/güncelleyebiliyordu ve
+        // `senderUid` alanı hiç doğrulanmadığı için biri adına sahte mesaj (ve buradan
+        // tetiklenen push bildirimi) üretilebiliyordu.
+        allow create: if isSignedIn()
+          && request.resource.data.senderUid == request.auth.uid
+          && (
+            questionOf(questionId).studentUid == request.auth.uid ||
+            questionOf(questionId).claimedByTeacherUid == request.auth.uid
+          );
+
+        // Güncelleme yalnızca "okundu" işareti ve "benden sil" listesiyle sınırlı;
+        // başka hiçbir alan (textContent, mediaUrl, senderUid, createdAt...) sonradan
+        // değiştirilemez.
+        allow update: if isSignedIn()
+          && changed().hasOnly(['readAt', 'deletedForUids'])
+          && (
+            questionOf(questionId).studentUid == request.auth.uid ||
+            questionOf(questionId).claimedByTeacherUid == request.auth.uid
+          );
+
         allow delete: if isSignedIn() && resource.data.senderUid == request.auth.uid;
+      }
+    }
+
+    // ── Kurs sınıfları (bkz. functions/classes.js) ──────────────────────────
+    // Hepsini yalnızca sınıf Cloud Function'ları yazar; istemci yalnızca okur.
+
+    // Kurs adı gizli değil (sınıf ekranında görünüyor).
+    match /courses/{courseId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Sınıf: öğretmenleri ve içindeki öğrenci okur. Katılma kodu dokümanda; öğrencinin
+    // görmesi zararsız, kodu zaten öğretmeninden aldı.
+    match /classes/{classId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid in resource.data.teacherUids
+        || myUser().get('classId', null) == classId
+      );
+      allow write: if false;
+
+      // Öğrenci listesi: sınıfın öğretmenleri ve sınıftaki öğrenciler (Sorularım → Sınıfım,
+      // kullanıcı kararı 23.10.2026). Dokümanda ad, kullanıcı adı ve katılma zamanı var; ad ve
+      // kullanıcı adı zaten herkese açık (publicProfiles). Yeni olan, kimin hangi sınıfta
+      // olduğunun sınıf arkadaşlarına görünmesi — gizlilik politikası taslağında yazılı olmalı.
+      match /members/{memberUid} {
+        allow read: if isSignedIn() && (
+          request.auth.uid in get(/databases/$(database)/documents/classes/$(classId)).data.teacherUids
+          || myUser().get('classId', null) == classId
+        );
+        allow write: if false;
+      }
+    }
+
+    // Kod → sınıf eşlemesi ve yanlış kod sayacı: istemci okuyabilseydi kodlar listelenirdi.
+    match /classJoinCodes/{code} {
+      allow read, write: if false;
+    }
+    match /classJoinGuards/{uid} {
+      allow read, write: if false;
+    }
+
+    // Davet: davet edilen öğrenci ve gönderen öğretmen okur.
+    match /classInvites/{inviteId} {
+      allow read: if isSignedIn() && (
+        resource.data.studentUid == request.auth.uid
+        || resource.data.teacherUid == request.auth.uid
+      );
+      allow write: if false;
+    }
+
+    // ── Ödevler (bkz. functions/homework.js) ─────────────────────────────────
+    // Ödevi yalnızca createHomework yazar. Görebilen: sınıfın öğretmenleri ve — o sınıfta
+    // OLDUĞU sürece — ödevin verildiği öğrenci (sınıfa verildiyse sınıftaki herkes, sonradan
+    // katılan dahil). Sınıftan ayrılan öğrencinin ödevleri listesinden düşer.
+    //
+    // Alanlar KATI okunuyor (`hw.wholeClass`, `hw.assignedUids`), `get(alan, varsayılan)` değil:
+    // varsayılanlı yazım liste sorgusunun kanıtında gevşek (bkz. teacherReaches yorumu).
+    function isTeacherOfClassId(classId) {
+      return request.auth.uid in get(/databases/$(database)/documents/classes/$(classId)).data.teacherUids;
+    }
+
+    function homeworkVisibleToMe(hw) {
+      return isTeacherOfClassId(hw.classId)
+        || (myUser().get('classId', null) == hw.classId
+            && (hw.wholeClass == true || request.auth.uid in hw.assignedUids));
+    }
+
+    function homeworkOf(hwId) {
+      return get(/databases/$(database)/documents/homeworks/$(hwId)).data;
+    }
+
+    // İlerleme: her yazım tam olarak BİR adım ileri. Cevaplanan ve doğru sayıları yalnızca
+    // artabilir ve ödevin soru sayısını geçemez. Doğru sayısı istemcinin beyanı; ödevde para
+    // yok, kurallar yalnızca saçma değerleri (ör. 10 soruda 50 doğru) engelliyor.
+    function homeworkProgressOk(hw, prevBlocks, prevAnswered, prevCorrect) {
+      let p = request.resource.data;
+      return p.keys().hasOnly(['uid', 'completedBlocks', 'answered', 'correct', 'lastBlockCorrect', 'updatedAtMs', 'ruleTally'])
+        && (!('ruleTally' in p) || (p.ruleTally is map && p.ruleTally.size() <= 40))
+        && p.uid == request.auth.uid
+        && p.completedBlocks is int && p.completedBlocks == prevBlocks + 1
+        && p.completedBlocks <= hw.blockCount
+        && p.answered is int && p.answered > prevAnswered && p.answered <= hw.config.questionCount
+        && p.answered - prevAnswered <= 10
+        && p.correct is int && p.correct >= prevCorrect && p.correct <= p.answered
+        && p.correct - prevCorrect <= p.answered - prevAnswered
+        && p.lastBlockCorrect is int && p.lastBlockCorrect == p.correct - prevCorrect;
+    }
+
+    // Ödevde kural kural başarı (onHomeworkProgressWritten topluyor; içerik functions/homework.js
+    // sanitizeRuleTally). Öğrencinin kendisi (veli paneli) ve sınıf öğretmeni okur; yazım sunucuda.
+    match /homeworkRuleStats/{uid} {
+      allow read: if isSelf(uid) || (isSignedIn() && isTeacherOfStudent(uid));
+      allow write: if false;
+
+      // Günlük kayıtlar (ödev başarısı grafiği); okuma izni üst dokümanla aynı.
+      match /months/{month} {
+        allow read: if isSelf(uid) || (isSignedIn() && isTeacherOfStudent(uid));
+        allow write: if false;
+      }
+    }
+
+    match /homeworks/{hwId} {
+      allow read: if isSignedIn() && homeworkVisibleToMe(resource.data);
+      allow write: if false;
+
+      match /studentProgress/{studentUid} {
+        allow read: if isSelf(studentUid) || (isSignedIn() && isTeacherOfClassId(homeworkOf(hwId).classId));
+        allow create: if isSelf(studentUid)
+          && homeworkVisibleToMe(homeworkOf(hwId))
+          && homeworkProgressOk(homeworkOf(hwId), 0, 0, 0);
+        allow update: if isSelf(studentUid)
+          && homeworkVisibleToMe(homeworkOf(hwId))
+          && homeworkProgressOk(homeworkOf(hwId), resource.data.completedBlocks,
+                                resource.data.answered, resource.data.correct);
+        allow delete: if false;
       }
     }
 
@@ -229,15 +723,11 @@ service cloud.firestore {
     // ── Liderlik tabloları ─────────────────────────────────────────────────
     match /lessonLeaderboards/{leaderboardId} {
       allow read: if isSignedIn();
-      allow create, update: if isSignedIn()
-        && request.resource.data.partId is number
-        && request.resource.data.lessonIndex is number
-        && request.resource.data.season is number
-        && ('updatedAt' in request.resource.data)
-        && (!('titleUnit' in request.resource.data)
-            || (request.resource.data.titleUnit is string
-                && request.resource.data.titleUnit.size() < 200));
-      allow delete: if false;
+      // Tahta meta dokümanını YALNIZCA submitLeaderboardScore (Admin SDK, kuralları atlar) yazar.
+      // İstemci yalnızca okuyor; eski kural ise her giriş yapmış kullanıcının tahta uydurmasına
+      // izin veriyordu. Ayrıca `lessonIndex is number` koşulu, tahta anahtarı liste konumundan
+      // LessonItem.stableId'ye taşındığı için artık yanlış alanı doğruluyordu.
+      allow create, update, delete: if false;
     }
 
     // Girişler yalnızca submitLeaderboardScore Cloud Function üzerinden yazılır.
@@ -246,13 +736,27 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // ── Anketler / istatistikler ───────────────────────────────────────────
-    match /questionPanel/{document=**} {
-      allow create, update: if isSignedIn();
+    // ── Ders sonu anketi ───────────────────────────────────────────────────
+    //
+    // Anketin ŞIK SAYAÇLARI (`choice{1–5}`) artık Firestore'da tutulmuyor; Firebase
+    // Analytics'e olay olarak gidiyor (bkz. AnalyticsLogger.logSurveyChoice). Sayaç
+    // dokümanları giriş yapan herkes tarafından istenen değere çekilebiliyordu ve veri
+    // zaten uygulamaya geri okunmuyordu.
+    //
+    // Firestore'da yalnızca kullanıcının yazdığı SERBEST METİN kalıyor: Analytics'e
+    // kişisel veri yazılamaz, ayrıca bu metinler okunup değerlendirilecek.
+    // Yol: questionPanel/{partId}/{lessonId}/question{N}/text/{uid}
+    // {lessonId} = LessonItem.stableId (eskiden liste konumuydu; araya ders eklenince kayıyordu).
+    //
+    // Yazma izni `isSignedIn()` yerine `isSelf(uid)`: kullanıcı yalnızca kendi dokümanına
+    // yazabilir, başkasının cevabını ezemez. Okuma kapalı — metinler yalnızca Admin SDK
+    // (Firebase Console / Cloud Functions) ile okunur.
+    match /questionPanel/{partId}/{lessonId}/{questionDoc}/text/{uid} {
+      allow create, update: if isSelf(uid);
       allow read, delete: if false;
     }
-    match /questionPanelTutorial/{document=**} {
-      allow create, update: if isSignedIn();
+    match /questionPanelTutorial/{partId}/{lessonId}/{questionDoc}/text/{uid} {
+      allow create, update: if isSelf(uid);
       allow read, delete: if false;
     }
 
@@ -264,14 +768,43 @@ service cloud.firestore {
       allow read, delete: if false;
     }
 
-    match /appStatistics/{docId} {
-      allow create, update: if isSignedIn();
-      allow read, delete: if false;
-    }
+    // ── Edinim kaynağı istatistiği ─────────────────────────────────────────
+    // `appStatistics/acquisition_sources` sayacı kaldırıldı; artık Firebase Analytics'e
+    // hem olay hem kullanıcı özelliği olarak yazılıyor (bkz. AppStatisticsManager).
+    // Koleksiyona yazan kod kalmadığı için kural da kaldırıldı — aşağıdaki catch-all
+    // her erişimi reddeder.
 
-    match /successRate/{document=**} {
+    // ── Başarı oranı sayaçları ─────────────────────────────────────────────
+    //
+    // Yalnızca GÜNLÜK SORU sayaçları burada kaldı. Bunlar gerçek bir ürün özelliğidir:
+    // TasksFragment kartta "Başarı: %X" olarak gösterir, yani uygulama bu değeri GERİ OKUR
+    // (bkz. DailyQuestionRepository). Analytics'ten geri okuma mümkün olmadığı için
+    // Firestore'da kalmaları zorunlu.
+    //
+    // Buna karşılık `successRate/lessonSuccessRate/**` ağacı kaldırıldı: hiçbir yerde
+    // okunmuyordu, küresel sayaç dokümanları sıcak nokta yaratıyordu ve eski kural
+    // (`match /successRate/{document=**}`) giriş yapan HERKESE tüm ağaç için okuma VE
+    // yazma izni veriyordu — yani istatistikler hem görünür hem manipüle edilebilirdi.
+    // Ders istatistikleri artık Analytics'e gidiyor (bkz. LessonSuccessRateRepository).
+    //
+    // Yol: successRate/dailyQuestionSuccessRate/generatorForPart{N}Chest/{titleUnit}
+    match /successRate/dailyQuestionSuccessRate/{partCollection}/{unitDoc} {
       allow read, create, update: if isSignedIn();
       allow delete: if false;
+    }
+
+    // ── Hata bildirimleri ──────────────────────────────────────────────────
+    //
+    // Yazma tamamen kapalı: gönderim, admin kararı ve ödül toplama Cloud Functions'tan
+    // (submitBugReport / reviewBugReport / claimBugReportReward). Böylece `status` ve ödül
+    // alanlarına istemcinin dokunması imkânsız, gönderim sınırları da sunucuda sayılıyor.
+    // Kullanıcı yalnızca kendi bildirimlerini okur (sorgu `uid == kendi uid'i` olmalı);
+    // admin (Auth custom claim, bkz. functions/scripts/set-admin-claim.js) hepsini okur.
+    // `bugReportGuards` (gönderim sayacı) yalnızca sunucuda; aşağıdaki catch-all kapatıyor.
+    match /bugReports/{reportId} {
+      allow read: if isSignedIn()
+        && (request.auth.token.admin == true || resource.data.uid == request.auth.uid);
+      allow write: if false;
     }
 
     // Yukarıdakilerin dışındaki tüm path'ler reddedilir.

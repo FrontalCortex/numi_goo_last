@@ -1,0 +1,1 @@
+Bu derste "komşu" dediğimiz şey, çıkarırken bir üst sütundan yardım almak. Örneğin 100'den 3 çıkarmak için 3'ü doğrudan çıkaramayız, bu yüzden 10 gider ve 3'ün kardeşi olan 7 gelir. Yani 10 − 3 = 7 olduğu için, sol sütundan gidip sağda 7 gelir.

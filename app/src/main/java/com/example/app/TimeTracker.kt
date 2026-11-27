@@ -4,11 +4,14 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldPath
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.Calendar
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
@@ -17,6 +20,22 @@ object TimeTracker {
     private const val PREFS_NAME = "time_tracker_prefs"
     private const val KEY_UNSYNCED_TIME = "unsynced_time_seconds"
     private const val KEY_LAST_START_TIME = "last_start_time"
+
+    /**
+     * Kullanıcı dokümanındaki gün→saniye haritası (ör. `{"20260911": 1840}`).
+     *
+     * Ayrı bir koleksiyon yerine `users/{uid}` üzerinde ALAN olarak tutuluyor: [syncToFirestore]
+     * zaten `totalTimeSpent`'i güncellediği için günlük süre AYNI yazmaya biniyor — ek yazma
+     * maliyeti sıfır. Veli paneli (bkz. ParentReportRepository) bunu okuyor.
+     */
+    const val DAILY_FIELD = "dailyTimeSpent"
+
+    /**
+     * Harita kaç gün geriye kadar tutulur. Her senkronizasyonda bu kadar eski olan anahtar
+     * siliniyor; böylece harita okuma yapılmadan sabit boyutta kalıyor (olmayan alanı silmek
+     * Firestore'da zaten etkisizdir).
+     */
+    const val RETENTION_DAYS = 14
     
     private var isTracking = false
     private var startTime: Long = 0
@@ -124,7 +143,13 @@ object TimeTracker {
             _unsyncedTimeFlow.value = 0L
             
             firestore.collection("users").document(currentUser.uid)
-                .update("totalTimeSpent", FieldValue.increment(unsynced))
+                .update(
+                    "totalTimeSpent", FieldValue.increment(unsynced),
+                    // Gün anahtarı senkronizasyon anına göre veriliyor. Gece yarısını aşan bir
+                    // oturumun tamamı ertesi güne yazılabilir; veli raporu için önemsiz bir sapma.
+                    FieldPath.of(DAILY_FIELD, dayKey(0)), FieldValue.increment(unsynced),
+                    FieldPath.of(DAILY_FIELD, dayKey(-RETENTION_DAYS)), FieldValue.delete(),
+                )
                 .addOnSuccessListener {
                     Log.d("TimeTracker", "Firestore'a $unsynced saniye başarıyla eklendi.")
                 }
@@ -135,6 +160,24 @@ object TimeTracker {
         }
     }
     
+    /**
+     * `yyyyMMdd` biçiminde, cihazın yerel saat dilimine göre gün anahtarı.
+     * [offsetDays] negatifse geçmiş bir gün verir.
+     *
+     * Tire/iki nokta içermez: anahtar Firestore alan adı olarak kullanılıyor.
+     */
+    fun dayKey(offsetDays: Int): String {
+        val cal = Calendar.getInstance()
+        cal.add(Calendar.DAY_OF_YEAR, offsetDays)
+        return String.format(
+            Locale.US,
+            "%04d%02d%02d",
+            cal.get(Calendar.YEAR),
+            cal.get(Calendar.MONTH) + 1,
+            cal.get(Calendar.DAY_OF_MONTH),
+        )
+    }
+
     fun reset() {
         prefs.edit().putLong(KEY_UNSYNCED_TIME, 0).apply()
         _unsyncedTimeFlow.value = 0L

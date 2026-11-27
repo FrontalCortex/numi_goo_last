@@ -87,6 +87,22 @@ class RatingDialogFragment : DialogFragment() {
     private var selectedRating = 0
     private lateinit var stars: List<ImageView>
 
+    /**
+     * Kapanınca ders sonrası kuyruğunu dürter.
+     *
+     * Bu olmadan kuyruk burada asılı kalıyordu: rating açıkken kapı "rating_showing"
+     * diyor, kapanınca kimse yeniden denemiyor ve sıradaki ekran (maraton rehberi) hiç
+     * gösterilmiyordu.
+     *
+     * `onCancel` değil `onDismiss`: kullanıcı yıldız verip kapattığında `onCancel`
+     * çalışmıyor ve kuyruk yine asılı kalırdı. (Ölçüm tarafı ayrı — oraya
+     * dokunulmadı.)
+     */
+    override fun onDismiss(dialog: android.content.DialogInterface) {
+        super.onDismiss(dialog)
+        (activity as? MainActivity)?.pumpPostLessonQueue("RatingDialog.dismiss")
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         dialog?.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
         dialog?.window?.requestFeature(Window.FEATURE_NO_TITLE)
@@ -134,8 +150,8 @@ class RatingDialogFragment : DialogFragment() {
                         dismiss()
                     } else {
                         // Ask for feedback
-                        tvTitle.text = "Üzgünüz \uD83D\uDE14"
-                        tvSubtitle.text = "Deneyimini geliştirmek için geri bildirimine ihtiyacımız var."
+                        tvTitle.text = appString(R.string.ui_uzgunuz)
+                        tvSubtitle.text = appString(R.string.ui_deneyimini_gelistirmek_icin_geri_bildirimine)
                         llFeedback.visibility = View.VISIBLE
                     }
                 }, 300)
@@ -146,11 +162,11 @@ class RatingDialogFragment : DialogFragment() {
             val feedbackText = etFeedback.text.toString().trim()
             if (feedbackText.isNotEmpty()) {
                 submitFeedbackToFirestore(feedbackText, selectedRating)
-                Toast.makeText(context, "Geri bildiriminiz için teşekkürler!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_geri_bildiriminiz_icin_tesekkurler), Toast.LENGTH_SHORT).show()
                 AppRatingManager.markAsRated(requireContext())
                 dismiss()
             } else {
-                Toast.makeText(context, "Lütfen bir şeyler yazın.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, appString(R.string.ui_lutfen_bir_seyler_yazin), Toast.LENGTH_SHORT).show()
             }
         }
     }

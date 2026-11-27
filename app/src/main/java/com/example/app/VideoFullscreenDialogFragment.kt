@@ -32,13 +32,16 @@ class VideoFullscreenDialogFragment : DialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val videoUrl = arguments?.getString(ARG_VIDEO_URL) ?: return
+        val playerView = view.findViewById<androidx.media3.ui.PlayerView>(R.id.fullscreenPlayerView)
         exoPlayer = ExoPlayer.Builder(requireContext()).build().also { player ->
-            view.findViewById<androidx.media3.ui.PlayerView>(R.id.fullscreenPlayerView).player = player
+            playerView.player = player
             player.setMediaItem(MediaItem.fromUri(Uri.parse(videoUrl)))
             player.prepare()
             player.playWhenReady = true
         }
-        view.findViewById<ImageButton>(R.id.fullscreenCloseButton).setOnClickListener { dismiss() }
+        val closeButton = view.findViewById<ImageButton>(R.id.fullscreenCloseButton)
+        closeButton.setOnClickListener { dismiss() }
+        PreviewSafeArea.apply(closeButton, playerView)
     }
 
     override fun onDismiss(dialog: DialogInterface) {

@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ödevler: öğretmenin ödev ekranları, öğrencinin Görevler kartı ve ödev oynatıcısı (bkz. homework/). -->
+<resources>
+    <!-- İşlem ve konu adları -->
+    <string name="hw_op_add">Toplama</string>
+    <string name="hw_op_sub">Çıkarma</string>
+    <string name="hw_op_mul">Çarpma</string>
+    <string name="hw_op_add_lower">toplama</string>
+    <string name="hw_op_sub_lower">çıkarma</string>
+    <string name="hw_rule_direct">Kuralsız</string>
+    <string name="hw_rule_five">5\'lik</string>
+    <string name="hw_rule_ten">10\'luk</string>
+    <string name="hw_rule_bead">Boncuk</string>
+    <string name="hw_and">ve</string>
+    <string name="hw_with_abacus">Abaküslü</string>
+    <string name="hw_without_abacus">Abaküssüz</string>
+    <string name="hw_digits">%1$d basamak</string>
+    <string name="hw_mul_digits">%1$d × %2$d basamak</string>
+    <string name="hw_mul_title">Çarpma (%1$d × %2$d basamak)</string>
+    <string name="hw_title">%1$s %2$s</string>
+    <plurals name="hw_numbers">
+        <item quantity="one">%d sayı</item>
+        <item quantity="other">%d sayı</item>
+    </plurals>
+    <plurals name="hw_sub_numbers">
+        <item quantity="one">%d sayı çıkarılır</item>
+        <item quantity="other">%d sayı çıkarılır</item>
+    </plurals>
+    <plurals name="hw_questions">
+        <item quantity="one">%d soru</item>
+        <item quantity="other">%d soru</item>
+    </plurals>
+    <string name="hw_seconds">%1$s sn</string>
+
+    <!-- Öğretmen: ödev listesi -->
+    <string name="hw_class_button">Ödevler</string>
+    <string name="hw_list_title">Ödevler · %1$s</string>
+    <string name="hw_list_empty">Bu sınıfa henüz ödev verilmedi.</string>
+    <string name="hw_new_button">+ Yeni ödev</string>
+    <string name="hw_new_short">Yeni ödev</string>
+    <string name="hw_list_done_bar">%1$d/%2$d bitirdi</string>
+    <string name="hw_target_whole_class">Tüm sınıf</string>
+    <plurals name="hw_target_students">
+        <item quantity="one">%d öğrenci</item>
+        <item quantity="other">%d öğrenci</item>
+    </plurals>
+
+    <!-- %2$s ekiyle birlikte sayı: "8\'i", "3\'ü", "6\'sı" (HomeworkText.withAccusative). -->
+    <string name="hw_list_done_summary">%1$d öğrenciden %2$s bitirdi</string>
+    <string name="hw_list_done_none">Henüz bitiren yok · %1$d öğrenci</string>
+    <string name="hw_list_done_all">Herkes bitirdi ✓ · %1$d öğrenci</string>
+
+    <!-- Öğretmen: ödev ayrıntısı -->
+    <string name="hw_detail_title">Ödev</string>
+    <string name="hw_detail_students">Öğrenciler</string>
+    <string name="hw_detail_not_started">Başlamadı</string>
+    <string name="hw_detail_progress">Adım %1$d/%2$d · %3$d/%4$d doğru</string>
+    <string name="hw_detail_done">Bitti · %1$d/%2$d doğru</string>
+    <string name="hw_delete">Ödevi sil</string>
+    <string name="hw_delete_title">Ödev silinsin mi?</string>
+    <string name="hw_delete_message">Ödev öğrencilerin listesinden kalkar ve ilerlemeleri silinir.</string>
+    <string name="hw_deleted">Ödev silindi.</string>
+    <string name="hw_left_class">Sınıftan ayrılmış</string>
+
+    <!-- Öğretmen: ödev oluşturma -->
+    <string name="hw_create_title">Yeni ödev</string>
+    <string name="hw_field_op">İşlem</string>
+    <string name="hw_field_rules">Konu</string>
+    <string name="hw_field_rules_hint">Birden fazla seçebilirsin; sorularda yalnızca seçtiğin kurallar çıkar.</string>
+    <string name="hw_field_type">Tür</string>
+    <string name="hw_section_settings">Ayarlar</string>
+    <string name="hw_field_digits">Basamak sayısı</string>
+    <string name="hw_field_digits1">1. sayının basamağı</string>
+    <string name="hw_field_digits2">2. sayının basamağı</string>
+    <string name="hw_field_count_add">Sayı adedi</string>
+    <string name="hw_field_count_sub">Çıkarılacak sayı adedi</string>
+    <string name="hw_field_count_sub_hint">Başlangıç sayısı hariç. Başlangıç sayısı, sonuç negatife düşmeyecek ve seçtiğin kurallar çalışılabilecek şekilde seçilir.</string>
+    <string name="hw_field_interval">Gösterilme hızı (sn)</string>
+    <string name="hw_field_interval_hint">Sayılar bu aralıkla tek tek gösterilir (0,1 – 30 sn).</string>
+    <string name="hw_field_questions">Soru adedi</string>
+    <string name="hw_field_questions_hint">10\'arlı adımlara bölünür: %1$d adım.</string>
+    <string name="hw_field_target">Kime</string>
+    <string name="hw_target_select">Öğrenci seç</string>
+    <string name="hw_target_none_selected">En az bir öğrenci seç.</string>
+    <string name="hw_target_no_students">Sınıfta henüz öğrenci yok; ödev sınıfa katılan herkese görünür.</string>
+    <string name="hw_count_max">En fazla %1$d</string>
+    <string name="hw_count_max_recommended">En fazla %1$d · önerilen %2$d</string>
+    <string name="hw_count_impossible">Bu kurallarla %1$d basamakta soru üretilemiyor. Basamağı, konuyu ya da gelişmiş ayarı değiştir.</string>
+    <string name="hw_count_forced">Bu kurallarla %1$d sayı seçersen bütün sayıların bütün basamakları %2$s olur (ör. %3$s). Sağlıklı değer %4$d.</string>
+    <string name="hw_mul_capacity">İki sayının basamakları toplamı en fazla %1$d olabilir.</string>
+    <string name="hw_preview_title">Örnek soru</string>
+    <string name="hw_preview_pick_rule">Bir konu seç</string>
+    <string name="hw_preview_refresh">Başka örnek</string>
+    <string name="hw_send">Ödevi gönder</string>
+    <string name="hw_sent">Ödev %1$d öğrenciye gönderildi.</string>
+    <string name="hw_invalid">Ayarları kontrol et.</string>
+    <string name="hw_count_measuring">En fazla değer hesaplanıyor…</string>
+    <string name="hw_wait_measuring">Sayı sınırı hesaplanıyor; birkaç saniye bekle.</string>
+
+    <!-- Öğretmen: ödev oluşturma → Gelişmiş paneli (hangi rakamlar gelsin) -->
+    <string name="hw_advanced">Gelişmiş</string>
+    <string name="hw_advanced_all_digits">Bütün sayılar</string>
+    <string name="hw_advanced_title_add">Hangi sayılar eklensin?</string>
+    <string name="hw_advanced_title_sub">Hangi sayılar çıkarılsın?</string>
+    <string name="hw_advanced_title_mul">Basamaklara hangi rakamlar gelsin?</string>
+    <string name="hw_advanced_desc_add">Her konuda, o kuralla eklenebilecek sayılar. Kapattığın sayı o kuralla eklenmez; ör. 5\'likte yalnızca 4 açıksa 5\'lik kural hep +4 ile (+5 −1) çalışılır.</string>
+    <string name="hw_advanced_desc_sub">Her konuda, o kuralla çıkarılabilecek sayılar. Kapattığın sayı o kuralla çıkarılmaz; ör. 5\'likte yalnızca 4 açıksa 5\'lik kural hep −4 ile (−5 +1) çalışılır.</string>
+    <string name="hw_advanced_desc_mul">Her basamak yalnızca açık rakamlardan seçilir.</string>
+    <string name="hw_advanced_select_all">Tümü</string>
+    <string name="hw_advanced_done">Tamam</string>
+    <string name="hw_advanced_min_one">En az bir sayı açık kalmalı.</string>
+    <string name="hw_advanced_pick_rule">Önce bir konu seç.</string>
+    <!-- "5\'lik: 3, 4" -->
+    <string name="hw_advanced_rule_digits">%1$s: %2$s</string>
+    <!-- "1. sayı · onlar basamağı" (panel kartı) ve "1. sayı onlar: 2, 3" (özet) -->
+    <string name="hw_advanced_mul_group">%1$d. sayı · %2$s basamağı</string>
+    <string name="hw_advanced_mul_digits">%1$d. sayı %2$s: %3$s</string>
+    <!-- Basamak adları, birlerden başlayarak (çarpmada bir sayı en fazla 7 basamak). -->
+    <string-array name="hw_place_names">
+        <item>birler</item>
+        <item>onlar</item>
+        <item>yüzler</item>
+        <item>binler</item>
+        <item>on binler</item>
+        <item>yüz binler</item>
+        <item>milyonlar</item>
+    </string-array>
+
+    <!-- Bildirim kanalı: gece gelen ödev (MyFirebaseMessagingService, account_quiet) -->
+    <string name="notification_channel_account_quiet_name">Ödevler ve hesap (sessiz)</string>
+    <string name="notification_channel_account_quiet_desc">Gece gelen ödev bildirimleri — sessiz gösterilir</string>
+
+    <!-- Öğrenci: Sorularım → Ödevlerim / Sınıfım -->
+    <string name="hw_card_title">Ödevlerim</string>
+    <plurals name="hw_student_card_pending">
+        <item quantity="one">%d ödev seni bekliyor</item>
+        <item quantity="other">%d ödev seni bekliyor</item>
+    </plurals>
+    <string name="hw_student_card_all_done">Hepsini bitirdin</string>
+    <string name="hw_student_card_none">Henüz ödev yok</string>
+    <string name="hw_tab_homework">Ödevlerim</string>
+    <string name="hw_student_empty">Öğretmenin henüz ödev vermedi.</string>
+    <string name="hw_classmates_empty">Sınıfında henüz başka öğrenci yok.</string>
+    <string name="hw_classmate_teacher">Öğretmen</string>
+    <string name="hw_classmate_me">%1$s (sen)</string>
+    <string name="hw_card_from">%1$s verdi</string>
+    <string name="hw_card_progress">%1$d/%2$d adım</string>
+    <string name="hw_card_done">Tamamlandı ✓</string>
+
+    <!-- Öğrenci: ödev oynatıcısı -->
+    <string name="hw_player_quit_desc">Kapat</string>
+    <string name="hw_player_step">Adım %1$d/%2$d · Soru %3$d/%4$d</string>
+    <string name="hw_player_start">Başla</string>
+    <string name="hw_player_check">Kontrol</string>
+    <string name="hw_player_answer_hint">Cevabın</string>
+    <string name="hw_player_correct">Doğru!</string>
+    <string name="hw_player_wrong">Doğru cevap: %1$s</string>
+    <string name="hw_player_next">Devam</string>
+    <string name="hw_player_block_done">Adım bitti!</string>
+    <string name="hw_player_block_score">%1$d/%2$d doğru</string>
+    <string name="hw_player_next_block">Sonraki adım</string>
+    <string name="hw_player_finish">Bitir</string>
+    <string name="hw_player_all_done">Ödevin tamamlandı! 🎉</string>
+    <string name="hw_player_save_failed">İlerleme kaydedilemedi. İnternet bağlantını kontrol edip tekrar dene.</string>
+    <string name="hw_player_retry_save">Tekrar kaydet</string>
+    <string name="hw_player_unavailable">Bu ödev açılamıyor. Öğretmenine haber ver.</string>
+    <string name="hw_player_quit_title">Ödevden çıkılsın mı?</string>
+    <string name="hw_player_quit_message">Bu adımdaki cevapların kaydedilmez; adıma baştan başlarsın.</string>
+    <string name="hw_player_quit_confirm">Çık</string>
+
+    <!-- İlerleme sayfası girişi (ProgressHubFragment) ve kural başarısı (HomeworkRuleStatsFragment; eski adı ödev başarısı,
+         01.11.2026'dan beri dersler ve Sobi ile çalışma da sayılıyor) -->
+    <string name="progress_hub_lessons">Dersler</string>
+    <string name="progress_hub_lessons_desc">Ders ilerlemesi ve çalışma süresi</string>
+    <string name="progress_hub_rules">Kural başarısı</string>
+    <string name="progress_hub_rules_desc">Derslerde, ödevlerde ve Sobi ile kural kural doğru oranı</string>
+    <string name="rule_stats_title">%1$s — Kural başarısı</string>
+    <string name="rule_stats_add">Toplama</string>
+    <string name="rule_stats_sub">Çıkarma</string>
+    <string name="rule_stats_add_mental">Abaküssüz toplama</string>
+    <string name="rule_stats_sub_mental">Abaküssüz çıkarma</string>
+    <string name="rule_stats_mul_abacus">Abaküslü çarpma</string>
+    <string name="rule_stats_mul_mental">Abaküssüz çarpma</string>
+    <string name="rule_stats_mul_digits">%1$d × %2$d basamak</string>
+    <string name="rule_stats_percent">%%%1$d</string>
+    <string name="rule_stats_count">%1$d/%2$d doğru</string>
+    <string name="rule_stats_empty">Henüz veri yok. Dersler, ödevler ve Sobi ile çalışmalar çözüldükçe burada her kuralın doğru oranı görünecek.</string>
+    <string name="rule_stats_sobi_level">Sobi testi seviye %1$d/%2$d</string>
+    <string name="rule_stats_sobi_level_estimated">Sobi testi seviye %1$d/%2$d (tahmini)</string>
+    <string name="rule_stats_note">Toplama ve çıkarmada her basamak işlemi, gerektirdiği kurala sayılır: dersler, ödevler ve Sobi ile çalışma birlikte. Çarpmada her ödev sorusu bir deneme.</string>
+
+    <!-- Kural başarısı: bu hafta kartı ve başarı grafiği (HomeworkRuleStatsFragment) -->
+    <string name="rule_progress_unit_question">soru</string>
+    <string name="rule_progress_unit_op">işlem</string>
+    <string name="rule_progress_week_title">Bu hafta</string>
+    <!-- "42 soru · geçen hafta %74" -->
+    <string name="rule_progress_week_sub">%1$d %2$s · geçen hafta %%%3$d</string>
+    <string name="rule_progress_week_sub_no_last">%1$d %2$s · geçen hafta çalışma yoktu</string>
+    <string name="rule_progress_week_none">Bu hafta henüz soru çözülmedi</string>
+    <string name="rule_progress_week_none_sub">Geçen hafta %%%1$d · %2$d %3$s</string>
+    <string name="rule_progress_delta_up">+%1$d puan</string>
+    <string name="rule_progress_delta_down">−%1$d puan</string>
+    <string name="rule_progress_delta_same">Geçen haftayla aynı</string>
+    <string name="rule_progress_total">Şimdiye kadar %1$d %2$s</string>
+    <string name="rule_progress_chart_title">Başarı grafiği</string>
+    <string name="rule_progress_all_rules">Hepsi</string>
+    <string name="rule_progress_chip_mul_abacus">%1$d×%2$d abaküslü çarpma</string>
+    <string name="rule_progress_chip_mul_mental">%1$d×%2$d abaküssüz çarpma</string>
+    <string name="rule_progress_range_week">1 hafta</string>
+    <string name="rule_progress_range_month">1 ay</string>
+    <string name="rule_progress_range_quarter">3 ay</string>
+    <string name="rule_progress_range_all">Tümü</string>
+    <string name="rule_progress_chart_hint">Her nokta o dönemin doğru oranı; üstündeki sayı o ana kadar çözülen toplam %1$s. Ayrıntı için noktaya dokun.</string>
+    <string name="rule_progress_chart_empty">Bu dönemde soru çözülmedi</string>
+    <!-- Seçili dönemde konu çalışılmadıysa: "En son çalışma: 12 Ağu · %78 doğru. Tümü'ne geçince görünür." -->
+    <string name="rule_progress_chart_empty_last">En son çalışma: %1$s · %%%2$d doğru. Tümü\'ne geçince görünür.</string>
+    <string name="rule_progress_base">Başlangıç</string>
+    <!-- "12–18 Eki · 42 soru · %86 doğru · toplam 380" -->
+    <string name="rule_progress_point_detail">%1$s · %2$d %3$s · %%%4$d doğru · toplam %5$d</string>
+    <string name="rule_progress_base_detail">Başlangıç: grafikten önceki %1$d %2$s · %%%3$d doğru</string>
+    <string name="rule_stats_mastery_title">Kural ustalığı</string>
+    <string name="rule_stats_mastery_desc">Bir kuralda son 50 işlemin %90\'ını doğru yapınca usta olur. Kazanılan aşama geri düşmez.</string>
+    <string name="rule_stats_stage_started">Başladı</string>
+    <string name="rule_stats_stage_improving">Gelişiyor</string>
+    <string name="rule_stats_stage_master">Usta ⭐</string>
+    <!-- "Son 52 işlem · %92 doğru"; pencere yoksa (eski veri) toplam: "680 işlem · %67 doğru" -->
+    <string name="rule_stats_recent">Son %1$d %2$s · %%%3$d doğru</string>
+    <string name="rule_stats_ops">%1$d %2$s · %%%3$d doğru</string>
+    <!-- Satırın sonuna eklenir: "… · Usta olmaya %4 kaldı" ya da "… · Usta olmaya 12 işlem kaldı" -->
+    <string name="rule_stats_to_master_pct">Usta olmaya %%%1$d kaldı</string>
+    <string name="rule_stats_to_master_ops">Usta olmaya %1$d %2$s kaldı</string>
+    <string-array name="rule_progress_months">
+        <item>Oca</item>
+        <item>Şub</item>
+        <item>Mar</item>
+        <item>Nis</item>
+        <item>May</item>
+        <item>Haz</item>
+        <item>Tem</item>
+        <item>Ağu</item>
+        <item>Eyl</item>
+        <item>Eki</item>
+        <item>Kas</item>
+        <item>Ara</item>
+    </string-array>
+</resources>

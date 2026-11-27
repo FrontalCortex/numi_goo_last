@@ -2,22 +2,24 @@ package com.example.app
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.SetOptions
 
 /**
- * Kullanıcının `blinding_addition_abacus_cup` kupa skorunu Firestore üzerinden okur/yazar.
+ * Kullanıcının `blinding_addition_abacus_cup` kupa skorunu OKUR.
  *
- * Veri yolu: `users/{uid}/blinding_addition_abacus_cup` (INT alanı)
- * İlk erişimde alan yoksa varsayılan değer [DEFAULT_CUP_SCORE] olarak seed edilir.
+ * Veri yolu: `users/{uid}/cupWayProgress/progress` içindeki aynı adlı alan.
+ *
+ * Yazma tarafı burada yok: kupa puanı bir musluk (kupa yolu sandıkları ve kupa rozetleri
+ * ona bakıyor), bu yüzden koleksiyon istemciye kapatıldı ve puanı yalnızca sunucudaki
+ * `submitCupResult` değiştiriyor — bkz. [CupScoreService].
+ *
+ * Alan yoksa [DEFAULT_CUP_SCORE] dönülür ama yazılmaz; doküman ilk ders sonucunda sunucuda
+ * oluşur.
  */
 object BlindingAdditionCupRepository {
 
     private const val DEFAULT_CUP_SCORE = 200
     private const val FIELD = "blinding_addition_abacus_cup"
     private const val COLLECTION = "users"
-
-    /** Kupa değişiminin sabit adım büyüklüğü. */
-    const val CUP_STEP = 5
 
     // --------------------------------------------------------------------------------------------
     // Okuma
@@ -37,54 +39,13 @@ object BlindingAdditionCupRepository {
             .document("progress")
             .get()
             .addOnSuccessListener { doc ->
-                val raw = (doc?.get(FIELD) as? Number)?.toInt()
-                if (raw == null) {
-                    val initialScore = DEFAULT_CUP_SCORE
-                    doc?.reference?.set(
-                        mapOf(FIELD to initialScore),
-                        SetOptions.merge(),
-                    )
-                    onResult(initialScore)
-                } else {
-                    onResult(raw)
-                }
+                // Alan yoksa varsayılan DÖNÜLÜYOR ama yazılmıyor: cupWayProgress artık
+                // istemciye kapalı. Doküman ilk ders sonucunda sunucuda oluşuyor.
+                onResult((doc?.get(FIELD) as? Number)?.toInt() ?: DEFAULT_CUP_SCORE)
             }
             .addOnFailureListener {
                 onResult(DEFAULT_CUP_SCORE)
             }
-    }
-
-    // --------------------------------------------------------------------------------------------
-    // Yazma
-    // --------------------------------------------------------------------------------------------
-
-    /**
-     * Kupa skorunu [delta] kadar artırır/azaltır. Sonuç 0'ın altına düşemez.
-     * İşlem Firestore transaction ile atomik olarak yapılır.
-     *
-     * @param delta  Pozitif (kazanç) veya negatif (kayıp) değişim miktarı
-     * @param onDone İşlem tamamlandığında yeni skoru iletir
-     */
-    fun updateCupScore(delta: Int, onDone: ((oldScore: Int, newScore: Int) -> Unit)? = null) {
-        val uid = uid() ?: return
-        val ref = FirebaseFirestore.getInstance()
-            .collection(COLLECTION)
-            .document(uid)
-            .collection("cupWayProgress")
-            .document("progress")
-
-        FirebaseFirestore.getInstance().runTransaction { tx ->
-            val snapshot = tx.get(ref)
-            val current = (snapshot.getLong(FIELD) ?: DEFAULT_CUP_SCORE.toLong()).toInt()
-            val updated = (current + delta).coerceAtLeast(0)
-            tx.set(ref, mapOf(FIELD to updated), SetOptions.merge())
-            CupHistoryRepository.recordSnapshot(tx, uid, FIELD, updated)
-            Pair(current, updated)
-        }.addOnSuccessListener { (oldScore, newScore) ->
-            onDone?.invoke(oldScore, newScore)
-        }.addOnFailureListener {
-            // Hata durumunda callback'i atla
-        }
     }
 
     // --------------------------------------------------------------------------------------------

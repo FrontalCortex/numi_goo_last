@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.app.auth.AuthManager
@@ -75,7 +76,8 @@ class FollowersFollowingFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = FollowUserAdapter(
             onFollowClick = { user -> followUser(user) },
-            onItemClick = { user -> openUserProfile(user.firebaseUid) }
+            onItemClick = { user -> openUserProfile(user.firebaseUid) },
+            onUnfollowClick = { user -> confirmUnfollow(user) }
         )
         binding.rvFollowList.layoutManager = LinearLayoutManager(requireContext())
         binding.rvFollowList.adapter = adapter
@@ -95,8 +97,8 @@ class FollowersFollowingFragment : Fragment() {
     }
 
     private fun setupTabs() {
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("TAKİP EDİLEN"))
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("TAKİPÇİ"))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText(appString(R.string.ui_takip_edilen)))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText(appString(R.string.ui_takipci)))
 
         binding.tabLayout.selectTab(binding.tabLayout.getTabAt(currentTab))
 
@@ -154,9 +156,9 @@ class FollowersFollowingFragment : Fragment() {
                     binding.progressBar.visibility = View.GONE
                     binding.layoutEmpty.visibility = View.VISIBLE
                     binding.tvEmpty.text = if (tab == TAB_FOLLOWING)
-                        "Henüz kimseyi takip etmiyorsun"
+                        appString(R.string.ui_henuz_kimseyi_takip_etmiyorsun)
                     else
-                        "Henüz takipçin yok"
+                        appString(R.string.ui_henuz_takipcin_yok)
                     return@addOnSuccessListener
                 }
 
@@ -171,10 +173,10 @@ class FollowersFollowingFragment : Fragment() {
                         if (!isAdded) return@addOnSuccessListener
                         binding.progressBar.visibility = View.GONE
 
-                        // Build a map uid → selectedAvatar
+                        // uid → avatarConfig (publicProfiles)
                         val avatarMap = userDocs.associateBy(
                             keySelector = { it.id },
-                            valueTransform = { it.getLong("selectedAvatar")?.toInt() ?: 0 }
+                            valueTransform = { it.getString(AvatarStore.FIRESTORE_FIELD) }
                         )
 
                         val users = snap.documents.mapNotNull { doc ->
@@ -187,17 +189,20 @@ class FollowersFollowingFragment : Fragment() {
                                 firebaseUid = uid,
                                 name = name,
                                 userId = userId,
-                                selectedAvatar = avatarMap[uid] ?: 0,
-                                showFollowButton = showFollowButton
+                                avatarConfig = avatarMap[uid],
+                                showFollowButton = showFollowButton,
+                                // X yalnızca "Takip Edilen" sekmesinde: oradaki herkesi zaten
+                                // takip ediyorum, yani X'in anlamı tek. Bkz. [FollowUser].
+                                showUnfollowButton = (tab == TAB_FOLLOWING)
                             )
                         }
 
                         if (users.isEmpty()) {
                             binding.layoutEmpty.visibility = View.VISIBLE
                             binding.tvEmpty.text = if (tab == TAB_FOLLOWING)
-                                "Henüz kimseyi takip etmiyorsun"
+                                appString(R.string.ui_henuz_kimseyi_takip_etmiyorsun)
                             else
-                                "Henüz takipçin yok"
+                                appString(R.string.ui_henuz_takipcin_yok)
                         } else {
                             binding.rvFollowList.visibility = View.VISIBLE
                             adapter.submitList(users)
@@ -206,13 +211,13 @@ class FollowersFollowingFragment : Fragment() {
                     .addOnFailureListener { e ->
                         if (!isAdded) return@addOnFailureListener
                         binding.progressBar.visibility = View.GONE
-                        Toast.makeText(requireContext(), "Avatar yüklenemedi: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), appString(R.string.ui_avatar_yuklenemedi_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
                     }
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
                 binding.progressBar.visibility = View.GONE
-                Toast.makeText(requireContext(), "Yüklenemedi: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_yuklenemedi_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
 
@@ -229,32 +234,94 @@ class FollowersFollowingFragment : Fragment() {
         val myFollowingRef = firestore.collection("users").document(myFirebaseUid)
             .collection("following").document(targetUid)
 
-        val followData = mapOf(
-            "userId" to user.userId,
-            "name" to user.name,
-            "followedAt" to Timestamp.now()
-        )
-        val myData = mapOf(
+        // DİKKAT: Hangi bilginin hangi dokümana yazıldığı buradaki tek incelik ve ters
+        // yazılmıştı. Doküman KENDİSİ kimi temsil ediyorsa onun bilgileri yazılır:
+        //   users/{hedef}/followers/{ben}  -> BENİM bilgilerim (hedefin takipçi listesindeki satır ben'im)
+        //   users/{ben}/following/{hedef}  -> HEDEFİN bilgileri (benim takip listemdeki satır hedef)
+        // Aynı eşleştirme [AddFriendFragment] ve [ProfileFragment] içinde de var.
+        val myRowInTargetFollowers = mapOf(
             "userId" to myUserId,
             "name" to myName,
             "followedAt" to Timestamp.now()
         )
+        val targetRowInMyFollowing = mapOf(
+            "userId" to user.userId,
+            "name" to user.name,
+            "followedAt" to Timestamp.now()
+        )
 
         // Sayaçlar sunucudaki takip trigger'ları tarafından güncelleniyor (bkz. AddFriendFragment).
-        batch.set(myFollowerRef, followData)
-        batch.set(myFollowingRef, myData)
+        batch.set(myFollowerRef, myRowInTargetFollowers)
+        batch.set(myFollowingRef, targetRowInMyFollowing)
 
         batch.commit()
             .addOnSuccessListener {
+                // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip gerçekleşti.
+                AnalyticsLogger.logFriendAddedFromList()
                 if (!isAdded) return@addOnSuccessListener
                 myFollowingUids.add(targetUid)
-                Toast.makeText(requireContext(), "${user.name} takip edildi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_x_takip_edildi_2, user.name), Toast.LENGTH_SHORT).show()
                 // Refresh list to hide the "+" button for this user
                 loadTab(currentTab)
             }
             .addOnFailureListener { e ->
                 if (!isAdded) return@addOnFailureListener
-                Toast.makeText(requireContext(), "Hata: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    // ----- Unfollow action -----
+
+    /**
+     * Takibi bırakmadan önce sorar.
+     *
+     * Profildeki onayla aynı sebep: liste satırları küçük ve alt alta; yanlışlıkla
+     * dokunmak kolay. Geri alınabilir bir işlem ama hedef kitle çocuk.
+     */
+    private fun confirmUnfollow(user: FollowUser) {
+        AlertDialog.Builder(requireContext())
+            .setMessage(appString(R.string.ui_x_adli_kullaniciyi_takip_etmeyi_birakmak, user.name))
+            .setNegativeButton(appString(R.string.ui_takibi_birak)) { dialog, _ ->
+                dialog.dismiss()
+                unfollowUser(user)
+            }
+            .setPositiveButton(appString(R.string.ui_iptal_2)) { dialog, _ -> dialog.dismiss() }
+            .show()
+    }
+
+    /**
+     * Takibi bırakır: iki takip kaydını da siler.
+     *
+     * Sunucuda yapılacak bir şey yok; sayaçları onFollowerDeleted / onFollowingDeleted
+     * trigger'ları düşürüyor (aynısı ProfileFragment.unfollowTargetUser içinde).
+     */
+    private fun unfollowUser(user: FollowUser) {
+        if (myFirebaseUid.isEmpty()) return
+        val targetUid = user.firebaseUid
+
+        val batch = firestore.batch()
+        batch.delete(
+            firestore.collection("users").document(targetUid)
+                .collection("followers").document(myFirebaseUid)
+        )
+        batch.delete(
+            firestore.collection("users").document(myFirebaseUid)
+                .collection("following").document(targetUid)
+        )
+
+        batch.commit()
+            .addOnSuccessListener {
+                // Ölçüm isAdded kontrolünden ÖNCE: ekran kapanmış olsa bile takip bırakıldı.
+                AnalyticsLogger.logFriendRemoved()
+                if (!isAdded) return@addOnSuccessListener
+                myFollowingUids.remove(targetUid)
+                Toast.makeText(requireContext(), appString(R.string.ui_x_takipten_cikarildi, user.name), Toast.LENGTH_SHORT).show()
+                // Listeyi tazele: satır "Takip Edilen"den düşsün, "Takipçi"de "+" geri gelsin.
+                loadTab(currentTab)
+            }
+            .addOnFailureListener { e ->
+                if (!isAdded) return@addOnFailureListener
+                Toast.makeText(requireContext(), appString(R.string.ui_hata_x, e.localizedMessage), Toast.LENGTH_SHORT).show()
             }
     }
 

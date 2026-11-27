@@ -33,7 +33,7 @@ class RestrictedUserAdapter(
         fun bind(user: RestrictedUser) {
             name.text = user.name
             if (user.banned) {
-                status.text = "Kalıcı ban"
+                status.text = appString(R.string.ui_kalici_ban)
                 status.setBackgroundResource(R.drawable.bg_status_chip_error)
                 status.setTextColor(itemView.context.getColor(R.color.dark_error))
             } else {
@@ -45,15 +45,15 @@ class RestrictedUserAdapter(
         }
 
         private fun formatRemaining(until: com.google.firebase.Timestamp?): String {
-            if (until == null) return "Kısıtlı"
+            if (until == null) return appString(R.string.ui_kisitli)
             val diff = until.toDate().time - System.currentTimeMillis()
-            if (diff <= 0) return "Süresi doldu"
+            if (diff <= 0) return appString(R.string.ui_suresi_doldu)
             val days = TimeUnit.MILLISECONDS.toDays(diff)
             val hours = TimeUnit.MILLISECONDS.toHours(diff) % 24
             return when {
-                days >= 1 -> "$days gün kaldı"
-                hours >= 1 -> "$hours saat kaldı"
-                else -> "1 saatten az kaldı"
+                days >= 1 -> appPlural(R.plurals.ui_x_gun_kaldi, days, days)
+                hours >= 1 -> appPlural(R.plurals.ui_x_saat_kaldi, hours, hours)
+                else -> appString(R.string.ui_1_saatten_az_kaldi)
             }
         }
     }

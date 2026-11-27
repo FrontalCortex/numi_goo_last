@@ -1,0 +1,1 @@
+Onlar basamağında 3 var ve 8'i doğrudan çıkaramayız, o yüzden boncuk kuralını kullanacağız. Önce yüzler basamağından 1 alıp onlara 10 ekleriz, yani onlarda 10 gider. Sonra 2 eklemek için 5 gelir, 3 gider ve onlar basamağında 8'i çıkarmış oluruz.

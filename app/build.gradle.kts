@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("com.google.devtools.ksp") version "1.9.24-1.0.20"
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+    id("com.google.android.gms.oss-licenses-plugin")
 }
 
 // Yayın imzalama bilgileri keystore.properties'ten okunur (git'e girmez, bkz. .gitignore).
@@ -32,7 +34,7 @@ android {
         applicationId = "com.numigo.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 4
+        versionCode = 26
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -50,6 +52,18 @@ android {
                 storePassword = keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+        // CI runner'larda ~/.android/debug.keystore varsayılan konumu ortam kurulumuna göre
+        // değişebiliyor (AGP her seferinde farklı, kayıtsız bir sertifika üretebiliyor →
+        // Google Sign-In DEVELOPER_ERROR). CI_DEBUG_KEYSTORE_PATH ortam değişkeni verildiğinde
+        // konumu varsaymadan doğrudan o dosyayı kullan; yoksa AGP'nin normal varsayılanı geçerli.
+        System.getenv("CI_DEBUG_KEYSTORE_PATH")?.let { ciDebugKeystorePath ->
+            getByName("debug") {
+                storeFile = file(ciDebugKeystorePath)
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
             }
         }
     }
@@ -121,6 +135,9 @@ dependencies {
     //character animation
     implementation(libs.lottie)
 
+    // Davet atıfı: Play'in kurulum referrer'ı (haftalık kart bağlantısındaki kod; ReferralAttribution).
+    implementation("com.android.installreferrer:installreferrer:2.2")
+
     //bundle off
     //noinspection UseTomlInstead
 
@@ -143,6 +160,18 @@ dependencies {
 
     implementation ("com.github.bumptech.glide:glide:4.16.0")
 
+    // Avatar (Personas) parçalarını SVG olarak çizmek için; VectorDrawable maske ve
+    // gradyanları desteklemiyor. Bkz. AvatarArt.
+    implementation("com.caverock:androidsvg-aar:1.4")
+
+    // Açılış ekranı: Android 12+'nın sistem açılışıyla bizimki tek ekran olsun (eskiden önce sistemin
+    // ikon ekranı, sonra bizim farklı logolu ekranımız geliyordu). Android 7–11'de de aynı görünüm.
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // Açık kaynak lisansları ekranı (OssLicensesMenuActivity). Liste yalnızca release derlemesinde
+    // gerçek; debug'da eklenti yer tutucu bir satır koyuyor.
+    implementation("com.google.android.gms:play-services-oss-licenses:17.1.0")
+
     // Firebase dependencies
     // Email link (passwordless) migration away from Dynamic Links requires newer Auth SDKs.
     // Use BoM 32.7.0 to stay compatible with Kotlin 1.9.x in this project.
@@ -150,11 +179,34 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
+    // Üretimdeki çökmeler ve "ölümcül olmayan" hatalar (bkz. AnalyticsLogger.recordNonFatal).
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
     implementation("com.google.firebase:firebase-functions")
     implementation("com.google.firebase:firebase-functions-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
+    // BoM 32.7.0'daki firebase-auth 22.3.0, reCAPTCHA 18.1.2 getiriyor; Play bu sürüm için
+    // güvenlik açığı uyarısı veriyor (incelemeden itibaren 90 gün, sonra yayın engelleniyor).
+    // BoM yükseltmek Kotlin 1.9 uyumunu bozabildiği için yalnızca bu kütüphane yükseltiliyor;
+    // Gradle iki sürümden büyüğünü seçer. BoM yükseltildiğinde bu satır kaldırılabilir.
+    implementation("com.google.android.recaptcha:recaptcha:18.4.0")
+
+    // App Check: "bu istek gerçekten benim uygulamamdan mı geliyor?" sorusunu yanıtlar.
+    // Kurallar (firestore.rules) ve context.auth "kim" sorusunu çözüyor; App Check
+    // APK'dan çıkarılan yapılandırmayla yazılmış bir script'in ya da yamalanmış bir
+    // APK'nın backend'i çağırmasını engelleyen ayrı katmandır.
+    //
+    // ZORLAMA (enforcement) Firebase Console'dan açılır ve ŞU AN KAPALI OLMALIDIR:
+    // açıldığı anda App Check SDK'sı olmayan her istemci kilitlenir. Bu yüzden SDK
+    // yayınlanan ilk sürümde bulunmalı, zorlama ise Console'daki doğrulanmış istek
+    // oranı oturduktan sonra (yayından ~2-4 hafta sonra) servis servis açılmalıdır.
+    implementation("com.google.firebase:firebase-appcheck-playintegrity")
+    // Debug derlemeleri Play'den dağıtılmadığı için Play Integrity ile doğrulanamaz;
+    // debug sağlayıcı Logcat'e bir jeton basar, Console'a eklenince test cihazı da
+    // zorlama açıkken çalışır. Release APK'ya girmez.
+    debugImplementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    debugImplementation("com.google.firebase:firebase-appcheck-debug")
     implementation("com.google.android.gms:play-services-auth:21.4.0")
 
     // Video oynatma (ağ / galeri formatları için) — aynı sürüm kullanılmalı
@@ -167,6 +219,10 @@ dependencies {
     // In-App Review API
     implementation("com.google.android.play:review:2.0.1")
     implementation("com.google.android.play:review-ktx:2.0.1")
+
+    // In-App Updates API: zorunlu güncelleme penceresindeki "Güncelle" düğmesi
+    // (bkz. ForceUpdateManager). Kilit kararı Remote Config'teki min_version_code'dan gelir.
+    implementation("com.google.android.play:app-update:2.1.0")
 
     // Google Play Billing (mağaza satın almaları) — bkz. docs/SATIN_ALMA_ENTEGRASYONU.md
     implementation("com.android.billingclient:billing:8.0.0")

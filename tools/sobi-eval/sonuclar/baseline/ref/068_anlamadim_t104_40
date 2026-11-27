@@ -1,0 +1,1 @@
+Burada 4'ü doğrudan eklemek yerine, önce 10 ekliyoruz. Çünkü 4'ün büyük kardeşi 6'dır (4 + 6 = 10), yani 10'u ekleyip 6'yı geri çıkarmak 4'ü eklemekle aynı sonucu verir. Senin abaküsünde 10 gelir, sonra 6 gider.

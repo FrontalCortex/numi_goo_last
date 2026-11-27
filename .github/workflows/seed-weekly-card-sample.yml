@@ -1,0 +1,41 @@
+name: Seed Weekly Card Sample
+
+# Ted hesabına haftalık ilerleme kartı için iki haftalık örnek kayıt + ders kilometre taşları (.github/scripts/seed-weekly-card-sample.js).
+# Bu dosya push edilince çalışır. REPLACE '1': eski örnek geri alınıp yenisi yazılır (tekrar
+# çalışması zararsız). Tamamen geri almak için REMOVE'u '1' yapıp push et.
+on:
+  workflow_dispatch: {}
+  push:
+    branches:
+      - 'claude/**'
+    paths:
+      - '.github/workflows/seed-weekly-card-sample.yml'
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install function dependencies
+        working-directory: functions
+        run: npm ci
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Run seed
+        env:
+          NODE_PATH: ${{ github.workspace }}/functions/node_modules
+          SEED_USER_ID: '835398VV'
+          REMOVE: '0'
+          REPLACE: '1'
+        run: node .github/scripts/seed-weekly-card-sample.js

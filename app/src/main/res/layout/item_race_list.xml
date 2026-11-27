@@ -35,7 +35,7 @@
                 android:id="@+id/raceName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Race Name"
+                android:text="@string/item_race_list_race_name"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/black" />
@@ -56,7 +56,7 @@
                 android:id="@+id/raceStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="BAŞLA"
+                android:text="@string/item_race_list_race_status"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/black"
