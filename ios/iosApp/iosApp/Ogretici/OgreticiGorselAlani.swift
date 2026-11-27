@@ -24,7 +24,7 @@ import UIKit
 // blinding_tutorial3 görünür; 16'da gizlenir. Metin bağı sonraki adımlarda da sürer (kalıcı).
 //
 // Metnin görselin üstüne alınması: adım metni OgreticiEkrani'nda (OgreticiAnaDuzen) çizilir; o görünüme
-// `.modifier(OgreticiMetinGorselBagi(model:))` takılır (aşağıda). Bu düzenleyici metin kabının altına
+// `.modifier(OgreticiMetinGorselBagi(model:))` takılır (aşağıda): bağ varken metin ayrı bir katmanda,
 // (görsel kutusunun yüksekliği + 2) kadar yer bırakır. Görsel alanı da metnin ALTINDA çizilir
 // (Android'de görseller alt panelin altında kalır), bu yüzden OgreticiIcerigiGorunumu'nda
 // OgreticiAnaDuzen'den ÖNCE yer alır.
@@ -143,50 +143,36 @@ struct OgreticiGorselKutusu: View {
 
 // MARK: Metnin görsele bağlanması
 
-/// Metin kabının alt kenarının (genel koordinat) ölçümü.
-struct OgreticiMetinAltAnahtari: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+extension OgreticiGorunumModeli {
+    /// Adım metni bir görsel kutusunun üstüne bağlı mı (Android ChangeConstraints bottomToTop).
+    /// Bağlıysa dönen değer görsel kutusunun yerleşim yüksekliğidir.
+    var metinGorselYuksekligi: CGFloat? {
+        return OgreticiGorselOlcu.metinBagiYuksekligi(birikmisYerlesimler())
     }
 }
 
-/// Adım metnini görsel kutusunun üstüne bağlar (Android ChangeConstraints: bottomToTop = görsel).
-/// Metin kabının altına, kutunun üstüne kadar yer bırakır; bağ yoksa hiçbir şey yapmaz.
-/// Kullanım (OgreticiAnaDuzen): `OgreticiMetinAlani(...).modifier(OgreticiMetinGorselBagi(model: model))`.
+/// Adım metnini görselin üstüne bağlar. BELİRLEYİCİ yerleşim (ölçüm yok): bağ varken metin, ana düzenin
+/// üzerine ayrı bir katmanda çizilir: üstte çıkış çubuğu kadar boşluk, altta (görsel yüksekliği + 2)
+/// boşluk, metin bu alana ALT hizalı. Görsel katmanı da aynı güvenli alanın altından 2 pt yukarıda
+/// başladığı için iki katman aynı referansı kullanır. Ana düzendeki asıl metin bu durumda
+/// OgreticiAnaDuzen'de gizlenir (opacity 0).
+/// Kullanım (OgreticiAnaDuzen VStack'ine): `.modifier(OgreticiMetinGorselBagi(model: model))`.
 struct OgreticiMetinGorselBagi: ViewModifier {
     @ObservedObject var model: OgreticiGorunumModeli
-    /// Metin kabının alt kenarının ekran içindeki konumu (ölçülen).
-    @State private var kabAlti: CGFloat = 0
 
     func body(content: Content) -> some View {
-        content
-            .padding(.bottom, ekBosluk)
-            .background(olcer)
-            .onPreferenceChange(OgreticiMetinAltAnahtari.self) { deger in
-                kabAlti = deger
+        content.overlay(katman)
+    }
+
+    @ViewBuilder
+    private var katman: some View {
+        if let yukseklik = model.metinGorselYuksekligi {
+            VStack(spacing: 0) {
+                Color.clear.frame(height: OgreticiOlcu.cikisUst + OgreticiOlcu.cikisBoyu)
+                OgreticiMetinAlani(metin: model.adim.metin, gorunenHarf: model.gorunenHarf)
+                Color.clear.frame(height: yukseklik + OgreticiGorselOlcu.altBosluk)
             }
-    }
-
-    private var olcer: some View {
-        GeometryReader { alan in
-            Color.clear.preference(
-                key: OgreticiMetinAltAnahtari.self,
-                value: alan.frame(in: .global).maxY
-            )
+            .allowsHitTesting(false)
         }
-    }
-
-    /// Kabın altı ile ekranın alt güvenli kenarı arasındaki mesafe, görsel kutusunun (yükseklik + alt
-    /// boşluk) altında kalıyorsa farkı bırakır.
-    private var ekBosluk: CGFloat {
-        guard let yukseklik = OgreticiGorselOlcu.metinBagiYuksekligi(model.birikmisYerlesimler()) else {
-            return 0
-        }
-        let ekranAlti: CGFloat = UIScreen.main.bounds.height - OgreticiGorselOlcu.altGuvenliAlan()
-        let kabaMesafe: CGFloat = max(0, ekranAlti - kabAlti)
-        let gereken: CGFloat = yukseklik + OgreticiGorselOlcu.altBosluk
-        return max(0, gereken - kabaMesafe)
     }
 }

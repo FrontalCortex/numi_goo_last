@@ -124,7 +124,7 @@ struct OgreticiAnaDuzen: View {
                 OgreticiKuralAlani(model: model)
             }
             OgreticiMetinAlani(metin: model.adim.metin, gorunenHarf: model.gorunenHarf)
-                .modifier(OgreticiMetinGorselBagi(model: model))
+                .opacity(model.metinGorselYuksekligi == nil ? 1 : 0)
                 .allowsHitTesting(false)
             OgreticiSoruKutusu(adim: model.adim)
                 .allowsHitTesting(false)
@@ -135,6 +135,7 @@ struct OgreticiAnaDuzen: View {
                 .padding(.horizontal, OgreticiOlcu.altPanelYatay)
                 .padding(.bottom, OgreticiOlcu.altPanelAlt)
         }
+        .modifier(OgreticiMetinGorselBagi(model: model))
     }
 }
 
