@@ -5,9 +5,20 @@ Bu klasör, Android uygulamasından **tamamen bağımsız** bir Gradle projesidi
 ```
 ios/
   shared/   Kotlin Multiplatform; Android mantığının kopyası (Aşama 1 — bitti)
-  iosApp/   SwiftUI ekranları (Aşama 2 — henüz yok)
+  iosApp/   SwiftUI ekranları (Aşama 2 — sürüyor; kurallar: iosApp/GELISTIRME.md)
+  docs/     Shared.h: ortak kodun Swift'e görünen adları (Codemagic çıktısı)
   tools/    Android kaynağından katalog/altın veri üreten betikler
 ```
+
+## Durum (Aşama 2, 27.11.2026)
+
+- : 100'den fazla Swift dosyası, ekran başına bir klasör. Codemagic'te (6. derleme, commit ) **0 hata ile derlendi** ve 29 ekranın simülatör görüntüsü alındı.
+- Yazılan ekranlar: kabuk (üst çubuk + 6 sekme), harita (kısım seçimi, ders listesi, alt panel), abaküs dersi, kör ders, ders sonucu, sandık, kristal, görevler, günlük soru, kupa yolu, kupa geçmişi, lider tablosu, rozetler, özelleştirme, mağaza, giriş/kayıt, profil.  bunları birbirine bağlar.
+- Ortak koda eklenenler (Fragment içinde kalmış kurallar ve Swift için köprüler) ile birlikte: **JVM 845 test, Kotlin/Native 842 test, 0 hata.**
+- **Hepsi sahte veriyle çalışıyor.** Firebase, StoreKit, reklam, ses, Lottie ve video bağlı değil; her biri bir Swift protokolünün arkasında yer tutucu.
+- Yazılmayanlar: öğretici (), bildirimler/öğretmene soru, ders sonu soru özeti, yarış paneli, plan karşılaştırma, rozet kutlaması.
+- Doğrulanmayanlar: dokunma/sürükleme hissi ve animasyonlar (yalnızca durağan ekran görüntüsüne bakıldı), gerçek cihaz, küçük ekranlar, Android ile piksel karşılaştırması.
+- Ekran galerisi: uygulama  argümanıyla açılırsa o ekranı örnek veriyle gösterir (); Codemagic her derlemede hepsinin görüntüsünü çıktı olarak bırakır.
 
 ## Durum (Aşama 1)
 
