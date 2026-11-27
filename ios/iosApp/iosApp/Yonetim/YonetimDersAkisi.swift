@@ -240,18 +240,28 @@ extension UygulamaYoneticisi {
 
     /// Android: ChestFragment — harita ilerlemesi yazılır, ardından sandık (NewChestFragment, COMMON) açılır.
     private func oduleGec(puan: Int, baglam: YonetimSonucBaglami, katman: Int) {
-        ilerleme.ilerlet(sira: baglam.sira, puan: puan, basariOrani: baglam.basariOrani)
+        // Android: ChestFragment.claim → MarathonGuideStore.scheduleIfEligible (ilerleme yazılmadan ÖNCEKİ öğeyle):
+        // 1. kısmın ilk ünite maratonu ilk kez bitiyorsa harita rehberi sıraya girer (bkz. Rehber/).
+        RehberOrtak.maratonuPlanla(
+            partId: baglam.partId, sira: baglam.sira, oge: ilerleme.dersOgesi(sira: baglam.sira)
+        )
+        // Android: ChestFragment.claim → shouldIncrement* bayrakları (ilerleme yazılmadan ÖNCEKİ öğeyle) +
+        // incrementBadgeProgressAndDetectLevelUp; seviye atlayan rozetler kuyruğun rozet adımına düşer.
+        var rozetGirdisi: RozetKazanimGirdisi = rozetGirdisiniHazirla(baglam: baglam, puan: puan)
+        let roket: Bool = ilerleme.ilerlet(sira: baglam.sira, puan: puan, basariOrani: baglam.basariOrani)
+        rozetGirdisi.roketGunlukDers = roket
+        rozetSayaclariniArtir(rozetGirdisi)
         haritaModeli.yenile()
         degistir(katman, .sandik(SandikGirdisi(baslangicNadirligi: "COMMON"), kapandi: { [weak self] _ in
-            // Ders sonrası kuyruğun "yeni seri" adımı (sandık katmanı hemen ardından kapanır).
-            self?.seriSorusunuDene()
+            // Ders sonrası kuyruk (sandık katmanı hemen ardından kapanır): önce rozet kutlaması, sonra "yeni seri".
+            self?.dersSonrasiKuyruguIsle()
         }))
     }
 
     private func haritayaDon(_ katman: Int) {
         haritaModeli.yenile()
         kapat(katman)
-        // Ders sonrası kuyruğun "yeni seri" adımı (Android: showNewStreakStep).
-        seriSorusunuDene()
+        // Ders sonrası kuyruk: rozet kutlaması (varsa), sonra "yeni seri" adımı (Android: showBadgeStep → showNewStreakStep).
+        dersSonrasiKuyruguIsle()
     }
 }

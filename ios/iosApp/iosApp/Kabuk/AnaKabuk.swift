@@ -169,7 +169,8 @@ struct AnaKabuk: View {
         ekran.soruBaslat = { veri in nesne.gunlukSoruyuBaslat(veri) }
         ekran.odulAc = { istek in nesne.gunlukSoruOdulunuAc(istek) }
         ekran.kartSecildi = { kart in nesne.kesfetKartiSecildi(kart) }
-        // rozetGoster: rozet seviye atlama ekranı (BadgeLevelUpFragment) henüz yazılmadı.
+        // Günlük soru ödülünden sonra seviye atlayan rozetler (Android: TasksFragment → openBadgeCelebration).
+        ekran.rozetGoster = { kuyruk in nesne.rozetKutlamasiniAc(kuyruk, bitti: {}) }
         return ekran
     }
 

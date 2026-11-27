@@ -181,8 +181,8 @@ struct AbakusAyarDugmesi: View {
 // MARK: - Sobi ile analiz et
 
 /// Ekranın "Sobi ile analiz et" için dışarıya verdiği istek (Android: MistakeReviewDialog.newInstance).
-/// Hata analizi motoru (MistakeAnalyzer, StepExplainer) ortak kodda yoktur; ekranı açan taraf yazılana
-/// kadar yer tutucu gösterir.
+/// Pencere SobiAnaliz/SobiAnalizEkrani'dır (kural motoru ortak kodda: shared/.../sobianaliz/); onu
+/// yönetici (Yonetim/UygulamaKokGorunumu) açar.
 struct AbakusSobiAnalizIstegi {
     /// Sorudaki sayılar; çıkarılan sayı eksi işaretlidir (Android: toplama/çıkarma için
     /// `listOf(first, if (sign == "-") -second else second)`; kör derste flaş dizisi).
@@ -204,8 +204,8 @@ struct AbakusSobiAnalizIstegi {
 
 /// "Sobi ile analiz et" düğmesinin dışarıya bağlantısı.
 struct AbakusSobiAnalizBaglantisi {
-    /// Android: `MistakeReviewDialog.canReview(numbers) && SobiAccess.isAllowed(context)`. Kural motoru
-    /// (buildSteps) ortak kodda olmadığından kararı ekranı açan taraf verir; "hayır" ise düğme gizlenir.
+    /// Android: `MistakeReviewDialog.canReview(numbers) && SobiAccess.isAllowed(context)`. Kararı ekranı
+    /// açan taraf verir (yönetici: SobiAnalizModeli.analizYapilabilir); "hayır" ise düğme gizlenir.
     var yapilabilir: ([Int]) -> Bool
     /// Düğmeye basılınca çağrılır.
     var istendi: (AbakusSobiAnalizIstegi) -> Void

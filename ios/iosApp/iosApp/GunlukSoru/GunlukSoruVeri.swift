@@ -259,12 +259,15 @@ final class SahteGunlukSoruCuzdani: GunlukSoruCuzdani {
     }
 }
 
-/// Sunucu bağlanana dek: rozet seviye atlaması yok, sandık ön isteği boş.
+/// Sunucu bağlanana dek: rozet sayacı bellekteki sahte rozet belgesinde ortak kuralla artar (Kupa/RozetKutlamaServisi.swift),
+/// sandık ön isteği boş.
 final class SahteGunlukSoruOdulServisi: GunlukSoruOdulServisi {
     func rozetIlerlet(periodKey: String, tamam: @escaping ([String]) -> Void) {
-        DispatchQueue.main.async {
-            tamam([])
-        }
+        // Android: TasksFragment.startDailyQuestionRewardFlow → incrementBadgeProgressAndDetectLevelUp(incrementFishing = true).
+        var girdi = RozetKazanimGirdisi()
+        girdi.olta = true
+        girdi.gunlukSoruPeriyodu = periodKey
+        SahteRozetKazanimServisi.ortak.sayaclariArtir(girdi, tamam: tamam)
     }
 
     func sandikOnIstegi(nadirlik: String) {}

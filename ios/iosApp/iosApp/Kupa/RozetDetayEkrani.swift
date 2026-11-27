@@ -238,7 +238,7 @@ struct RozetDetayEkrani: View {
 
     private func parcaDugmesi(_ durum: RozetDetayDurumu) -> some View {
         Button(action: {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            Titresim.tik()
             model.parcaPaneliAcik.toggle()
         }) {
             Text(durum.parcaSayisiMetni)

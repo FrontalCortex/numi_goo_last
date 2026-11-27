@@ -38,6 +38,9 @@ struct EkranGalerisi: View {
         "abakus-ders",
         "abakus-sandik",
         "kor-ders",
+        "rehber-ders",
+        "rehber-kor-ders",
+        "rehber-maraton",
         "sonuc-basarili",
         "sonuc-basarisiz",
         "sonuc-sandik-basarisiz",
@@ -56,6 +59,7 @@ struct EkranGalerisi: View {
         "magaza-alt",
         "profil",
         "profil-duzenle",
+        "ses-ayarlari",
         "avatar",
         "avatar-duzenle",
         "yer-tutucu",
@@ -69,7 +73,8 @@ struct EkranGalerisi: View {
         "maskot",
         "maskot-2",
         "maskot-3",
-    ] + SeriGaleri.adlar
+    ] + SeriGaleri.adlar + KuralGaleri.adlar + PlanGaleri.adlar + RozetKutlamaGaleri.adlar
+        + SobiAnalizGaleri.adlar
 
     /// `-ekran <ad>` ile istenen ekran; argüman yoksa nil (uygulama olağan akışla açılır).
     nonisolated static var istenenAd: String? {
@@ -111,6 +116,21 @@ struct EkranGalerisi: View {
         } else if SeriGaleri.adlar.contains(ad) {
             // Günlük seri ekranları ("seri", "seri-…"; Seri/SeriGaleri.swift).
             SeriGaleriEkrani(ad: ad)
+        } else if PlanGaleri.adlar.contains(ad) {
+            // Plan karşılaştırma / Pro satın alma ("plan", "plan-secim", "plan-pro"; Plan/PlanGaleri.swift).
+            PlanGaleriEkrani(ad: ad)
+        } else if RozetKutlamaGaleri.adlar.contains(ad) {
+            // Rozet kutlaması ("rozet-kutlama"; Kupa/RozetKutlamaGaleri.swift).
+            RozetKutlamaGaleriEkrani(ad: ad)
+        } else if KuralGaleri.adlar.contains(ad) {
+            // Kural kitabı ve kural paneli ("kural-…"; Kurallar/KuralGaleri.swift).
+            KuralGaleriEkrani(ad: ad)
+        } else if RehberGaleri.adlar.contains(ad) {
+            // Sobi rehberi ("rehber-ders", "rehber-kor-ders", "rehber-maraton"; Rehber/RehberGaleri.swift).
+            RehberGaleriEkrani(ad: ad)
+        } else if SobiAnalizGaleri.adlar.contains(ad) {
+            // "Sobi ile analiz et" ("sobi-analiz", "sobi-analiz-2"; SobiAnaliz/SobiAnalizGaleri.swift).
+            SobiAnalizGaleriEkrani(ad: ad)
         } else {
             digerEkranlar
         }
@@ -237,6 +257,8 @@ struct EkranGalerisi: View {
             EkranGalerisiHarita(durum: .kilitliPanel)
         case "profil-duzenle":
             EkranGalerisiProfilDuzenle()
+        case "ses-ayarlari":
+            EkranGalerisiSesAyarlari()
         case "avatar":
             // Farklı avatar dizgeleriyle 12 avatar (varsayılan, maskeler, degrade, dairesiz, yakın plan).
             AvatarOrnekIzgarasi()

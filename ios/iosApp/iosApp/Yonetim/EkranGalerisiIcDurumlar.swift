@@ -26,3 +26,21 @@ struct EkranGalerisiProfilDuzenle: View {
         }
     }
 }
+
+/// "Ses ve Bildirimler" ekranı: profilin geri yığınındaki ekran tek başına açılır.
+@MainActor
+struct EkranGalerisiSesAyarlari: View {
+    @StateObject private var gezinme: ProfilGezinme
+
+    init() {
+        let nesne = ProfilGezinme(depo: SahteProfilDeposu())
+        _gezinme = StateObject(wrappedValue: nesne)
+    }
+
+    var body: some View {
+        ZStack {
+            Color("background_color").ignoresSafeArea()
+            ProfilSesAyarlariEkrani(gezinme: gezinme)
+        }
+    }
+}

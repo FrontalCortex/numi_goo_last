@@ -116,6 +116,8 @@ final class YonetimIlerlemeDeposu: HaritaIlerlemeKaynagi {
         b.adimBitti = oge.stepIsFinish
         b.ipucu = oge.lessonHint
         b.enKotuKupaSuresi = oge.worstCupTime?.intValue
+        b.rehberNo = oge.abacusGuideNumber?.intValue
+        b.rehberIlkAdim = (oge.currentStep == 1)
         return b
     }
 
@@ -164,10 +166,13 @@ final class YonetimIlerlemeDeposu: HaritaIlerlemeKaynagi {
 
     /// Android: ChestFragment — changeCupIcon + updateMapProgress (adım ilerler / ders biter /
     /// sıradaki dersin kilidi açılır). `puan`: derste ders puanı, sandıkta toplam puan.
-    func ilerlet(sira: Int32, puan: Int, basariOrani: Float) {
-        guard let oge = dersOgesi(sira: sira) else { return }
+    /// Dönüş: roket rozetinin günlük ders sayacı artmalı mı (Android: updateMapProgress'in dönüş değeri,
+    /// `incrementRocketDailyLessons`); rozet adımı için YonetimPlanRozetAkisi.swift kullanır.
+    @discardableResult
+    func ilerlet(sira: Int32, puan: Int, basariOrani: Float) -> Bool {
+        guard let oge = dersOgesi(sira: sira) else { return false }
         let simge: String = ChestFragmentLogic.shared.changeCupIcon(lessonItem: oge, globalPartId: aktifPart).icon
-        _ = ChestFragmentLogic.shared.updateMapProgress(
+        let sonuc = ChestFragmentLogic.shared.updateMapProgress(
             mapFragmentStepIndex: sira,
             recordScore: Int32(puan),
             lessonSuccessRate: basariOrani,
@@ -177,6 +182,7 @@ final class YonetimIlerlemeDeposu: HaritaIlerlemeKaynagi {
             questionElapsedMs: nil
         )
         bellektenAl()
+        return sonuc.incrementRocketDailyLessons
     }
 
     // MARK: Hesapsız ilk açılış (ilk öğretici)

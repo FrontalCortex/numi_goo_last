@@ -84,6 +84,12 @@ final class AbakusDenetleyici: ObservableObject {
         tahta.ogreticiSayiyiYaz(yeni, bitti: bitti)
     }
 
+    /// Ders rehberi: "rod4BottomBead4" / "rod4TopBead" gibi bir boncuğu, kullanıcı dokunmuş gibi hareket
+    /// ettirir (Android: abacusController.animateGuideBead). Görünüm henüz bağlanmadıysa hiçbir şey yapmaz.
+    func rehberBoncugu(_ kimlik: String) {
+        tahta?.rehberBoncugu(kimlik)
+    }
+
     /// Öğretici boncuk animasyonu, sayı yazma ya da kullanıcı hareketi sürüyor mu.
     var ogreticiMesgul: Bool {
         guard let tahta = tahta else { return false }

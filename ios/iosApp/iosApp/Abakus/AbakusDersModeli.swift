@@ -248,6 +248,12 @@ final class AbakusDersModeli: ObservableObject {
         }
     }
 
+    /// Android: rehberin son sayfasından sonra showCurrentOperation() — yeni soru gibi hata kaydı sıfırlanır
+    /// (rehber boncukları oynatırken biriken ara değerler analize karışmasın). Rehber katmanı çağırır.
+    func rehberBitti() {
+        soruyuGoster()
+    }
+
     // MARK: Kontrol
 
     /// Android: controlButtonAnim, ACTION_UP dalı.

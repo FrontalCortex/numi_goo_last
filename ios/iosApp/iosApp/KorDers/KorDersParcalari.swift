@@ -49,6 +49,7 @@ struct KorDersTahta: View {
         } else {
             // firstNumberText: kartın ortasında tek sayı.
             sayi(model.tahtaMetni)
+                .rehberHedefi(.ilkSayi)
         }
     }
 
@@ -58,8 +59,10 @@ struct KorDersTahta: View {
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 sayi(model.birinciSayi)
+                    .rehberHedefi(.ilkSayi)
                 Spacer(minLength: 0)
                 sayi(model.ikinciSayi)
+                    .rehberHedefi(.ikinciSayi)
                 Spacer(minLength: 0)
             }
             Text(model.islec)
@@ -108,8 +111,8 @@ struct KorDersSayiKutusu: View {
 
 /// Sağ kenardaki düğme sütunu. Android'de alttan üste (hepsi startButton'ın üstünde, aralarında 4dp):
 /// abacusModeButton, skipStepButton, rulesPanelButton, resetButton, askQuestionButton, hintContainer.
-/// Sihirli değnek (rulesPanelButton, kural paneli) henüz yazılmadı; öğretmene sor düğmesi Android'de
-/// gizli (TeacherQuestionsFeature.ENABLED = false), ikisinin yeri de boş kalır.
+/// Sihirli değnek (rulesPanelButton, kural paneli; bkz. Kurallar/) yalnızca tablo seçicili derslerde görünür;
+/// öğretmene sor düğmesi Android'de gizli (TeacherQuestionsFeature.ENABLED = false), yeri boş kalır.
 /// Ekran kenarına uzaklık (kök dolgu 10dp + marginEnd): skipStepButton, abacusModeButton −10dp → 0;
 /// resetButton −9dp → 1; fabHint (16 − 25 = −9dp) → 1.
 ///
@@ -124,6 +127,10 @@ struct KorDersYanDugmeler: View {
     @ObservedObject var model: KorDersModeli
     @ObservedObject var ayar: AbakusGorunumAyari
     let ayarDokunuldu: () -> Void
+    /// Sihirli değnek (rulesPanelButton, kural paneli): sıfırla ile adım atla düğmelerinin arasında (bkz. Kurallar/).
+    @ObservedObject var kural: KuralModeli
+    /// Sayı kutusu odakta (klavye açık): Android değneği devre dışı bırakır.
+    let klavyeAcik: Bool
 
     @State private var sifirlaOynuyor: Bool = false
     @State private var sifirlaSayaci: Int = 0
@@ -145,11 +152,18 @@ struct KorDersYanDugmeler: View {
                 sifirlaDugmesi
                     .padding(.trailing, 1)
             }
+            if kural.ders.panelDugmesi != .yok {
+                KuralDegnekDugmesi(eylem: { _ = kural.panelDugmesiDokunuldu() })
+                    .rehberHedefi(.kuralPaneliDugmesi)
+                    .allowsHitTesting(!klavyeAcik)
+            }
             if !model.adimAtlaGizli {
                 atlaDugmesi
+                    .rehberHedefi(.adimAtlaDugmesi)
             }
             if model.ayarGorunur {
                 AbakusAyarDugmesi(acik: ayar.acik, eylem: ayarDokunuldu)
+                    .rehberHedefi(.abakusAyarDugmesi)
             }
         }
     }

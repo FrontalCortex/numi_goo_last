@@ -458,6 +458,14 @@ final class AbakusTahtaGorunumu: UIView {
         modeldenYerlestir()
     }
 
+    /// Ders rehberi: boncuğu dokunulmuş gibi hareket ettirir (Android: AbacusBeadController.animateGuideBead;
+    /// kimlik biçimi "rod<0-4>TopBead" / "rod<0-4>BottomBead<1-4>"; rod 4 birler çubuğudur).
+    func rehberBoncugu(_ kimlik: String) {
+        dokunmayiBirak()
+        denetleyici.animateGuideBead(beadId: kimlik)
+        modeldenYerlestir()
+    }
+
     /// Öğretici animasyonu ya da sayı yazma sürüyor mu (host'ta bekleyen animasyon var mı).
     var ogreticiAnimasyonVar: Bool {
         return evSahibi.animasyonVar

@@ -12,7 +12,6 @@ import SwiftUI
 //
 // Kapsam dışı bırakılan Android parçaları (ayrı işler; ayrıntı raporda):
 //  - rehber paneli (panelContent, btnBack, btnForward; Sobi maskotlu adım adım rehber),
-//  - kural kitabı ve kural paneli (rulesBookButton, rulesPanelButton, view_rules_panel; LessonRulesPanel),
 //  - öğretmene sor düğmesi (TeacherQuestionsFeature.ENABLED = false; Android'de de gizli),
 //  - "Sobi ile analiz et" penceresinin kendisi (MistakeReviewDialog, MistakeAnalyzer, StepExplainer):
 //    düğme ve çıkış noktası burada, pencereyi dışarıdaki `sobiAnalizi` bağlantısı açar.
@@ -25,6 +24,10 @@ import SwiftUI
 struct AbakusDersEkrani: View {
     @StateObject private var model: AbakusDersModeli
     @StateObject private var ayar: AbakusGorunumAyari
+    /// Ders içi Sobi rehberi (Android: panelContent + rehber akışı; bkz. Rehber/).
+    @StateObject private var rehber: RehberAkisi
+    /// Kural kitabı ve sihirli değnek paneli (bkz. Kurallar/).
+    @StateObject private var kural: KuralModeli
     private let kapat: () -> Void
     private let stil: AbakusStili
     private let cikisGizli: Bool
@@ -45,6 +48,7 @@ struct AbakusDersEkrani: View {
         stil: AbakusStili = .varsayilan,
         sobiAnalizi: AbakusSobiAnalizBaglantisi? = nil,
         cikisGizli: Bool = false,
+        baslangicKurali: KuralBaslangicDurumu = .kapali,
         bitti: @escaping (AbakusDersSonucu) -> Void,
         kapat: @escaping () -> Void
     ) {
@@ -54,6 +58,14 @@ struct AbakusDersEkrani: View {
             )
         )
         _ayar = StateObject(wrappedValue: AbakusGorunumAyari())
+        _rehber = StateObject(wrappedValue: RehberAkisi(girisSuresi: 0.3, cikisSuresi: 0.3))
+        // Android: FirebaseAuth.currentUser == null → kural düğmeleri gizli (= hesapsız ilk öğretici dersi).
+        _kural = StateObject(
+            wrappedValue: KuralModeli(
+                ders: KuralDersBilgisi.abakusDersi(dersBaslangici, hesapsiz: cikisGizli),
+                baslangic: baslangicKurali
+            )
+        )
         self.kapat = kapat
         self.stil = stil
         self.cikisGizli = cikisGizli
@@ -69,18 +81,86 @@ struct AbakusDersEkrani: View {
                 )
                 // abacus_fragment_root_padding
                 .padding(AbakusDersOlcu.kokBosluk)
-                AbakusYanDugmeKatmani(model: model, ayar: ayar)
+                AbakusYanDugmeKatmani(model: model, ayar: ayar, kural: kural)
+                // Kural kitabı düğmesi, kitap ve kural paneli (rulesBookButton, rulesFragmentContainer,
+                // rulesPanelScrollView).
+                KuralKatmani(
+                    kural: kural,
+                    yerlesim: KuralYerlesimi.abakusDersi(
+                        ekran: alan.size, altBosluk: CGFloat(ayar.altBosluk), sureGorunur: model.sureGorunur
+                    ),
+                    klavyeAcik: false
+                )
                 AbakusAyarKatmani(ayar: ayar, ekran: alan.size)
                 AbakusDersOrtusu(model: model)
                 AbakusKonfetiKatmani(goster: model.konfeti)
                 AbakusSonucPanelKatmani(model: model)
                 AbakusBildirimKatmani(metin: model.bildirim)
             }
+            // Ders içi rehber: dokunma engeli, vurgu ve kayan panel (panel abaküsün hemen üstüne oturur).
+            .overlayPreferenceValue(RehberHedefAnahtari.self) { (hedefler: [RehberHedefi: Anchor<CGRect>]) in
+                RehberKatmani(
+                    akis: rehber, hedefler: hedefler, duzen: RehberDuzeni.abakusDersi,
+                    yer: RehberYeri.abakusUstu(aralik: 0)
+                )
+            }
             // closeFragment: ekran genişliği kadar SOLA kayar, 400 ms.
             .offset(x: model.kapaniyor ? -alan.size.width : 0)
         }
-        .onAppear { model.gorundu() }
+        .onAppear {
+            model.gorundu()
+            rehberiBaslat()
+        }
         .onDisappear { model.kayboldu() }
+        // Rehber 4: kural tablosundan bir kural seçilince (panel açılınca) rehber ilerler
+        // (Android: completeGuideIfWaitingForRulesSelection).
+        .onChange(of: kural.panelAcik) { (acik: Bool) in
+            if acik {
+                rehber.kuralSecildi()
+            }
+        }
+    }
+
+    /// Android: AbacusFragment.setupGuidePanel — `abacusGuideNumber` varsa ve ders adımı 1 ise rehber açılır
+    /// (rehber 6 en çok iki kez). Bir akış yalnızca bir kez başlar; ekran yeniden göründüğünde tekrarlanmaz.
+    private func rehberiBaslat() {
+        guard let baslatma = RehberOrtak.abakusDersiRehberi(
+            rehberNo: model.baslangic.rehberNo, ilkAdim: model.baslangic.rehberIlkAdim
+        ) else {
+            return
+        }
+        let dersModeli: AbakusDersModeli = model
+        let denetleyici: AbakusDenetleyici = model.abakus
+        let ayarNesnesi: AbakusGorunumAyari = ayar
+        let kuralNesnesi: KuralModeli = kural
+        rehber.boncukOynat = { (kimlik: String) -> Void in
+            denetleyici.rehberBoncugu(kimlik)
+        }
+        rehber.kuralKitabiniKapat = { () -> Void in
+            kuralNesnesi.kitabiKapat()
+        }
+        rehber.hedefTiklandi = { (hedef: RehberHedefi) -> Void in
+            // Android: handleRequiredClickTarget — hedefin asıl işi yapılır.
+            switch hedef {
+            case .abakusAyarDugmesi:
+                ayarNesnesi.degistir(
+                    acildi: { denetleyici.sifirla(animasyonlu: true) },
+                    kapandi: {}
+                )
+            case .kuralPaneliDugmesi:
+                _ = kuralNesnesi.panelDugmesiDokunuldu()
+            case .kuralKitabiDugmesi:
+                kuralNesnesi.kitabiAc()
+            default:
+                break
+            }
+        }
+        rehber.bitti = { (normal: Bool) -> Void in
+            if normal {
+                dersModeli.rehberBitti()
+            }
+        }
+        rehber.baslat(baslatma.adimlar, gecikme: 0.5, acildi: { RehberOrtak.gosterildi(baslatma) })
     }
 }
 
@@ -201,9 +281,13 @@ private struct AbakusDersAltBolumu: View {
         let boy: CGFloat = boyut.height * olcek
         let kullaniciX: CGFloat = CGFloat(ayar.abakusX)
         let kullaniciY: CGFloat = CGFloat(ayar.abakusY)
+        // Sihirli değnek de sütundadır (hesapsız ilk dersin düğmeleri zaten gizli olduğundan hesapsiz: false).
+        let degnekGorunumu: KuralGorunurluk = KuralDersBilgisi.abakusDersi(
+            model.baslangic, hesapsiz: false
+        ).panelDugmesi
+        let sutunVar: Bool = model.baslangic.ayarDugmesiGorunur || degnekGorunumu != .yok
         let pay: CGFloat = AbakusYanSigdirma.pay(
-            ekranGenisligi: ekranGenisligi, kullaniciX: kullaniciX,
-            sutunVar: model.baslangic.ayarDugmesiGorunur
+            ekranGenisligi: ekranGenisligi, kullaniciX: kullaniciX, sutunVar: sutunVar
         )
         let gorunenOlcek: CGSize = CGSize(width: kullaniciX * pay, height: kullaniciY * pay)
         let kilitli: Bool = model.ortuAcik || ayar.acik
@@ -220,6 +304,8 @@ private struct AbakusDersAltBolumu: View {
         .scaleEffect(olcek)
         .frame(width: en, height: boy)
         .scaleEffect(gorunenOlcek, anchor: .bottom)
+        // Rehber paneli bu çerçevenin üstüne oturur (Android: abacusContainer).
+        .rehberHedefi(.abakusAlani)
     }
 
     /// kontrolButton ve startButton aynı yerde durur; biri görünürken öbürü gizlidir.
@@ -234,6 +320,7 @@ private struct AbakusDersAltBolumu: View {
                 )
                 // Android: panel açıkken dinleyici kaldırılır; düğmenin görünümü değişmez.
                 .allowsHitTesting(model.kontrolEtkin)
+                .rehberHedefi(.kontrolDugmesi)
                 // tutorial_bottom_panel_margin_bottom
                 .padding(.bottom, 16)
             }
@@ -258,19 +345,29 @@ private struct AbakusDersAltBolumu: View {
 // MARK: - Yan düğmeler ve ayar paneli
 
 /// Sağ kenardaki düğme sütunu: kontrolButton'ın 4 üstünde, ekran kenarına yaslı (marginEnd −10 + kök
-/// dolgu 10). Abaküs dersinde yalnızca abaküs ayarı düğmesi vardır; sihirli değnek (kural paneli) ve
-/// kural kitabı düğmeleri henüz yazılmadı, öğretmene sor düğmesi Android'de de gizli.
+/// dolgu 10). Abaküs dersinde abaküs ayarı düğmesi ve onun üstünde sihirli değnek (kural paneli; bkz.
+/// Kurallar/) vardır; kural kitabı düğmesi sağ üsttedir (KuralKatmani), öğretmene sor düğmesi Android'de
+/// de gizli.
 private struct AbakusYanDugmeKatmani: View {
     @ObservedObject var model: AbakusDersModeli
     @ObservedObject var ayar: AbakusGorunumAyari
+    /// Sihirli değnek (rulesPanelButton) abaküs ayar düğmesinin 4 üstündedir (Android: bottomToTopOf abacusModeButton).
+    @ObservedObject var kural: KuralModeli
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
-                if model.baslangic.ayarDugmesiGorunur {
-                    AbakusAyarDugmesi(acik: ayar.acik, eylem: { ayarDugmesiDokunuldu() })
+                VStack(alignment: .trailing, spacing: AbakusDersOlcu.yanDugmeAraligi) {
+                    if kural.ders.panelDugmesi != .yok {
+                        KuralDegnekDugmesi(eylem: { _ = kural.panelDugmesiDokunuldu() })
+                            .rehberHedefi(.kuralPaneliDugmesi)
+                    }
+                    if model.baslangic.ayarDugmesiGorunur {
+                        AbakusAyarDugmesi(acik: ayar.acik, eylem: { ayarDugmesiDokunuldu() })
+                            .rehberHedefi(.abakusAyarDugmesi)
+                    }
                 }
             }
         }

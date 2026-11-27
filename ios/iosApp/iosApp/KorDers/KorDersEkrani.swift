@@ -15,8 +15,10 @@ import SwiftUI
 // yüksekliğinde göçen "Kontrol Et" / "Başla" düğmesi; sağ kenarda düğmenin üstünde yan düğme sütunu
 // (ipucu, sıfırla, adım atla, abaküs ayarı); alttan kayan doğru / yanlış panelleri.
 //
-// Bu ekranda OLMAYANLAR (Android'de var; ayrı işler, ayrıntı raporda): kural kitabı ve kural paneli
-// (rulesBookButton, rulesPanelButton, view_rules_panel), rehber (guide) paneli, "Sobi ile analiz et"
+// Kural kitabı ve kural paneli (rulesBookButton, rulesPanelButton, view_rules_panel) Kurallar/ klasöründedir;
+// bu ekran yalnızca KuralKatmani'nı ve sihirli değnek düğmesini bağlar.
+//
+// Bu ekranda OLMAYANLAR (Android'de var; ayrı işler, ayrıntı raporda): rehber (guide) paneli, "Sobi ile analiz et"
 // penceresinin kendisi (düğme ve çıkış noktası vardır; pencereyi dışarıdaki `sobiAnalizi` bağlantısı açar),
 // öğretmene soru düğmesi (Android'de de gizli). Ders sonu anketi güncel Android'de kalktı.
 //
@@ -29,12 +31,21 @@ struct KorDersEkrani: View {
     @FocusState private var kutuOdakta: Bool
     /// Abaküsle cevaplanan derslerde abaküsün görünümü (bkz. `abakusStili(_:)`).
     private var abakusGorunumStili: AbakusStili = .varsayilan
+    /// Boncuk tık sesi: ses servisi `AbakusBoncukSesi` de ise (gerçek uygulama) abaküse bağlanır; sahte ise sessiz.
+    private let boncukSesi: AbakusBoncukSesi?
+    /// Ders içi Sobi rehberi (Android: view_guide_panel include'u + rehber akışı; bkz. Rehber/).
+    @StateObject private var rehber: RehberAkisi
+    /// Kural kitabı ve sihirli değnek paneli (bkz. Kurallar/).
+    @StateObject private var kural: KuralModeli
+    private let rehberNo: Int?
+    private let rehberIlkAdim: Bool
 
     /// - Parameter sobiAnalizi: yanlış cevap panelindeki "Sobi ile analiz et" düğmesinin bağlantısı; nil ise
     ///   düğme hiç görünmez.
     init(
         baslangic: KorDersBaslangici,
         sobiAnalizi: AbakusSobiAnalizBaglantisi? = nil,
+        baslangicKurali: KuralBaslangicDurumu = .kapali,
         bitti: @escaping (KorDersSonucu) -> Void,
         kapat: @escaping () -> Void
     ) {
@@ -44,6 +55,7 @@ struct KorDersEkrani: View {
             enerji: SahteKorDersEnerjiServisi(),
             ses: SahteKorDersSesServisi(),
             sobiAnalizi: sobiAnalizi,
+            baslangicKurali: baslangicKurali,
             bitti: bitti,
             kapat: kapat
         )
@@ -56,9 +68,13 @@ struct KorDersEkrani: View {
         enerji: KorDersEnerjiServisi,
         ses: KorDersSesServisi,
         sobiAnalizi: AbakusSobiAnalizBaglantisi? = nil,
+        baslangicKurali: KuralBaslangicDurumu = .kapali,
         bitti: @escaping (KorDersSonucu) -> Void,
         kapat: @escaping () -> Void
     ) {
+        _kural = StateObject(
+            wrappedValue: KuralModeli(ders: KuralDersBilgisi.korDersi(baslangic), baslangic: baslangicKurali)
+        )
         _model = StateObject(
             wrappedValue: KorDersModeli(
                 baslangic: baslangic,
@@ -71,6 +87,10 @@ struct KorDersEkrani: View {
             )
         )
         _ayar = StateObject(wrappedValue: AbakusGorunumAyari())
+        self.boncukSesi = ses as? AbakusBoncukSesi
+        _rehber = StateObject(wrappedValue: RehberAkisi(girisSuresi: 0.3, cikisSuresi: 0.3))
+        self.rehberNo = baslangic.rehberNo
+        self.rehberIlkAdim = baslangic.rehberIlkAdim
     }
 
     /// Abaküsle cevaplanan derslerde (isBlinding == null) kullanıcının seçtiği boncuk ve çerçeve.
@@ -85,8 +105,65 @@ struct KorDersEkrani: View {
         GeometryReader { alan in
             govde(ekran: alan.size)
         }
-        .onAppear { model.gorundu() }
+        .onAppear {
+            model.gorundu()
+            rehberiBaslat()
+        }
         .onDisappear { model.kayboldu() }
+        // Android: showHint → closeRulesPanelIfOpen; showActiveRulesPanelTable → closeHintIfVisible.
+        .onChange(of: model.ipucuAcik) { (acik: Bool) in
+            if acik {
+                kural.panelKapat()
+            }
+        }
+        .onChange(of: kural.panelAcik) { (acik: Bool) in
+            if acik && model.ipucuAcik {
+                model.ipucunuDegistir()
+            }
+        }
+        // Rehber 4: kural tablosundan bir kural seçilince (panel açılınca) rehber ilerler.
+        .onChange(of: kural.panelAcik) { (acik: Bool) in
+            if acik {
+                rehber.kuralSecildi()
+            }
+        }
+    }
+
+    /// Android: BlindingLessonFragment.initializeGuideSystem — "sayıyı geç" düğmesi görünüyorsa ve öğretici
+    /// gösterilmediyse rehber 5, değilse dersin kendi rehberi (yalnızca ders adımı 1'de). Bir akış bir kez başlar.
+    private func rehberiBaslat() {
+        guard let baslatma = RehberOrtak.korDersiRehberi(
+            rehberNo: rehberNo, ilkAdim: rehberIlkAdim, adimAtlaGorunur: !model.adimAtlaGizli
+        ) else {
+            return
+        }
+        let denetleyici: AbakusDenetleyici = model.abakus
+        let ayarNesnesi: AbakusGorunumAyari = ayar
+        let kuralNesnesi: KuralModeli = kural
+        rehber.boncukOynat = { (kimlik: String) -> Void in
+            denetleyici.rehberBoncugu(kimlik)
+        }
+        rehber.kuralKitabiniKapat = { () -> Void in
+            kuralNesnesi.kitabiKapat()
+        }
+        rehber.hedefTiklandi = { (hedef: RehberHedefi) -> Void in
+            // Android: handleRequiredClickTarget — hedefin asıl işi yapılır. Kör derste "sayıyı geç" oku
+            // (rehber 5) zorunlu dokunma hedefi değildir.
+            switch hedef {
+            case .abakusAyarDugmesi:
+                ayarNesnesi.degistir(
+                    acildi: { denetleyici.sifirla(animasyonlu: true) },
+                    kapandi: {}
+                )
+            case .kuralPaneliDugmesi:
+                _ = kuralNesnesi.panelDugmesiDokunuldu()
+            case .kuralKitabiDugmesi:
+                kuralNesnesi.kitabiAc()
+            default:
+                break
+            }
+        }
+        rehber.baslat(baslatma.adimlar, gecikme: 0.5, acildi: { RehberOrtak.gosterildi(baslatma) })
     }
 
     private func govde(ekran: CGSize) -> some View {
@@ -99,9 +176,26 @@ struct KorDersEkrani: View {
             }
             .padding(KorDersStil.kokBosluk)
             yanDugmeKatmani
+            // Kural kitabı düğmesi, kitap ve kural paneli (rulesBookButton, rulesFragmentContainer,
+            // rulesPanelScrollView); klavye açıkken panel gizlenir.
+            KuralKatmani(
+                kural: kural,
+                yerlesim: KuralYerlesimi.korDersi(
+                    ekran: ekran, altBosluk: CGFloat(ayar.altBosluk), sureGorunur: model.sureGorunur,
+                    klavyeyleCevap: model.klavyeyleCevap
+                ),
+                klavyeAcik: kutuOdakta
+            )
             AbakusAyarKatmani(ayar: ayar, ekran: ekran)
             konfetiKatmani
             panelKatmani
+        }
+        // Ders içi rehber: dokunma engeli, vurgu ve kayan panel (panel abaküs alanının 16 üstüne oturur).
+        .overlayPreferenceValue(RehberHedefAnahtari.self) { (hedefler: [RehberHedefi: Anchor<CGRect>]) in
+            RehberKatmani(
+                akis: rehber, hedefler: hedefler, duzen: RehberDuzeni.korDersi,
+                yer: RehberYeri.abakusUstu(aralik: 16)
+            )
         }
     }
 
@@ -199,8 +293,10 @@ struct KorDersEkrani: View {
         let boy: CGFloat = boyut.height * olcek
         let kullaniciX: CGFloat = CGFloat(ayar.abakusX)
         let kullaniciY: CGFloat = CGFloat(ayar.abakusY)
+        // Sihirli değnek de sütundadır.
+        let degnekVar: Bool = kural.ders.panelDugmesi != .yok
         let pay: CGFloat = AbakusYanSigdirma.pay(
-            ekranGenisligi: ekranGenisligi, kullaniciX: kullaniciX, sutunVar: model.yanDugmeVar
+            ekranGenisligi: ekranGenisligi, kullaniciX: kullaniciX, sutunVar: model.yanDugmeVar || degnekVar
         )
         let gorunenOlcek: CGSize = CGSize(width: kullaniciX * pay, height: kullaniciY * pay)
         return VStack(spacing: 0) {
@@ -211,12 +307,15 @@ struct KorDersEkrani: View {
                 kilitli: ayar.acik,
                 stil: abakusGorunumStili,
                 animasyonSuresiMs: model.boncukAnimasyonMs,
+                ses: boncukSesi,
                 degerDegisti: { (deger: Int) -> Void in model.abakusDegeriDegisti(deger) },
                 boncukAyari: ayar.boncukAyari
             )
             .scaleEffect(olcek)
             .frame(width: en, height: boy)
             .scaleEffect(gorunenOlcek, anchor: .bottom)
+            // Rehber paneli bu çerçevenin 16 üstüne oturur (Android: abacusContainer).
+            .rehberHedefi(.abakusAlani)
             .padding(.bottom, CGFloat(ayar.altBosluk))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -232,6 +331,7 @@ struct KorDersEkrani: View {
                 baslaDugmesi
             }
         }
+        .rehberHedefi(.kontrolDugmesi)
         .padding(.horizontal, KorDersStil.anaDugmeYanBosluk)
         .padding(.bottom, KorDersStil.anaDugmeAltBosluk)
     }
@@ -272,7 +372,10 @@ struct KorDersEkrani: View {
             Spacer(minLength: 0)
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
-                KorDersYanDugmeler(model: model, ayar: ayar, ayarDokunuldu: { ayarDugmesiDokunuldu() })
+                KorDersYanDugmeler(
+                    model: model, ayar: ayar, ayarDokunuldu: { ayarDugmesiDokunuldu() },
+                    kural: kural, klavyeAcik: kutuOdakta
+                )
             }
         }
         .padding(.bottom, altBosluk)

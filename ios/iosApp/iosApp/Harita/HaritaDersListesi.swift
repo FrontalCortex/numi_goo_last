@@ -9,6 +9,8 @@ import UIKit
 
 struct HaritaDersListesi: View {
     @ObservedObject var model: HaritaModeli
+    /// Ünite maratonu rehberi (Android: MapFragment.showGuidePanel; bkz. Rehber/RehberMaraton.swift).
+    @ObservedObject private var maraton: RehberMaratonDurumu = RehberOrtak.maraton
 
     /// true ise geri düğmesini kabuğun üst çubuğu çizer (Android'deki yeri).
     @Environment(\.haritaGeriKabukta) private var geriKabukta: Bool
@@ -22,6 +24,21 @@ struct HaritaDersListesi: View {
                 // Panel kapalıyken katman listeye gelen dokunuşları almasın.
                 .allowsHitTesting(model.panel != nil)
             }
+            // Maraton rehberi ders panelinin ÜSTÜNDE: dokunmayı keser, "Rekor" satırını işaret eder.
+            .overlayPreferenceValue(RehberHedefAnahtari.self) { (hedefler: [RehberHedefi: Anchor<CGRect>]) in
+                RehberKatmani(
+                    akis: maraton.akis, hedefler: hedefler, duzen: RehberDuzeni.harita,
+                    yer: RehberYeri.hedefAltinda(hedef: .dersPaneli, aralik: 12)
+                )
+            }
+            .onAppear { maraton.dene(model: model) }
+            .onDisappear { maraton.durdur() }
+            .onReceive(maraton.$istekSayaci) { (_: Int) in
+                // Durum güncellemesi sırasında başlatılmasın.
+                DispatchQueue.main.async {
+                    maraton.dene(model: model)
+                }
+            }
             .overlay(alignment: .topLeading) { geriKatmani }
             .background(Color("background_color"))
             .animation(Animation.easeOut(duration: 0.18), value: model.panel?.id)
@@ -30,15 +47,26 @@ struct HaritaDersListesi: View {
     // MARK: Liste
 
     private var liste: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            LazyVStack(spacing: 0) {
-                ForEach(model.ogeler) { oge in
-                    HaritaSatiri(oge: oge, dokun: { model.ogeyeDokun(oge) })
+        ScrollViewReader { (vekil: ScrollViewProxy) in
+            ScrollView(.vertical, showsIndicators: false) {
+                LazyVStack(spacing: 0) {
+                    ForEach(model.ogeler) { oge in
+                        HaritaSatiri(oge: oge, dokun: { model.ogeyeDokun(oge) })
+                            .id(oge.id)
+                    }
+                }
+                .padding(.top, HaritaStil.listeUstBosluk)
+                .padding(.bottom, HaritaStil.listeAltBosluk)
+                .frame(maxWidth: .infinity)
+            }
+            // Maraton rehberi: liste ilk sandığa kayar (Android: scrollToPositionWithOffset(chestIndex, 0)).
+            .onChange(of: maraton.kaydirma) { (hedefSira: Int?) in
+                if let sira = hedefSira {
+                    withAnimation(Animation.easeInOut(duration: 0.4)) {
+                        vekil.scrollTo(sira, anchor: .top)
+                    }
                 }
             }
-            .padding(.top, HaritaStil.listeUstBosluk)
-            .padding(.bottom, HaritaStil.listeAltBosluk)
-            .frame(maxWidth: .infinity)
         }
     }
 

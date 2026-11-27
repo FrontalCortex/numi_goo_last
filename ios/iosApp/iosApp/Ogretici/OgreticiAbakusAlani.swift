@@ -16,8 +16,12 @@ struct OgreticiAbakusAlani: View {
         let sahne: OgreticiSahneVerisi = model.sahne
         let cizilir: Bool = sahne.abakus.cizilir
         let dokunulur: Bool = cizilir && !sahne.abakusKilitli
+        // Boncuk tık sesi (Android: AbacusBeadController → AbacusSoundPlayer); ekran galerisinde sessiz.
+        let boncukSesi: AbakusBoncukSesi? = EkranGalerisi.istenenAd == nil ? GercekAbakusBoncukSesi.ortak : nil
         return ZStack(alignment: .topLeading) {
-            AbakusGorunumu(denetleyici: model.abakus, basamakSayisi: 5, kilitli: sahne.abakusKilitli)
+            AbakusGorunumu(
+                denetleyici: model.abakus, basamakSayisi: 5, kilitli: sahne.abakusKilitli, ses: boncukSesi
+            )
                 .opacity(cizilir ? 1 : 0)
                 // Kilitliyken dokunuş alttaki ekran katmanına geçer (abacusTapBlocker).
                 .allowsHitTesting(dokunulur)

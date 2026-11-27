@@ -44,7 +44,7 @@ struct UygulamaKokGorunumu: View {
             return AnyTransition.opacity
         }
         switch ekran {
-        case .abakusDers, .korDers, .sonuc, .sandik, .seri(.yeniSeri):
+        case .abakusDers, .korDers, .sonuc, .sandik, .seri(.yeniSeri), .rozetKutlama:
             return SonucGecisi.sagdanGirSolaCik
         case .seri(.seri):
             // Android: openStreakFragment → slide_down / slide_up.
@@ -127,6 +127,12 @@ struct YonetimKatmanGorunumu: View {
             ogretici(hedef)
         case .seri(let tur):
             seriKatmani(tur)
+        case .plan:
+            planKatmani
+        case .rozetKutlama(let kuyruk, let bitti):
+            rozetKutlamaKatmani(kuyruk, bitti)
+        case .sobiAnaliz(let istek):
+            sobiAnalizKatmani(istek)
         case .yerTutucu(let veri):
             YonetimYerTutucuEkrani(
                 baslik: veri.baslik, aciklama: veri.aciklama, ayrintilar: veri.ayrintilar,
@@ -142,6 +148,7 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return AbakusDersEkrani(
             dersBaslangici: baslangic,
+            hizmetler: GercekAbakusDersHizmetleri(),
             sobiAnalizi: sobiAnalizBaglantisi(nesne),
             // Android isFirstRunLesson: hesapsız ilk öğreticinin dersinde çıkış düğmesi gizli.
             cikisGizli: nesne.ilkOgreticiAkisi,
@@ -151,23 +158,26 @@ struct YonetimKatmanGorunumu: View {
     }
 
     /// Yanlış cevap panelindeki "Sobi ile analiz et" düğmesinin bağlantısı (Android: MistakeReviewDialog).
-    /// Hata analizi motoru (MistakeAnalyzer, StepExplainer) ortak kodda yok; pencere yazılana kadar yer
-    /// tutucu açılır. Yer tutucu kapanışı ekrana haber vermediği için süre durdurulmaz: `kapandi` hemen
-    /// çağrılır (gerçek pencere kapanınca çağıracak).
+    /// Karar ortak koddaki kural motorundan: `MistakeReviewDialog.canReview` (yalnızca toplama/çıkarma ve
+    /// abaküse sığan diziler). Android ayrıca öğretmen hesabında düğmeyi gizler (SobiAccess.isAllowed);
+    /// iOS'ta öğretmen rolü yok. Pencere üstte açılır; kapanınca `istek.kapandi` (sandık dersinde süre sürer).
     private func sobiAnalizBaglantisi(_ nesne: UygulamaYoneticisi) -> AbakusSobiAnalizBaglantisi {
         return AbakusSobiAnalizBaglantisi(
-            yapilabilir: { _ in true },
+            yapilabilir: { sayilar in SobiAnalizModeli.analizYapilabilir(sayilar) },
             istendi: { istek in
-                nesne.yerTutucuAc(
-                    Metin.al("review_open_button"),
-                    "Hata analizi penceresi (Sobi)",
-                    [
-                        "Android: MistakeReviewDialog, MistakeAnalyzer, StepExplainer",
-                        "Sayılar: \(istek.sayilar)",
-                        "Cevap: \(istek.cevap)",
-                    ]
-                )
+                nesne.ac(.sobiAnaliz(istek))
+            }
+        )
+    }
+
+    private func sobiAnalizKatmani(_ istek: AbakusSobiAnalizIstegi) -> some View {
+        let nesne: UygulamaYoneticisi = yonetici
+        let no: Int = katman.id
+        return SobiAnalizEkrani(
+            istek: istek,
+            kapat: {
                 istek.kapandi()
+                nesne.kapat(no)
             }
         )
     }
@@ -177,6 +187,9 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return KorDersEkrani(
             baslangic: baslangic,
+            kayit: SahteKorDersKayitServisi(),
+            enerji: SahteKorDersEnerjiServisi(),
+            ses: GercekKorDersSesServisi(),
             sobiAnalizi: sobiAnalizBaglantisi(nesne),
             bitti: { sonuc in nesne.korDersBitti(sonuc, kaynak: kaynak, baslangic: baslangic, katman: no) },
             kapat: { nesne.kapat(no) }
@@ -188,6 +201,7 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return SonucEkrani(
             girdi: girdi,
+            ses: GercekSonucSesCalar(),
             devam: { nesne.sonucDevam(girdi, baglam: baglam, katman: no) },
             tekrar: { nesne.sonucTekrar(baglam: baglam, katman: no) }
         )
@@ -198,6 +212,8 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return SandikEkrani(
             girdi: girdi,
+            odulServisi: SahteSandikOdulServisi(),
+            ses: GercekSandikSesCalar(),
             kapat: { sonuc in
                 kapandi(sonuc)
                 nesne.kapat(no)
@@ -212,7 +228,8 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return MagazaEkrani(
             kapat: { nesne.kapat(no) },
-            sandikAc: { nonce in nesne.reklamSandiginiAc(nonce: nonce) }
+            sandikAc: { nonce in nesne.reklamSandiginiAc(nonce: nonce) },
+            planKarsilastirmaAc: { nesne.planKarsilastirmaAc() }
         )
     }
 
@@ -259,7 +276,8 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return RozetlerEkrani(
             kapat: { nesne.kapat(no) },
-            rozetSecildi: { secim in nesne.rozetSecildi(secim) }
+            rozetSecildi: { secim in nesne.rozetSecildi(secim) },
+            ortam: KupaOrtami.gercekSesli
         )
     }
 

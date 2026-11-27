@@ -90,6 +90,8 @@ extension UygulamaYoneticisi {
         // Gün az önce bitmiş olabilir: önce tazelenir (seri başladıysa soru sorulmaz).
         _ = seri.durum()
         if !seri.yeniSeriSorusuGerekli() {
+            // Kuyruğun sıradaki adımı: ünite maratonu rehberi (Android: showMarathonGuideStep, yeni seriden sonra).
+            maratonRehberiniDene()
             return
         }
         if let ust = katmanlar.last, case .seri(.yeniSeri) = ust.ekran {
@@ -170,7 +172,11 @@ extension YonetimKatmanGorunumu {
         let no: Int = katman.id
         return SeriYeniSeriEkrani(
             servis: nesne.seri,
-            bitti: { nesne.kapat(no) }
+            bitti: {
+                nesne.kapat(no)
+                // Yeni seri sorusu kapandı: kuyruğun sıradaki adımı ünite maratonu rehberi.
+                nesne.maratonRehberiniDene()
+            }
         )
     }
 
@@ -180,6 +186,7 @@ extension YonetimKatmanGorunumu {
         return MagazaEkrani(
             kapat: { nesne.kapat(no) },
             sandikAc: { nonce in nesne.reklamSandiginiAc(nonce: nonce) },
+            planKarsilastirmaAc: { nesne.planKarsilastirmaAc() },
             odak: .seriDondurma
         )
     }

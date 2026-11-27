@@ -59,6 +59,10 @@ struct AbakusDersBaslangici: Equatable {
     /// sandığın liste sırası; sandık yoksa nil. Bölüm 1'de abaküs ayar düğmesi ilk sandığa kadar gizlidir
     /// (abacusModeVisibility); nil ise Android'in "sandık yok" dalı uygulanır (sıra ≤ 3 gizli).
     var ilkSandikSirasi: Int? = nil
+    /// Android: LessonItem.abacusGuideNumber — dersin Sobi rehberinin numarası (1...6); yoksa nil.
+    var rehberNo: Int? = nil
+    /// Android: LessonItem.currentStep == 1 — rehber yalnızca dersin ilk adımında açılır.
+    var rehberIlkAdim: Bool = false
 
     static let sandikTuru: Int = 2
 
@@ -133,6 +137,10 @@ struct AbakusDersBaslangici: Equatable {
             soruKaynagi: kaynak
         )
         sonuc.ilkSandikSirasi = ilkSandikSirasi
+        if let rehber = oge.abacusGuideNumber {
+            sonuc.rehberNo = Int(rehber.intValue)
+        }
+        sonuc.rehberIlkAdim = (oge.currentStep == 1)
         return sonuc
     }
 }

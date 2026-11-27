@@ -246,6 +246,8 @@ struct HaritaDersPaneli: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
         .background(zemin)
+        // Maraton rehberi balonu panelin altına oturur (bkz. Rehber/RehberMaraton.swift).
+        .rehberHedefi(.dersPaneli)
         // Panelin boş yerine dokunuş karartmaya geçmesin (Android: lessonPanelCard clickable).
         .contentShape(RoundedRectangle(cornerRadius: HaritaStil.panelKoseYaricapi))
         .onTapGesture {}
@@ -354,6 +356,8 @@ struct HaritaDersPaneli: View {
             }
             .buttonStyle(.plain)
             .disabled(!durum.rekorTiklanir)
+            // Maraton rehberinin son sayfası bu satırı işaret eder (Android: recordLayout).
+            .rehberHedefi(.rekorSatiri)
             .padding(.top, 12)
         }
     }

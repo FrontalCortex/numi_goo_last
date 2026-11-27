@@ -63,6 +63,7 @@ final class AvatarDuzenleModeli: ObservableObject {
 
     /// Android: select.
     func sec(_ deger: String) {
+        Titresim.tik()
         guard let sekme = seciliSekmeBilgisi else { return }
         if AvatarOrtak.secili(sekme, config: config) == deger { return }
         uygula(AvatarOrtak.sec(sekme, deger: deger, config: config))
@@ -70,6 +71,7 @@ final class AvatarDuzenleModeli: ObservableObject {
 
     /// Android: btnRandom.
     func rastgele() {
+        Titresim.tik()
         rastgeleKullanildi = true
         uygula(AvatarOrtak.rastgele(config))
     }

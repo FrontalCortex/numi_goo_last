@@ -75,6 +75,11 @@ struct KorDersBaslangici {
     /// worstCupTime (sandık puanı çarpanı için).
     var enKotuKupaSuresi: Int? = nil
 
+    /// abacusGuideNumber — dersin Sobi rehberinin numarası (1...6); yoksa nil.
+    var rehberNo: Int? = nil
+    /// currentStep == 1 — rehber yalnızca dersin ilk adımında açılır.
+    var rehberIlkAdim: Bool = false
+
     /// Doluysa günlük soru modu.
     var gunlukSoru: KorDersGunlukSoru? = nil
 

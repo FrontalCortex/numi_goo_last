@@ -83,6 +83,12 @@ enum YonetimEkrani {
     case yerTutucu(YonetimYerTutucu)
     /// Günlük seri ekranları (Seri/; bağlantılar YonetimSeriAkisi.swift).
     case seri(YonetimSeriKatmani)
+    /// Plan karşılaştırma / Pro satın alma (Android ProDiffirentFragment + PlanFragment; Plan/; bağlantı YonetimPlanRozetAkisi.swift).
+    case plan
+    /// Rozet kutlaması (Android BadgeFragment kutlama kipi); `bitti`: kuyruk bitip ekran kapanınca çalışır.
+    case rozetKutlama(kuyruk: [String], bitti: () -> Void)
+    /// "Sobi ile analiz et" penceresi (Android MistakeReviewDialog; SobiAnaliz/). Kapanınca `istek.kapandi`.
+    case sobiAnaliz(AbakusSobiAnalizIstegi)
 
     /// Altındaki ekran görünür kalır mı (Kupa Yolu alttan açılan paneldir).
     var saydam: Bool {

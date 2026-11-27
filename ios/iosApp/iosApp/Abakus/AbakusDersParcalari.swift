@@ -25,8 +25,10 @@ struct AbakusSayiKarti: View {
             HStack(spacing: 0) {
                 Spacer(minLength: 0)
                 sayi(ilkSayi)
+                    .rehberHedefi(.ilkSayi)
                 Spacer(minLength: 0)
                 sayi(ikinciSayi)
+                    .rehberHedefi(.ikinciSayi)
                 Spacer(minLength: 0)
             }
             Text(islec)

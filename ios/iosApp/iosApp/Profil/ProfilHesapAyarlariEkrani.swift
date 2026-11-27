@@ -110,8 +110,11 @@ struct ProfilHesapAyarlariEkrani: View {
                     eylem: { gezinme.ac(.profilDuzenle) }
                 )
                 ProfilStil.ayarAyirici.frame(height: 1)
-                // Android: SoundSettingsFragment (başka klasörün ekranı; henüz bağlı değil).
-                ProfilAyarSatiri(metin: Metin.al("fragment_account_settings_text_3"), eylem: {})
+                // Android: SoundSettingsFragment → Profil/ProfilSesAyarlariEkrani.
+                ProfilAyarSatiri(
+                    metin: Metin.al("fragment_account_settings_text_3"),
+                    eylem: { gezinme.ac(.sesAyarlari) }
+                )
                 ProfilStil.ayarAyirici.frame(height: 1)
                 // Dil (Android: AppLanguage; seçim uygulamayı yeniden başlatır). Çoklu dil iOS'ta henüz açılmadı:
                 // satır Android'deki yerinde, değer "Türkçe"; seçicide yalnızca Türkçe etkin.

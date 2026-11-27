@@ -86,6 +86,7 @@ private struct AltCubukOgesi: View {
 
     /// Android: her seçimde (aynı sekme dahil) simge zıplar. Titreşim (Haptics.click) iOS'ta yok.
     private func dokunuldu() {
+        Titresim.tik()
         olcek = 0.85
         DispatchQueue.main.async {
             withAnimation(Animation.spring(response: 0.28, dampingFraction: 0.45)) {

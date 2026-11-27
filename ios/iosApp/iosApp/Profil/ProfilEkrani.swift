@@ -21,6 +21,7 @@ enum ProfilHedef: Equatable {
     case takipListesi(Int)
     case arkadasAra
     case hesapAyarlari
+    case sesAyarlari
     case profilDuzenle
     case geriBildirim
     case avatarDuzenle
@@ -189,6 +190,8 @@ struct ProfilRotaGorunumu: View {
             ProfilArkadasAraEkrani(gezinme: gezinme)
         case .hesapAyarlari:
             ProfilHesapAyarlariEkrani(gezinme: gezinme)
+        case .sesAyarlari:
+            ProfilSesAyarlariEkrani(gezinme: gezinme)
         case .profilDuzenle:
             ProfilDuzenleEkrani(gezinme: gezinme)
         case .geriBildirim:

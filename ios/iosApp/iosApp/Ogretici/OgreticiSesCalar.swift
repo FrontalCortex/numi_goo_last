@@ -129,13 +129,8 @@ final class OgreticiGercekSesCalici: OgreticiSesCalici {
     private func oturumuKur() {
         if oturumKuruldu { return }
         oturumKuruldu = true
-        let oturum: AVAudioSession = AVAudioSession.sharedInstance()
-        do {
-            try oturum.setCategory(.playback, mode: .default, options: [.mixWithOthers])
-            try oturum.setActive(true)
-        } catch {
-            // Oturum kurulamazsa varsayılan oturumla denenir; hata sessizce geçilir.
-        }
+        // Ortak kurulum (Ortak/SesCalar.swift): `.playback` + `.mixWithOthers`, bir kez.
+        SesOturumu.kur()
     }
 
     private func cal(ad: String, sesDuzeyi: Float) {
