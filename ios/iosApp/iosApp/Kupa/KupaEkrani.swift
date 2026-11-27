@@ -1,5 +1,6 @@
 import Combine
 import SwiftUI
+import UIKit
 
 // Kupa Yolu ekranı.
 //
@@ -16,6 +17,8 @@ struct KupaEkrani: View {
     private let sonuc: KupaDersSonucu?
 
     @StateObject private var model: KupaModeli
+    /// Giriş animasyonu: panel alttan kayarak gelir.
+    @State private var gorundu: Bool = false
 
     private let saniyeSayaci = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -43,13 +46,26 @@ struct KupaEkrani: View {
         ZStack(alignment: .bottom) {
             arkaKarartma
             panel
+                .offset(y: gorundu ? 0 : UIScreen.main.bounds.height)
+            if model.zorlukPaneli != nil {
+                zorlukKarartmasi
+                    .transition(.opacity)
+                    .zIndex(2)
+            }
             if let durum = model.zorlukPaneli {
                 zorlukKatmani(durum)
+                    .transition(zorlukGecisi)
+                    .zIndex(3)
             }
         }
+        .animation(.linear(duration: 0.3), value: model.zorlukPaneli != nil)
         .onAppear {
             model.yukle()
             model.sonucuIsle(sonuc)
+            // Android BottomSheetDialog: panel alttan kayarak gelir.
+            withAnimation(.easeOut(duration: 0.3)) {
+                gorundu = true
+            }
         }
         .onChange(of: sonuc) { yeni in
             model.sonucuIsle(yeni)
@@ -97,22 +113,32 @@ struct KupaEkrani: View {
         .padding(.top, 48)
     }
 
+    /// Android AlertDialog'un arka karartması; dışına dokununca pencere kapanır.
+    private var zorlukKarartmasi: some View {
+        Color.black.opacity(0.6)
+            .ignoresSafeArea()
+            .onTapGesture {
+                model.zorlukPaneliniKapat()
+            }
+    }
+
+    /// Android R.style.DialogAnimationSlideLeft: soldan girer (slide_in_left), sağa çıkar
+    /// (slide_out_right); ikisi de 300 ms.
+    private var zorlukGecisi: AnyTransition {
+        return AnyTransition.asymmetric(
+            insertion: AnyTransition.move(edge: .leading),
+            removal: AnyTransition.move(edge: .trailing)
+        )
+    }
+
     private func zorlukKatmani(_ durum: KupaZorlukPaneliDurumu) -> some View {
-        ZStack {
-            Color.black.opacity(0.6)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    model.zorlukPaneliniKapat()
-                }
-            KupaZorlukPaneli(
-                durum: durum,
-                model: model,
-                baslat: baslataBasildi
-            )
-            .padding(.horizontal, 24)
-        }
+        KupaZorlukPaneli(
+            durum: durum,
+            model: model,
+            baslat: baslataBasildi
+        )
+        .padding(.horizontal, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .transition(.opacity)
     }
 
     private func baslataBasildi() {
@@ -191,10 +217,13 @@ private struct KupaYolKarti: View {
                     skorSatiri
                 }
                 Spacer(minLength: 8)
+                // Android setupCupPathCard: açık kartta döngüyle oynar; kilitli kartta ilk karede
+                // durur ve lesson_locked rengine boyanır.
                 KupaAnimasyonGorunumu(
                     dosya: kart.animasyonDosyasi,
                     duzRenk: kart.acik ? nil : kilitRengi,
-                    oynuyor: kart.acik
+                    dongu: kart.acik,
+                    oynat: kart.acik
                 )
                 .frame(width: 70, height: 70)
                 .id(kart.acik)
@@ -253,9 +282,11 @@ private struct KupaZorlukPaneli: View {
     var body: some View {
         VStack(spacing: 0) {
             baslikSatiri
-            KupaAnimasyonGorunumu(dosya: durum.kart.animasyonDosyasi, oynuyor: true)
+            // cupDifficultyAnim: 120dp, lottie_autoPlay + lottie_loop.
+            KupaAnimasyonGorunumu(dosya: durum.kart.animasyonDosyasi, dongu: true)
                 .frame(width: 120, height: 120)
-                .padding(.top, 8)
+                // Android'de animasyon başlığın (40dp'lik satırda ortalı ~32dp) altına 8dp bağlıdır.
+                .padding(.top, 4)
             if durum.kaydiriciGorunur {
                 Text(model.zorlukIletisi)
                     .font(Tema.yazi(16))
@@ -338,16 +369,21 @@ private struct KupaZorlukPaneli: View {
     private var baslatDugmesi: some View {
         let etkin: Bool = durum.kupaSkoru != nil
         return Button(action: baslat) {
+            // MaterialButton: 60dp yerleşim yüksekliğinin üstten ve alttan 6dp'si boşluktur
+            // (varsayılan insetTop/insetBottom); görünen dolgu 48dp. backgroundTint tek renk
+            // olduğu için düğme kapalıyken de aynı renkte kalır.
             Text(model.baslatEtiketi)
                 .font(Tema.yazi(18))
                 .foregroundColor(.black)
                 .padding(.horizontal, 24)
                 .frame(minWidth: 160)
-                .frame(height: 60)
+                .frame(height: 48)
                 .background(
                     RoundedRectangle(cornerRadius: 15)
-                        .fill(Color(etkin ? "button_enabled" : "button_disabled"))
+                        .fill(Color("button_enabled"))
                 )
+                .padding(.vertical, 6)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!etkin)

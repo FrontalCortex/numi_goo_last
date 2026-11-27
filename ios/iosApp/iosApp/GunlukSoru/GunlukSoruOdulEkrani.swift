@@ -167,13 +167,17 @@ struct GunlukSoruOdulEkrani: View {
                 Text("Ödülü Al")
                     .font(Tema.yazi(20))
                     .foregroundColor(GunlukSoruStil.odulZemini)
-                    .padding(.horizontal, 24)
+                    // Widget.MaterialComponents.Button: yatay iç boşluk 16dp, en az 88×48dp,
+                    // insetTop/insetBottom 6dp (görünen zemin 36dp), köşe 4dp.
+                    .padding(.horizontal, 16)
                     .frame(minWidth: 88)
                     .frame(height: 48)
                     .background(
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: 4)
                             .fill(GunlukSoruStil.odulSarisi)
+                            .padding(.vertical, 6)
                     )
+                    .contentShape(Rectangle())
             }
             .buttonStyle(GunlukSoruKartBasmaStili())
             .padding(.bottom, 48)

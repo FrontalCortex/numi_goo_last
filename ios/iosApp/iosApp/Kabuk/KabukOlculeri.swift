@@ -10,6 +10,8 @@ enum KabukOlculeri {
     static let gostergeSimge: CGFloat = 28        // main_energy_icon_size
     static let gostergeYazi: CGFloat = 17         // main_currency_text_size / main_energy_text_size
     static let gostergeYaziBosluk: CGFloat = 3    // layout_marginStart="3dp"
+    static let geriDugmesi: CGFloat = 30          // main_toolbar_icon_back
+    static let geriOku: CGFloat = 24              // ic_back_arrow.xml (vektörün kendi boyu)
 
     // Alt çubuk (bottomNavigationID)
     static let altYukseklik: CGFloat = 64         // main_bottom_nav_min_height

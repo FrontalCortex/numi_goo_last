@@ -272,12 +272,15 @@ final class SahteKupaDeposu: KupaSkorDeposu, KupaKilitKaynagi, KupaEnerjiKaynagi
 final class SahteKupaLiderlikDeposu: KupaLiderlikDeposu {
     var oturumKimligi: String = "ornek-ben"
 
+    // Not: `ad` boş bırakılırsa satırda "Liderlik tablosu" yazar — Android de boş adı
+    // R.string.record_leaderboard_title ile doldurur (RecordLeaderboardAdapter.bind; ortak kod
+    // RecordLogic.displayNameOrFallback). Örnek veride bu yüzden her kaydın adı doludur.
     var kayitlar: [KupaLiderKaydi] = [
         KupaLiderKaydi(kullaniciKimligi: "ornek-1", puan: 9820, ad: "Elif", rekorEtiketi: "0:41", fotoAdresi: ""),
         KupaLiderKaydi(kullaniciKimligi: "ornek-2", puan: 9510, ad: "Yusuf", rekorEtiketi: "0:47", fotoAdresi: ""),
         KupaLiderKaydi(kullaniciKimligi: "ornek-3", puan: 9510, ad: "Zeynep", rekorEtiketi: "0:47", fotoAdresi: ""),
         KupaLiderKaydi(kullaniciKimligi: "ornek-ben", puan: 9100, ad: "Sen", rekorEtiketi: "0:55", fotoAdresi: ""),
-        KupaLiderKaydi(kullaniciKimligi: "ornek-5", puan: 8740, ad: "", rekorEtiketi: "1:02", fotoAdresi: ""),
+        KupaLiderKaydi(kullaniciKimligi: "ornek-5", puan: 8740, ad: "Ayşe", rekorEtiketi: "1:02", fotoAdresi: ""),
         KupaLiderKaydi(kullaniciKimligi: "ornek-6", puan: 8100, ad: "Mert", rekorEtiketi: "1:15", fotoAdresi: ""),
         KupaLiderKaydi(kullaniciKimligi: "ornek-7", puan: 7650, ad: "Defne", rekorEtiketi: "1:28", fotoAdresi: "")
     ]

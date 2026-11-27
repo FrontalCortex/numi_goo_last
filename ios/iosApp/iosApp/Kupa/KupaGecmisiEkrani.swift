@@ -161,7 +161,7 @@ struct KupaGecmisiEkrani: View {
 
     private var skorOzeti: some View {
         HStack(spacing: 12) {
-            KupaAnimasyonGorunumu(dosya: animasyonDosyasi, oynuyor: true)
+            skorAnimasyonu
                 .frame(width: 56, height: 56)
             VStack(alignment: .leading, spacing: 0) {
                 Text(model.skorMetni.isEmpty ? " " : model.skorMetni)
@@ -176,6 +176,17 @@ struct KupaGecmisiEkrani: View {
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 16)
+    }
+
+    /// cupHistoryLottie: 56dp, lottie_autoPlay + lottie_loop. Android dosya adı boşsa animasyon
+    /// kurmaz (alan boş kalır).
+    @ViewBuilder
+    private var skorAnimasyonu: some View {
+        if animasyonDosyasi.isEmpty {
+            Color.clear
+        } else {
+            KupaAnimasyonGorunumu(dosya: animasyonDosyasi, dongu: true)
+        }
     }
 
     private var tekNoktaIpucu: some View {
@@ -242,7 +253,10 @@ private struct KupaGecmisSekmeleri: View {
                     .frame(height: 2)
             }
             .fixedSize(horizontal: true, vertical: false)
-            .padding(.horizontal, 16)
+            // Material TabLayout (scrollable): sekme iç boşluğu 12dp, en az genişlik 72dp;
+            // gösterge yazı genişliğindedir (tabIndicatorFullWidth=false).
+            .padding(.horizontal, 12)
+            .frame(minWidth: 72)
             .frame(height: 48)
             .contentShape(Rectangle())
         }

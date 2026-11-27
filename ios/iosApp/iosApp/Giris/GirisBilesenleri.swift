@@ -28,6 +28,12 @@ enum GirisStil {
     static let kartCizgisi: Color = Color.white.opacity(Double(0x33) / 255.0)
     /// bg_edit_profile_input.xml çizgisi (#30363D).
     static let yasAlaniCizgisi: Color = GirisStil.renk(0x30363D)
+    /// Android teması (Theme.MaterialComponents, koyu) colorPrimary tanımlamaz; Material'ın koyu
+    /// tema varsayılanı #BB86FC kalır. TextInputLayout odak çizgisi ve imleç bu rengi kullanır.
+    static let materyalAnaRenk: Color = GirisStil.renk(0xBB86FC)
+    /// Material düğme yazısının harf aralığı (TextAppearance.MaterialComponents.Button:
+    /// letterSpacing = 0.0892857143 em).
+    static let dugmeHarfAraligi: CGFloat = 0.0892857143
 
     static func klavyeyiKapat() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
@@ -69,8 +75,10 @@ struct GirisDoluDugme: View {
     let eylem: () -> Void
 
     private var zemin: Color {
+        // app:backgroundTint tek renktir (durum listesi değil): devre dışıyken de zemin aynı kalır,
+        // yalnızca yazı soluklaşır (mtrl_btn_text_color_selector: colorOnSurface %38).
         if etkin { return Color("dark_primary") }
-        return devreDisiZemin ?? Color.white.opacity(0.12)
+        return devreDisiZemin ?? Color("dark_primary")
     }
 
     private var yaziRengi: Color {
@@ -81,6 +89,7 @@ struct GirisDoluDugme: View {
     var body: some View {
         Button(action: eylem) {
             Text(metin)
+                .tracking(yaziBoyu * GirisStil.dugmeHarfAraligi)
                 .font(Tema.yazi(yaziBoyu))
                 .textCase(buyukHarf ? .uppercase : nil)
                 .foregroundColor(yaziRengi)
@@ -108,9 +117,12 @@ struct GirisCerceveliDugme: View {
     let eylem: () -> Void
 
     var body: some View {
-        let renk: Color = Color("dark_primary").opacity(etkin ? 1.0 : 0.38)
+        // Çizgi ve yazı rengi tek renktir (durum listesi değil): Android'de devre dışıyken
+        // görünüm değişmez, yalnızca dokunma kapanır.
+        let renk: Color = Color("dark_primary")
         Button(action: eylem) {
             Text(metin)
+                .tracking(yaziBoyu * GirisStil.dugmeHarfAraligi)
                 .font(Tema.yazi(yaziBoyu))
                 .textCase(buyukHarf ? .uppercase : nil)
                 .foregroundColor(renk)
@@ -142,6 +154,7 @@ struct GirisGoogleDugmesi: View {
                     .scaledToFit()
                     .frame(width: 24, height: 24)
                 Text(metin)
+                    .tracking(16 * GirisStil.dugmeHarfAraligi)
                     .font(Tema.yazi(16))
                     .textCase(.uppercase)
                     .foregroundColor(GirisStil.saglayiciYaziRengi)
@@ -178,6 +191,7 @@ struct GirisAppleDugmesi: View {
                     .font(.system(size: 20, weight: .medium))
                     .foregroundColor(Color.white)
                 Text(metin)
+                    .tracking(16 * GirisStil.dugmeHarfAraligi)
                     .font(Tema.yazi(16))
                     .textCase(.uppercase)
                     .foregroundColor(Color.white)
@@ -205,8 +219,45 @@ enum GirisAlanTuru {
     case ad
 }
 
+/// Dolu kutunun biçimi: üst köşeler 4dp yuvarlak, alt köşeler düz
+/// (Widget.MaterialComponents.TextInputLayout.FilledBox).
+struct GirisUstYuvarlakSekil: Shape {
+    var yaricap: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var yol = Path()
+        let solUst = CGPoint(x: rect.minX + yaricap, y: rect.minY + yaricap)
+        let sagUst = CGPoint(x: rect.maxX - yaricap, y: rect.minY + yaricap)
+        yol.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        yol.addLine(to: CGPoint(x: rect.minX, y: rect.minY + yaricap))
+        yol.addArc(
+            center: solUst,
+            radius: yaricap,
+            startAngle: Angle.degrees(180),
+            endAngle: Angle.degrees(270),
+            clockwise: false
+        )
+        yol.addLine(to: CGPoint(x: rect.maxX - yaricap, y: rect.minY))
+        yol.addArc(
+            center: sagUst,
+            radius: yaricap,
+            startAngle: Angle.degrees(270),
+            endAngle: Angle.degrees(360),
+            clockwise: false
+        )
+        yol.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        yol.closeSubpath()
+        return yol
+    }
+}
+
 /// Metin alanı (TextInputLayout, dolu kutu: boxBackgroundColor = dark_surface, yazı dark_text,
-/// ipucu dark_text_secondary). Material'ın yüzen etiketi çizilmez; ipucu alan boşken görünür.
+/// ipucu dark_text_secondary; yan iç boşluk 12dp, üst köşeler 4dp).
+/// Durumlar (Material 2 varsayılanları; Android layout'larında hata ya da parola göster/gizle
+/// simgesi yoktur, hatalar Toast ile bildirilir):
+///   - boş ve odaksız: ipucu 16sp kutunun ortasında, alt çizgi 1dp (%42 beyaz)
+///   - odakta ya da dolu: ipucu 12sp olarak yukarı kayar (hintTextColor = dark_text_secondary)
+///   - odakta: alt çizgi 2dp colorPrimary, imleç colorPrimary
 @MainActor
 struct GirisMetinAlani: View {
     let ipucu: String
@@ -214,33 +265,61 @@ struct GirisMetinAlani: View {
     var tur: GirisAlanTuru = .eposta
     var azamiUzunluk: Int? = nil
 
+    @FocusState private var odakta: Bool
+
+    init(ipucu: String, metin: Binding<String>, tur: GirisAlanTuru = .eposta, azamiUzunluk: Int? = nil) {
+        self.ipucu = ipucu
+        self._metin = metin
+        self.tur = tur
+        self.azamiUzunluk = azamiUzunluk
+    }
+
     var body: some View {
-        ZStack(alignment: .leading) {
-            if metin.isEmpty {
-                Text(ipucu)
-                    .font(Tema.yazi(16))
-                    .foregroundColor(Color("dark_text_secondary"))
-                    .allowsHitTesting(false)
-            }
+        let yukarida: Bool = odakta || !metin.isEmpty
+        let cizgiKalinligi: CGFloat = odakta ? 2 : 1
+        let cizgiRengi: Color = odakta ? GirisStil.materyalAnaRenk : Color.white.opacity(0.42)
+        ZStack(alignment: .topLeading) {
+            etiket(yukarida: yukarida)
             alan
+                .focused($odakta)
                 .font(Tema.yazi(16))
                 .foregroundColor(Color("dark_text"))
-                .tint(Color("dark_primary"))
+                .tint(GirisStil.materyalAnaRenk)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                .padding(.bottom, 4)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .frame(height: 56)
         .background(Color("dark_surface"))
         .overlay(alignment: .bottom) {
             Rectangle()
-                .fill(Color("dark_text_secondary"))
-                .frame(height: 1)
+                .fill(cizgiRengi)
+                .frame(height: cizgiKalinligi)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 4))
+        .clipShape(GirisUstYuvarlakSekil(yaricap: 4))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            odakta = true
+        }
+        .animation(.easeOut(duration: 0.167), value: yukarida)
         .onChange(of: metin) { yeni in
             if let azami = azamiUzunluk, yeni.count > azami {
                 metin = String(yeni.prefix(azami))
             }
         }
+    }
+
+    private func etiket(yukarida: Bool) -> some View {
+        let boyut: CGFloat = yukarida ? 12 : 16
+        let hiza: Alignment = yukarida ? .topLeading : .leading
+        let ustBosluk: CGFloat = yukarida ? 4 : 0
+        return Text(ipucu)
+            .font(Tema.yazi(boyut))
+            .foregroundColor(Color("dark_text_secondary"))
+            .lineLimit(1)
+            .padding(.top, ustBosluk)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: hiza)
+            .allowsHitTesting(false)
     }
 
     @ViewBuilder

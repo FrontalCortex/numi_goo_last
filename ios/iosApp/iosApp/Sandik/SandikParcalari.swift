@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 // Sandık ve kristal ekranlarının ortak küçük parçaları: renk ve ölçü yardımcıları, animasyon
-// eğrileri, video yer tutucusu.
+// eğrileri, video yer tutucusu (gerçek oynatıcı: SandikVideoOynatici.swift).
 
 enum SandikStil {
     /// 0xRRGGBB biçimindeki sabit renk.
@@ -91,12 +91,11 @@ enum SandikStil {
     }
 }
 
-/// Videonun yeri.
+/// Video dosyası pakette yokken çizilen durağan görsel.
 ///
-/// Video oynatıcı (AVPlayer) henüz bağlı değil ve kristal videoları depoda yok; bu görünüm
-/// şimdilik durağan bir görsel çizer. Bağlanırken yalnızca bu yapının `body`'si değişecek:
-/// `ad` Android `res/raw/` içindeki video dosyasının uzantısız adıdır (ör. "crystal_blue_blue").
-/// Android'de video ekranı kırparak doldurur (PlayerView `resize_mode="zoom"`).
+/// Kristal videoları depoda yok; dosya `iosApp/Videolar/<ad>.mp4` olarak eklendiğinde ekran
+/// kendiliğinden gerçek videoya (SandikVideoGorunumu) geçer. `ad` Android `res/raw/` içindeki
+/// video dosyasının uzantısız adıdır (ör. "crystal_blue_blue").
 struct SandikVideoYerTutucu: View {
     let ad: String
 

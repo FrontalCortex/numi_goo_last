@@ -23,7 +23,7 @@ struct GunlukSoruKarti: View {
         .background(zemin)
         // cardElevation = 2dp
         .shadow(color: Color.black.opacity(0.25), radius: 2, x: 0, y: 1)
-        .contentShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 18))
         .onTapGesture {
             model.kartaDokunuldu()
         }
@@ -31,7 +31,7 @@ struct GunlukSoruKarti: View {
 
     /// bg_daily_question_card.xml: açı 135° (sağ alttan sol üste), #FFB74D → #FF8F00, 18dp köşe.
     private var zemin: some View {
-        RoundedRectangle(cornerRadius: 18, style: .continuous)
+        RoundedRectangle(cornerRadius: 18)
             .fill(
                 LinearGradient(
                     colors: [GunlukSoruStil.kartGecisBaslangic, GunlukSoruStil.kartGecisBitis],
@@ -118,17 +118,17 @@ struct GunlukSoruIlerlemeBolgesi: View {
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(Color(cizim.zeminRengi))
                 .frame(width: genislik, height: yukseklik)
             if cizim.dolguGorunur {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(Color(cizim.dolguRengi))
                     .frame(width: cizim.dolguGenisligi, height: yukseklik)
             }
             if cizim.parlamaGorunur {
                 // mission_progress_shine_*: yükseklik 6dp, üstten 8dp, soldan 14dp, köşe 3dp.
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                RoundedRectangle(cornerRadius: 3)
                     .fill(Color(cizim.parlamaRengi))
                     .frame(width: cizim.parlamaGenisligi, height: 6)
                     .offset(x: 14, y: 8)
@@ -156,38 +156,50 @@ struct GunlukSoruIlerlemeBolgesi: View {
 
 // MARK: - Kalp
 
-/// Kartın sağ üstündeki kalp. Android'de Lottie'dir (assets/broken_heart_anim.json: 0. kare sağlam,
-/// 116. kare kırık). lottie-ios bağlanana dek sistem simgeleriyle çizilir.
+/// Kartın sağındaki kalp (28dp). Android: LottieAnimationView, assets/broken_heart_anim.json
+/// (60 kare/sn, 198 kare; 0. kare sağlam, 116. kare kırık), döngüsüz, kendiliğinden oynamaz.
+/// Dört durum tek bir Lottie görünümünün kare parametreleriyle verilir (TasksFragment.kt,
+/// DailyQuestionVH.bindBrokenHeart):
+///  - sağlam (showBrokenHeartFrame(0)): 0. karede sabit;
+///  - kırılıyor (playBrokenHeartBreakToHold116): 0 → 116 oynar ve 116. karede kalır;
+///  - kırık (showBrokenHeartFrame(116)): 116. karede sabit;
+///  - iyileşiyor (playBrokenHeartHealThenFirstFrame): 116 → son kare oynar; bitince model durumu
+///    "sağlam" yapar (0. kare).
+/// Durum geçişlerinin zamanını model tutar (GunlukSoruModeli.kalbiBagla).
 struct GunlukSoruKalpGorunumu: View {
     let durum: GunlukSoruKalpDurumu
 
+    /// DailyQuestionPeriod.BROKEN_HEART_HOLD_FRAME
+    private static let tutmaKaresi: Double = 116
+
+    private var oynat: Bool {
+        return durum == .kiriliyor || durum == .iyilesiyor
+    }
+
+    private var baslangicKare: Double {
+        switch durum {
+        case .saglam, .kiriliyor:
+            return 0
+        case .kirik, .iyilesiyor:
+            return GunlukSoruKalpGorunumu.tutmaKaresi
+        }
+    }
+
+    /// nil: animasyonun son karesi.
+    private var bitisKare: Double? {
+        return durum == .kiriliyor ? GunlukSoruKalpGorunumu.tutmaKaresi : nil
+    }
+
     var body: some View {
-        Image(systemName: simgeAdi)
-            .resizable()
-            .scaledToFit()
-            .foregroundColor(GunlukSoruStil.renk(0xE53935))
-            .scaleEffect(olcek)
-            .rotationEffect(.degrees(egim))
-            .animation(.easeInOut(duration: 0.3).repeatCount(3, autoreverses: true), value: durum)
-    }
-
-    private var simgeAdi: String {
-        switch durum {
-        case .saglam, .iyilesiyor: return "heart.fill"
-        case .kirik, .kiriliyor: return "heart.slash.fill"
-        }
-    }
-
-    private var olcek: CGFloat {
-        switch durum {
-        case .saglam, .kirik: return 1.0
-        case .kiriliyor: return 1.2
-        case .iyilesiyor: return 1.25
-        }
-    }
-
-    private var egim: Double {
-        return durum == .kiriliyor ? -12 : 0
+        LottieGorunumu(
+            "broken_heart_anim",
+            dongu: false,
+            hiz: 1.0,
+            oynat: oynat,
+            bitti: nil,
+            baslangicKare: baslangicKare,
+            bitisKare: bitisKare
+        )
     }
 }
 
@@ -200,6 +212,9 @@ struct GunlukSoruDevamKatmani: View {
     let kapat: () -> Void
     let devam: () -> Void
 
+    /// Android Dialog'un açılış animasyonu: panel hafifçe büyüyerek ve belirerek gelir.
+    @State private var acik: Bool = false
+
     var body: some View {
         GeometryReader { alan in
             ZStack {
@@ -208,8 +223,15 @@ struct GunlukSoruDevamKatmani: View {
                     .onTapGesture(perform: kapat)
                 GunlukSoruDevamPaneli(kapat: kapat, devam: devam)
                     .frame(width: alan.size.width * 0.88)
+                    .scaleEffect(acik ? 1.0 : 0.9)
+                    .opacity(acik ? 1.0 : 0.0)
             }
             .frame(width: alan.size.width, height: alan.size.height)
+        }
+        .onAppear {
+            withAnimation(.easeOut(duration: 0.2)) {
+                acik = true
+            }
         }
     }
 }
@@ -219,12 +241,11 @@ struct GunlukSoruDevamPaneli: View {
     let kapat: () -> Void
     let devam: () -> Void
 
-    @State private var nabiz = false
-
     var body: some View {
         VStack(spacing: 0) {
             ustSatir
-            sargiliKalp
+            // Android: LottieAnimationView 120dp, bandaged_heart_anim.json, autoPlay + loop.
+            LottieGorunumu("bandaged_heart_anim", dongu: true)
                 .frame(width: 120, height: 120)
                 .padding(.top, 8)
             Text(Metin.al("daily_question_continue_message"))
@@ -238,12 +259,9 @@ struct GunlukSoruDevamPaneli: View {
         }
         .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 18)
                 .fill(Color("panel_background"))
         )
-        .onAppear {
-            nabiz = true
-        }
     }
 
     /// Başlık (20sp, ortalı) ve sağ üstte kapatma düğmesi (40dp, simge 24dp).
@@ -270,27 +288,9 @@ struct GunlukSoruDevamPaneli: View {
         }
     }
 
-    /// Android'de Lottie'dir (assets/bandaged_heart_anim.json, döngülü). lottie-ios bağlanana dek
-    /// sistem simgeleriyle çizilir.
-    private var sargiliKalp: some View {
-        ZStack {
-            Image(systemName: "heart.fill")
-                .resizable()
-                .scaledToFit()
-                .foregroundColor(GunlukSoruStil.renk(0xE53935))
-                .padding(12)
-            Image(systemName: "bandage.fill")
-                .resizable()
-                .scaledToFit()
-                .foregroundColor(GunlukSoruStil.renk(0xFFE0B2))
-                .frame(width: 52, height: 52)
-                .rotationEffect(.degrees(-20))
-        }
-        .scaleEffect(nabiz ? 1.06 : 0.94)
-        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: nabiz)
-    }
-
     /// Yeşil düğme: anahtar simgesi (32dp) + "x1" (18sp, siyah); yükseklik 60dp, en az 160dp, köşe 15dp.
+    /// MaterialButton'ın varsayılan insetTop/insetBottom değeri 6dp'dir: 60dp'lik düğmenin görünen
+    /// zemini 48dp yüksekliğindedir.
     private var devamDugmesi: some View {
         Button(action: devam) {
             HStack(alignment: .center, spacing: 8) {
@@ -306,9 +306,11 @@ struct GunlukSoruDevamPaneli: View {
             .frame(minWidth: 160)
             .frame(height: 60)
             .background(
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
+                RoundedRectangle(cornerRadius: 15)
                     .fill(Color("button_enabled"))
+                    .padding(.vertical, 6)
             )
+            .contentShape(Rectangle())
         }
         .buttonStyle(GunlukSoruKartBasmaStili())
     }
@@ -371,7 +373,7 @@ struct GunlukSoruYerTutucuSoru: View {
                 .frame(minWidth: 120)
                 .frame(height: 52)
                 .background(
-                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                    RoundedRectangle(cornerRadius: 15)
                         .fill(zemin)
                 )
         }

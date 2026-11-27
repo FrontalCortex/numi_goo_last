@@ -114,7 +114,9 @@ struct KayitSartlarMetni: View {
     private var metin: AttributedString {
         let metinler = LoginFlowTexts.shared
         var sonuc = AttributedString(metinler.TERMS_FULL_TEXT)
-        sonuc.font = Tema.yazi(12, kalin: false)
+        // Tema bütün TextView'ları kalın çizer (Widget.NumiGoo.TextView); bağlantılar yalnızca
+        // renkle ayrılır.
+        sonuc.font = Tema.yazi(12)
         sonuc.foregroundColor = Color("dark_text_secondary")
         let baglantilar: [(String, String)] = [
             (metinler.TERMS_LINK_TEXT, metinler.TERMS_URL),

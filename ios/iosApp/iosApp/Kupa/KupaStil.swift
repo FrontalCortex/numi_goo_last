@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 // Kupa klasörünün ortak görsel yardımcıları: sabit renkler, şekiller, çerçeveli sayı yazısı
-// (Android BadgeRewardTextView), Lottie yer tutucusu ve Android layout'larında doğrudan
+// (Android BadgeRewardTextView), Lottie kabuğu ve Android layout'larında doğrudan
 // yazılmış (strings.xml'de olmayan) metinler.
 
 enum KupaStil {
@@ -24,6 +24,21 @@ enum KupaStil {
     static let sekmeRengi: Color = KupaStil.renk(0x1CB0F6)
     /// BadgeRewardTextView varsayılan çerçeve rengi (0xFFFF8F00).
     static let sayiCercevesi: Color = KupaStil.renk(0xFF8F00)
+
+    /// "Son kare" (Android progress = 1): sarmalayıcı sınır dışındaki kareyi son kareye kırpar.
+    static let sonKare: Double = 9999
+
+    /// Ortak kodun verdiği Android assets dosya adından `LottieGorunumu` adını üretir: sondaki
+    /// ".json" atılır. Android'de iki dosyanın adı çift uzantılıdır ("silver_medal_anim.json.json");
+    /// iOS paketine tek uzantıyla kopyalandıkları için (Lottie/silver_medal_anim.json) hepsi atılır.
+    static func lottieAdi(_ dosya: String) -> String {
+        let uzanti: String = ".json"
+        var ad: String = dosya
+        while ad.hasSuffix(uzanti) {
+            ad = String(ad.dropLast(uzanti.count))
+        }
+        return ad
+    }
 
     /// Android drawable adı → dolgu rengi (bg_record_rank_* oval şekilleri).
     static func siraRozetiRengi(_ drawableAdi: String) -> Color {
@@ -104,67 +119,81 @@ struct KupaCerceveliYazi: View {
     }
 }
 
-/// Lottie animasyonlarının yer tutucusu.
+/// Android `LottieAnimationView` karşılığı: ortak `LottieGorunumu` sarmalayıcısının Kupa
+/// klasörüne özgü ince kabuğu. Dosya adı ortak koddan uzantılı gelir ("dinosaur_anim.json");
+/// uzantı burada atılır. Boyut çağıran tarafta `.frame` ile verilir.
 ///
-/// Android bu ekranlarda Lottie kullanır (assets/*.json). iOS projesinde henüz Lottie
-/// kütüphanesi ve animasyon dosyaları yok; o gelene kadar dosya adına karşılık bir SF Symbols
-/// simgesi çizilir. Lottie eklendiğinde yalnızca bu görünümün gövdesi değişir: dosya adı,
-/// tutma karesi ve renk filtresi çağıranlardan zaten geliyor.
+/// Android'de hangi dosya nerede, nasıl oynar (hepsi app/src/main/assets):
+/// - Kupa Yolu kartları (70dp) ve zorluk penceresi (120dp): hayvan animasyonu, döngülü.
+/// - Kupa geçmişi (56dp): seçilen kupanın hayvan animasyonu, döngülü.
+/// - Rozet listesi: taban `daily_tasks_complite_badge2` son karede, üst animasyon tutma karesinde sabit.
+/// - Tek rozet: taban bir kez oynar; üst animasyon bir kez oynar (madalyalarda döngülü).
+/// - Parça satırları (40dp): `cup_google_anim` 135. karede, madalya ilk karede sabit.
+///
+/// Renk filtresi sarmalayıcının sözleşmesinde yoktur; Android'in düz renk filtresi
+/// (PorterDuff SRC_ATOP — kilitli kart/rozet) SwiftUI renk efektleriyle karşılanır:
+/// önce bütün renkler beyaza çekilir, sonra istenen renkle çarpılır (saydamlık korunur).
 struct KupaAnimasyonGorunumu: View {
     /// Android assets dosya adı (ör. "dinosaur_anim.json").
     let dosya: String
     /// Düz renk filtresi (kilitli kart/rozet); nil = özgün renkler.
     var duzRenk: Color? = nil
-    /// Animasyon oynuyor mu (yer tutucuda yalnızca hafif nabız).
-    var oynuyor: Bool = false
+    /// Sürekli döner mi (Android lottie_loop / repeatCount = -1).
+    var dongu: Bool = false
+    /// false ise ilk karede durur (Android progress = 0 + pauseAnimation).
+    var oynat: Bool = true
+    /// Tek seferlik oynatma bitince çağrılır.
+    var bitti: (() -> Void)? = nil
+    /// nil değilse animasyon oynatılmaz, bu karede sabit durur (Android progress / holdFrame +
+    /// pauseAnimation). Animasyonun sınırı dışındaki kare en yakın sınıra kırpılır: 9999 = son kare.
+    var sabitKare: Double? = nil
 
-    @State private var nabiz: Bool = false
-
-    private var simge: String {
-        switch dosya {
-        case "dinosaur_anim.json": return "lizard.fill"
-        case "crocodile_anim.json": return "fossil.shell.fill"
-        case "goat_anim.json": return "pawprint.fill"
-        case "eagle_anim.json": return "bird.fill"
-        case "fly_anim.json": return "ladybug.fill"
-        case "turtle_anim.json": return "tortoise.fill"
-        case "cup_google_anim.json": return "trophy.fill"
-        case "karate_anim.json": return "figure.martial.arts"
-        case "gold_medal_anim.json", "silver_medal_anim.json.json", "bronze_medal_anim.json.json": return "medal.fill"
-        case "dart_anim.json": return "target"
-        case "rocket_badge_anim2.json": return "paperplane.fill"
-        case "bowling_anim.json": return "figure.bowling"
-        case "fishing_pole_anim.json": return "fish.fill"
-        case "golf_anim.json": return "figure.golf"
-        case "tornado_anim.json": return "tornado"
-        case "volcano_anim.json": return "flame.fill"
-        case "daily_tasks_complite_badge.json", "daily_tasks_complite_badge2.json": return "seal.fill"
-        default: return "star.fill"
-        }
+    var body: some View {
+        let parlaklik: Double = duzRenk == nil ? 0.0 : 1.0
+        let carpim: Color = duzRenk ?? Color.white
+        let oynasin: Bool = sabitKare == nil ? oynat : false
+        return LottieGorunumu(
+            KupaStil.lottieAdi(dosya),
+            dongu: dongu,
+            hiz: 1.0,
+            oynat: oynasin,
+            bitti: bitti,
+            baslangicKare: sabitKare,
+            bitisKare: nil
+        )
+            .brightness(parlaklik)
+            .colorMultiply(carpim)
+            .accessibilityHidden(true)
     }
+}
 
-    private var ozgunRenk: Color {
-        switch dosya {
-        case "gold_medal_anim.json", "cup_google_anim.json": return KupaStil.renk(0xFFD54F)
-        case "silver_medal_anim.json.json": return KupaStil.renk(0xCFD8DC)
-        case "bronze_medal_anim.json.json": return KupaStil.renk(0xCD7F32)
-        case "daily_tasks_complite_badge.json", "daily_tasks_complite_badge2.json": return KupaStil.renk(0xFFB300)
+/// Açık rozetin tabanına uygulanan kademe tonu.
+///
+/// Android (BadgeDetailFragment / BadgeFragment.applyUnlockedLevelToneToBase): BRONZE, SILVER, RED
+/// → `badge_tone_*_filter` rengiyle PorterDuff MULTIPLY (burada `colorMultiply`, birebir);
+/// PURPLE → `badge_tone_purple_filter` ile PorterDuff OVERLAY. SwiftUI'da görünüm başına OVERLAY
+/// renk filtresi yoktur; turuncu tabanın sarıya kayması ton döndürmeyle YAKLAŞIK verilir.
+/// ORIGINAL / boş → filtre yok.
+struct KupaRozetTonu: ViewModifier {
+    let ton: String
+
+    private var carpim: Color {
+        switch ton {
+        case "BRONZE": return Color("badge_tone_bronze_filter")
+        case "SILVER": return Color("badge_tone_silver_filter")
+        case "RED": return Color("badge_tone_red_filter")
         default: return Color.white
         }
     }
 
-    var body: some View {
-        Image(systemName: simge)
-            .resizable()
-            .scaledToFit()
-            .foregroundColor(duzRenk ?? ozgunRenk)
-            .scaleEffect(nabiz ? 1.06 : 1.0)
-            .onAppear {
-                guard oynuyor else { return }
-                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
-                    nabiz = true
-                }
-            }
+    private var tonAcisi: Double {
+        return ton == "PURPLE" ? 22.0 : 0.0
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .hueRotation(Angle(degrees: tonAcisi))
+            .colorMultiply(carpim)
     }
 }
 

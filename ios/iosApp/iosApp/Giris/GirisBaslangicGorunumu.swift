@@ -29,7 +29,8 @@ struct GirisBaslangicGorunumu: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.horizontal, GirisStil.kenarBoslugu)
         }
-        .padding(.bottom, GirisStil.kenarBoslugu)
+        // android:padding="24dp" dört kenara uygulanır; kılavuz yüzdeleri iç alana göredir.
+        .padding(.vertical, GirisStil.kenarBoslugu)
         .onAppear {
             model.baslangicGoruldu()
         }

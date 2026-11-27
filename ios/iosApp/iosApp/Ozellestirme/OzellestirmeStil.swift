@@ -53,6 +53,21 @@ enum OzellestirmeStil {
     static let kaydiriciBasi: CGFloat = 20
     static let kaydiriciYuksekligi: CGFloat = 28
     static let kaydiriciZeminYuksekligi: CGFloat = 8
+
+    // MARK: Dikeyde esneyen vektörler
+
+    /// Android'de bazı vektörlerin bildirdiği boyut (120×92 dp) görüş alanıyla (120×72) aynı
+    /// oranda değildir: VectorDrawable yolları yatay ve dikeyde ayrı ayrı ölçekler, yani çizim
+    /// dikeyde 92/72 oranında esner (boncuk hapı daha yüksek görünür). iOS'taki SVG karşılıkları
+    /// ise oranı koruyup üstte ve altta boşluk bırakır. Bu işlev o görseller için gereken dikey
+    /// esnetme katsayısını verir; diğerleri için 1.
+    /// Kaynak: res/drawable/bead.xml, abacus_color_tab_ic.xml, soroban_bead*.xml.
+    static func dikeyGerme(_ gorselAdi: String) -> CGFloat {
+        if gorselAdi == "bead" || gorselAdi == "abacus_color_tab_ic" || gorselAdi.hasPrefix("soroban_bead") {
+            return 92.0 / 72.0
+        }
+        return 1.0
+    }
 }
 
 /// Görseli kutuya sığdırarak çizer (Android ImageView, fitCenter).
@@ -62,10 +77,12 @@ struct OzellestirmeGorsel: View {
     let yukseklik: CGFloat
 
     var body: some View {
-        Image(ad)
+        let germe: CGFloat = OzellestirmeStil.dikeyGerme(ad)
+        return Image(ad)
             .renderingMode(.original)
             .resizable()
             .scaledToFit()
+            .scaleEffect(x: 1.0, y: germe, anchor: UnitPoint.center)
             .frame(width: genislik, height: yukseklik)
     }
 }

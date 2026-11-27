@@ -99,11 +99,11 @@ struct GorevlerBolumu: View {
         }
         .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(GorevlerStil.cerceveZemini)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(GorevlerStil.cerceveCizgisi, lineWidth: 2)
         )
     }
@@ -220,7 +220,7 @@ struct GorevlerSatirBasmaStili: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(Color.white.opacity(configuration.isPressed ? 0.12 : 0))
             )
     }
@@ -246,16 +246,16 @@ struct GorevlerIlerlemeCubugu: View {
     private func cubuk(genislik: CGFloat) -> some View {
         let olcu: GorevlerCubukOlcusu? = GorevlerCubukHesabi.hesapla(genislik: genislik, satir: satir)
         return ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(Color("missions_track"))
                 .frame(width: genislik, height: 32)
             if let o = olcu, o.dolguGorunur {
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 16)
                     .fill(Color(o.dolguRengi))
                     .frame(width: o.dolguGenisligi, height: 32)
             }
             if let o = olcu, o.parlamaGorunur {
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                RoundedRectangle(cornerRadius: 3)
                     .fill(Color(o.parlamaRengi))
                     .frame(width: o.parlamaGenisligi, height: 6)
                     .offset(x: 14, y: 8)
@@ -315,7 +315,7 @@ struct GorevlerSandikYerTutucu: View {
                     .padding(.horizontal, 32)
                     .frame(height: 52)
                     .background(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        RoundedRectangle(cornerRadius: 15)
                             .fill(Color("missions_progress_complete"))
                     )
             }

@@ -29,6 +29,10 @@ struct HaritaDersListesi: View {
 
     @State private var ilkGorunen: Int = 0
     @State private var yapiskanYukseklik: CGFloat = 81
+    /// askQuestionButton'ın süzülme animasyonu başladı mı.
+    @State private var suzuluyor: Bool = false
+    /// true ise geri düğmesini kabuğun üst çubuğu çizer (Android'deki yeri).
+    @Environment(\.haritaGeriKabukta) private var geriKabukta: Bool
 
     private let listeAlani = "haritaListesi"
 
@@ -86,7 +90,9 @@ struct HaritaDersListesi: View {
     private var ustKatman: some View {
         ZStack(alignment: .topLeading) {
             yapiskanAlan
-            geriDugmesi
+            if !geriKabukta {
+                geriDugmesi
+            }
         }
     }
 
@@ -109,11 +115,12 @@ struct HaritaDersListesi: View {
         }
     }
 
-    /// Kısım seçimine dönüş. Sabit başlığın solundaki 32pt'lik boşlukta durur.
+    /// Kısım seçimine dönüş; yalnızca harita kabuksuz açıldığında (ekran galerisi) çizilir.
+    /// Sabit başlığın solundaki 32pt'lik boşlukta durur.
     private var geriDugmesi: some View {
         Button(action: { model.kisimSeciminDon() }) {
             geriGorseli
-                .frame(width: HaritaStil.geriDugmesiBoyu, height: HaritaStil.geriDugmesiBoyu)
+                .frame(width: HaritaStil.geriOkuBoyu, height: HaritaStil.geriOkuBoyu)
                 .frame(width: HaritaStil.yapiskanYatayBosluk, height: max(yapiskanYukseklik, 44))
                 .contentShape(Rectangle())
         }
@@ -150,6 +157,19 @@ struct HaritaDersListesi: View {
         }
         .buttonStyle(.plain)
         .padding(.trailing, 6)
+        .offset(x: 0, y: suzuluyor ? -HaritaStil.soruDugmesiSuzulme : 0)
+        .animation(suzulmeAnimasyonu, value: suzuluyor)
+        .onAppear {
+            // Sonsuz animasyon ilk yerleşimle aynı işlemde başlarsa konuma da bulaşabiliyor.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                suzuluyor = true
+            }
+        }
+    }
+
+    /// Android: ObjectAnimator.ofFloat(btn, "translationY", 0f, -20f, 0f), 1800 ms, sonsuz.
+    private var suzulmeAnimasyonu: Animation {
+        return Animation.easeInOut(duration: 0.9).repeatForever(autoreverses: true)
     }
 }
 

@@ -35,6 +35,23 @@ Bu belge `ios/iosApp/` altında SwiftUI ekranı yazan herkes (insan ya da alt ot
 | Metin | `Metin.al("android_string_adi")` ve biçimli olanlar için `Metin.al("ad", arg1, arg2)` — `strings.xml` adıyla aynı. Android'de karşılığı olmayan metin gerekiyorsa Swift'te Türkçe sabit yazın ve raporda listeleyin. |
 | Şekil arka planları | Android `shape`/`selector`/`ripple` drawable'ları asset olarak **yoktur**; SwiftUI'da çizilir. Çözülmüş renk ve köşe değerleri `ios/tools/gorsel-donustur/rapor.json` içindedir. |
 
+### Lottie animasyonları
+
+Android'de `LottieAnimationView` olan her yerde ortak sarmalayıcı kullanılır (`iosApp/Ortak/LottieGorunumu.swift`):
+
+```swift
+LottieGorunumu("confetti_anim")                          // bir kez oynar
+LottieGorunumu("fire_anim", dongu: true)                 // sürekli döner
+LottieGorunumu("gold_medal_anim", dongu: false, hiz: 1.0, oynat: true, bitti: { ... })
+```
+
+- İmza: `init(_ ad: String, dongu: Bool = false, hiz: Double = 1.0, oynat: Bool = true, bitti: (() -> Void)? = nil)`.
+- `ad`: Android'deki dosya adının uzantısız hali (`app/src/main/assets/*.json` ya da `res/raw/*.json`); dosyalar `iosApp/Lottie/` altına kopyalanmıştır. `oynat: false` ilk karede durur.
+- Boyut görünümün kendisine `.frame(...)` ile verilir (içerik sığdırılır, Android `fitCenter` gibi). **İki yön de verilmelidir** (`width` ve `height`); verilmeyen yönde görünüm önerilen alanın tamamını kaplar.
+- Kare aralığı (isteğe bağlı, imzanın sonunda): `baslangicKare: Double? = nil, bitisKare: Double? = nil` — Android `setMinAndMaxFrame` / `setFrame` / `progress` karşılığı, dosyanın kendi kare numaralarıyla. `bitisKare` verilirse `baslangicKare ?? ilk kare`'den o kareye oynar ve orada kalır (`dongu: true` ise bu aralıkta döner); `bitti` aralığın sonunda çağrılır; aralık değişince yeni aralık baştan oynar. Sabit kare: `LottieGorunumu("x", oynat: false, baslangicKare: 116)`. Animasyonun sınırları dışındaki kare en yakın sınıra kırpılır; "son kare" için `baslangicKare: 9999` verilebilir.
+- Sarmalayıcı **dokunma almaz** (alttaki görünüme geçirir; tam ekran konfeti düğmeleri kilitlemez). `Button` etiketi ya da `onTapGesture` içinde kullanılıyorsa kapsayan görünüme `.contentShape(Rectangle())` ekleyin.
+- `lottie-ios` kütüphanesini ekran kodundan doğrudan `import` etmeyin; yalnızca sarmalayıcıyı kullanın.
+
 Görsellerin listesi: `ios/iosApp/iosApp/Assets.xcassets/Gorseller/`. Olmayan bir ada başvurmak çökertmez (boş çizilir) ama raporda belirtin.
 
 ## Ekran sözleşmesi

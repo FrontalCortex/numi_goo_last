@@ -2,7 +2,7 @@ import SwiftUI
 
 // Profil klasörünün ortak görsel yardımcıları: layout XML'lerinde doğrudan yazılmış renkler,
 // yazı tipi ve birden çok ekranda yinelenen küçük parçalar (üst çubuk, çerçeveli düğme,
-// harf avatarı, bildirim balonu, Lottie yer tutucusu).
+// harf avatarı, bildirim balonu, Lottie çizimi).
 
 enum ProfilStil {
     /// 0xRRGGBB biçimindeki sabit renk.
@@ -122,7 +122,9 @@ struct ProfilCerceveliDugme: View {
                         .scaledToFit()
                         .frame(width: 24, height: 24)
                 }
+                // TextAppearance.MaterialComponents.Button: letterSpacing = 0.0892857143 em.
                 Text(metin)
+                    .tracking(yaziBoyu * 0.0892857143)
                     .font(ProfilStil.yazi(yaziBoyu))
                     .lineLimit(1)
             }
@@ -240,7 +242,7 @@ struct ProfilYukleniyor: View {
     }
 }
 
-// MARK: - Lottie yer tutucusu
+// MARK: - Lottie
 
 /// Android'de Lottie ile çizilen bir animasyonun istenen hali.
 struct ProfilAnimasyonIstegi {
@@ -252,37 +254,76 @@ struct ProfilAnimasyonIstegi {
     let kare: Float
     /// Bütün katmanlara uygulanacak düz renk (kilitli rozet) ya da ton; yoksa nil.
     let renk: Color?
+    /// true: `renk` çizimin bütün renklerinin yerine geçer (kilitli rozet; Android:
+    /// PorterDuff.Mode.SRC_ATOP). false: `renk` çizimle çarpılır (kademe tonu; MULTIPLY).
+    var duzRenk: Bool = false
 }
 
-/// lottie-ios projede olmadığı için animasyonlar şimdilik yer tutucuyla çizilir.
-/// Lottie bağlanınca yönetici oturum `ProfilAnimasyon.saglayici`'yı atar; Profil dosyalarına
-/// dokunmak gerekmez.
+/// Animasyonlar ortak sarmalayıcıyla (`LottieGorunumu`) çizilir; sabit kare sarmalayıcının
+/// `baslangicKare` parametresiyle verilir. Sarmalayıcının sözleşmesinde renk süzgeci yoktur
+/// (SwiftUI karışım kipleriyle yaklaşık çizilir); tam karşılayan bir çizim yazılırsa yönetici oturum
+/// `ProfilAnimasyon.saglayici`'yı atar, Profil dosyalarına dokunmak gerekmez.
 enum ProfilAnimasyon {
     static var saglayici: ((ProfilAnimasyonIstegi) -> AnyView)? = nil
+
+    /// Android dosya adı → sarmalayıcının istediği uzantısız ad
+    /// ("dinosaur_anim.json" → "dinosaur_anim", "silver_medal_anim.json.json" → "silver_medal_anim").
+    static func lottieAdi(_ dosya: String) -> String {
+        var ad: String = dosya
+        while ad.hasSuffix(".json") {
+            ad = String(ad.dropLast(5))
+        }
+        return ad
+    }
 }
 
+@MainActor
 struct ProfilAnimasyonGorunumu: View {
     let istek: ProfilAnimasyonIstegi
-    /// Yer tutucuda gösterilecek görsel (Assets); yoksa yalnızca daire çizilir.
-    var yerTutucuGorsel: String? = nil
 
     var body: some View {
         if let saglayici = ProfilAnimasyon.saglayici {
             saglayici(istek)
         } else {
-            yerTutucu
+            boyali
         }
     }
 
-    private var yerTutucu: some View {
-        ZStack {
-            Circle().fill((istek.renk ?? ProfilStil.soluk).opacity(0.35))
-            if let gorsel = yerTutucuGorsel {
-                Image(gorsel)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(10)
+    /// Android'deki oynatma hali:
+    ///   - kupa kartı: lottie_autoPlay + lottie_loop → sürekli döner
+    ///   - rozet (ProfileFragment.applyBadge…: `progress = frameToProgress(topHoldFrame, …)` +
+    ///     `pauseAnimation()`; alt katmanda `progress = 1f`): istenen karede sabit durur.
+    ///     9999 = son kare; sarmalayıcı animasyonun son karesinden büyük değeri son kareye kırpar.
+    @ViewBuilder
+    private var cizim: some View {
+        let ad: String = ProfilAnimasyon.lottieAdi(istek.dosya)
+        if istek.oynat {
+            LottieGorunumu(ad, dongu: true, hiz: 1.0, oynat: true, bitti: nil)
+        } else {
+            LottieGorunumu(
+                ad,
+                dongu: false,
+                hiz: 1.0,
+                oynat: false,
+                bitti: nil,
+                baslangicKare: Double(istek.kare)
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var boyali: some View {
+        if let renk = istek.renk {
+            if istek.duzRenk {
+                cizim
+                    .overlay(Rectangle().fill(renk).blendMode(.sourceAtop))
+                    .compositingGroup()
+            } else {
+                cizim
+                    .colorMultiply(renk)
             }
+        } else {
+            cizim
         }
     }
 }

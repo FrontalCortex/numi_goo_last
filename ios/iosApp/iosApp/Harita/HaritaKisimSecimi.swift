@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 
 // Kısım (part) seçim ekranı.
@@ -84,21 +85,79 @@ struct HaritaKisimKartGorunumu: View {
                 .frame(maxWidth: .infinity)
                 .padding(.top, 5)
             Spacer(minLength: 0)
-            animasyonAlani
+            HaritaKisimAnimasyonu(kart: kart)
+                .padding(.bottom, 4)
         }
         .padding(8)
         .frame(width: 160, height: 180)
-        .background(RoundedRectangle(cornerRadius: 16).fill(Color(kart.kartRengi)))
+        .background(zemin)
         .contentShape(RoundedRectangle(cornerRadius: 16))
-        .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 2)
     }
 
-    /// Android'de burada Lottie animasyonu oynar (kart.animasyon). lottie-ios henüz projede yok;
-    /// yer boş bırakılır ki kart ölçüleri Android ile aynı kalsın.
-    private var animasyonAlani: some View {
-        Color.clear
+    /// Gölge yalnızca zemin şekline verilir (cardElevation 4dp). Kabın tamamına verilirse SwiftUI
+    /// gölgeyi her alt görünüme ayrı ayrı uygular ve başlık yazısı da gölgelenir.
+    private var zemin: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(Color(kart.kartRengi))
+            .shadow(color: Color.black.opacity(0.35), radius: 4, x: 0, y: 2)
+    }
+}
+
+/// item_part_card.xml: partCardLottie (genişlik kart içi, yükseklik 100dp, fitCenter).
+/// Android (PartCardAdapter.bind):
+///   - kart açıksa animasyon hemen ve ardından her 10 saniyede bir, döngüsüz oynar
+///     (kısım 2'de repeatCount = 2 → her seferinde art arda 3 kez);
+///   - kart kapalıysa ilk karede durur ve lesson_locked rengiyle boyanır (SRC_ATOP).
+struct HaritaKisimAnimasyonu: View {
+    let kart: HaritaKisimKarti
+
+    /// Her 10 saniyede bir artar; görünüm kimliği değişince animasyon baştan oynar.
+    @State private var tur: Int = 0
+    /// Bu turda yapılan ek tekrar sayısı (yalnızca kısım 2'de 0'dan büyük olur).
+    @State private var tekrar: Int = 0
+
+    /// Android: itemView.postDelayed(this, 10000L).
+    private let saat = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        icerik
             .frame(height: 100)
             .frame(maxWidth: .infinity)
-            .padding(.bottom, 4)
+            // Dokunuşu kart düğmesi alır; animasyon görünümü yutmasın.
+            .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private var icerik: some View {
+        if kart.gorselEtkin {
+            oynayan
+        } else {
+            duran
+        }
+    }
+
+    private var oynayan: some View {
+        let kimlik: Int = tur * 100 + tekrar
+        return LottieGorunumu(kart.animasyon, dongu: false, hiz: 1.0, oynat: true, bitti: { oynatmaBitti() })
+            .id(kimlik)
+            .onReceive(saat) { _ in
+                tekrar = 0
+                tur += 1
+            }
+    }
+
+    /// Android burada bütün katmanları düz lesson_locked rengine boyar. SwiftUI'da aynı sonucu
+    /// güvenle veren bir yol olmadığı için renk doygunluğu sıfırlanıp kilit rengiyle çarpılır
+    /// (silüet aynı tonda kalır, içindeki açık-koyu farkı hafifçe seçilir).
+    private var duran: some View {
+        LottieGorunumu(kart.animasyon, dongu: false, hiz: 1.0, oynat: false, bitti: nil)
+            .saturation(0)
+            .colorMultiply(Color("lesson_locked"))
+    }
+
+    private func oynatmaBitti() {
+        if tekrar < kart.animasyonTekrari {
+            tekrar += 1
+        }
     }
 }

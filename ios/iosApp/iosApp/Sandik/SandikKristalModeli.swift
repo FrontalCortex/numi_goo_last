@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Shared
 import SwiftUI
@@ -8,10 +9,10 @@ import SwiftUI
 // (durak / dokunuş durum makinesi), CrystalBreakLogic (yıldız sayısı), CrystalRarityTier
 // (etiket ve renk). Bu türler ios/shared/.../oyun/CrystalBreakLogic.kt içindedir.
 //
-// Video oynatıcı henüz bağlı değil: oynatım konumu burada bir saatle TAKLİT edilir
-// (`yerTutucuVideoSuresi` boyunca ilerler). AVPlayer bağlanınca `kareIlerlet` içindeki konum
-// hesabı oynatıcının gerçek konumuyla, "video bitti" denetimi de oynatıcının bildirimiyle
-// değiştirilmeli; gerisi aynı kalır.
+// Video: dosya pakette varsa (iosApp/Videolar/<ad>.mp4) AVPlayer ile oynatılır; konum
+// oynatıcıdan okunur, "video bitti" oynatıcının bildirimiyle gelir (SandikVideoOynatici).
+// Dosya yoksa ya da açılamazsa oynatım konumu burada bir saatle TAKLİT edilir
+// (`yerTutucuVideoSuresi` boyunca ilerler) ve ekranda yer tutucu görsel çizilir.
 
 /// Dokunma / durak dalgası (halka + parıltı).
 struct SandikKristalDalgasi: Identifiable {
@@ -51,6 +52,12 @@ final class SandikKristalModeli: ObservableObject {
 
     /// Oynatılacak videonun adı (res/raw içindeki dosyanın uzantısız adı).
     let videoAdi: String
+    /// `true`: video dosyası pakette var ve AVPlayer ile oynatılıyor; `false`: yer tutucu.
+    @Published private(set) var gercekVideo: Bool = false
+    /// Video dosyası pakette varsa oynatıcısı (görünüm bunu AVPlayerLayer'a bağlar).
+    var videoOynaticisi: AVPlayer? {
+        return video.oynatici
+    }
 
     // MARK: Özel
 
@@ -63,6 +70,9 @@ final class SandikKristalModeli: ObservableObject {
     private let durum: CrystalBreakState
     private let mantik = CrystalBreakLogic.shared
     private let zaman = SandikZamanlayici()
+    private let video: SandikVideoOynatici
+    /// Gerçek videoda: model oynatımın sürmesini istiyor mu (durakta ve bitişte `false`).
+    private var oynatmaIsteniyor = false
     private var saat: Timer?
     private var oynuyor = false
     private var konum: Double = 0
@@ -78,6 +88,9 @@ final class SandikKristalModeli: ObservableObject {
         let yeniDurum = CrystalBreakState(requestedVideoName: videoAdi)
         self.durum = yeniDurum
         self.videoAdi = yeniDurum.videoName
+        let oynatici = SandikVideoOynatici(ad: yeniDurum.videoName, sesDuzeyi: ses.videoSesDuzeyi)
+        self.video = oynatici
+        self.gercekVideo = oynatici.varMi
     }
 
     // MARK: Yaşam döngüsü
@@ -87,10 +100,20 @@ final class SandikKristalModeli: ObservableObject {
         basladi = true
         ses.hazirla()
         etiketiGuncelle()
-        // Oynatıcı hazır olup oynamaya başladı (Android: onIsPlayingChanged(true)).
-        oynuyor = true
-        durum.onPlaybackStarted()
-        etiketGorunur = durum.rarityLabelVisible
+        if gercekVideo {
+            // Etiket, oynatıcı gerçekten oynamaya başlayınca görünür (bkz. gercekKare).
+            video.bitince = { [weak self] in
+                self?.videoBitti()
+            }
+            oynatmaIsteniyor = true
+            video.oynat()
+        } else {
+            // Yer tutucu: oynatıcı hazır olup oynamaya başlamış sayılır
+            // (Android: onIsPlayingChanged(true)).
+            oynuyor = true
+            durum.onPlaybackStarted()
+            etiketGorunur = durum.rarityLabelVisible
+        }
         sonKare = ProcessInfo.processInfo.systemUptime
         saat = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
             self?.kareIlerlet()
@@ -101,6 +124,9 @@ final class SandikKristalModeli: ObservableObject {
         saat?.invalidate()
         saat = nil
         zaman.durdur()
+        oynatmaIsteniyor = false
+        video.bitince = nil
+        video.duraklat()
     }
 
     func ekranBoyunuAyarla(_ boy: CGSize) {
@@ -115,18 +141,73 @@ final class SandikKristalModeli: ObservableObject {
         let fark: Double = simdi - sonKare
         sonKare = simdi
         efektleriTemizle(simdi: simdi)
+        if gercekVideo {
+            gercekKare(simdi: simdi)
+            return
+        }
         if !oynuyor { return }
 
         konum += fark
         if konum >= yerTutucuVideoSuresi {
-            // Player.STATE_ENDED: Android'de ekran kendiliğinden kapanır.
-            durum.onVideoEnded()
-            etiketGorunur = durum.rarityLabelVisible
-            bitir()
+            videoBitti()
             return
         }
 
         let konumMs = Int64(konum * 1000.0)
+        tikIsle(konumMs: konumMs, simdi: simdi)
+    }
+
+    /// Gerçek video: durum ve konum oynatıcıdan okunur.
+    private func gercekKare(simdi: TimeInterval) {
+        if video.basarisiz {
+            yerTutucuyaDus(simdi: simdi)
+            return
+        }
+        let oynuyorMu: Bool = video.oynuyor
+        oynuyor = oynuyorMu
+        if !oynuyorMu {
+            // Uygulama arka plana gidip dönünce sistem oynatıcıyı duraklatır; durakta
+            // beklenmiyorsa oynatım sürdürülür (Android: onResume → exoPlayer.play()).
+            if oynatmaIsteniyor && video.duraklatilmis {
+                video.oynat()
+            }
+            return
+        }
+        if !durum.hasPlaybackStarted {
+            // Android: onIsPlayingChanged(true) → etiket görünür.
+            durum.onPlaybackStarted()
+            etiketGorunur = durum.rarityLabelVisible
+        }
+        let konumMs = Int64(video.konumSaniye * 1000.0)
+        tikIsle(konumMs: konumMs, simdi: simdi)
+    }
+
+    /// Video dosyası açılamadı: yer tutucu saate geçilir, akış kaldığı yerden sürer.
+    private func yerTutucuyaDus(simdi: TimeInterval) {
+        video.bitince = nil
+        video.duraklat()
+        oynatmaIsteniyor = false
+        gercekVideo = false
+        konum = video.konumSaniye
+        sonKare = simdi
+        if !durum.hasPlaybackStarted {
+            durum.onPlaybackStarted()
+            etiketGorunur = durum.rarityLabelVisible
+        }
+        oynuyor = !durum.waitingTapToContinue
+    }
+
+    /// Player.STATE_ENDED: Android'de ekran kendiliğinden kapanır.
+    private func videoBitti() {
+        if kapandi { return }
+        oynatmaIsteniyor = false
+        durum.onVideoEnded()
+        etiketGorunur = durum.rarityLabelVisible
+        bitir()
+    }
+
+    /// checkpointTick.run gövdesi: `konumMs` oynatım konumudur (oynatıcı oynarken çağrılır).
+    private func tikIsle(konumMs: Int64, simdi: TimeInterval) {
         let sonuc: CrystalTickResult = durum.onTick(positionMs: konumMs, isPlaying: true)
         if sonuc.rarityChanged {
             etiketiGuncelle()
@@ -137,6 +218,10 @@ final class SandikKristalModeli: ObservableObject {
         }
         if sonuc.pausePlayback {
             oynuyor = false
+            if gercekVideo {
+                oynatmaIsteniyor = false
+                video.duraklat()
+            }
             if durum.shouldIdlePulse {
                 nabizBaslangici = simdi
             }
@@ -150,7 +235,8 @@ final class SandikKristalModeli: ObservableObject {
         ses.kristalTikSesiCal()
         // Dalga rengi dokunuş anındaki etikete göre belirlenir (currentRarityWaveColor).
         let dalgaRengi: Color = SandikStil.renk(argb: durum.tapWaveColor)
-        let sonuc: CrystalTapResult = durum.onTap(isPlaying: oynuyor)
+        let oynuyorMu: Bool = gercekVideo ? video.oynuyor : oynuyor
+        let sonuc: CrystalTapResult = durum.onTap(isPlaying: oynuyorMu)
         let eylem: CrystalTapAction = sonuc.action
         if eylem == CrystalTapAction.tapWave {
             dokunmaDalgasi(nokta, renk: dalgaRengi)
@@ -162,7 +248,12 @@ final class SandikKristalModeli: ObservableObject {
                 buyukDalgayiZamanla(devamSirasi: dalgaSirasi)
             }
             sonKare = ProcessInfo.processInfo.systemUptime
-            oynuyor = true
+            if gercekVideo {
+                oynatmaIsteniyor = true
+                video.oynat()
+            } else {
+                oynuyor = true
+            }
         } else if eylem == CrystalTapAction.dismiss {
             bitir()
         }

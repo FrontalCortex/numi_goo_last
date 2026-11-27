@@ -231,11 +231,13 @@ struct ProfilDuzenleEkrani: View {
                 parolaBolumu
             }
 
+            // Bu iki düğmede app:cornerRadius yoktur: Material 2 varsayılanı 4dp.
             ProfilCerceveliDugme(
                 metin: model.kaydetMetni,
                 zemin: Color("outline_button_bg"),
                 cizgi: Color("outline_button_stroke"),
                 cizgiKalinligi: 1,
+                kose: 4,
                 yukseklik: 48,
                 etkin: !model.kaydediliyor,
                 eylem: { model.kaydet(gezinme: gezinme) }
@@ -249,6 +251,7 @@ struct ProfilDuzenleEkrani: View {
                 zemin: Color("outline_button_bg"),
                 cizgi: Color("outline_button_stroke"),
                 cizgiKalinligi: 1,
+                kose: 4,
                 yukseklik: 48,
                 eylem: { model.silmeOnayiAcik = true }
             )

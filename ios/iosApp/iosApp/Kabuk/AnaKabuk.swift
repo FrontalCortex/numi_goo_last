@@ -21,12 +21,17 @@ struct AnaKabuk: View {
     var body: some View {
         VStack(spacing: 0) {
             if secili.ustCubukGorunur {
-                UstCubuk(durum: yonetici.oturum, magazaAc: { yonetici.magazaAc() })
+                KabukUstCubukBaglayici(
+                    harita: yonetici.haritaModeli,
+                    oturum: yonetici.oturum,
+                    haritaSekmesi: secili == .harita,
+                    magazaAc: { yonetici.magazaAc() }
+                )
             }
             KabukAyirici()
             icerik
             KabukAyirici()
-            AltCubuk(secili: $secili)
+            AltCubuk(secili: $secili, ayniSekmeyeDokunuldu: { sekme in ayniSekme(sekme) })
         }
         // Arka plan çentiğin ve alt ana ekran çizgisinin altına kadar uzanır;
         // içerik güvenli alanın içinde kalır (Android: fitsSystemWindows + sistem çubuğu rengi).
@@ -44,6 +49,8 @@ struct AnaKabuk: View {
     private var icerik: some View {
         ZStack {
             HaritaEkrani(model: yonetici.haritaModeli, yerTutucuGoster: false)
+                // Geri düğmesini üst çubuk çizer (Android: lessonPartBackButton currencyPanel içinde).
+                .environment(\.haritaGeriKabukta, true)
                 .opacity(secili == .harita ? 1 : 0)
                 .allowsHitTesting(secili == .harita)
                 .accessibilityHidden(secili != .harita)
@@ -51,6 +58,14 @@ struct AnaKabuk: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .clipped()
+    }
+
+    /// Android: R.id.map seçiliyken yeniden dokunulursa ve MapFragment açıksa
+    /// popBackStack("part_map") ile kısım seçimine dönülür; diğer sekmelerde bir şey olmaz.
+    private func ayniSekme(_ sekme: Sekme) {
+        if sekme == .harita && yonetici.haritaModeli.seciliPart != nil {
+            yonetici.haritaModeli.kisimSeciminDon()
+        }
     }
 
     @ViewBuilder
@@ -98,5 +113,27 @@ struct AnaKabuk: View {
         ekran.kartSecildi = { kart in nesne.kesfetKartiSecildi(kart) }
         // rozetGoster: rozet seviye atlama ekranı (BadgeLevelUpFragment) henüz yazılmadı.
         return ekran
+    }
+}
+
+// Üst çubuğu harita modeline bağlar: geri düğmesi yalnızca harita sekmesinde bir kısım açıkken
+// görünür (Android: PartSelectionFragment.openMapForPart -> lessonPartBackButton VISIBLE;
+// MainActivity.updateCurrencyPanelVisibility -> MapFragment dışında GONE).
+// Ayrı görünüm olmasının nedeni: kabuk yalnızca yöneticiyi gözler, modelin `seciliPart`
+// değişikliği burada gözlenmezse üst çubuk yeniden çizilmez.
+private struct KabukUstCubukBaglayici: View {
+    @ObservedObject var harita: HaritaModeli
+    @ObservedObject var oturum: OturumDurumu
+    let haritaSekmesi: Bool
+    let magazaAc: () -> Void
+
+    var body: some View {
+        let geriGorunur: Bool = haritaSekmesi && harita.seciliPart != nil
+        return UstCubuk(
+            durum: oturum,
+            magazaAc: magazaAc,
+            geriGorunur: geriGorunur,
+            geri: { harita.kisimSeciminDon() }
+        )
     }
 }

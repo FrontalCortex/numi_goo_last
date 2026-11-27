@@ -184,6 +184,12 @@ struct KupaLiderTablosuEkrani: View {
     }
 
     /// fragment_record.xml: sağ üstte 120dp, sol altta 80dp yarı saydam daire (bg_record_decor_circle).
+    ///
+    /// Bu daireler Android'de de vardır ve içeriğin ARKASINDA durur (FrameLayout'un ilk iki çocuğu):
+    /// - sağ üst: 120dp, layout_gravity top|end, marginTop -20dp, marginEnd -30dp
+    /// - sol alt: 80dp, layout_gravity bottom|start, marginStart -24dp, marginBottom 80dp
+    /// - dolgu: #33FFFFFF (beyaz, %20) oval
+    /// Kök görünüm fitsSystemWindows olduğu için konumlar güvenli alana göredir.
     private var susDaireleri: some View {
         GeometryReader { geo in
             Circle()
@@ -218,6 +224,8 @@ struct KupaLiderTablosuEkrani: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 16)
                     .padding(.bottom, 8)
+                    // recordRankSectionLabel: android:background="@color/black" (süs dairesini örter).
+                    .background(Color.black)
             }
             altBolum
         }

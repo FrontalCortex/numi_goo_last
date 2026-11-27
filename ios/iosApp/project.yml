@@ -11,12 +11,21 @@ settings:
     SWIFT_VERSION: "5.9"
     # Gradle betiği proje klasörü dışına yazdığı için betik korumalı alanı kapalı olmalı.
     ENABLE_USER_SCRIPT_SANDBOXING: "NO"
+# Swift paketleri: xcodebuild derlemenin başında kendiliğinden indirir (ayrı adım gerekmez).
+packages:
+  # Lottie animasyonları. lottie-spm, lottie-ios'un hazır derlenmiş (xcframework) dağıtımıdır;
+  # kaynak deposundan çok daha hızlı iner. Yalnızca Ortak/LottieGorunumu.swift içinden kullanılır.
+  Lottie:
+    url: https://github.com/airbnb/lottie-spm.git
+    from: 4.6.1
 targets:
   iosApp:
     type: application
     platform: iOS
     sources:
       - path: iosApp
+    dependencies:
+      - package: Lottie
     scheme: {}
     settings:
       base:

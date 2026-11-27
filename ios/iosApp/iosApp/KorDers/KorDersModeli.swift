@@ -41,6 +41,11 @@ final class KorDersModeli: ObservableObject {
     @Published private(set) var ilerlemeRengi: Color = KorDersStil.ilerlemeYesil
     /// Android: isHintVisible.
     @Published private(set) var ipucuAcik: Bool = false
+    /// Android: lottieView (animaton_thirteen) — son soruda bütün cevaplar doğruysa bir kez oynar.
+    @Published private(set) var konfeti: Bool = false
+
+    /// Android: abacusContainer + AbacusBeadController (cevabı abaküsle verilen derslerde görünür).
+    let abakus = AbakusDenetleyici()
 
     // MARK: Sabit görünüm bayrakları (ortak koddan)
 
@@ -114,6 +119,16 @@ final class KorDersModeli: ObservableObject {
     deinit {
         diziIsi?.cancel()
         sureSayaci?.invalidate()
+    }
+
+    /// Android: setupAbacusController — lessonItem.type == 2 ise 50 ms, değilse 300 ms.
+    var boncukAnimasyonMs: Int {
+        return Int(oturum.boncukAnimasyonMs)
+    }
+
+    /// Android: skipStepButton yalnızca dizi gösterilirken (isShowingSequence) çalışır ve oynar.
+    var adimAtlanabilir: Bool {
+        return oturum.diziGosteriliyor
     }
 
     /// Android: onCreate (lessonItem) + uploadLessonData.
@@ -275,9 +290,9 @@ final class KorDersModeli: ObservableObject {
     /// Android: resetClickListener.
     func sifirla() {
         oturum.kontrolSifirla()
-        // isBlinding == null → abaküs sıfırlanır; true → kutu temizlenir. Abaküs yer tutucusu da
-        // aynı kutuyu kullandığı için iki durumda da kutu temizlenir.
-        if oturum.abakusleCevap || klavyeyleCevap { girdi = "" }
+        // isBlinding == null → abaküs sıfırlanır (resetAbacus); true → kutu temizlenir.
+        if oturum.abakusleCevap { abakus.sifirla(animasyonlu: true) }
+        if klavyeyleCevap { girdi = "" }
         if oturum.diziVar {
             diziZamanlayicisiniIptalEt()
             oturum.diziDurdur()
@@ -310,8 +325,8 @@ final class KorDersModeli: ObservableObject {
         if simdi.timeIntervalSince(sonKontrolAni) < aralik { return }
         sonKontrolAni = simdi
 
-        // Abaküs görünümü bağlanana kadar abaküs değeri de sayı kutusundan okunur (yer tutucu).
-        let abakusDegeri: Int32 = oturum.abakusleCevap ? (Int32(girdi) ?? 0) : 0
+        // Android: controlNumber = abacusController.getCurrentValue() (abaküsle cevaplanan dersler).
+        let abakusDegeri: Int32 = oturum.abakusleCevap ? Int32(abakus.anlikDeger) : 0
         let dogru: Bool = oturum.kontrolEt(girdi: girdi, abakusDegeri: abakusDegeri)
         ilerlemeyiGuncelle(dogru: dogru)
 
@@ -351,8 +366,8 @@ final class KorDersModeli: ObservableObject {
         if panel != nil { return }
         let kurallar = AbacusLessonRules.shared
         if dogru {
-            // Dönüş değeri "konfeti oynatılsın mı" (lottie animaton_thirteen); Lottie henüz yok.
-            _ = oturum.dogruIslendi()
+            // Dönüş değeri "konfeti oynatılsın mı" (lottieView: animaton_thirteen, bir kez).
+            if oturum.dogruIslendi() { konfeti = true }
             ses.cal(ad: kurallar.SOUND_CORRECT, sesDuzeyi: kurallar.SOUND_CORRECT_VOLUME)
         } else {
             ses.cal(ad: kurallar.SOUND_INCORRECT, sesDuzeyi: 1.0)
@@ -424,7 +439,8 @@ final class KorDersModeli: ObservableObject {
             self?.kontrolKilitli = false
         }
         paneliGizle()
-        // Android: isBlinding == null ise abaküs sıfırlanır (yer tutucuda kutu zaten temizlendi).
+        // Android: isBlinding == null ise abaküs sıfırlanır (resetAbacus).
+        if oturum.abakusleCevap { abakus.sifirla(animasyonlu: true) }
         if soruKaldi {
             suankiSoruyuGoster()
         } else {

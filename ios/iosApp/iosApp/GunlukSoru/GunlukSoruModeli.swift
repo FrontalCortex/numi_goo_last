@@ -259,8 +259,10 @@ final class GunlukSoruModeli: ObservableObject {
 
     // MARK: Kırık kalp (DailyQuestionVH.bindBrokenHeart)
 
-    /// Lottie yerine geçen kısa animasyonun süresi (sn).
-    private static let kalpAnimasyonSuresi: Double = 1.2
+    /// broken_heart_anim.json 60 kare/sn ve 198 karedir (dosyanın "fr" ve "op" alanları).
+    /// Kırılma 0 → 116. kare (DailyQuestionPeriod.BROKEN_HEART_HOLD_FRAME), iyileşme 116 → 198.
+    private static let kalpKirilmaSuresi: Double = 116.0 / 60.0
+    private static let kalpIyilesmeSuresi: Double = 82.0 / 60.0
 
     private func kalbiBagla(_ durum: DailyQuestionCardUiState) {
         kalpNesli += 1
@@ -277,14 +279,14 @@ final class GunlukSoruModeli: ObservableObject {
             // (sekme değişimi, kartın yeniden bağlanması) kalp sağlam görünmesin.
             kalp = .kiriliyor
             depo.kalpDeposu.setBrokenHold116(periodKey: periyot, hold: true)
-            DispatchQueue.main.asyncAfter(deadline: .now() + GunlukSoruModeli.kalpAnimasyonSuresi) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + GunlukSoruModeli.kalpKirilmaSuresi) { [weak self] in
                 guard let ben = self, ben.kalpNesli == nesil else { return }
                 ben.kalp = .kirik
             }
         case .iyiles:
             // Android: playBrokenHeartHealThenFirstFrame — bitince bekleyen soru başlar.
             kalp = .iyilesiyor
-            DispatchQueue.main.asyncAfter(deadline: .now() + GunlukSoruModeli.kalpAnimasyonSuresi) { [weak self] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + GunlukSoruModeli.kalpIyilesmeSuresi) { [weak self] in
                 guard let ben = self, ben.kalpNesli == nesil else { return }
                 ben.depo.kalpDeposu.clearBrokenHold116(periodKey: periyot)
                 ben.kalp = .saglam

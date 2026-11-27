@@ -156,11 +156,14 @@ private struct OzellestirmeSekmeSeridi: View {
 
     private func sekme(_ sira: Int) -> some View {
         let seciliMi: Bool = sira == model.sekme
+        let simgeAdi: String = model.sekmeSimgeleri[sira]
+        let germe: CGFloat = OzellestirmeStil.dikeyGerme(simgeAdi)
         return Button(action: { model.sekmeSec(sira) }) {
-            Image(model.sekmeSimgeleri[sira])
+            Image(simgeAdi)
                 .renderingMode(.original)
                 .resizable()
                 .scaledToFit()
+                .scaleEffect(x: 1.0, y: germe, anchor: UnitPoint.center)
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .opacity(seciliMi ? model.seciliSekmeOpakligi : model.digerSekmeOpakligi)

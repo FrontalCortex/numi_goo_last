@@ -1,14 +1,21 @@
 import SwiftUI
 
 // Üst durum çubuğu: elmas, enerji, anahtar. Android activity_main.xml -> currencyPanel.
-// Dizilim: [elmas] boşluk [enerji] boşluk [anahtar] (aradaki iki boşluk eşit ağırlıklı).
+// Dizilim: [geri] [elmas] boşluk [enerji] boşluk [anahtar] (aradaki iki boşluk eşit ağırlıklı).
+// Geri düğmesi (lessonPartBackButton) yalnızca ders haritası (MapFragment) açıkken görünür.
 struct UstCubuk: View {
     @ObservedObject var durum: OturumDurumu
     // Android'de göstergelerin hepsi dokununca mağazayı (ShopFragment) açar.
     var magazaAc: () -> Void = {}
+    // Android: lessonPartBackButton. Öğretmen hesabında göstergeler gizlenir ama bu düğme kalır.
+    var geriGorunur: Bool = false
+    var geri: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 0) {
+            if geriGorunur {
+                geriDugmesi
+            }
             if !durum.ogretmenMi {
                 elmasGostergesi
                 Spacer(minLength: 0)
@@ -17,10 +24,26 @@ struct UstCubuk: View {
                 anahtarGostergesi
             }
         }
-        .frame(maxWidth: .infinity, minHeight: KabukOlculeri.elmasYukseklik)
+        .frame(maxWidth: .infinity, minHeight: KabukOlculeri.elmasYukseklik, alignment: .leading)
         .padding(.vertical, KabukOlculeri.ustDikeyBosluk)
         .padding(.horizontal, KabukOlculeri.ustYatayBosluk)
         .background(Color("background_color"))
+    }
+
+    // 30x30 pt'lik kutunun ortasında 24 pt'lik beyaz ok (ImageButton, scaleType varsayılanı: center).
+    private var geriDugmesi: some View {
+        Button(action: geri) {
+            Image("ic_back_arrow")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(Color.white)
+                .frame(width: KabukOlculeri.geriOku, height: KabukOlculeri.geriOku)
+                .frame(width: KabukOlculeri.geriDugmesi, height: KabukOlculeri.geriDugmesi)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Geri"))
     }
 
     private var elmasGostergesi: some View {
@@ -82,6 +105,8 @@ private struct UstGosterge: View {
                     .font(Tema.yazi(KabukOlculeri.gostergeYazi))
                     .foregroundColor(metinRengi)
                     .lineLimit(1)
+                    // Çok basamaklı bakiyelerde dar ekranda (375 pt) taşmak yerine küçülsün.
+                    .minimumScaleFactor(0.6)
             }
             .contentShape(Rectangle())
         }

@@ -45,6 +45,7 @@ struct EkranGalerisi: View {
         "profil-duzenle",
         "yer-tutucu",
         "yazi-tipi",
+        "lottie",
     ]
 
     /// `-ekran <ad>` ile istenen ekran; argüman yoksa nil (uygulama olağan akışla açılır).
@@ -187,6 +188,8 @@ struct EkranGalerisi: View {
             )
         case "yazi-tipi":
             EkranGalerisiYaziTipi()
+        case "lottie":
+            LottieDenemeEkrani()
         default:
             EkranGalerisiAdListesi(istenen: ad)
         }

@@ -29,8 +29,22 @@ enum HaritaStil {
     static let yarisSimgeBoyu: CGFloat = 64
     /// map_fab_size
     static let soruDugmesiBoyu: CGFloat = 60
-    /// main_toolbar_icon_back
+    /// main_toolbar_icon_back (düğmenin kutusu)
     static let geriDugmesiBoyu: CGFloat = 30
+    /// ic_back_arrow.xml: 24dp'lik vektör, ImageButton içinde ölçeklenmeden ortalanır.
+    static let geriOkuBoyu: CGFloat = 24
+    /// lesson_sheet_top_row_height
+    static let altPanelUstSatir: CGFloat = 38
+    /// lesson_sheet_lottie_size
+    static let altPanelAtesBoyu: CGFloat = 53
+    /// lesson_sheet_lottie_padding_bottom
+    static let altPanelAtesAltBosluk: CGFloat = 6
+    /// Widget.MaterialComponents.Button: minHeight 48dp - insetTop 6dp - insetBottom 6dp
+    static let altPanelDugmeBoyu: CGFloat = 36
+    /// Widget.MaterialComponents.Button: insetTop / insetBottom
+    static let altPanelDugmeIcBosluk: CGFloat = 6
+    /// MapFragment.startAskQuestionBounceAnimation: translationY 0 → -20 → 0
+    static let soruDugmesiSuzulme: CGFloat = 20
 
     // MARK: Yazı
 
@@ -60,6 +74,21 @@ enum HaritaStil {
     static let altPanelZemini: Color = HaritaStil.renk(0x222222)
     /// record_background.xml: #FFB703.
     static let rekorZemini: Color = HaritaStil.renk(0xFFB703)
+}
+
+/// Geri düğmesini (Android: lessonPartBackButton) uygulama kabuğu kendi üst çubuğunda mı çiziyor.
+/// Android'de düğme MainActivity'nin üst çubuğundadır (activity_main.xml: currencyPanel);
+/// kabuk bu değeri true yapar ve düğmeyi Kabuk/UstCubuk çizer. Harita tek başına açıldığında
+/// (ekran galerisi) değer false kalır ve geri dönüş yolu kaybolmasın diye düğmeyi liste çizer.
+struct HaritaGeriKabuktaAnahtari: EnvironmentKey {
+    static let defaultValue: Bool = false
+}
+
+extension EnvironmentValues {
+    var haritaGeriKabukta: Bool {
+        get { return self[HaritaGeriKabuktaAnahtari.self] }
+        set { self[HaritaGeriKabuktaAnahtari.self] = newValue }
+    }
 }
 
 /// Yalnızca üst köşeleri yuvarlatılmış dikdörtgen (bottom_sheet_background.xml).

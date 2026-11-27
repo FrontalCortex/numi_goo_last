@@ -28,6 +28,8 @@ struct KorDersIlerlemeCubugu: View {
 /// Android: blackboardImage + üstündeki sayı metinleri.
 struct KorDersTahta: View {
     @ObservedObject var model: KorDersModeli
+    /// Kısa ekranlarda tahtanın küçültülme oranı; 1 = Android ölçüleri.
+    var olcek: CGFloat = 1
 
     var body: some View {
         ZStack {
@@ -39,10 +41,10 @@ struct KorDersTahta: View {
                 )
                 .clipped()
             yazilar
-                .padding(.bottom, KorDersStil.tahtaYaziAltBosluk)
+                .padding(.bottom, KorDersStil.tahtaYaziAltBosluk * olcek)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: KorDersStil.tahtaYukseklik)
+        .frame(height: KorDersStil.tahtaYukseklik * olcek)
         .allowsHitTesting(false)
     }
 
@@ -67,18 +69,18 @@ struct KorDersTahta: View {
                 Spacer(minLength: 0)
             }
             Text(model.islec)
-                .font(Tema.yazi(KorDersStil.tahtaYaziBoyu))
+                .font(Tema.yazi(KorDersStil.tahtaYaziBoyu * olcek))
                 .foregroundColor(.white)
         }
     }
 
     private func sayi(_ metin: String) -> some View {
         Text(metin)
-            .font(Tema.yazi(KorDersStil.tahtaYaziBoyu))
+            .font(Tema.yazi(KorDersStil.tahtaYaziBoyu * olcek))
             .foregroundColor(.white)
             .lineLimit(1)
             .minimumScaleFactor(0.5)
-            .padding(KorDersStil.tahtaYaziBosluk)
+            .padding(KorDersStil.tahtaYaziBosluk * olcek)
     }
 }
 
@@ -112,67 +114,143 @@ struct KorDersSayiKutusu: View {
 
 /// Sağ kenardaki düğme sütunu. Android'de alttan üste: skipStepButton, resetButton,
 /// askQuestionButton, hintContainer (aralarında 4dp; hepsi startButton'ın üstünde).
+/// Ekran kenarına uzaklık (kök dolgu 10dp + marginEnd): skipStepButton ve askQuestionButton
+/// −10dp → 0, resetButton −9dp → 1, fabHint (16 − 25 = −9dp) → 1.
+///
+/// Üçü de Android'de LottieAnimationView'dur (autoPlay=false, loop=false):
+///  - fabHint (raw/lesson_hint_ic): showHint'te bir kez oynar, hideHint'te ilk kareye döner.
+///  - resetButton (raw/reset): 20. karede bekler; dokununca baştan sona bir kez oynar, bitişten
+///    1 sn sonra yeniden 20. kareye alınır.
+///  - skipStepButton (skip_step_arrow_anim.json): dokununca (dizi gösterilirken) bir kez oynar.
 struct KorDersYanDugmeler: View {
     @ObservedObject var model: KorDersModeli
+
+    @State private var sifirlaOynuyor: Bool = false
+    @State private var sifirlaSayaci: Int = 0
+    @State private var atlaOynuyor: Bool = false
+    @State private var atlaSayaci: Int = 0
+
+    /// raw/reset: 75 kare, 25 kare/sn; Android bitişten 1 sn sonra bekleme karesine döner.
+    private static let sifirlaSuresi: Double = 75.0 / 25.0 + 1.0
+    /// skip_step_arrow_anim: 10. kareden 37. kareye, 30 kare/sn.
+    private static let atlaSuresi: Double = 27.0 / 30.0 + 0.1
 
     var body: some View {
         VStack(alignment: .trailing, spacing: KorDersStil.yanDugmeAraligi) {
             if !model.ipucuGizli {
                 ipucu
+                    .padding(.trailing, 1)
             }
             // askQuestionButton (öğretmene soru sor) bu ekranda yok; yeri boş bırakılır.
             Color.clear
                 .frame(width: KorDersStil.yanDugmeBoyu, height: KorDersStil.yanDugmeBoyu)
                 .allowsHitTesting(false)
             if !model.sifirlaGizli {
-                KorDersYanDugme(eylem: { model.sifirla() }) {
-                    // Android: lottie raw/reset; burada durağan simge.
-                    Image("reset_ic")
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundColor(.white)
-                        .frame(width: 30, height: 30)
-                }
+                sifirlaDugmesi
+                    .padding(.trailing, 1)
             }
             if !model.adimAtlaGizli {
-                KorDersYanDugme(eylem: { model.adimAtla() }) {
-                    // Android: lottie skip_step_arrow_anim.json; burada sistem simgesi.
-                    Image(systemName: "forward.end.fill")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.white)
-                }
+                atlaDugmesi
             }
         }
     }
+
+    // MARK: Sıfırla
+
+    private var sifirlaDugmesi: some View {
+        KorDersYanDugme(eylem: { sifirlaDokunuldu() }) {
+            sifirlaSimgesi
+        }
+    }
+
+    /// Animasyonun ilk ve son karesi boştur; Android bu yüzden 20. karede bekletir
+    /// (findsId: resetButton.frame = 20). Beklerken 20. kare, oynarken 0. kareden sona.
+    /// Kimlik her dokunuşta değişir: oynarken yeniden dokunulursa baştan başlar.
+    private var sifirlaSimgesi: some View {
+        let kare: Double = sifirlaOynuyor ? 0.0 : 20.0
+        return LottieGorunumu("reset", dongu: false, oynat: sifirlaOynuyor, baslangicKare: kare)
+            .frame(width: KorDersStil.yanDugmeLottieBoyu, height: KorDersStil.yanDugmeLottieBoyu)
+            .id(sifirlaSayaci)
+    }
+
+    /// Android: resetButton.setOnClickListener — her dokunuşta playAnimation (baştan başlar).
+    private func sifirlaDokunuldu() {
+        let no: Int = sifirlaSayaci + 1
+        sifirlaSayaci = no
+        sifirlaOynuyor = true
+        model.sifirla()
+        DispatchQueue.main.asyncAfter(deadline: .now() + KorDersYanDugmeler.sifirlaSuresi) {
+            if sifirlaSayaci == no {
+                sifirlaOynuyor = false
+            }
+        }
+    }
+
+    // MARK: Adım atla
+
+    private var atlaDugmesi: some View {
+        KorDersYanDugme(eylem: { atlaDokunuldu() }) {
+            // Android: setMinFrame(10) — 10. karede bekler, dokununca 10. kareden sona oynar.
+            LottieGorunumu("skip_step_arrow_anim", dongu: false, oynat: atlaOynuyor, baslangicKare: 10.0)
+                .frame(width: KorDersStil.adimAtlaLottieBoyu, height: KorDersStil.adimAtlaLottieBoyu)
+                .id(atlaSayaci)
+        }
+    }
+
+    /// Android: setupSkipStepButton — dizi gösterilmiyorsa hiçbir şey yapmaz (animasyon da oynamaz).
+    private func atlaDokunuldu() {
+        if !model.adimAtlanabilir { return }
+        let no: Int = atlaSayaci + 1
+        atlaSayaci = no
+        atlaOynuyor = true
+        model.adimAtla()
+        DispatchQueue.main.asyncAfter(deadline: .now() + KorDersYanDugmeler.atlaSuresi) {
+            if atlaSayaci == no {
+                atlaOynuyor = false
+            }
+        }
+    }
+
+    // MARK: İpucu
 
     /// Android: hintContainer — fabHint (lottie lesson_hint_ic) ve soldan açılan tvHint.
     private var ipucu: some View {
         ZStack(alignment: .trailing) {
             if model.ipucuAcik {
-                Text(model.ipucuMetni)
-                    .font(Tema.yazi(KorDersStil.ipucuYaziBoyu))
-                    .foregroundColor(.white)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.leading, 10)
-                    .padding(.trailing, 30)
-                    .frame(height: KorDersStil.ipucuYukseklik)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(KorDersStil.ipucuZemin)
-                    )
-                    // tvHint'in sağ kenarı düğmenin sağ kenarından 40dp içeridedir (15 + 25).
-                    .padding(.trailing, 40)
-                    // anim/slide_in_right ve slide_out_right_hint: 500 ms, kayma + belirme.
-                    .transition(.move(edge: .trailing).combined(with: .opacity))
+                ipucuBalonu
             }
             KorDersYanDugme(eylem: { model.ipucunuDegistir() }) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundColor(Color("yellow"))
+                ipucuSimgesi
             }
         }
+    }
+
+    /// Android: showHint → playAnimation + setFrame(25) (25. kareden sona bir kez);
+    /// hideHint → cancelAnimation + setFrame(0).
+    private var ipucuSimgesi: some View {
+        let acik: Bool = model.ipucuAcik
+        let kare: Double = acik ? 25.0 : 0.0
+        return LottieGorunumu("lesson_hint_ic", dongu: false, oynat: acik, baslangicKare: kare)
+            .frame(width: KorDersStil.yanDugmeLottieBoyu, height: KorDersStil.yanDugmeLottieBoyu)
+    }
+
+    private var ipucuBalonu: some View {
+        Text(model.ipucuMetni)
+            .font(Tema.yazi(KorDersStil.ipucuYaziBoyu))
+            .foregroundColor(.white)
+            .lineLimit(2)
+            .fixedSize(horizontal: true, vertical: false)
+            .padding(.leading, 10)
+            .padding(.trailing, 30)
+            .frame(height: KorDersStil.ipucuYukseklik)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(KorDersStil.ipucuZemin)
+            )
+            // tvHint'in sağ kenarı düğmenin sağ kenarından 40dp içeridedir (15 + 25).
+            .padding(.trailing, 40)
+            // anim/slide_in_right ve slide_out_right_hint: 500 ms, kayma + belirme.
+            .transition(.move(edge: .trailing).combined(with: .opacity))
     }
 }
 

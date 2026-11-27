@@ -30,6 +30,10 @@ enum KorDersStil {
     static let kutuYaziBoyu: CGFloat = 32
     static let kutuKose: CGFloat = 12
     static let kutuCerceve: CGFloat = 10
+    /// Kısa ekranda (ya da klavye açıkken) sayı kutusunun üstünde ve altında bırakılan en az boşluk.
+    static let kutuEnAzBosluk: CGFloat = 8
+    /// abacusContainer: layout_marginBottom (tutorial_abacus_linear_margin_bottom 10dp).
+    static let abakusAltBosluk: CGFloat = 10
     /// kontrolButton / startButton: yükseklik 60dp, yan boşluk 24dp, alt boşluk 15dp, köşe 15dp, 18sp.
     static let anaDugmeYukseklik: CGFloat = 60
     static let anaDugmeYanBosluk: CGFloat = 24
@@ -42,6 +46,9 @@ enum KorDersStil {
     /// Yan düğmeler (tutorial_ask_button_size 56dp; aralarında abacus_fragment_ask_button_margin_top 4dp).
     static let yanDugmeBoyu: CGFloat = 56
     static let yanDugmeAraligi: CGFloat = 4
+    /// fabHint ve resetButton: padding 5dp → 46dp'lik animasyon; skipStepButton: padding 2dp → 52dp.
+    static let yanDugmeLottieBoyu: CGFloat = 46
+    static let adimAtlaLottieBoyu: CGFloat = 52
     /// tvHint: yükseklik 55dp, 16sp, paddingLeft 10dp, paddingRight 30dp; hint_background köşe 8dp.
     static let ipucuYukseklik: CGFloat = 55
     static let ipucuYaziBoyu: CGFloat = 16
@@ -96,7 +103,6 @@ enum KorDersStil {
     static let yanlisBaslik = "Yanlış"
     static let yanlisDugme = "Devam Et"
     static let kutuIpucu = "?"
-    static let abakusYerTutucuMetni = "Abaküs burada olacak. Şimdilik cevabı kutuya yaz."
 }
 
 /// Android'deki dokunma dinleyicili düğme: basınca 100 ms'de 0,85'e küçülür, bırakınca 400 ms'de

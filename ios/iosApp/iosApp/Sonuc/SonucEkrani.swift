@@ -76,7 +76,7 @@ struct SonucDersBasariliGorunumu: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SonucAnimasyonYerTutucu(ad: model.animasyonAdi)
+            SonucAnimasyonu(ad: model.animasyonAdi)
                 .frame(width: 200, height: 200)
             Text("Ders Bitti!")
                 .font(Tema.yazi(28))
@@ -146,7 +146,7 @@ struct SonucBasarisizGorunumu: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SonucAnimasyonYerTutucu(ad: model.animasyonAdi)
+            SonucAnimasyonu(ad: model.animasyonAdi)
                 .frame(width: 200, height: 200)
             Text("Ders Geçilemedi!")
                 .font(Tema.yazi(28))
@@ -229,7 +229,7 @@ struct SonucSandikGorunumu: View {
 
     private var sutun: some View {
         VStack(spacing: 0) {
-            SonucAnimasyonYerTutucu(ad: model.animasyonAdi)
+            SonucAnimasyonu(ad: model.animasyonAdi)
                 .frame(width: 200, height: 200)
             Text("Ders Bitti!")
                 .font(Tema.yazi(28))
@@ -294,11 +294,13 @@ struct SonucSandikGorunumu: View {
             .padding(.vertical, 12)
     }
 
-    /// Çarpan balonu (86×42): süre kutusunun 16 pt üstünde durur, sonra puan yazısına uçar.
+    /// Çarpan balonu (86×42): süre kutusunun 16 PİKSEL üstünde durur (positionBubbleOverTimeBox
+    /// `- 16f`: dp değil ham piksel), sonra puan yazısına uçar.
     private var balon: some View {
         let sure: CGRect = cerceveler[SonucSandikGorunumu.sureKutusu] ?? .zero
         let puan: CGRect = cerceveler[SonucSandikGorunumu.puanYazisi] ?? .zero
-        let ustKenar: CGFloat = max(0, sure.minY - 42 - 16)
+        let aralik: CGFloat = SonucStil.pikseldenNokta(16)
+        let ustKenar: CGFloat = max(0, sure.minY - 42 - aralik)
         let bekleme = CGPoint(x: sure.midX, y: ustKenar + 21)
         let hedef = CGPoint(x: puan.midX, y: puan.midY)
         let konum: CGPoint = model.balonUcusta ? hedef : bekleme
@@ -349,25 +351,35 @@ struct SonucPuanCubugu: View {
         .frame(width: genislik, height: yukseklik)
     }
 
+    /// scoreProgressBarContainer: #333333 zemin üstünde yan yana iki parça (dolu, boş); ikisi de
+    /// progress_bar_fill şeklidir (köşeler solda 3dp, sağda 4dp — burada dördü de 4 pt çizilir).
     private var cubuk: some View {
-        let dolu: CGFloat = genislik * model.cubukOrani
-        return ZStack(alignment: .leading) {
-            SonucStil.cubukZemin
-            SonucStil.cubukBos
-                .cornerRadius(4)
-            model.cubukRengi
-                .cornerRadius(4)
+        let oran: CGFloat = min(1, max(0, model.cubukOrani))
+        let dolu: CGFloat = genislik * oran
+        let bos: CGFloat = genislik - dolu
+        let doluRenk: Color = SonucStil.cubukSabitRenkli ? SonucStil.cubukDolu : model.cubukRengi
+        return HStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(doluRenk)
                 .frame(width: dolu)
+            RoundedRectangle(cornerRadius: 4)
+                .fill(SonucStil.cubukBos)
+                .frame(width: bos)
         }
+        .frame(width: genislik, height: cubukYuksekligi, alignment: .leading)
+        .background(SonucStil.cubukZemin)
     }
 
-    /// Yıldızlar 100×100'lük Lottie görünümleridir ve çubuğun ortasına hizalanır;
-    /// çubuğun sınırları dışına taşabilirler (Android: kırpma yok).
+    /// Yıldızlar 100×100'lük Lottie görünümleridir (star.json, döngüsüz) ve çubuğun ortasına
+    /// hizalanır; çubuğun sınırları dışına taşabilirler (Android: kırpma yok).
+    /// Android'de ayrı bir dolu/boş yıldız görseli YOKTUR: animasyonun ilk karesi yalnızca
+    /// çerçeveden oluşan yıldızdır (resetStarMarker: progress = 0), puan eşiği geçilince bir kez
+    /// oynar ve dolu yıldızın olduğu son karede kalır (playStarOnceAndHold).
     private func yildiz(_ sira: Int) -> some View {
         let oran: CGFloat = sira < model.yildizOranlari.count ? model.yildizOranlari[sira] : 1
         let yandi: Bool = sira < model.yildizYandi.count ? model.yildizYandi[sira] : false
         let merkezY: CGFloat = yukseklik - cubukYuksekligi / 2
-        return SonucAnimasyonYerTutucu(ad: "star.json", dongu: false, oynat: yandi)
+        return SonucAnimasyonu(ad: "star.json", dongu: false, oynat: yandi)
             .frame(width: 100, height: 100)
             .position(x: oran * genislik, y: merkezY)
     }

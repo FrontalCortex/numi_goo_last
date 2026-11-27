@@ -891,7 +891,7 @@ final class OzellestirmeModeli: ObservableObject {
             // REPLACED_BITMAP: renkler varsayılansa kaynak görsel olduğu gibi kullanılır.
             guard let gorselAdi = boya.resNames.first else { return nil }
             if boya.isDefaultColors {
-                return UIImage(named: gorselAdi)
+                return OzellestirmeBoyaci.hamResim(gorselAdi)
             }
             return OzellestirmeBoyaci.pikselleriIslenmisResim(
                 gorselAdi: gorselAdi,

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-// Sonuç ekranının küçük parçaları: renk yardımcıları, Lottie yer tutucusu, sonuç kutusu, düğme.
+// Sonuç ekranının küçük parçaları: renk yardımcıları, Lottie görünümü, sonuç kutusu, düğme.
 
 enum SonucStil {
     /// 0xRRGGBB biçimindeki sabit renk (layout XML'lerinde kaynak adı olmadan yazılmış renkler).
@@ -35,6 +35,18 @@ enum SonucStil {
     /// Puan çubuğunun zemini (#333333) ve boş kısmı (#444444)
     static let cubukZemin: Color = SonucStil.renk(0x333333)
     static let cubukBos: Color = SonucStil.renk(0x444444)
+    /// Puan çubuğunun dolu kısmı: scoreProgressBarFill `backgroundTint="@color/button_enabled"` (#8CC63F).
+    static let cubukDolu: Color = SonucStil.renk(0x8CC63F)
+    /// Android'de dolu kısmın rengi kodla (ChestResult.updateScoreProgressBar → GradientDrawable.setColor)
+    /// değiştirilir, ama görünümde XML'den gelen `backgroundTint` durduğu için (SRC_IN) çizilen renk
+    /// hep tint rengidir. `true`: Android'de GÖRÜNEN sabit renk; `false`: kodun hesapladığı geçişli
+    /// renk (SonucModeli.cubukRengi, ortak koddan). Android cihazda doğrulanamadı; tek satırla döner.
+    static let cubukSabitRenkli: Bool = true
+    /// MaterialButton (Widget.MaterialComponents.Button) üst/alt iç boşluğu: mtrl_btn_inset = 6dp.
+    /// layout_height bu boşlukları İÇERİR; görünen düğme 12dp daha kısadır.
+    static let dugmeIcBosluk: CGFloat = 6
+    /// TextAppearance.MaterialComponents.Button harf aralığı: 0.0892857143 em.
+    static let dugmeHarfAraligi: CGFloat = 0.0892857143
 
     /// "#RRGGBB" metnini 0…1 aralığındaki bileşenlere çevirir; bozuksa beyaz.
     static func bilesenler(_ onaltilik: String) -> (Double, Double, Double) {
@@ -59,6 +71,21 @@ enum SonucStil {
         return Color(.sRGB, red: kirmizi, green: yesil, blue: mavi, opacity: 1.0)
     }
 
+    /// Lottie dosya adından ".json" uzantısını atar (sarmalayıcı uzantısız ad ister).
+    static func lottieAdi(_ dosya: String) -> String {
+        let uzanti: String = ".json"
+        if dosya.hasSuffix(uzanti) {
+            return String(dosya.dropLast(uzanti.count))
+        }
+        return dosya
+    }
+
+    /// Android animasyon kodunda dp yerine ham PİKSEL yazılmış değerleri pt'ye çevirir
+    /// (yoğunluk 3 = xxhdpi varsayıldı; Sandik/SandikStil.pikseldenNokta ile aynı kabul).
+    static func pikseldenNokta(_ piksel: CGFloat) -> CGFloat {
+        return piksel / 3.0
+    }
+
     private static func kanalKarisimi(_ ilk: Double, _ son: Double, _ oran: Double) -> Double {
         let dogrusalIlk: Double = pow(ilk, 2.2)
         let dogrusalSon: Double = pow(son, 2.2)
@@ -67,47 +94,20 @@ enum SonucStil {
     }
 }
 
-/// Lottie animasyonunun yeri.
+/// Android `LottieAnimationView` karşılığı: ortak sarmalayıcıyı (Ortak/LottieGorunumu.swift) çağırır.
 ///
-/// `lottie-ios` paketi henüz ekli değil; bu görünüm şimdilik durağan bir simge çizer. Paket
-/// eklendiğinde yalnızca bu yapının `body`'si değişecek: `ad` Android `assets/` klasöründeki
-/// dosya adıdır (ör. "animation_one.json", "star.json").
-///
+/// - `ad`: Android `assets/` klasöründeki dosya adı; ".json" uzantılı da verilebilir
+///   (ortak kod "animation_one.json" biçiminde döndürür), uzantı burada atılır.
 /// - `dongu`: Android `lottie_loop`.
 /// - `oynat`: `false` iken ilk karede bekler; `true` olunca oynar (döngüsüzse son karede kalır).
-struct SonucAnimasyonYerTutucu: View {
+struct SonucAnimasyonu: View {
     let ad: String
     var dongu: Bool = true
     var oynat: Bool = true
 
     var body: some View {
-        Group {
-            if ad == "star.json" {
-                yildiz
-            } else {
-                kutlama
-            }
-        }
-        .accessibilityHidden(true)
-    }
-
-    /// Sandık sonucundaki yıldız işareti: yanmadan önce sönük, yanınca dolu yıldız.
-    private var yildiz: some View {
-        Image(oynat ? "star_on_ic" : "star_off_ic")
-            .resizable()
-            .scaledToFit()
-            .frame(width: 34, height: 34)
-            .scaleEffect(oynat ? 1.0 : 0.8)
-            .animation(.spring(response: 0.35, dampingFraction: 0.45), value: oynat)
-    }
-
-    /// Ekranın üstündeki kutlama animasyonunun yeri.
-    private var kutlama: some View {
-        Image(systemName: "sparkles")
-            .resizable()
-            .scaledToFit()
-            .foregroundColor(SonucStil.kutuSarisi)
-            .padding(50)
+        LottieGorunumu(SonucStil.lottieAdi(ad), dongu: dongu, hiz: 1.0, oynat: oynat, bitti: nil)
+            .accessibilityHidden(true)
     }
 }
 
@@ -135,7 +135,11 @@ struct SonucKutusu: View {
     }
 }
 
-/// Alt düğme (Android: MaterialButton).
+/// Alt düğme (Android: tema gereği MaterialButton).
+///
+/// `yukseklik` Android `layout_height` değeridir; MaterialButton bunun üstünden ve altından
+/// 6dp'yi boş bırakır (insetTop / insetBottom), yani renkli gövde `yukseklik - 12` yüksekliğindedir.
+/// Dokunma alanı Android'deki gibi bütün yüksekliktir.
 struct SonucDugmesi: View {
     let metin: String
     let zemin: Color
@@ -144,16 +148,28 @@ struct SonucDugmesi: View {
     let kose: CGFloat
     let eylem: () -> Void
 
+    private let yaziBoyu: CGFloat = 18
+
     var body: some View {
         Button(action: eylem) {
-            Text(metin)
-                .font(Tema.yazi(18))
-                .foregroundColor(yaziRengi)
-                .frame(maxWidth: .infinity)
-                .frame(height: yukseklik)
-                .background(RoundedRectangle(cornerRadius: kose).fill(zemin))
+            etiket
         }
         .buttonStyle(.plain)
+    }
+
+    private var etiket: some View {
+        let aralik: CGFloat = yaziBoyu * SonucStil.dugmeHarfAraligi
+        let govdeYuksekligi: CGFloat = max(0, yukseklik - SonucStil.dugmeIcBosluk * 2)
+        return Text(metin)
+            .kerning(aralik)
+            .font(Tema.yazi(yaziBoyu))
+            .foregroundColor(yaziRengi)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity)
+            .frame(height: govdeYuksekligi)
+            .background(RoundedRectangle(cornerRadius: kose).fill(zemin))
+            .frame(height: yukseklik)
+            .contentShape(Rectangle())
     }
 }
 

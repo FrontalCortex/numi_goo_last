@@ -71,7 +71,7 @@ struct HaritaDersAltPaneli: View {
             Spacer(minLength: 0)
             rekor
         }
-        .frame(height: 38)
+        .frame(height: HaritaStil.altPanelUstSatir)
     }
 
     /// recordLayout: yalnızca bitmiş sandıkta ve rekor satırı gizli değilse görünür.
@@ -79,15 +79,7 @@ struct HaritaDersAltPaneli: View {
     private var rekor: some View {
         if let metin = durum.rekorMetni, !durum.rekorGizli {
             Button(action: { model.rekoraDokun(durum) }) {
-                // Android'de metnin solunda ateş Lottie'si (fire_anim.json) oynar; lottie-ios bağlanınca eklenecek.
-                Text(metin)
-                    .font(HaritaStil.yazi(14))
-                    .foregroundColor(Color("background_color"))
-                    .lineLimit(1)
-                    .padding(.leading, 10)
-                    .padding(.trailing, 10)
-                    .frame(height: 30)
-                    .background(RoundedRectangle(cornerRadius: 12).fill(HaritaStil.rekorZemini))
+                HaritaRekorRozeti(metin: metin, atesGorunur: durum.atesGorunur)
             }
             .buttonStyle(.plain)
             .padding(.trailing, 8)
@@ -132,10 +124,17 @@ struct HaritaDersAltPaneli: View {
             // Android: textAllCaps=true (Türkçe büyük harf kuralıyla: i → İ).
             Text(durum.dugmeMetni.uppercased(with: Locale(identifier: "tr_TR")))
                 .font(HaritaStil.yazi(14))
+                // TextAppearance.MaterialComponents.Button: letterSpacing 0.0892857 em (14sp → 1.25).
+                .tracking(1.25)
                 .foregroundColor(dugmeYaziRengi)
+                .lineLimit(1)
                 .frame(maxWidth: .infinity)
-                .frame(minHeight: 40)
+                .frame(height: HaritaStil.altPanelDugmeBoyu)
                 .background(RoundedRectangle(cornerRadius: 4).fill(dugmeZemini))
+                // Widget.MaterialComponents.Button: 48dp'lik kutunun üstünde ve altında 6dp'lik
+                // saydam boşluk (insetTop / insetBottom) vardır; görünen gövde 36dp'dir.
+                .padding(.vertical, HaritaStil.altPanelDugmeIcBosluk)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(!durum.dugmeEtkin)
@@ -152,5 +151,46 @@ struct HaritaDersAltPaneli: View {
                     model.altPaneliKapat()
                 }
             }
+    }
+}
+
+/// lesson_bottom_sheet.xml: recordLayout (record_background: #FFB703, köşe 12dp).
+/// İçinde solda ateş animasyonu (fireAnimID: fire_anim.json, autoPlay + loop, 53x53dp,
+/// paddingBottom 6dp), sağda "Rekor: N" yazısı (paddingEnd 10dp) vardır.
+/// Rozet üst satırın yüksekliğini (38dp) aşamaz; 53dp'lik animasyon dikeyde ortalanır ve
+/// taşan kısmı rozetin sınırında kırpılır (Android: üst kabın clipChildren=true).
+struct HaritaRekorRozeti: View {
+    let metin: String
+    let atesGorunur: Bool
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ates
+            Text(metin)
+                .font(HaritaStil.yazi(14))
+                .foregroundColor(Color("background_color"))
+                .lineLimit(1)
+                .padding(.trailing, 10)
+        }
+        .frame(height: HaritaStil.altPanelUstSatir)
+        .clipped()
+        .background(RoundedRectangle(cornerRadius: 12).fill(HaritaStil.rekorZemini))
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private var ates: some View {
+        if atesGorunur {
+            let boy: CGFloat = HaritaStil.altPanelAtesBoyu
+            let altBosluk: CGFloat = HaritaStil.altPanelAtesAltBosluk
+            LottieGorunumu("fire_anim", dongu: true)
+                .frame(width: boy, height: boy - altBosluk)
+                .padding(.bottom, altBosluk)
+                .frame(width: boy, height: HaritaStil.altPanelUstSatir)
+                .allowsHitTesting(false)
+        } else {
+            // Android'de animasyon gizliyken (GONE) yazının solunda boşluk kalmaz.
+            EmptyView()
+        }
     }
 }

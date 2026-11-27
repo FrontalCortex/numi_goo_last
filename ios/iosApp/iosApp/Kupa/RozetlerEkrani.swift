@@ -1,5 +1,6 @@
 import Shared
 import SwiftUI
+import UIKit
 
 // "Başarılar" ekranı: kişisel rekorlar şeridi ve rozet ızgarası.
 //
@@ -33,6 +34,8 @@ struct RozetKutuDurumu: Identifiable, Equatable {
     let tabanDosyasi: String
     let ustDosyasi: String
     let ustOlcek: CGFloat
+    /// Üst animasyonun durduğu kare (Android topHoldFrame): 0 = ilk kare, 9999 = son kare.
+    let ustTutmaKaresi: CGFloat
 
     var id: String { modAdi }
 }
@@ -85,7 +88,8 @@ final class RozetlerModeli: ObservableObject {
             ton: v.toneName,
             tabanDosyasi: v.baseAsset,
             ustDosyasi: v.topAsset,
-            ustOlcek: CGFloat(v.topScale)
+            ustOlcek: CGFloat(v.topScale),
+            ustTutmaKaresi: CGFloat(v.topHoldFrame)
         )
     }
 }
@@ -203,47 +207,59 @@ struct RozetlerEkrani: View {
 
 // MARK: - Rozet görseli
 
-/// Rozetin taban + üst animasyonu (Android'de iki LottieAnimationView üst üste).
-/// Kilitli rozet düz griye boyanır (badge_locked_base / badge_locked_top); açık rozette taban,
-/// kademe tonuna göre renklenir. Lottie gelene kadar `KupaAnimasyonGorunumu` yer tutucusu çizilir.
+/// Rozetin durağan görünümü: taban + üst animasyon (Android'de üst üste iki LottieAnimationView;
+/// BadgeDetailFragment.bindSingleBadge).
+///
+/// - Taban son karesinde sabit durur (Android progress = 1 + pauseAnimation). Tabansız rozetlerde
+///   (madalya, kupa, siyah kuşak) Android tabanı INVISIBLE yapar; burada çizilmez.
+/// - Üst animasyon tutma karesinde sabit durur (Android topHoldFrame; 9999 = son kare).
+/// - Kilitli rozet düz griye boyanır (taban badge_locked_base, üst badge_locked_top); açık rozette
+///   taban kademe tonuyla renklenir (`KupaRozetTonu`).
 struct RozetGorseli: View {
     let tabanDosyasi: String
     let ustDosyasi: String
     let ustOlcek: CGFloat
+    /// Android topHoldFrame.
+    let ustTutmaKaresi: CGFloat
     let acik: Bool
     let ton: String
-    /// Tabanın kenar uzunluğu.
-    let boyut: CGFloat
+    /// Çerçevenin ve taban Lottie'sinin kenarı (rozet şekli tuvalin ortasındaki ~%43'tür).
+    let tabanBoyutu: CGFloat
+    /// Üst Lottie'nin ölçeklenmeden önceki kenarı.
+    let ustBoyutu: CGFloat
 
-    private var tabanRengi: Color? {
-        if !acik { return Color("badge_locked_base") }
-        switch ton {
-        case "BRONZE": return KupaStil.renk(0xCD7F32)
-        case "SILVER": return KupaStil.renk(0xB0BEC5)
-        case "RED": return KupaStil.renk(0xE53935)
-        case "PURPLE": return KupaStil.renk(0x8E24AA)
-        default: return nil
-        }
-    }
-
-    private var ustRengi: Color? {
-        return acik ? nil : Color("badge_locked_top")
+    private var ustKenar: CGFloat {
+        return ustBoyutu * ustOlcek
     }
 
     var body: some View {
         ZStack {
-            if tabanDosyasi.isEmpty {
-                KupaAnimasyonGorunumu(dosya: ustDosyasi, duzRenk: ustRengi)
-                    .frame(width: boyut * 0.8, height: boyut * 0.8)
-            } else {
-                KupaAnimasyonGorunumu(dosya: tabanDosyasi, duzRenk: tabanRengi)
-                    .frame(width: boyut, height: boyut)
-                KupaAnimasyonGorunumu(dosya: ustDosyasi, duzRenk: ustRengi)
-                    .frame(width: boyut * 0.5 * ustOlcek, height: boyut * 0.5 * ustOlcek)
-                    .offset(y: -1)
-            }
+            taban
+            KupaAnimasyonGorunumu(
+                dosya: ustDosyasi,
+                duzRenk: acik ? nil : Color("badge_locked_top"),
+                sabitKare: Double(ustTutmaKaresi)
+            )
+            .frame(width: ustKenar, height: ustKenar)
+            // Android: top.translationY = −1dp.
+            .offset(y: -1)
         }
-        .frame(width: boyut, height: boyut)
+        .frame(width: tabanBoyutu, height: tabanBoyutu)
+        // Çerçeve hücresinden taşar; dokunuşu hücrenin kendisi alır.
+        .allowsHitTesting(false)
+    }
+
+    @ViewBuilder
+    private var taban: some View {
+        if !tabanDosyasi.isEmpty {
+            KupaAnimasyonGorunumu(
+                dosya: tabanDosyasi,
+                duzRenk: acik ? nil : Color("badge_locked_base"),
+                sabitKare: KupaStil.sonKare
+            )
+            .modifier(KupaRozetTonu(ton: acik ? ton : ""))
+            .frame(width: tabanBoyutu, height: tabanBoyutu)
+        }
     }
 }
 
@@ -265,7 +281,8 @@ struct RozetDegerYazisi: View {
 
 // MARK: - Kutular
 
-/// item_badge_detail_record.xml: 164×260 çerçeveli kart.
+/// item_badge_detail_record.xml: 164×260 çerçeveli kart. recordBadgeFrame 120dp; taban ve üst
+/// animasyon çerçevenin tamamını kaplar (match_parent).
 private struct RozetRekorKarti: View {
     let rozet: RozetKutuDurumu
 
@@ -275,9 +292,11 @@ private struct RozetRekorKarti: View {
                 tabanDosyasi: rozet.tabanDosyasi,
                 ustDosyasi: rozet.ustDosyasi,
                 ustOlcek: rozet.ustOlcek,
+                ustTutmaKaresi: rozet.ustTutmaKaresi,
                 acik: rozet.acik,
                 ton: rozet.ton,
-                boyut: 120
+                tabanBoyutu: 120,
+                ustBoyutu: 120
             )
             // Sayı gösterilmeyen rozetlerde de yer tutulur (Android: View.INVISIBLE).
             RozetDegerYazisi(metin: rozet.degerMetni, boyut: 38, acik: rozet.acik)
@@ -308,39 +327,110 @@ private struct RozetRekorKarti: View {
 }
 
 /// item_badge_detail_award.xml: ızgaradaki rozet (sütun genişliğinin 1/3'ü).
+///
+/// awardBadgeFrame 200×200dp'dir ve hücreden (~1/3 ekran) geniştir: Android'de ortalanıp iki yana
+/// taşar (clipChildren=false). Taban 200dp, üst animasyon 100dp × ölçek. Sayı çerçevenin altına
+/// 72dp bindirilir (layout_marginTop=−72dp); alt yazı başlığa 8dp biner.
 private struct RozetIzgaraKutusu: View {
     let rozet: RozetKutuDurumu
 
+    private var gorsel: RozetGorseli {
+        return RozetGorseli(
+            tabanDosyasi: rozet.tabanDosyasi,
+            ustDosyasi: rozet.ustDosyasi,
+            ustOlcek: rozet.ustOlcek,
+            ustTutmaKaresi: rozet.ustTutmaKaresi,
+            acik: rozet.acik,
+            ton: rozet.ton,
+            tabanBoyutu: 200,
+            ustBoyutu: 100
+        )
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            RozetGorseli(
-                tabanDosyasi: rozet.tabanDosyasi,
-                ustDosyasi: rozet.ustDosyasi,
-                ustOlcek: rozet.ustOlcek,
-                acik: rozet.acik,
-                ton: rozet.ton,
-                boyut: 96
-            )
-            .padding(.top, 20)
+            // Yerleşimde yalnızca yükseklik tutulur; 200dp'lik görsel bindirme olarak çizilir ki
+            // hücrenin genişliğini büyütmesin.
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 200)
+                .overlay(gorsel)
             if rozet.degerGorunur {
                 RozetDegerYazisi(metin: rozet.degerMetni, boyut: 36, acik: rozet.acik)
-                    .padding(.top, -22)
+                    .padding(.top, -72)
             }
-            Text(rozet.baslik)
-                .font(Tema.yazi(20))
-                .foregroundColor(KupaStil.renk(0xE5EDF2))
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .minimumScaleFactor(0.7)
-                .frame(maxWidth: .infinity)
+            RozetIzgaraBasligi(metin: rozet.baslik)
             Text(rozet.altYazi)
                 .font(Tema.yazi(16))
                 .foregroundColor(KupaStil.renk(0x6F8595))
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
+                .padding(.top, -8)
         }
         .padding(.bottom, 18)
         .frame(maxWidth: .infinity)
         .contentShape(Rectangle())
+    }
+}
+
+/// awardBadgeTitle: 20sp, ortalı, en çok 2 satır, lineSpacingMultiplier=0.6 (iki satıra bölünen
+/// başlıkta satırlar sıkışıktır).
+///
+/// SwiftUI `Text` satır aralığını daraltamaz; bu yüzden başlık tek satıra sığıyorsa tek `Text`,
+/// sığmıyorsa ve iki kelimeyse kelimeler alt alta, satır yüksekliğinin 0.4'ü kadar bindirilerek
+/// çizilir (Android'deki satır kırılımıyla aynı sonuç).
+private struct RozetIzgaraBasligi: View {
+    let metin: String
+
+    private let renk: Color = KupaStil.renk(0xE5EDF2)
+
+    private var kelimeler: [String] {
+        return metin.split(separator: " ").map { String($0) }
+    }
+
+    /// İki satır arasındaki (eksi) boşluk: satır yüksekliği × (0.6 − 1).
+    private var satirAraligi: CGFloat {
+        let satirYuksekligi: CGFloat = Tema.uiYazi(20).lineHeight
+        return -0.4 * satirYuksekligi
+    }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            tekSatir
+            cokSatir
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var tekSatir: some View {
+        Text(metin)
+            .font(Tema.yazi(20))
+            .foregroundColor(renk)
+            .lineLimit(1)
+            .fixedSize()
+    }
+
+    @ViewBuilder
+    private var cokSatir: some View {
+        if kelimeler.count == 2 {
+            VStack(spacing: satirAraligi) {
+                kelime(kelimeler[0])
+                kelime(kelimeler[1])
+            }
+        } else {
+            Text(metin)
+                .font(Tema.yazi(20))
+                .foregroundColor(renk)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+    }
+
+    private func kelime(_ yazi: String) -> some View {
+        Text(yazi)
+            .font(Tema.yazi(20))
+            .foregroundColor(renk)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
     }
 }

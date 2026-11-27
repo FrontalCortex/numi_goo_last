@@ -113,8 +113,9 @@ struct SandikGovdesi: View {
             RoundedRectangle(cornerRadius: 16)
                 .fill(model.platformRengi)
                 .frame(width: 210, height: 140)
-                .offset(y: 55)
+                // Android platformu kendi merkezinden ölçekler: önce ölçek, sonra kaydırma.
                 .scaleEffect(olcek)
+                .offset(y: 55)
             sandik
             if model.yukleniyor {
                 ProgressView()
@@ -272,12 +273,14 @@ struct SandikOdulGorunumu: View {
         .allowsHitTesting(false)
     }
 
+    /// chestRewardText: drawableStart kendi boyutunda çizilir (gold_ic / key vektörleri 36dp),
+    /// drawablePadding 8dp.
     private var odulYazisi: some View {
         HStack(spacing: 8) {
             Image(model.odulKucukGorsel)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 32, height: 32)
+                .frame(width: 36, height: 36)
             Text(model.odulMetni)
                 .font(Tema.yazi(28))
                 .foregroundColor(.white)

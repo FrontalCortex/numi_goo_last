@@ -55,12 +55,44 @@ enum OzellestirmeBoyaci {
         return cizici.image { _ in
             let alan = CGRect(origin: .zero, size: boyut)
             for (sira, katman) in katmanlar.enumerated() {
+                // Android bu yolları dikeyde esnetir (120×72 görüş alanı → 120×92 dp).
+                let cizimAlani: CGRect = gerilmisAlan(alan, gorselAdi: gorselAdlari[sira])
                 if sira < renkler.count {
-                    katman.withTintColor(renkler[sira], renderingMode: .alwaysOriginal).draw(in: alan)
+                    katman.withTintColor(renkler[sira], renderingMode: .alwaysOriginal).draw(in: cizimAlani)
                 } else {
-                    katman.draw(in: alan)
+                    katman.draw(in: cizimAlani)
                 }
             }
+        }
+    }
+
+    // MARK: Dikeyde esneyen vektörler
+
+    /// `OzellestirmeStil.dikeyGerme` katsayısı 1'den büyük olan görseller için, görselin içindeki
+    /// boş şeritler dışarıda kalacak biçimde dikeyde büyütülmüş (ortası sabit) çizim alanı.
+    static func gerilmisAlan(_ alan: CGRect, gorselAdi: String) -> CGRect {
+        let oran: CGFloat = OzellestirmeStil.dikeyGerme(gorselAdi)
+        if oran <= 1.0 { return alan }
+        let yeniYukseklik: CGFloat = alan.height * oran
+        let tasma: CGFloat = (yeniYukseklik - alan.height) / 2
+        return CGRect(x: alan.minX, y: alan.minY - tasma, width: alan.width, height: yeniYukseklik)
+    }
+
+    /// Kaynak görselin değiştirilmemiş hâli (renkler varsayılanken). Dikeyde esneyen vektörler
+    /// Android'deki gibi esnetilerek yeniden çizilir; diğerleri olduğu gibi döner.
+    static func hamResim(_ gorselAdi: String) -> UIImage? {
+        guard let kaynak = UIImage(named: gorselAdi) else { return nil }
+        if OzellestirmeStil.dikeyGerme(gorselAdi) <= 1.0 { return kaynak }
+        let boyut: CGSize = kaynak.size
+        if boyut.width <= 0 || boyut.height <= 0 { return kaynak }
+        let bicim = UIGraphicsImageRendererFormat()
+        bicim.scale = 3
+        bicim.opaque = false
+        let cizici = UIGraphicsImageRenderer(size: boyut, format: bicim)
+        let alan = CGRect(origin: .zero, size: boyut)
+        let cizimAlani: CGRect = gerilmisAlan(alan, gorselAdi: gorselAdi)
+        return cizici.image { _ in
+            kaynak.draw(in: cizimAlani)
         }
     }
 
@@ -157,7 +189,8 @@ enum OzellestirmeBoyaci {
         baglam.translateBy(x: 0, y: CGFloat(boy))
         baglam.scaleBy(x: 1, y: -1)
         UIGraphicsPushContext(baglam)
-        kaynak.draw(in: CGRect(x: 0, y: 0, width: en, height: boy))
+        let tamAlan = CGRect(x: 0, y: 0, width: CGFloat(en), height: CGFloat(boy))
+        kaynak.draw(in: gerilmisAlan(tamAlan, gorselAdi: gorselAdi))
         UIGraphicsPopContext()
 
         guard let ham = baglam.data else { return nil }

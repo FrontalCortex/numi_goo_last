@@ -112,12 +112,18 @@ struct ProfilBaslikKarti: View {
         .accessibilityLabel(Text("Profil Fotoğrafı"))
     }
 
+    /// btnAddFriend'in görünen gövdesi. Android'de yükseklik wrap_content'tir: 16sp satır (~26dp)
+    /// + paddingVertical 12dp x 2 ≈ 50dp; MaterialButton bunun üst ve altından 6'şar dp'yi boş
+    /// bırakır (insetTop/insetBottom), görünen gövde ≈ 38–40dp kalır (cihazda ölçülmedi).
+    static let dugmeYuksekligi: CGFloat = 40
+
     @ViewBuilder
     private var dugme: some View {
         if model.baskasi {
             ProfilCerceveliDugme(
                 metin: model.takipDugmesiMetni,
                 simge: "ic_person_add",
+                yukseklik: ProfilBaslikKarti.dugmeYuksekligi,
                 etkin: model.takipDugmesiEtkin,
                 opaklik: model.takipDugmesiOpaklik,
                 eylem: { model.takipEt(bildir: { metin in gezinme.bildir(metin) }) }
@@ -126,6 +132,7 @@ struct ProfilBaslikKarti: View {
             ProfilCerceveliDugme(
                 metin: "ARKADAŞ EKLE",
                 simge: "ic_person_add",
+                yukseklik: ProfilBaslikKarti.dugmeYuksekligi,
                 eylem: { gezinme.ac(.arkadasAra) }
             )
         }
@@ -246,7 +253,8 @@ struct ProfilIlerlemeKarti: View {
                     .buttonStyle(.plain)
                 }
             }
-            .padding(.trailing, 16)
+            // Son kartın layout_marginEnd'i (12dp) + HorizontalScrollView paddingEnd (16dp).
+            .padding(.trailing, 28)
         }
     }
 }
@@ -329,13 +337,14 @@ struct ProfilKupaKartGorunumu: View {
                         .frame(width: 16, height: 16)
                 }
             }
-            Spacer(minLength: 4)
+            // cardLottie: 60dp genişlik, layout_weight=1 (başlık ile skor arasında kalan yükseklik),
+            // üst/alt 4dp; lottie_autoPlay + lottie_loop. İçerik sığdırılır (fitCenter).
             ProfilAnimasyonGorunumu(
-                istek: ProfilAnimasyonIstegi(dosya: kart.tanim.animasyonDosyasi, oynat: true, kare: 0, renk: nil),
-                yerTutucuGorsel: "cup_ic"
+                istek: ProfilAnimasyonIstegi(dosya: kart.tanim.animasyonDosyasi, oynat: true, kare: 0, renk: nil)
             )
-            .frame(width: 60, height: 60)
-            Spacer(minLength: 4)
+            .frame(width: 60)
+            .frame(minHeight: 0, maxHeight: .infinity)
+            .padding(.vertical, 4)
             Text(kart.skor)
                 .font(ProfilStil.yazi(18))
                 .foregroundColor(Color.white)
@@ -396,12 +405,16 @@ struct ProfilRozetGorunumu: View {
             ZStack {
                 if !yuva.altDosya.isEmpty {
                     ProfilAnimasyonGorunumu(
-                        istek: ProfilAnimasyonIstegi(dosya: yuva.altDosya, oynat: false, kare: 9999, renk: altRenk)
+                        istek: ProfilAnimasyonIstegi(
+                            dosya: yuva.altDosya, oynat: false, kare: 9999, renk: altRenk, duzRenk: !yuva.acik
+                        )
                     )
                     .frame(width: 150, height: 150)
                 }
                 ProfilAnimasyonGorunumu(
-                    istek: ProfilAnimasyonIstegi(dosya: yuva.ustDosya, oynat: false, kare: yuva.ustKare, renk: ustRenk)
+                    istek: ProfilAnimasyonIstegi(
+                        dosya: yuva.ustDosya, oynat: false, kare: yuva.ustKare, renk: ustRenk, duzRenk: !yuva.acik
+                    )
                 )
                 .frame(width: 72, height: 72)
                 .scaleEffect(yuva.ustOlcek)

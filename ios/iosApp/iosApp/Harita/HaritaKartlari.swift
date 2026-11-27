@@ -41,11 +41,16 @@ struct HaritaBaslikSatiri: View {
     var body: some View {
         HStack(spacing: 0) {
             cizgi
+            // Android: headerText wrap_content, çizgiler layout_weight=1 → önce yazı kendi
+            // genişliğini alır, kalan yer iki çizgiye bölünür. Öncelik verilmezse SwiftUI yeri
+            // üçe böler ve başlığı "Sayıları…" diye kısaltır.
             Text(baslik)
                 .font(HaritaStil.yazi(17))
                 .foregroundColor(HaritaStil.baslikCizgiRengi)
-                .lineLimit(1)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 16)
+                .layoutPriority(1)
             cizgi
         }
         .padding(.horizontal, HaritaStil.yapiskanYatayBosluk)
@@ -119,6 +124,8 @@ struct HaritaKartGovdesi: View {
         .frame(width: HaritaStil.kartBoyu, height: HaritaStil.kartBoyu)
         .clipShape(Circle())
         .contentShape(Circle())
+        // Gölge kartın bütününe tek parça uygulansın (simgeye ayrıca değil).
+        .compositingGroup()
         .shadow(color: Color.black.opacity(0.3), radius: 2, x: 0, y: 1)
     }
 

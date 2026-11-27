@@ -12,16 +12,6 @@ import SwiftUI
 // Android bu sonuçlardan önce QuestionPanelFragment'ı (ders sonu soru özeti) gösterir; o ekran
 // henüz yazılmadı, doğrudan sonuç ekranına geçilir.
 
-/// `HaritaModeli`'nin `HaritaHedefi.aciklama` alanına yazdığı sabit metinler. Hedef yalnızca metin
-/// taşıdığı için tür bu metinlerden anlaşılır (HaritaModeli.swift ile birlikte değişmelidir).
-enum YonetimHaritaMetni {
-    static let yarisPaneli = "Yarış paneli"
-    static let enerjiYok = "Enerji yok"
-    static let liderlikTablosu = "Liderlik tablosu"
-    static let soruSorma = "Soru sorma ekranı"
-    static let egitimiTekrarla = "Eğitimi tekrarla"
-}
-
 extension UygulamaYoneticisi {
 
     // MARK: Harita hedefi
@@ -32,30 +22,33 @@ extension UygulamaYoneticisi {
         if asama != .kabuk {
             return
         }
-        if hedef.aciklama == YonetimHaritaMetni.enerjiYok {
+        // Hedefin türü açık bir alandır (HaritaHedefi.tur); metinlere bakılmaz.
+        switch hedef.tur {
+        case .magaza:
             // Android: panel kapanır, mağaza (enerji yenileme) açılır.
             magazaAc()
             return
-        }
-        if hedef.aciklama == YonetimHaritaMetni.liderlikTablosu, let acik = panel {
-            let partId: Int32 = haritaModeli.seciliPart ?? ilerleme.aktifPart
-            let sira: Int32 = ilerleme.haritaSirasi(acik.oge.oge, listeSirasi: acik.id)
-            ac(.liderTablosu(partId: Int(partId), dersIndeksi: Int(sira), baslik: acik.baslik))
+        case .liderlikTablosu:
+            if let acik = panel {
+                let partId: Int32 = haritaModeli.seciliPart ?? ilerleme.aktifPart
+                let sira: Int32 = ilerleme.haritaSirasi(acik.oge.oge, listeSirasi: acik.id)
+                ac(.liderTablosu(partId: Int(partId), dersIndeksi: Int(sira), baslik: acik.baslik))
+            } else {
+                yerTutucuAc(hedef.baslik, hedef.aciklama, hedef.ayrintilar)
+            }
             return
-        }
-        let dersDegil: Bool = hedef.aciklama == YonetimHaritaMetni.yarisPaneli
-            || hedef.aciklama == YonetimHaritaMetni.soruSorma
-            || hedef.aciklama == YonetimHaritaMetni.liderlikTablosu
-        if dersDegil {
+        case .yarisPaneli, .soruSorma:
             yerTutucuAc(hedef.baslik, hedef.aciklama, hedef.ayrintilar)
             return
+        case .abakusDersi, .korDers, .ogretici, .ogreticiTekrari:
+            break
         }
         // Ders hedefi: başlığı ve açıklaması alt panelinkiyle aynıdır.
         guard let acik = panel, acik.baslik == hedef.baslik else {
             yerTutucuAc(hedef.baslik, hedef.aciklama, hedef.ayrintilar)
             return
         }
-        let tekrar: Bool = hedef.ayrintilar.contains(YonetimHaritaMetni.egitimiTekrarla)
+        let tekrar: Bool = hedef.tur == .ogreticiTekrari
         haritaDersiniBaslat(acik, ogreticiIstendi: tekrar)
     }
 

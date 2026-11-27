@@ -62,6 +62,8 @@ struct GunlukSoruEkrani: View {
                     kapat: { model.devamPaneliniKapat() },
                     devam: { model.anahtarlaDevam() }
                 )
+                .transition(.opacity)
+                .zIndex(1)
             }
             if model.dokunmaKilitli {
                 // Android: launch touch blocker — geçiş sürerken dokunuşları yutar.
@@ -80,6 +82,7 @@ struct GunlukSoruEkrani: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("background_color"))
         .animation(.easeInOut(duration: 0.2), value: model.bildirim)
+        .animation(.easeInOut(duration: 0.2), value: model.devamPaneli?.id)
         .onAppear {
             cikislariBagla()
             model.gorundu()
@@ -201,7 +204,7 @@ struct GunlukSoruKesfetKartGorunumu: View {
             }
             .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 18)
                     .fill(icerik.zemin)
             )
             // cardElevation = 2dp

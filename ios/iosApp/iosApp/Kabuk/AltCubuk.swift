@@ -4,18 +4,27 @@ import SwiftUI
 // Altı sekme eşit genişlikte; yalnızca simge var, başlık yok; simgeler renklendirilmez.
 struct AltCubuk: View {
     @Binding var secili: Sekme
+    // Zaten açık olan sekmeye yeniden dokunuldu (Android: setOnItemSelectedListener her dokunuşta
+    // çağrılır; harita sekmesinde MapFragment açıksa kısım seçimine döner).
+    var ayniSekmeyeDokunuldu: (Sekme) -> Void = { _ in }
 
     var body: some View {
         HStack(spacing: 0) {
             ForEach(Sekme.allCases) { sekme in
-                AltCubukOgesi(sekme: sekme, seciliMi: sekme == secili) {
-                    secili = sekme
-                }
+                AltCubukOgesi(sekme: sekme, seciliMi: sekme == secili, eylem: { dokun(sekme) })
             }
         }
         .frame(maxWidth: .infinity)
         .frame(height: KabukOlculeri.altYukseklik)
         .background(Color("background_color"))
+    }
+
+    private func dokun(_ sekme: Sekme) {
+        if sekme == secili {
+            ayniSekmeyeDokunuldu(sekme)
+        } else {
+            secili = sekme
+        }
     }
 }
 

@@ -104,6 +104,16 @@ protocol SandikSesCalar {
     func odulSesiCal()
     /// Kristal videosunda her dokunuş. Android: res/raw/crystal_click1.mp3, ses düzeyi 0.5.
     func kristalTikSesiCal()
+    /// Kristal videosunun kendi ses düzeyi, 0…1. Android: "ses açık" ise 0.5, kapalıysa 0
+    /// (CrystalBreakVideoFragment: `player.volume = if (soundEnabled) 0.5f else 0f`).
+    /// Varsayılan uygulaması 0.5 döndürür; gerçek uygulama tercihe göre 0 döndürmeli.
+    var videoSesDuzeyi: Float { get }
+}
+
+extension SandikSesCalar {
+    var videoSesDuzeyi: Float {
+        return 0.5
+    }
 }
 
 struct SahteSandikSesCalar: SandikSesCalar {

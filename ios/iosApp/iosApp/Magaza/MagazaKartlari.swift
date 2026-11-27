@@ -33,8 +33,7 @@ private struct MagazaUcusBindirmesi: ViewModifier {
 // MARK: - Süper (Pro) kartı
 
 /// shopSuperCard: gradyan zemin, PRO rozeti, başlık, alt yazı, beyaz düğme.
-/// Android'de sağda 140×140 dp'lik Lottie animasyonu (trex_anim.json) oynar; Lottie henüz
-/// bağlı olmadığı için yeri boş bırakılmıştır.
+/// Sağda 140×140 dp'lik Lottie animasyonu (superAnim: trex_anim.json, sürekli döner).
 struct MagazaSuperKart: View {
     let eylem: () -> Void
 
@@ -43,8 +42,7 @@ struct MagazaSuperKart: View {
             VStack(spacing: 0) {
                 HStack(alignment: .center, spacing: 0) {
                     yazilar
-                    Spacer(minLength: 0)
-                    Color.clear
+                    LottieGorunumu("trex_anim", dongu: true)
                         .frame(width: 140, height: 140)
                         .padding(.trailing, 10)
                 }
@@ -80,19 +78,23 @@ struct MagazaSuperKart: View {
                         .fill(MagazaStil.superRozetGradyani)
                 )
                 .padding(.top, 20)
-            Text("Öğrenmeyi\n hızlandıran \n özellikler")
+            // Android metninde satır başlarında birer boşluk vardır ("Öğrenmeyi\n hızlandıran \n
+            // özellikler"); 2. ve 3. satırı içeri kaydırdığı için burada alınmamıştır. Metin sola
+            // yaslıdır (superTitle'da gravity yok); genişliği animasyonun soluna kadardır.
+            Text("Öğrenmeyi\nhızlandıran\nözellikler")
                 .font(Tema.yazi(20))
                 .foregroundColor(.white)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12)
-            Text("Sınırsız enerji ve reklamsız\n deneyimin")
+            Text("Sınırsız enerji ve reklamsız\ndeneyimin")
                 .font(Tema.yazi(13))
                 .foregroundColor(MagazaStil.superAltYaziRengi)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.leading, 20)
         .padding(.trailing, 8)
     }

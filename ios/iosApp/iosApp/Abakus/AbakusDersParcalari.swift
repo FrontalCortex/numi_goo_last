@@ -10,11 +10,13 @@ struct AbakusKaraTahta: View {
     let ilkSayi: String
     let islec: String
     let ikinciSayi: String
+    /// Kısa ekranlarda tahtanın küçültülme oranı (bkz. AbakusDersOlcegi); 1 = Android ölçüleri.
+    var olcek: CGFloat = 1
 
     var body: some View {
         Color.clear
             // blackboardImage: layout_height
-            .frame(height: 300)
+            .frame(height: 300 * olcek)
             .frame(maxWidth: .infinity)
             .overlay(
                 // scaleType=centerCrop
@@ -38,20 +40,20 @@ struct AbakusKaraTahta: View {
                 Spacer(minLength: 0)
             }
             Text(islec)
-                .font(Tema.yazi(36))
+                .font(Tema.yazi(36 * olcek))
                 .foregroundColor(.white)
         }
-        .offset(y: -10)
+        .offset(y: -10 * olcek)
     }
 
     private func sayi(_ metin: String) -> some View {
         Text(metin)
             // abacus_fragment_equation_text_size
-            .font(Tema.yazi(36))
+            .font(Tema.yazi(36 * olcek))
             .foregroundColor(.white)
             .lineLimit(1)
             // abacus_fragment_equation_padding
-            .padding(16)
+            .padding(16 * olcek)
     }
 }
 
@@ -122,15 +124,23 @@ struct AbakusIpucuBolumu: View {
             .padding(.trailing, 31)
     }
 
+    /// fabHint: raw/lesson_hint_ic, lottie_autoPlay=false, lottie_loop=false.
+    /// showHint → playAnimation + setFrame(25) (25. kareden sona bir kez);
+    /// hideHint → cancelAnimation + setFrame(0).
+    private var simge: some View {
+        let acik: Bool = model.ipucuAcik
+        let kare: Double = acik ? 25.0 : 0.0
+        return LottieGorunumu("lesson_hint_ic", dongu: false, oynat: acik, baslangicKare: kare)
+            // 56 − 2 × abacus_fragment_hint_fab_padding (5)
+            .frame(width: 46, height: 46)
+    }
+
     private var dugme: some View {
         Button(action: { model.ipucuDokunuldu() }) {
             ZStack {
                 // fab_background
                 Circle().fill(AbakusRenk.renk(0x263C31))
-                // Android'de Lottie (raw/lesson_hint_ic); Lottie bağlanana kadar sistem simgesi.
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 24))
-                    .foregroundColor(Color("yellow"))
+                simge
             }
             // tutorial_ask_button_size
             .frame(width: 56, height: 56)

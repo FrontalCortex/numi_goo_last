@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 // Kristal kırma ekranı: tam ekran video üç yerde durur ve dokunuş bekler; ilk iki durakta
@@ -39,10 +40,6 @@ struct SandikKristalEkrani: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .topLeading) {
-                Color.black
-                SandikKristalVideosu(model: model)
-                // crystalVideoDimOverlay: #58000000
-                Color.black.opacity(Double(0x58) / 255.0)
                 etiket
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 28)
@@ -65,8 +62,20 @@ struct SandikKristalEkrani: View {
                 model.ekranBoyunuAyarla(yeni)
             }
         }
-        .background(Color.black.ignoresSafeArea())
+        .background(arkaKatman.ignoresSafeArea())
         .onDisappear { model.durdur() }
+    }
+
+    /// Siyah zemin, video ve karartma. Android'de pencere tam ekrandır (durum çubuğu gizli) ve
+    /// video ekranın tamamını kırparak doldurur; burada da güvenli alanın dışına taşar.
+    private var arkaKatman: some View {
+        ZStack {
+            Color.black
+            SandikKristalVideosu(model: model)
+            // crystalVideoDimOverlay: #58000000
+            Color.black.opacity(Double(0x58) / 255.0)
+        }
+        .allowsHitTesting(false)
     }
 
     /// crystalRarityText: 34 sp, gölgeli; video oynamaya başlayınca görünür.
@@ -80,7 +89,8 @@ struct SandikKristalEkrani: View {
     }
 }
 
-/// Video (yer tutucu) ve üzerindeki ölçek animasyonları: durakta nabız, dalgada sarsıntı.
+/// Video (dosya pakette yoksa yer tutucu) ve üzerindeki ölçek animasyonları: durakta nabız,
+/// dalgada sarsıntı.
 struct SandikKristalVideosu: View {
     @ObservedObject var model: SandikKristalModeli
 
@@ -88,8 +98,18 @@ struct SandikKristalVideosu: View {
         TimelineView(.animation) { _ in
             let simdi: TimeInterval = ProcessInfo.processInfo.systemUptime
             let olcek: CGSize = olcekHesapla(simdi: simdi)
-            SandikVideoYerTutucu(ad: model.videoAdi)
+            icerik
                 .scaleEffect(x: olcek.width, y: olcek.height)
+        }
+    }
+
+    /// Dosya pakette varsa AVPlayer katmanı, yoksa (ya da açılamadıysa) durağan görsel.
+    @ViewBuilder
+    private var icerik: some View {
+        if model.gercekVideo, let oynatici = model.videoOynaticisi {
+            SandikVideoGorunumu(oynatici: oynatici)
+        } else {
+            SandikVideoYerTutucu(ad: model.videoAdi)
         }
     }
 

@@ -89,8 +89,10 @@ struct HaritaKisimKarti: Identifiable {
     /// Renk kaynağı adları.
     let kartRengi: String
     let yaziRengi: String
-    /// Android assets içindeki Lottie dosyasının adı (lottie-ios bağlanınca kullanılacak).
+    /// Android assets içindeki Lottie dosyasının UZANTISIZ adı (`LottieGorunumu` bu biçimi ister).
     let animasyon: String
+    /// Android: lottieView.repeatCount (kısım 2'de 2 → art arda 3 kez oynar; diğerlerinde 0).
+    let animasyonTekrari: Int
 }
 
 /// Kısım seçim ekranındaki bir satır ("Toplama", "Çıkarma", "Çarpma").
@@ -100,9 +102,32 @@ struct HaritaKisimSatiri: Identifiable {
     let kartlar: [HaritaKisimKarti]
 }
 
-/// Henüz yazılmamış bir ekranın yerine gösterilen yer tutucunun içeriği.
+/// Haritanın dışarı verdiği hedefin türü. Hedefi alan taraf (Yonetim/YonetimDersAkisi) hangi
+/// ekranı açacağına YALNIZCA bu alana bakarak karar verir; `aciklama` / `ayrintilar` metinleri
+/// sadece yer tutucuda gösterilir.
+enum HaritaHedefTuru {
+    /// AbacusFragment (ortak kural: LessonStartTarget.ABACUS).
+    case abakusDersi
+    /// BlindingLessonFragment (ortak kural: LessonStartTarget.BLINDING_LESSON).
+    case korDers
+    /// TutorialFragment; dersin öğreticisi henüz bitmemiş (ortak kural: LessonStartTarget.TUTORIAL).
+    case ogretici
+    /// TutorialFragment; alt paneldeki "Eğitimi tekrarla" ile istendi.
+    case ogreticiTekrari
+    /// Yarış paneli (yarış bayrağı ya da kısım 7 / 8 kartı).
+    case yarisPaneli
+    /// RecordFragment (bitmiş sandığın rekor satırı).
+    case liderlikTablosu
+    /// Mağaza; enerji yetmedi (ortak kural: ActionButtonDecision.NOT_ENOUGH_ENERGY).
+    case magaza
+    /// Öğretmene soru sorma akışı (askQuestionButton).
+    case soruSorma
+}
+
+/// Haritadan açılması istenen ekran. Yer tutucu da içeriğini buradan alır.
 struct HaritaHedefi: Identifiable {
     let id = UUID()
+    let tur: HaritaHedefTuru
     let baslik: String
     let aciklama: String
     let ayrintilar: [String]
@@ -289,11 +314,22 @@ final class HaritaModeli: ObservableObject {
                     kapaliMesaji: durum.inactiveMessage,
                     kartRengi: kisimMantigi.partCardColor(state: durum),
                     yaziRengi: kisimMantigi.partLabelColor(state: durum),
-                    animasyon: kisimMantigi.partAnimationName(partId: partId)
+                    animasyon: uzantisiz(kisimMantigi.partAnimationName(partId: partId)),
+                    // PartCardAdapter.bind: `if (partId == 2) repeatCount = 2 else repeatCount = 0`.
+                    animasyonTekrari: partId == 2 ? 2 : 0
                 )
             )
         }
         return HaritaKisimSatiri(id: sira, baslik: baslik, kartlar: kartlar)
+    }
+
+    /// "rocket_anim.json" → "rocket_anim".
+    private func uzantisiz(_ ad: String) -> String {
+        let ek: String = ".json"
+        if ad.hasSuffix(ek) {
+            return String(ad.dropLast(ek.count))
+        }
+        return ad
     }
 
     /// Android: PartCardAdapter kart tıklaması + PartSelectionFragment.openMapForPart.
@@ -305,6 +341,7 @@ final class HaritaModeli: ObservableObject {
         if kisimMantigi.opensRacePanel(partId: kart.partId) {
             // Android burada harita yerine yarış panelini açar; panel henüz yazılmadı.
             hedef = HaritaHedefi(
+                tur: .yarisPaneli,
                 baslik: kisimMantigi.racePanelTitle(partId: kart.partId),
                 aciklama: "Yarış paneli",
                 ayrintilar: ["Kısım: \(kart.partId)"]
@@ -352,10 +389,10 @@ final class HaritaModeli: ObservableObject {
             return
         case .yaris:
             if !o.kilitsiz {
-                // strings.xml: race_unlock_complete_all_lessons
-                bildir("Burayı açmak için bütün dersleri tamamla.")
+                bildir(Metin.al("race_unlock_complete_all_lessons"))
             } else {
                 hedef = HaritaHedefi(
+                    tur: .yarisPaneli,
                     baslik: o.baslik,
                     aciklama: "Yarış paneli",
                     ayrintilar: ["Harita sırası: \(o.id)"]
@@ -403,6 +440,7 @@ final class HaritaModeli: ObservableObject {
         if karar == "NOT_ENOUGH_ENERGY" {
             // Android: panel kapanır, mağaza (enerji yenileme) açılır.
             hedef = HaritaHedefi(
+                tur: .magaza,
                 baslik: panel.baslik,
                 aciklama: "Enerji yok",
                 ayrintilar: ["Açılacak ekran: Mağaza (enerji yenileme)"]
@@ -415,14 +453,23 @@ final class HaritaModeli: ObservableObject {
         } else {
             enerji = "Enerji: harcanmaz (sonsuz enerji)"
         }
+        // Açılacak ekranı ortak kural seçer (Android: LessonAdapter.continueWithLesson).
         let hedefAdi: String = mantik.continueWithLessonTarget(item: oge).name
-        hedef = dersHedefi(panel: panel, hedefAdi: hedefAdi, ekSatir: enerji)
+        let tur: HaritaHedefTuru
+        if hedefAdi == "TUTORIAL" {
+            tur = .ogretici
+        } else if hedefAdi == "BLINDING_LESSON" {
+            tur = .korDers
+        } else {
+            tur = .abakusDersi
+        }
+        hedef = dersHedefi(panel: panel, tur: tur, ekSatir: enerji)
     }
 
     /// Android: againTutorial.setOnClickListener (öğreticiyi yeniden aç).
     func egitimiTekrarla(_ panel: HaritaAltPanelDurumu) {
         altPanel = nil
-        hedef = dersHedefi(panel: panel, hedefAdi: "TUTORIAL", ekSatir: "Eğitimi tekrarla")
+        hedef = dersHedefi(panel: panel, tur: .ogreticiTekrari, ekSatir: "Eğitimi tekrarla")
     }
 
     /// Android: recordLayout.setOnClickListener (liderlik tablosu / RecordFragment).
@@ -432,6 +479,7 @@ final class HaritaModeli: ObservableObject {
         }
         altPanel = nil
         hedef = HaritaHedefi(
+            tur: .liderlikTablosu,
             baslik: panel.baslik,
             aciklama: "Liderlik tablosu",
             ayrintilar: ["Harita sırası: \(panel.id)"]
@@ -440,15 +488,17 @@ final class HaritaModeli: ObservableObject {
 
     /// Android: askQuestionButton (öğretmene soru sor).
     func soruSorDokunuldu() {
-        hedef = HaritaHedefi(baslik: "Öğretmene sor", aciklama: "Soru sorma ekranı", ayrintilar: [])
+        hedef = HaritaHedefi(
+            tur: .soruSorma, baslik: "Öğretmene sor", aciklama: "Soru sorma ekranı", ayrintilar: []
+        )
     }
 
-    private func dersHedefi(panel: HaritaAltPanelDurumu, hedefAdi: String, ekSatir: String) -> HaritaHedefi {
+    private func dersHedefi(panel: HaritaAltPanelDurumu, tur: HaritaHedefTuru, ekSatir: String) -> HaritaHedefi {
         let oge = panel.oge.oge
         let ekran: String
-        if hedefAdi == "TUTORIAL" {
+        if tur == .ogretici || tur == .ogreticiTekrari {
             ekran = "Öğretici (\(oge.tutorialNumber))"
-        } else if hedefAdi == "BLINDING_LESSON" {
+        } else if tur == .korDers {
             ekran = "Körleme dersi"
         } else {
             ekran = "Abaküs dersi"
@@ -464,7 +514,7 @@ final class HaritaModeli: ObservableObject {
             satirlar.append("Başlangıç adımı: \(adim.intValue)")
         }
         satirlar.append(ekSatir)
-        return HaritaHedefi(baslik: panel.baslik, aciklama: panel.aciklama, ayrintilar: satirlar)
+        return HaritaHedefi(tur: tur, baslik: panel.baslik, aciklama: panel.aciklama, ayrintilar: satirlar)
     }
 
     // MARK: Bilgi balonu
