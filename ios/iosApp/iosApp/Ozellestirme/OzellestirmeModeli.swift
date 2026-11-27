@@ -416,6 +416,18 @@ final class OzellestirmeModeli: ObservableObject {
         esitlemeyiZamanla()
     }
 
+    /// Boncuk renk özelliği fiyatı (Android: getBeadColorFeaturePrice); anahtarla satılan boncukta anahtar cinsinden.
+    var boncukRenkFiyatMetni: String {
+        guard let tip = renkSekmesiTipi else { return renkOzelligiFiyatMetni }
+        return String(AbacusCustomizationRules.shared.getBeadColorFeaturePrice(beadType: tip))
+    }
+
+    /// Boncuk renk özelliği para birimi simgesi (boncukla aynı para birimi: "key" ya da "gold_ic").
+    var boncukRenkParaBirimiSimgesi: String {
+        guard let tip = renkSekmesiTipi else { return AbacusCustomizationRules.shared.ICON_GOLD }
+        return AbacusCustomizationRules.shared.colorFeatureCurrencyIconResName(beadType: tip)
+    }
+
     /// 2. sekmenin kilit örtüsüne dokunuldu: renk özelliği satın alma paneli.
     func boncukRenkKilidineDokun() {
         guard panel == nil, kimlik != nil, let tip = renkSekmesiTipi else { return }
@@ -424,8 +436,8 @@ final class OzellestirmeModeli: ObservableObject {
                 tur: .boncukRenkOzelligi,
                 tipAdi: tip.name,
                 gorselAdi: AbacusCustomizationRules.shared.beadImageResName(beadType: tip),
-                fiyatMetni: renkOzelligiFiyatMetni,
-                birimSimgeAdi: AbacusCustomizationRules.shared.ICON_GOLD,
+                fiyatMetni: boncukRenkFiyatMetni,
+                birimSimgeAdi: boncukRenkParaBirimiSimgesi,
                 ozellikSimgesiGorunur: true
             )
         )
@@ -541,8 +553,10 @@ final class OzellestirmeModeli: ObservableObject {
 
         case .boncukRenkOzelligi:
             guard let tip = boncukTipi(bilgi.tipAdi) else { return }
-            let denetim = ui.checkGoldPurchase(
-                price: kurallar.COLOR_FEATURE_PRICE, cachedCurrency: Int32(cuzdan.altin)
+            // Android: getBeadColorFeaturePrice — fiyat boncuğun para biriminde (ANIMAL3/ANIMAL8: 40 anahtar,
+            // diğerleri 2000 altın); kayıt başarısız olursa harcanan iade edilir (BEAD_COLOR_FEATURE_PANEL).
+            let denetim = ui.checkBeadColorFeaturePurchase(
+                beadType: tip, cachedKeys: Int32(cuzdan.anahtar), cachedCurrency: Int32(cuzdan.altin)
             )
             satinAl(
                 denetim: denetim,

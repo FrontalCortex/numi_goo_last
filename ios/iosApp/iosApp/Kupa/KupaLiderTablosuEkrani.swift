@@ -17,8 +17,8 @@ struct KupaLiderSatirDurumu: Identifiable, Equatable {
     let sira: Int
     let ad: String
     let rekorEtiketi: String
-    let fotoAdresi: String
-    let fotoVar: Bool
+    let avatarConfig: String
+    let avatarVar: Bool
     /// Android drawable adı (sıra rozetinin rengi).
     let rozetAdi: String
     let kartRenkAdi: String
@@ -37,15 +37,15 @@ final class KupaLiderTablosuModeli: ObservableObject {
     @Published private(set) var bosMetin: String? = nil
 
     private let partId: Int
-    private let dersIndeksi: Int
+    private let dersAnahtari: String
     private let depo: KupaLiderlikDeposu
     private let kopru: KupaEkranKoprusu = KupaEkranKoprusu.shared
     private var tutamak: KupaDinlemeTutamagi? = nil
     private var bagliSezon: Int = -1
 
-    init(partId: Int, dersIndeksi: Int, depo: KupaLiderlikDeposu) {
+    init(partId: Int, dersAnahtari: String, depo: KupaLiderlikDeposu) {
         self.partId = partId
-        self.dersIndeksi = dersIndeksi
+        self.dersAnahtari = dersAnahtari
         self.depo = depo
     }
 
@@ -84,7 +84,7 @@ final class KupaLiderTablosuModeli: ObservableObject {
         bagliSezon = sezon
         tutamak = depo.dinle(
             partId: partId,
-            dersIndeksi: dersIndeksi,
+            dersAnahtari: dersAnahtari,
             sezon: sezon,
             guncelle: { [weak self] kayitlar in
                 self?.kayitlarGeldi(kayitlar)
@@ -102,7 +102,7 @@ final class KupaLiderTablosuModeli: ObservableObject {
                 recordScore: Int32($0.puan),
                 displayName: $0.ad,
                 recordLabel: $0.rekorEtiketi,
-                photoUrl: $0.fotoAdresi
+                avatarConfig: $0.avatarConfig
             )
         }
         let satirlar: [LiderSatirVerisi] = kopru.liderSatirlari(kayitlar: ham, currentUid: depo.oturumKimligi)
@@ -112,8 +112,8 @@ final class KupaLiderTablosuModeli: ObservableObject {
                 sira: Int(s.displayRank),
                 ad: s.displayName,
                 rekorEtiketi: s.recordLabel,
-                fotoAdresi: s.photoUrl,
-                fotoVar: s.hasPhoto,
+                avatarConfig: s.avatarConfig,
+                avatarVar: s.hasAvatar,
                 rozetAdi: s.rankBadgeDrawable,
                 kartRenkAdi: s.cardColorRes,
                 adRenkAdi: s.nameColorRes,
@@ -148,13 +148,13 @@ struct KupaLiderTablosuEkrani: View {
 
     /// - Parameters:
     ///   - partId: dersin part'ı (GlobalLessonData.globalPartId).
-    ///   - dersIndeksi: dersin haritadaki liste indeksi.
+    ///   - dersAnahtari: dersin kalıcı kimliği (LessonItem.stableId); liste konumu değil.
     ///   - dersBasligi: başlığın altında gösterilen ders adı.
     ///   - kapat: geri düğmesi.
     ///   - ortam: veri servisleri (varsayılan: örnek veri).
     init(
         partId: Int,
-        dersIndeksi: Int,
+        dersAnahtari: String,
         dersBasligi: String,
         kapat: (() -> Void)?,
         ortam: KupaOrtami = KupaOrtami.sahte
@@ -162,7 +162,7 @@ struct KupaLiderTablosuEkrani: View {
         self.dersBasligi = dersBasligi
         self.kapat = kapat
         _model = StateObject(
-            wrappedValue: KupaLiderTablosuModeli(partId: partId, dersIndeksi: dersIndeksi, depo: ortam.liderlikDeposu)
+            wrappedValue: KupaLiderTablosuModeli(partId: partId, dersAnahtari: dersAnahtari, depo: ortam.liderlikDeposu)
         )
     }
 
@@ -280,27 +280,16 @@ struct KupaLiderTablosuEkrani: View {
 
 // MARK: - Parçalar
 
-/// Profil fotoğrafı; adres yoksa ya da yüklenemezse varsayılan simge
-/// (Android: android.R.drawable.sym_def_app_icon; burada "user" görseli).
+/// Satır avatarı. Android avatarı `AvatarConfig` ile kodla çizer (leaderboardAvatarBitmap); iOS'ta liderlik
+/// satırı için avatar çizici henüz yok, bu yüzden `avatarConfig` taşınır ama şimdilik varsayılan simge
+/// ("user" görseli; boş avatar için Android de varsayılan avatarı çizer) gösterilir.
 private struct KupaLiderFotografi: View {
-    let adres: String
-    let fotoVar: Bool
+    let avatarConfig: String
+    let avatarVar: Bool
     let doldur: Bool
 
     var body: some View {
-        if fotoVar, let url = URL(string: adres) {
-            AsyncImage(url: url) { asama in
-                if let gorsel = asama.image {
-                    gorsel
-                        .resizable()
-                        .aspectRatio(contentMode: doldur ? .fill : .fit)
-                } else {
-                    varsayilan
-                }
-            }
-        } else {
-            varsayilan
-        }
+        varsayilan
     }
 
     private var varsayilan: some View {
@@ -317,7 +306,7 @@ private struct KupaLiderBirinciGorunumu: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack(alignment: .bottom) {
-                KupaLiderFotografi(adres: satir.fotoAdresi, fotoVar: satir.fotoVar, doldur: false)
+                KupaLiderFotografi(avatarConfig: satir.avatarConfig, avatarVar: satir.avatarVar, doldur: false)
                     .padding(4)
                     .frame(width: 120, height: 120)
                     .clipShape(Circle())
@@ -354,7 +343,7 @@ private struct KupaLiderSatirGorunumu: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            KupaLiderFotografi(adres: satir.fotoAdresi, fotoVar: satir.fotoVar, doldur: true)
+            KupaLiderFotografi(avatarConfig: satir.avatarConfig, avatarVar: satir.avatarVar, doldur: true)
                 .frame(width: 44, height: 44)
                 .clipShape(Circle())
             VStack(alignment: .leading, spacing: 2) {

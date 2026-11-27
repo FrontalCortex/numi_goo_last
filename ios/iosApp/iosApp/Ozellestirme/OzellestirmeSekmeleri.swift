@@ -181,9 +181,10 @@ struct OzellestirmeBoncukRengiSekmesi: View {
             }
             if model.boncukRenkKilitli {
                 OzellestirmeRenkKilidi(
-                    fiyatMetni: model.renkOzelligiFiyatMetni,
+                    fiyatMetni: model.boncukRenkFiyatMetni,
                     zemin: model.kilitOrtusu,
-                    dokun: model.boncukRenkKilidineDokun
+                    dokun: model.boncukRenkKilidineDokun,
+                    simgeAdi: model.boncukRenkParaBirimiSimgesi
                 )
             }
         }

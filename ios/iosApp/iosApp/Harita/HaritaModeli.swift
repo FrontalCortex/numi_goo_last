@@ -299,7 +299,9 @@ final class HaritaModeli: ObservableObject {
             hasProPlan: pro,
             part1ChestComplete: p1,
             part2ChestComplete: p2,
-            part3ChestComplete: p3
+            part3ChestComplete: p3,
+            // Android: onaylı öğretmende bütün kısımlar açık (bölüm sırası yok).
+            teacherApproved: ogretmenOnayli
         )
         var kartlar: [HaritaKisimKarti] = []
         for durum in durumlar {
@@ -431,9 +433,12 @@ final class HaritaModeli: ObservableObject {
     func eylemDugmesi(_ panel: HaritaAltPanelDurumu) {
         let oge = panel.oge.oge
         let karar: String = mantik.actionButtonDecision(
-            item: oge, isInfiniteEnergy: sonsuzEnerji, hasEnoughEnergy: enerjiYeterli
+            item: oge, isInfiniteEnergy: sonsuzEnerji, hasEnoughEnergy: enerjiYeterli,
+            globalPartId: seciliPart ?? GlobalLessonData.shared.globalPartId
         ).name
-        if karar == "LOCKED_COLLAPSE" {
+        // UNLOCK_WITH_KEY: kilitli ama anahtarla açılabilen ders. Anahtarla açma akışı harita yeniden
+        // yazılırken eklenecek; şimdilik kilitli ders gibi davranır (panel kapanmaz, bir şey olmaz).
+        if karar == "LOCKED_COLLAPSE" || karar == "UNLOCK_WITH_KEY" {
             return
         }
         altPanel = nil

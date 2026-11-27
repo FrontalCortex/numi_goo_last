@@ -31,8 +31,8 @@ extension UygulamaYoneticisi {
         case .liderlikTablosu:
             if let acik = panel {
                 let partId: Int32 = haritaModeli.seciliPart ?? ilerleme.aktifPart
-                let sira: Int32 = ilerleme.haritaSirasi(acik.oge.oge, listeSirasi: acik.id)
-                ac(.liderTablosu(partId: Int(partId), dersIndeksi: Int(sira), baslik: acik.baslik))
+                // Android: RecordFragment dersin liste konumunu değil kalıcı kimliğini (stableId) alır.
+                ac(.liderTablosu(partId: Int(partId), dersAnahtari: acik.oge.oge.stableId, baslik: acik.baslik))
             } else {
                 yerTutucuAc(hedef.baslik, hedef.aciklama, hedef.ayrintilar)
             }

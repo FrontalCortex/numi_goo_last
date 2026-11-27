@@ -87,8 +87,8 @@ struct YonetimKatmanGorunumu: View {
             rozetler
         case .rozetDetay(let modAdi):
             RozetDetayEkrani(modAdi: modAdi, kapat: { kapat() })
-        case .liderTablosu(let partId, let dersIndeksi, let baslik):
-            KupaLiderTablosuEkrani(partId: partId, dersIndeksi: dersIndeksi, dersBasligi: baslik, kapat: { kapat() })
+        case .liderTablosu(let partId, let dersAnahtari, let baslik):
+            KupaLiderTablosuEkrani(partId: partId, dersAnahtari: dersAnahtari, dersBasligi: baslik, kapat: { kapat() })
         case .ogretici(let hedef):
             ogretici(hedef)
         case .yerTutucu(let veri):

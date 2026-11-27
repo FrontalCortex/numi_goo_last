@@ -164,7 +164,9 @@ final class YonetimIlerlemeDeposu: HaritaIlerlemeKaynagi {
             recordScore: Int32(puan),
             lessonSuccessRate: basariOrani,
             icon: simge,
-            season: sezon
+            season: sezon,
+            // Android: ChestFragment.questionElapsedMs (sorunun süresi, ms). iOS'ta henüz taşınmıyor: nil (bilinmiyor).
+            questionElapsedMs: nil
         )
         bellektenAl()
     }

@@ -89,7 +89,10 @@ struct GirisYasGorunumu: View {
     private func kart(_ adlar: [String], _ sira: Int) -> some View {
         if sira < adlar.count {
             let ad: String = adlar[sira]
-            GirisKaynakKarti(ad: ad, secili: model.seciliKaynak == ad) {
+            // Kayıt değeri SOURCE_NAMES (istatistik anahtarı), görünen ad SOURCE_DISPLAY_NAMES_TR (aynı sırada).
+            let gosterimler: [String] = UserInfoRules.shared.SOURCE_DISPLAY_NAMES_TR
+            let gosterim: String = sira < gosterimler.count ? gosterimler[sira] : ad
+            GirisKaynakKarti(ad: gosterim, secili: model.seciliKaynak == ad) {
                 model.kaynakSec(ad)
             }
         } else {

@@ -62,8 +62,8 @@ struct KupaLiderKaydi: Equatable {
     let ad: String
     /// recordLabel
     let rekorEtiketi: String
-    /// photoUrl (boş = yok)
-    let fotoAdresi: String
+    /// avatarConfig (Android AvatarConfig.encode biçimi; boş = varsayılan avatar). Eski photoUrl alanı kalktı.
+    let avatarConfig: String
 }
 
 // MARK: - Protokoller
@@ -123,7 +123,7 @@ final class KupaDinlemeTutamagi {
 
 /// Ders liderlik tablosu.
 /// Android: `LessonLeaderboardRepository.listenLeaderboard` —
-/// `lessonLeaderboards/part_{p}_lesson_{i}_season_{s}/entries`, `orderBy recordScore DESC`,
+/// `lessonLeaderboards/part_{p}_lesson_{stableId}_season_{s}/entries`, `orderBy recordScore DESC`,
 /// en çok 100 kayıt, canlı dinleme.
 protocol KupaLiderlikDeposu: AnyObject {
     /// Oturum açmış kullanıcının kimliği (yoksa boş). Android: FirebaseAuth.currentUser?.uid.
@@ -132,7 +132,7 @@ protocol KupaLiderlikDeposu: AnyObject {
     /// - Parameter hata: (yerelleştirilmiş ileti, yetki hatası mı).
     func dinle(
         partId: Int,
-        dersIndeksi: Int,
+        dersAnahtari: String,
         sezon: Int,
         guncelle: @escaping ([KupaLiderKaydi]) -> Void,
         hata: @escaping (String, Bool) -> Void
@@ -276,18 +276,18 @@ final class SahteKupaLiderlikDeposu: KupaLiderlikDeposu {
     // R.string.record_leaderboard_title ile doldurur (RecordLeaderboardAdapter.bind; ortak kod
     // RecordLogic.displayNameOrFallback). Örnek veride bu yüzden her kaydın adı doludur.
     var kayitlar: [KupaLiderKaydi] = [
-        KupaLiderKaydi(kullaniciKimligi: "ornek-1", puan: 9820, ad: "Elif", rekorEtiketi: "0:41", fotoAdresi: ""),
-        KupaLiderKaydi(kullaniciKimligi: "ornek-2", puan: 9510, ad: "Yusuf", rekorEtiketi: "0:47", fotoAdresi: ""),
-        KupaLiderKaydi(kullaniciKimligi: "ornek-3", puan: 9510, ad: "Zeynep", rekorEtiketi: "0:47", fotoAdresi: ""),
-        KupaLiderKaydi(kullaniciKimligi: "ornek-ben", puan: 9100, ad: "Sen", rekorEtiketi: "0:55", fotoAdresi: ""),
-        KupaLiderKaydi(kullaniciKimligi: "ornek-5", puan: 8740, ad: "Ayşe", rekorEtiketi: "1:02", fotoAdresi: ""),
-        KupaLiderKaydi(kullaniciKimligi: "ornek-6", puan: 8100, ad: "Mert", rekorEtiketi: "1:15", fotoAdresi: ""),
-        KupaLiderKaydi(kullaniciKimligi: "ornek-7", puan: 7650, ad: "Defne", rekorEtiketi: "1:28", fotoAdresi: "")
+        KupaLiderKaydi(kullaniciKimligi: "ornek-1", puan: 9820, ad: "Elif", rekorEtiketi: "0:41", avatarConfig: ""),
+        KupaLiderKaydi(kullaniciKimligi: "ornek-2", puan: 9510, ad: "Yusuf", rekorEtiketi: "0:47", avatarConfig: ""),
+        KupaLiderKaydi(kullaniciKimligi: "ornek-3", puan: 9510, ad: "Zeynep", rekorEtiketi: "0:47", avatarConfig: ""),
+        KupaLiderKaydi(kullaniciKimligi: "ornek-ben", puan: 9100, ad: "Sen", rekorEtiketi: "0:55", avatarConfig: ""),
+        KupaLiderKaydi(kullaniciKimligi: "ornek-5", puan: 8740, ad: "Ayşe", rekorEtiketi: "1:02", avatarConfig: ""),
+        KupaLiderKaydi(kullaniciKimligi: "ornek-6", puan: 8100, ad: "Mert", rekorEtiketi: "1:15", avatarConfig: ""),
+        KupaLiderKaydi(kullaniciKimligi: "ornek-7", puan: 7650, ad: "Defne", rekorEtiketi: "1:28", avatarConfig: "")
     ]
 
     func dinle(
         partId: Int,
-        dersIndeksi: Int,
+        dersAnahtari: String,
         sezon: Int,
         guncelle: @escaping ([KupaLiderKaydi]) -> Void,
         hata: @escaping (String, Bool) -> Void

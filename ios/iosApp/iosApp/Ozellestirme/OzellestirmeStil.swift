@@ -131,13 +131,15 @@ struct OzellestirmeRenkKilidi: View {
     let fiyatMetni: String
     let zemin: Color
     let dokun: () -> Void
+    /// Para birimi simgesi: çerçeve için altın, anahtarla satılan boncuklarda anahtar.
+    var simgeAdi: String = "gold_ic"
 
     var body: some View {
         ZStack {
             zemin
             OzellestirmeFiyat(
                 metin: fiyatMetni,
-                simgeAdi: "gold_ic",
+                simgeAdi: simgeAdi,
                 yaziBoyu: 20,
                 simgeBoyu: 32,
                 aralik: 8,

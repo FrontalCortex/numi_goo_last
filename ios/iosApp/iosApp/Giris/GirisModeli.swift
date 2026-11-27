@@ -762,9 +762,10 @@ enum GirisMetin {
     /// strings.xml: login_start_student_subtitle / login_start_teacher_subtitle
     static var ogrenciAltBaslik: String { Metin.al("login_start_student_subtitle") }
     static var ogretmenAltBaslik: String { Metin.al("login_start_teacher_subtitle") }
-    /// strings.xml: login_start_primary_button / login_start_secondary_button
-    static var girisYap: String { Metin.al("login_start_primary_button") }
-    static var basla: String { Metin.al("login_start_secondary_button") }
+    /// strings.xml: login_start_login_button ("Zaten hesabım var") / login_start_start_button ("Başla");
+    /// eski primary/secondary anahtarları Android'de silindi. Düğme işlevine göre eşlendi (yerleşim değişmedi).
+    static var girisYap: String { Metin.al("login_start_login_button") }
+    static var basla: String { Metin.al("login_start_start_button") }
     /// strings.xml: login_start_teacher_mode_button / login_start_student_mode_button
     static var ogretmenGirisi: String { Metin.al("login_start_teacher_mode_button") }
     static var ogrenciGirisi: String { Metin.al("login_start_student_mode_button") }

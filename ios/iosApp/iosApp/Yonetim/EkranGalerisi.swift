@@ -143,7 +143,7 @@ struct EkranGalerisi: View {
                 kapat: nil
             )
         case "lider-tablosu":
-            KupaLiderTablosuEkrani(partId: 1, dersIndeksi: 4, dersBasligi: "Ünite Maratonu", kapat: nil)
+            KupaLiderTablosuEkrani(partId: 1, dersAnahtari: "p1_i04_unite_maratonu", dersBasligi: "Ünite Maratonu", kapat: nil)
         case "rozetler":
             RozetlerEkrani(kapat: nil, rozetSecildi: nil)
         case "rozet-detay":

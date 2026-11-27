@@ -73,7 +73,7 @@ enum YonetimEkrani {
     case kupaGecmisi(ProfilKupaSecimi)
     case rozetler
     case rozetDetay(modAdi: String)
-    case liderTablosu(partId: Int, dersIndeksi: Int, baslik: String)
+    case liderTablosu(partId: Int, dersAnahtari: String, baslik: String)
     case ogretici(YonetimOgreticiHedefi)
     case yerTutucu(YonetimYerTutucu)
 
