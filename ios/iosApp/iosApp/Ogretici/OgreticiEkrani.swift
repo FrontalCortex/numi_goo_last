@@ -101,8 +101,9 @@ struct OgreticiIcerigiGorunumu: View {
             Color.clear
                 .contentShape(Rectangle())
                 .onTapGesture { model.ekranaDokunuldu() }
-            OgreticiAnaDuzen(model: model)
+            // Kör ders görselleri alt panelin ve metnin ALTINDA çizilir (Android'de XML sırası).
             OgreticiGorselAlani(model: model)
+            OgreticiAnaDuzen(model: model)
             OgreticiSecenekPaneli(model: model)
             OgreticiSonucKatmani(model: model)
             OgreticiUyariKatmani(metin: model.uyari)
@@ -123,6 +124,7 @@ struct OgreticiAnaDuzen: View {
                 OgreticiKuralAlani(model: model)
             }
             OgreticiMetinAlani(metin: model.adim.metin, gorunenHarf: model.gorunenHarf)
+                .modifier(OgreticiMetinGorselBagi(model: model))
                 .allowsHitTesting(false)
             OgreticiSoruKutusu(adim: model.adim)
                 .allowsHitTesting(false)

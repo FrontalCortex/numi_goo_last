@@ -245,6 +245,21 @@ final class OgreticiKoprusu {
         )
     }
 
+    /// Baştan şu anki adıma kadar (dahil) bütün adımların odak dışı yerleşim değişiklikleri, sırayla.
+    /// Android ChangeConstraints kalıcıdır (24. öğreticide metnin görsele bağlanması sonraki adımlarda sürer).
+    func yerlesimlerAdimaKadar() -> [String] {
+        var sonuc: [String] = []
+        let son: Int32 = oynatici.adim
+        var i: Int32 = 0
+        while i <= son {
+            if let a = icerik.adim(sira: i) {
+                sonuc.append(contentsOf: a.yerlesimler)
+            }
+            i += 1
+        }
+        return sonuc
+    }
+
     // MARK: Çeviriler
 
     private static func gorunurluk(_ kod: Int32) -> OgreticiGorunurlukTuru {

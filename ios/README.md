@@ -16,8 +16,8 @@ ios/
 
 ### Ortak kod (`shared/`)
 
-- 99 Kotlin kaynak dosyası (yaklaşık 29,6 bin satır), yaklaşık 20,6 bin satır test.
-- **JVM'de 926 test, 0 hata** (`shared/build/test-results/jvmTest` içindeki sonuç dosyalarından toplandı). Kotlin/Native (mingwX64) bu eklerden sonra yeniden çalıştırılmadı; son tam mingwX64 çalıştırması eşitlemenin ilk aşamasındaydı (890 test, 0 hata). Eşitlemeden sonra eklenen yeni ortak dosyalar: `ders/LessonEndMascotLogic.kt`, `model/SignupStreakRules.kt`, `profil/AvatarConfigLogic.kt`. (Eskiden JVM ile Native arasındaki 3 testlik fark `java.util.Random` karşılaştırmasından geliyordu; güncel farkın nedeni yeni testlerin Native'de koşturulmamış olması.)
+- 138 Kotlin kaynak dosyası (yaklaşık 46,7 bin satır; bunun yaklaşık 16,3 bin satırı üretilmiş öğretici içeriği, `ogretici/icerik/`), yaklaşık 21,3 bin satır test.
+- **JVM'de 950 test, Kotlin/Native (mingwX64) 945 test, ikisinde de 0 hata** (27.11.2026, öğretici içeriği üretildikten sonra tam çalıştırma; sayılar `shared/build/test-results/<hedef>/*.xml` dosyalarından toplandı). JVM'deki 5 fazlalık yalnızca JVM'de koşan testlerden (`java.util.Random` karşılaştırması, avatar paketi dosyası vb.) gelir.
 - `commonMain` içinde `java.*`, `android.*`, Firebase, Gson yok. Bağımlılıklar: Kotlin stdlib, kotlinx-datetime 0.6.1, kotlin-test.
 - **iOS hedefleri bu bilgisayarda derlenemez** (Windows). Ortak kod gerçek iOS hedefinde Codemagic'te derlendi ve simülatör testleri geçti (26.11.2026, eşitlemeden önceki kodla); eşitlenmiş kod için iOS hedefli test çalıştırması yapılmadı, yalnızca uygulamanın derlemesi (aşağıda) ortak kodu iOS framework'ü olarak kullandı.
 
@@ -38,6 +38,10 @@ ios/
   - Mağaza: yeni kart sırası, Sobi kredisi, seri dondurma, yeni ürün kimlikleri.
   - Giriş: yeni açılış ve başlangıç, kayıt soruları, 13 yaş altı veli onayı.
   - Profil: Personas avatar sistemi (`Profil/Avatar/`: `AvatarGorunumu(config:)`, `AvatarDuzenleEkrani`), takip, en uzun seri.
+- **Öğretici (`TutorialFragment`, 34 öğretici, 1270 adım):** motor ve içerik ortak kodda (`shared/.../ogretici/`: oynatıcı durum makinesi, sahne hesabı, abaküs köprüsü; içerik `icerik/OgreticiN.kt`, `ios/tools/ogretici-donustur/donustur.js` ile Android'den üretildi, 34'ü de uyarısız). Adım sayıları, metin/ses/ipucu/kimlik anahtarları, boncuk animasyonları, seçenekler ve doğru şıklar Android kaynağıyla betikle karşılaştırıldı; kullanılan 997 metin anahtarının hepsi `tr.lproj/Localizable.strings`'te var. Her öğretici doğru cevaplarla baştan sona oynanıyor (testli). Ayrıntı: `docs/OGRETICI_PLANI.md`.
+  - **Swift görünümleri (`iosApp/Ogretici/`) yazılıyor ve henüz derlenmedi**; ekranda hiç görülmedi.
+  - **İlk açılış akışı bağlandı** (hesapsız ilk açılış → 1. öğretici → ders → giriş), derlenmedi.
+  - **Ses yok:** 1092 öğretici ses dosyası kopyalanmadı; çalıcı sahte uygulama (`SahteOgreticiSesCalici`).
 - **Hepsi sahte veriyle çalışıyor.** Firebase, StoreKit, reklam, ses ve bildirim izni bağlı değil; her biri bir Swift protokolünün arkasında yer tutucu.
 - **Doğrulanmayanlar:** dokunma/sürükleme hissi ve animasyonlar (yalnızca durağan ekran görüntüsüne bakıldı), gerçek cihaz, küçük ekranlar, Android ile piksel karşılaştırması. Önceki turda kısa ekranlar için abaküs/kör ders ölçeklemesi eklendi; simülatörde yalnızca büyük ekranda görüldü.
 - Yaklaşık kalanlar: kilitli rozet/kupa kartlarının düz gri boyanması ve kademe tonları (SwiftUI karışım kipleriyle), mor ton (Android OVERLAY).
@@ -48,7 +52,7 @@ ios/
 
 Android'de var, iOS'ta yok:
 
-- **Öğretici** (`TutorialFragment`, yaklaşık 17 bin satır). Bu yüzden ilk açılışta uygulama doğrudan haritaya geçiyor ve giriş/kayıt ekranlarına uygulama içinden ulaşılamıyor (yalnızca galeriden görülüyor).
+- **Öğreticide yazılmayanlar:** gerçek ses (mp3'ler ve çalıcı), Sobi düğmesi ve dürtmeleri, ölçüm, öğretici sonu anketi, ipucu paneli, kısa ekran ölçeklemesi (öğretici artık "yazılmayanlar"da değil; durum "Uygulama" bölümünde).
 - Sobi sohbeti.
 - Seri (streak) ekranları ve akışı.
 - Sobi hata analizi penceresi (yaklaşık 3,5 bin satırlık kural motoru).
@@ -202,7 +206,7 @@ Paketler birbirinden bağımsız kopyalandığı için bazıları komşu türler
 | Ne | Neden |
 |---|---|
 | **Sobi sohbeti, hata analizi kural motoru (~3,5 bin satır), kural paneli/kitabı, ders içi rehber, günlük Sobi testi** | Güncel Android'de var; ortak koda yalnızca maskot ve kredi/mağaza ile ilgili kısımları alındı (`LessonEndMascotLogic`, `ShopFragmentLogic`, `BillingCatalog`). Gerisi kopyalanmadı ve Swift'te yazılmadı. |
-| `TutorialFragment.kt` (17 bin satır) | Mantık görünüm ve animasyonla iç içe; kendi içinde kapalı saf kural bulunamadı. Ekranla birlikte ele alınmalı — en büyük tek iş kalemi; henüz yazılmadı. |
+| `TutorialFragment.kt` (17 bin satır) | Taşındı (27.11.2026): içerik (%77) betikle üretilen veri, geçişler saf kural (`ogretici/`); görünüm Swift'te (`iosApp/Ogretici/`, derlenmedi). Atlananlar: Sobi düğmesi/sohbet, ölçüm, anketler, ipucu paneli. |
 | `NotificationFragment.kt`, `QuestionChatFragment.kt`, `CreateQuestionFragment.kt` sorgu/sekme akışları | Yalnızca modeller ve yazım kuralları alındı; akış Firestore dinleyicilerine bağlı. |
 | Yerel önbellek JSON ayrıştırması (ders önbelleği, günlük soru önbelleği) | JSON kütüphanesi eklenmedi. Biçim belgelendi; günlük soru önbelleği arayüze çevrildi. Aşama 2'de kotlinx-serialization eklenirse yazılır. |
 | `LessonProgressDiag.kt` ve diğer `*Diagnostics` dosyaları | Tamamı log; hesap yok. |
@@ -271,9 +275,9 @@ Aşama 2'nin ekran işi yukarıdaki "Durum" bölümündedir. Aşağıda önce ka
 
 ### SwiftUI ekranları
 
-- Yazılmış ekranların listesi ve kalanlar "Durum (27.11.2026)" bölümündedir; sıradaki büyük işler öğretici, Sobi sohbeti/hata analizi ve seri akışıdır.
+- Yazılmış ekranların listesi ve kalanlar "Durum (27.11.2026)" bölümündedir; sıradaki büyük işler öğreticinin ilk derlemesi ve ekranda doğrulanması, Sobi sohbeti/hata analizi ve seri akışıdır.
 - Abaküs ekranı en riskli parça (yazıldı, dokunma hissi cihazda denenmedi): `AbacusBeadController` saf durum makinesi olarak hazır, `AbacusBeadHost` arayüzünü SwiftUI/UIKit tarafı uygular. Sürükleme hissi için UIKit jest tanıyıcıları SwiftUI jestlerinden daha öngörülebilir.
-- `TutorialFragment` (17 bin satır) taşınmadı. Öğreticiler iOS'ta veriyle sürülen bir yapıya (adım listesi + hedef boncuk) çevrilirse hem iOS işi küçülür hem ileride Android sadeleşebilir. Aynen çevirmek haftalar alır.
+- `TutorialFragment` veriyle sürülen yapıya çevrildi (adım listesi + boncuk hareketleri, ortak Kotlin'de; bkz. `docs/OGRETICI_PLANI.md`). Böylece ileride Android da aynı veriyi kullanabilir.
 - Görseller: ortak kod kaynak adlarını String olarak veriyor. Android `res/drawable` içindeki vektörler SVG/PDF'e çevrilip aynı adlarla Asset Catalog'a konursa eşleme tablosu gerekmez.
 - Lottie animasyonları lottie-ios (`lottie-spm` paketi) ile bağlandı; `iosApp/Lottie/` altında 43 dosya var. Ders sonu rastgele Lottie'leri güncel Android'de kalktığı için silindi; kristal ekranı da silindi.
 - Metinler: şu an Android `strings.xml`'den üretilen `tr.lproj` (3609 anahtar) kullanılıyor; `Localizable.xcstrings`'e geçilmedi. Dil sırası planı (İngilizce → Endonezce) burada da geçerli; ortak kodda Türkçe sabit metinler var (rozet açıklamaları, kupa motivasyon metinleri), çeviri öncesi bunların anahtarlara taşınması gerekir.

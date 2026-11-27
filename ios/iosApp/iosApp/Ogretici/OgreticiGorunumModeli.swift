@@ -283,6 +283,12 @@ final class OgreticiGorunumModeli: ObservableObject {
         }
     }
 
+    /// Başlangıçtan şu anki adıma kadar biriken yerlesim değişiklikleri (görsel alanı kullanır).
+    func birikmisYerlesimler() -> [String] {
+        guard let k = kopru else { return [] }
+        return k.yerlesimlerAdimaKadar()
+    }
+
     // MARK: Daktilo (Android showTextWithTypewriter)
 
     private func daktiloyuBaslat(_ veri: OgreticiAdimVerisi) {
