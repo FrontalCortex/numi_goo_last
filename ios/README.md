@@ -15,7 +15,7 @@ ios/
 - `iosApp/`: 100'den fazla Swift dosyası, ekran başına bir klasör. Codemagic'te (6. derleme, commit `5ef439c`) **0 hata ile derlendi** ve 29 ekranın simülatör görüntüsü alındı.
 - Yazılan ekranlar: kabuk (üst çubuk + 6 sekme), harita (kısım seçimi, ders listesi, alt panel), abaküs dersi, kör ders, ders sonucu, sandık, kristal, görevler, günlük soru, kupa yolu, kupa geçmişi, lider tablosu, rozetler, özelleştirme, mağaza, giriş/kayıt, profil. `Yonetim/` bunları birbirine bağlar.
 - Ortak koda eklenenler (Fragment içinde kalmış kurallar ve Swift için köprüler) ile birlikte: **JVM 845 test, Kotlin/Native 842 test, 0 hata.**
-- **Hepsi sahte veriyle çalışıyor.** Firebase, StoreKit, reklam, ses, Lottie ve video bağlı değil; her biri bir Swift protokolünün arkasında yer tutucu.
+- **Hepsi sahte veriyle çalışıyor.** Firebase, StoreKit, reklam ve ses bağlı değil; her biri bir Swift protokolünün arkasında yer tutucu.
 - Yazılmayanlar: öğretici (`TutorialFragment`), bildirimler/öğretmene soru, ders sonu soru özeti, yarış paneli, plan karşılaştırma, rozet kutlaması.
 - Doğrulanmayanlar: dokunma/sürükleme hissi ve animasyonlar (yalnızca durağan ekran görüntüsüne bakıldı), gerçek cihaz, küçük ekranlar, Android ile piksel karşılaştırması.
 - **İkinci tur (7. derleme, commit `50dd1f7`, 0 hata, 30 ekran görüntüsü):** her ekran Android layout'una karşı denetlendi ve düzeltildi. Lottie bağlandı (`lottie-ios` 4.6.1, `Ortak/LottieGorunumu.swift`, `iosApp/Lottie/` altında 54 dosya); kristal için video oynatıcı yazıldı ama `crystal_*.mp4` dosyaları depoda yok (`iosApp/Videolar/` altına konunca çalışır). Kısa ekranlar için abaküs/kör ders ölçeklemesi eklendi (simülatörde yalnızca büyük ekranda görüldü).
