@@ -8,30 +8,30 @@ Bu klasör, Android uygulamasından **tamamen bağımsız** bir Gradle projesidi
 ios/
   shared/   Kotlin Multiplatform; Android mantığının kopyası (Aşama 1)
   iosApp/   SwiftUI ekranları (Aşama 2 — sürüyor; kurallar: iosApp/GELISTIRME.md)
-  docs/     Shared.h (ortak kodun Swift'e görünen adları, 9. Codemagic derlemesinden) ve Android fark belgeleri
+  docs/     Shared.h (ortak kodun Swift'e görünen adları, 13. Codemagic derlemesinden) ve Android fark belgeleri
   tools/    Android kaynağından katalog/altın veri üreten betikler
 ```
 
-## Durum (27.11.2026)
+## Durum (28.11.2026)
 
 ### Ortak kod (`shared/`)
 
-- 138 Kotlin kaynak dosyası (yaklaşık 46,7 bin satır; bunun yaklaşık 16,3 bin satırı üretilmiş öğretici içeriği, `ogretici/icerik/`), yaklaşık 21,3 bin satır test.
-- **JVM'de 950 test, Kotlin/Native (mingwX64) 945 test, ikisinde de 0 hata** (27.11.2026, öğretici içeriği üretildikten sonra tam çalıştırma; sayılar `shared/build/test-results/<hedef>/*.xml` dosyalarından toplandı). JVM'deki 5 fazlalık yalnızca JVM'de koşan testlerden (`java.util.Random` karşılaştırması, avatar paketi dosyası vb.) gelir.
+- 147 Kotlin dosyası `commonMain` içinde, testlerle birlikte `shared/src` altında toplam 211 (toplam yaklaşık 70,5 bin satır; bunun yaklaşık 16,3 bin satırı üretilmiş öğretici içeriği, `ogretici/icerik/`).
+- **JVM'de 987 test, Kotlin/Native (mingwX64) 982 test, ikisinde de 0 hata** (sayılar `shared/build/test-results/<hedef>/*.xml` dosyalarından toplandı; seri paketi `seri/` eklendikten sonraki çalıştırma). JVM'deki 5 fazlalık yalnızca JVM'de koşan testlerden (`java.util.Random` karşılaştırması, avatar paketi dosyası vb.) gelir.
 - `commonMain` içinde `java.*`, `android.*`, Firebase, Gson yok. Bağımlılıklar: Kotlin stdlib, kotlinx-datetime 0.6.1, kotlin-test.
 - **iOS hedefleri bu bilgisayarda derlenemez** (Windows). Ortak kod gerçek iOS hedefinde Codemagic'te derlendi ve simülatör testleri geçti (26.11.2026, eşitlemeden önceki kodla); eşitlenmiş kod için iOS hedefli test çalıştırması yapılmadı, yalnızca uygulamanın derlemesi (aşağıda) ortak kodu iOS framework'ü olarak kullandı.
 
 ### Uygulama (`iosApp/`)
 
-- 134 Swift dosyası, ekran başına bir klasör (`Abakus/`, `Giris/`, `Gorevler/`, `GunlukSoru/`, `Harita/`, `Kabuk/`, `KorDers/`, `Kupa/`, `Magaza/`, `Maskot/`, `Ortak/`, `Ozellestirme/`, `Profil/`, `Sandik/`, `Sonuc/`, `Tema/`, `Yonetim/`). `Yonetim/` ekranları birbirine bağlar.
+- 159 Swift dosyası, ekran başına bir klasör (`Abakus/`, `Giris/`, `Gorevler/`, `GunlukSoru/`, `Harita/`, `Kabuk/`, `KorDers/`, `Kupa/`, `Magaza/`, `Maskot/`, `Ogretici/`, `Ortak/`, `Ozellestirme/`, `Profil/`, `Sandik/`, `Seri/`, `Sonuc/`, `Tema/`, `Yonetim/`). `Yonetim/` ekranları birbirine bağlar.
 - Kaynaklar (güncel Android'den): metinler 3609 anahtar (yalnızca `tr.lproj`; araç en/id/ar da üretebilir), 271 görsel, 92 renk, uygulama simgesi (`design/sobi_ikon_kaynak.png`'den 1024), 43 Lottie dosyası.
-- **Derleme durumu:** 9. Codemagic derlemesi (commit `5f51bce`) **0 hata ile derlendi**, simülatör görüntüleri alındı. İkinci ekran turu (commit `e0a2fb6`) 10. derlemede; **sonucu bu belge yazılırken bilinmiyordu**, yani ikinci turun derlendiği ve çalıştığı doğrulanmadı.
+- **Derleme durumu:** son doğrulanan derleme 13. (commit `d845d05`): **0 hata ile derlendi**, 69 simülatör ekran görüntüsü alındı. 12. derleme (commit `b2e1d49`) öğreticinin tamamını 0 hata ile derledi. Yani ikinci tur, öğretici ve seri derlendi ve ekran görüntüsünde göründü; animasyon, dokunma, ses ve gerçek cihaz hâlâ denenmedi.
 - **İlk tur (9. derleme, doğrulandı: derlendi, görüntüler alındı):**
   - Harita: ders kartları, karta bağlı panel, anahtarla kilit açma.
   - Kabuk: yeni sekmeler, üst çubukta seri göstergesi.
   - `Maskot/`: Android `BunnyMascotView`'ın 48 hâli SwiftUI `Canvas` ile çizildi (`SobiMaskotGorunumu(emote:animasyonlu:)`).
   - Sonuç: maskot sahnesi, göçen düğme (`Ortak/GocenDugmeStili`). Sandık güncellendi. Kristal ekranı ve ders sonundaki rastgele Lottie'ler silindi.
-- **İkinci tur (commit `e0a2fb6`, derleme sonucu bilinmiyor, ekranda görülmedi):**
+- **İkinci tur (commit `e0a2fb6`, sonraki derlemelerde derlendi; durağan görüntüler alındı):**
   - Abaküs ve kör ders: sayı kartı, göçen düğmeler, abaküs ayar paneli; "Sobi ile analiz et" girişi yer tutucuya gider.
   - Görevler sekmesi tek ekran (görevler + günlük soru + abaküs kartı).
   - Kupa: sunucu taraflı puan, `KupaYoluOdulEkrani`, sandıklı kartlar.
@@ -39,22 +39,30 @@ ios/
   - Giriş: yeni açılış ve başlangıç, kayıt soruları, 13 yaş altı veli onayı.
   - Profil: Personas avatar sistemi (`Profil/Avatar/`: `AvatarGorunumu(config:)`, `AvatarDuzenleEkrani`), takip, en uzun seri.
 - **Öğretici (`TutorialFragment`, 34 öğretici, 1270 adım):** motor ve içerik ortak kodda (`shared/.../ogretici/`: oynatıcı durum makinesi, sahne hesabı, abaküs köprüsü; içerik `icerik/OgreticiN.kt`, `ios/tools/ogretici-donustur/donustur.js` ile Android'den üretildi, 34'ü de uyarısız). Adım sayıları, metin/ses/ipucu/kimlik anahtarları, boncuk animasyonları, seçenekler ve doğru şıklar Android kaynağıyla betikle karşılaştırıldı; kullanılan 997 metin anahtarının hepsi `tr.lproj/Localizable.strings`'te var. Her öğretici doğru cevaplarla baştan sona oynanıyor (testli). Ayrıntı: `docs/OGRETICI_PLANI.md`.
-  - **Swift görünümleri (`iosApp/Ogretici/`) yazılıyor ve henüz derlenmedi**; ekranda hiç görülmedi.
-  - **İlk açılış akışı bağlandı** (hesapsız ilk açılış → 1. öğretici → ders → giriş), derlenmedi.
-  - **Ses yok:** 1092 öğretici ses dosyası kopyalanmadı; çalıcı sahte uygulama (`SahteOgreticiSesCalici`).
-- **Hepsi sahte veriyle çalışıyor.** Firebase, StoreKit, reklam, ses ve bildirim izni bağlı değil; her biri bir Swift protokolünün arkasında yer tutucu.
+  - **Swift görünümleri (`iosApp/Ogretici/`) 12. derlemede (commit `b2e1d49`) 0 hata ile derlendi:** 34 öğreticinin tamamı (1270 adım), seçenek paneli, 7 kural tablosu ve kör ders görselleri; simülatör görüntüleri alındı. 24. öğreticide metin–görsel hizası düzeltildi (commit `137b656`) ve 13. derlemede görüntüyle doğrulandı.
+  - **İlk açılış** artık 1. öğreticiyle başlıyor (hesapsız ilk açılış → 1. öğretici → ders → giriş).
+  - **Ses:** gerçek çalıcı yazıldı (`Ogretici/OgreticiSesCalar.swift`, `AVAudioPlayer`, `.playback` + `.mixWithOthers`); `iosApp/Sesler/Ogretici/` altında 854 dosya (yaklaşık 45 MB, Android `res/raw` kopyası). **Ses hiç çalınıp dinlenmedi.**
+- **Seri (streak, 13. derlemede derlendi, 0 hata, ekran görüntüleri alındı):**
+  - Ortak kod `shared/.../seri/`: Android `StreakRepository`, `StudyTimeTracker`, `StreakFreezeRules`, `StreakMilestones` ve sunucu senkron kurallarının (`StreakSync.kt`) kopyası.
+  - `iosApp/Seri/` ekranları: seri ekranı, yeni seri, kutlama şeridi, hedef ve hatırlatma pencereleri.
+  - Bağlantılar: üst çubuk, ders sonrası akış, kayıt cevapları, mağazada seri dondurma, profilde en uzun seri.
+  - Sahte servis (`SahteSeriServisi`) ortak kurallarla çalışıyor; depolama bellekte, uygulama kapanınca gider.
+  - İlerleme çubuğu etiketleri iOS'ta beyaz yazı + koyu gölge; Android'de gölgesiz beyaz (bilinçli sapma, okunurluk).
+  - **Eksikler:** boşta kalma sınırı işlemiyor; sahte serviste ders kapanınca +300 sn ekleniyor; bildirim/hatırlatma gerçek değil (sunucuda `sendStreakReminders` FCM ile gönderir, iOS için APNs gerekecek); maskot alevi güne göre büyümüyor.
+- **Hepsi sahte veriyle çalışıyor.** Firebase, StoreKit, reklam ve bildirim izni bağlı değil (ses yalnızca öğreticide gerçek); her biri bir Swift protokolünün arkasında yer tutucu.
 - **Doğrulanmayanlar:** dokunma/sürükleme hissi ve animasyonlar (yalnızca durağan ekran görüntüsüne bakıldı), gerçek cihaz, küçük ekranlar, Android ile piksel karşılaştırması. Önceki turda kısa ekranlar için abaküs/kör ders ölçeklemesi eklendi; simülatörde yalnızca büyük ekranda görüldü.
 - Yaklaşık kalanlar: kilitli rozet/kupa kartlarının düz gri boyanması ve kademe tonları (SwiftUI karışım kipleriyle), mor ton (Android OVERLAY).
-- **Ekran galerisi:** uygulama `-ekran <ad>` argümanıyla açılırsa o ekranı örnek veriyle gösterir (`Yonetim/EkranGalerisi.swift`). Codemagic her derlemede 48 adın hepsinin görüntüsünü çıktı olarak bırakır (`codemagic.yaml` içindeki liste galeriyle aynı tutulmalı).
+- **Ekran galerisi:** uygulama `-ekran <ad>` argümanıyla açılırsa o ekranı örnek veriyle gösterir (`Yonetim/EkranGalerisi.swift`). Codemagic her derlemede 69 adın hepsinin görüntüsünü çıktı olarak bırakır (`codemagic.yaml` içindeki liste galeriyle aynı tutulmalı).
 - Android'le uyumlu olduğu doğrulanan davranışlar: gri boncuklar Android varsayılanıdır (soroban, `#737373`); Android'de misafir girişi yoktur (yalnızca hesapsız ilk öğretici); hesap silme iki platformda da Profili Düzenle'dedir.
 
 ### Henüz yazılmayanlar
 
 Android'de var, iOS'ta yok:
 
-- **Öğreticide yazılmayanlar:** gerçek ses (mp3'ler ve çalıcı), Sobi düğmesi ve dürtmeleri, ölçüm, öğretici sonu anketi, ipucu paneli, kısa ekran ölçeklemesi (öğretici artık "yazılmayanlar"da değil; durum "Uygulama" bölümünde).
+- **Öğreticide yazılmayanlar:** Sobi düğmesi ve dürtmeleri, ölçüm, öğretici sonu anketi, ipucu paneli, kısa ekran ölçeklemesi (öğretici ve seri artık buradan çıktı; durumları "Uygulama" bölümünde).
+- **Uygulamanın diğer ses efektleri:** boncuk tık, sandık, rozet, ders sonucu sesleri; protokolleri var, gerçek çalıcı yok.
+- **Ses ayarı düğmeleri:** Android `tutorial_sound_enabled` / `sound_enabled`; iOS değeri okuyor ama ayar ekranında satır yok.
 - Sobi sohbeti.
-- Seri (streak) ekranları ve akışı.
 - Sobi hata analizi penceresi (yaklaşık 3,5 bin satırlık kural motoru).
 - Kural paneli / kural kitabı.
 - Ders içi Sobi rehberi.
@@ -68,7 +76,9 @@ Android'de var, iOS'ta yok:
 
 ### Hâlâ sahte olanlar
 
-Firebase (giriş, Firestore, Cloud Functions), StoreKit, reklam, ses, bildirim izni. Hepsi protokol + `Sahte…` uygulaması olarak duruyor; gerçek bağlantı için bkz. "Verilen kararlar".
+Firebase (giriş, Firestore, Cloud Functions), StoreKit, reklam, bildirim izni (ses yalnızca öğreticide gerçek). Hepsi protokol + `Sahte…` uygulaması olarak duruyor; gerçek bağlantı için bkz. "Verilen kararlar".
+
+**Firebase bağlanınca seri için gereken sözleşme** (sunucu zaten var, `functions/` değişmez): Firestore'da `users/{uid}/streak/state` belgesi okunur; yazım Cloud Function'larla yapılır: `submitStreakDay` (günleri gönderir, güncel durumu döndürür), `buyStreakFreeze` (seri dondurma satın alma), `claimStreakReward` (kilometre taşı ya da meydan okuma ödülü). İstek/yanıt alanlarının ayrıntısı `shared/src/commonMain/kotlin/com/sorobit/shared/seri/StreakSync.kt` başlığında. Hatırlatma bildirimi için sunucudaki `sendStreakReminders` FCM kullanıyor; iOS'ta APNs ayrıca kurulmalı.
 
 ### Ortak kodda eski kalan değerler
 
@@ -206,7 +216,7 @@ Paketler birbirinden bağımsız kopyalandığı için bazıları komşu türler
 | Ne | Neden |
 |---|---|
 | **Sobi sohbeti, hata analizi kural motoru (~3,5 bin satır), kural paneli/kitabı, ders içi rehber, günlük Sobi testi** | Güncel Android'de var; ortak koda yalnızca maskot ve kredi/mağaza ile ilgili kısımları alındı (`LessonEndMascotLogic`, `ShopFragmentLogic`, `BillingCatalog`). Gerisi kopyalanmadı ve Swift'te yazılmadı. |
-| `TutorialFragment.kt` (17 bin satır) | Taşındı (27.11.2026): içerik (%77) betikle üretilen veri, geçişler saf kural (`ogretici/`); görünüm Swift'te (`iosApp/Ogretici/`, derlenmedi). Atlananlar: Sobi düğmesi/sohbet, ölçüm, anketler, ipucu paneli. |
+| `TutorialFragment.kt` (17 bin satır) | Taşındı (27.11.2026): içerik (%77) betikle üretilen veri, geçişler saf kural (`ogretici/`); görünüm Swift'te (`iosApp/Ogretici/`, 12. derlemede derlendi). Atlananlar: Sobi düğmesi/sohbet, ölçüm, anketler, ipucu paneli. |
 | `NotificationFragment.kt`, `QuestionChatFragment.kt`, `CreateQuestionFragment.kt` sorgu/sekme akışları | Yalnızca modeller ve yazım kuralları alındı; akış Firestore dinleyicilerine bağlı. |
 | Yerel önbellek JSON ayrıştırması (ders önbelleği, günlük soru önbelleği) | JSON kütüphanesi eklenmedi. Biçim belgelendi; günlük soru önbelleği arayüze çevrildi. Aşama 2'de kotlinx-serialization eklenirse yazılır. |
 | `LessonProgressDiag.kt` ve diğer `*Diagnostics` dosyaları | Tamamı log; hesap yok. |
@@ -275,7 +285,7 @@ Aşama 2'nin ekran işi yukarıdaki "Durum" bölümündedir. Aşağıda önce ka
 
 ### SwiftUI ekranları
 
-- Yazılmış ekranların listesi ve kalanlar "Durum (27.11.2026)" bölümündedir; sıradaki büyük işler öğreticinin ilk derlemesi ve ekranda doğrulanması, Sobi sohbeti/hata analizi ve seri akışıdır.
+- Yazılmış ekranların listesi ve kalanlar "Durum (27.11.2026)" bölümündedir; sıradaki büyük işler öğretici ve serinin ses/animasyon/dokunma doğrulaması (gerçek cihazda), diğer ses efektleri ve Sobi sohbeti/hata analizidir.
 - Abaküs ekranı en riskli parça (yazıldı, dokunma hissi cihazda denenmedi): `AbacusBeadController` saf durum makinesi olarak hazır, `AbacusBeadHost` arayüzünü SwiftUI/UIKit tarafı uygular. Sürükleme hissi için UIKit jest tanıyıcıları SwiftUI jestlerinden daha öngörülebilir.
 - `TutorialFragment` veriyle sürülen yapıya çevrildi (adım listesi + boncuk hareketleri, ortak Kotlin'de; bkz. `docs/OGRETICI_PLANI.md`). Böylece ileride Android da aynı veriyi kullanabilir.
 - Görseller: ortak kod kaynak adlarını String olarak veriyor. Android `res/drawable` içindeki vektörler SVG/PDF'e çevrilip aynı adlarla Asset Catalog'a konursa eşleme tablosu gerekmez.
@@ -285,9 +295,9 @@ Aşama 2'nin ekran işi yukarıdaki "Durum" bölümündedir. Aşağıda önce ka
 
 ### Codemagic
 
-**Durum (27.11.2026):** depo kökündeki `codemagic.yaml` içinde iki iş akışı var. İlki `ios-shared-test`: ilk çalıştırması (26.11.2026, commit `d90149c`, Mac mini M2, 10 dk 4 sn) yeşil bitti; ortak kod gerçek iOS hedefinde derlendi, simülatör testleri geçti, cihaz framework'ü bağlandı. Webhook 26.11.2026'da henüz eklenmemişti; sonrası doğrulanmadı, derlemeler elle başlatılıyordu. Yaptıkları: JVM testleri → `:shared:iosSimulatorArm64Test` → `:shared:linkDebugFrameworkIosArm64`. İmzalama ve Apple hesabı gerektirmez. `claude/sorobit-ios-*` dallarına push'ta, yalnızca `ios/` ya da `codemagic.yaml` değişmişse tetiklenir.
+**Durum (28.11.2026):** depo kökündeki `codemagic.yaml` içinde iki iş akışı var. İlki `ios-shared-test`: ilk çalıştırması (26.11.2026, commit `d90149c`, Mac mini M2, 10 dk 4 sn) yeşil bitti; ortak kod gerçek iOS hedefinde derlendi, simülatör testleri geçti, cihaz framework'ü bağlandı. Webhook 26.11.2026'da henüz eklenmemişti; sonrası doğrulanmadı, derlemeler elle başlatılıyordu. Yaptıkları: JVM testleri → `:shared:iosSimulatorArm64Test` → `:shared:linkDebugFrameworkIosArm64`. İmzalama ve Apple hesabı gerektirmez. `claude/sorobit-ios-*` dallarına push'ta, yalnızca `ios/` ya da `codemagic.yaml` değişmişse tetiklenir.
 
-İkinci iş akışı `ios-app-build` (yalnızca elle başlatılır): `ios/iosApp/project.yml` dosyasından XcodeGen ile Xcode projesini üretir, uygulamayı imzasız olarak simülatör için derler, simülatörde açıp açılış ekranının görüntüsünü (`ekran.png`) ve `-ekran <ad>` ile açılan 48 galeri ekranının görüntülerini (`ekranlar/*.png`) derleme çıktısı olarak bırakır. Paket kimliği `com.sorobit.app` geçicidir. İlk çalıştırma (26.11.2026, commit `12d631e`, o zaman tek ekranlı iskelet) ilk denemede geçti; derleme 3 dk 16 sn sürdü. Son doğrulanmış çalıştırma 9. derleme (commit `5f51bce`, 0 hata); 10. derlemenin (commit `e0a2fb6`) sonucu bilinmiyor. Simülatörün ilk açılışı ~3 dakika sürüyor, 48 görüntü için galeri adımı da uzun sürer. Önbellek iki iş akışından da çıkarıldı: kapanışta yüklenmesi 5 dakikadan uzun sürüyordu.
+İkinci iş akışı `ios-app-build` (yalnızca elle başlatılır): `ios/iosApp/project.yml` dosyasından XcodeGen ile Xcode projesini üretir, uygulamayı imzasız olarak simülatör için derler, simülatörde açıp açılış ekranının görüntüsünü (`ekran.png`) ve `-ekran <ad>` ile açılan 69 galeri ekranının görüntülerini (`ekranlar/*.png`) derleme çıktısı olarak bırakır (ad sayısı `codemagic.yaml` içindeki `for AD in` döngüsünden sayıldı). Paket kimliği `com.sorobit.app` geçicidir. İlk çalıştırma (26.11.2026, commit `12d631e`, o zaman tek ekranlı iskelet) ilk denemede geçti; derleme 3 dk 16 sn sürdü. Son doğrulanmış çalıştırma 13. derleme (commit `d845d05`, 0 hata, 69 ekran görüntüsü). Simülatörün ilk açılışı ~3 dakika sürüyor, galeri adımı da ad başına 5 sn beklediği için uzun sürer. Önbellek iki iş akışından da çıkarıldı: kapanışta yüklenmesi 5 dakikadan uzun sürüyordu.
 
 Kurulum (bir kez, hesap sahibi yapar):
 
@@ -298,7 +308,7 @@ Kurulum (bir kez, hesap sahibi yapar):
 
 - Mac olmadığı için derleme, imzalama ve TestFlight yüklemesi Codemagic'te yapılır. Ücretsiz katman ayda 500 dakika macOS M2 verir; bir iOS derlemesi 10–20 dakika sürer.
 - İş akışı: `ios/` içinde `./gradlew :shared:assembleSharedXCFramework` (ya da Xcode derleme aşamasında `embedAndSignAppleFrameworkForXcode`) → `xcodebuild` → TestFlight.
-- `ios-shared-test` bu iş için kuruldu (Aşama 1 kodu iOS hedefinde derlendi, o günkü testler geçti). Eşitlenmiş koddaki 926 testin iOS hedefinde geçtiği henüz gösterilmedi.
+- `ios-shared-test` bu iş için kuruldu (Aşama 1 kodu iOS hedefinde derlendi, o günkü testler geçti). Güncel koddaki testlerin (JVM 987) iOS hedefinde geçtiği henüz gösterilmedi.
 - İmzalama için App Store Connect API anahtarı Codemagic'e girilir (otomatik imzalama); sertifikayı elle üretmek için Mac gerekmez.
 - Tetikleyici yalnızca `ios/**` değişikliklerine bağlanmalı ki Android commit'leri dakika harcamasın.
 - Mac olmadan Xcode proje dosyasını elle yazmak hataya açık; proje XcodeGen (`project.yml`) ile tanımlanıp Codemagic'te üretilirse Windows'tan yönetilebilir.

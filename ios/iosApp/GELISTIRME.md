@@ -73,7 +73,7 @@ Görsellerin listesi: `ios/iosApp/iosApp/Assets.xcassets/Gorseller/`. Olmayan bi
 
 ## Kotlin → Swift adlandırma
 
-Ortak kodun Swift'e nasıl göründüğünün kesin kaynağı üretilen başlık dosyasıdır: **`ios/docs/Shared.h`** (Codemagic çıktısından alınır; son güncelleme 9. derlemeden, yani 27.11.2026 eşitlemesinden sonra eklenen ortak kod adları orada olmayabilir; varsa işi bitirmeden önce kullandığınız her adı orada `grep` ile doğrulayın). Genel kurallar:
+Ortak kodun Swift'e nasıl göründüğünün kesin kaynağı üretilen başlık dosyasıdır: **`ios/docs/Shared.h`** (Codemagic çıktısından alınır; son güncelleme 13. derlemeden; sonradan eklenen ortak kod adları orada olmayabilir, işi bitirmeden önce kullandığınız her adı orada `grep` ile doğrulayın). Genel kurallar:
 
 - `object X` → `X.shared`; `companion object` üyeleri → `X.companion.uye`.
 - `Int` → `Int32`, `Long` → `Int64`, `Float` → `Float`, `Double` → `Double`, `Boolean` → `Bool`.

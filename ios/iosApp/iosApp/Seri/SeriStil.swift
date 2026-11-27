@@ -111,6 +111,9 @@ struct SeriIlerlemeCubugu: View {
             Text(yazi)
                 .font(Tema.yazi(13))
                 .foregroundColor(Color.white)
+                // Android'den bilinçli sapma (okunurluk): Android'de etiket gölgesiz beyaz;
+                // iOS'ta turuncu dolgu ve parlama şeridi üstünde okunmadığı için koyu gölge var.
+                .shadow(color: Color.black.opacity(0.9), radius: 2, x: 0, y: 1)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(width: genislik, height: boy, alignment: .center)

@@ -6,9 +6,9 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSValue.h>
 
-@class SharedAbacusBead, SharedAbacusBeadController, SharedAbacusBeadMetrics, SharedAbacusBeadMetricsMoveDistancesPx, SharedAbacusBeadMetricsRodMeasurement, SharedAbacusBeadRenderer, SharedAbacusBeadRendererBeadRenderKind, SharedAbacusBeadRendererSoroban2Geometry, SharedAbacusCupRepository, SharedAbacusCustomizationFirestore, SharedAbacusCustomizationRules, SharedAbacusCustomizationRulesPlaceResult, SharedAbacusCustomizationSnapshot, SharedAbacusCustomizationUiLogic, SharedAbacusCustomizationUiLogicBeadCard, SharedAbacusCustomizationUiLogicBeadCardState, SharedAbacusCustomizationUiLogicBeadPaint, SharedAbacusCustomizationUiLogicColorRow, SharedAbacusCustomizationUiLogicFrameCard, SharedAbacusCustomizationUiLogicFrameCardState, SharedAbacusCustomizationUiLogicFrameLayer, SharedAbacusCustomizationUiLogicFramePaint, SharedAbacusCustomizationUiLogicPillGeometry, SharedAbacusCustomizationUiLogicPlaceOutcome, SharedAbacusCustomizationUiLogicPurchaseCheck, SharedAbacusCustomizationUiLogicPurchasePanelRules, SharedAbacusCustomizationUiLogicSlotBead, SharedAbacusCustomizationUiLogicSlotPanelState, SharedAbacusFrameRenderer, SharedAbacusFrameRendererRoundRectLayer, SharedAbacusLessonOutcome, SharedAbacusLessonRules, SharedAbacusLessonSessionControlResult, SharedAbacusLessonSessionControlResultAnswered, SharedAbacusLessonSessionControlResultIgnored, SharedAbacusLessonSessionControlResultOffline, SharedAbacusOperation, SharedAbacusPracticeLogic, SharedAbacusPracticeLogicKontrolResult, SharedAbacusPreferences, SharedAbacusPreferencesBeadColorSpec, SharedAbacusPreferencesBeadType, SharedAbacusPreferencesFrameType, SharedAbacusPreviewMetrics, SharedAbacusSoundPlayer, SharedAbacusTouchAction, SharedAbacusUiSettings, SharedAbakusBoncukKoprusu, SharedAbakusDersAkisi, SharedAbakusDersBitisi, SharedAbakusDersGirdisi, SharedAbakusDersKoprusu, SharedAbakusKontrolSonucu, SharedAbakusKontrolSonucuCompanion, SharedAbakusSoruListesi, SharedAccountDeletionRules, SharedAccountSettingsRules, SharedAdRules, SharedAdRulesAdSkipPolicyCompanion, SharedAgeConsentManager, SharedAgeConsentManagerAdRequestTags, SharedAgeConsentManagerAgeTreatment, SharedAnimatedQuest, SharedAppRatingManagerCompanion, SharedAuthRules, SharedAuthRulesGoogleLoginFailureAction, SharedAuthRulesPendingRegistration, SharedAuthRulesStudentEmailFlow, SharedAvatarConfig, SharedAvatarConfigCompanion, SharedAvatarParts, SharedAvatarPartsCompanion, SharedAvatarRect, SharedAvatarRules, SharedAvatarStyle, SharedAvatarStyleCompanion, SharedAvatarTab, SharedAvatarTabCompanion, SharedBadgeAnimMode, SharedBadgeDetailLogic, SharedBadgeDetailLogicBadgeDetailUiState, SharedBadgeDetailLogicBadgeRenderConfig, SharedBadgeFragmentLogic, SharedBadgeFragmentLogicCelebrationQueueItem, SharedBadgeFragmentLogicLevelUpAnimConfig, SharedBadgeFragmentLogicLevelUpCelebrationPlan, SharedBadgeFragmentLogicPieceCountBadge, SharedBadgeFragmentLogicProgressUi, SharedBadgeIncrementTransactionResult, SharedBadgeKind, SharedBadgeKindCompanion, SharedBadgeLevelTone, SharedBadgeLevelUpPayload, SharedBadgePieceLeaderboardSync, SharedBadgePrecalcHelper, SharedBadgeProgressEngine, SharedBadgeProgressFirestore, SharedBadgeProgressRepository, SharedBadgeProgressWindow, SharedBadgeState, SharedBeadAnimationCompanion, SharedBeadAnimationPlan, SharedBeadData, SharedBeadMoveDistances, SharedBeadPurchaseFirestore, SharedBeadsBehavior, SharedBellekIciGunlukSoruDeposu, SharedBillingCatalog, SharedBlindingAdditionCupRepository, SharedBlindingExtractionCupRepository, SharedBlindingImpactCupRepository, SharedBlindingLessonFlags, SharedBlindingLessonOutcome, SharedBlindingLessonRules, SharedBlindingLessonRulesResultFalseAction, SharedBlindingOperation, SharedBlindingOperationMath, SharedBlindingOperationOther, SharedBlindingOperationSequence, SharedBlindingSequencePlaybackStep, SharedBlindingSequencePlaybackTimer, SharedBlindingWrongAnswerNext, SharedChestCrystalPolicy, SharedChestFragmentLogic, SharedChestFragmentLogicCupIconChange, SharedChestFragmentLogicMapProgressResult, SharedChestFragmentLogicPendingLessonProgressAnimation, SharedChestFragmentLogicSuccessRateEvent, SharedChestFragmentLogicSuccessRateEventItemFirstFinish, SharedChestFragmentLogicSuccessRateEventPass, SharedChestIcons, SharedChestRarity, SharedChestRarityCompanion, SharedChestResultLogic, SharedChestResultLogicReplayResult, SharedChestResultLogic_, SharedChestRewardDisplay, SharedChestRewardOutcome, SharedChestRewardType, SharedChestStepIndicator, SharedChestTapAction, SharedChestTapResult, SharedChestTypeProgressHelper, SharedChestTypeProgressHelper_, SharedCrystalBreakLogic, SharedCrystalRarityBehavior, SharedCrystalRarityTier, SharedCrystalTapAction, SharedCrystalTapResult, SharedCrystalTickResult, SharedCupBadgeSyncResult, SharedCupDeltaPrecalc, SharedCupDeltaTarget, SharedCupFetchResult, SharedCupFragmentLogic, SharedCupHistoryLogic, SharedCupHistoryLogicRangeTab, SharedCupHistoryRepository, SharedCupIconChange, SharedCupLessonLaunch, SharedCupMathOperation, SharedCupPathCard, SharedCupPathKind, SharedCupPathLogic, SharedCupPathRewardRepository, SharedCupPathRewardRepositoryCupPathState, SharedCupPathRewardRepositoryMilestone, SharedCupPathRewardRepositoryMilestoneStatus, SharedCupPieceRow, SharedCupRuleEngine, SharedCupRuleEngineBlindingMultiplicationConfig, SharedCupRuleEngineCupLessonItemOverride, SharedCupRuleEngineCupRange, SharedCupRuleEngineDigitConfig, SharedCupRuleEngineMultiplicationConfig, SharedCupScoreRepositorySpec, SharedCupScoreService, SharedCupScoreServiceCupScoreResult, SharedCupTier, SharedCupUpdateResult, SharedDailyQuestionBrokenHeartAction, SharedDailyQuestionBrokenHeartStore, SharedDailyQuestionBrokenHeartStoreCompanion, SharedDailyQuestionCardClickAction, SharedDailyQuestionCardLogic, SharedDailyQuestionCardProgressAnimStore, SharedDailyQuestionCardProgressAnimStoreCompanion, SharedDailyQuestionCardUiState, SharedDailyQuestionChallenge, SharedDailyQuestionChallengeClickAction, SharedDailyQuestionPeriod, SharedDailyQuestionPoolBuilder, SharedDailyQuestionPoolBuilderCompanion, SharedDailyQuestionProgressPlan, SharedDailyQuestionRepository, SharedDailyQuestionSlot, SharedDailyQuestionSource, SharedEditProfileRules, SharedEnergyManagerCompanion, SharedExtractionCupRepository, SharedFcmRules, SharedFcmRulesIncoming, SharedFeedbackGate, SharedFeedbackRules, SharedFirstTutorialShownStoreCompanion, SharedFirstTutorialShownStoreResolution, SharedFishingStreakPeriod, SharedFollowRules, SharedFollowRulesFriendSearchResult, SharedFrameData, SharedFramePurchaseFirestore, SharedFriendSearchRules, SharedGlobalLessonData, SharedGlobalLessonDataChestLessonRef, SharedGlobalLessonDataFirestoreLoadStatus, SharedGlobalLessonDataItemWrite, SharedGlobalLessonDataLeaderboardSubmit, SharedGlobalLessonDataLegacyMigrationPlan, SharedGlobalValues, SharedGorevEkraniDurumu, SharedGuidePanelData, SharedGunlukSoruBaslatma, SharedGunlukSoruCubukGorunumu, SharedGunlukSoruCubukModu, SharedImpactCupRepository, SharedJavaRandom, SharedKorDersAdimi, SharedKorDersAdimiCompanion, SharedKorDersOturumu, SharedKotlinArray<T>, SharedKotlinByteArray, SharedKotlinByteIterator, SharedKotlinEnum<E>, SharedKotlinEnumCompanion, SharedKotlinException, SharedKotlinFloatArray, SharedKotlinFloatIterator, SharedKotlinIntArray, SharedKotlinIntIterator, SharedKotlinNothing, SharedKotlinPair<__covariant A, __covariant B>, SharedKotlinRandom, SharedKotlinRandomDefault, SharedKotlinThrowable, SharedKotlinTriple<__covariant A, __covariant B, __covariant C>, SharedKotlinUnit, SharedKotlinx_datetimeDayOfWeek, SharedKotlinx_datetimeDayOfWeekNames, SharedKotlinx_datetimeDayOfWeekNamesCompanion, SharedKotlinx_datetimeFixedOffsetTimeZone, SharedKotlinx_datetimeFixedOffsetTimeZoneCompanion, SharedKotlinx_datetimeInstant, SharedKotlinx_datetimeInstantCompanion, SharedKotlinx_datetimeLocalDate, SharedKotlinx_datetimeLocalDateCompanion, SharedKotlinx_datetimeLocalDateTime, SharedKotlinx_datetimeLocalDateTimeCompanion, SharedKotlinx_datetimeLocalTime, SharedKotlinx_datetimeLocalTimeCompanion, SharedKotlinx_datetimeMonth, SharedKotlinx_datetimeMonthNames, SharedKotlinx_datetimeMonthNamesCompanion, SharedKotlinx_datetimePadding, SharedKotlinx_datetimeTimeZone, SharedKotlinx_datetimeTimeZoneCompanion, SharedKotlinx_datetimeUtcOffset, SharedKotlinx_datetimeUtcOffsetCompanion, SharedKotlinx_serialization_coreSerialKind, SharedKotlinx_serialization_coreSerializersModule, SharedKupaEkranKoprusu, SharedKupaGecmisNoktasi, SharedKupaGrafikNoktasi, SharedKupaGrafikVerisi, SharedLessonAdapterLogic, SharedLessonAdapterLogicActionButtonDecision, SharedLessonAdapterLogicCardState, SharedLessonAdapterLogicChestCardStars, SharedLessonAdapterLogicChestStarSlot, SharedLessonAdapterLogicChestStarsRow, SharedLessonAdapterLogicLessonBottomSheetState, SharedLessonAdapterLogicLessonStartGlobals, SharedLessonAdapterLogicLessonStartTarget, SharedLessonAdapterLogicPanelState, SharedLessonAdapterLogicProgressAnimationAction, SharedLessonAdapterLogicProgressAnimationDecision, SharedLessonAdapterLogicRaceLessonBottomSheetState, SharedLessonAdapterLogicRaceRowStatus, SharedLessonAdapterLogicStepSegments, SharedLessonDataManager, SharedLessonEndMascotDraw, SharedLessonEndMascotLogic, SharedLessonItem, SharedLessonItemCompanion, SharedLessonLeaderboardRepository, SharedLessonLeaderboardRepositoryLeaderboardEntry, SharedLessonManager, SharedLessonOperations, SharedLessonProgressMerge, SharedLessonResultFalseLogic, SharedLessonResultFalseLogicFailRecord, SharedLessonResultLogic, SharedLessonResultLogicClaimBranch, SharedLessonResultLogicClaimDecision, SharedLessonSuccessRateRepository, SharedLessonSuccessRateRepositoryStateRefs, SharedLessonSuccessRateRepositoryStepWrite, SharedLiderHamKayit, SharedLiderSatirVerisi, SharedLoginFlowTexts, SharedMapFragmentLogic, SharedMapFragmentLogicStickyHeader, SharedMapLayoutLogic, SharedMarathonGuideLogic, SharedMarathonGuideStoreCompanion, SharedMatematikDailyQuestionGenerators, SharedMathOperation, SharedMathOperationGenerator, SharedMathOperation_, SharedMedalPieceRow, SharedMessageReport, SharedMessageReportCompanion, SharedMissionCountdownLabel, SharedMissionCounterType, SharedMissionProgressOverlay, SharedMissionQuestCatalog, SharedMissionQuestData, SharedMissionQuestDefinition, SharedMissionQuestState, SharedMissionUiLogic, SharedMissionWindow, SharedMissionsProgressStore, SharedMissionsProgressStoreCompanion, SharedMissionsProgressStoreSnapshot, SharedNewChestLogic, SharedNewChestLogicCloseRoute, SharedOgreticiAbakusKoprusu, SharedOgreticiAdimi, SharedOgreticiBoncukHareketi, SharedOgreticiEtki, SharedOgreticiEtkiCompanion, SharedOgreticiGorunurluk, SharedOgreticiIcerigi, SharedOgreticiKatalogu, SharedOgreticiKurallari, SharedOgreticiOdakIslemi, SharedOgreticiOynatici, SharedOgreticiRenkliHarf, SharedOgreticiSabit, SharedOgreticiSahnesi, SharedOtpRules, SharedOtpRulesWrongAttemptResult, SharedOyunLessonItemCompanion, SharedOyunLessonItemData, SharedPartSelectionLogic, SharedPartState, SharedPendingUploadMeta, SharedPlanStatus, SharedProfileBadgeRenderConfig, SharedProfileBadgeSlotUi, SharedProfileCupCard, SharedProfileFragmentLogic, SharedProfileHeaderColors, SharedQuestionMessage, SharedQuestionMessageCompanion, SharedRarityTheme, SharedRastgeleKaynagi, SharedRatingPromptDecision, SharedRecordLogic, SharedRecordLogicLeaderboardSections, SharedRecordLogicRowColors, SharedRecordLogicSeasonCountdown, SharedRecordTimeUtils, SharedRestrictedUser, SharedRestrictedUserCompanion, SharedRestrictedUserRestrictionUpdate, SharedRozetEkranVerisi, SharedRozetKutuVerisi, SharedRozetParcaVerisi, SharedScoreBarColorBlend, SharedSeasonClock, SharedSeasonLeaderboardRewardPayloads, SharedServerEnergy, SharedServerEnergyBuyWithKeysResult, SharedServerRewards, SharedServerRewardsChestOutcome, SharedServerRewardsCrystalOutcome, SharedSessionDeviceRules, SharedSessionDeviceRulesDecision, SharedSezonVerisi, SharedShopFragmentLogic, SharedShopFragmentLogicEnergySectionState, SharedShopFragmentLogicPackCard, SharedShopFragmentLogicProductKind, SharedSignupFlowRules, SharedSignupFlowRulesStep, SharedSignupStreakRules, SharedSonucEkraniKoprusu, SharedSplashRules, SharedSplashRulesRoute, SharedStudentQuestion, SharedStudentQuestionCompanion, SharedSurum, SharedTeacherLoginRules, SharedTimeTrackerCompanion, SharedTimeTrackerCompanionSyncWrite, SharedTrustedClockCompanion, SharedTrustedClockRules, SharedTrustedClockRulesAnchor, SharedUploadLessonDataLogic, SharedUploadLessonDataLogicYuklenenDers<T>, SharedUserAskQuestionRestriction, SharedUserBadgeProgress, SharedUserIdRules, SharedUserInfoRules, SharedUserWallet, SharedUserWalletFirestore, SharedWalletLoadResult, SharedWalletReason;
+@class SharedAbacusBead, SharedAbacusBeadController, SharedAbacusBeadMetrics, SharedAbacusBeadMetricsMoveDistancesPx, SharedAbacusBeadMetricsRodMeasurement, SharedAbacusBeadRenderer, SharedAbacusBeadRendererBeadRenderKind, SharedAbacusBeadRendererSoroban2Geometry, SharedAbacusCupRepository, SharedAbacusCustomizationFirestore, SharedAbacusCustomizationRules, SharedAbacusCustomizationRulesPlaceResult, SharedAbacusCustomizationSnapshot, SharedAbacusCustomizationUiLogic, SharedAbacusCustomizationUiLogicBeadCard, SharedAbacusCustomizationUiLogicBeadCardState, SharedAbacusCustomizationUiLogicBeadPaint, SharedAbacusCustomizationUiLogicColorRow, SharedAbacusCustomizationUiLogicFrameCard, SharedAbacusCustomizationUiLogicFrameCardState, SharedAbacusCustomizationUiLogicFrameLayer, SharedAbacusCustomizationUiLogicFramePaint, SharedAbacusCustomizationUiLogicPillGeometry, SharedAbacusCustomizationUiLogicPlaceOutcome, SharedAbacusCustomizationUiLogicPurchaseCheck, SharedAbacusCustomizationUiLogicPurchasePanelRules, SharedAbacusCustomizationUiLogicSlotBead, SharedAbacusCustomizationUiLogicSlotPanelState, SharedAbacusFrameRenderer, SharedAbacusFrameRendererRoundRectLayer, SharedAbacusLessonOutcome, SharedAbacusLessonRules, SharedAbacusLessonSessionControlResult, SharedAbacusLessonSessionControlResultAnswered, SharedAbacusLessonSessionControlResultIgnored, SharedAbacusLessonSessionControlResultOffline, SharedAbacusOperation, SharedAbacusPracticeLogic, SharedAbacusPracticeLogicKontrolResult, SharedAbacusPreferences, SharedAbacusPreferencesBeadColorSpec, SharedAbacusPreferencesBeadType, SharedAbacusPreferencesFrameType, SharedAbacusPreviewMetrics, SharedAbacusSoundPlayer, SharedAbacusTouchAction, SharedAbacusUiSettings, SharedAbakusBoncukKoprusu, SharedAbakusDersAkisi, SharedAbakusDersBitisi, SharedAbakusDersGirdisi, SharedAbakusDersKoprusu, SharedAbakusKontrolSonucu, SharedAbakusKontrolSonucuCompanion, SharedAbakusSoruListesi, SharedAccountDeletionRules, SharedAccountSettingsRules, SharedAdRules, SharedAdRulesAdSkipPolicyCompanion, SharedAgeConsentManager, SharedAgeConsentManagerAdRequestTags, SharedAgeConsentManagerAgeTreatment, SharedAnimatedQuest, SharedAppRatingManagerCompanion, SharedAuthRules, SharedAuthRulesGoogleLoginFailureAction, SharedAuthRulesPendingRegistration, SharedAuthRulesStudentEmailFlow, SharedAvatarConfig, SharedAvatarConfigCompanion, SharedAvatarParts, SharedAvatarPartsCompanion, SharedAvatarRect, SharedAvatarRules, SharedAvatarStyle, SharedAvatarStyleCompanion, SharedAvatarTab, SharedAvatarTabCompanion, SharedBadgeAnimMode, SharedBadgeDetailLogic, SharedBadgeDetailLogicBadgeDetailUiState, SharedBadgeDetailLogicBadgeRenderConfig, SharedBadgeFragmentLogic, SharedBadgeFragmentLogicCelebrationQueueItem, SharedBadgeFragmentLogicLevelUpAnimConfig, SharedBadgeFragmentLogicLevelUpCelebrationPlan, SharedBadgeFragmentLogicPieceCountBadge, SharedBadgeFragmentLogicProgressUi, SharedBadgeIncrementTransactionResult, SharedBadgeKind, SharedBadgeKindCompanion, SharedBadgeLevelTone, SharedBadgeLevelUpPayload, SharedBadgePieceLeaderboardSync, SharedBadgePrecalcHelper, SharedBadgeProgressEngine, SharedBadgeProgressFirestore, SharedBadgeProgressRepository, SharedBadgeProgressWindow, SharedBadgeState, SharedBeadAnimationCompanion, SharedBeadAnimationPlan, SharedBeadData, SharedBeadMoveDistances, SharedBeadPurchaseFirestore, SharedBeadsBehavior, SharedBellekIciGunlukSoruDeposu, SharedBillingCatalog, SharedBlindingAdditionCupRepository, SharedBlindingExtractionCupRepository, SharedBlindingImpactCupRepository, SharedBlindingLessonFlags, SharedBlindingLessonOutcome, SharedBlindingLessonRules, SharedBlindingLessonRulesResultFalseAction, SharedBlindingOperation, SharedBlindingOperationMath, SharedBlindingOperationOther, SharedBlindingOperationSequence, SharedBlindingSequencePlaybackStep, SharedBlindingSequencePlaybackTimer, SharedBlindingWrongAnswerNext, SharedChestCrystalPolicy, SharedChestFragmentLogic, SharedChestFragmentLogicCupIconChange, SharedChestFragmentLogicMapProgressResult, SharedChestFragmentLogicPendingLessonProgressAnimation, SharedChestFragmentLogicSuccessRateEvent, SharedChestFragmentLogicSuccessRateEventItemFirstFinish, SharedChestFragmentLogicSuccessRateEventPass, SharedChestIcons, SharedChestRarity, SharedChestRarityCompanion, SharedChestResultLogic, SharedChestResultLogicReplayResult, SharedChestResultLogic_, SharedChestRewardDisplay, SharedChestRewardOutcome, SharedChestRewardType, SharedChestStepIndicator, SharedChestTapAction, SharedChestTapResult, SharedChestTypeProgressHelper, SharedChestTypeProgressHelper_, SharedCrystalBreakLogic, SharedCrystalRarityBehavior, SharedCrystalRarityTier, SharedCrystalTapAction, SharedCrystalTapResult, SharedCrystalTickResult, SharedCupBadgeSyncResult, SharedCupDeltaPrecalc, SharedCupDeltaTarget, SharedCupFetchResult, SharedCupFragmentLogic, SharedCupHistoryLogic, SharedCupHistoryLogicRangeTab, SharedCupHistoryRepository, SharedCupIconChange, SharedCupLessonLaunch, SharedCupMathOperation, SharedCupPathCard, SharedCupPathKind, SharedCupPathLogic, SharedCupPathRewardRepository, SharedCupPathRewardRepositoryCupPathState, SharedCupPathRewardRepositoryMilestone, SharedCupPathRewardRepositoryMilestoneStatus, SharedCupPieceRow, SharedCupRuleEngine, SharedCupRuleEngineBlindingMultiplicationConfig, SharedCupRuleEngineCupLessonItemOverride, SharedCupRuleEngineCupRange, SharedCupRuleEngineDigitConfig, SharedCupRuleEngineMultiplicationConfig, SharedCupScoreRepositorySpec, SharedCupScoreService, SharedCupScoreServiceCupScoreResult, SharedCupTier, SharedCupUpdateResult, SharedDailyQuestionBrokenHeartAction, SharedDailyQuestionBrokenHeartStore, SharedDailyQuestionBrokenHeartStoreCompanion, SharedDailyQuestionCardClickAction, SharedDailyQuestionCardLogic, SharedDailyQuestionCardProgressAnimStore, SharedDailyQuestionCardProgressAnimStoreCompanion, SharedDailyQuestionCardUiState, SharedDailyQuestionChallenge, SharedDailyQuestionChallengeClickAction, SharedDailyQuestionPeriod, SharedDailyQuestionPoolBuilder, SharedDailyQuestionPoolBuilderCompanion, SharedDailyQuestionProgressPlan, SharedDailyQuestionRepository, SharedDailyQuestionSlot, SharedDailyQuestionSource, SharedEditProfileRules, SharedEnergyManagerCompanion, SharedExtractionCupRepository, SharedFcmRules, SharedFcmRulesIncoming, SharedFeedbackGate, SharedFeedbackRules, SharedFirstTutorialShownStoreCompanion, SharedFirstTutorialShownStoreResolution, SharedFishingStreakPeriod, SharedFollowRules, SharedFollowRulesFriendSearchResult, SharedFrameData, SharedFramePurchaseFirestore, SharedFriendSearchRules, SharedGlobalLessonData, SharedGlobalLessonDataChestLessonRef, SharedGlobalLessonDataFirestoreLoadStatus, SharedGlobalLessonDataItemWrite, SharedGlobalLessonDataLeaderboardSubmit, SharedGlobalLessonDataLegacyMigrationPlan, SharedGlobalValues, SharedGorevEkraniDurumu, SharedGuidePanelData, SharedGunlukSoruBaslatma, SharedGunlukSoruCubukGorunumu, SharedGunlukSoruCubukModu, SharedImpactCupRepository, SharedJavaRandom, SharedKorDersAdimi, SharedKorDersAdimiCompanion, SharedKorDersOturumu, SharedKotlinArray<T>, SharedKotlinByteArray, SharedKotlinByteIterator, SharedKotlinEnum<E>, SharedKotlinEnumCompanion, SharedKotlinException, SharedKotlinFloatArray, SharedKotlinFloatIterator, SharedKotlinIntArray, SharedKotlinIntIterator, SharedKotlinNothing, SharedKotlinPair<__covariant A, __covariant B>, SharedKotlinRandom, SharedKotlinRandomDefault, SharedKotlinThrowable, SharedKotlinTriple<__covariant A, __covariant B, __covariant C>, SharedKotlinUnit, SharedKotlinx_datetimeDayOfWeek, SharedKotlinx_datetimeDayOfWeekNames, SharedKotlinx_datetimeDayOfWeekNamesCompanion, SharedKotlinx_datetimeFixedOffsetTimeZone, SharedKotlinx_datetimeFixedOffsetTimeZoneCompanion, SharedKotlinx_datetimeInstant, SharedKotlinx_datetimeInstantCompanion, SharedKotlinx_datetimeLocalDate, SharedKotlinx_datetimeLocalDateCompanion, SharedKotlinx_datetimeLocalDateTime, SharedKotlinx_datetimeLocalDateTimeCompanion, SharedKotlinx_datetimeLocalTime, SharedKotlinx_datetimeLocalTimeCompanion, SharedKotlinx_datetimeMonth, SharedKotlinx_datetimeMonthNames, SharedKotlinx_datetimeMonthNamesCompanion, SharedKotlinx_datetimePadding, SharedKotlinx_datetimeTimeZone, SharedKotlinx_datetimeTimeZoneCompanion, SharedKotlinx_datetimeUtcOffset, SharedKotlinx_datetimeUtcOffsetCompanion, SharedKotlinx_serialization_coreSerialKind, SharedKotlinx_serialization_coreSerializersModule, SharedKupaEkranKoprusu, SharedKupaGecmisNoktasi, SharedKupaGrafikNoktasi, SharedKupaGrafikVerisi, SharedLessonAdapterLogic, SharedLessonAdapterLogicActionButtonDecision, SharedLessonAdapterLogicCardState, SharedLessonAdapterLogicChestCardStars, SharedLessonAdapterLogicChestStarSlot, SharedLessonAdapterLogicChestStarsRow, SharedLessonAdapterLogicLessonBottomSheetState, SharedLessonAdapterLogicLessonStartGlobals, SharedLessonAdapterLogicLessonStartTarget, SharedLessonAdapterLogicPanelState, SharedLessonAdapterLogicProgressAnimationAction, SharedLessonAdapterLogicProgressAnimationDecision, SharedLessonAdapterLogicRaceLessonBottomSheetState, SharedLessonAdapterLogicRaceRowStatus, SharedLessonAdapterLogicStepSegments, SharedLessonDataManager, SharedLessonEndMascotDraw, SharedLessonEndMascotLogic, SharedLessonItem, SharedLessonItemCompanion, SharedLessonLeaderboardRepository, SharedLessonLeaderboardRepositoryLeaderboardEntry, SharedLessonManager, SharedLessonOperations, SharedLessonProgressMerge, SharedLessonResultFalseLogic, SharedLessonResultFalseLogicFailRecord, SharedLessonResultLogic, SharedLessonResultLogicClaimBranch, SharedLessonResultLogicClaimDecision, SharedLessonSuccessRateRepository, SharedLessonSuccessRateRepositoryStateRefs, SharedLessonSuccessRateRepositoryStepWrite, SharedLiderHamKayit, SharedLiderSatirVerisi, SharedLoginFlowTexts, SharedMapFragmentLogic, SharedMapFragmentLogicStickyHeader, SharedMapLayoutLogic, SharedMarathonGuideLogic, SharedMarathonGuideStoreCompanion, SharedMatematikDailyQuestionGenerators, SharedMathOperation, SharedMathOperationGenerator, SharedMathOperation_, SharedMedalPieceRow, SharedMessageReport, SharedMessageReportCompanion, SharedMissionCountdownLabel, SharedMissionCounterType, SharedMissionProgressOverlay, SharedMissionQuestCatalog, SharedMissionQuestData, SharedMissionQuestDefinition, SharedMissionQuestState, SharedMissionUiLogic, SharedMissionWindow, SharedMissionsProgressStore, SharedMissionsProgressStoreCompanion, SharedMissionsProgressStoreSnapshot, SharedNewChestLogic, SharedNewChestLogicCloseRoute, SharedOgreticiAbakusKoprusu, SharedOgreticiAdimi, SharedOgreticiBoncukHareketi, SharedOgreticiEtki, SharedOgreticiEtkiCompanion, SharedOgreticiGorunurluk, SharedOgreticiIcerigi, SharedOgreticiKatalogu, SharedOgreticiKurallari, SharedOgreticiOdakIslemi, SharedOgreticiOynatici, SharedOgreticiRenkliHarf, SharedOgreticiSabit, SharedOgreticiSahnesi, SharedOtpRules, SharedOtpRulesWrongAttemptResult, SharedOyunLessonItemCompanion, SharedOyunLessonItemData, SharedPartSelectionLogic, SharedPartState, SharedPendingUploadMeta, SharedPlanStatus, SharedProfileBadgeRenderConfig, SharedProfileBadgeSlotUi, SharedProfileCupCard, SharedProfileFragmentLogic, SharedProfileHeaderColors, SharedQuestionMessage, SharedQuestionMessageCompanion, SharedRarityTheme, SharedRastgeleKaynagi, SharedRatingPromptDecision, SharedRecordLogic, SharedRecordLogicLeaderboardSections, SharedRecordLogicRowColors, SharedRecordLogicSeasonCountdown, SharedRecordTimeUtils, SharedRestrictedUser, SharedRestrictedUserCompanion, SharedRestrictedUserRestrictionUpdate, SharedRozetEkranVerisi, SharedRozetKutuVerisi, SharedRozetParcaVerisi, SharedScoreBarColorBlend, SharedSeasonClock, SharedSeasonLeaderboardRewardPayloads, SharedServerEnergy, SharedServerEnergyBuyWithKeysResult, SharedServerRewards, SharedServerRewardsChestOutcome, SharedServerRewardsCrystalOutcome, SharedSessionDeviceRules, SharedSessionDeviceRulesDecision, SharedSezonVerisi, SharedShopFragmentLogic, SharedShopFragmentLogicEnergySectionState, SharedShopFragmentLogicPackCard, SharedShopFragmentLogicProductKind, SharedSignupFlowRules, SharedSignupFlowRulesStep, SharedSignupStreakRules, SharedSonucEkraniKoprusu, SharedSplashRules, SharedSplashRulesRoute, SharedStreakChallengeUi, SharedStreakClaimResult, SharedStreakDays, SharedStreakErrorText, SharedStreakFreezeBuyResult, SharedStreakFreezeNotice, SharedStreakFreezeRules, SharedStreakFreezeRulesSettled, SharedStreakMilestoneRowUi, SharedStreakMilestones, SharedStreakMilestonesReward, SharedStreakOptionRowUi, SharedStreakPendingSignup, SharedStreakRepository, SharedStreakRepositoryCompanion, SharedStreakRules, SharedStreakScreenLogic, SharedStreakScreenUi, SharedStreakServerError, SharedStreakServerModelCompanion, SharedStreakServerState, SharedStreakServerStateCompanion, SharedStreakSignupResult, SharedStreakState, SharedStreakSubmitRequest, SharedStreakSync, SharedStreakText, SharedStreakWeekDayUi, SharedStudentQuestion, SharedStudentQuestionCompanion, SharedStudyTimeTracker, SharedStudyTimeTrackerCompanion, SharedSurum, SharedTeacherLoginRules, SharedTimeTrackerCompanion, SharedTimeTrackerCompanionSyncWrite, SharedTrustedClockCompanion, SharedTrustedClockRules, SharedTrustedClockRulesAnchor, SharedUploadLessonDataLogic, SharedUploadLessonDataLogicYuklenenDers<T>, SharedUserAskQuestionRestriction, SharedUserBadgeProgress, SharedUserIdRules, SharedUserInfoRules, SharedUserWallet, SharedUserWalletFirestore, SharedWalletLoadResult, SharedWalletReason;
 
-@protocol SharedAbacusBeadHost, SharedAbacusPrefsStore, SharedDailyQuestionChallengeCache, SharedDailyQuestionGenerators, SharedEnergyPlatform, SharedKotlinAnnotation, SharedKotlinAppendable, SharedKotlinComparable, SharedKotlinIterator, SharedKotlinKAnnotatedElement, SharedKotlinKClass, SharedKotlinKClassifier, SharedKotlinKDeclarationContainer, SharedKotlinx_datetimeDateTimeFormat, SharedKotlinx_datetimeDateTimeFormatBuilder, SharedKotlinx_datetimeDateTimeFormatBuilderWithDate, SharedKotlinx_datetimeDateTimeFormatBuilderWithDateTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithUtcOffset, SharedKotlinx_serialization_coreCompositeDecoder, SharedKotlinx_serialization_coreCompositeEncoder, SharedKotlinx_serialization_coreDecoder, SharedKotlinx_serialization_coreDeserializationStrategy, SharedKotlinx_serialization_coreEncoder, SharedKotlinx_serialization_coreKSerializer, SharedKotlinx_serialization_coreSerialDescriptor, SharedKotlinx_serialization_coreSerializationStrategy, SharedKotlinx_serialization_coreSerializersModuleCollector, SharedLessonManagerLessonAdapterBridge, SharedLessonManagerRaceAdapterBridge, SharedLessonProgressSink, SharedMissionCloudGateway, SharedOyunKeyValueStore, SharedOyunLessonItem, SharedServerRewardsChestCaller, SharedTimeTrackerPlatform;
+@protocol SharedAbacusBeadHost, SharedAbacusPrefsStore, SharedDailyQuestionChallengeCache, SharedDailyQuestionGenerators, SharedEnergyPlatform, SharedKotlinAnnotation, SharedKotlinAppendable, SharedKotlinComparable, SharedKotlinIterator, SharedKotlinKAnnotatedElement, SharedKotlinKClass, SharedKotlinKClassifier, SharedKotlinKDeclarationContainer, SharedKotlinx_datetimeDateTimeFormat, SharedKotlinx_datetimeDateTimeFormatBuilder, SharedKotlinx_datetimeDateTimeFormatBuilderWithDate, SharedKotlinx_datetimeDateTimeFormatBuilderWithDateTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithUtcOffset, SharedKotlinx_serialization_coreCompositeDecoder, SharedKotlinx_serialization_coreCompositeEncoder, SharedKotlinx_serialization_coreDecoder, SharedKotlinx_serialization_coreDeserializationStrategy, SharedKotlinx_serialization_coreEncoder, SharedKotlinx_serialization_coreKSerializer, SharedKotlinx_serialization_coreSerialDescriptor, SharedKotlinx_serialization_coreSerializationStrategy, SharedKotlinx_serialization_coreSerializersModuleCollector, SharedLessonManagerLessonAdapterBridge, SharedLessonManagerRaceAdapterBridge, SharedLessonProgressSink, SharedMissionCloudGateway, SharedOyunKeyValueStore, SharedOyunLessonItem, SharedServerRewardsChestCaller, SharedStreakClock, SharedTimeTrackerPlatform;
 
 NS_ASSUME_NONNULL_BEGIN
 #pragma clang diagnostic push
@@ -7932,6 +7932,579 @@ __attribute__((swift_name("ProfileHeaderColors")))
 @property (readonly) NSString *WHITE __attribute__((swift_name("WHITE")));
 @end
 
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakChallengeUi")))
+@interface SharedStreakChallengeUi : SharedBase
+- (instancetype)initWithDays:(int32_t)days reward:(int32_t)reward title:(SharedStreakText *)title subtitle:(SharedStreakText *)subtitle rewardBadgeVisible:(BOOL)rewardBadgeVisible claimVisible:(BOOL)claimVisible progressKey:(NSString * _Nullable)progressKey progressText:(NSString *)progressText percent:(float)percent complete:(BOOL)complete __attribute__((swift_name("init(days:reward:title:subtitle:rewardBadgeVisible:claimVisible:progressKey:progressText:percent:complete:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakChallengeUi *)doCopyDays:(int32_t)days reward:(int32_t)reward title:(SharedStreakText *)title subtitle:(SharedStreakText *)subtitle rewardBadgeVisible:(BOOL)rewardBadgeVisible claimVisible:(BOOL)claimVisible progressKey:(NSString * _Nullable)progressKey progressText:(NSString *)progressText percent:(float)percent complete:(BOOL)complete __attribute__((swift_name("doCopy(days:reward:title:subtitle:rewardBadgeVisible:claimVisible:progressKey:progressText:percent:complete:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) BOOL claimVisible __attribute__((swift_name("claimVisible")));
+@property (readonly) BOOL complete __attribute__((swift_name("complete")));
+@property (readonly) int32_t days __attribute__((swift_name("days")));
+@property (readonly) float percent __attribute__((swift_name("percent")));
+@property (readonly) NSString * _Nullable progressKey __attribute__((swift_name("progressKey")));
+@property (readonly) NSString *progressText __attribute__((swift_name("progressText")));
+@property (readonly) int32_t reward __attribute__((swift_name("reward")));
+@property (readonly) BOOL rewardBadgeVisible __attribute__((swift_name("rewardBadgeVisible")));
+@property (readonly) SharedStreakText *subtitle __attribute__((swift_name("subtitle")));
+@property (readonly) SharedStreakText *title __attribute__((swift_name("title")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakClaimResult")))
+@interface SharedStreakClaimResult : SharedBase
+- (instancetype)initWithError:(SharedStreakServerError * _Nullable)error milestone:(int32_t)milestone challengeDays:(int32_t)challengeDays rewardKeys:(int32_t)rewardKeys rewardGold:(int32_t)rewardGold __attribute__((swift_name("init(error:milestone:challengeDays:rewardKeys:rewardGold:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakClaimResult *)doCopyError:(SharedStreakServerError * _Nullable)error milestone:(int32_t)milestone challengeDays:(int32_t)challengeDays rewardKeys:(int32_t)rewardKeys rewardGold:(int32_t)rewardGold __attribute__((swift_name("doCopy(error:milestone:challengeDays:rewardKeys:rewardGold:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t challengeDays __attribute__((swift_name("challengeDays")));
+@property (readonly) SharedStreakServerError * _Nullable error __attribute__((swift_name("error")));
+@property (readonly) int32_t milestone __attribute__((swift_name("milestone")));
+@property (readonly) int32_t rewardGold __attribute__((swift_name("rewardGold")));
+@property (readonly) int32_t rewardKeys __attribute__((swift_name("rewardKeys")));
+@end
+
+__attribute__((swift_name("StreakClock")))
+@protocol SharedStreakClock
+@required
+- (int64_t)elapsedMs __attribute__((swift_name("elapsedMs()")));
+- (int64_t)nowMs __attribute__((swift_name("nowMs()")));
+- (SharedKotlinx_datetimeTimeZone *)timeZone __attribute__((swift_name("timeZone()")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakDays")))
+@interface SharedStreakDays : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)streakDays __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakDays *shared __attribute__((swift_name("shared")));
+- (NSString *)dayIdClock:(id<SharedStreakClock>)clock offsetDays:(int32_t)offsetDays __attribute__((swift_name("dayId(clock:offsetDays:)")));
+- (SharedKotlinx_datetimeLocalDate *)todayClock:(id<SharedStreakClock>)clock __attribute__((swift_name("today(clock:)")));
+- (int32_t)utcOffsetMinutesClock:(id<SharedStreakClock>)clock __attribute__((swift_name("utcOffsetMinutes(clock:)")));
+- (NSArray<NSString *> *)weekDayIdsClock:(id<SharedStreakClock>)clock __attribute__((swift_name("weekDayIds(clock:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakErrorText")))
+@interface SharedStreakErrorText : SharedBase
+- (instancetype)initWithKey:(NSString * _Nullable)key argKey:(NSString * _Nullable)argKey literal:(NSString * _Nullable)literal __attribute__((swift_name("init(key:argKey:literal:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakErrorText *)doCopyKey:(NSString * _Nullable)key argKey:(NSString * _Nullable)argKey literal:(NSString * _Nullable)literal __attribute__((swift_name("doCopy(key:argKey:literal:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable argKey __attribute__((swift_name("argKey")));
+@property (readonly) NSString * _Nullable key __attribute__((swift_name("key")));
+@property (readonly) NSString * _Nullable literal __attribute__((swift_name("literal")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakFreezeBuyResult")))
+@interface SharedStreakFreezeBuyResult : SharedBase
+- (instancetype)initWithError:(SharedStreakServerError * _Nullable)error freezes:(int32_t)freezes freezeDay:(NSString *)freezeDay __attribute__((swift_name("init(error:freezes:freezeDay:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakFreezeBuyResult *)doCopyError:(SharedStreakServerError * _Nullable)error freezes:(int32_t)freezes freezeDay:(NSString *)freezeDay __attribute__((swift_name("doCopy(error:freezes:freezeDay:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) SharedStreakServerError * _Nullable error __attribute__((swift_name("error")));
+@property (readonly) NSString *freezeDay __attribute__((swift_name("freezeDay")));
+@property (readonly) int32_t freezes __attribute__((swift_name("freezes")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakFreezeNotice")))
+@interface SharedStreakFreezeNotice : SharedKotlinEnum<SharedStreakFreezeNotice *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedStreakFreezeNotice *saved __attribute__((swift_name("saved")));
+@property (class, readonly) SharedStreakFreezeNotice *lost __attribute__((swift_name("lost")));
++ (SharedKotlinArray<SharedStreakFreezeNotice *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedStreakFreezeNotice *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakFreezeRules")))
+@interface SharedStreakFreezeRules : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)streakFreezeRules __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakFreezeRules *shared __attribute__((swift_name("shared")));
+- (SharedStreakFreezeRulesSettled * _Nullable)settleCurrent:(int32_t)current lastDay:(NSString *)lastDay freezes:(int32_t)freezes freezeDay:(NSString *)freezeDay scanDays:(int32_t)scanDays dayIdAt:(NSString *(^)(SharedInt *))dayIdAt __attribute__((swift_name("settle(current:lastDay:freezes:freezeDay:scanDays:dayIdAt:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakFreezeRules.Settled")))
+@interface SharedStreakFreezeRulesSettled : SharedBase
+- (instancetype)initWithMissedDay:(NSString *)missedDay __attribute__((swift_name("init(missedDay:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakFreezeRulesSettled *)doCopyMissedDay:(NSString *)missedDay __attribute__((swift_name("doCopy(missedDay:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *missedDay __attribute__((swift_name("missedDay")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakMilestoneRowUi")))
+@interface SharedStreakMilestoneRowUi : SharedBase
+- (instancetype)initWithMilestone:(int32_t)milestone keys:(int32_t)keys gold:(int32_t)gold claimable:(BOOL)claimable daysLeft:(int32_t)daysLeft __attribute__((swift_name("init(milestone:keys:gold:claimable:daysLeft:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakMilestoneRowUi *)doCopyMilestone:(int32_t)milestone keys:(int32_t)keys gold:(int32_t)gold claimable:(BOOL)claimable daysLeft:(int32_t)daysLeft __attribute__((swift_name("doCopy(milestone:keys:gold:claimable:daysLeft:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) BOOL claimable __attribute__((swift_name("claimable")));
+@property (readonly) int32_t daysLeft __attribute__((swift_name("daysLeft")));
+@property (readonly) int32_t gold __attribute__((swift_name("gold")));
+@property (readonly) int32_t keys __attribute__((swift_name("keys")));
+@property (readonly) int32_t milestone __attribute__((swift_name("milestone")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakMilestones")))
+@interface SharedStreakMilestones : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)streakMilestones __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakMilestones *shared __attribute__((swift_name("shared")));
+- (int32_t)challengeRewardDays:(int32_t)days __attribute__((swift_name("challengeReward(days:)")));
+- (NSArray<SharedInt *> *)claimableStreak:(int32_t)streak claimed:(NSSet<SharedInt *> *)claimed __attribute__((swift_name("claimable(streak:claimed:)")));
+- (SharedInt * _Nullable)nextMilestone:(int32_t)milestone __attribute__((swift_name("next(milestone:)")));
+- (SharedStreakMilestonesReward * _Nullable)rewardForMilestone:(int32_t)milestone __attribute__((swift_name("rewardFor(milestone:)")));
+- (NSArray<SharedInt *> *)visibleStreak:(int32_t)streak claimed:(NSSet<SharedInt *> *)claimed count:(int32_t)count __attribute__((swift_name("visible(streak:claimed:count:)")));
+@property (readonly) int32_t MAX_MILESTONE __attribute__((swift_name("MAX_MILESTONE")));
+@property (readonly) int32_t REPEAT_STEP __attribute__((swift_name("REPEAT_STEP")));
+@property (readonly) int32_t VISIBLE_COUNT __attribute__((swift_name("VISIBLE_COUNT")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakMilestones.Reward")))
+@interface SharedStreakMilestonesReward : SharedBase
+- (instancetype)initWithKeys:(int32_t)keys gold:(int32_t)gold __attribute__((swift_name("init(keys:gold:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakMilestonesReward *)doCopyKeys:(int32_t)keys gold:(int32_t)gold __attribute__((swift_name("doCopy(keys:gold:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t gold __attribute__((swift_name("gold")));
+@property (readonly) int32_t keys __attribute__((swift_name("keys")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakOptionRowUi")))
+@interface SharedStreakOptionRowUi : SharedBase
+- (instancetype)initWithValue:(int32_t)value labelKey:(NSString * _Nullable)labelKey labelLiteral:(NSString * _Nullable)labelLiteral labelPluralCount:(int32_t)labelPluralCount trailingKey:(NSString * _Nullable)trailingKey trailingArg:(int32_t)trailingArg trailingLiteral:(NSString * _Nullable)trailingLiteral trailingPlural:(BOOL)trailingPlural selected:(BOOL)selected __attribute__((swift_name("init(value:labelKey:labelLiteral:labelPluralCount:trailingKey:trailingArg:trailingLiteral:trailingPlural:selected:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakOptionRowUi *)doCopyValue:(int32_t)value labelKey:(NSString * _Nullable)labelKey labelLiteral:(NSString * _Nullable)labelLiteral labelPluralCount:(int32_t)labelPluralCount trailingKey:(NSString * _Nullable)trailingKey trailingArg:(int32_t)trailingArg trailingLiteral:(NSString * _Nullable)trailingLiteral trailingPlural:(BOOL)trailingPlural selected:(BOOL)selected __attribute__((swift_name("doCopy(value:labelKey:labelLiteral:labelPluralCount:trailingKey:trailingArg:trailingLiteral:trailingPlural:selected:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable labelKey __attribute__((swift_name("labelKey")));
+@property (readonly) NSString * _Nullable labelLiteral __attribute__((swift_name("labelLiteral")));
+@property (readonly) int32_t labelPluralCount __attribute__((swift_name("labelPluralCount")));
+@property (readonly) BOOL selected __attribute__((swift_name("selected")));
+@property (readonly) int32_t trailingArg __attribute__((swift_name("trailingArg")));
+@property (readonly) NSString * _Nullable trailingKey __attribute__((swift_name("trailingKey")));
+@property (readonly) NSString * _Nullable trailingLiteral __attribute__((swift_name("trailingLiteral")));
+@property (readonly) BOOL trailingPlural __attribute__((swift_name("trailingPlural")));
+@property (readonly) int32_t value __attribute__((swift_name("value")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakPendingSignup")))
+@interface SharedStreakPendingSignup : SharedBase
+- (instancetype)initWithGoalMinutes:(int32_t)goalMinutes challengeDays:(int32_t)challengeDays reminderHour:(int32_t)reminderHour savedAtMs:(int64_t)savedAtMs createdUid:(NSString * _Nullable)createdUid createdAtMs:(int64_t)createdAtMs __attribute__((swift_name("init(goalMinutes:challengeDays:reminderHour:savedAtMs:createdUid:createdAtMs:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakPendingSignup *)doCopyGoalMinutes:(int32_t)goalMinutes challengeDays:(int32_t)challengeDays reminderHour:(int32_t)reminderHour savedAtMs:(int64_t)savedAtMs createdUid:(NSString * _Nullable)createdUid createdAtMs:(int64_t)createdAtMs __attribute__((swift_name("doCopy(goalMinutes:challengeDays:reminderHour:savedAtMs:createdUid:createdAtMs:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t challengeDays __attribute__((swift_name("challengeDays")));
+@property (readonly) int64_t createdAtMs __attribute__((swift_name("createdAtMs")));
+@property (readonly) NSString * _Nullable createdUid __attribute__((swift_name("createdUid")));
+@property (readonly) int32_t goalMinutes __attribute__((swift_name("goalMinutes")));
+@property (readonly) int32_t reminderHour __attribute__((swift_name("reminderHour")));
+@property (readonly) int64_t savedAtMs __attribute__((swift_name("savedAtMs")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakRepository")))
+@interface SharedStreakRepository : SharedBase
+- (instancetype)initWithStore:(id<SharedOyunKeyValueStore>)store tracker:(SharedStudyTimeTracker *)tracker clock:(id<SharedStreakClock>)clock __attribute__((swift_name("init(store:tracker:clock:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedStreakRepositoryCompanion *companion __attribute__((swift_name("companion")));
+- (void)adoptServerReminderHourHour:(int32_t)hour __attribute__((swift_name("adoptServerReminderHour(hour:)")));
+- (void)adoptServerStateCurrent:(int32_t)current longest:(int32_t)longest lastDay:(NSString *)lastDay claimed:(NSSet<SharedInt *> *)claimed recentDays:(NSSet<NSString *> *)recentDays goalMinutes:(int32_t)goalMinutes challengeDays:(int32_t)challengeDays challengeClaimed:(int32_t)challengeClaimed freezes:(int32_t)freezes freezeDay:(NSString *)freezeDay frozenDays:(NSSet<NSString *> *)frozenDays __attribute__((swift_name("adoptServerState(current:longest:lastDay:claimed:recentDays:goalMinutes:challengeDays:challengeClaimed:freezes:freezeDay:frozenDays:)")));
+- (SharedStreakSignupResult *)applyPendingSignupPending:(SharedStreakPendingSignup * _Nullable)pending uid:(NSString *)uid accountCreatedAtMs:(SharedLong * _Nullable)accountCreatedAtMs __attribute__((swift_name("applyPendingSignup(pending:uid:accountCreatedAtMs:)")));
+- (void)bindToUserUid:(NSString * _Nullable)uid __attribute__((swift_name("bindToUser(uid:)")));
+- (int32_t)challengeClaimed __attribute__((swift_name("challengeClaimed()")));
+- (NSString *)challengeClaimedDay __attribute__((swift_name("challengeClaimedDay()")));
+- (int32_t)chosenChallengeDays __attribute__((swift_name("chosenChallengeDays()")));
+- (NSSet<SharedInt *> *)claimedMilestones __attribute__((swift_name("claimedMilestones()")));
+- (void)clearPendingCelebration __attribute__((swift_name("clearPendingCelebration()")));
+- (int32_t)freezesHeld __attribute__((swift_name("freezesHeld()")));
+- (int32_t)goalMinutes __attribute__((swift_name("goalMinutes()")));
+- (BOOL)isAccountBound __attribute__((swift_name("isAccountBound()")));
+- (BOOL)isOnboardingDone __attribute__((swift_name("isOnboardingDone()")));
+- (void)markChallengeClaimedDays:(int32_t)days __attribute__((swift_name("markChallengeClaimed(days:)")));
+- (void)markDailyPing __attribute__((swift_name("markDailyPing()")));
+- (void)markFreezePurchasedFreezes:(int32_t)freezes freezeDay:(NSString *)freezeDay __attribute__((swift_name("markFreezePurchased(freezes:freezeDay:)")));
+- (void)markMilestoneClaimedMilestone:(int32_t)milestone __attribute__((swift_name("markMilestoneClaimed(milestone:)")));
+- (void)markNewStreakPromptShown __attribute__((swift_name("markNewStreakPromptShown()")));
+- (void)markOnboardingDone __attribute__((swift_name("markOnboardingDone()")));
+- (BOOL)needsDailyPing __attribute__((swift_name("needsDailyPing()")));
+- (BOOL)needsNewStreakPrompt __attribute__((swift_name("needsNewStreakPrompt()")));
+- (void)onReminderHourSyncedSentHour:(int32_t)sentHour __attribute__((swift_name("onReminderHourSynced(sentHour:)")));
+- (void)onSyncAcceptedSentDays:(NSArray<NSString *> *)sentDays current:(int32_t)current longest:(int32_t)longest claimed:(NSSet<SharedInt *> *)claimed __attribute__((swift_name("onSyncAccepted(sentDays:current:longest:claimed:)")));
+- (int32_t)pendingCelebration __attribute__((swift_name("pendingCelebration()")));
+- (NSArray<NSString *> *)pendingSyncDays __attribute__((swift_name("pendingSyncDays()")));
+- (SharedStreakState *)refresh __attribute__((swift_name("refresh()")));
+- (int32_t)reminderHour __attribute__((swift_name("reminderHour()")));
+- (BOOL)reminderHourPending __attribute__((swift_name("reminderHourPending()")));
+- (void)resetForDebug __attribute__((swift_name("resetForDebug()")));
+- (void)seedForPreviewOwnerUid:(NSString *)ownerUid current:(int32_t)current longest:(int32_t)longest lastDayOffset:(int32_t)lastDayOffset goalMinutes:(int32_t)goalMinutes challengeDays:(int32_t)challengeDays challengeClaimed:(int32_t)challengeClaimed freezes:(int32_t)freezes serverCurrent:(int32_t)serverCurrent claimed:(NSArray<SharedInt *> *)claimed __attribute__((swift_name("seedForPreview(ownerUid:current:longest:lastDayOffset:goalMinutes:challengeDays:challengeClaimed:freezes:serverCurrent:claimed:)")));
+- (int32_t)serverCurrent __attribute__((swift_name("serverCurrent()")));
+- (int32_t)serverLongest __attribute__((swift_name("serverLongest()")));
+- (void)setChallengeDaysDays:(int32_t)days __attribute__((swift_name("setChallengeDays(days:)")));
+- (void)setGoalMinutesMinutes:(int32_t)minutes __attribute__((swift_name("setGoalMinutes(minutes:)")));
+- (void)setReminderHourHour:(int32_t)hour __attribute__((swift_name("setReminderHour(hour:)")));
+- (void)startNewChallengeDays:(int32_t)days __attribute__((swift_name("startNewChallenge(days:)")));
+- (SharedStreakFreezeNotice * _Nullable)takeFreezeNotice __attribute__((swift_name("takeFreezeNotice()")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakRepository.Companion")))
+@interface SharedStreakRepositoryCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakRepositoryCompanion *shared __attribute__((swift_name("shared")));
+@property (readonly) NSString *KEY_ACHIEVED_DAYS __attribute__((swift_name("KEY_ACHIEVED_DAYS")));
+@property (readonly) NSString *KEY_CELEBRATION_DAY __attribute__((swift_name("KEY_CELEBRATION_DAY")));
+@property (readonly) NSString *KEY_CELEBRATION_STREAK __attribute__((swift_name("KEY_CELEBRATION_STREAK")));
+@property (readonly) NSString *KEY_CHALLENGE_CLAIMED __attribute__((swift_name("KEY_CHALLENGE_CLAIMED")));
+@property (readonly) NSString *KEY_CHALLENGE_CLAIMED_DAY __attribute__((swift_name("KEY_CHALLENGE_CLAIMED_DAY")));
+@property (readonly) NSString *KEY_CHALLENGE_DAYS __attribute__((swift_name("KEY_CHALLENGE_DAYS")));
+@property (readonly) NSString *KEY_CHALLENGE_LOGGED __attribute__((swift_name("KEY_CHALLENGE_LOGGED")));
+@property (readonly) NSString *KEY_CURRENT __attribute__((swift_name("KEY_CURRENT")));
+@property (readonly) NSString *KEY_FREEZES __attribute__((swift_name("KEY_FREEZES")));
+@property (readonly) NSString *KEY_FREEZE_DAY __attribute__((swift_name("KEY_FREEZE_DAY")));
+@property (readonly) NSString *KEY_FREEZE_NOTICE __attribute__((swift_name("KEY_FREEZE_NOTICE")));
+@property (readonly) NSString *KEY_FROZEN_DAYS __attribute__((swift_name("KEY_FROZEN_DAYS")));
+@property (readonly) NSString *KEY_GOAL_MINUTES __attribute__((swift_name("KEY_GOAL_MINUTES")));
+@property (readonly) NSString *KEY_LAST_DAY __attribute__((swift_name("KEY_LAST_DAY")));
+@property (readonly) NSString *KEY_LAST_PING_DAY __attribute__((swift_name("KEY_LAST_PING_DAY")));
+@property (readonly) NSString *KEY_LONGEST __attribute__((swift_name("KEY_LONGEST")));
+@property (readonly) NSString *KEY_NEW_STREAK_PROMPT_DAY __attribute__((swift_name("KEY_NEW_STREAK_PROMPT_DAY")));
+@property (readonly) NSString *KEY_ONBOARDING_DONE __attribute__((swift_name("KEY_ONBOARDING_DONE")));
+@property (readonly) NSString *KEY_OWNER_UID __attribute__((swift_name("KEY_OWNER_UID")));
+@property (readonly) NSString *KEY_PENDING_SYNC_DAYS __attribute__((swift_name("KEY_PENDING_SYNC_DAYS")));
+@property (readonly) NSString *KEY_REMINDER_HOUR __attribute__((swift_name("KEY_REMINDER_HOUR")));
+@property (readonly) NSString *KEY_REMINDER_HOUR_PENDING __attribute__((swift_name("KEY_REMINDER_HOUR_PENDING")));
+@property (readonly) NSString *KEY_SERVER_CLAIMED __attribute__((swift_name("KEY_SERVER_CLAIMED")));
+@property (readonly) NSString *KEY_SERVER_CURRENT __attribute__((swift_name("KEY_SERVER_CURRENT")));
+@property (readonly) NSString *KEY_SERVER_LONGEST __attribute__((swift_name("KEY_SERVER_LONGEST")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakRules")))
+@interface SharedStreakRules : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)streakRules __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakRules *shared __attribute__((swift_name("shared")));
+- (NSArray<SharedInt *> *)hourGrid __attribute__((swift_name("hourGrid()")));
+- (NSString *)hourTextHour:(int32_t)hour __attribute__((swift_name("hourText(hour:)")));
+- (BOOL)isPresetReminderHourHour:(int32_t)hour __attribute__((swift_name("isPresetReminderHour(hour:)")));
+- (NSString * _Nullable)reminderHourHardcodedLabelHour:(int32_t)hour __attribute__((swift_name("reminderHourHardcodedLabel(hour:)")));
+- (NSString * _Nullable)reminderHourLabelKeyHour:(int32_t)hour __attribute__((swift_name("reminderHourLabelKey(hour:)")));
+@property (readonly) int32_t ACHIEVED_HISTORY_DAYS __attribute__((swift_name("ACHIEVED_HISTORY_DAYS")));
+@property (readonly) NSArray<SharedInt *> *CHALLENGE_OPTIONS __attribute__((swift_name("CHALLENGE_OPTIONS")));
+@property (readonly) int32_t DEFAULT_CHALLENGE_DAYS __attribute__((swift_name("DEFAULT_CHALLENGE_DAYS")));
+@property (readonly) int32_t DEFAULT_GOAL_MINUTES __attribute__((swift_name("DEFAULT_GOAL_MINUTES")));
+@property (readonly) int32_t DEFAULT_REMINDER_HOUR __attribute__((swift_name("DEFAULT_REMINDER_HOUR")));
+@property (readonly) int32_t FREEZES_UNKNOWN __attribute__((swift_name("FREEZES_UNKNOWN")));
+@property (readonly) int32_t FREEZE_COST_GOLD __attribute__((swift_name("FREEZE_COST_GOLD")));
+@property (readonly) int32_t FREEZE_MAX_HELD __attribute__((swift_name("FREEZE_MAX_HELD")));
+@property (readonly) int32_t FREEZE_SCAN_DAYS __attribute__((swift_name("FREEZE_SCAN_DAYS")));
+@property (readonly) NSArray<NSString *> *GOAL_LABEL_KEYS __attribute__((swift_name("GOAL_LABEL_KEYS")));
+@property (readonly) NSArray<SharedInt *> *GOAL_OPTIONS __attribute__((swift_name("GOAL_OPTIONS")));
+@property (readonly) int32_t HOUR_GRID_START __attribute__((swift_name("HOUR_GRID_START")));
+@property (readonly) int32_t MAX_PENDING_SYNC_DAYS __attribute__((swift_name("MAX_PENDING_SYNC_DAYS")));
+@property (readonly) int64_t NEW_ACCOUNT_WINDOW_MS __attribute__((swift_name("NEW_ACCOUNT_WINDOW_MS")));
+@property (readonly) int64_t PENDING_SIGNUP_MAX_AGE_MS __attribute__((swift_name("PENDING_SIGNUP_MAX_AGE_MS")));
+@property (readonly) NSArray<SharedInt *> *REMINDER_HOUR_OPTIONS __attribute__((swift_name("REMINDER_HOUR_OPTIONS")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakScreenLogic")))
+@interface SharedStreakScreenLogic : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)streakScreenLogic __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakScreenLogic *shared __attribute__((swift_name("shared")));
+- (SharedStreakText *)celebrationSubtitleStreak:(int32_t)streak __attribute__((swift_name("celebrationSubtitle(streak:)")));
+- (SharedStreakChallengeUi * _Nullable)challengeState:(SharedStreakState *)state chosenChallengeDays:(int32_t)chosenChallengeDays challengeClaimed:(int32_t)challengeClaimed challengeClaimedDay:(NSString *)challengeClaimedDay today:(NSString *)today serverCurrent:(int32_t)serverCurrent __attribute__((swift_name("challenge(state:chosenChallengeDays:challengeClaimed:challengeClaimedDay:today:serverCurrent:)")));
+- (NSArray<SharedStreakOptionRowUi *> *)challengeRowsPicked:(int32_t)picked __attribute__((swift_name("challengeRows(picked:)")));
+- (SharedStreakErrorText *)errorTextCode:(NSString * _Nullable)code serverMessage:(NSString * _Nullable)serverMessage failedKey:(NSString *)failedKey turkish:(BOOL)turkish __attribute__((swift_name("errorText(code:serverMessage:failedKey:turkish:)")));
+- (NSString *)freezeNoticeKeyNotice:(SharedStreakFreezeNotice *)notice __attribute__((swift_name("freezeNoticeKey(notice:)")));
+- (NSArray<SharedStreakOptionRowUi *> *)goalRowsSelected:(int32_t)selected __attribute__((swift_name("goalRows(selected:)")));
+- (NSArray<SharedStreakMilestoneRowUi *> *)milestonesServerStreak:(int32_t)serverStreak claimed:(NSSet<SharedInt *> *)claimed __attribute__((swift_name("milestones(serverStreak:claimed:)")));
+- (NSArray<SharedStreakOptionRowUi *> *)reminderRowsSelected:(int32_t)selected __attribute__((swift_name("reminderRows(selected:)")));
+- (SharedStreakScreenUi *)screenState:(SharedStreakState *)state chosenChallengeDays:(int32_t)chosenChallengeDays challengeClaimed:(int32_t)challengeClaimed challengeClaimedDay:(NSString *)challengeClaimedDay today:(NSString *)today serverCurrent:(int32_t)serverCurrent claimedMilestones:(NSSet<SharedInt *> *)claimedMilestones reminderHour:(int32_t)reminderHour __attribute__((swift_name("screen(state:chosenChallengeDays:challengeClaimed:challengeClaimedDay:today:serverCurrent:claimedMilestones:reminderHour:)")));
+- (NSArray<SharedStreakWeekDayUi *> *)weekStripClock:(id<SharedStreakClock>)clock achievedDays:(NSSet<NSString *> *)achievedDays frozenDays:(NSSet<NSString *> *)frozenDays __attribute__((swift_name("weekStrip(clock:achievedDays:frozenDays:)")));
+@property (readonly) int64_t CELEBRATION_MS __attribute__((swift_name("CELEBRATION_MS")));
+@property (readonly) NSString *COLOR_ACCENT __attribute__((swift_name("COLOR_ACCENT")));
+@property (readonly) NSString *COLOR_DEAD __attribute__((swift_name("COLOR_DEAD")));
+@property (readonly) NSString *COLOR_FREEZE __attribute__((swift_name("COLOR_FREEZE")));
+@property (readonly) NSString *COLOR_GOLD __attribute__((swift_name("COLOR_GOLD")));
+@property (readonly) NSString *COLOR_MUTED __attribute__((swift_name("COLOR_MUTED")));
+@property (readonly) int32_t CUSTOM_HOUR_ROW __attribute__((swift_name("CUSTOM_HOUR_ROW")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakScreenUi")))
+@interface SharedStreakScreenUi : SharedBase
+- (instancetype)initWithAlive:(BOOL)alive bigNumber:(int32_t)bigNumber bigLabel:(SharedStreakText *)bigLabel bigSubtitle:(SharedStreakText *)bigSubtitle todayText:(SharedStreakText *)todayText todayPercent:(float)todayPercent todayComplete:(BOOL)todayComplete challenge:(SharedStreakChallengeUi * _Nullable)challenge milestones:(NSArray<SharedStreakMilestoneRowUi *> *)milestones longest:(int32_t)longest freezeHeld:(BOOL)freezeHeld freezeRowClickable:(BOOL)freezeRowClickable reminderHour:(int32_t)reminderHour __attribute__((swift_name("init(alive:bigNumber:bigLabel:bigSubtitle:todayText:todayPercent:todayComplete:challenge:milestones:longest:freezeHeld:freezeRowClickable:reminderHour:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakScreenUi *)doCopyAlive:(BOOL)alive bigNumber:(int32_t)bigNumber bigLabel:(SharedStreakText *)bigLabel bigSubtitle:(SharedStreakText *)bigSubtitle todayText:(SharedStreakText *)todayText todayPercent:(float)todayPercent todayComplete:(BOOL)todayComplete challenge:(SharedStreakChallengeUi * _Nullable)challenge milestones:(NSArray<SharedStreakMilestoneRowUi *> *)milestones longest:(int32_t)longest freezeHeld:(BOOL)freezeHeld freezeRowClickable:(BOOL)freezeRowClickable reminderHour:(int32_t)reminderHour __attribute__((swift_name("doCopy(alive:bigNumber:bigLabel:bigSubtitle:todayText:todayPercent:todayComplete:challenge:milestones:longest:freezeHeld:freezeRowClickable:reminderHour:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) BOOL alive __attribute__((swift_name("alive")));
+@property (readonly) SharedStreakText *bigLabel __attribute__((swift_name("bigLabel")));
+@property (readonly) int32_t bigNumber __attribute__((swift_name("bigNumber")));
+@property (readonly) SharedStreakText *bigSubtitle __attribute__((swift_name("bigSubtitle")));
+@property (readonly) SharedStreakChallengeUi * _Nullable challenge __attribute__((swift_name("challenge")));
+@property (readonly) BOOL freezeHeld __attribute__((swift_name("freezeHeld")));
+@property (readonly) BOOL freezeRowClickable __attribute__((swift_name("freezeRowClickable")));
+@property (readonly) int32_t longest __attribute__((swift_name("longest")));
+@property (readonly) NSArray<SharedStreakMilestoneRowUi *> *milestones __attribute__((swift_name("milestones")));
+@property (readonly) int32_t reminderHour __attribute__((swift_name("reminderHour")));
+@property (readonly) BOOL todayComplete __attribute__((swift_name("todayComplete")));
+@property (readonly) float todayPercent __attribute__((swift_name("todayPercent")));
+@property (readonly) SharedStreakText *todayText __attribute__((swift_name("todayText")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakServerError")))
+@interface SharedStreakServerError : SharedBase
+- (instancetype)initWithCode:(NSString *)code message:(NSString *)message __attribute__((swift_name("init(code:message:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakServerError *)doCopyCode:(NSString *)code message:(NSString *)message __attribute__((swift_name("doCopy(code:message:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *code __attribute__((swift_name("code")));
+@property (readonly) NSString *message __attribute__((swift_name("message")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakServerModel")))
+@interface SharedStreakServerModel : SharedBase
+- (instancetype)initWithClock:(id<SharedStreakClock>)clock __attribute__((swift_name("init(clock:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedStreakServerModelCompanion *companion __attribute__((swift_name("companion")));
+- (SharedStreakFreezeBuyResult *)buyFreezeToday:(NSString *)today currency:(int32_t)currency __attribute__((swift_name("buyFreeze(today:currency:)")));
+- (SharedStreakClaimResult *)claimChallenge __attribute__((swift_name("claimChallenge()")));
+- (SharedStreakClaimResult *)claimMilestoneMilestone:(int32_t)milestone __attribute__((swift_name("claimMilestone(milestone:)")));
+- (void)reset __attribute__((swift_name("reset()")));
+- (void)seedCurrent:(int32_t)current longest:(int32_t)longest lastDay:(NSString *)lastDay claimed:(NSArray<SharedInt *> *)claimed challengeDays:(int32_t)challengeDays challengeClaimed:(int32_t)challengeClaimed freezes:(int32_t)freezes freezeDay:(NSString *)freezeDay __attribute__((swift_name("seed(current:longest:lastDay:claimed:challengeDays:challengeClaimed:freezes:freezeDay:)")));
+- (SharedStreakServerState *)snapshot __attribute__((swift_name("snapshot()")));
+- (SharedStreakServerError * _Nullable)submitRequest:(SharedStreakSubmitRequest *)request __attribute__((swift_name("submit(request:)")));
+@property (readonly) int32_t challengeClaimed __attribute__((swift_name("challengeClaimed")));
+@property (readonly) int32_t challengeDays __attribute__((swift_name("challengeDays")));
+@property (readonly) NSArray<SharedInt *> *claimed __attribute__((swift_name("claimed")));
+@property (readonly) int32_t current __attribute__((swift_name("current")));
+@property (readonly) BOOL exists __attribute__((swift_name("exists")));
+@property (readonly) NSString *freezeDay __attribute__((swift_name("freezeDay")));
+@property (readonly) int32_t freezes __attribute__((swift_name("freezes")));
+@property (readonly) NSArray<NSString *> *frozenDays __attribute__((swift_name("frozenDays")));
+@property (readonly) int32_t goalMinutes __attribute__((swift_name("goalMinutes")));
+@property (readonly) NSString *lastDay __attribute__((swift_name("lastDay")));
+@property (readonly) int32_t longest __attribute__((swift_name("longest")));
+@property (readonly) NSArray<NSString *> *recentDays __attribute__((swift_name("recentDays")));
+@property (readonly) SharedInt * _Nullable reminderLocalHour __attribute__((swift_name("reminderLocalHour")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakServerModel.Companion")))
+@interface SharedStreakServerModelCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakServerModelCompanion *shared __attribute__((swift_name("shared")));
+- (NSString *)dayIdOfDayNo:(int32_t)dayNo __attribute__((swift_name("dayIdOf(dayNo:)")));
+- (SharedInt * _Nullable)dayNumberDay:(NSString *)day __attribute__((swift_name("dayNumber(day:)")));
+@property (readonly) int32_t DAY_TOLERANCE_DAYS __attribute__((swift_name("DAY_TOLERANCE_DAYS")));
+@property (readonly) int32_t MAX_DAYS_PER_CALL __attribute__((swift_name("MAX_DAYS_PER_CALL")));
+@property (readonly) int32_t RECENT_DAYS_KEPT __attribute__((swift_name("RECENT_DAYS_KEPT")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakServerState")))
+@interface SharedStreakServerState : SharedBase
+- (instancetype)initWithCurrent:(int32_t)current longest:(int32_t)longest lastDay:(NSString *)lastDay claimed:(NSSet<SharedInt *> *)claimed recentDays:(NSSet<NSString *> *)recentDays goalMinutes:(int32_t)goalMinutes challengeDays:(int32_t)challengeDays challengeClaimed:(int32_t)challengeClaimed freezes:(int32_t)freezes freezeDay:(NSString *)freezeDay frozenDays:(NSSet<NSString *> *)frozenDays reminderLocalHour:(SharedInt * _Nullable)reminderLocalHour __attribute__((swift_name("init(current:longest:lastDay:claimed:recentDays:goalMinutes:challengeDays:challengeClaimed:freezes:freezeDay:frozenDays:reminderLocalHour:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedStreakServerStateCompanion *companion __attribute__((swift_name("companion")));
+- (SharedStreakServerState *)doCopyCurrent:(int32_t)current longest:(int32_t)longest lastDay:(NSString *)lastDay claimed:(NSSet<SharedInt *> *)claimed recentDays:(NSSet<NSString *> *)recentDays goalMinutes:(int32_t)goalMinutes challengeDays:(int32_t)challengeDays challengeClaimed:(int32_t)challengeClaimed freezes:(int32_t)freezes freezeDay:(NSString *)freezeDay frozenDays:(NSSet<NSString *> *)frozenDays reminderLocalHour:(SharedInt * _Nullable)reminderLocalHour __attribute__((swift_name("doCopy(current:longest:lastDay:claimed:recentDays:goalMinutes:challengeDays:challengeClaimed:freezes:freezeDay:frozenDays:reminderLocalHour:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t challengeClaimed __attribute__((swift_name("challengeClaimed")));
+@property (readonly) int32_t challengeDays __attribute__((swift_name("challengeDays")));
+@property (readonly) NSSet<SharedInt *> *claimed __attribute__((swift_name("claimed")));
+@property (readonly) int32_t current __attribute__((swift_name("current")));
+@property (readonly) NSString *freezeDay __attribute__((swift_name("freezeDay")));
+@property (readonly) int32_t freezes __attribute__((swift_name("freezes")));
+@property (readonly) NSSet<NSString *> *frozenDays __attribute__((swift_name("frozenDays")));
+@property (readonly) int32_t goalMinutes __attribute__((swift_name("goalMinutes")));
+@property (readonly) NSString *lastDay __attribute__((swift_name("lastDay")));
+@property (readonly) int32_t longest __attribute__((swift_name("longest")));
+@property (readonly) NSSet<NSString *> *recentDays __attribute__((swift_name("recentDays")));
+@property (readonly) SharedInt * _Nullable reminderLocalHour __attribute__((swift_name("reminderLocalHour")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakServerState.Companion")))
+@interface SharedStreakServerStateCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakServerStateCompanion *shared __attribute__((swift_name("shared")));
+- (SharedStreakServerState *)fromDocumentDoc:(NSDictionary<NSString *, id> *)doc __attribute__((swift_name("fromDocument(doc:)")));
+- (SharedStreakServerState * _Nullable)fromFunctionResultData:(NSDictionary<NSString *, id> *)data __attribute__((swift_name("fromFunctionResult(data:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakSignupResult")))
+@interface SharedStreakSignupResult : SharedKotlinEnum<SharedStreakSignupResult *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedStreakSignupResult *noPending __attribute__((swift_name("noPending")));
+@property (class, readonly) SharedStreakSignupResult *applied __attribute__((swift_name("applied")));
+@property (class, readonly) SharedStreakSignupResult *discardedStale __attribute__((swift_name("discardedStale")));
+@property (class, readonly) SharedStreakSignupResult *discardedExistingAccount __attribute__((swift_name("discardedExistingAccount")));
++ (SharedKotlinArray<SharedStreakSignupResult *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedStreakSignupResult *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakState")))
+@interface SharedStreakState : SharedBase
+- (instancetype)initWithCurrent:(int32_t)current longest:(int32_t)longest goalMinutes:(int32_t)goalMinutes secondsToday:(int32_t)secondsToday achievedDays:(NSSet<NSString *> *)achievedDays frozenDays:(NSSet<NSString *> *)frozenDays freezeHeld:(BOOL)freezeHeld __attribute__((swift_name("init(current:longest:goalMinutes:secondsToday:achievedDays:frozenDays:freezeHeld:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakState *)doCopyCurrent:(int32_t)current longest:(int32_t)longest goalMinutes:(int32_t)goalMinutes secondsToday:(int32_t)secondsToday achievedDays:(NSSet<NSString *> *)achievedDays frozenDays:(NSSet<NSString *> *)frozenDays freezeHeld:(BOOL)freezeHeld __attribute__((swift_name("doCopy(current:longest:goalMinutes:secondsToday:achievedDays:frozenDays:freezeHeld:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSSet<NSString *> *achievedDays __attribute__((swift_name("achievedDays")));
+@property (readonly) int32_t current __attribute__((swift_name("current")));
+@property (readonly) BOOL freezeHeld __attribute__((swift_name("freezeHeld")));
+@property (readonly) NSSet<NSString *> *frozenDays __attribute__((swift_name("frozenDays")));
+@property (readonly) int32_t goalMinutes __attribute__((swift_name("goalMinutes")));
+@property (readonly) BOOL goalReachedToday __attribute__((swift_name("goalReachedToday")));
+@property (readonly) int32_t goalSeconds __attribute__((swift_name("goalSeconds")));
+@property (readonly) int32_t longest __attribute__((swift_name("longest")));
+@property (readonly) int32_t minutesLeft __attribute__((swift_name("minutesLeft")));
+@property (readonly) int32_t secondsToday __attribute__((swift_name("secondsToday")));
+@property (readonly) float todayFraction __attribute__((swift_name("todayFraction")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakSubmitRequest")))
+@interface SharedStreakSubmitRequest : SharedBase
+- (instancetype)initWithDays:(NSArray<NSString *> *)days goalMinutes:(int32_t)goalMinutes challengeDays:(int32_t)challengeDays utcOffsetMinutes:(int32_t)utcOffsetMinutes today:(NSString *)today reminderHour:(SharedInt * _Nullable)reminderHour __attribute__((swift_name("init(days:goalMinutes:challengeDays:utcOffsetMinutes:today:reminderHour:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakSubmitRequest *)doCopyDays:(NSArray<NSString *> *)days goalMinutes:(int32_t)goalMinutes challengeDays:(int32_t)challengeDays utcOffsetMinutes:(int32_t)utcOffsetMinutes today:(NSString *)today reminderHour:(SharedInt * _Nullable)reminderHour __attribute__((swift_name("doCopy(days:goalMinutes:challengeDays:utcOffsetMinutes:today:reminderHour:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSDictionary<NSString *, id> *)payload __attribute__((swift_name("payload()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t challengeDays __attribute__((swift_name("challengeDays")));
+@property (readonly) NSArray<NSString *> *days __attribute__((swift_name("days")));
+@property (readonly) int32_t goalMinutes __attribute__((swift_name("goalMinutes")));
+@property (readonly) SharedInt * _Nullable reminderHour __attribute__((swift_name("reminderHour")));
+@property (readonly) NSString *today __attribute__((swift_name("today")));
+@property (readonly) int32_t utcOffsetMinutes __attribute__((swift_name("utcOffsetMinutes")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakSync")))
+@interface SharedStreakSync : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)streakSync __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStreakSync *shared __attribute__((swift_name("shared")));
+- (SharedStreakSubmitRequest * _Nullable)buildSubmitRequestRepo:(SharedStreakRepository *)repo clock:(id<SharedStreakClock>)clock __attribute__((swift_name("buildSubmitRequest(repo:clock:)")));
+- (NSDictionary<NSString *, id> *)challengePayload __attribute__((swift_name("challengePayload()")));
+- (NSDictionary<NSString *, id> *)freezePayloadClock:(id<SharedStreakClock>)clock __attribute__((swift_name("freezePayload(clock:)")));
+- (NSDictionary<NSString *, id> *)milestonePayloadMilestone:(int32_t)milestone __attribute__((swift_name("milestonePayload(milestone:)")));
+- (void)onChallengeClaimedRepo:(SharedStreakRepository *)repo serverChallengeDays:(int32_t)serverChallengeDays __attribute__((swift_name("onChallengeClaimed(repo:serverChallengeDays:)")));
+- (void)onDocumentReadRepo:(SharedStreakRepository *)repo doc:(SharedStreakServerState *)doc __attribute__((swift_name("onDocumentRead(repo:doc:)")));
+- (void)onFreezeBoughtRepo:(SharedStreakRepository *)repo freezes:(int32_t)freezes freezeDay:(NSString *)freezeDay __attribute__((swift_name("onFreezeBought(repo:freezes:freezeDay:)")));
+- (void)onMilestoneClaimedRepo:(SharedStreakRepository *)repo milestone:(int32_t)milestone __attribute__((swift_name("onMilestoneClaimed(repo:milestone:)")));
+- (void)onSubmitSucceededRepo:(SharedStreakRepository *)repo request:(SharedStreakSubmitRequest *)request response:(SharedStreakServerState *)response __attribute__((swift_name("onSubmitSucceeded(repo:request:response:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakText")))
+@interface SharedStreakText : SharedBase
+- (instancetype)initWithKey:(NSString *)key args:(NSArray<SharedInt *> *)args __attribute__((swift_name("init(key:args:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakText *)doCopyKey:(NSString *)key args:(NSArray<SharedInt *> *)args __attribute__((swift_name("doCopy(key:args:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSArray<SharedInt *> *args __attribute__((swift_name("args")));
+@property (readonly) NSString *key __attribute__((swift_name("key")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StreakWeekDayUi")))
+@interface SharedStreakWeekDayUi : SharedBase
+- (instancetype)initWithDayId:(NSString *)dayId index:(int32_t)index done:(BOOL)done frozen:(BOOL)frozen today:(BOOL)today __attribute__((swift_name("init(dayId:index:done:frozen:today:)"))) __attribute__((objc_designated_initializer));
+- (SharedStreakWeekDayUi *)doCopyDayId:(NSString *)dayId index:(int32_t)index done:(BOOL)done frozen:(BOOL)frozen today:(BOOL)today __attribute__((swift_name("doCopy(dayId:index:done:frozen:today:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *dayId __attribute__((swift_name("dayId")));
+@property (readonly) BOOL done __attribute__((swift_name("done")));
+@property (readonly) BOOL frozen __attribute__((swift_name("frozen")));
+@property (readonly) int32_t index __attribute__((swift_name("index")));
+@property (readonly) BOOL today __attribute__((swift_name("today")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StudyTimeTracker")))
+@interface SharedStudyTimeTracker : SharedBase
+- (instancetype)initWithStore:(id<SharedOyunKeyValueStore>)store clock:(id<SharedStreakClock>)clock __attribute__((swift_name("init(store:clock:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedStudyTimeTrackerCompanion *companion __attribute__((swift_name("companion")));
+- (void)addSecondsForDebugSeconds:(int32_t)seconds __attribute__((swift_name("addSecondsForDebug(seconds:)")));
+- (void)clearAll __attribute__((swift_name("clearAll()")));
+- (BOOL)isCounting __attribute__((swift_name("isCounting()")));
+- (BOOL)isStudyScreenScreen:(NSString * _Nullable)screen __attribute__((swift_name("isStudyScreen(screen:)")));
+- (void)onUserInteraction __attribute__((swift_name("onUserInteraction()")));
+- (int32_t)secondsToday __attribute__((swift_name("secondsToday()")));
+- (void)setActiveScreenScreen:(NSString * _Nullable)screen __attribute__((swift_name("setActiveScreen(screen:)")));
+@property void (^ _Nullable onChanged)(void) __attribute__((swift_name("onChanged")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("StudyTimeTracker.Companion")))
+@interface SharedStudyTimeTrackerCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedStudyTimeTrackerCompanion *shared __attribute__((swift_name("shared")));
+@property (readonly) int32_t KEEP_DAYS __attribute__((swift_name("KEEP_DAYS")));
+@property (readonly) NSString *KEY_PREFIX __attribute__((swift_name("KEY_PREFIX")));
+@property (readonly) int64_t MAX_IDLE_MS __attribute__((swift_name("MAX_IDLE_MS")));
+@property (readonly) NSSet<NSString *> *STUDY_SCREENS __attribute__((swift_name("STUDY_SCREENS")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SystemStreakClock")))
+@interface SharedSystemStreakClock : SharedBase <SharedStreakClock>
+- (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
++ (instancetype)new __attribute__((availability(swift, unavailable, message="use object initializers instead")));
+- (int64_t)elapsedMs __attribute__((swift_name("elapsedMs()")));
+- (int64_t)nowMs __attribute__((swift_name("nowMs()")));
+- (SharedKotlinx_datetimeTimeZone *)timeZone __attribute__((swift_name("timeZone()")));
+@end
+
 @interface SharedLessonItem (Extensions)
 - (id<SharedOyunLessonItem>)asOyunLessonItem __attribute__((swift_name("asOyunLessonItem()")));
 @end
@@ -8162,6 +8735,30 @@ __attribute__((swift_name("KotlinException")))
 - (instancetype)initWithMessage:(NSString * _Nullable)message cause:(SharedKotlinThrowable * _Nullable)cause __attribute__((swift_name("init(message:cause:)"))) __attribute__((objc_designated_initializer));
 @end
 
+
+/**
+ * @note annotations
+ *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalDateIso8601Serializer))
+*/
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeLocalDate")))
+@interface SharedKotlinx_datetimeLocalDate : SharedBase <SharedKotlinComparable>
+- (instancetype)initWithYear:(int32_t)year monthNumber:(int32_t)monthNumber dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:monthNumber:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithYear:(int32_t)year month:(SharedKotlinx_datetimeMonth *)month dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:month:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedKotlinx_datetimeLocalDateCompanion *companion __attribute__((swift_name("companion")));
+- (int32_t)compareToOther:(SharedKotlinx_datetimeLocalDate *)other __attribute__((swift_name("compareTo(other:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (int32_t)toEpochDays __attribute__((swift_name("toEpochDays()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t dayOfMonth __attribute__((swift_name("dayOfMonth")));
+@property (readonly) SharedKotlinx_datetimeDayOfWeek *dayOfWeek __attribute__((swift_name("dayOfWeek")));
+@property (readonly) int32_t dayOfYear __attribute__((swift_name("dayOfYear")));
+@property (readonly) SharedKotlinx_datetimeMonth *month __attribute__((swift_name("month")));
+@property (readonly) int32_t monthNumber __attribute__((swift_name("monthNumber")));
+@property (readonly) int32_t year __attribute__((swift_name("year")));
+@end
+
 __attribute__((swift_name("KotlinIterator")))
 @protocol SharedKotlinIterator
 @required
@@ -8289,6 +8886,58 @@ __attribute__((swift_name("Kotlinx_datetimeLocalDateTime")))
 @property (readonly) int32_t year __attribute__((swift_name("year")));
 @end
 
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeMonth")))
+@interface SharedKotlinx_datetimeMonth : SharedKotlinEnum<SharedKotlinx_datetimeMonth *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedKotlinx_datetimeMonth *january __attribute__((swift_name("january")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *february __attribute__((swift_name("february")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *march __attribute__((swift_name("march")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *april __attribute__((swift_name("april")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *may __attribute__((swift_name("may")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *june __attribute__((swift_name("june")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *july __attribute__((swift_name("july")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *august __attribute__((swift_name("august")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *september __attribute__((swift_name("september")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *october __attribute__((swift_name("october")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *november __attribute__((swift_name("november")));
+@property (class, readonly) SharedKotlinx_datetimeMonth *december __attribute__((swift_name("december")));
++ (SharedKotlinArray<SharedKotlinx_datetimeMonth *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedKotlinx_datetimeMonth *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeLocalDate.Companion")))
+@interface SharedKotlinx_datetimeLocalDateCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedKotlinx_datetimeLocalDateCompanion *shared __attribute__((swift_name("shared")));
+- (id<SharedKotlinx_datetimeDateTimeFormat>)FormatBlock:(void (^)(id<SharedKotlinx_datetimeDateTimeFormatBuilderWithDate>))block __attribute__((swift_name("Format(block:)")));
+- (SharedKotlinx_datetimeLocalDate *)fromEpochDaysEpochDays:(int32_t)epochDays __attribute__((swift_name("fromEpochDays(epochDays:)")));
+- (SharedKotlinx_datetimeLocalDate *)parseInput:(id)input format:(id<SharedKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("parse(input:format:)")));
+- (id<SharedKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeDayOfWeek")))
+@interface SharedKotlinx_datetimeDayOfWeek : SharedKotlinEnum<SharedKotlinx_datetimeDayOfWeek *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *monday __attribute__((swift_name("monday")));
+@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *tuesday __attribute__((swift_name("tuesday")));
+@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *wednesday __attribute__((swift_name("wednesday")));
+@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *thursday __attribute__((swift_name("thursday")));
+@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *friday __attribute__((swift_name("friday")));
+@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *saturday __attribute__((swift_name("saturday")));
+@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *sunday __attribute__((swift_name("sunday")));
++ (SharedKotlinArray<SharedKotlinx_datetimeDayOfWeek *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedKotlinx_datetimeDayOfWeek *> *entries __attribute__((swift_name("entries")));
+@end
+
 __attribute__((swift_name("KotlinByteIterator")))
 @interface SharedKotlinByteIterator : SharedBase <SharedKotlinIterator>
 - (instancetype)init __attribute__((swift_name("init()"))) __attribute__((objc_designated_initializer));
@@ -8351,30 +9000,6 @@ __attribute__((swift_name("Kotlinx_datetimeInstant.Companion")))
 
 /**
  * @note annotations
- *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalDateIso8601Serializer))
-*/
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalDate")))
-@interface SharedKotlinx_datetimeLocalDate : SharedBase <SharedKotlinComparable>
-- (instancetype)initWithYear:(int32_t)year monthNumber:(int32_t)monthNumber dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:monthNumber:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithYear:(int32_t)year month:(SharedKotlinx_datetimeMonth *)month dayOfMonth:(int32_t)dayOfMonth __attribute__((swift_name("init(year:month:dayOfMonth:)"))) __attribute__((objc_designated_initializer));
-@property (class, readonly, getter=companion) SharedKotlinx_datetimeLocalDateCompanion *companion __attribute__((swift_name("companion")));
-- (int32_t)compareToOther:(SharedKotlinx_datetimeLocalDate *)other __attribute__((swift_name("compareTo(other:)")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (int32_t)toEpochDays __attribute__((swift_name("toEpochDays()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) int32_t dayOfMonth __attribute__((swift_name("dayOfMonth")));
-@property (readonly) SharedKotlinx_datetimeDayOfWeek *dayOfWeek __attribute__((swift_name("dayOfWeek")));
-@property (readonly) int32_t dayOfYear __attribute__((swift_name("dayOfYear")));
-@property (readonly) SharedKotlinx_datetimeMonth *month __attribute__((swift_name("month")));
-@property (readonly) int32_t monthNumber __attribute__((swift_name("monthNumber")));
-@property (readonly) int32_t year __attribute__((swift_name("year")));
-@end
-
-
-/**
- * @note annotations
  *   kotlinx.serialization.Serializable(with=NormalClass(value=kotlinx/datetime/serializers/LocalTimeIso8601Serializer))
 */
 __attribute__((objc_subclassing_restricted))
@@ -8396,28 +9021,6 @@ __attribute__((swift_name("Kotlinx_datetimeLocalTime")))
 @end
 
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeMonth")))
-@interface SharedKotlinx_datetimeMonth : SharedKotlinEnum<SharedKotlinx_datetimeMonth *>
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
-@property (class, readonly) SharedKotlinx_datetimeMonth *january __attribute__((swift_name("january")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *february __attribute__((swift_name("february")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *march __attribute__((swift_name("march")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *april __attribute__((swift_name("april")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *may __attribute__((swift_name("may")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *june __attribute__((swift_name("june")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *july __attribute__((swift_name("july")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *august __attribute__((swift_name("august")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *september __attribute__((swift_name("september")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *october __attribute__((swift_name("october")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *november __attribute__((swift_name("november")));
-@property (class, readonly) SharedKotlinx_datetimeMonth *december __attribute__((swift_name("december")));
-+ (SharedKotlinArray<SharedKotlinx_datetimeMonth *> *)values __attribute__((swift_name("values()")));
-@property (class, readonly) NSArray<SharedKotlinx_datetimeMonth *> *entries __attribute__((swift_name("entries")));
-@end
-
-__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("Kotlinx_datetimeLocalDateTime.Companion")))
 @interface SharedKotlinx_datetimeLocalDateTimeCompanion : SharedBase
 + (instancetype)alloc __attribute__((unavailable));
@@ -8429,21 +9032,31 @@ __attribute__((swift_name("Kotlinx_datetimeLocalDateTime.Companion")))
 - (id<SharedKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
 @end
 
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeDayOfWeek")))
-@interface SharedKotlinx_datetimeDayOfWeek : SharedKotlinEnum<SharedKotlinx_datetimeDayOfWeek *>
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
-@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *monday __attribute__((swift_name("monday")));
-@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *tuesday __attribute__((swift_name("tuesday")));
-@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *wednesday __attribute__((swift_name("wednesday")));
-@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *thursday __attribute__((swift_name("thursday")));
-@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *friday __attribute__((swift_name("friday")));
-@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *saturday __attribute__((swift_name("saturday")));
-@property (class, readonly) SharedKotlinx_datetimeDayOfWeek *sunday __attribute__((swift_name("sunday")));
-+ (SharedKotlinArray<SharedKotlinx_datetimeDayOfWeek *> *)values __attribute__((swift_name("values()")));
-@property (class, readonly) NSArray<SharedKotlinx_datetimeDayOfWeek *> *entries __attribute__((swift_name("entries")));
+__attribute__((swift_name("Kotlinx_datetimeDateTimeFormat")))
+@protocol SharedKotlinx_datetimeDateTimeFormat
+@required
+- (NSString *)formatValue:(id _Nullable)value __attribute__((swift_name("format(value:)")));
+- (id<SharedKotlinAppendable>)formatToAppendable:(id<SharedKotlinAppendable>)appendable value:(id _Nullable)value __attribute__((swift_name("formatTo(appendable:value:)")));
+- (id _Nullable)parseInput:(id)input __attribute__((swift_name("parse(input:)")));
+- (id _Nullable)parseOrNullInput:(id)input __attribute__((swift_name("parseOrNull(input:)")));
+@end
+
+__attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilder")))
+@protocol SharedKotlinx_datetimeDateTimeFormatBuilder
+@required
+- (void)charsValue:(NSString *)value __attribute__((swift_name("chars(value:)")));
+@end
+
+__attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilderWithDate")))
+@protocol SharedKotlinx_datetimeDateTimeFormatBuilderWithDate <SharedKotlinx_datetimeDateTimeFormatBuilder>
+@required
+- (void)dateFormat:(id<SharedKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("date(format:)")));
+- (void)dayOfMonthPadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("dayOfMonth(padding:)")));
+- (void)dayOfWeekNames:(SharedKotlinx_datetimeDayOfWeekNames *)names __attribute__((swift_name("dayOfWeek(names:)")));
+- (void)monthNameNames:(SharedKotlinx_datetimeMonthNames *)names __attribute__((swift_name("monthName(names:)")));
+- (void)monthNumberPadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("monthNumber(padding:)")));
+- (void)yearPadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("year(padding:)")));
+- (void)yearTwoDigitsBaseYear:(int32_t)baseYear __attribute__((swift_name("yearTwoDigits(baseYear:)")));
 @end
 
 __attribute__((swift_name("Kotlinx_serialization_coreEncoder")))
@@ -8612,28 +9225,6 @@ __attribute__((swift_name("Kotlinx_datetimeFixedOffsetTimeZone.Companion")))
 - (id<SharedKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
 @end
 
-__attribute__((swift_name("Kotlinx_datetimeDateTimeFormat")))
-@protocol SharedKotlinx_datetimeDateTimeFormat
-@required
-- (NSString *)formatValue:(id _Nullable)value __attribute__((swift_name("format(value:)")));
-- (id<SharedKotlinAppendable>)formatToAppendable:(id<SharedKotlinAppendable>)appendable value:(id _Nullable)value __attribute__((swift_name("formatTo(appendable:value:)")));
-- (id _Nullable)parseInput:(id)input __attribute__((swift_name("parse(input:)")));
-- (id _Nullable)parseOrNullInput:(id)input __attribute__((swift_name("parseOrNull(input:)")));
-@end
-
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeLocalDate.Companion")))
-@interface SharedKotlinx_datetimeLocalDateCompanion : SharedBase
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)companion __attribute__((swift_name("init()")));
-@property (class, readonly, getter=shared) SharedKotlinx_datetimeLocalDateCompanion *shared __attribute__((swift_name("shared")));
-- (id<SharedKotlinx_datetimeDateTimeFormat>)FormatBlock:(void (^)(id<SharedKotlinx_datetimeDateTimeFormatBuilderWithDate>))block __attribute__((swift_name("Format(block:)")));
-- (SharedKotlinx_datetimeLocalDate *)fromEpochDaysEpochDays:(int32_t)epochDays __attribute__((swift_name("fromEpochDays(epochDays:)")));
-- (SharedKotlinx_datetimeLocalDate *)parseInput:(id)input format:(id<SharedKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("parse(input:format:)")));
-- (id<SharedKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
-@end
-
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("Kotlinx_datetimeLocalTime.Companion")))
 @interface SharedKotlinx_datetimeLocalTimeCompanion : SharedBase
@@ -8647,24 +9238,6 @@ __attribute__((swift_name("Kotlinx_datetimeLocalTime.Companion")))
 - (SharedKotlinx_datetimeLocalTime *)fromSecondOfDaySecondOfDay:(int32_t)secondOfDay __attribute__((swift_name("fromSecondOfDay(secondOfDay:)")));
 - (SharedKotlinx_datetimeLocalTime *)parseInput:(id)input format:(id<SharedKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("parse(input:format:)")));
 - (id<SharedKotlinx_serialization_coreKSerializer>)serializer __attribute__((swift_name("serializer()")));
-@end
-
-__attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilder")))
-@protocol SharedKotlinx_datetimeDateTimeFormatBuilder
-@required
-- (void)charsValue:(NSString *)value __attribute__((swift_name("chars(value:)")));
-@end
-
-__attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilderWithDate")))
-@protocol SharedKotlinx_datetimeDateTimeFormatBuilderWithDate <SharedKotlinx_datetimeDateTimeFormatBuilder>
-@required
-- (void)dateFormat:(id<SharedKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("date(format:)")));
-- (void)dayOfMonthPadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("dayOfMonth(padding:)")));
-- (void)dayOfWeekNames:(SharedKotlinx_datetimeDayOfWeekNames *)names __attribute__((swift_name("dayOfWeek(names:)")));
-- (void)monthNameNames:(SharedKotlinx_datetimeMonthNames *)names __attribute__((swift_name("monthName(names:)")));
-- (void)monthNumberPadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("monthNumber(padding:)")));
-- (void)yearPadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("year(padding:)")));
-- (void)yearTwoDigitsBaseYear:(int32_t)baseYear __attribute__((swift_name("yearTwoDigits(baseYear:)")));
 @end
 
 __attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilderWithTime")))
@@ -8684,6 +9257,51 @@ __attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilderWithDateTime")))
 @protocol SharedKotlinx_datetimeDateTimeFormatBuilderWithDateTime <SharedKotlinx_datetimeDateTimeFormatBuilderWithDate, SharedKotlinx_datetimeDateTimeFormatBuilderWithTime>
 @required
 - (void)dateTimeFormat:(id<SharedKotlinx_datetimeDateTimeFormat>)format __attribute__((swift_name("dateTime(format:)")));
+@end
+
+__attribute__((swift_name("KotlinAppendable")))
+@protocol SharedKotlinAppendable
+@required
+- (id<SharedKotlinAppendable>)appendValue:(unichar)value __attribute__((swift_name("append(value:)")));
+- (id<SharedKotlinAppendable>)appendValue_:(id _Nullable)value __attribute__((swift_name("append(value_:)")));
+- (id<SharedKotlinAppendable>)appendValue:(id _Nullable)value startIndex:(int32_t)startIndex endIndex:(int32_t)endIndex __attribute__((swift_name("append(value:startIndex:endIndex:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimePadding")))
+@interface SharedKotlinx_datetimePadding : SharedKotlinEnum<SharedKotlinx_datetimePadding *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedKotlinx_datetimePadding *none __attribute__((swift_name("none")));
+@property (class, readonly) SharedKotlinx_datetimePadding *zero __attribute__((swift_name("zero")));
+@property (class, readonly) SharedKotlinx_datetimePadding *space __attribute__((swift_name("space")));
++ (SharedKotlinArray<SharedKotlinx_datetimePadding *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedKotlinx_datetimePadding *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeDayOfWeekNames")))
+@interface SharedKotlinx_datetimeDayOfWeekNames : SharedBase
+- (instancetype)initWithNames:(NSArray<NSString *> *)names __attribute__((swift_name("init(names:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithMonday:(NSString *)monday tuesday:(NSString *)tuesday wednesday:(NSString *)wednesday thursday:(NSString *)thursday friday:(NSString *)friday saturday:(NSString *)saturday sunday:(NSString *)sunday __attribute__((swift_name("init(monday:tuesday:wednesday:thursday:friday:saturday:sunday:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedKotlinx_datetimeDayOfWeekNamesCompanion *companion __attribute__((swift_name("companion")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSArray<NSString *> *names __attribute__((swift_name("names")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("Kotlinx_datetimeMonthNames")))
+@interface SharedKotlinx_datetimeMonthNames : SharedBase
+- (instancetype)initWithNames:(NSArray<NSString *> *)names __attribute__((swift_name("init(names:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithJanuary:(NSString *)january february:(NSString *)february march:(NSString *)march april:(NSString *)april may:(NSString *)may june:(NSString *)june july:(NSString *)july august:(NSString *)august september:(NSString *)september october:(NSString *)october november:(NSString *)november december:(NSString *)december __attribute__((swift_name("init(january:february:march:april:may:june:july:august:september:october:november:december:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedKotlinx_datetimeMonthNamesCompanion *companion __attribute__((swift_name("companion")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSArray<NSString *> *names __attribute__((swift_name("names")));
 @end
 
 __attribute__((swift_name("Kotlinx_serialization_coreCompositeEncoder")))
@@ -8810,49 +9428,26 @@ __attribute__((swift_name("Kotlinx_datetimeUtcOffset.Companion")))
 @property (readonly) SharedKotlinx_datetimeUtcOffset *ZERO __attribute__((swift_name("ZERO")));
 @end
 
-__attribute__((swift_name("KotlinAppendable")))
-@protocol SharedKotlinAppendable
-@required
-- (id<SharedKotlinAppendable>)appendValue:(unichar)value __attribute__((swift_name("append(value:)")));
-- (id<SharedKotlinAppendable>)appendValue_:(id _Nullable)value __attribute__((swift_name("append(value_:)")));
-- (id<SharedKotlinAppendable>)appendValue:(id _Nullable)value startIndex:(int32_t)startIndex endIndex:(int32_t)endIndex __attribute__((swift_name("append(value:startIndex:endIndex:)")));
-@end
-
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimePadding")))
-@interface SharedKotlinx_datetimePadding : SharedKotlinEnum<SharedKotlinx_datetimePadding *>
+__attribute__((swift_name("Kotlinx_datetimeDayOfWeekNames.Companion")))
+@interface SharedKotlinx_datetimeDayOfWeekNamesCompanion : SharedBase
 + (instancetype)alloc __attribute__((unavailable));
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
-@property (class, readonly) SharedKotlinx_datetimePadding *none __attribute__((swift_name("none")));
-@property (class, readonly) SharedKotlinx_datetimePadding *zero __attribute__((swift_name("zero")));
-@property (class, readonly) SharedKotlinx_datetimePadding *space __attribute__((swift_name("space")));
-+ (SharedKotlinArray<SharedKotlinx_datetimePadding *> *)values __attribute__((swift_name("values()")));
-@property (class, readonly) NSArray<SharedKotlinx_datetimePadding *> *entries __attribute__((swift_name("entries")));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedKotlinx_datetimeDayOfWeekNamesCompanion *shared __attribute__((swift_name("shared")));
+@property (readonly) SharedKotlinx_datetimeDayOfWeekNames *ENGLISH_ABBREVIATED __attribute__((swift_name("ENGLISH_ABBREVIATED")));
+@property (readonly) SharedKotlinx_datetimeDayOfWeekNames *ENGLISH_FULL __attribute__((swift_name("ENGLISH_FULL")));
 @end
 
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeDayOfWeekNames")))
-@interface SharedKotlinx_datetimeDayOfWeekNames : SharedBase
-- (instancetype)initWithNames:(NSArray<NSString *> *)names __attribute__((swift_name("init(names:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithMonday:(NSString *)monday tuesday:(NSString *)tuesday wednesday:(NSString *)wednesday thursday:(NSString *)thursday friday:(NSString *)friday saturday:(NSString *)saturday sunday:(NSString *)sunday __attribute__((swift_name("init(monday:tuesday:wednesday:thursday:friday:saturday:sunday:)"))) __attribute__((objc_designated_initializer));
-@property (class, readonly, getter=companion) SharedKotlinx_datetimeDayOfWeekNamesCompanion *companion __attribute__((swift_name("companion")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) NSArray<NSString *> *names __attribute__((swift_name("names")));
-@end
-
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeMonthNames")))
-@interface SharedKotlinx_datetimeMonthNames : SharedBase
-- (instancetype)initWithNames:(NSArray<NSString *> *)names __attribute__((swift_name("init(names:)"))) __attribute__((objc_designated_initializer));
-- (instancetype)initWithJanuary:(NSString *)january february:(NSString *)february march:(NSString *)march april:(NSString *)april may:(NSString *)may june:(NSString *)june july:(NSString *)july august:(NSString *)august september:(NSString *)september october:(NSString *)october november:(NSString *)november december:(NSString *)december __attribute__((swift_name("init(january:february:march:april:may:june:july:august:september:october:november:december:)"))) __attribute__((objc_designated_initializer));
-@property (class, readonly, getter=companion) SharedKotlinx_datetimeMonthNamesCompanion *companion __attribute__((swift_name("companion")));
-- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
-- (NSUInteger)hash __attribute__((swift_name("hash()")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) NSArray<NSString *> *names __attribute__((swift_name("names")));
+__attribute__((swift_name("Kotlinx_datetimeMonthNames.Companion")))
+@interface SharedKotlinx_datetimeMonthNamesCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedKotlinx_datetimeMonthNamesCompanion *shared __attribute__((swift_name("shared")));
+@property (readonly) SharedKotlinx_datetimeMonthNames *ENGLISH_ABBREVIATED __attribute__((swift_name("ENGLISH_ABBREVIATED")));
+@property (readonly) SharedKotlinx_datetimeMonthNames *ENGLISH_FULL __attribute__((swift_name("ENGLISH_FULL")));
 @end
 
 
@@ -8911,28 +9506,6 @@ __attribute__((swift_name("Kotlinx_datetimeDateTimeFormatBuilderWithUtcOffset"))
 - (void)offsetHoursPadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("offsetHours(padding:)")));
 - (void)offsetMinutesOfHourPadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("offsetMinutesOfHour(padding:)")));
 - (void)offsetSecondsOfMinutePadding:(SharedKotlinx_datetimePadding *)padding __attribute__((swift_name("offsetSecondsOfMinute(padding:)")));
-@end
-
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeDayOfWeekNames.Companion")))
-@interface SharedKotlinx_datetimeDayOfWeekNamesCompanion : SharedBase
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)companion __attribute__((swift_name("init()")));
-@property (class, readonly, getter=shared) SharedKotlinx_datetimeDayOfWeekNamesCompanion *shared __attribute__((swift_name("shared")));
-@property (readonly) SharedKotlinx_datetimeDayOfWeekNames *ENGLISH_ABBREVIATED __attribute__((swift_name("ENGLISH_ABBREVIATED")));
-@property (readonly) SharedKotlinx_datetimeDayOfWeekNames *ENGLISH_FULL __attribute__((swift_name("ENGLISH_FULL")));
-@end
-
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("Kotlinx_datetimeMonthNames.Companion")))
-@interface SharedKotlinx_datetimeMonthNamesCompanion : SharedBase
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)companion __attribute__((swift_name("init()")));
-@property (class, readonly, getter=shared) SharedKotlinx_datetimeMonthNamesCompanion *shared __attribute__((swift_name("shared")));
-@property (readonly) SharedKotlinx_datetimeMonthNames *ENGLISH_ABBREVIATED __attribute__((swift_name("ENGLISH_ABBREVIATED")));
-@property (readonly) SharedKotlinx_datetimeMonthNames *ENGLISH_FULL __attribute__((swift_name("ENGLISH_FULL")));
 @end
 
 #pragma pop_macro("_Nullable_result")
