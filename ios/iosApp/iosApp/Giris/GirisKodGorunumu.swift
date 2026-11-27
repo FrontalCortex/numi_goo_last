@@ -7,8 +7,11 @@ import SwiftUI
 // 12dp altında "Kodu tekrar gönder" (48dp, çerçeveli; geri sayımda metin değişir).
 // Kurallar ortak kodda: kod uzunluğu, 45 sn yeniden gönderme beklemesi, 5 yanlış denemede 15 dk kilit.
 //
-// Android'de bu parça giriş/kayıt ekranının içine gömülüdür (girişte altında Google düğmesi
-// görünmeye devam eder); burada ayrı ekrandır ve sağlayıcı düğmeleri gösterilmez.
+// Türüne göre (OtpVerificationFragment.onViewCreated):
+//   şifre sıfırlama → "Şifre sıfırlama"; veli kodu → "Veli onayı", "Velinin e-postası: …", veli
+//   açıklaması; çocuğun kendi adresi → "E-postanı doğrula", "Önce kendi e-postana gelen…";
+//   kayıt → "Hesap oluştur"; giriş → "E-postanı doğrula".
+// Android'de bu parça giriş/kayıt ekranının içine gömülüdür; burada ayrı ekrandır.
 @MainActor
 struct GirisKodGorunumu: View {
     @ObservedObject var model: GirisModeli
@@ -16,15 +19,38 @@ struct GirisKodGorunumu: View {
     let tur: GirisKodTuru
 
     private var baslik: String {
-        return LoginFlowTexts.shared.otpTitle(
-            forPasswordReset: tur == .sifreSifirlama,
-            isRegistration: tur == .kayit
-        )
+        switch tur {
+        case .sifreSifirlama:
+            return Metin.al("ui_sifre_sifirlama")
+        case .veli:
+            return Metin.al("ui_veli_onayi")
+        case .cocukEpostasi, .giris:
+            return Metin.al("ui_e_postani_dogrula")
+        case .kayit:
+            return Metin.al("ui_hesap_olustur")
+        }
+    }
+
+    private var epostaSatiri: String {
+        if case .veli(let veli, _) = tur {
+            return Metin.al("ui_veli_e_postasi_x", veli)
+        }
+        return eposta
+    }
+
+    private var aciklama: String {
+        switch tur {
+        case .veli:
+            return Metin.al("ui_veli_e_postasina_gelen_kodu_gir")
+        case .cocukEpostasi:
+            return Metin.al("ui_once_kendi_e_postana_gelen_kodu_gir")
+        default:
+            return Metin.al("fragment_otp_verification_text")
+        }
     }
 
     private var dogrulaMetni: String {
-        let metinler = LoginFlowTexts.shared
-        return model.kodDogrulaniyor ? metinler.BUTTON_VERIFYING : metinler.BUTTON_VERIFY
+        return model.kodDogrulaniyor ? Metin.al("ui_dogrulaniyor") : Metin.al("fragment_otp_verification_btn_verify")
     }
 
     var body: some View {
@@ -46,16 +72,17 @@ struct GirisKodGorunumu: View {
             Text(baslik)
                 .font(Tema.yazi(20))
                 .foregroundColor(Color("dark_text"))
-            Text(eposta)
+            Text(epostaSatiri)
                 .font(Tema.yazi(14))
                 .foregroundColor(Color("dark_text_secondary"))
                 .padding(.top, 6)
-            Text("E-postanıza gelen 6 haneli kodu girin.")
+            Text(aciklama)
                 .font(Tema.yazi(14))
                 .foregroundColor(Color("dark_text_secondary"))
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.top, 12)
             GirisMetinAlani(
-                ipucu: "6 haneli kod",
+                ipucu: Metin.al("fragment_otp_verification_et_code_hint"),
                 metin: $model.kod,
                 tur: .sayi,
                 azamiUzunluk: Int(OtpRules.shared.CODE_LENGTH)

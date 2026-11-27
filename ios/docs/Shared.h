@@ -6,7 +6,7 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSValue.h>
 
-@class SharedAbacusBead, SharedAbacusBeadController, SharedAbacusBeadMetrics, SharedAbacusBeadMetricsMoveDistancesPx, SharedAbacusBeadMetricsRodMeasurement, SharedAbacusBeadRenderer, SharedAbacusBeadRendererBeadRenderKind, SharedAbacusBeadRendererSoroban2Geometry, SharedAbacusCupRepository, SharedAbacusCustomizationFirestore, SharedAbacusCustomizationRules, SharedAbacusCustomizationRulesPlaceResult, SharedAbacusCustomizationSnapshot, SharedAbacusCustomizationUiLogic, SharedAbacusCustomizationUiLogicBeadCard, SharedAbacusCustomizationUiLogicBeadCardState, SharedAbacusCustomizationUiLogicBeadPaint, SharedAbacusCustomizationUiLogicColorRow, SharedAbacusCustomizationUiLogicFrameCard, SharedAbacusCustomizationUiLogicFrameCardState, SharedAbacusCustomizationUiLogicFrameLayer, SharedAbacusCustomizationUiLogicFramePaint, SharedAbacusCustomizationUiLogicPillGeometry, SharedAbacusCustomizationUiLogicPlaceOutcome, SharedAbacusCustomizationUiLogicPurchaseCheck, SharedAbacusCustomizationUiLogicPurchasePanelRules, SharedAbacusCustomizationUiLogicSlotBead, SharedAbacusCustomizationUiLogicSlotPanelState, SharedAbacusFrameRenderer, SharedAbacusFrameRendererRoundRectLayer, SharedAbacusLessonOutcome, SharedAbacusLessonRules, SharedAbacusLessonSessionControlResult, SharedAbacusLessonSessionControlResultAnswered, SharedAbacusLessonSessionControlResultIgnored, SharedAbacusLessonSessionControlResultOffline, SharedAbacusOperation, SharedAbacusPracticeLogic, SharedAbacusPracticeLogicKontrolResult, SharedAbacusPreferences, SharedAbacusPreferencesBeadColorSpec, SharedAbacusPreferencesBeadType, SharedAbacusPreferencesFrameType, SharedAbacusPreviewMetrics, SharedAbacusSoundPlayer, SharedAbacusTouchAction, SharedAbacusUiSettings, SharedAbakusBoncukKoprusu, SharedAbakusDersAkisi, SharedAbakusDersBitisi, SharedAbakusDersGirdisi, SharedAbakusDersKoprusu, SharedAbakusKontrolSonucu, SharedAbakusKontrolSonucuCompanion, SharedAbakusSoruListesi, SharedAccountDeletionRules, SharedAccountSettingsRules, SharedAdRules, SharedAgeConsentManager, SharedAgeConsentManagerAdRequestTags, SharedAgeConsentManagerAgeTreatment, SharedAnimatedQuest, SharedAppRatingManagerCompanion, SharedAuthRules, SharedAuthRulesGoogleLoginFailureAction, SharedAuthRulesPendingRegistration, SharedAuthRulesStudentEmailFlow, SharedBadgeAnimMode, SharedBadgeDetailLogic, SharedBadgeDetailLogicBadgeDetailUiState, SharedBadgeDetailLogicBadgeRenderConfig, SharedBadgeFragmentLogic, SharedBadgeFragmentLogicCelebrationQueueItem, SharedBadgeFragmentLogicLevelUpAnimConfig, SharedBadgeFragmentLogicLevelUpCelebrationPlan, SharedBadgeFragmentLogicPieceCountBadge, SharedBadgeFragmentLogicProgressUi, SharedBadgeIncrementTransactionResult, SharedBadgeKind, SharedBadgeKindCompanion, SharedBadgeLevelTone, SharedBadgeLevelUpPayload, SharedBadgePieceLeaderboardSync, SharedBadgePrecalcHelper, SharedBadgeProgressEngine, SharedBadgeProgressFirestore, SharedBadgeProgressRepository, SharedBadgeProgressWindow, SharedBadgeState, SharedBeadAnimationCompanion, SharedBeadAnimationPlan, SharedBeadData, SharedBeadMoveDistances, SharedBeadPurchaseFirestore, SharedBeadsBehavior, SharedBellekIciGunlukSoruDeposu, SharedBillingCatalog, SharedBlindingAdditionCupRepository, SharedBlindingExtractionCupRepository, SharedBlindingImpactCupRepository, SharedBlindingLessonFlags, SharedBlindingLessonOutcome, SharedBlindingLessonRules, SharedBlindingLessonRulesResultFalseAction, SharedBlindingOperation, SharedBlindingOperationMath, SharedBlindingOperationOther, SharedBlindingOperationSequence, SharedBlindingSequencePlaybackStep, SharedBlindingSequencePlaybackTimer, SharedBlindingWrongAnswerNext, SharedChestCrystalPolicy, SharedChestFragmentLogic, SharedChestFragmentLogicCupIconChange, SharedChestFragmentLogicMapProgressResult, SharedChestFragmentLogicPendingLessonProgressAnimation, SharedChestFragmentLogicSuccessRateEvent, SharedChestFragmentLogicSuccessRateEventItemFirstFinish, SharedChestFragmentLogicSuccessRateEventPass, SharedChestIcons, SharedChestRarity, SharedChestRarityCompanion, SharedChestResultLogic, SharedChestResultLogicReplayResult, SharedChestResultLogic_, SharedChestRewardDisplay, SharedChestRewardOutcome, SharedChestRewardType, SharedChestStepIndicator, SharedChestTapAction, SharedChestTapResult, SharedChestTypeProgressHelper, SharedChestTypeProgressHelper_, SharedCrystalBreakLogic, SharedCrystalRarityBehavior, SharedCrystalRarityTier, SharedCrystalTapAction, SharedCrystalTapResult, SharedCrystalTickResult, SharedCupBadgeSyncResult, SharedCupDeltaPrecalc, SharedCupDeltaTarget, SharedCupFetchResult, SharedCupFragmentLogic, SharedCupHistoryLogic, SharedCupHistoryLogicRangeTab, SharedCupHistoryRepository, SharedCupIconChange, SharedCupLessonLaunch, SharedCupMathOperation, SharedCupPathCard, SharedCupPathKind, SharedCupPathLogic, SharedCupPieceRow, SharedCupRuleEngine, SharedCupRuleEngineBlindingMultiplicationConfig, SharedCupRuleEngineCupLessonItemOverride, SharedCupRuleEngineCupRange, SharedCupRuleEngineDigitConfig, SharedCupRuleEngineMultiplicationConfig, SharedCupScoreRepositorySpec, SharedCupTier, SharedCupUpdateResult, SharedDailyQuestionBrokenHeartAction, SharedDailyQuestionBrokenHeartStore, SharedDailyQuestionBrokenHeartStoreCompanion, SharedDailyQuestionCardClickAction, SharedDailyQuestionCardLogic, SharedDailyQuestionCardProgressAnimStore, SharedDailyQuestionCardProgressAnimStoreCompanion, SharedDailyQuestionCardUiState, SharedDailyQuestionChallenge, SharedDailyQuestionChallengeClickAction, SharedDailyQuestionPeriod, SharedDailyQuestionPoolBuilder, SharedDailyQuestionPoolBuilderCompanion, SharedDailyQuestionProgressPlan, SharedDailyQuestionRepository, SharedDailyQuestionSlot, SharedDailyQuestionSource, SharedEditProfileRules, SharedEnergyManagerCompanion, SharedExtractionCupRepository, SharedFcmRules, SharedFcmRulesIncoming, SharedFeedbackGate, SharedFeedbackRules, SharedFirstTutorialShownStoreCompanion, SharedFirstTutorialShownStoreResolution, SharedFishingStreakPeriod, SharedFollowRules, SharedFollowRulesFriendSearchResult, SharedFrameData, SharedFramePurchaseFirestore, SharedFriendSearchRules, SharedGlobalLessonData, SharedGlobalLessonDataChestLessonRef, SharedGlobalLessonDataFirestoreLoadStatus, SharedGlobalLessonDataLeaderboardSubmit, SharedGlobalValues, SharedGorevEkraniDurumu, SharedGuidePanelData, SharedGunlukSoruBaslatma, SharedGunlukSoruCubukGorunumu, SharedGunlukSoruCubukModu, SharedImpactCupRepository, SharedJavaRandom, SharedKorDersAdimi, SharedKorDersAdimiCompanion, SharedKorDersOturumu, SharedKotlinArray<T>, SharedKotlinByteArray, SharedKotlinByteIterator, SharedKotlinEnum<E>, SharedKotlinEnumCompanion, SharedKotlinException, SharedKotlinFloatArray, SharedKotlinFloatIterator, SharedKotlinIntArray, SharedKotlinIntIterator, SharedKotlinNothing, SharedKotlinPair<__covariant A, __covariant B>, SharedKotlinRandom, SharedKotlinRandomDefault, SharedKotlinThrowable, SharedKotlinTriple<__covariant A, __covariant B, __covariant C>, SharedKotlinUnit, SharedKotlinx_datetimeDayOfWeek, SharedKotlinx_datetimeDayOfWeekNames, SharedKotlinx_datetimeDayOfWeekNamesCompanion, SharedKotlinx_datetimeFixedOffsetTimeZone, SharedKotlinx_datetimeFixedOffsetTimeZoneCompanion, SharedKotlinx_datetimeInstant, SharedKotlinx_datetimeInstantCompanion, SharedKotlinx_datetimeLocalDate, SharedKotlinx_datetimeLocalDateCompanion, SharedKotlinx_datetimeLocalDateTime, SharedKotlinx_datetimeLocalDateTimeCompanion, SharedKotlinx_datetimeLocalTime, SharedKotlinx_datetimeLocalTimeCompanion, SharedKotlinx_datetimeMonth, SharedKotlinx_datetimeMonthNames, SharedKotlinx_datetimeMonthNamesCompanion, SharedKotlinx_datetimePadding, SharedKotlinx_datetimeTimeZone, SharedKotlinx_datetimeTimeZoneCompanion, SharedKotlinx_datetimeUtcOffset, SharedKotlinx_datetimeUtcOffsetCompanion, SharedKotlinx_serialization_coreSerialKind, SharedKotlinx_serialization_coreSerializersModule, SharedKupaEkranKoprusu, SharedKupaGecmisNoktasi, SharedKupaGrafikNoktasi, SharedKupaGrafikVerisi, SharedLessonAdapterLogic, SharedLessonAdapterLogicActionButtonDecision, SharedLessonAdapterLogicChestStarSlot, SharedLessonAdapterLogicChestStarsRow, SharedLessonAdapterLogicLessonBottomSheetState, SharedLessonAdapterLogicLessonStartGlobals, SharedLessonAdapterLogicLessonStartTarget, SharedLessonAdapterLogicProgressAnimationAction, SharedLessonAdapterLogicProgressAnimationDecision, SharedLessonAdapterLogicRaceLessonBottomSheetState, SharedLessonAdapterLogicRaceRowStatus, SharedLessonAdapterLogicStepSegments, SharedLessonDataManager, SharedLessonItem, SharedLessonItemCompanion, SharedLessonLeaderboardRepository, SharedLessonLeaderboardRepositoryLeaderboardEntry, SharedLessonManager, SharedLessonOperations, SharedLessonProgressMerge, SharedLessonResultFalseLogic, SharedLessonResultFalseLogicFailRecord, SharedLessonResultLogic, SharedLessonResultLogicClaimBranch, SharedLessonResultLogicClaimDecision, SharedLessonSuccessRateRepository, SharedLessonSuccessRateRepositoryStepWrite, SharedLiderHamKayit, SharedLiderSatirVerisi, SharedLoginFlowTexts, SharedMapFragmentLogic, SharedMapFragmentLogicStickyHeader, SharedMapLayoutLogic, SharedMarathonGuideLogic, SharedMarathonGuideStoreCompanion, SharedMatematikDailyQuestionGenerators, SharedMathOperation, SharedMathOperationGenerator, SharedMathOperation_, SharedMedalPieceRow, SharedMessageReport, SharedMessageReportCompanion, SharedMissionCountdownLabel, SharedMissionCounterType, SharedMissionProgressOverlay, SharedMissionQuestCatalog, SharedMissionQuestData, SharedMissionQuestDefinition, SharedMissionQuestState, SharedMissionUiLogic, SharedMissionWindow, SharedMissionsProgressStore, SharedMissionsProgressStoreCompanion, SharedMissionsProgressStoreSnapshot, SharedNewChestLogic, SharedNewChestLogicCloseRoute, SharedOtpRules, SharedOtpRulesWrongAttemptResult, SharedOyunLessonItemCompanion, SharedOyunLessonItemData, SharedPartSelectionLogic, SharedPartState, SharedPendingUploadMeta, SharedProfileBadgeRenderConfig, SharedProfileBadgeSlotUi, SharedProfileCupCard, SharedProfileFragmentLogic, SharedQuestionMessage, SharedQuestionMessageCompanion, SharedRarityTheme, SharedRastgeleKaynagi, SharedRatingPromptDecision, SharedRecordLogic, SharedRecordLogicLeaderboardSections, SharedRecordLogicRowColors, SharedRecordLogicSeasonCountdown, SharedRecordTimeUtils, SharedRestrictedUser, SharedRestrictedUserCompanion, SharedRestrictedUserRestrictionUpdate, SharedRozetEkranVerisi, SharedRozetKutuVerisi, SharedRozetParcaVerisi, SharedScoreBarColorBlend, SharedSeasonClock, SharedSeasonLeaderboardRewardPayloads, SharedServerEnergy, SharedServerEnergyBuyWithKeysResult, SharedServerRewards, SharedServerRewardsChestOutcome, SharedServerRewardsCrystalOutcome, SharedSessionDeviceRules, SharedSessionDeviceRulesDecision, SharedSezonVerisi, SharedShopFragmentLogic, SharedShopFragmentLogicEnergySectionState, SharedShopFragmentLogicPackCard, SharedShopFragmentLogicProductKind, SharedSonucEkraniKoprusu, SharedSplashRules, SharedSplashRulesRoute, SharedStudentQuestion, SharedStudentQuestionCompanion, SharedSurum, SharedTeacherLoginRules, SharedTimeTrackerCompanion, SharedUploadLessonDataLogic, SharedUploadLessonDataLogicYuklenenDers<T>, SharedUserAskQuestionRestriction, SharedUserBadgeProgress, SharedUserIdRules, SharedUserInfoRules, SharedUserWallet, SharedUserWalletFirestore, SharedWalletLoadResult, SharedWalletReason;
+@class SharedAbacusBead, SharedAbacusBeadController, SharedAbacusBeadMetrics, SharedAbacusBeadMetricsMoveDistancesPx, SharedAbacusBeadMetricsRodMeasurement, SharedAbacusBeadRenderer, SharedAbacusBeadRendererBeadRenderKind, SharedAbacusBeadRendererSoroban2Geometry, SharedAbacusCupRepository, SharedAbacusCustomizationFirestore, SharedAbacusCustomizationRules, SharedAbacusCustomizationRulesPlaceResult, SharedAbacusCustomizationSnapshot, SharedAbacusCustomizationUiLogic, SharedAbacusCustomizationUiLogicBeadCard, SharedAbacusCustomizationUiLogicBeadCardState, SharedAbacusCustomizationUiLogicBeadPaint, SharedAbacusCustomizationUiLogicColorRow, SharedAbacusCustomizationUiLogicFrameCard, SharedAbacusCustomizationUiLogicFrameCardState, SharedAbacusCustomizationUiLogicFrameLayer, SharedAbacusCustomizationUiLogicFramePaint, SharedAbacusCustomizationUiLogicPillGeometry, SharedAbacusCustomizationUiLogicPlaceOutcome, SharedAbacusCustomizationUiLogicPurchaseCheck, SharedAbacusCustomizationUiLogicPurchasePanelRules, SharedAbacusCustomizationUiLogicSlotBead, SharedAbacusCustomizationUiLogicSlotPanelState, SharedAbacusFrameRenderer, SharedAbacusFrameRendererRoundRectLayer, SharedAbacusLessonOutcome, SharedAbacusLessonRules, SharedAbacusLessonSessionControlResult, SharedAbacusLessonSessionControlResultAnswered, SharedAbacusLessonSessionControlResultIgnored, SharedAbacusLessonSessionControlResultOffline, SharedAbacusOperation, SharedAbacusPracticeLogic, SharedAbacusPracticeLogicKontrolResult, SharedAbacusPreferences, SharedAbacusPreferencesBeadColorSpec, SharedAbacusPreferencesBeadType, SharedAbacusPreferencesFrameType, SharedAbacusPreviewMetrics, SharedAbacusSoundPlayer, SharedAbacusTouchAction, SharedAbacusUiSettings, SharedAbakusBoncukKoprusu, SharedAbakusDersAkisi, SharedAbakusDersBitisi, SharedAbakusDersGirdisi, SharedAbakusDersKoprusu, SharedAbakusKontrolSonucu, SharedAbakusKontrolSonucuCompanion, SharedAbakusSoruListesi, SharedAccountDeletionRules, SharedAccountSettingsRules, SharedAdRules, SharedAdRulesAdSkipPolicyCompanion, SharedAgeConsentManager, SharedAgeConsentManagerAdRequestTags, SharedAgeConsentManagerAgeTreatment, SharedAnimatedQuest, SharedAppRatingManagerCompanion, SharedAuthRules, SharedAuthRulesGoogleLoginFailureAction, SharedAuthRulesPendingRegistration, SharedAuthRulesStudentEmailFlow, SharedBadgeAnimMode, SharedBadgeDetailLogic, SharedBadgeDetailLogicBadgeDetailUiState, SharedBadgeDetailLogicBadgeRenderConfig, SharedBadgeFragmentLogic, SharedBadgeFragmentLogicCelebrationQueueItem, SharedBadgeFragmentLogicLevelUpAnimConfig, SharedBadgeFragmentLogicLevelUpCelebrationPlan, SharedBadgeFragmentLogicPieceCountBadge, SharedBadgeFragmentLogicProgressUi, SharedBadgeIncrementTransactionResult, SharedBadgeKind, SharedBadgeKindCompanion, SharedBadgeLevelTone, SharedBadgeLevelUpPayload, SharedBadgePieceLeaderboardSync, SharedBadgePrecalcHelper, SharedBadgeProgressEngine, SharedBadgeProgressFirestore, SharedBadgeProgressRepository, SharedBadgeProgressWindow, SharedBadgeState, SharedBeadAnimationCompanion, SharedBeadAnimationPlan, SharedBeadData, SharedBeadMoveDistances, SharedBeadPurchaseFirestore, SharedBeadsBehavior, SharedBellekIciGunlukSoruDeposu, SharedBillingCatalog, SharedBlindingAdditionCupRepository, SharedBlindingExtractionCupRepository, SharedBlindingImpactCupRepository, SharedBlindingLessonFlags, SharedBlindingLessonOutcome, SharedBlindingLessonRules, SharedBlindingLessonRulesResultFalseAction, SharedBlindingOperation, SharedBlindingOperationMath, SharedBlindingOperationOther, SharedBlindingOperationSequence, SharedBlindingSequencePlaybackStep, SharedBlindingSequencePlaybackTimer, SharedBlindingWrongAnswerNext, SharedChestCrystalPolicy, SharedChestFragmentLogic, SharedChestFragmentLogicCupIconChange, SharedChestFragmentLogicMapProgressResult, SharedChestFragmentLogicPendingLessonProgressAnimation, SharedChestFragmentLogicSuccessRateEvent, SharedChestFragmentLogicSuccessRateEventItemFirstFinish, SharedChestFragmentLogicSuccessRateEventPass, SharedChestIcons, SharedChestRarity, SharedChestRarityCompanion, SharedChestResultLogic, SharedChestResultLogicReplayResult, SharedChestResultLogic_, SharedChestRewardDisplay, SharedChestRewardOutcome, SharedChestRewardType, SharedChestStepIndicator, SharedChestTapAction, SharedChestTapResult, SharedChestTypeProgressHelper, SharedChestTypeProgressHelper_, SharedCrystalBreakLogic, SharedCrystalRarityBehavior, SharedCrystalRarityTier, SharedCrystalTapAction, SharedCrystalTapResult, SharedCrystalTickResult, SharedCupBadgeSyncResult, SharedCupDeltaPrecalc, SharedCupDeltaTarget, SharedCupFetchResult, SharedCupFragmentLogic, SharedCupHistoryLogic, SharedCupHistoryLogicRangeTab, SharedCupHistoryRepository, SharedCupIconChange, SharedCupLessonLaunch, SharedCupMathOperation, SharedCupPathCard, SharedCupPathKind, SharedCupPathLogic, SharedCupPathRewardRepository, SharedCupPathRewardRepositoryCupPathState, SharedCupPathRewardRepositoryMilestone, SharedCupPathRewardRepositoryMilestoneStatus, SharedCupPieceRow, SharedCupRuleEngine, SharedCupRuleEngineBlindingMultiplicationConfig, SharedCupRuleEngineCupLessonItemOverride, SharedCupRuleEngineCupRange, SharedCupRuleEngineDigitConfig, SharedCupRuleEngineMultiplicationConfig, SharedCupScoreRepositorySpec, SharedCupScoreService, SharedCupScoreServiceCupScoreResult, SharedCupTier, SharedCupUpdateResult, SharedDailyQuestionBrokenHeartAction, SharedDailyQuestionBrokenHeartStore, SharedDailyQuestionBrokenHeartStoreCompanion, SharedDailyQuestionCardClickAction, SharedDailyQuestionCardLogic, SharedDailyQuestionCardProgressAnimStore, SharedDailyQuestionCardProgressAnimStoreCompanion, SharedDailyQuestionCardUiState, SharedDailyQuestionChallenge, SharedDailyQuestionChallengeClickAction, SharedDailyQuestionPeriod, SharedDailyQuestionPoolBuilder, SharedDailyQuestionPoolBuilderCompanion, SharedDailyQuestionProgressPlan, SharedDailyQuestionRepository, SharedDailyQuestionSlot, SharedDailyQuestionSource, SharedEditProfileRules, SharedEnergyManagerCompanion, SharedExtractionCupRepository, SharedFcmRules, SharedFcmRulesIncoming, SharedFeedbackGate, SharedFeedbackRules, SharedFirstTutorialShownStoreCompanion, SharedFirstTutorialShownStoreResolution, SharedFishingStreakPeriod, SharedFollowRules, SharedFollowRulesFriendSearchResult, SharedFrameData, SharedFramePurchaseFirestore, SharedFriendSearchRules, SharedGlobalLessonData, SharedGlobalLessonDataChestLessonRef, SharedGlobalLessonDataFirestoreLoadStatus, SharedGlobalLessonDataItemWrite, SharedGlobalLessonDataLeaderboardSubmit, SharedGlobalLessonDataLegacyMigrationPlan, SharedGlobalValues, SharedGorevEkraniDurumu, SharedGuidePanelData, SharedGunlukSoruBaslatma, SharedGunlukSoruCubukGorunumu, SharedGunlukSoruCubukModu, SharedImpactCupRepository, SharedJavaRandom, SharedKorDersAdimi, SharedKorDersAdimiCompanion, SharedKorDersOturumu, SharedKotlinArray<T>, SharedKotlinByteArray, SharedKotlinByteIterator, SharedKotlinEnum<E>, SharedKotlinEnumCompanion, SharedKotlinException, SharedKotlinFloatArray, SharedKotlinFloatIterator, SharedKotlinIntArray, SharedKotlinIntIterator, SharedKotlinNothing, SharedKotlinPair<__covariant A, __covariant B>, SharedKotlinRandom, SharedKotlinRandomDefault, SharedKotlinThrowable, SharedKotlinTriple<__covariant A, __covariant B, __covariant C>, SharedKotlinUnit, SharedKotlinx_datetimeDayOfWeek, SharedKotlinx_datetimeDayOfWeekNames, SharedKotlinx_datetimeDayOfWeekNamesCompanion, SharedKotlinx_datetimeFixedOffsetTimeZone, SharedKotlinx_datetimeFixedOffsetTimeZoneCompanion, SharedKotlinx_datetimeInstant, SharedKotlinx_datetimeInstantCompanion, SharedKotlinx_datetimeLocalDate, SharedKotlinx_datetimeLocalDateCompanion, SharedKotlinx_datetimeLocalDateTime, SharedKotlinx_datetimeLocalDateTimeCompanion, SharedKotlinx_datetimeLocalTime, SharedKotlinx_datetimeLocalTimeCompanion, SharedKotlinx_datetimeMonth, SharedKotlinx_datetimeMonthNames, SharedKotlinx_datetimeMonthNamesCompanion, SharedKotlinx_datetimePadding, SharedKotlinx_datetimeTimeZone, SharedKotlinx_datetimeTimeZoneCompanion, SharedKotlinx_datetimeUtcOffset, SharedKotlinx_datetimeUtcOffsetCompanion, SharedKotlinx_serialization_coreSerialKind, SharedKotlinx_serialization_coreSerializersModule, SharedKupaEkranKoprusu, SharedKupaGecmisNoktasi, SharedKupaGrafikNoktasi, SharedKupaGrafikVerisi, SharedLessonAdapterLogic, SharedLessonAdapterLogicActionButtonDecision, SharedLessonAdapterLogicCardState, SharedLessonAdapterLogicChestCardStars, SharedLessonAdapterLogicChestStarSlot, SharedLessonAdapterLogicChestStarsRow, SharedLessonAdapterLogicLessonBottomSheetState, SharedLessonAdapterLogicLessonStartGlobals, SharedLessonAdapterLogicLessonStartTarget, SharedLessonAdapterLogicPanelState, SharedLessonAdapterLogicProgressAnimationAction, SharedLessonAdapterLogicProgressAnimationDecision, SharedLessonAdapterLogicRaceLessonBottomSheetState, SharedLessonAdapterLogicRaceRowStatus, SharedLessonAdapterLogicStepSegments, SharedLessonDataManager, SharedLessonEndMascotDraw, SharedLessonEndMascotLogic, SharedLessonItem, SharedLessonItemCompanion, SharedLessonLeaderboardRepository, SharedLessonLeaderboardRepositoryLeaderboardEntry, SharedLessonManager, SharedLessonOperations, SharedLessonProgressMerge, SharedLessonResultFalseLogic, SharedLessonResultFalseLogicFailRecord, SharedLessonResultLogic, SharedLessonResultLogicClaimBranch, SharedLessonResultLogicClaimDecision, SharedLessonSuccessRateRepository, SharedLessonSuccessRateRepositoryStateRefs, SharedLessonSuccessRateRepositoryStepWrite, SharedLiderHamKayit, SharedLiderSatirVerisi, SharedLoginFlowTexts, SharedMapFragmentLogic, SharedMapFragmentLogicStickyHeader, SharedMapLayoutLogic, SharedMarathonGuideLogic, SharedMarathonGuideStoreCompanion, SharedMatematikDailyQuestionGenerators, SharedMathOperation, SharedMathOperationGenerator, SharedMathOperation_, SharedMedalPieceRow, SharedMessageReport, SharedMessageReportCompanion, SharedMissionCountdownLabel, SharedMissionCounterType, SharedMissionProgressOverlay, SharedMissionQuestCatalog, SharedMissionQuestData, SharedMissionQuestDefinition, SharedMissionQuestState, SharedMissionUiLogic, SharedMissionWindow, SharedMissionsProgressStore, SharedMissionsProgressStoreCompanion, SharedMissionsProgressStoreSnapshot, SharedNewChestLogic, SharedNewChestLogicCloseRoute, SharedOtpRules, SharedOtpRulesWrongAttemptResult, SharedOyunLessonItemCompanion, SharedOyunLessonItemData, SharedPartSelectionLogic, SharedPartState, SharedPendingUploadMeta, SharedPlanStatus, SharedProfileBadgeRenderConfig, SharedProfileBadgeSlotUi, SharedProfileCupCard, SharedProfileFragmentLogic, SharedQuestionMessage, SharedQuestionMessageCompanion, SharedRarityTheme, SharedRastgeleKaynagi, SharedRatingPromptDecision, SharedRecordLogic, SharedRecordLogicLeaderboardSections, SharedRecordLogicRowColors, SharedRecordLogicSeasonCountdown, SharedRecordTimeUtils, SharedRestrictedUser, SharedRestrictedUserCompanion, SharedRestrictedUserRestrictionUpdate, SharedRozetEkranVerisi, SharedRozetKutuVerisi, SharedRozetParcaVerisi, SharedScoreBarColorBlend, SharedSeasonClock, SharedSeasonLeaderboardRewardPayloads, SharedServerEnergy, SharedServerEnergyBuyWithKeysResult, SharedServerRewards, SharedServerRewardsChestOutcome, SharedServerRewardsCrystalOutcome, SharedSessionDeviceRules, SharedSessionDeviceRulesDecision, SharedSezonVerisi, SharedShopFragmentLogic, SharedShopFragmentLogicEnergySectionState, SharedShopFragmentLogicPackCard, SharedShopFragmentLogicProductKind, SharedSignupFlowRules, SharedSignupFlowRulesStep, SharedSonucEkraniKoprusu, SharedSplashRules, SharedSplashRulesRoute, SharedStudentQuestion, SharedStudentQuestionCompanion, SharedSurum, SharedTeacherLoginRules, SharedTimeTrackerCompanion, SharedTimeTrackerCompanionSyncWrite, SharedTrustedClockCompanion, SharedTrustedClockRules, SharedTrustedClockRulesAnchor, SharedUploadLessonDataLogic, SharedUploadLessonDataLogicYuklenenDers<T>, SharedUserAskQuestionRestriction, SharedUserBadgeProgress, SharedUserIdRules, SharedUserInfoRules, SharedUserWallet, SharedUserWalletFirestore, SharedWalletLoadResult, SharedWalletReason;
 
 @protocol SharedAbacusBeadHost, SharedAbacusPrefsStore, SharedDailyQuestionChallengeCache, SharedDailyQuestionGenerators, SharedEnergyPlatform, SharedKotlinAnnotation, SharedKotlinAppendable, SharedKotlinComparable, SharedKotlinIterator, SharedKotlinKAnnotatedElement, SharedKotlinKClass, SharedKotlinKClassifier, SharedKotlinKDeclarationContainer, SharedKotlinx_datetimeDateTimeFormat, SharedKotlinx_datetimeDateTimeFormatBuilder, SharedKotlinx_datetimeDateTimeFormatBuilderWithDate, SharedKotlinx_datetimeDateTimeFormatBuilderWithDateTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithUtcOffset, SharedKotlinx_serialization_coreCompositeDecoder, SharedKotlinx_serialization_coreCompositeEncoder, SharedKotlinx_serialization_coreDecoder, SharedKotlinx_serialization_coreDeserializationStrategy, SharedKotlinx_serialization_coreEncoder, SharedKotlinx_serialization_coreKSerializer, SharedKotlinx_serialization_coreSerialDescriptor, SharedKotlinx_serialization_coreSerializationStrategy, SharedKotlinx_serialization_coreSerializersModuleCollector, SharedLessonManagerLessonAdapterBridge, SharedLessonManagerRaceAdapterBridge, SharedLessonProgressSink, SharedMissionCloudGateway, SharedOyunKeyValueStore, SharedOyunLessonItem, SharedServerRewardsChestCaller, SharedTimeTrackerPlatform;
 
@@ -196,8 +196,8 @@ __attribute__((swift_name("AbacusBeadController")))
 - (void)setup __attribute__((swift_name("setup()")));
 - (void)syncStateFromUiApplyAppearance:(BOOL)applyAppearance __attribute__((swift_name("syncStateFromUi(applyAppearance:)")));
 @property (readonly) SharedKotlinArray<SharedKotlinArray<SharedAbacusBead *> *> *bottomBeads __attribute__((swift_name("bottomBeads")));
+@property void (^ _Nullable onValueChanged)(void) __attribute__((swift_name("onValueChanged")));
 @property (readonly) SharedKotlinArray<SharedAbacusBead *> *topBeads __attribute__((swift_name("topBeads")));
-@property BOOL tutorialBeadDiagnosticsEnabled __attribute__((swift_name("tutorialBeadDiagnosticsEnabled")));
 @end
 
 __attribute__((swift_name("AbacusBeadHost")))
@@ -418,8 +418,10 @@ __attribute__((swift_name("AbacusCustomizationRules")))
 @property (class, readonly, getter=shared) SharedAbacusCustomizationRules *shared __attribute__((swift_name("shared")));
 - (int32_t)availableCountOwnedBeads:(NSDictionary<NSString *, SharedBeadData *> *)ownedBeads store:(id<SharedAbacusPrefsStore>)store uid:(NSString * _Nullable)uid beadType:(SharedAbacusPreferencesBeadType *)beadType __attribute__((swift_name("availableCount(ownedBeads:store:uid:beadType:)")));
 - (NSString *)beadImageResNameBeadType:(SharedAbacusPreferencesBeadType *)beadType __attribute__((swift_name("beadImageResName(beadType:)")));
+- (NSString *)colorFeatureCurrencyIconResNameBeadType:(SharedAbacusPreferencesBeadType *)beadType __attribute__((swift_name("colorFeatureCurrencyIconResName(beadType:)")));
 - (int32_t)countAfterPurchaseCurrentCount:(int32_t)currentCount __attribute__((swift_name("countAfterPurchase(currentCount:)")));
 - (NSString *)currencyIconResNameBeadType:(SharedAbacusPreferencesBeadType *)beadType __attribute__((swift_name("currencyIconResName(beadType:)")));
+- (int32_t)getBeadColorFeaturePriceBeadType:(SharedAbacusPreferencesBeadType *)beadType __attribute__((swift_name("getBeadColorFeaturePrice(beadType:)")));
 - (int32_t)getBeadPriceBeadType:(SharedAbacusPreferencesBeadType *)beadType __attribute__((swift_name("getBeadPrice(beadType:)")));
 - (int32_t)getFramePriceFrameType:(SharedAbacusPreferencesFrameType *)frameType __attribute__((swift_name("getFramePrice(frameType:)")));
 - (BOOL)hasEnoughBeadType:(SharedAbacusPreferencesBeadType *)beadType cachedKeys:(int32_t)cachedKeys cachedCurrency:(int32_t)cachedCurrency __attribute__((swift_name("hasEnough(beadType:cachedKeys:cachedCurrency:)")));
@@ -438,6 +440,7 @@ __attribute__((swift_name("AbacusCustomizationRules")))
 - (NSDictionary<NSString *, SharedFrameData *> *)withFrameColorFeatureOwnedFrames:(NSDictionary<NSString *, SharedFrameData *> *)ownedFrames frameType:(SharedAbacusPreferencesFrameType *)frameType __attribute__((swift_name("withFrameColorFeature(ownedFrames:frameType:)")));
 - (NSDictionary<NSString *, SharedFrameData *> *)withFrameOwnedOwnedFrames:(NSDictionary<NSString *, SharedFrameData *> *)ownedFrames frameType:(SharedAbacusPreferencesFrameType *)frameType __attribute__((swift_name("withFrameOwned(ownedFrames:frameType:)")));
 @property (readonly) int32_t BEAD_PACK_SIZE __attribute__((swift_name("BEAD_PACK_SIZE")));
+@property (readonly) int32_t COLOR_FEATURE_KEY_PRICE __attribute__((swift_name("COLOR_FEATURE_KEY_PRICE")));
 @property (readonly) int32_t COLOR_FEATURE_PRICE __attribute__((swift_name("COLOR_FEATURE_PRICE")));
 @property (readonly) NSString *ICON_GOLD __attribute__((swift_name("ICON_GOLD")));
 @property (readonly) NSString *ICON_KEY __attribute__((swift_name("ICON_KEY")));
@@ -498,6 +501,7 @@ __attribute__((swift_name("AbacusCustomizationUiLogic")))
 - (NSArray<SharedAbacusCustomizationUiLogicColorRow *> *)beadColorRowsStore:(id<SharedAbacusPrefsStore>)store beadType:(SharedAbacusPreferencesBeadType *)beadType selected:(BOOL)selected __attribute__((swift_name("beadColorRows(store:beadType:selected:)")));
 - (int32_t)beadCountAfterPurchaseOwnedBeads:(NSDictionary<NSString *, SharedBeadData *> *)ownedBeads beadType:(SharedAbacusPreferencesBeadType *)beadType fromSlotPanel:(BOOL)fromSlotPanel __attribute__((swift_name("beadCountAfterPurchase(ownedBeads:beadType:fromSlotPanel:)")));
 - (SharedAbacusCustomizationUiLogicBeadPaint *)beadPaintStore:(id<SharedAbacusPrefsStore>)store beadType:(SharedAbacusPreferencesBeadType *)beadType selected:(BOOL)selected __attribute__((swift_name("beadPaint(store:beadType:selected:)")));
+- (SharedAbacusCustomizationUiLogicPurchaseCheck *)checkBeadColorFeaturePurchaseBeadType:(SharedAbacusPreferencesBeadType *)beadType cachedKeys:(int32_t)cachedKeys cachedCurrency:(int32_t)cachedCurrency __attribute__((swift_name("checkBeadColorFeaturePurchase(beadType:cachedKeys:cachedCurrency:)")));
 - (SharedAbacusCustomizationUiLogicPurchaseCheck *)checkBeadPurchaseBeadType:(SharedAbacusPreferencesBeadType *)beadType cachedKeys:(int32_t)cachedKeys cachedCurrency:(int32_t)cachedCurrency __attribute__((swift_name("checkBeadPurchase(beadType:cachedKeys:cachedCurrency:)")));
 - (SharedAbacusCustomizationUiLogicPurchaseCheck *)checkGoldPurchasePrice:(int32_t)price cachedCurrency:(int32_t)cachedCurrency __attribute__((swift_name("checkGoldPurchase(price:cachedCurrency:)")));
 - (SharedAbacusCustomizationUiLogicPurchaseCheck *)checkSlotPanelPurchaseOwnedBeads:(NSDictionary<NSString *, SharedBeadData *> *)ownedBeads beadType:(SharedAbacusPreferencesBeadType *)beadType cachedKeys:(int32_t)cachedKeys cachedCurrency:(int32_t)cachedCurrency __attribute__((swift_name("checkSlotPanelPurchase(ownedBeads:beadType:cachedKeys:cachedCurrency:)")));
@@ -841,6 +845,7 @@ __attribute__((swift_name("AbacusLessonRules")))
 - (SharedKotlinPair<SharedFloat *, SharedInt *> *)calculateChestScoreSuccessRate:(float)successRate timeStr:(NSString *)timeStr worstCupTime:(int32_t)worstCupTime __attribute__((swift_name("calculateChestScore(successRate:timeStr:worstCupTime:)")));
 - (int32_t)dersPuaniSuccessRate:(float)successRate __attribute__((swift_name("dersPuani(successRate:)")));
 - (NSString *)formatTimerSeconds:(int32_t)seconds __attribute__((swift_name("formatTimer(seconds:)")));
+- (BOOL)isLessonSuccessRateTypeLessonType:(int32_t)lessonType __attribute__((swift_name("isLessonSuccessRateType(lessonType:)")));
 - (NSString *)multiplicationLayoutForDigitDigit:(int32_t)digit __attribute__((swift_name("multiplicationLayoutForDigit(digit:)")));
 - (NSArray<NSString *> *)optimizeBeadIdsForReverseBeadIds:(NSArray<NSString *> *)beadIds __attribute__((swift_name("optimizeBeadIdsForReverse(beadIds:)")));
 - (int32_t)parseTimeToSecondsValue:(NSString *)value __attribute__((swift_name("parseTimeToSeconds(value:)")));
@@ -853,6 +858,7 @@ __attribute__((swift_name("AbacusLessonRules")))
 @property (readonly) int64_t CONTROL_DEBOUNCE_MS __attribute__((swift_name("CONTROL_DEBOUNCE_MS")));
 @property (readonly) int64_t CONTROL_REENABLE_DELAY_CORRECT_MS __attribute__((swift_name("CONTROL_REENABLE_DELAY_CORRECT_MS")));
 @property (readonly) int64_t CONTROL_REENABLE_DELAY_INCORRECT_MS __attribute__((swift_name("CONTROL_REENABLE_DELAY_INCORRECT_MS")));
+@property (readonly) float LESSON_PASS_MIN_SUCCESS_RATE __attribute__((swift_name("LESSON_PASS_MIN_SUCCESS_RATE")));
 @property (readonly) int64_t PROGRESS_ANIMATION_MS __attribute__((swift_name("PROGRESS_ANIMATION_MS")));
 @property (readonly) int32_t PROGRESS_COLOR_DARK_RED __attribute__((swift_name("PROGRESS_COLOR_DARK_RED")));
 @property (readonly) int32_t PROGRESS_COLOR_GREEN __attribute__((swift_name("PROGRESS_COLOR_GREEN")));
@@ -1473,9 +1479,11 @@ __attribute__((swift_name("BlindingLessonRules")))
 @property (class, readonly, getter=shared) SharedBlindingLessonRules *shared __attribute__((swift_name("shared")));
 - (int32_t)cupDeltaFlags:(SharedBlindingLessonFlags *)flags isCorrect:(BOOL)isCorrect __attribute__((swift_name("cupDelta(flags:isCorrect:)")));
 - (SharedCupDeltaTarget *)cupDeltaTargetFlags:(SharedBlindingLessonFlags *)flags __attribute__((swift_name("cupDeltaTarget(flags:)")));
+- (NSString *)cupModeNameFlags:(SharedBlindingLessonFlags *)flags __attribute__((swift_name("cupModeName(flags:)")));
 - (SharedBlindingLessonOutcome *)finishLessonAfterLastQuestionIsDailyQuestionMode:(BOOL)isDailyQuestionMode globalPartId:(int32_t)globalPartId flags:(SharedBlindingLessonFlags *)flags correctAnswer:(int32_t)correctAnswer totalQuestions:(int32_t)totalQuestions toplamPuan:(int32_t)toplamPuan __attribute__((swift_name("finishLessonAfterLastQuestion(isDailyQuestionMode:globalPartId:flags:correctAnswer:totalQuestions:toplamPuan:)")));
 - (BOOL)isDailyQuestionSessionPeriodValidSessionPeriodKey:(NSString * _Nullable)sessionPeriodKey currentPeriodKey:(NSString *)currentPeriodKey __attribute__((swift_name("isDailyQuestionSessionPeriodValid(sessionPeriodKey:currentPeriodKey:)")));
 - (BOOL)isHintHiddenGlobalPartId:(int32_t)globalPartId __attribute__((swift_name("isHintHidden(globalPartId:)")));
+- (BOOL)isLessonSuccessRateScopeIsDailyQuestionMode:(BOOL)isDailyQuestionMode globalPartId:(int32_t)globalPartId lessonType:(int32_t)lessonType __attribute__((swift_name("isLessonSuccessRateScope(isDailyQuestionMode:globalPartId:lessonType:)")));
 - (BOOL)isProgressBarHiddenGlobalPartId:(int32_t)globalPartId __attribute__((swift_name("isProgressBarHidden(globalPartId:)")));
 - (BOOL)isRacePanelLessonFlags:(SharedBlindingLessonFlags *)flags __attribute__((swift_name("isRacePanelLesson(flags:)")));
 - (BOOL)isTimerVisibleLessonType:(int32_t)lessonType globalPartId:(int32_t)globalPartId __attribute__((swift_name("isTimerVisible(lessonType:globalPartId:)")));
@@ -1483,12 +1491,14 @@ __attribute__((swift_name("BlindingLessonRules")))
 - (BOOL)raceLessonPassedCorrectAnswer:(int32_t)correctAnswer totalQuestions:(int32_t)totalQuestions __attribute__((swift_name("raceLessonPassed(correctAnswer:totalQuestions:)")));
 - (BOOL)shouldResetAbacusAfterAnswerFlags:(SharedBlindingLessonFlags *)flags __attribute__((swift_name("shouldResetAbacusAfterAnswer(flags:)")));
 - (BOOL)shouldStartTimerLessonType:(int32_t)lessonType isTimerStarted:(BOOL)isTimerStarted __attribute__((swift_name("shouldStartTimer(lessonType:isTimerStarted:)")));
+- (BOOL)shouldSubmitCupQuitResultGlobalPartId:(int32_t)globalPartId lessonStarted:(BOOL)lessonStarted cupResultSubmitted:(BOOL)cupResultSubmitted __attribute__((swift_name("shouldSubmitCupQuitResult(globalPartId:lessonStarted:cupResultSubmitted:)")));
 - (BOOL)usesRulesTablePickerGlobalPartId:(int32_t)globalPartId isDailyQuestionMode:(BOOL)isDailyQuestionMode __attribute__((swift_name("usesRulesTablePicker(globalPartId:isDailyQuestionMode:)")));
 - (SharedBlindingWrongAnswerNext *)wrongAnswerNextGlobalPartId:(int32_t)globalPartId isDailyQuestionMode:(BOOL)isDailyQuestionMode flags:(SharedBlindingLessonFlags *)flags __attribute__((swift_name("wrongAnswerNext(globalPartId:isDailyQuestionMode:flags:)")));
 @property (readonly) int32_t CUP_PART_ID __attribute__((swift_name("CUP_PART_ID")));
 @property (readonly) int32_t DEFAULT_CUP_LOSS_DELTA __attribute__((swift_name("DEFAULT_CUP_LOSS_DELTA")));
 @property (readonly) int32_t DEFAULT_CUP_WIN_DELTA __attribute__((swift_name("DEFAULT_CUP_WIN_DELTA")));
 @property (readonly) int64_t DEFAULT_TIME_PERIOD_MS __attribute__((swift_name("DEFAULT_TIME_PERIOD_MS")));
+@property (readonly) float PART_4_5_PASS_MIN_SUCCESS_RATE __attribute__((swift_name("PART_4_5_PASS_MIN_SUCCESS_RATE")));
 @property (readonly) int64_t SEQUENCE_BLANK_MS __attribute__((swift_name("SEQUENCE_BLANK_MS")));
 @property (readonly) int64_t SEQUENCE_RESTART_DELAY_MS __attribute__((swift_name("SEQUENCE_RESTART_DELAY_MS")));
 @end
@@ -1510,6 +1520,9 @@ __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("BlindingLessonSession")))
 @interface SharedBlindingLessonSession : SharedBase
 - (instancetype)initWithOperations:(NSArray<SharedBlindingOperation *> *)operations flags:(SharedBlindingLessonFlags *)flags __attribute__((swift_name("init(operations:flags:)"))) __attribute__((objc_designated_initializer));
+- (BOOL)claimCupRaceLog __attribute__((swift_name("claimCupRaceLog()")));
+- (BOOL)claimCupResult __attribute__((swift_name("claimCupResult()")));
+- (BOOL)claimLessonFinish __attribute__((swift_name("claimLessonFinish()")));
 - (void)clearControlNumber __attribute__((swift_name("clearControlNumber()")));
 - (BOOL)stepAnswerAlgorithmInputText:(NSString *)inputText abacusValue:(int32_t)abacusValue currentSequenceIndex:(int32_t)currentSequenceIndex __attribute__((swift_name("stepAnswerAlgorithm(inputText:abacusValue:currentSequenceIndex:)")));
 @property (readonly) int32_t answerNumber __attribute__((swift_name("answerNumber")));
@@ -1517,8 +1530,11 @@ __attribute__((swift_name("BlindingLessonSession")))
 @property int32_t correctAnswer __attribute__((swift_name("correctAnswer")));
 @property (readonly) NSString *correctAnswerLabel __attribute__((swift_name("correctAnswerLabel")));
 @property (readonly) NSString *correctAnswerText __attribute__((swift_name("correctAnswerText")));
+@property (readonly) BOOL cupResultLogged __attribute__((swift_name("cupResultLogged")));
+@property (readonly) BOOL cupResultSubmitted __attribute__((swift_name("cupResultSubmitted")));
 @property int32_t currentIndex __attribute__((swift_name("currentIndex")));
 @property (readonly) SharedBlindingLessonFlags *flags __attribute__((swift_name("flags")));
+@property (readonly) BOOL lessonFinishStarted __attribute__((swift_name("lessonFinishStarted")));
 @property (readonly) NSArray<SharedBlindingOperation *> *operations __attribute__((swift_name("operations")));
 @property (readonly) int32_t totalQuestions __attribute__((swift_name("totalQuestions")));
 @end
@@ -1569,10 +1585,12 @@ __attribute__((swift_name("BlindingSequencePlayback")))
 - (instancetype)initWithTimePeriod:(SharedLong * _Nullable)timePeriod __attribute__((swift_name("init(timePeriod:)"))) __attribute__((objc_designated_initializer));
 - (SharedBlindingSequencePlaybackStep *)onSequenceRevealStep __attribute__((swift_name("onSequenceRevealStep()")));
 - (SharedBlindingSequencePlaybackStep *)onShowNextNumberStep __attribute__((swift_name("onShowNextNumberStep()")));
+- (SharedBlindingSequencePlaybackStep * _Nullable)skip __attribute__((swift_name("skip()")));
 - (SharedBlindingSequencePlaybackStep *)startSequence:(NSArray<SharedInt *> *)sequence __attribute__((swift_name("start(sequence:)")));
 - (void)stop __attribute__((swift_name("stop()")));
 @property (readonly) NSArray<SharedInt *> *currentSequence __attribute__((swift_name("currentSequence")));
 @property (readonly) int32_t currentSequenceIndex __attribute__((swift_name("currentSequenceIndex")));
+@property (readonly) BOOL isBlankPending __attribute__((swift_name("isBlankPending")));
 @property (readonly) BOOL isShowingSequence __attribute__((swift_name("isShowingSequence")));
 @end
 
@@ -1807,9 +1825,12 @@ __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("KorDersOturumu")))
 @interface SharedKorDersOturumu : SharedBase
 - (float)basariOrani __attribute__((swift_name("basariOrani()")));
+- (BOOL)basariOraniKapsaminda __attribute__((swift_name("basariOraniKapsaminda()")));
 - (NSString * _Nullable)birinciSayiMetni __attribute__((swift_name("birinciSayiMetni()")));
 - (NSString *)bitisSureMetni:(NSString *)sureMetni __attribute__((swift_name("bitis(sureMetni:)")));
+- (BOOL)dersBitisiHakkiAl __attribute__((swift_name("dersBitisiHakkiAl()")));
 - (int32_t)dersPuani __attribute__((swift_name("dersPuani()")));
+- (SharedKorDersAdimi * _Nullable)diziAtla __attribute__((swift_name("diziAtla()")));
 - (SharedKorDersAdimi * _Nullable)diziBaslat __attribute__((swift_name("diziBaslat()")));
 - (void)diziDurdur __attribute__((swift_name("diziDurdur()")));
 - (SharedKorDersAdimi *)diziYenidenBaslat __attribute__((swift_name("diziYenidenBaslat()")));
@@ -1820,8 +1841,12 @@ __attribute__((swift_name("KorDersOturumu")))
 - (NSString * _Nullable)islecMetni __attribute__((swift_name("islecMetni()")));
 - (BOOL)kontrolEtGirdi:(NSString *)girdi abakusDegeri:(int32_t)abakusDegeri __attribute__((swift_name("kontrolEt(girdi:abakusDegeri:)")));
 - (void)kontrolSifirla __attribute__((swift_name("kontrolSifirla()")));
+- (BOOL)kupaCikisCezasiVerilmeliDersBasladi:(BOOL)dersBasladi __attribute__((swift_name("kupaCikisCezasiVerilmeli(dersBasladi:)")));
 - (NSString *)kupaDeltaHedefi __attribute__((swift_name("kupaDeltaHedefi()")));
 - (int32_t)kupaDeltasiDogru:(BOOL)dogru __attribute__((swift_name("kupaDeltasi(dogru:)")));
+- (NSString *)kupaModuAdi __attribute__((swift_name("kupaModuAdi()")));
+- (BOOL)kupaSonucuHakkiAl __attribute__((swift_name("kupaSonucuHakkiAl()")));
+- (BOOL)kupaYarisLoguHakkiAl __attribute__((swift_name("kupaYarisLoguHakkiAl()")));
 - (SharedKorDersAdimi *)sayiGosterAdimi __attribute__((swift_name("sayiGosterAdimi()")));
 - (SharedKorDersAdimi *)sonrakiSayiAdimi __attribute__((swift_name("sonrakiSayiAdimi()")));
 - (BOOL)sonrakiSoru __attribute__((swift_name("sonrakiSoru()")));
@@ -1977,6 +2002,7 @@ __attribute__((swift_name("ChestFragmentLogic")))
 @property (class, readonly, getter=shared) SharedChestFragmentLogic *shared __attribute__((swift_name("shared")));
 - (SharedChestFragmentLogicCupIconChange *)changeCupIconLessonItem:(SharedLessonItem *)lessonItem globalPartId:(int32_t)globalPartId __attribute__((swift_name("changeCupIcon(lessonItem:globalPartId:)")));
 - (BOOL)isLastChestOfCupPathPartLessonAfterClaim:(SharedLessonItem * _Nullable)lessonAfterClaim globalPartId:(int32_t)globalPartId lessonItems:(NSArray<SharedLessonItem *> *)lessonItems __attribute__((swift_name("isLastChestOfCupPathPart(lessonAfterClaim:globalPartId:lessonItems:)")));
+- (BOOL)isLessonTypeReturnItem:(SharedLessonItem * _Nullable)item __attribute__((swift_name("isLessonTypeReturn(item:)")));
 - (NSString *)lessonProgressKeyItem:(SharedLessonItem *)item fallbackIndex:(int32_t)fallbackIndex __attribute__((swift_name("lessonProgressKey(item:fallbackIndex:)")));
 - (BOOL)shouldIncrementDartProgressLessonBeforeClaim:(SharedLessonItem * _Nullable)lessonBeforeClaim lessonSuccessRate:(float)lessonSuccessRate __attribute__((swift_name("shouldIncrementDartProgress(lessonBeforeClaim:lessonSuccessRate:)")));
 - (BOOL)shouldIncrementTornadoGlobalPartId:(int32_t)globalPartId __attribute__((swift_name("shouldIncrementTornado(globalPartId:)")));
@@ -1984,7 +2010,7 @@ __attribute__((swift_name("ChestFragmentLogic")))
 - (BOOL)shouldMarkJustFinishedChestForRatingLessonBeforeClaim:(SharedLessonItem * _Nullable)lessonBeforeClaim __attribute__((swift_name("shouldMarkJustFinishedChestForRating(lessonBeforeClaim:)")));
 - (BOOL)shouldRedirectToLoginForFirstTutorialCurrentTutorialNumber:(int32_t)currentTutorialNumber isLoggedIn:(BOOL)isLoggedIn __attribute__((swift_name("shouldRedirectToLoginForFirstTutorial(currentTutorialNumber:isLoggedIn:)")));
 - (SharedInt * _Nullable)unlockNextRaceItemSkippingCompletedCompletedIndex:(int32_t)completedIndex season:(int32_t)season __attribute__((swift_name("unlockNextRaceItemSkippingCompleted(completedIndex:season:)")));
-- (SharedChestFragmentLogicMapProgressResult *)updateMapProgressMapFragmentStepIndex:(int32_t)mapFragmentStepIndex recordScore:(int32_t)recordScore lessonSuccessRate:(float)lessonSuccessRate icon:(NSString *)icon season:(int32_t)season __attribute__((swift_name("updateMapProgress(mapFragmentStepIndex:recordScore:lessonSuccessRate:icon:season:)")));
+- (SharedChestFragmentLogicMapProgressResult *)updateMapProgressMapFragmentStepIndex:(int32_t)mapFragmentStepIndex recordScore:(int32_t)recordScore lessonSuccessRate:(float)lessonSuccessRate icon:(NSString *)icon season:(int32_t)season questionElapsedMs:(SharedLong * _Nullable)questionElapsedMs __attribute__((swift_name("updateMapProgress(mapFragmentStepIndex:recordScore:lessonSuccessRate:icon:season:questionElapsedMs:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -2048,11 +2074,12 @@ __attribute__((swift_name("ChestFragmentLogic.SuccessRateEventItemFirstFinish"))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("ChestFragmentLogic.SuccessRateEventPass")))
 @interface SharedChestFragmentLogicSuccessRateEventPass : SharedChestFragmentLogicSuccessRateEvent
-- (instancetype)initWithPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step __attribute__((swift_name("init(partId:position:step:)"))) __attribute__((objc_designated_initializer));
-- (SharedChestFragmentLogicSuccessRateEventPass *)doCopyPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step __attribute__((swift_name("doCopy(partId:position:step:)")));
+- (instancetype)initWithPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step elapsedMs:(SharedLong * _Nullable)elapsedMs __attribute__((swift_name("init(partId:position:step:elapsedMs:)"))) __attribute__((objc_designated_initializer));
+- (SharedChestFragmentLogicSuccessRateEventPass *)doCopyPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step elapsedMs:(SharedLong * _Nullable)elapsedMs __attribute__((swift_name("doCopy(partId:position:step:elapsedMs:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) SharedLong * _Nullable elapsedMs __attribute__((swift_name("elapsedMs")));
 @property (readonly) int32_t partId __attribute__((swift_name("partId")));
 @property (readonly) int32_t position __attribute__((swift_name("position")));
 @property (readonly) int32_t step __attribute__((swift_name("step")));
@@ -2132,23 +2159,28 @@ __attribute__((swift_name("GlobalLessonData")))
 - (void)applyDefaultLessonItemsPartId:(int32_t)partId tutorial1Pending:(BOOL)tutorial1Pending saveRemote:(BOOL)saveRemote __attribute__((swift_name("applyDefaultLessonItems(partId:tutorial1Pending:saveRemote:)")));
 - (void)applyLoadStatusStatus:(SharedGlobalLessonDataFirestoreLoadStatus *)status partId:(int32_t)partId tutorial1Pending:(BOOL)tutorial1Pending __attribute__((swift_name("applyLoadStatus(status:partId:tutorial1Pending:)")));
 - (SharedLessonItem *)applyProgressFieldsTemplate:(SharedLessonItem *)template_ data:(NSDictionary<NSString *, id> *)data stepCupIconOku:(NSString * _Nullable (^)(id _Nullable))stepCupIconOku __attribute__((swift_name("applyProgressFields(template:data:stepCupIconOku:)")));
+- (BOOL)applyTeacherUnlocksToMemory __attribute__((swift_name("applyTeacherUnlocksToMemory()")));
 - (SharedGlobalLessonDataLeaderboardSubmit * _Nullable)backfillLeaderboardSubmitPartId:(int32_t)partId chestIndex:(int32_t)chestIndex items:(NSArray<SharedLessonItem *> * _Nullable)items season:(int32_t)season __attribute__((swift_name("backfillLeaderboardSubmit(partId:chestIndex:items:season:)")));
 - (NSArray<SharedLessonItem *> *)buildDefaultLessonItemsForPartPartId:(int32_t)partId tutorial1Pending:(BOOL)tutorial1Pending __attribute__((swift_name("buildDefaultLessonItemsForPart(partId:tutorial1Pending:)")));
 - (int32_t)calculateGlobalCompletionPercentageItemsByPart:(NSDictionary<SharedInt *, id> *)itemsByPart __attribute__((swift_name("calculateGlobalCompletionPercentage(itemsByPart:)")));
 - (NSArray<NSString *> *)clearCurrentUserLessonDataUid:(NSString * _Nullable)uid __attribute__((swift_name("clearCurrentUserLessonData(uid:)")));
 - (NSArray<SharedLessonItem *> *)createLessonItemsPartId:(int32_t)partId __attribute__((swift_name("createLessonItems(partId:)")));
+- (NSArray<SharedLessonItem *> *)createLessonItemsInTurkishPartId:(int32_t)partId __attribute__((swift_name("createLessonItemsInTurkish(partId:)")));
 - (NSArray<SharedGlobalLessonDataChestLessonRef *> *)getFinishedChestItemsAcrossPartsCloudItemsByPart:(NSDictionary<SharedInt *, id> *)cloudItemsByPart __attribute__((swift_name("getFinishedChestItemsAcrossParts(cloudItemsByPart:)")));
 - (NSString *)getKeyPartId:(int32_t)partId __attribute__((swift_name("getKey(partId:)")));
 - (SharedLessonItem * _Nullable)getLessonItemPosition:(int32_t)position __attribute__((swift_name("getLessonItem(position:)")));
 - (SharedLessonItem * _Nullable)getLessonItemForPartPartId:(int32_t)partId index:(int32_t)index cloudItems:(NSArray<SharedLessonItem *> * _Nullable)cloudItems __attribute__((swift_name("getLessonItemForPart(partId:index:cloudItems:)")));
 - (void)initializePartId:(int32_t)partId __attribute__((swift_name("initialize(partId:)")));
-- (NSString *)itemDocumentPathUid:(NSString *)uid partId:(int32_t)partId position:(int32_t)position __attribute__((swift_name("itemDocumentPath(uid:partId:position:)")));
+- (NSString *)itemDocumentPathUid:(NSString *)uid partId:(int32_t)partId stableId:(NSString *)stableId __attribute__((swift_name("itemDocumentPath(uid:partId:stableId:)")));
 - (NSString *)itemsCollectionPathUid:(NSString *)uid partId:(int32_t)partId __attribute__((swift_name("itemsCollectionPath(uid:partId:)")));
 - (SharedGlobalLessonDataLeaderboardSubmit * _Nullable)leaderboardSubmitForPartId:(int32_t)partId position:(int32_t)position newItem:(SharedLessonItem *)newItem season:(int32_t)season __attribute__((swift_name("leaderboardSubmitFor(partId:position:newItem:season:)")));
+- (NSString *)legacyItemDocumentPathUid:(NSString *)uid partId:(int32_t)partId position:(int32_t)position __attribute__((swift_name("legacyItemDocumentPath(uid:partId:position:)")));
+- (SharedGlobalLessonDataLegacyMigrationPlan * _Nullable)legacyMigrationPlanDocs:(NSDictionary<NSString *, id> *)docs merged:(NSArray<SharedLessonItem *> *)merged __attribute__((swift_name("legacyMigrationPlan(docs:merged:)")));
 - (NSArray<SharedLessonItem *> * _Nullable)lessonItemsFromFirestoreDocsPartId:(int32_t)partId docs:(NSDictionary<NSString *, id> *)docs __attribute__((swift_name("lessonItemsFromFirestoreDocs(partId:docs:)")));
 - (NSString *)lessonPrefsNameUid:(NSString * _Nullable)uid __attribute__((swift_name("lessonPrefsName(uid:)")));
 - (void)loadFromParsedCacheItems:(NSArray<SharedLessonItem *> *)items partId:(int32_t)partId __attribute__((swift_name("loadFromParsedCache(items:partId:)")));
 - (NSArray<SharedLessonItem *> *)loadLessonItemsForPartPartId:(int32_t)partId cloudItems:(NSArray<SharedLessonItem *> * _Nullable)cloudItems __attribute__((swift_name("loadLessonItemsForPart(partId:cloudItems:)")));
+- (NSString *)localizeLessonTextTurkish:(NSString *)turkish __attribute__((swift_name("localizeLessonText(turkish:)")));
 - (NSArray<SharedLessonItem *> *)mergeTemplateWithDocsPartId:(int32_t)partId docs:(NSDictionary<NSString *, id> *)docs __attribute__((swift_name("mergeTemplateWithDocs(partId:docs:)")));
 - (id _Nullable)migrateLegacyRecordFieldRoot:(id _Nullable)root __attribute__((swift_name("migrateLegacyRecordField(root:)")));
 - (id _Nullable)migrateRecordValueRecordElement:(id _Nullable)recordElement __attribute__((swift_name("migrateRecordValue(recordElement:)")));
@@ -2159,13 +2191,20 @@ __attribute__((swift_name("GlobalLessonData")))
 - (SharedInt * _Nullable)resolveFirstChestLessonIndexPartId:(int32_t)partId cloudItems:(NSArray<SharedLessonItem *> * _Nullable)cloudItems error:(BOOL)error __attribute__((swift_name("resolveFirstChestLessonIndex(partId:cloudItems:error:)")));
 - (void)saveToPreferencesSaveRemote:(BOOL)saveRemote __attribute__((swift_name("saveToPreferences(saveRemote:)")));
 - (NSArray<NSDictionary<NSString *, id> *> * _Nullable)seedItemsForPartPartId:(int32_t)partId tutorial1Pending:(BOOL)tutorial1Pending __attribute__((swift_name("seedItemsForPart(partId:tutorial1Pending:)")));
+- (NSArray<NSString *> *)seedStableIdsForPartPartId:(int32_t)partId __attribute__((swift_name("seedStableIdsForPart(partId:)")));
+- (NSString * _Nullable)stableIdAtPartId:(int32_t)partId position:(int32_t)position __attribute__((swift_name("stableIdAt(partId:position:)")));
 - (SharedLessonItem *)stepCupIconKayittanTuretItem:(SharedLessonItem *)item globalPartId:(int32_t)globalPartId __attribute__((swift_name("stepCupIconKayittanTuret(item:globalPartId:)")));
 - (NSString * _Nullable)stepCupIconVarsayilanOkuRaw:(id _Nullable)raw __attribute__((swift_name("stepCupIconVarsayilanOku(raw:)")));
+- (NSArray<SharedGlobalLessonDataItemWrite *> *)teacherUnlockPlanPartId:(int32_t)partId cloudItems:(NSArray<SharedLessonItem *> * _Nullable)cloudItems tutorial1Pending:(BOOL)tutorial1Pending __attribute__((swift_name("teacherUnlockPlan(partId:cloudItems:tutorial1Pending:)")));
 - (SharedInt * _Nullable)templateFirstChestLessonIndexOrNullPartId:(int32_t)partId __attribute__((swift_name("templateFirstChestLessonIndexOrNull(partId:)")));
 - (int32_t)totalValidItemsForCompletion __attribute__((swift_name("totalValidItemsForCompletion()")));
+- (SharedLessonItem * _Nullable)turkishItemPartId:(int32_t)partId stableId:(NSString *)stableId __attribute__((swift_name("turkishItem(partId:stableId:)")));
 - (BOOL)updateLessonItemPosition:(int32_t)position newItem:(SharedLessonItem *)newItem season:(int32_t)season __attribute__((swift_name("updateLessonItem(position:newItem:season:)")));
+- (NSMutableArray<SharedLessonItem *> *)withDerivedUnlocksPartId:(int32_t)partId items:(NSArray<SharedLessonItem *> *)items __attribute__((swift_name("withDerivedUnlocks(partId:items:)")));
+- (NSArray<SharedLessonItem *> *)withTeacherUnlocksPartId:(int32_t)partId items:(NSArray<SharedLessonItem *> *)items __attribute__((swift_name("withTeacherUnlocks(partId:items:)")));
 @property (readonly) NSString *APP_PREFS_NAME __attribute__((swift_name("APP_PREFS_NAME")));
 @property (readonly) int64_t AUTH_WAIT_TIMEOUT_MS __attribute__((swift_name("AUTH_WAIT_TIMEOUT_MS")));
+@property (readonly) NSString *FIELD_TEACHER_LESSONS_UNLOCKED __attribute__((swift_name("FIELD_TEACHER_LESSONS_UNLOCKED")));
 @property (readonly) NSString *FIRESTORE_LESSON_ITEMS __attribute__((swift_name("FIRESTORE_LESSON_ITEMS")));
 @property (readonly) NSString *FIRESTORE_LESSON_PROGRESS __attribute__((swift_name("FIRESTORE_LESSON_PROGRESS")));
 @property (readonly) NSString *FIRESTORE_USERS __attribute__((swift_name("FIRESTORE_USERS")));
@@ -2206,14 +2245,26 @@ __attribute__((swift_name("GlobalLessonData.FirestoreLoadStatus")))
 @end
 
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("GlobalLessonData.LeaderboardSubmit")))
-@interface SharedGlobalLessonDataLeaderboardSubmit : SharedBase
-- (instancetype)initWithPartId:(int32_t)partId lessonIndex:(int32_t)lessonIndex score:(int32_t)score season:(int32_t)season titleUnit:(NSString * _Nullable)titleUnit __attribute__((swift_name("init(partId:lessonIndex:score:season:titleUnit:)"))) __attribute__((objc_designated_initializer));
-- (SharedGlobalLessonDataLeaderboardSubmit *)doCopyPartId:(int32_t)partId lessonIndex:(int32_t)lessonIndex score:(int32_t)score season:(int32_t)season titleUnit:(NSString * _Nullable)titleUnit __attribute__((swift_name("doCopy(partId:lessonIndex:score:season:titleUnit:)")));
+__attribute__((swift_name("GlobalLessonData.ItemWrite")))
+@interface SharedGlobalLessonDataItemWrite : SharedBase
+- (instancetype)initWithStableId:(NSString *)stableId fields:(NSDictionary<NSString *, id> *)fields __attribute__((swift_name("init(stableId:fields:)"))) __attribute__((objc_designated_initializer));
+- (SharedGlobalLessonDataItemWrite *)doCopyStableId:(NSString *)stableId fields:(NSDictionary<NSString *, id> *)fields __attribute__((swift_name("doCopy(stableId:fields:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) int32_t lessonIndex __attribute__((swift_name("lessonIndex")));
+@property (readonly) NSDictionary<NSString *, id> *fields __attribute__((swift_name("fields")));
+@property (readonly) NSString *stableId __attribute__((swift_name("stableId")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("GlobalLessonData.LeaderboardSubmit")))
+@interface SharedGlobalLessonDataLeaderboardSubmit : SharedBase
+- (instancetype)initWithPartId:(int32_t)partId lessonKey:(NSString *)lessonKey score:(int32_t)score season:(int32_t)season titleUnit:(NSString * _Nullable)titleUnit __attribute__((swift_name("init(partId:lessonKey:score:season:titleUnit:)"))) __attribute__((objc_designated_initializer));
+- (SharedGlobalLessonDataLeaderboardSubmit *)doCopyPartId:(int32_t)partId lessonKey:(NSString *)lessonKey score:(int32_t)score season:(int32_t)season titleUnit:(NSString * _Nullable)titleUnit __attribute__((swift_name("doCopy(partId:lessonKey:score:season:titleUnit:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *lessonKey __attribute__((swift_name("lessonKey")));
 @property (readonly) int32_t partId __attribute__((swift_name("partId")));
 @property (readonly) int32_t score __attribute__((swift_name("score")));
 @property (readonly) int32_t season __attribute__((swift_name("season")));
@@ -2221,14 +2272,26 @@ __attribute__((swift_name("GlobalLessonData.LeaderboardSubmit")))
 @end
 
 __attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("GuidePanelData")))
-@interface SharedGuidePanelData : SharedBase
-- (instancetype)initWithImageResId:(NSString *)imageResId text:(NSString *)text __attribute__((swift_name("init(imageResId:text:)"))) __attribute__((objc_designated_initializer));
-- (SharedGuidePanelData *)doCopyImageResId:(NSString *)imageResId text:(NSString *)text __attribute__((swift_name("doCopy(imageResId:text:)")));
+__attribute__((swift_name("GlobalLessonData.LegacyMigrationPlan")))
+@interface SharedGlobalLessonDataLegacyMigrationPlan : SharedBase
+- (instancetype)initWithWrites:(NSArray<SharedGlobalLessonDataItemWrite *> *)writes legacyDocIds:(NSArray<NSString *> *)legacyDocIds __attribute__((swift_name("init(writes:legacyDocIds:)"))) __attribute__((objc_designated_initializer));
+- (SharedGlobalLessonDataLegacyMigrationPlan *)doCopyWrites:(NSArray<SharedGlobalLessonDataItemWrite *> *)writes legacyDocIds:(NSArray<NSString *> *)legacyDocIds __attribute__((swift_name("doCopy(writes:legacyDocIds:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) NSString *imageResId __attribute__((swift_name("imageResId")));
+@property (readonly) NSArray<NSString *> *legacyDocIds __attribute__((swift_name("legacyDocIds")));
+@property (readonly) NSArray<SharedGlobalLessonDataItemWrite *> *writes __attribute__((swift_name("writes")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("GuidePanelData")))
+@interface SharedGuidePanelData : SharedBase
+- (instancetype)initWithEmote:(NSString *)emote text:(NSString *)text __attribute__((swift_name("init(emote:text:)"))) __attribute__((objc_designated_initializer));
+- (SharedGuidePanelData *)doCopyEmote:(NSString *)emote text:(NSString *)text __attribute__((swift_name("doCopy(emote:text:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *emote __attribute__((swift_name("emote")));
 @property (readonly) NSString *text __attribute__((swift_name("text")));
 @end
 
@@ -2239,11 +2302,16 @@ __attribute__((swift_name("LessonAdapterLogic")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)lessonAdapterLogic __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedLessonAdapterLogic *shared __attribute__((swift_name("shared")));
-- (SharedLessonAdapterLogicActionButtonDecision *)actionButtonDecisionItem:(SharedLessonItem *)item isInfiniteEnergy:(BOOL)isInfiniteEnergy hasEnoughEnergy:(BOOL)hasEnoughEnergy __attribute__((swift_name("actionButtonDecision(item:isInfiniteEnergy:hasEnoughEnergy:)")));
+- (SharedLessonAdapterLogicActionButtonDecision *)actionButtonDecisionItem:(SharedLessonItem *)item isInfiniteEnergy:(BOOL)isInfiniteEnergy hasEnoughEnergy:(BOOL)hasEnoughEnergy globalPartId:(int32_t)globalPartId __attribute__((swift_name("actionButtonDecision(item:isInfiniteEnergy:hasEnoughEnergy:globalPartId:)")));
+- (NSString *)cardIconNameItem:(SharedLessonItem *)item globalPartId:(int32_t)globalPartId __attribute__((swift_name("cardIconName(item:globalPartId:)")));
+- (SharedLessonAdapterLogicCardState *)cardStateItem:(SharedLessonItem *)item goldAnimationPlayed:(BOOL)goldAnimationPlayed __attribute__((swift_name("cardState(item:goldAnimationPlayed:)")));
+- (SharedLessonAdapterLogicChestCardStars *)chestCardStarsItem:(SharedLessonItem *)item goldDone:(BOOL)goldDone __attribute__((swift_name("chestCardStars(item:goldDone:)")));
+- (int32_t)chestStarCountItem:(SharedLessonItem *)item __attribute__((swift_name("chestStarCount(item:)")));
 - (SharedLessonAdapterLogicChestStarsRow *)chestStarsForBindItem:(SharedLessonItem *)item __attribute__((swift_name("chestStarsForBind(item:)")));
 - (SharedLessonAdapterLogicChestStarsRow *)chestStarsRowTierResId:(NSString *)tierResId isCompleted:(BOOL)isCompleted __attribute__((swift_name("chestStarsRow(tierResId:isCompleted:)")));
 - (SharedLessonAdapterLogicLessonStartTarget *)continueWithLessonTargetItem:(SharedLessonItem *)item __attribute__((swift_name("continueWithLessonTarget(item:)")));
 - (NSString *)formatRaceTimePeriodDescriptionTimePeriodMs:(SharedLong * _Nullable)timePeriodMs __attribute__((swift_name("formatRaceTimePeriodDescription(timePeriodMs:)")));
+- (BOOL)isKeyUnlockableItem:(SharedLessonItem *)item globalPartId:(int32_t)globalPartId __attribute__((swift_name("isKeyUnlockable(item:globalPartId:)")));
 - (int32_t)itemViewTypeItems:(NSArray<SharedLessonItem *> *)items position:(int32_t)position __attribute__((swift_name("itemViewType(items:position:)")));
 - (SharedLessonAdapterLogicLessonBottomSheetState *)lessonBottomSheetStateItem:(SharedLessonItem *)item globalPartId:(int32_t)globalPartId __attribute__((swift_name("lessonBottomSheetState(item:globalPartId:)")));
 - (NSString *)lessonCardColorItem:(SharedLessonItem *)item __attribute__((swift_name("lessonCardColor(item:)")));
@@ -2260,18 +2328,28 @@ __attribute__((swift_name("LessonAdapterLogic")))
 - (NSArray<SharedLessonItem *> *)refreshedRacePanelItemsCurrentTitle:(NSString *)currentTitle lessonItems:(NSArray<SharedLessonItem *> *)lessonItems __attribute__((swift_name("refreshedRacePanelItems(currentTitle:lessonItems:)")));
 - (BOOL)shouldStartBreathingAnimationItem:(SharedLessonItem *)item goldAnimationPlayed:(BOOL)goldAnimationPlayed __attribute__((swift_name("shouldStartBreathingAnimation(item:goldAnimationPlayed:)")));
 - (SharedLessonAdapterLogicStepSegments *)stepSegmentsItem:(SharedLessonItem *)item __attribute__((swift_name("stepSegments(item:)")));
+- (SharedLessonItem *)unlockedWithKeyItem:(SharedLessonItem *)item __attribute__((swift_name("unlockedWithKey(item:)")));
+@property (readonly) NSString *ICON_BOOK __attribute__((swift_name("ICON_BOOK")));
+@property (readonly) NSString *ICON_PODIUM __attribute__((swift_name("ICON_PODIUM")));
 @property (readonly) int32_t LESSON_ENERGY_COST __attribute__((swift_name("LESSON_ENERGY_COST")));
+@property (readonly) int32_t LESSON_UNLOCK_KEY_COST __attribute__((swift_name("LESSON_UNLOCK_KEY_COST")));
 @property (readonly) int32_t RACE_FAST_FORWARD_KEY_COST __attribute__((swift_name("RACE_FAST_FORWARD_KEY_COST")));
 @property (readonly) NSSet<SharedInt *> *RECORD_HIDDEN_PARTS __attribute__((swift_name("RECORD_HIDDEN_PARTS")));
 @property (readonly) float SEGMENT_GAP_ANGLE __attribute__((swift_name("SEGMENT_GAP_ANGLE")));
 @property (readonly) NSString *STRING_KEY_INSUFFICIENT_KEYS __attribute__((swift_name("STRING_KEY_INSUFFICIENT_KEYS")));
 @property (readonly) NSString *STRING_KEY_RACE_UNLOCK __attribute__((swift_name("STRING_KEY_RACE_UNLOCK")));
+@property (readonly) NSString *TEXT_CONTINUE __attribute__((swift_name("TEXT_CONTINUE")));
+@property (readonly) NSString *TEXT_KIND_CHEST __attribute__((swift_name("TEXT_KIND_CHEST")));
+@property (readonly) NSString *TEXT_KIND_LESSON __attribute__((swift_name("TEXT_KIND_LESSON")));
 @property (readonly) NSString *TEXT_LESSON_DONE __attribute__((swift_name("TEXT_LESSON_DONE")));
 @property (readonly) NSString *TEXT_LOCKED __attribute__((swift_name("TEXT_LOCKED")));
 @property (readonly) NSString *TEXT_LOCKED_DESCRIPTION __attribute__((swift_name("TEXT_LOCKED_DESCRIPTION")));
+@property (readonly) NSString *TEXT_RACE_START __attribute__((swift_name("TEXT_RACE_START")));
 @property (readonly) NSString *TEXT_RETRY __attribute__((swift_name("TEXT_RETRY")));
 @property (readonly) NSString *TEXT_REVIEW __attribute__((swift_name("TEXT_REVIEW")));
 @property (readonly) NSString *TEXT_START __attribute__((swift_name("TEXT_START")));
+@property (readonly) NSString *TEXT_UNLOCK_OFFER_DESCRIPTION __attribute__((swift_name("TEXT_UNLOCK_OFFER_DESCRIPTION")));
+@property (readonly) NSString *TEXT_UNLOCK_WITH_KEY __attribute__((swift_name("TEXT_UNLOCK_WITH_KEY")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -2284,8 +2362,36 @@ __attribute__((swift_name("LessonAdapterLogic.ActionButtonDecision")))
 @property (class, readonly) SharedLessonAdapterLogicActionButtonDecision *notEnoughEnergy __attribute__((swift_name("notEnoughEnergy")));
 @property (class, readonly) SharedLessonAdapterLogicActionButtonDecision *useEnergyAndStart __attribute__((swift_name("useEnergyAndStart")));
 @property (class, readonly) SharedLessonAdapterLogicActionButtonDecision *startWithoutEnergy __attribute__((swift_name("startWithoutEnergy")));
+@property (class, readonly) SharedLessonAdapterLogicActionButtonDecision *unlockWithKey __attribute__((swift_name("unlockWithKey")));
 + (SharedKotlinArray<SharedLessonAdapterLogicActionButtonDecision *> *)values __attribute__((swift_name("values()")));
 @property (class, readonly) NSArray<SharedLessonAdapterLogicActionButtonDecision *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("LessonAdapterLogic.CardState")))
+@interface SharedLessonAdapterLogicCardState : SharedKotlinEnum<SharedLessonAdapterLogicCardState *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedLessonAdapterLogicCardState *locked __attribute__((swift_name("locked")));
+@property (class, readonly) SharedLessonAdapterLogicCardState *open __attribute__((swift_name("open")));
+@property (class, readonly) SharedLessonAdapterLogicCardState *done __attribute__((swift_name("done")));
++ (SharedKotlinArray<SharedLessonAdapterLogicCardState *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedLessonAdapterLogicCardState *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("LessonAdapterLogic.ChestCardStars")))
+@interface SharedLessonAdapterLogicChestCardStars : SharedBase
+- (instancetype)initWithEarned:(int32_t)earned unlocked:(BOOL)unlocked done:(BOOL)done __attribute__((swift_name("init(earned:unlocked:done:)"))) __attribute__((objc_designated_initializer));
+- (SharedLessonAdapterLogicChestCardStars *)doCopyEarned:(int32_t)earned unlocked:(BOOL)unlocked done:(BOOL)done __attribute__((swift_name("doCopy(earned:unlocked:done:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) BOOL done __attribute__((swift_name("done")));
+@property (readonly) int32_t earned __attribute__((swift_name("earned")));
+@property (readonly) float emptyStarAlpha __attribute__((swift_name("emptyStarAlpha")));
+@property (readonly) BOOL unlocked __attribute__((swift_name("unlocked")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -2316,8 +2422,8 @@ __attribute__((swift_name("LessonAdapterLogic.ChestStarsRow")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("LessonAdapterLogic.LessonBottomSheetState")))
 @interface SharedLessonAdapterLogicLessonBottomSheetState : SharedBase
-- (instancetype)initWithTitle:(NSString *)title description:(NSString *)description actionText:(NSString *)actionText actionEnabled:(BOOL)actionEnabled locked:(BOOL)locked againTutorialVisible:(BOOL)againTutorialVisible recordText:(NSString * _Nullable)recordText recordLayoutGone:(BOOL)recordLayoutGone recordClickable:(BOOL)recordClickable fireAnimVisible:(BOOL)fireAnimVisible __attribute__((swift_name("init(title:description:actionText:actionEnabled:locked:againTutorialVisible:recordText:recordLayoutGone:recordClickable:fireAnimVisible:)"))) __attribute__((objc_designated_initializer));
-- (SharedLessonAdapterLogicLessonBottomSheetState *)doCopyTitle:(NSString *)title description:(NSString *)description actionText:(NSString *)actionText actionEnabled:(BOOL)actionEnabled locked:(BOOL)locked againTutorialVisible:(BOOL)againTutorialVisible recordText:(NSString * _Nullable)recordText recordLayoutGone:(BOOL)recordLayoutGone recordClickable:(BOOL)recordClickable fireAnimVisible:(BOOL)fireAnimVisible __attribute__((swift_name("doCopy(title:description:actionText:actionEnabled:locked:againTutorialVisible:recordText:recordLayoutGone:recordClickable:fireAnimVisible:)")));
+- (instancetype)initWithTitle:(NSString *)title description:(NSString *)description actionText:(NSString *)actionText actionEnabled:(BOOL)actionEnabled locked:(BOOL)locked againTutorialVisible:(BOOL)againTutorialVisible recordText:(NSString * _Nullable)recordText recordLayoutGone:(BOOL)recordLayoutGone recordClickable:(BOOL)recordClickable fireAnimVisible:(BOOL)fireAnimVisible panelState:(SharedLessonAdapterLogicPanelState *)panelState kindText:(NSString *)kindText iconName:(NSString *)iconName stepRowVisible:(BOOL)stepRowVisible doneSteps:(int32_t)doneSteps stepCount:(int32_t)stepCount keyUnlockable:(BOOL)keyUnlockable __attribute__((swift_name("init(title:description:actionText:actionEnabled:locked:againTutorialVisible:recordText:recordLayoutGone:recordClickable:fireAnimVisible:panelState:kindText:iconName:stepRowVisible:doneSteps:stepCount:keyUnlockable:)"))) __attribute__((objc_designated_initializer));
+- (SharedLessonAdapterLogicLessonBottomSheetState *)doCopyTitle:(NSString *)title description:(NSString *)description actionText:(NSString *)actionText actionEnabled:(BOOL)actionEnabled locked:(BOOL)locked againTutorialVisible:(BOOL)againTutorialVisible recordText:(NSString * _Nullable)recordText recordLayoutGone:(BOOL)recordLayoutGone recordClickable:(BOOL)recordClickable fireAnimVisible:(BOOL)fireAnimVisible panelState:(SharedLessonAdapterLogicPanelState *)panelState kindText:(NSString *)kindText iconName:(NSString *)iconName stepRowVisible:(BOOL)stepRowVisible doneSteps:(int32_t)doneSteps stepCount:(int32_t)stepCount keyUnlockable:(BOOL)keyUnlockable __attribute__((swift_name("doCopy(title:description:actionText:actionEnabled:locked:againTutorialVisible:recordText:recordLayoutGone:recordClickable:fireAnimVisible:panelState:kindText:iconName:stepRowVisible:doneSteps:stepCount:keyUnlockable:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
@@ -2325,11 +2431,18 @@ __attribute__((swift_name("LessonAdapterLogic.LessonBottomSheetState")))
 @property (readonly) NSString *actionText __attribute__((swift_name("actionText")));
 @property (readonly) BOOL againTutorialVisible __attribute__((swift_name("againTutorialVisible")));
 @property (readonly) NSString *description_ __attribute__((swift_name("description_")));
+@property (readonly) int32_t doneSteps __attribute__((swift_name("doneSteps")));
 @property (readonly) BOOL fireAnimVisible __attribute__((swift_name("fireAnimVisible")));
+@property (readonly) NSString *iconName __attribute__((swift_name("iconName")));
+@property (readonly) BOOL keyUnlockable __attribute__((swift_name("keyUnlockable")));
+@property (readonly) NSString *kindText __attribute__((swift_name("kindText")));
 @property (readonly) BOOL locked __attribute__((swift_name("locked")));
+@property (readonly) SharedLessonAdapterLogicPanelState *panelState __attribute__((swift_name("panelState")));
 @property (readonly) BOOL recordClickable __attribute__((swift_name("recordClickable")));
 @property (readonly) BOOL recordLayoutGone __attribute__((swift_name("recordLayoutGone")));
 @property (readonly) NSString * _Nullable recordText __attribute__((swift_name("recordText")));
+@property (readonly) int32_t stepCount __attribute__((swift_name("stepCount")));
+@property (readonly) BOOL stepRowVisible __attribute__((swift_name("stepRowVisible")));
 @property (readonly) NSString *title __attribute__((swift_name("title")));
 @end
 
@@ -2356,6 +2469,19 @@ __attribute__((swift_name("LessonAdapterLogic.LessonStartTarget")))
 @property (class, readonly) SharedLessonAdapterLogicLessonStartTarget *tutorial __attribute__((swift_name("tutorial")));
 + (SharedKotlinArray<SharedLessonAdapterLogicLessonStartTarget *> *)values __attribute__((swift_name("values()")));
 @property (class, readonly) NSArray<SharedLessonAdapterLogicLessonStartTarget *> *entries __attribute__((swift_name("entries")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("LessonAdapterLogic.PanelState")))
+@interface SharedLessonAdapterLogicPanelState : SharedKotlinEnum<SharedLessonAdapterLogicPanelState *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedLessonAdapterLogicPanelState *open __attribute__((swift_name("open")));
+@property (class, readonly) SharedLessonAdapterLogicPanelState *done __attribute__((swift_name("done")));
+@property (class, readonly) SharedLessonAdapterLogicPanelState *locked __attribute__((swift_name("locked")));
++ (SharedKotlinArray<SharedLessonAdapterLogicPanelState *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedLessonAdapterLogicPanelState *> *entries __attribute__((swift_name("entries")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -2445,11 +2571,38 @@ __attribute__((swift_name("LessonDataManager")))
 @end
 
 __attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("LessonEndMascotDraw")))
+@interface SharedLessonEndMascotDraw : SharedBase
+- (instancetype)initWithEmote:(NSString *)emote bag:(NSString *)bag last:(NSString *)last __attribute__((swift_name("init(emote:bag:last:)"))) __attribute__((objc_designated_initializer));
+- (SharedLessonEndMascotDraw *)doCopyEmote:(NSString *)emote bag:(NSString *)bag last:(NSString *)last __attribute__((swift_name("doCopy(emote:bag:last:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *bag __attribute__((swift_name("bag")));
+@property (readonly) NSString *emote __attribute__((swift_name("emote")));
+@property (readonly) NSString *last __attribute__((swift_name("last")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("LessonEndMascotLogic")))
+@interface SharedLessonEndMascotLogic : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)lessonEndMascotLogic __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedLessonEndMascotLogic *shared __attribute__((swift_name("shared")));
+- (SharedLessonEndMascotDraw *)nextSuccessStoredBag:(NSString * _Nullable)storedBag storedLast:(NSString * _Nullable)storedLast __attribute__((swift_name("nextSuccess(storedBag:storedLast:)")));
+- (SharedLessonEndMascotDraw *)nextSuccessWithStoredBag:(NSString * _Nullable)storedBag storedLast:(NSString * _Nullable)storedLast random:(SharedKotlinRandom *)random __attribute__((swift_name("nextSuccessWith(storedBag:storedLast:random:)")));
+@property (readonly) int64_t ENTER_DELAY_MS __attribute__((swift_name("ENTER_DELAY_MS")));
+@property (readonly) NSString *FAILURE __attribute__((swift_name("FAILURE")));
+@property (readonly) NSArray<NSString *> *SUCCESS __attribute__((swift_name("SUCCESS")));
+@end
+
+__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("LessonItem")))
 @interface SharedLessonItem : SharedBase
-- (instancetype)initWithId:(SharedInt * _Nullable)id type:(int32_t)type title:(NSString *)title partId:(SharedInt * _Nullable)partId offset:(int32_t)offset isCompleted:(BOOL)isCompleted progressBarLevel:(int32_t)progressBarLevel stepCount:(int32_t)stepCount currentStep:(int32_t)currentStep fragment:(NSString * _Nullable)fragment color:(NSString * _Nullable)color LESSON_ID:(SharedInt * _Nullable)LESSON_ID isBlinding:(SharedBoolean * _Nullable)isBlinding isExtraction:(SharedBoolean * _Nullable)isExtraction isMultiplication:(SharedBoolean * _Nullable)isMultiplication stepCompletionStatus:(NSArray<SharedBoolean *> *)stepCompletionStatus finishStepNumber:(SharedInt * _Nullable)finishStepNumber startStepNumber:(SharedInt * _Nullable)startStepNumber mapFragmentIndex:(SharedInt * _Nullable)mapFragmentIndex stepIsFinish:(BOOL)stepIsFinish finalGoldVisualUnlocked:(BOOL)finalGoldVisualUnlocked tutorialNumber:(int32_t)tutorialNumber tutorialIsFinish:(BOOL)tutorialIsFinish lessonHint:(NSString * _Nullable)lessonHint stepCupIcon:(NSString *)stepCupIcon cupPoint1:(SharedInt * _Nullable)cupPoint1 cupPoint2:(SharedInt * _Nullable)cupPoint2 worstCupTime:(SharedInt * _Nullable)worstCupTime sectionTitle:(NSString * _Nullable)sectionTitle backPart:(SharedBoolean * _Nullable)backPart sectionDescription:(NSString * _Nullable)sectionDescription timePeriod:(SharedLong * _Nullable)timePeriod blindingMultiplication:(SharedBoolean * _Nullable)blindingMultiplication racePartId:(SharedInt * _Nullable)racePartId backRaceId:(SharedInt * _Nullable)backRaceId raceBusyLevel:(SharedInt * _Nullable)raceBusyLevel cupDifficultyLevel:(SharedInt * _Nullable)cupDifficultyLevel cupWinDelta:(SharedInt * _Nullable)cupWinDelta cupLossDelta:(SharedInt * _Nullable)cupLossDelta record:(SharedInt * _Nullable)record leaderboardSeasonBest:(SharedInt * _Nullable)leaderboardSeasonBest leaderboardSeasonId:(SharedInt * _Nullable)leaderboardSeasonId abacusGuideNumber:(SharedInt * _Nullable)abacusGuideNumber titleUnit:(NSString * _Nullable)titleUnit raceTitle:(NSString * _Nullable)raceTitle cupDigitSize:(SharedInt * _Nullable)cupDigitSize cupNumberCount:(SharedInt * _Nullable)cupNumberCount __attribute__((swift_name("init(id:type:title:partId:offset:isCompleted:progressBarLevel:stepCount:currentStep:fragment:color:LESSON_ID:isBlinding:isExtraction:isMultiplication:stepCompletionStatus:finishStepNumber:startStepNumber:mapFragmentIndex:stepIsFinish:finalGoldVisualUnlocked:tutorialNumber:tutorialIsFinish:lessonHint:stepCupIcon:cupPoint1:cupPoint2:worstCupTime:sectionTitle:backPart:sectionDescription:timePeriod:blindingMultiplication:racePartId:backRaceId:raceBusyLevel:cupDifficultyLevel:cupWinDelta:cupLossDelta:record:leaderboardSeasonBest:leaderboardSeasonId:abacusGuideNumber:titleUnit:raceTitle:cupDigitSize:cupNumberCount:)"))) __attribute__((objc_designated_initializer));
+- (instancetype)initWithStableId:(NSString *)stableId id:(SharedInt * _Nullable)id type:(int32_t)type title:(NSString *)title partId:(SharedInt * _Nullable)partId offset:(int32_t)offset isCompleted:(BOOL)isCompleted progressBarLevel:(int32_t)progressBarLevel stepCount:(int32_t)stepCount currentStep:(int32_t)currentStep fragment:(NSString * _Nullable)fragment color:(NSString * _Nullable)color LESSON_ID:(SharedInt * _Nullable)LESSON_ID isBlinding:(SharedBoolean * _Nullable)isBlinding isExtraction:(SharedBoolean * _Nullable)isExtraction isMultiplication:(SharedBoolean * _Nullable)isMultiplication stepCompletionStatus:(NSArray<SharedBoolean *> *)stepCompletionStatus finishStepNumber:(SharedInt * _Nullable)finishStepNumber startStepNumber:(SharedInt * _Nullable)startStepNumber mapFragmentIndex:(SharedInt * _Nullable)mapFragmentIndex stepIsFinish:(BOOL)stepIsFinish finalGoldVisualUnlocked:(BOOL)finalGoldVisualUnlocked tutorialNumber:(int32_t)tutorialNumber tutorialIsFinish:(BOOL)tutorialIsFinish lessonHint:(NSString * _Nullable)lessonHint stepCupIcon:(NSString *)stepCupIcon cupPoint1:(SharedInt * _Nullable)cupPoint1 cupPoint2:(SharedInt * _Nullable)cupPoint2 worstCupTime:(SharedInt * _Nullable)worstCupTime sectionTitle:(NSString * _Nullable)sectionTitle backPart:(SharedBoolean * _Nullable)backPart sectionDescription:(NSString * _Nullable)sectionDescription timePeriod:(SharedLong * _Nullable)timePeriod blindingMultiplication:(SharedBoolean * _Nullable)blindingMultiplication racePartId:(SharedInt * _Nullable)racePartId backRaceId:(SharedInt * _Nullable)backRaceId raceBusyLevel:(SharedInt * _Nullable)raceBusyLevel cupDifficultyLevel:(SharedInt * _Nullable)cupDifficultyLevel cupWinDelta:(SharedInt * _Nullable)cupWinDelta cupLossDelta:(SharedInt * _Nullable)cupLossDelta record:(SharedInt * _Nullable)record leaderboardSeasonBest:(SharedInt * _Nullable)leaderboardSeasonBest leaderboardSeasonId:(SharedInt * _Nullable)leaderboardSeasonId abacusGuideNumber:(SharedInt * _Nullable)abacusGuideNumber titleUnit:(NSString * _Nullable)titleUnit raceTitle:(NSString * _Nullable)raceTitle cupDigitSize:(SharedInt * _Nullable)cupDigitSize cupNumberCount:(SharedInt * _Nullable)cupNumberCount __attribute__((swift_name("init(stableId:id:type:title:partId:offset:isCompleted:progressBarLevel:stepCount:currentStep:fragment:color:LESSON_ID:isBlinding:isExtraction:isMultiplication:stepCompletionStatus:finishStepNumber:startStepNumber:mapFragmentIndex:stepIsFinish:finalGoldVisualUnlocked:tutorialNumber:tutorialIsFinish:lessonHint:stepCupIcon:cupPoint1:cupPoint2:worstCupTime:sectionTitle:backPart:sectionDescription:timePeriod:blindingMultiplication:racePartId:backRaceId:raceBusyLevel:cupDifficultyLevel:cupWinDelta:cupLossDelta:record:leaderboardSeasonBest:leaderboardSeasonId:abacusGuideNumber:titleUnit:raceTitle:cupDigitSize:cupNumberCount:)"))) __attribute__((objc_designated_initializer));
 @property (class, readonly, getter=companion) SharedLessonItemCompanion *companion __attribute__((swift_name("companion")));
-- (SharedLessonItem *)doCopyId:(SharedInt * _Nullable)id type:(int32_t)type title:(NSString *)title partId:(SharedInt * _Nullable)partId offset:(int32_t)offset isCompleted:(BOOL)isCompleted progressBarLevel:(int32_t)progressBarLevel stepCount:(int32_t)stepCount currentStep:(int32_t)currentStep fragment:(NSString * _Nullable)fragment color:(NSString * _Nullable)color LESSON_ID:(SharedInt * _Nullable)LESSON_ID isBlinding:(SharedBoolean * _Nullable)isBlinding isExtraction:(SharedBoolean * _Nullable)isExtraction isMultiplication:(SharedBoolean * _Nullable)isMultiplication stepCompletionStatus:(NSArray<SharedBoolean *> *)stepCompletionStatus finishStepNumber:(SharedInt * _Nullable)finishStepNumber startStepNumber:(SharedInt * _Nullable)startStepNumber mapFragmentIndex:(SharedInt * _Nullable)mapFragmentIndex stepIsFinish:(BOOL)stepIsFinish finalGoldVisualUnlocked:(BOOL)finalGoldVisualUnlocked tutorialNumber:(int32_t)tutorialNumber tutorialIsFinish:(BOOL)tutorialIsFinish lessonHint:(NSString * _Nullable)lessonHint stepCupIcon:(NSString *)stepCupIcon cupPoint1:(SharedInt * _Nullable)cupPoint1 cupPoint2:(SharedInt * _Nullable)cupPoint2 worstCupTime:(SharedInt * _Nullable)worstCupTime sectionTitle:(NSString * _Nullable)sectionTitle backPart:(SharedBoolean * _Nullable)backPart sectionDescription:(NSString * _Nullable)sectionDescription timePeriod:(SharedLong * _Nullable)timePeriod blindingMultiplication:(SharedBoolean * _Nullable)blindingMultiplication racePartId:(SharedInt * _Nullable)racePartId backRaceId:(SharedInt * _Nullable)backRaceId raceBusyLevel:(SharedInt * _Nullable)raceBusyLevel cupDifficultyLevel:(SharedInt * _Nullable)cupDifficultyLevel cupWinDelta:(SharedInt * _Nullable)cupWinDelta cupLossDelta:(SharedInt * _Nullable)cupLossDelta record:(SharedInt * _Nullable)record leaderboardSeasonBest:(SharedInt * _Nullable)leaderboardSeasonBest leaderboardSeasonId:(SharedInt * _Nullable)leaderboardSeasonId abacusGuideNumber:(SharedInt * _Nullable)abacusGuideNumber titleUnit:(NSString * _Nullable)titleUnit raceTitle:(NSString * _Nullable)raceTitle cupDigitSize:(SharedInt * _Nullable)cupDigitSize cupNumberCount:(SharedInt * _Nullable)cupNumberCount __attribute__((swift_name("doCopy(id:type:title:partId:offset:isCompleted:progressBarLevel:stepCount:currentStep:fragment:color:LESSON_ID:isBlinding:isExtraction:isMultiplication:stepCompletionStatus:finishStepNumber:startStepNumber:mapFragmentIndex:stepIsFinish:finalGoldVisualUnlocked:tutorialNumber:tutorialIsFinish:lessonHint:stepCupIcon:cupPoint1:cupPoint2:worstCupTime:sectionTitle:backPart:sectionDescription:timePeriod:blindingMultiplication:racePartId:backRaceId:raceBusyLevel:cupDifficultyLevel:cupWinDelta:cupLossDelta:record:leaderboardSeasonBest:leaderboardSeasonId:abacusGuideNumber:titleUnit:raceTitle:cupDigitSize:cupNumberCount:)")));
+- (SharedLessonItem *)doCopyStableId:(NSString *)stableId id:(SharedInt * _Nullable)id type:(int32_t)type title:(NSString *)title partId:(SharedInt * _Nullable)partId offset:(int32_t)offset isCompleted:(BOOL)isCompleted progressBarLevel:(int32_t)progressBarLevel stepCount:(int32_t)stepCount currentStep:(int32_t)currentStep fragment:(NSString * _Nullable)fragment color:(NSString * _Nullable)color LESSON_ID:(SharedInt * _Nullable)LESSON_ID isBlinding:(SharedBoolean * _Nullable)isBlinding isExtraction:(SharedBoolean * _Nullable)isExtraction isMultiplication:(SharedBoolean * _Nullable)isMultiplication stepCompletionStatus:(NSArray<SharedBoolean *> *)stepCompletionStatus finishStepNumber:(SharedInt * _Nullable)finishStepNumber startStepNumber:(SharedInt * _Nullable)startStepNumber mapFragmentIndex:(SharedInt * _Nullable)mapFragmentIndex stepIsFinish:(BOOL)stepIsFinish finalGoldVisualUnlocked:(BOOL)finalGoldVisualUnlocked tutorialNumber:(int32_t)tutorialNumber tutorialIsFinish:(BOOL)tutorialIsFinish lessonHint:(NSString * _Nullable)lessonHint stepCupIcon:(NSString *)stepCupIcon cupPoint1:(SharedInt * _Nullable)cupPoint1 cupPoint2:(SharedInt * _Nullable)cupPoint2 worstCupTime:(SharedInt * _Nullable)worstCupTime sectionTitle:(NSString * _Nullable)sectionTitle backPart:(SharedBoolean * _Nullable)backPart sectionDescription:(NSString * _Nullable)sectionDescription timePeriod:(SharedLong * _Nullable)timePeriod blindingMultiplication:(SharedBoolean * _Nullable)blindingMultiplication racePartId:(SharedInt * _Nullable)racePartId backRaceId:(SharedInt * _Nullable)backRaceId raceBusyLevel:(SharedInt * _Nullable)raceBusyLevel cupDifficultyLevel:(SharedInt * _Nullable)cupDifficultyLevel cupWinDelta:(SharedInt * _Nullable)cupWinDelta cupLossDelta:(SharedInt * _Nullable)cupLossDelta record:(SharedInt * _Nullable)record leaderboardSeasonBest:(SharedInt * _Nullable)leaderboardSeasonBest leaderboardSeasonId:(SharedInt * _Nullable)leaderboardSeasonId abacusGuideNumber:(SharedInt * _Nullable)abacusGuideNumber titleUnit:(NSString * _Nullable)titleUnit raceTitle:(NSString * _Nullable)raceTitle cupDigitSize:(SharedInt * _Nullable)cupDigitSize cupNumberCount:(SharedInt * _Nullable)cupNumberCount __attribute__((swift_name("doCopy(stableId:id:type:title:partId:offset:isCompleted:progressBarLevel:stepCount:currentStep:fragment:color:LESSON_ID:isBlinding:isExtraction:isMultiplication:stepCompletionStatus:finishStepNumber:startStepNumber:mapFragmentIndex:stepIsFinish:finalGoldVisualUnlocked:tutorialNumber:tutorialIsFinish:lessonHint:stepCupIcon:cupPoint1:cupPoint2:worstCupTime:sectionTitle:backPart:sectionDescription:timePeriod:blindingMultiplication:racePartId:backRaceId:raceBusyLevel:cupDifficultyLevel:cupWinDelta:cupLossDelta:record:leaderboardSeasonBest:leaderboardSeasonId:abacusGuideNumber:titleUnit:raceTitle:cupDigitSize:cupNumberCount:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (SharedInt * _Nullable)leaderboardSubmitScoreSeason:(int32_t)season __attribute__((swift_name("leaderboardSubmitScore(season:)")));
@@ -2490,6 +2643,7 @@ __attribute__((swift_name("LessonItem")))
 @property SharedInt * _Nullable record __attribute__((swift_name("record")));
 @property NSString * _Nullable sectionDescription __attribute__((swift_name("sectionDescription")));
 @property NSString * _Nullable sectionTitle __attribute__((swift_name("sectionTitle")));
+@property (readonly) NSString *stableId __attribute__((swift_name("stableId")));
 @property SharedInt * _Nullable startStepNumber __attribute__((swift_name("startStepNumber")));
 @property NSArray<SharedBoolean *> *stepCompletionStatus __attribute__((swift_name("stepCompletionStatus")));
 @property int32_t stepCount __attribute__((swift_name("stepCount")));
@@ -2562,9 +2716,10 @@ __attribute__((swift_name("LessonProgressMerge")))
 __attribute__((swift_name("LessonProgressSink")))
 @protocol SharedLessonProgressSink
 @required
-- (void)submitBestIfNeededPartId:(int32_t)partId lessonIndex:(int32_t)lessonIndex score:(int32_t)score season:(int32_t)season titleUnit:(NSString * _Nullable)titleUnit __attribute__((swift_name("submitBestIfNeeded(partId:lessonIndex:score:season:titleUnit:)")));
-- (void)writeAllItemsPartId:(int32_t)partId itemsFields:(NSArray<NSDictionary<NSString *, id> *> *)itemsFields __attribute__((swift_name("writeAllItems(partId:itemsFields:)")));
-- (void)writeSingleItemPartId:(int32_t)partId position:(int32_t)position fields:(NSDictionary<NSString *, id> *)fields __attribute__((swift_name("writeSingleItem(partId:position:fields:)")));
+- (void)migrateLegacyItemKeysPartId:(int32_t)partId stableIds:(NSArray<NSString *> *)stableIds itemsFields:(NSArray<NSDictionary<NSString *, id> *> *)itemsFields legacyDocIds:(NSArray<NSString *> *)legacyDocIds __attribute__((swift_name("migrateLegacyItemKeys(partId:stableIds:itemsFields:legacyDocIds:)")));
+- (void)submitBestIfNeededPartId:(int32_t)partId lessonKey:(NSString *)lessonKey score:(int32_t)score season:(int32_t)season titleUnit:(NSString * _Nullable)titleUnit __attribute__((swift_name("submitBestIfNeeded(partId:lessonKey:score:season:titleUnit:)")));
+- (void)writeAllItemsPartId:(int32_t)partId stableIds:(NSArray<NSString *> *)stableIds itemsFields:(NSArray<NSDictionary<NSString *, id> *> *)itemsFields __attribute__((swift_name("writeAllItems(partId:stableIds:itemsFields:)")));
+- (void)writeSingleItemPartId:(int32_t)partId stableId:(NSString *)stableId fields:(NSDictionary<NSString *, id> *)fields __attribute__((swift_name("writeSingleItem(partId:stableId:fields:)")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -2574,7 +2729,8 @@ __attribute__((swift_name("LessonResultFalseLogic")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)lessonResultFalseLogic __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedLessonResultFalseLogic *shared __attribute__((swift_name("shared")));
-- (SharedLessonResultFalseLogicFailRecord * _Nullable)failRecordForItem:(SharedLessonItem * _Nullable)item mapFragmentStepIndex:(int32_t)mapFragmentStepIndex globalPartId:(int32_t)globalPartId __attribute__((swift_name("failRecordFor(item:mapFragmentStepIndex:globalPartId:)")));
+- (SharedLessonResultFalseLogicFailRecord * _Nullable)failRecordForItem:(SharedLessonItem * _Nullable)item mapFragmentStepIndex:(int32_t)mapFragmentStepIndex globalPartId:(int32_t)globalPartId successRate:(SharedFloat * _Nullable)successRate __attribute__((swift_name("failRecordFor(item:mapFragmentStepIndex:globalPartId:successRate:)")));
+- (BOOL)isLessonTypeReturnItem:(SharedLessonItem * _Nullable)item __attribute__((swift_name("isLessonTypeReturn(item:)")));
 - (NSString *)resultTitleCommentIsChestFailure:(BOOL)isChestFailure __attribute__((swift_name("resultTitleComment(isChestFailure:)")));
 - (BOOL)shouldRedirectToLoginCurrentTutorialNumber:(int32_t)currentTutorialNumber isLoggedIn:(BOOL)isLoggedIn __attribute__((swift_name("shouldRedirectToLogin(currentTutorialNumber:isLoggedIn:)")));
 @end
@@ -2582,11 +2738,12 @@ __attribute__((swift_name("LessonResultFalseLogic")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("LessonResultFalseLogic.FailRecord")))
 @interface SharedLessonResultFalseLogicFailRecord : SharedBase
-- (instancetype)initWithPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step __attribute__((swift_name("init(partId:position:step:)"))) __attribute__((objc_designated_initializer));
-- (SharedLessonResultFalseLogicFailRecord *)doCopyPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step __attribute__((swift_name("doCopy(partId:position:step:)")));
+- (instancetype)initWithPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step answerSuccessRatePercent:(SharedFloat * _Nullable)answerSuccessRatePercent __attribute__((swift_name("init(partId:position:step:answerSuccessRatePercent:)"))) __attribute__((objc_designated_initializer));
+- (SharedLessonResultFalseLogicFailRecord *)doCopyPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step answerSuccessRatePercent:(SharedFloat * _Nullable)answerSuccessRatePercent __attribute__((swift_name("doCopy(partId:position:step:answerSuccessRatePercent:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) SharedFloat * _Nullable answerSuccessRatePercent __attribute__((swift_name("answerSuccessRatePercent")));
 @property (readonly) int32_t partId __attribute__((swift_name("partId")));
 @property (readonly) int32_t position __attribute__((swift_name("position")));
 @property (readonly) int32_t step __attribute__((swift_name("step")));
@@ -2620,12 +2777,13 @@ __attribute__((swift_name("LessonResultLogic.ClaimBranch")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("LessonResultLogic.ClaimDecision")))
 @interface SharedLessonResultLogicClaimDecision : SharedBase
-- (instancetype)initWithBranch:(SharedLessonResultLogicClaimBranch *)branch recordItemReplay:(BOOL)recordItemReplay __attribute__((swift_name("init(branch:recordItemReplay:)"))) __attribute__((objc_designated_initializer));
-- (SharedLessonResultLogicClaimDecision *)doCopyBranch:(SharedLessonResultLogicClaimBranch *)branch recordItemReplay:(BOOL)recordItemReplay __attribute__((swift_name("doCopy(branch:recordItemReplay:)")));
+- (instancetype)initWithBranch:(SharedLessonResultLogicClaimBranch *)branch recordItemReplay:(BOOL)recordItemReplay isLessonTypeReturn:(BOOL)isLessonTypeReturn __attribute__((swift_name("init(branch:recordItemReplay:isLessonTypeReturn:)"))) __attribute__((objc_designated_initializer));
+- (SharedLessonResultLogicClaimDecision *)doCopyBranch:(SharedLessonResultLogicClaimBranch *)branch recordItemReplay:(BOOL)recordItemReplay isLessonTypeReturn:(BOOL)isLessonTypeReturn __attribute__((swift_name("doCopy(branch:recordItemReplay:isLessonTypeReturn:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
 @property (readonly) SharedLessonResultLogicClaimBranch *branch __attribute__((swift_name("branch")));
+@property (readonly) BOOL isLessonTypeReturn __attribute__((swift_name("isLessonTypeReturn")));
 @property (readonly) BOOL recordItemReplay __attribute__((swift_name("recordItemReplay")));
 @end
 
@@ -2636,45 +2794,45 @@ __attribute__((swift_name("LessonSuccessRateRepository")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)lessonSuccessRateRepository __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedLessonSuccessRateRepository *shared __attribute__((swift_name("shared")));
-- (float)avgReplayCountTotalCompletionCount:(int64_t)totalCompletionCount passUserCount:(int64_t)passUserCount __attribute__((swift_name("avgReplayCount(totalCompletionCount:passUserCount:)")));
+- (SharedFloat * _Nullable)answerSuccessRateForAnalyticsPartId:(int32_t)partId answerSuccessRatePercent:(SharedFloat * _Nullable)answerSuccessRatePercent __attribute__((swift_name("answerSuccessRateForAnalytics(partId:answerSuccessRatePercent:)")));
 - (BOOL)isTrackedPartPartId:(int32_t)partId __attribute__((swift_name("isTrackedPart(partId:)")));
-- (NSString *)itemPathPartId:(int32_t)partId position:(int32_t)position __attribute__((swift_name("itemPath(partId:position:)")));
-- (NSString *)partCollectionPathPartId:(int32_t)partId __attribute__((swift_name("partCollectionPath(partId:)")));
-- (SharedLessonSuccessRateRepositoryStepWrite * _Nullable)recordFailUserSnap:(NSDictionary<NSString *, id> *)userSnap globalSnap:(NSDictionary<NSString *, id> *)globalSnap __attribute__((swift_name("recordFail(userSnap:globalSnap:)")));
-- (NSDictionary<NSString *, id> *)recordItemFirstFinishGlobalSnap:(NSDictionary<NSString *, id> *)globalSnap chestStars:(SharedInt * _Nullable)chestStars __attribute__((swift_name("recordItemFirstFinish(globalSnap:chestStars:)")));
-- (NSDictionary<NSString *, id> *)recordItemReplayGlobalSnap:(NSDictionary<NSString *, id> *)globalSnap __attribute__((swift_name("recordItemReplay(globalSnap:)")));
-- (SharedLessonSuccessRateRepositoryStepWrite * _Nullable)recordPassUserSnap:(NSDictionary<NSString *, id> *)userSnap globalSnap:(NSDictionary<NSString *, id> *)globalSnap __attribute__((swift_name("recordPass(userSnap:globalSnap:)")));
-- (NSString *)stepPathPartId:(int32_t)partId position:(int32_t)position step:(int32_t)step __attribute__((swift_name("stepPath(partId:position:step:)")));
-- (float)successRatePercentPassUserCount:(int64_t)passUserCount attemptUserCount:(int64_t)attemptUserCount __attribute__((swift_name("successRatePercent(passUserCount:attemptUserCount:)")));
-- (NSString *)userStepStatePathUid:(NSString *)uid partId:(int32_t)partId position:(int32_t)position step:(int32_t)step __attribute__((swift_name("userStepStatePath(uid:partId:position:step:)")));
+- (NSString *)legacyUserStepStatePathUid:(NSString *)uid partId:(int32_t)partId position:(int32_t)position step:(int32_t)step __attribute__((swift_name("legacyUserStepStatePath(uid:partId:position:step:)")));
+- (SharedKotlinPair<NSDictionary<NSString *, id> *, SharedBoolean *> *)pickUserSnapTarget:(NSDictionary<NSString *, id> * _Nullable)target legacy:(NSDictionary<NSString *, id> * _Nullable)legacy __attribute__((swift_name("pickUserSnap(target:legacy:)")));
+- (SharedLessonSuccessRateRepositoryStepWrite * _Nullable)recordFailTarget:(NSDictionary<NSString *, id> * _Nullable)target legacy:(NSDictionary<NSString *, id> * _Nullable)legacy __attribute__((swift_name("recordFail(target:legacy:)")));
+- (SharedLessonSuccessRateRepositoryStepWrite * _Nullable)recordPassTarget:(NSDictionary<NSString *, id> * _Nullable)target legacy:(NSDictionary<NSString *, id> * _Nullable)legacy __attribute__((swift_name("recordPass(target:legacy:)")));
+- (BOOL)shouldLogEventPartId:(int32_t)partId isLoggedIn:(BOOL)isLoggedIn __attribute__((swift_name("shouldLogEvent(partId:isLoggedIn:)")));
+- (NSString * _Nullable)stableIdOfPartId:(int32_t)partId position:(int32_t)position __attribute__((swift_name("stableIdOf(partId:position:)")));
+- (NSString *)stateCollectionPathUid:(NSString *)uid __attribute__((swift_name("stateCollectionPath(uid:)")));
+- (SharedLessonSuccessRateRepositoryStateRefs *)stateRefsUid:(NSString *)uid partId:(int32_t)partId position:(int32_t)position step:(int32_t)step __attribute__((swift_name("stateRefs(uid:partId:position:step:)")));
+- (NSString *)userStepStatePathUid:(NSString *)uid partId:(int32_t)partId stableId:(NSString *)stableId step:(int32_t)step __attribute__((swift_name("userStepStatePath(uid:partId:stableId:step:)")));
 @property (readonly) NSString *FIELD_ATTEMPTED __attribute__((swift_name("FIELD_ATTEMPTED")));
-@property (readonly) NSString *FIELD_ATTEMPT_FAIL_TOTAL __attribute__((swift_name("FIELD_ATTEMPT_FAIL_TOTAL")));
-@property (readonly) NSString *FIELD_ATTEMPT_USER_COUNT __attribute__((swift_name("FIELD_ATTEMPT_USER_COUNT")));
-@property (readonly) NSString *FIELD_AVG_REPLAY_COUNT __attribute__((swift_name("FIELD_AVG_REPLAY_COUNT")));
 @property (readonly) NSString *FIELD_FAIL_STREAK __attribute__((swift_name("FIELD_FAIL_STREAK")));
-@property (readonly) NSString *FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT __attribute__((swift_name("FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT")));
-@property (readonly) NSString *FIELD_ITEM_PASS_USER_COUNT __attribute__((swift_name("FIELD_ITEM_PASS_USER_COUNT")));
-@property (readonly) NSString *FIELD_ONE_STAR_COUNT __attribute__((swift_name("FIELD_ONE_STAR_COUNT")));
 @property (readonly) NSString *FIELD_PASSED __attribute__((swift_name("FIELD_PASSED")));
-@property (readonly) NSString *FIELD_PASS_FIRST_TRY __attribute__((swift_name("FIELD_PASS_FIRST_TRY")));
-@property (readonly) NSString *FIELD_PASS_SECOND_TRY __attribute__((swift_name("FIELD_PASS_SECOND_TRY")));
-@property (readonly) NSString *FIELD_PASS_THIRD_PLUS_TRY __attribute__((swift_name("FIELD_PASS_THIRD_PLUS_TRY")));
-@property (readonly) NSString *FIELD_STEP_PASS_USER_COUNT __attribute__((swift_name("FIELD_STEP_PASS_USER_COUNT")));
-@property (readonly) NSString *FIELD_SUCCESS_RATE_PERCENT __attribute__((swift_name("FIELD_SUCCESS_RATE_PERCENT")));
-@property (readonly) NSString *FIELD_THREE_STAR_COUNT __attribute__((swift_name("FIELD_THREE_STAR_COUNT")));
-@property (readonly) NSString *FIELD_TOTAL_COMPLETION_COUNT __attribute__((swift_name("FIELD_TOTAL_COMPLETION_COUNT")));
-@property (readonly) NSString *FIELD_TWO_STAR_COUNT __attribute__((swift_name("FIELD_TWO_STAR_COUNT")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("LessonSuccessRateRepository.StateRefs")))
+@interface SharedLessonSuccessRateRepositoryStateRefs : SharedBase
+- (instancetype)initWithTargetPath:(NSString *)targetPath legacyPath:(NSString * _Nullable)legacyPath stableId:(NSString * _Nullable)stableId __attribute__((swift_name("init(targetPath:legacyPath:stableId:)"))) __attribute__((objc_designated_initializer));
+- (SharedLessonSuccessRateRepositoryStateRefs *)doCopyTargetPath:(NSString *)targetPath legacyPath:(NSString * _Nullable)legacyPath stableId:(NSString * _Nullable)stableId __attribute__((swift_name("doCopy(targetPath:legacyPath:stableId:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable legacyPath __attribute__((swift_name("legacyPath")));
+@property (readonly) NSString * _Nullable stableId __attribute__((swift_name("stableId")));
+@property (readonly) NSString *targetPath __attribute__((swift_name("targetPath")));
 @end
 
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("LessonSuccessRateRepository.StepWrite")))
 @interface SharedLessonSuccessRateRepositoryStepWrite : SharedBase
-- (instancetype)initWithUserState:(NSDictionary<NSString *, id> *)userState stepDoc:(NSDictionary<NSString *, id> *)stepDoc __attribute__((swift_name("init(userState:stepDoc:)"))) __attribute__((objc_designated_initializer));
-- (SharedLessonSuccessRateRepositoryStepWrite *)doCopyUserState:(NSDictionary<NSString *, id> *)userState stepDoc:(NSDictionary<NSString *, id> *)stepDoc __attribute__((swift_name("doCopy(userState:stepDoc:)")));
+- (instancetype)initWithUserState:(NSDictionary<NSString *, id> *)userState failStreak:(int64_t)failStreak deleteLegacy:(BOOL)deleteLegacy __attribute__((swift_name("init(userState:failStreak:deleteLegacy:)"))) __attribute__((objc_designated_initializer));
+- (SharedLessonSuccessRateRepositoryStepWrite *)doCopyUserState:(NSDictionary<NSString *, id> *)userState failStreak:(int64_t)failStreak deleteLegacy:(BOOL)deleteLegacy __attribute__((swift_name("doCopy(userState:failStreak:deleteLegacy:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) NSDictionary<NSString *, id> *stepDoc __attribute__((swift_name("stepDoc")));
+@property (readonly) BOOL deleteLegacy __attribute__((swift_name("deleteLegacy")));
+@property (readonly) int64_t failStreak __attribute__((swift_name("failStreak")));
 @property (readonly) NSDictionary<NSString *, id> *userState __attribute__((swift_name("userState")));
 @end
 
@@ -2745,12 +2903,13 @@ __attribute__((swift_name("PartSelectionLogic")))
 @property (class, readonly, getter=shared) SharedPartSelectionLogic *shared __attribute__((swift_name("shared")));
 - (BOOL)hasProPlanPlan:(NSString *)plan teacherApproved:(BOOL)teacherApproved __attribute__((swift_name("hasProPlan(plan:teacherApproved:)")));
 - (BOOL)lastChestCompleteItems:(NSArray<SharedLessonItem *> *)items __attribute__((swift_name("lastChestComplete(items:)")));
+- (NSString *)marathonGateMessagePrerequisitePart:(int32_t)prerequisitePart __attribute__((swift_name("marathonGateMessage(prerequisitePart:)")));
 - (BOOL)opensRacePanelPartId:(int32_t)partId __attribute__((swift_name("opensRacePanel(partId:)")));
 - (NSString *)partAnimationNamePartId:(int32_t)partId __attribute__((swift_name("partAnimationName(partId:)")));
 - (NSString *)partCardColorState:(SharedPartState *)state __attribute__((swift_name("partCardColor(state:)")));
 - (NSString *)partLabelColorState:(SharedPartState *)state __attribute__((swift_name("partLabelColor(state:)")));
-- (SharedPartState *)partStatePartId:(int32_t)partId hasProPlan:(BOOL)hasProPlan part1ChestComplete:(BOOL)part1ChestComplete part2ChestComplete:(BOOL)part2ChestComplete part3ChestComplete:(BOOL)part3ChestComplete __attribute__((swift_name("partState(partId:hasProPlan:part1ChestComplete:part2ChestComplete:part3ChestComplete:)")));
-- (NSArray<SharedPartState *> *)partStatesPartIds:(NSArray<SharedInt *> *)partIds hasProPlan:(BOOL)hasProPlan part1ChestComplete:(BOOL)part1ChestComplete part2ChestComplete:(BOOL)part2ChestComplete part3ChestComplete:(BOOL)part3ChestComplete __attribute__((swift_name("partStates(partIds:hasProPlan:part1ChestComplete:part2ChestComplete:part3ChestComplete:)")));
+- (SharedPartState *)partStatePartId:(int32_t)partId hasProPlan:(BOOL)hasProPlan part1ChestComplete:(BOOL)part1ChestComplete part2ChestComplete:(BOOL)part2ChestComplete part3ChestComplete:(BOOL)part3ChestComplete teacherApproved:(BOOL)teacherApproved __attribute__((swift_name("partState(partId:hasProPlan:part1ChestComplete:part2ChestComplete:part3ChestComplete:teacherApproved:)")));
+- (NSArray<SharedPartState *> *)partStatesPartIds:(NSArray<SharedInt *> *)partIds hasProPlan:(BOOL)hasProPlan part1ChestComplete:(BOOL)part1ChestComplete part2ChestComplete:(BOOL)part2ChestComplete part3ChestComplete:(BOOL)part3ChestComplete teacherApproved:(BOOL)teacherApproved __attribute__((swift_name("partStates(partIds:hasProPlan:part1ChestComplete:part2ChestComplete:part3ChestComplete:teacherApproved:)")));
 - (NSString *)partTitlePartId:(int32_t)partId __attribute__((swift_name("partTitle(partId:)")));
 - (NSString *)racePanelTitlePartId:(int32_t)partId __attribute__((swift_name("racePanelTitle(partId:)")));
 @property (readonly) NSArray<SharedInt *> *ADDITION_PARTS __attribute__((swift_name("ADDITION_PARTS")));
@@ -2959,6 +3118,7 @@ __attribute__((swift_name("BadgePrecalcHelper")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)badgePrecalcHelper __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedBadgePrecalcHelper *shared __attribute__((swift_name("shared")));
+- (NSDictionary<NSString *, id> *)buildCupSubmitPayloadDelta:(int32_t)delta isMultiplication:(SharedBoolean * _Nullable)isMultiplication isExtraction:(SharedBoolean * _Nullable)isExtraction isBlinding:(SharedBoolean * _Nullable)isBlinding cupDifficultyLevel:(SharedInt * _Nullable)cupDifficultyLevel dayId:(NSString *)dayId __attribute__((swift_name("buildCupSubmitPayload(delta:isMultiplication:isExtraction:isBlinding:cupDifficultyLevel:dayId:)")));
 - (SharedCupDeltaPrecalc *)precalculateDelta:(int32_t)delta currentLessonOldCupScore:(SharedInt * _Nullable)currentLessonOldCupScore isMultiplication:(SharedBoolean * _Nullable)isMultiplication isExtraction:(SharedBoolean * _Nullable)isExtraction isBlinding:(SharedBoolean * _Nullable)isBlinding __attribute__((swift_name("precalculate(delta:currentLessonOldCupScore:isMultiplication:isExtraction:isBlinding:)")));
 - (SharedCupPathKind *)resolveCupPathKindIsMultiplication:(SharedBoolean * _Nullable)isMultiplication isExtraction:(SharedBoolean * _Nullable)isExtraction isBlinding:(SharedBoolean * _Nullable)isBlinding __attribute__((swift_name("resolveCupPathKind(isMultiplication:isExtraction:isBlinding:)")));
 - (SharedInt * _Nullable)resolvePendingDeltaPendingCupDelta:(SharedInt * _Nullable)pendingCupDelta pendingBlindingCupDelta:(SharedInt * _Nullable)pendingBlindingCupDelta pendingExtractionCupDelta:(SharedInt * _Nullable)pendingExtractionCupDelta pendingBlindingExtractionCupDelta:(SharedInt * _Nullable)pendingBlindingExtractionCupDelta pendingImpactCupDelta:(SharedInt * _Nullable)pendingImpactCupDelta pendingBlindingImpactCupDelta:(SharedInt * _Nullable)pendingBlindingImpactCupDelta __attribute__((swift_name("resolvePendingDelta(pendingCupDelta:pendingBlindingCupDelta:pendingExtractionCupDelta:pendingBlindingExtractionCupDelta:pendingImpactCupDelta:pendingBlindingImpactCupDelta:)")));
@@ -3183,6 +3343,8 @@ __attribute__((swift_name("CupPathLogic")))
 - (NSString *)digitOptionLabelDigits:(int32_t)digits __attribute__((swift_name("digitOptionLabel(digits:)")));
 - (NSArray<SharedInt *> *)digitOptionsCupScore:(int32_t)cupScore isBlinding:(BOOL)isBlinding isMultiplication:(BOOL)isMultiplication __attribute__((swift_name("digitOptions(cupScore:isBlinding:isMultiplication:)")));
 - (BOOL)isCardActiveLessonItemTypes:(NSArray<SharedInt *> *)lessonItemTypes stepIsFinish:(NSArray<SharedBoolean *> *)stepIsFinish __attribute__((swift_name("isCardActive(lessonItemTypes:stepIsFinish:)")));
+- (BOOL)isCardActiveLessonItemTypes:(NSArray<SharedInt *> *)lessonItemTypes stepIsFinish:(NSArray<SharedBoolean *> *)stepIsFinish isApprovedTeacher:(BOOL)isApprovedTeacher __attribute__((swift_name("isCardActive(lessonItemTypes:stepIsFinish:isApprovedTeacher:)")));
+- (NSString *)lockedCardHintCardNumber:(int32_t)cardNumber __attribute__((swift_name("lockedCardHint(cardNumber:)")));
 - (int32_t)scoreAfterLessonOldScore:(int32_t)oldScore delta:(int32_t)delta __attribute__((swift_name("scoreAfterLesson(oldScore:delta:)")));
 - (int32_t)scoreAnimationEndUpdatedScore:(int32_t)updatedScore __attribute__((swift_name("scoreAnimationEnd(updatedScore:)")));
 - (int32_t)scoreAnimationStartUpdatedScore:(int32_t)updatedScore delta:(int32_t)delta __attribute__((swift_name("scoreAnimationStart(updatedScore:delta:)")));
@@ -3191,6 +3353,7 @@ __attribute__((swift_name("CupPathLogic")))
 - (BOOL)showsDifficultySliderIsMultiplication:(BOOL)isMultiplication __attribute__((swift_name("showsDifficultySlider(isMultiplication:)")));
 @property (readonly) NSArray<SharedCupPathCard *> *CARDS __attribute__((swift_name("CARDS")));
 @property (readonly) int64_t CARD_CLICK_DEBOUNCE_MS __attribute__((swift_name("CARD_CLICK_DEBOUNCE_MS")));
+@property (readonly) NSArray<NSString *> *CARD_UNLOCK_REQUIREMENTS __attribute__((swift_name("CARD_UNLOCK_REQUIREMENTS")));
 @property (readonly) NSString *DIFFICULTY_MESSAGE __attribute__((swift_name("DIFFICULTY_MESSAGE")));
 @property (readonly) int32_t DIFFICULTY_SEEKBAR_MAX __attribute__((swift_name("DIFFICULTY_SEEKBAR_MAX")));
 @property (readonly) NSString *DIGIT_LABEL __attribute__((swift_name("DIGIT_LABEL")));
@@ -3201,9 +3364,99 @@ __attribute__((swift_name("CupPathLogic")))
 @property (readonly) int32_t MULTIPLICATION_LOSS_DELTA __attribute__((swift_name("MULTIPLICATION_LOSS_DELTA")));
 @property (readonly) int32_t MULTIPLICATION_NUMBER_COUNT __attribute__((swift_name("MULTIPLICATION_NUMBER_COUNT")));
 @property (readonly) int32_t MULTIPLICATION_WIN_DELTA __attribute__((swift_name("MULTIPLICATION_WIN_DELTA")));
+@property (readonly) int64_t PANEL_REOPEN_GUARD_MS __attribute__((swift_name("PANEL_REOPEN_GUARD_MS")));
 @property (readonly) NSString *PANEL_TITLE __attribute__((swift_name("PANEL_TITLE")));
 @property (readonly) int64_t SCORE_ANIMATION_MS __attribute__((swift_name("SCORE_ANIMATION_MS")));
 @property (readonly) NSString *START_LABEL __attribute__((swift_name("START_LABEL")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("CupPathRewardRepository")))
+@interface SharedCupPathRewardRepository : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)cupPathRewardRepository __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedCupPathRewardRepository *shared __attribute__((swift_name("shared")));
+- (NSDictionary<NSString *, SharedCupPathRewardRepositoryCupPathState *> *)buildStatesCupDoc:(NSDictionary<NSString *, id> * _Nullable)cupDoc ledgerDoc:(NSDictionary<NSString *, id> * _Nullable)ledgerDoc __attribute__((swift_name("buildStates(cupDoc:ledgerDoc:)")));
+- (SharedCupPathRewardRepositoryCupPathState *)defaultStateCupField:(NSString *)cupField __attribute__((swift_name("defaultState(cupField:)")));
+- (NSString *)ledgerDocumentPathUid:(NSString *)uid __attribute__((swift_name("ledgerDocumentPath(uid:)")));
+- (NSString *)lockedMilestoneTextCupValue:(int32_t)cupValue __attribute__((swift_name("lockedMilestoneText(cupValue:)")));
+- (SharedChestRarity *)rarityOfMilestone:(int32_t)milestone __attribute__((swift_name("rarityOf(milestone:)")));
+- (NSString *)titleOfCupField:(NSString *)cupField __attribute__((swift_name("titleOf(cupField:)")));
+@property (readonly) NSString *COL_CUP __attribute__((swift_name("COL_CUP")));
+@property (readonly) NSString *COL_LEDGER __attribute__((swift_name("COL_LEDGER")));
+@property (readonly) NSString *COL_USERS __attribute__((swift_name("COL_USERS")));
+@property (readonly) NSString *DOC_CUP __attribute__((swift_name("DOC_CUP")));
+@property (readonly) NSString *DOC_LEDGER __attribute__((swift_name("DOC_LEDGER")));
+@property (readonly) NSArray<NSString *> *FIELDS __attribute__((swift_name("FIELDS")));
+@property (readonly) NSString *FIELD_ADDITION __attribute__((swift_name("FIELD_ADDITION")));
+@property (readonly) NSString *FIELD_BLINDING_ADDITION __attribute__((swift_name("FIELD_BLINDING_ADDITION")));
+@property (readonly) NSString *FIELD_BLINDING_EXTRACTION __attribute__((swift_name("FIELD_BLINDING_EXTRACTION")));
+@property (readonly) NSString *FIELD_BLINDING_IMPACT __attribute__((swift_name("FIELD_BLINDING_IMPACT")));
+@property (readonly) NSString *FIELD_EXTRACTION __attribute__((swift_name("FIELD_EXTRACTION")));
+@property (readonly) NSString *FIELD_IMPACT __attribute__((swift_name("FIELD_IMPACT")));
+@property (readonly) int32_t FUTURE_MILESTONES __attribute__((swift_name("FUTURE_MILESTONES")));
+@property (readonly) NSString *F_CLAIMED __attribute__((swift_name("F_CLAIMED")));
+@property (readonly) NSString *F_LAST_CLAIMED __attribute__((swift_name("F_LAST_CLAIMED")));
+@property (readonly) int32_t MAX __attribute__((swift_name("MAX")));
+@property (readonly) int32_t MAX_MILESTONES __attribute__((swift_name("MAX_MILESTONES")));
+@property (readonly) int32_t START __attribute__((swift_name("START")));
+@property (readonly) int32_t STEP __attribute__((swift_name("STEP")));
+@property (readonly) NSString *TEXT_ALREADY_CLAIMED __attribute__((swift_name("TEXT_ALREADY_CLAIMED")));
+@property (readonly) NSString *TEXT_CHEST_READY __attribute__((swift_name("TEXT_CHEST_READY")));
+@property (readonly) NSString *TEXT_CLAIMED_CAPS __attribute__((swift_name("TEXT_CLAIMED_CAPS")));
+@property (readonly) NSString *TEXT_FINISHED __attribute__((swift_name("TEXT_FINISHED")));
+@property (readonly) NSString *TEXT_READY_CAPS __attribute__((swift_name("TEXT_READY_CAPS")));
+@property (readonly) NSString *TEXT_TITLE_FALLBACK __attribute__((swift_name("TEXT_TITLE_FALLBACK")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("CupPathRewardRepository.CupPathState")))
+@interface SharedCupPathRewardRepositoryCupPathState : SharedBase
+- (instancetype)initWithCupField:(NSString *)cupField cupScore:(int32_t)cupScore lastClaimed:(int32_t)lastClaimed claimedAbove:(NSSet<SharedInt *> *)claimedAbove __attribute__((swift_name("init(cupField:cupScore:lastClaimed:claimedAbove:)"))) __attribute__((objc_designated_initializer));
+- (SharedCupPathRewardRepositoryCupPathState *)doCopyCupField:(NSString *)cupField cupScore:(int32_t)cupScore lastClaimed:(int32_t)lastClaimed claimedAbove:(NSSet<SharedInt *> *)claimedAbove __attribute__((swift_name("doCopy(cupField:cupScore:lastClaimed:claimedAbove:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (BOOL)isClaimedMilestone:(int32_t)milestone __attribute__((swift_name("isClaimed(milestone:)")));
+- (NSArray<SharedCupPathRewardRepositoryMilestone *> *)milestonesFuture:(int32_t)future __attribute__((swift_name("milestones(future:)")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) BOOL claimable __attribute__((swift_name("claimable")));
+@property (readonly) NSSet<SharedInt *> *claimedAbove __attribute__((swift_name("claimedAbove")));
+@property (readonly) NSString *cupField __attribute__((swift_name("cupField")));
+@property (readonly) int32_t cupScore __attribute__((swift_name("cupScore")));
+@property (readonly) BOOL finished __attribute__((swift_name("finished")));
+@property (readonly) float fraction __attribute__((swift_name("fraction")));
+@property (readonly) NSString *label __attribute__((swift_name("label")));
+@property (readonly) int32_t lastClaimed __attribute__((swift_name("lastClaimed")));
+@property (readonly) int32_t milestoneStart __attribute__((swift_name("milestoneStart")));
+@property (readonly) int32_t nextMilestone __attribute__((swift_name("nextMilestone")));
+@property (readonly) int32_t pendingChests __attribute__((swift_name("pendingChests")));
+@property (readonly) BOOL tapOpensChest __attribute__((swift_name("tapOpensChest")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("CupPathRewardRepository.Milestone")))
+@interface SharedCupPathRewardRepositoryMilestone : SharedBase
+- (instancetype)initWithCupValue:(int32_t)cupValue status:(SharedCupPathRewardRepositoryMilestoneStatus *)status __attribute__((swift_name("init(cupValue:status:)"))) __attribute__((objc_designated_initializer));
+- (SharedCupPathRewardRepositoryMilestone *)doCopyCupValue:(int32_t)cupValue status:(SharedCupPathRewardRepositoryMilestoneStatus *)status __attribute__((swift_name("doCopy(cupValue:status:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t cupValue __attribute__((swift_name("cupValue")));
+@property (readonly) SharedCupPathRewardRepositoryMilestoneStatus *status __attribute__((swift_name("status")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("CupPathRewardRepository.MilestoneStatus")))
+@interface SharedCupPathRewardRepositoryMilestoneStatus : SharedKotlinEnum<SharedCupPathRewardRepositoryMilestoneStatus *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedCupPathRewardRepositoryMilestoneStatus *claimed __attribute__((swift_name("claimed")));
+@property (class, readonly) SharedCupPathRewardRepositoryMilestoneStatus *claimable __attribute__((swift_name("claimable")));
+@property (class, readonly) SharedCupPathRewardRepositoryMilestoneStatus *locked __attribute__((swift_name("locked")));
++ (SharedKotlinArray<SharedCupPathRewardRepositoryMilestoneStatus *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedCupPathRewardRepositoryMilestoneStatus *> *entries __attribute__((swift_name("entries")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -3214,8 +3467,10 @@ __attribute__((swift_name("CupRuleEngine")))
 + (instancetype)cupRuleEngine __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedCupRuleEngine *shared __attribute__((swift_name("shared")));
 - (SharedCupRuleEngineCupLessonItemOverride *)buildLessonItemCupScore:(int32_t)cupScore difficultyLevel:(int32_t)difficultyLevel isBlinding:(BOOL)isBlinding isExtraction:(BOOL)isExtraction forcedDigitSize:(SharedInt * _Nullable)forcedDigitSize random:(SharedKotlinRandom *)random __attribute__((swift_name("buildLessonItem(cupScore:difficultyLevel:isBlinding:isExtraction:forcedDigitSize:random:)")));
+- (NSArray<SharedCupRuleEngineDigitConfig *> *)configsForCupScore:(int32_t)cupScore isBlinding:(BOOL)isBlinding __attribute__((swift_name("configsFor(cupScore:isBlinding:)")));
 - (SharedCupMathOperation *)generateMultiplicationQuestionCupScore:(int32_t)cupScore isBlinding:(BOOL)isBlinding random:(SharedKotlinRandom *)random __attribute__((swift_name("generateMultiplicationQuestion(cupScore:isBlinding:random:)")));
 - (NSArray<SharedInt *> *)getAvailableDigitsCupScore:(int32_t)cupScore isBlinding:(BOOL)isBlinding __attribute__((swift_name("getAvailableDigits(cupScore:isBlinding:)")));
+- (SharedKotlinPair<SharedInt *, SharedInt *> *)multiplicationDigitsForCupScore:(int32_t)cupScore isBlinding:(BOOL)isBlinding __attribute__((swift_name("multiplicationDigitsFor(cupScore:isBlinding:)")));
 - (SharedCupRuleEngineDigitConfig *)resolveCupScore:(int32_t)cupScore ranges:(NSArray<SharedCupRuleEngineCupRange *> *)ranges forcedDigitSize:(SharedInt * _Nullable)forcedDigitSize random:(SharedKotlinRandom *)random __attribute__((swift_name("resolve(cupScore:ranges:forcedDigitSize:random:)")));
 - (NSArray<SharedCupRuleEngineDigitConfig *> *)resolveConfigsCupScore:(int32_t)cupScore ranges:(NSArray<SharedCupRuleEngineCupRange *> *)ranges __attribute__((swift_name("resolveConfigs(cupScore:ranges:)")));
 - (SharedKotlinPair<SharedInt *, SharedLong *> *)selectValuesConfig:(SharedCupRuleEngineDigitConfig *)config difficultyLevel:(int32_t)difficultyLevel random:(SharedKotlinRandom *)random __attribute__((swift_name("selectValues(config:difficultyLevel:random:)")));
@@ -3298,6 +3553,33 @@ __attribute__((swift_name("CupRuleEngine.MultiplicationConfig")))
 @end
 
 __attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("CupScoreService")))
+@interface SharedCupScoreService : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)cupScoreService __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedCupScoreService *shared __attribute__((swift_name("shared")));
+- (NSDictionary<NSString *, id> *)buildSubmitPayloadCupField:(NSString *)cupField won:(BOOL)won difficultyLevel:(int32_t)difficultyLevel isMultiplication:(BOOL)isMultiplication dayId:(NSString *)dayId __attribute__((swift_name("buildSubmitPayload(cupField:won:difficultyLevel:isMultiplication:dayId:)")));
+- (NSString *)cupFieldForIsMultiplication:(SharedBoolean * _Nullable)isMultiplication isExtraction:(SharedBoolean * _Nullable)isExtraction isBlinding:(SharedBoolean * _Nullable)isBlinding __attribute__((swift_name("cupFieldFor(isMultiplication:isExtraction:isBlinding:)")));
+- (SharedCupScoreServiceCupScoreResult * _Nullable)parseResultResultData:(id _Nullable)resultData __attribute__((swift_name("parseResult(resultData:)")));
+@property (readonly) NSString *CF_SUBMIT_CUP_RESULT __attribute__((swift_name("CF_SUBMIT_CUP_RESULT")));
+@property (readonly) int32_t MAX_DIFFICULTY __attribute__((swift_name("MAX_DIFFICULTY")));
+@property (readonly) int32_t MIN_DIFFICULTY __attribute__((swift_name("MIN_DIFFICULTY")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("CupScoreService.CupScoreResult")))
+@interface SharedCupScoreServiceCupScoreResult : SharedBase
+- (instancetype)initWithOldScore:(int32_t)oldScore newScore:(int32_t)newScore __attribute__((swift_name("init(oldScore:newScore:)"))) __attribute__((objc_designated_initializer));
+- (SharedCupScoreServiceCupScoreResult *)doCopyOldScore:(int32_t)oldScore newScore:(int32_t)newScore __attribute__((swift_name("doCopy(oldScore:newScore:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly, getter=doNewScore) int32_t newScore __attribute__((swift_name("newScore")));
+@property (readonly) int32_t oldScore __attribute__((swift_name("oldScore")));
+@end
+
+__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("CupTier")))
 @interface SharedCupTier : SharedBase
 - (instancetype)initWithIcon:(NSString *)icon cupName:(NSString *)cupName cupMotivation:(NSArray<NSString *> *)cupMotivation __attribute__((swift_name("init(icon:cupName:cupMotivation:)"))) __attribute__((objc_designated_initializer));
@@ -3363,7 +3645,7 @@ __attribute__((swift_name("KupaEkranKoprusu")))
 - (NSArray<SharedLiderSatirVerisi *> *)liderSatirlariKayitlar:(NSArray<SharedLiderHamKayit *> *)kayitlar currentUid:(NSString *)currentUid __attribute__((swift_name("liderSatirlari(kayitlar:currentUid:)")));
 - (NSString *)liderlikHataMetniYerelIleti:(NSString *)yerelIleti yetkiHatasi:(BOOL)yetkiHatasi __attribute__((swift_name("liderlikHataMetni(yerelIleti:yetkiHatasi:)")));
 - (int32_t)liderlikSorguLimiti __attribute__((swift_name("liderlikSorguLimiti()")));
-- (NSString *)liderlikTahtaKimligiPartId:(int32_t)partId lessonIndex:(int32_t)lessonIndex season:(int32_t)season __attribute__((swift_name("liderlikTahtaKimligi(partId:lessonIndex:season:)")));
+- (NSString *)liderlikTahtaKimligiPartId:(int32_t)partId lessonKey:(NSString *)lessonKey season:(int32_t)season __attribute__((swift_name("liderlikTahtaKimligi(partId:lessonKey:season:)")));
 - (void)rozetDurumunuYukleDoc:(NSDictionary<NSString *, id> * _Nullable)doc __attribute__((swift_name("rozetDurumunuYukle(doc:)")));
 - (SharedRozetEkranVerisi *)rozetEkraniModeName:(NSString *)modeName __attribute__((swift_name("rozetEkrani(modeName:)")));
 - (int32_t)rozetSatirBoyu __attribute__((swift_name("rozetSatirBoyu()")));
@@ -3416,13 +3698,13 @@ __attribute__((swift_name("KupaGrafikVerisi")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("LiderHamKayit")))
 @interface SharedLiderHamKayit : SharedBase
-- (instancetype)initWithUserId:(NSString *)userId recordScore:(int32_t)recordScore displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel photoUrl:(NSString *)photoUrl __attribute__((swift_name("init(userId:recordScore:displayName:recordLabel:photoUrl:)"))) __attribute__((objc_designated_initializer));
-- (SharedLiderHamKayit *)doCopyUserId:(NSString *)userId recordScore:(int32_t)recordScore displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel photoUrl:(NSString *)photoUrl __attribute__((swift_name("doCopy(userId:recordScore:displayName:recordLabel:photoUrl:)")));
+- (instancetype)initWithUserId:(NSString *)userId recordScore:(int32_t)recordScore displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel avatarConfig:(NSString *)avatarConfig __attribute__((swift_name("init(userId:recordScore:displayName:recordLabel:avatarConfig:)"))) __attribute__((objc_designated_initializer));
+- (SharedLiderHamKayit *)doCopyUserId:(NSString *)userId recordScore:(int32_t)recordScore displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel avatarConfig:(NSString *)avatarConfig __attribute__((swift_name("doCopy(userId:recordScore:displayName:recordLabel:avatarConfig:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *avatarConfig __attribute__((swift_name("avatarConfig")));
 @property (readonly) NSString *displayName __attribute__((swift_name("displayName")));
-@property (readonly) NSString *photoUrl __attribute__((swift_name("photoUrl")));
 @property (readonly) NSString *recordLabel __attribute__((swift_name("recordLabel")));
 @property (readonly) int32_t recordScore __attribute__((swift_name("recordScore")));
 @property (readonly) NSString *userId __attribute__((swift_name("userId")));
@@ -3431,18 +3713,18 @@ __attribute__((swift_name("LiderHamKayit")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("LiderSatirVerisi")))
 @interface SharedLiderSatirVerisi : SharedBase
-- (instancetype)initWithUserId:(NSString *)userId displayRank:(int32_t)displayRank rewardRank:(int32_t)rewardRank displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel photoUrl:(NSString *)photoUrl hasPhoto:(BOOL)hasPhoto isCurrentUser:(BOOL)isCurrentUser rankBadgeDrawable:(NSString *)rankBadgeDrawable cardColorRes:(NSString *)cardColorRes nameColorRes:(NSString *)nameColorRes timeColorRes:(NSString *)timeColorRes __attribute__((swift_name("init(userId:displayRank:rewardRank:displayName:recordLabel:photoUrl:hasPhoto:isCurrentUser:rankBadgeDrawable:cardColorRes:nameColorRes:timeColorRes:)"))) __attribute__((objc_designated_initializer));
-- (SharedLiderSatirVerisi *)doCopyUserId:(NSString *)userId displayRank:(int32_t)displayRank rewardRank:(int32_t)rewardRank displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel photoUrl:(NSString *)photoUrl hasPhoto:(BOOL)hasPhoto isCurrentUser:(BOOL)isCurrentUser rankBadgeDrawable:(NSString *)rankBadgeDrawable cardColorRes:(NSString *)cardColorRes nameColorRes:(NSString *)nameColorRes timeColorRes:(NSString *)timeColorRes __attribute__((swift_name("doCopy(userId:displayRank:rewardRank:displayName:recordLabel:photoUrl:hasPhoto:isCurrentUser:rankBadgeDrawable:cardColorRes:nameColorRes:timeColorRes:)")));
+- (instancetype)initWithUserId:(NSString *)userId displayRank:(int32_t)displayRank rewardRank:(int32_t)rewardRank displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel avatarConfig:(NSString *)avatarConfig hasAvatar:(BOOL)hasAvatar isCurrentUser:(BOOL)isCurrentUser rankBadgeDrawable:(NSString *)rankBadgeDrawable cardColorRes:(NSString *)cardColorRes nameColorRes:(NSString *)nameColorRes timeColorRes:(NSString *)timeColorRes __attribute__((swift_name("init(userId:displayRank:rewardRank:displayName:recordLabel:avatarConfig:hasAvatar:isCurrentUser:rankBadgeDrawable:cardColorRes:nameColorRes:timeColorRes:)"))) __attribute__((objc_designated_initializer));
+- (SharedLiderSatirVerisi *)doCopyUserId:(NSString *)userId displayRank:(int32_t)displayRank rewardRank:(int32_t)rewardRank displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel avatarConfig:(NSString *)avatarConfig hasAvatar:(BOOL)hasAvatar isCurrentUser:(BOOL)isCurrentUser rankBadgeDrawable:(NSString *)rankBadgeDrawable cardColorRes:(NSString *)cardColorRes nameColorRes:(NSString *)nameColorRes timeColorRes:(NSString *)timeColorRes __attribute__((swift_name("doCopy(userId:displayRank:rewardRank:displayName:recordLabel:avatarConfig:hasAvatar:isCurrentUser:rankBadgeDrawable:cardColorRes:nameColorRes:timeColorRes:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *avatarConfig __attribute__((swift_name("avatarConfig")));
 @property (readonly) NSString *cardColorRes __attribute__((swift_name("cardColorRes")));
 @property (readonly) NSString *displayName __attribute__((swift_name("displayName")));
 @property (readonly) int32_t displayRank __attribute__((swift_name("displayRank")));
-@property (readonly) BOOL hasPhoto __attribute__((swift_name("hasPhoto")));
+@property (readonly) BOOL hasAvatar __attribute__((swift_name("hasAvatar")));
 @property (readonly) BOOL isCurrentUser __attribute__((swift_name("isCurrentUser")));
 @property (readonly) NSString *nameColorRes __attribute__((swift_name("nameColorRes")));
-@property (readonly) NSString *photoUrl __attribute__((swift_name("photoUrl")));
 @property (readonly) NSString *rankBadgeDrawable __attribute__((swift_name("rankBadgeDrawable")));
 @property (readonly) NSString *recordLabel __attribute__((swift_name("recordLabel")));
 @property (readonly) int32_t rewardRank __attribute__((swift_name("rewardRank")));
@@ -3863,6 +4145,8 @@ __attribute__((swift_name("BadgeProgressEngine")))
 - (SharedBadgeProgressWindow *)flyProgressWindowTierProgress:(int32_t)tierProgress __attribute__((swift_name("flyProgressWindow(tierProgress:)")));
 - (int32_t)goatNextThresholdTierProgress:(int32_t)tierProgress __attribute__((swift_name("goatNextThreshold(tierProgress:)")));
 - (SharedBadgeProgressWindow *)goatProgressWindowTierProgress:(int32_t)tierProgress __attribute__((swift_name("goatProgressWindow(tierProgress:)")));
+- (SharedKotlinPair<NSArray<SharedInt *> *, SharedInt *> * _Nullable)levelSpecMode:(SharedBadgeAnimMode *)mode __attribute__((swift_name("levelSpec(mode:)")));
+- (SharedKotlinPair<NSArray<SharedInt *> *, SharedInt *> * _Nullable)levelSpecKind:(SharedBadgeKind *)kind __attribute__((swift_name("levelSpec(kind:)")));
 - (int32_t)rocketNextThresholdRawProgress:(int32_t)rawProgress __attribute__((swift_name("rocketNextThreshold(rawProgress:)")));
 - (SharedBadgeProgressWindow *)rocketProgressWindowRawProgress:(int32_t)rawProgress __attribute__((swift_name("rocketProgressWindow(rawProgress:)")));
 - (int32_t)tornadoNextThresholdTierProgress:(int32_t)tierProgress __attribute__((swift_name("tornadoNextThreshold(tierProgress:)")));
@@ -3897,13 +4181,12 @@ __attribute__((swift_name("BadgeProgressFirestore")))
 - (NSArray<SharedBadgeLevelUpPayload *> *)resolveFlyLevelUpChainBeforeFly:(int32_t)beforeFly afterFly:(int32_t)afterFly __attribute__((swift_name("resolveFlyLevelUpChain(beforeFly:afterFly:)")));
 - (NSArray<SharedBadgeLevelUpPayload *> *)resolveGoatLevelUpChainBeforeGoat:(int32_t)beforeGoat afterGoat:(int32_t)afterGoat __attribute__((swift_name("resolveGoatLevelUpChain(beforeGoat:afterGoat:)")));
 - (SharedBadgeLevelUpPayload * _Nullable)resolveKarateFirstUnlockPayloadBefore:(int32_t)before after:(int32_t)after __attribute__((swift_name("resolveKarateFirstUnlockPayload(before:after:)")));
-- (SharedBadgeLevelUpPayload * _Nullable)resolveLevelUpPayloadMode:(SharedBadgeAnimMode *)mode before:(int32_t)before after:(int32_t)after levels:(NSArray<SharedInt *> *)levels __attribute__((swift_name("resolveLevelUpPayload(mode:before:after:levels:)")));
+- (SharedBadgeLevelUpPayload * _Nullable)resolveLevelUpPayloadMode:(SharedBadgeAnimMode *)mode before:(int32_t)before after:(int32_t)after levels:(NSArray<SharedInt *> * _Nullable)levels __attribute__((swift_name("resolveLevelUpPayload(mode:before:after:levels:)")));
 - (NSArray<SharedBadgeLevelUpPayload *> *)resolveRocketLevelUpChainBeforeRocket:(int32_t)beforeRocket afterRocket:(int32_t)afterRocket __attribute__((swift_name("resolveRocketLevelUpChain(beforeRocket:afterRocket:)")));
 - (NSArray<SharedBadgeLevelUpPayload *> *)resolveTurtleLevelUpChainBeforeTurtle:(int32_t)beforeTurtle afterTurtle:(int32_t)afterTurtle __attribute__((swift_name("resolveTurtleLevelUpChain(beforeTurtle:afterTurtle:)")));
 - (SharedUserBadgeProgress *)userBadgeProgressFromStateSnapshotDoc:(NSDictionary<NSString *, id> * _Nullable)doc currentPeriodKey:(NSString *)currentPeriodKey __attribute__((swift_name("userBadgeProgressFromStateSnapshot(doc:currentPeriodKey:)")));
 @property (readonly) NSString *COLLECTION_USERS __attribute__((swift_name("COLLECTION_USERS")));
 @property (readonly) NSString *DOCUMENT_STATE __attribute__((swift_name("DOCUMENT_STATE")));
-@property (readonly) NSString *F_ABACUS_LEADERBOARD_RANK __attribute__((swift_name("F_ABACUS_LEADERBOARD_RANK")));
 @property (readonly) NSString *F_BRONZE_MEDAL_PIECE __attribute__((swift_name("F_BRONZE_MEDAL_PIECE")));
 @property (readonly) NSString *F_CUP_PIECE __attribute__((swift_name("F_CUP_PIECE")));
 @property (readonly) NSString *F_GOLD_MEDAL_PIECE __attribute__((swift_name("F_GOLD_MEDAL_PIECE")));
@@ -4042,12 +4325,11 @@ __attribute__((swift_name("MedalPieceRow")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("UserBadgeProgress")))
 @interface SharedUserBadgeProgress : SharedBase
-- (instancetype)initWithUserDartProgress:(int32_t)userDartProgress userKarateProgress:(int32_t)userKarateProgress userGolfProgress:(int32_t)userGolfProgress userBowlingProgress:(int32_t)userBowlingProgress userFishingProgress:(int32_t)userFishingProgress userFishingStreak:(int32_t)userFishingStreak userFishingStreakPeriodKey:(NSString *)userFishingStreakPeriodKey userRocketProgress:(int32_t)userRocketProgress userRocketDailyLessons:(int32_t)userRocketDailyLessons userRocketDailyDayId:(NSString *)userRocketDailyDayId userTornadoProgress:(int32_t)userTornadoProgress userVolcanoProgress:(int32_t)userVolcanoProgress userDinoProgress:(int32_t)userDinoProgress userCrocodileProgress:(int32_t)userCrocodileProgress userGoatProgress:(int32_t)userGoatProgress userEagleProgress:(int32_t)userEagleProgress userFlyProgress:(int32_t)userFlyProgress userTurtleProgress:(int32_t)userTurtleProgress abacusLeaderboardRank:(int32_t)abacusLeaderboardRank goldMedalPiece:(NSArray<SharedMedalPieceRow *> *)goldMedalPiece silverMedalPiece:(NSArray<SharedMedalPieceRow *> *)silverMedalPiece bronzeMedalPiece:(NSArray<SharedMedalPieceRow *> *)bronzeMedalPiece cupPiece:(NSArray<SharedCupPieceRow *> *)cupPiece pendingLeaderboardRewardSeason:(SharedInt * _Nullable)pendingLeaderboardRewardSeason __attribute__((swift_name("init(userDartProgress:userKarateProgress:userGolfProgress:userBowlingProgress:userFishingProgress:userFishingStreak:userFishingStreakPeriodKey:userRocketProgress:userRocketDailyLessons:userRocketDailyDayId:userTornadoProgress:userVolcanoProgress:userDinoProgress:userCrocodileProgress:userGoatProgress:userEagleProgress:userFlyProgress:userTurtleProgress:abacusLeaderboardRank:goldMedalPiece:silverMedalPiece:bronzeMedalPiece:cupPiece:pendingLeaderboardRewardSeason:)"))) __attribute__((objc_designated_initializer));
-- (SharedUserBadgeProgress *)doCopyUserDartProgress:(int32_t)userDartProgress userKarateProgress:(int32_t)userKarateProgress userGolfProgress:(int32_t)userGolfProgress userBowlingProgress:(int32_t)userBowlingProgress userFishingProgress:(int32_t)userFishingProgress userFishingStreak:(int32_t)userFishingStreak userFishingStreakPeriodKey:(NSString *)userFishingStreakPeriodKey userRocketProgress:(int32_t)userRocketProgress userRocketDailyLessons:(int32_t)userRocketDailyLessons userRocketDailyDayId:(NSString *)userRocketDailyDayId userTornadoProgress:(int32_t)userTornadoProgress userVolcanoProgress:(int32_t)userVolcanoProgress userDinoProgress:(int32_t)userDinoProgress userCrocodileProgress:(int32_t)userCrocodileProgress userGoatProgress:(int32_t)userGoatProgress userEagleProgress:(int32_t)userEagleProgress userFlyProgress:(int32_t)userFlyProgress userTurtleProgress:(int32_t)userTurtleProgress abacusLeaderboardRank:(int32_t)abacusLeaderboardRank goldMedalPiece:(NSArray<SharedMedalPieceRow *> *)goldMedalPiece silverMedalPiece:(NSArray<SharedMedalPieceRow *> *)silverMedalPiece bronzeMedalPiece:(NSArray<SharedMedalPieceRow *> *)bronzeMedalPiece cupPiece:(NSArray<SharedCupPieceRow *> *)cupPiece pendingLeaderboardRewardSeason:(SharedInt * _Nullable)pendingLeaderboardRewardSeason __attribute__((swift_name("doCopy(userDartProgress:userKarateProgress:userGolfProgress:userBowlingProgress:userFishingProgress:userFishingStreak:userFishingStreakPeriodKey:userRocketProgress:userRocketDailyLessons:userRocketDailyDayId:userTornadoProgress:userVolcanoProgress:userDinoProgress:userCrocodileProgress:userGoatProgress:userEagleProgress:userFlyProgress:userTurtleProgress:abacusLeaderboardRank:goldMedalPiece:silverMedalPiece:bronzeMedalPiece:cupPiece:pendingLeaderboardRewardSeason:)")));
+- (instancetype)initWithUserDartProgress:(int32_t)userDartProgress userKarateProgress:(int32_t)userKarateProgress userGolfProgress:(int32_t)userGolfProgress userBowlingProgress:(int32_t)userBowlingProgress userFishingProgress:(int32_t)userFishingProgress userFishingStreak:(int32_t)userFishingStreak userFishingStreakPeriodKey:(NSString *)userFishingStreakPeriodKey userRocketProgress:(int32_t)userRocketProgress userRocketDailyLessons:(int32_t)userRocketDailyLessons userRocketDailyDayId:(NSString *)userRocketDailyDayId userTornadoProgress:(int32_t)userTornadoProgress userVolcanoProgress:(int32_t)userVolcanoProgress userDinoProgress:(int32_t)userDinoProgress userCrocodileProgress:(int32_t)userCrocodileProgress userGoatProgress:(int32_t)userGoatProgress userEagleProgress:(int32_t)userEagleProgress userFlyProgress:(int32_t)userFlyProgress userTurtleProgress:(int32_t)userTurtleProgress goldMedalPiece:(NSArray<SharedMedalPieceRow *> *)goldMedalPiece silverMedalPiece:(NSArray<SharedMedalPieceRow *> *)silverMedalPiece bronzeMedalPiece:(NSArray<SharedMedalPieceRow *> *)bronzeMedalPiece cupPiece:(NSArray<SharedCupPieceRow *> *)cupPiece pendingLeaderboardRewardSeason:(SharedInt * _Nullable)pendingLeaderboardRewardSeason __attribute__((swift_name("init(userDartProgress:userKarateProgress:userGolfProgress:userBowlingProgress:userFishingProgress:userFishingStreak:userFishingStreakPeriodKey:userRocketProgress:userRocketDailyLessons:userRocketDailyDayId:userTornadoProgress:userVolcanoProgress:userDinoProgress:userCrocodileProgress:userGoatProgress:userEagleProgress:userFlyProgress:userTurtleProgress:goldMedalPiece:silverMedalPiece:bronzeMedalPiece:cupPiece:pendingLeaderboardRewardSeason:)"))) __attribute__((objc_designated_initializer));
+- (SharedUserBadgeProgress *)doCopyUserDartProgress:(int32_t)userDartProgress userKarateProgress:(int32_t)userKarateProgress userGolfProgress:(int32_t)userGolfProgress userBowlingProgress:(int32_t)userBowlingProgress userFishingProgress:(int32_t)userFishingProgress userFishingStreak:(int32_t)userFishingStreak userFishingStreakPeriodKey:(NSString *)userFishingStreakPeriodKey userRocketProgress:(int32_t)userRocketProgress userRocketDailyLessons:(int32_t)userRocketDailyLessons userRocketDailyDayId:(NSString *)userRocketDailyDayId userTornadoProgress:(int32_t)userTornadoProgress userVolcanoProgress:(int32_t)userVolcanoProgress userDinoProgress:(int32_t)userDinoProgress userCrocodileProgress:(int32_t)userCrocodileProgress userGoatProgress:(int32_t)userGoatProgress userEagleProgress:(int32_t)userEagleProgress userFlyProgress:(int32_t)userFlyProgress userTurtleProgress:(int32_t)userTurtleProgress goldMedalPiece:(NSArray<SharedMedalPieceRow *> *)goldMedalPiece silverMedalPiece:(NSArray<SharedMedalPieceRow *> *)silverMedalPiece bronzeMedalPiece:(NSArray<SharedMedalPieceRow *> *)bronzeMedalPiece cupPiece:(NSArray<SharedCupPieceRow *> *)cupPiece pendingLeaderboardRewardSeason:(SharedInt * _Nullable)pendingLeaderboardRewardSeason __attribute__((swift_name("doCopy(userDartProgress:userKarateProgress:userGolfProgress:userBowlingProgress:userFishingProgress:userFishingStreak:userFishingStreakPeriodKey:userRocketProgress:userRocketDailyLessons:userRocketDailyDayId:userTornadoProgress:userVolcanoProgress:userDinoProgress:userCrocodileProgress:userGoatProgress:userEagleProgress:userFlyProgress:userTurtleProgress:goldMedalPiece:silverMedalPiece:bronzeMedalPiece:cupPiece:pendingLeaderboardRewardSeason:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
-@property (readonly) int32_t abacusLeaderboardRank __attribute__((swift_name("abacusLeaderboardRank")));
 @property (readonly) NSArray<SharedMedalPieceRow *> *bronzeMedalPiece __attribute__((swift_name("bronzeMedalPiece")));
 @property (readonly) NSArray<SharedCupPieceRow *> *cupPiece __attribute__((swift_name("cupPiece")));
 @property (readonly) NSArray<SharedMedalPieceRow *> *goldMedalPiece __attribute__((swift_name("goldMedalPiece")));
@@ -4080,51 +4362,43 @@ __attribute__((swift_name("LessonLeaderboardRepository")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)lessonLeaderboardRepository __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedLessonLeaderboardRepository *shared __attribute__((swift_name("shared")));
-- (int32_t)abacusLeaderboardRankToStoreRank:(SharedInt * _Nullable)rank __attribute__((swift_name("abacusLeaderboardRankToStore(rank:)")));
-- (NSDictionary<NSString *, id> *)abacusLeaderboardRankUpdateRank:(SharedInt * _Nullable)rank __attribute__((swift_name("abacusLeaderboardRankUpdate(rank:)")));
-- (NSString *)badgeStateDocumentPathUid:(NSString *)uid __attribute__((swift_name("badgeStateDocumentPath(uid:)")));
-- (NSDictionary<NSString *, id> * _Nullable)buildSubmitDataHasUser:(BOOL)hasUser partId:(int32_t)partId lessonIndex:(int32_t)lessonIndex recordScore:(int32_t)recordScore userDisplayName:(NSString * _Nullable)userDisplayName userPhotoUrl:(NSString * _Nullable)userPhotoUrl titleUnit:(NSString * _Nullable)titleUnit __attribute__((swift_name("buildSubmitData(hasUser:partId:lessonIndex:recordScore:userDisplayName:userPhotoUrl:titleUnit:)")));
+- (NSDictionary<NSString *, id> * _Nullable)buildSubmitDataHasUser:(BOOL)hasUser partId:(int32_t)partId lessonKey:(NSString *)lessonKey recordScore:(int32_t)recordScore titleUnit:(NSString * _Nullable)titleUnit __attribute__((swift_name("buildSubmitData(hasUser:partId:lessonKey:recordScore:titleUnit:)")));
 - (NSArray<SharedInt *> *)competitionRanksForOrderedDocsRecordScoreValues:(NSArray<id> *)recordScoreValues __attribute__((swift_name("competitionRanksForOrderedDocs(recordScoreValues:)")));
 - (NSArray<SharedInt *> *)competitionRanksForOrderedScoresScores:(NSArray<SharedInt *> *)scores __attribute__((swift_name("competitionRanksForOrderedScores(scores:)")));
-- (NSString *)entriesCollectionPathPartId:(int32_t)partId lessonIndex:(int32_t)lessonIndex season:(int32_t)season __attribute__((swift_name("entriesCollectionPath(partId:lessonIndex:season:)")));
+- (NSString *)entriesCollectionPathPartId:(int32_t)partId lessonKey:(NSString *)lessonKey season:(int32_t)season __attribute__((swift_name("entriesCollectionPath(partId:lessonKey:season:)")));
 - (SharedInt * _Nullable)firstChestLessonIndexForPartLessonItemTypes:(NSArray<SharedInt *> *)lessonItemTypes __attribute__((swift_name("firstChestLessonIndexForPart(lessonItemTypes:)")));
-- (NSString *)leaderboardDocumentIdPartId:(int32_t)partId lessonIndex:(int32_t)lessonIndex season:(int32_t)season __attribute__((swift_name("leaderboardDocumentId(partId:lessonIndex:season:)")));
-- (NSArray<SharedLessonLeaderboardRepositoryLeaderboardEntry *> *)mapLeaderboardEntriesDocuments:(NSArray<SharedKotlinPair<NSString *, NSDictionary<NSString *, id> *> *> *)documents __attribute__((swift_name("mapLeaderboardEntries(documents:)")));
+- (NSString *)leaderboardDocumentIdPartId:(int32_t)partId lessonKey:(NSString *)lessonKey season:(int32_t)season __attribute__((swift_name("leaderboardDocumentId(partId:lessonKey:season:)")));
+- (NSArray<SharedLessonLeaderboardRepositoryLeaderboardEntry *> *)mapLeaderboardEntriesDocuments:(NSArray<SharedKotlinPair<NSString *, NSDictionary<NSString *, id> *> *> *)documents avatarCache:(NSDictionary<NSString *, NSString *> *)avatarCache ownUid:(NSString * _Nullable)ownUid ownAvatarConfig:(NSString * _Nullable)ownAvatarConfig __attribute__((swift_name("mapLeaderboardEntries(documents:avatarCache:ownUid:ownAvatarConfig:)")));
+- (NSArray<NSArray<NSString *> *> *)missingAvatarChunksUids:(NSArray<NSString *> *)uids avatarCache:(NSDictionary<NSString *, NSString *> *)avatarCache ownUid:(NSString * _Nullable)ownUid ownAvatarConfig:(NSString * _Nullable)ownAvatarConfig __attribute__((swift_name("missingAvatarChunks(uids:avatarCache:ownUid:ownAvatarConfig:)")));
 - (int32_t)rankingScoreRecordScoreValue:(id _Nullable)recordScoreValue __attribute__((swift_name("rankingScore(recordScoreValue:)")));
-- (SharedInt * _Nullable)userRankInOrderedEntriesOrderedEntries:(NSArray<SharedKotlinPair<NSString *, id> *> *)orderedEntries userId:(NSString *)userId __attribute__((swift_name("userRankInOrderedEntries(orderedEntries:userId:)")));
-@property (readonly) int32_t ABACUS_BADGE_LEADERBOARD_PART_ID __attribute__((swift_name("ABACUS_BADGE_LEADERBOARD_PART_ID")));
-@property (readonly) int64_t ABACUS_BADGE_LEADERBOARD_TOP_N __attribute__((swift_name("ABACUS_BADGE_LEADERBOARD_TOP_N")));
-@property (readonly) NSString *BADGE_PROGRESS __attribute__((swift_name("BADGE_PROGRESS")));
-@property (readonly) NSString *BADGE_STATE __attribute__((swift_name("BADGE_STATE")));
+@property (readonly) int32_t AVATAR_QUERY_CHUNK __attribute__((swift_name("AVATAR_QUERY_CHUNK")));
 @property (readonly) NSString *CF_SUBMIT_LEADERBOARD_SCORE __attribute__((swift_name("CF_SUBMIT_LEADERBOARD_SCORE")));
 @property (readonly) NSString *COLLECTION __attribute__((swift_name("COLLECTION")));
 @property (readonly) NSString *ENTRIES __attribute__((swift_name("ENTRIES")));
-@property (readonly) NSString *F_ABACUS_LEADERBOARD_RANK __attribute__((swift_name("F_ABACUS_LEADERBOARD_RANK")));
 @property (readonly) NSString *F_LABEL __attribute__((swift_name("F_LABEL")));
 @property (readonly) NSString *F_NAME __attribute__((swift_name("F_NAME")));
-@property (readonly) NSString *F_PHOTO __attribute__((swift_name("F_PHOTO")));
 @property (readonly) NSString *F_SCORE __attribute__((swift_name("F_SCORE")));
 @property (readonly) NSString *F_TITLE_UNIT __attribute__((swift_name("F_TITLE_UNIT")));
 @property (readonly) NSString *F_UPDATED __attribute__((swift_name("F_UPDATED")));
 @property (readonly) int64_t LEADERBOARD_LIST_QUERY_LIMIT __attribute__((swift_name("LEADERBOARD_LIST_QUERY_LIMIT")));
 @property (readonly) int32_t LESSON_ITEM_TYPE_CHEST __attribute__((swift_name("LESSON_ITEM_TYPE_CHEST")));
-@property (readonly) NSString *META_LESSON_INDEX __attribute__((swift_name("META_LESSON_INDEX")));
+@property (readonly) NSString *META_LESSON_KEY __attribute__((swift_name("META_LESSON_KEY")));
 @property (readonly) NSString *META_PART_ID __attribute__((swift_name("META_PART_ID")));
 @property (readonly) NSString *META_SEASON __attribute__((swift_name("META_SEASON")));
-@property (readonly) NSString *USERS __attribute__((swift_name("USERS")));
+@property (readonly) NSString *PUBLIC_PROFILES_COLLECTION __attribute__((swift_name("PUBLIC_PROFILES_COLLECTION")));
 @end
 
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("LessonLeaderboardRepository.LeaderboardEntry")))
 @interface SharedLessonLeaderboardRepositoryLeaderboardEntry : SharedBase
-- (instancetype)initWithUserId:(NSString *)userId displayRank:(int32_t)displayRank rewardRank:(int32_t)rewardRank displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel photoUrl:(NSString * _Nullable)photoUrl __attribute__((swift_name("init(userId:displayRank:rewardRank:displayName:recordLabel:photoUrl:)"))) __attribute__((objc_designated_initializer));
-- (SharedLessonLeaderboardRepositoryLeaderboardEntry *)doCopyUserId:(NSString *)userId displayRank:(int32_t)displayRank rewardRank:(int32_t)rewardRank displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel photoUrl:(NSString * _Nullable)photoUrl __attribute__((swift_name("doCopy(userId:displayRank:rewardRank:displayName:recordLabel:photoUrl:)")));
+- (instancetype)initWithUserId:(NSString *)userId displayRank:(int32_t)displayRank rewardRank:(int32_t)rewardRank displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel avatarConfig:(NSString * _Nullable)avatarConfig __attribute__((swift_name("init(userId:displayRank:rewardRank:displayName:recordLabel:avatarConfig:)"))) __attribute__((objc_designated_initializer));
+- (SharedLessonLeaderboardRepositoryLeaderboardEntry *)doCopyUserId:(NSString *)userId displayRank:(int32_t)displayRank rewardRank:(int32_t)rewardRank displayName:(NSString *)displayName recordLabel:(NSString *)recordLabel avatarConfig:(NSString * _Nullable)avatarConfig __attribute__((swift_name("doCopy(userId:displayRank:rewardRank:displayName:recordLabel:avatarConfig:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString * _Nullable avatarConfig __attribute__((swift_name("avatarConfig")));
 @property (readonly) NSString *displayName __attribute__((swift_name("displayName")));
 @property (readonly) int32_t displayRank __attribute__((swift_name("displayRank")));
-@property (readonly) NSString * _Nullable photoUrl __attribute__((swift_name("photoUrl")));
 @property (readonly) NSString *recordLabel __attribute__((swift_name("recordLabel")));
 @property (readonly) int32_t rewardRank __attribute__((swift_name("rewardRank")));
 @property (readonly) NSString *userId __attribute__((swift_name("userId")));
@@ -4140,7 +4414,7 @@ __attribute__((swift_name("RecordLogic")))
 - (NSString *)badgeDrawableForRankRank:(int32_t)rank __attribute__((swift_name("badgeDrawableForRank(rank:)")));
 - (NSString *)displayNameOrFallbackDisplayName:(NSString *)displayName fallback:(NSString *)fallback __attribute__((swift_name("displayNameOrFallback(displayName:fallback:)")));
 - (SharedRecordLogicSeasonCountdown *)formatSeasonCountdownRemainingMs:(int64_t)remainingMs __attribute__((swift_name("formatSeasonCountdown(remainingMs:)")));
-- (BOOL)hasPhotoPhotoUrl:(NSString * _Nullable)photoUrl __attribute__((swift_name("hasPhoto(photoUrl:)")));
+- (BOOL)hasAvatarAvatarConfig:(NSString * _Nullable)avatarConfig __attribute__((swift_name("hasAvatar(avatarConfig:)")));
 - (BOOL)isCurrentUserEntryUserId:(NSString *)entryUserId currentUid:(NSString * _Nullable)currentUid __attribute__((swift_name("isCurrentUser(entryUserId:currentUid:)")));
 - (NSString *)leaderboardErrorMessageLocalizedMessage:(NSString * _Nullable)localizedMessage isPermissionDenied:(BOOL)isPermissionDenied loadErrorText:(NSString *)loadErrorText __attribute__((swift_name("leaderboardErrorMessage(localizedMessage:isPermissionDenied:loadErrorText:)")));
 - (SharedRecordLogicRowColors *)rowColorsIsCurrentUser:(BOOL)isCurrentUser __attribute__((swift_name("rowColors(isCurrentUser:)")));
@@ -4207,11 +4481,25 @@ __attribute__((swift_name("SeasonClock")))
 - (void)addSeasonChangeListenerListener:(void (^)(SharedInt *, SharedInt *))listener __attribute__((swift_name("addSeasonChangeListener(listener:)")));
 - (int32_t)currentSeasonNowUtcMs:(int64_t)nowUtcMs __attribute__((swift_name("currentSeason(nowUtcMs:)")));
 - (int64_t)millisUntilCurrentSeasonEndsNowUtcMs:(int64_t)nowUtcMs __attribute__((swift_name("millisUntilCurrentSeasonEnds(nowUtcMs:)")));
+- (int64_t)nowUtcMs __attribute__((swift_name("nowUtcMs()")));
+- (BOOL)onServerTimeServerNowUtcMs:(int64_t)serverNowUtcMs deviceNowMs:(int64_t)deviceNowMs __attribute__((swift_name("onServerTime(serverNowUtcMs:deviceNowMs:)")));
+- (SharedLong * _Nullable)parseServerNowResultData:(id _Nullable)resultData __attribute__((swift_name("parseServerNow(resultData:)")));
 - (BOOL)pollSeasonChangeNow:(int64_t)now __attribute__((swift_name("pollSeasonChange(now:)")));
 - (void)removeSeasonChangeListenerListener:(void (^)(SharedInt *, SharedInt *))listener __attribute__((swift_name("removeSeasonChangeListener(listener:)")));
+- (void)restoreOffsetSavedOffsetMs:(int64_t)savedOffsetMs __attribute__((swift_name("restoreOffset(savedOffsetMs:)")));
+- (BOOL)shouldRefreshFromServerForce:(BOOL)force syncInFlight:(BOOL)syncInFlight lastSyncElapsedMs:(int64_t)lastSyncElapsedMs elapsedNowMs:(int64_t)elapsedNowMs __attribute__((swift_name("shouldRefreshFromServer(force:syncInFlight:lastSyncElapsedMs:elapsedNowMs:)")));
+@property (readonly) NSString *CF_GET_SEASON_INFO __attribute__((swift_name("CF_GET_SEASON_INFO")));
+@property (readonly) NSString *FIELD_SERVER_NOW_MS __attribute__((swift_name("FIELD_SERVER_NOW_MS")));
+@property (readonly) NSString *KEY_OFFSET_MS __attribute__((swift_name("KEY_OFFSET_MS")));
+@property (readonly) int64_t PLAUSIBLE_MAX_UTC_MS __attribute__((swift_name("PLAUSIBLE_MAX_UTC_MS")));
+@property (readonly) int64_t PLAUSIBLE_MIN_UTC_MS __attribute__((swift_name("PLAUSIBLE_MIN_UTC_MS")));
+@property (readonly) NSString *PREFS_NAME __attribute__((swift_name("PREFS_NAME")));
 @property (readonly) int64_t SEASON_ANCHOR_UTC_MS __attribute__((swift_name("SEASON_ANCHOR_UTC_MS")));
 @property (readonly) int64_t SEASON_DURATION_MS __attribute__((swift_name("SEASON_DURATION_MS")));
 @property (readonly) int64_t SEASON_POLL_INTERVAL_MS __attribute__((swift_name("SEASON_POLL_INTERVAL_MS")));
+@property (readonly) int64_t SYNC_MIN_INTERVAL_MS __attribute__((swift_name("SYNC_MIN_INTERVAL_MS")));
+@property (readonly) int64_t serverOffsetMs __attribute__((swift_name("serverOffsetMs")));
+@property void (^ _Nullable serverTimeObserver)(SharedLong *) __attribute__((swift_name("serverTimeObserver")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -4453,6 +4741,7 @@ __attribute__((swift_name("AuthRules")))
 @property (class, readonly, getter=shared) SharedAuthRules *shared __attribute__((swift_name("shared")));
 - (NSDictionary<NSString *, NSString *> *)cacheBasicUserEmail:(NSString *)email role:(NSString *)role name:(NSString *)name userId:(NSString *)userId __attribute__((swift_name("cacheBasicUser(email:role:name:userId:)")));
 - (NSDictionary<NSString *, id> *)checkEmailRegisteredPayloadEmail:(NSString *)email __attribute__((swift_name("checkEmailRegisteredPayload(email:)")));
+- (NSDictionary<NSString *, id> *)confirmParentalConsentPayloadCode:(NSString *)code firstTutorialShown:(BOOL)firstTutorialShown __attribute__((swift_name("confirmParentalConsentPayload(code:firstTutorialShown:)")));
 - (NSDictionary<NSString *, id> *)emailStudentUserDataUid:(NSString *)uid userId:(NSString *)userId email:(NSString *)email name:(NSString *)name firstTutorialShown:(BOOL)firstTutorialShown nowMs:(int64_t)nowMs walletFields:(NSDictionary<NSString *, id> *)walletFields __attribute__((swift_name("emailStudentUserData(uid:userId:email:name:firstTutorialShown:nowMs:walletFields:)")));
 - (NSDictionary<NSString *, id> * _Nullable)findTeacherEmailByUserIdPayloadUserId:(NSString *)userId __attribute__((swift_name("findTeacherEmailByUserIdPayload(userId:)")));
 - (NSString *)generateFallbackUserIdNowMs:(int64_t)nowMs random:(SharedKotlinRandom *)random __attribute__((swift_name("generateFallbackUserId(nowMs:random:)")));
@@ -4471,8 +4760,11 @@ __attribute__((swift_name("AuthRules")))
 - (SharedKotlinTriple<SharedBoolean *, NSString *, NSString *> *)parseEmailRegisteredResultData:(NSDictionary<id, id> * _Nullable)data __attribute__((swift_name("parseEmailRegisteredResult(data:)")));
 - (NSString * _Nullable)parseTokenData:(NSDictionary<id, id> * _Nullable)data __attribute__((swift_name("parseToken(data:)")));
 - (NSString *)registerStudentErrorMessageExceptionMessage:(NSString * _Nullable)exceptionMessage localizedMessage:(NSString * _Nullable)localizedMessage __attribute__((swift_name("registerStudentErrorMessage(exceptionMessage:localizedMessage:)")));
+- (NSDictionary<NSString *, id> *)requestGoogleParentalConsentPayloadChildEmail:(NSString *)childEmail parentEmail:(NSString *)parentEmail birthYear:(int32_t)birthYear acquisitionSource:(NSString * _Nullable)acquisitionSource lang:(NSString *)lang __attribute__((swift_name("requestGoogleParentalConsentPayload(childEmail:parentEmail:birthYear:acquisitionSource:lang:)")));
+- (BOOL)requiresParentalConsentBirthYear:(SharedInt * _Nullable)birthYear utcYear:(int32_t)utcYear __attribute__((swift_name("requiresParentalConsent(birthYear:utcYear:)")));
 - (NSString *)resendPurposeIsRegistration:(BOOL)isRegistration __attribute__((swift_name("resendPurpose(isRegistration:)")));
 - (NSDictionary<NSString *, id> *)resetTeacherPasswordPayloadEmail:(NSString *)email code:(NSString *)code newPassword:(NSString *)newPassword __attribute__((swift_name("resetTeacherPasswordPayload(email:code:newPassword:)")));
+- (NSDictionary<NSString *, id> *)sendParentalRegistrationCodePayloadChildEmail:(NSString *)childEmail parentEmail:(NSString *)parentEmail birthYear:(int32_t)birthYear acquisitionSource:(NSString * _Nullable)acquisitionSource lang:(NSString *)lang __attribute__((swift_name("sendParentalRegistrationCodePayload(childEmail:parentEmail:birthYear:acquisitionSource:lang:)")));
 - (NSDictionary<NSString *, id> *)sendVerificationCodePayloadEmail:(NSString *)email purpose:(NSString *)purpose __attribute__((swift_name("sendVerificationCodePayload(email:purpose:)")));
 - (BOOL)skipStepTutorialShownExists:(BOOL)exists data:(NSDictionary<NSString *, id> * _Nullable)data __attribute__((swift_name("skipStepTutorialShown(exists:data:)")));
 - (SharedAuthRulesStudentEmailFlow *)studentEmailFlowAlreadyRegistered:(BOOL)alreadyRegistered uid:(NSString * _Nullable)uid role:(NSString * _Nullable)role __attribute__((swift_name("studentEmailFlow(alreadyRegistered:uid:role:)")));
@@ -4484,6 +4776,7 @@ __attribute__((swift_name("AuthRules")))
 - (NSString * _Nullable)validateNewPasswordNewPassword:(NSString *)newPassword __attribute__((swift_name("validateNewPassword(newPassword:)")));
 - (NSString * _Nullable)validateRegisterEmailRawEmail:(NSString * _Nullable)rawEmail __attribute__((swift_name("validateRegisterEmail(rawEmail:)")));
 - (NSString * _Nullable)validateTeacherRegistrationRawName:(NSString *)rawName rawEmail:(NSString *)rawEmail password:(NSString *)password passwordConfirm:(NSString *)passwordConfirm __attribute__((swift_name("validateTeacherRegistration(rawName:rawEmail:password:passwordConfirm:)")));
+- (NSDictionary<NSString *, id> *)verifyChildEmailForParentalConsentPayloadEmail:(NSString *)email code:(NSString *)code birthYear:(int32_t)birthYear __attribute__((swift_name("verifyChildEmailForParentalConsentPayload(email:code:birthYear:)")));
 - (NSDictionary<NSString *, id> *)verifyLoginCodePayloadEmail:(NSString *)email code:(NSString *)code __attribute__((swift_name("verifyLoginCodePayload(email:code:)")));
 - (NSDictionary<NSString *, id> *)verifyRegistrationCodePayloadEmail:(NSString *)email code:(NSString *)code pending:(SharedAuthRulesPendingRegistration * _Nullable)pending birthYear:(SharedInt * _Nullable)birthYear acquisitionSource:(NSString * _Nullable)acquisitionSource __attribute__((swift_name("verifyRegistrationCodePayload(email:code:pending:birthYear:acquisitionSource:)")));
 - (NSDictionary<NSString *, id> *)verifyTeacherPasswordResetCodePayloadEmail:(NSString *)email code:(NSString *)code __attribute__((swift_name("verifyTeacherPasswordResetCodePayload(email:code:)")));
@@ -4491,6 +4784,8 @@ __attribute__((swift_name("AuthRules")))
 @property (readonly) NSString *COLLECTION_TEACHER_INVITES __attribute__((swift_name("COLLECTION_TEACHER_INVITES")));
 @property (readonly) NSString *COLLECTION_USERS __attribute__((swift_name("COLLECTION_USERS")));
 @property (readonly) NSString *ERROR_ACCOUNT_NOT_REGISTERED __attribute__((swift_name("ERROR_ACCOUNT_NOT_REGISTERED")));
+@property (readonly) NSString *ERROR_CHILD_EMAIL_NOT_VERIFIED __attribute__((swift_name("ERROR_CHILD_EMAIL_NOT_VERIFIED")));
+@property (readonly) NSString *ERROR_PARENTAL_CONSENT_REQUIRED __attribute__((swift_name("ERROR_PARENTAL_CONSENT_REQUIRED")));
 @property (readonly) NSString *FIELD_ACQUISITION_SOURCE __attribute__((swift_name("FIELD_ACQUISITION_SOURCE")));
 @property (readonly) NSString *FIELD_BIRTH_YEAR __attribute__((swift_name("FIELD_BIRTH_YEAR")));
 @property (readonly) NSString *FIELD_CREATED_AT __attribute__((swift_name("FIELD_CREATED_AT")));
@@ -4504,6 +4799,7 @@ __attribute__((swift_name("AuthRules")))
 @property (readonly) NSString *FIELD_USER_ID __attribute__((swift_name("FIELD_USER_ID")));
 @property (readonly) NSString *FIELD_VERIFIED __attribute__((swift_name("FIELD_VERIFIED")));
 @property (readonly) NSString *FN_CHECK_EMAIL_REGISTERED __attribute__((swift_name("FN_CHECK_EMAIL_REGISTERED")));
+@property (readonly) NSString *FN_CONFIRM_PARENTAL_CONSENT __attribute__((swift_name("FN_CONFIRM_PARENTAL_CONSENT")));
 @property (readonly) NSString *FN_CREATE_TEACHER_INVITE __attribute__((swift_name("FN_CREATE_TEACHER_INVITE")));
 @property (readonly) NSString *FN_FIND_TEACHER_EMAIL_BY_USER_ID __attribute__((swift_name("FN_FIND_TEACHER_EMAIL_BY_USER_ID")));
 @property (readonly) NSString *FN_RESET_TEACHER_PASSWORD __attribute__((swift_name("FN_RESET_TEACHER_PASSWORD")));
@@ -4516,6 +4812,7 @@ __attribute__((swift_name("AuthRules")))
 @property (readonly) NSString *INVITE_FIELD_USED __attribute__((swift_name("INVITE_FIELD_USED")));
 @property (readonly) NSString *INVITE_FIELD_USED_AT __attribute__((swift_name("INVITE_FIELD_USED_AT")));
 @property (readonly) NSString *INVITE_FIELD_USED_BY_UID __attribute__((swift_name("INVITE_FIELD_USED_BY_UID")));
+@property (readonly) int32_t MAX_AGE_DIFF_NEEDING_CONSENT __attribute__((swift_name("MAX_AGE_DIFF_NEEDING_CONSENT")));
 @property (readonly) int32_t MAX_NAME_LENGTH __attribute__((swift_name("MAX_NAME_LENGTH")));
 @property (readonly) NSString *MESSAGE_CODE_NOT_SENT __attribute__((swift_name("MESSAGE_CODE_NOT_SENT")));
 @property (readonly) NSString *MESSAGE_CODE_NOT_VERIFIED __attribute__((swift_name("MESSAGE_CODE_NOT_VERIFIED")));
@@ -4542,6 +4839,7 @@ __attribute__((swift_name("AuthRules")))
 @property (readonly) int32_t MIN_PASSWORD_LENGTH __attribute__((swift_name("MIN_PASSWORD_LENGTH")));
 @property (readonly) NSString *OTP_PURPOSE_LOGIN __attribute__((swift_name("OTP_PURPOSE_LOGIN")));
 @property (readonly) NSString *OTP_PURPOSE_REGISTER __attribute__((swift_name("OTP_PURPOSE_REGISTER")));
+@property (readonly) NSString *OTP_PURPOSE_REGISTER_PARENTAL __attribute__((swift_name("OTP_PURPOSE_REGISTER_PARENTAL")));
 @property (readonly) NSString *OTP_PURPOSE_TEACHER_RESET __attribute__((swift_name("OTP_PURPOSE_TEACHER_RESET")));
 @property (readonly) NSString *PREFS_NAME __attribute__((swift_name("PREFS_NAME")));
 @property (readonly) NSString *PREF_FIRST_TUTORIAL_SHOWN __attribute__((swift_name("PREF_FIRST_TUTORIAL_SHOWN")));
@@ -4553,6 +4851,7 @@ __attribute__((swift_name("AuthRules")))
 @property (readonly) NSString *PROVIDER_PASSWORD __attribute__((swift_name("PROVIDER_PASSWORD")));
 @property (readonly) NSString *ROLE_STUDENT __attribute__((swift_name("ROLE_STUDENT")));
 @property (readonly) NSString *ROLE_TEACHER __attribute__((swift_name("ROLE_TEACHER")));
+@property (readonly) NSString *SERVER_REASON_CHILD_EMAIL_UNVERIFIED __attribute__((swift_name("SERVER_REASON_CHILD_EMAIL_UNVERIFIED")));
 @property (readonly) NSString *USER_ID_LETTERS __attribute__((swift_name("USER_ID_LETTERS")));
 @property (readonly) int32_t USER_ID_MAX_ATTEMPTS __attribute__((swift_name("USER_ID_MAX_ATTEMPTS")));
 @end
@@ -4704,6 +5003,9 @@ __attribute__((swift_name("LoginFlowTexts")))
 + (instancetype)loginFlowTexts __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedLoginFlowTexts *shared __attribute__((swift_name("shared")));
 - (NSString *)otpTitleForPasswordReset:(BOOL)forPasswordReset isRegistration:(BOOL)isRegistration __attribute__((swift_name("otpTitle(forPasswordReset:isRegistration:)")));
+- (NSString *)policyPageLangCode:(NSString *)langCode __attribute__((swift_name("policyPage(langCode:)")));
+- (NSString *)privacyUrlLangCode:(NSString *)langCode __attribute__((swift_name("privacyUrl(langCode:)")));
+- (NSString *)termsUrlLangCode:(NSString *)langCode __attribute__((swift_name("termsUrl(langCode:)")));
 @property (readonly) NSString *BUTTON_CONTINUE __attribute__((swift_name("BUTTON_CONTINUE")));
 @property (readonly) NSString *BUTTON_SENDING __attribute__((swift_name("BUTTON_SENDING")));
 @property (readonly) NSString *BUTTON_UPDATE_PASSWORD __attribute__((swift_name("BUTTON_UPDATE_PASSWORD")));
@@ -4713,6 +5015,7 @@ __attribute__((swift_name("LoginFlowTexts")))
 @property (readonly) NSString *MESSAGE_CODE_RESENT __attribute__((swift_name("MESSAGE_CODE_RESENT")));
 @property (readonly) NSString *MESSAGE_GOOGLE_LOGIN_FAILED __attribute__((swift_name("MESSAGE_GOOGLE_LOGIN_FAILED")));
 @property (readonly) NSString *MESSAGE_GOOGLE_REGISTER_FAILED __attribute__((swift_name("MESSAGE_GOOGLE_REGISTER_FAILED")));
+@property (readonly) int64_t NEW_ACCOUNT_WINDOW_MS __attribute__((swift_name("NEW_ACCOUNT_WINDOW_MS")));
 @property (readonly) NSString *PRIVACY_LINK_TEXT __attribute__((swift_name("PRIVACY_LINK_TEXT")));
 @property (readonly) NSString *PRIVACY_URL __attribute__((swift_name("PRIVACY_URL")));
 @property (readonly) NSString *TERMS_FULL_TEXT __attribute__((swift_name("TERMS_FULL_TEXT")));
@@ -4990,16 +5293,64 @@ __attribute__((swift_name("SessionDeviceRules.Decision")))
 @end
 
 __attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SignupFlowRules")))
+@interface SharedSignupFlowRules : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)signupFlowRules __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedSignupFlowRules *shared __attribute__((swift_name("shared")));
+- (NSArray<SharedSignupFlowRulesStep *> *)flowStepsStreakStepsEnabled:(BOOL)streakStepsEnabled __attribute__((swift_name("flowSteps(streakStepsEnabled:)")));
+- (int32_t)progressForStep:(SharedSignupFlowRulesStep *)step streakStepsEnabled:(BOOL)streakStepsEnabled __attribute__((swift_name("progressFor(step:streakStepsEnabled:)")));
+- (int32_t)questionCountStreakStepsEnabled:(BOOL)streakStepsEnabled __attribute__((swift_name("questionCount(streakStepsEnabled:)")));
+- (BOOL)streakStepsEnabledForceTeacher:(BOOL)forceTeacher __attribute__((swift_name("streakStepsEnabled(forceTeacher:)")));
+@property (readonly) NSArray<SharedInt *> *CHALLENGE_OPTIONS __attribute__((swift_name("CHALLENGE_OPTIONS")));
+@property (readonly) int32_t DEFAULT_REMINDER_HOUR __attribute__((swift_name("DEFAULT_REMINDER_HOUR")));
+@property (readonly) NSArray<SharedInt *> *GOAL_OPTIONS __attribute__((swift_name("GOAL_OPTIONS")));
+@property (readonly) NSArray<NSString *> *SOROBAN_LEVELS __attribute__((swift_name("SOROBAN_LEVELS")));
+@property (readonly) NSString *SOROBAN_LEVEL_FIELD __attribute__((swift_name("SOROBAN_LEVEL_FIELD")));
+@property (readonly) int64_t SOROBAN_PENDING_MAX_AGE_MS __attribute__((swift_name("SOROBAN_PENDING_MAX_AGE_MS")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SignupFlowRules.Step")))
+@interface SharedSignupFlowRulesStep : SharedKotlinEnum<SharedSignupFlowRulesStep *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly) SharedSignupFlowRulesStep *meet __attribute__((swift_name("meet")));
+@property (class, readonly) SharedSignupFlowRulesStep *brief __attribute__((swift_name("brief")));
+@property (class, readonly) SharedSignupFlowRulesStep *age __attribute__((swift_name("age")));
+@property (class, readonly) SharedSignupFlowRulesStep *source __attribute__((swift_name("source")));
+@property (class, readonly) SharedSignupFlowRulesStep *soroban __attribute__((swift_name("soroban")));
+@property (class, readonly) SharedSignupFlowRulesStep *goal __attribute__((swift_name("goal")));
+@property (class, readonly) SharedSignupFlowRulesStep *roadmap __attribute__((swift_name("roadmap")));
+@property (class, readonly) SharedSignupFlowRulesStep *challengeIntro __attribute__((swift_name("challengeIntro")));
+@property (class, readonly) SharedSignupFlowRulesStep *challenge __attribute__((swift_name("challenge")));
+@property (class, readonly) SharedSignupFlowRulesStep *reminder __attribute__((swift_name("reminder")));
++ (SharedKotlinArray<SharedSignupFlowRulesStep *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedSignupFlowRulesStep *> *entries __attribute__((swift_name("entries")));
+@property (readonly) BOOL asks __attribute__((swift_name("asks")));
+@property (readonly) BOOL isIntro __attribute__((swift_name("isIntro")));
+@end
+
+__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("SplashRules")))
 @interface SharedSplashRules : SharedBase
 + (instancetype)alloc __attribute__((unavailable));
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)splashRules __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedSplashRules *shared __attribute__((swift_name("shared")));
+- (BOOL)hasEverHadAccountAccountEverCreated:(BOOL)accountEverCreated signedIn:(BOOL)signedIn legacyFirstTutorialShown:(BOOL)legacyFirstTutorialShown __attribute__((swift_name("hasEverHadAccount(accountEverCreated:signedIn:legacyFirstTutorialShown:)")));
 - (SharedSplashRulesRoute *)routeIsOnline:(BOOL)isOnline loginStartEverShown:(BOOL)loginStartEverShown hasExistingLogin:(BOOL)hasExistingLogin __attribute__((swift_name("route(isOnline:loginStartEverShown:hasExistingLogin:)")));
+- (BOOL)shouldPersistAccountFlagAccountEverCreated:(BOOL)accountEverCreated signedIn:(BOOL)signedIn legacyFirstTutorialShown:(BOOL)legacyFirstTutorialShown __attribute__((swift_name("shouldPersistAccountFlag(accountEverCreated:signedIn:legacyFirstTutorialShown:)")));
+- (BOOL)showsFirstTutorialHadAccount:(BOOL)hadAccount __attribute__((swift_name("showsFirstTutorial(hadAccount:)")));
+@property (readonly) int64_t BRAND_REVEAL_MS __attribute__((swift_name("BRAND_REVEAL_MS")));
+@property (readonly) int64_t FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS __attribute__((swift_name("FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS")));
+@property (readonly) int64_t FORCE_UPDATE_MAX_WAIT_DEEP_LINK_MS __attribute__((swift_name("FORCE_UPDATE_MAX_WAIT_DEEP_LINK_MS")));
+@property (readonly) NSString *PREF_ACCOUNT_EVER_CREATED __attribute__((swift_name("PREF_ACCOUNT_EVER_CREATED")));
+@property (readonly) NSString *PREF_LEGACY_FIRST_TUTORIAL_SHOWN __attribute__((swift_name("PREF_LEGACY_FIRST_TUTORIAL_SHOWN")));
 @property (readonly) NSString *PREF_LOGIN_START_EVER_SHOWN __attribute__((swift_name("PREF_LOGIN_START_EVER_SHOWN")));
 @property (readonly) int64_t SPLASH_ANIMATION_MS __attribute__((swift_name("SPLASH_ANIMATION_MS")));
-@property (readonly) int64_t SPLASH_MAX_EXTRA_WAIT_MS __attribute__((swift_name("SPLASH_MAX_EXTRA_WAIT_MS")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -5077,6 +5428,7 @@ __attribute__((swift_name("StudentQuestion.Companion")))
 @property (readonly) NSString *MEDIA_TYPE_IMAGE __attribute__((swift_name("MEDIA_TYPE_IMAGE")));
 @property (readonly) NSString *MEDIA_TYPE_VIDEO __attribute__((swift_name("MEDIA_TYPE_VIDEO")));
 @property (readonly) NSString *STATUS_CLAIMED __attribute__((swift_name("STATUS_CLAIMED")));
+@property (readonly) NSString *STATUS_EXPIRED __attribute__((swift_name("STATUS_EXPIRED")));
 @property (readonly) NSString *STATUS_PENDING __attribute__((swift_name("STATUS_PENDING")));
 @property (readonly) NSString *STATUS_RESOLVED __attribute__((swift_name("STATUS_RESOLVED")));
 @property (readonly) NSString *SUBCOLLECTION_MESSAGES __attribute__((swift_name("SUBCOLLECTION_MESSAGES")));
@@ -5133,6 +5485,7 @@ __attribute__((swift_name("UserInfoRules")))
 @property (readonly) NSString *MESSAGE_EMAIL_NOT_REGISTERED_REDIRECT __attribute__((swift_name("MESSAGE_EMAIL_NOT_REGISTERED_REDIRECT")));
 @property (readonly) NSString *MESSAGE_INVALID_AGE __attribute__((swift_name("MESSAGE_INVALID_AGE")));
 @property (readonly) int32_t MIN_AGE __attribute__((swift_name("MIN_AGE")));
+@property (readonly) NSArray<NSString *> *SOURCE_DISPLAY_NAMES_TR __attribute__((swift_name("SOURCE_DISPLAY_NAMES_TR")));
 @property (readonly) NSArray<NSString *> *SOURCE_NAMES __attribute__((swift_name("SOURCE_NAMES")));
 @end
 
@@ -5144,13 +5497,50 @@ __attribute__((swift_name("AdRules")))
 + (instancetype)adRules __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedAdRules *shared __attribute__((swift_name("shared")));
 - (BOOL)canShowRewardedAdUid:(NSString * _Nullable)uid __attribute__((swift_name("canShowRewardedAd(uid:)")));
+- (NSString *)interstitialAdUnitIdIsDebug:(BOOL)isDebug __attribute__((swift_name("interstitialAdUnitId(isDebug:)")));
+- (BOOL)isRetryableErrorCode:(int32_t)errorCode __attribute__((swift_name("isRetryable(errorCode:)")));
+- (SharedLong * _Nullable)nextRetryDelayMsErrorCode:(int32_t)errorCode attempt:(int32_t)attempt __attribute__((swift_name("nextRetryDelayMs(errorCode:attempt:)")));
+- (BOOL)shouldLogLoadFailureAttempt:(int32_t)attempt __attribute__((swift_name("shouldLogLoadFailure(attempt:)")));
 - (BOOL)shouldShowAdSkipAfterRewardedShowAdSkipAfter:(BOOL)showAdSkipAfter hostSupportsDialogs:(BOOL)hostSupportsDialogs __attribute__((swift_name("shouldShowAdSkipAfterRewarded(showAdSkipAfter:hostSupportsDialogs:)")));
 - (NSString *)ssvCustomDataUid:(NSString *)uid nonce:(NSString *)nonce __attribute__((swift_name("ssvCustomData(uid:nonce:)")));
 @property (readonly) NSString *ANDROID_INTERSTITIAL_AD_UNIT_ID __attribute__((swift_name("ANDROID_INTERSTITIAL_AD_UNIT_ID")));
 @property (readonly) NSString *ANDROID_REWARDED_AD_UNIT_ID __attribute__((swift_name("ANDROID_REWARDED_AD_UNIT_ID")));
+@property (readonly) int32_t ERROR_CODE_INTERNAL_ERROR __attribute__((swift_name("ERROR_CODE_INTERNAL_ERROR")));
+@property (readonly) int32_t ERROR_CODE_INVALID_REQUEST __attribute__((swift_name("ERROR_CODE_INVALID_REQUEST")));
+@property (readonly) int32_t ERROR_CODE_MEDIATION_NO_FILL __attribute__((swift_name("ERROR_CODE_MEDIATION_NO_FILL")));
+@property (readonly) int32_t ERROR_CODE_NETWORK_ERROR __attribute__((swift_name("ERROR_CODE_NETWORK_ERROR")));
+@property (readonly) int32_t ERROR_CODE_NO_FILL __attribute__((swift_name("ERROR_CODE_NO_FILL")));
+@property (readonly) NSArray<SharedLong *> *RETRY_DELAYS_MS __attribute__((swift_name("RETRY_DELAYS_MS")));
 @property (readonly) NSString *TAG_AD_SKIP __attribute__((swift_name("TAG_AD_SKIP")));
+@property (readonly) NSString *TEST_INTERSTITIAL_AD_UNIT_ID __attribute__((swift_name("TEST_INTERSTITIAL_AD_UNIT_ID")));
 @property (readonly) NSString *TOAST_AD_NOT_READY __attribute__((swift_name("TOAST_AD_NOT_READY")));
 @property (readonly) NSString *TOAST_LOGIN_REQUIRED __attribute__((swift_name("TOAST_LOGIN_REQUIRED")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AdRules.AdSkipPolicy")))
+@interface SharedAdRulesAdSkipPolicy : SharedBase
+- (instancetype)initWithStore:(id<SharedOyunKeyValueStore>)store nowMs:(SharedLong *(^)(void))nowMs timeZone:(SharedKotlinx_datetimeTimeZone *)timeZone debugEveryAd:(BOOL)debugEveryAd __attribute__((swift_name("init(store:nowMs:timeZone:debugEveryAd:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedAdRulesAdSkipPolicyCompanion *companion __attribute__((swift_name("companion")));
+- (BOOL)onAdClosedEligible:(BOOL)eligible __attribute__((swift_name("onAdClosed(eligible:)")));
+- (void)resetForDebug __attribute__((swift_name("resetForDebug()")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AdRules.AdSkipPolicyCompanion")))
+@interface SharedAdRulesAdSkipPolicyCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedAdRulesAdSkipPolicyCompanion *shared __attribute__((swift_name("shared")));
+@property (readonly) int32_t ADS_PER_PANEL __attribute__((swift_name("ADS_PER_PANEL")));
+@property (readonly) NSString *KEY_ADS_SINCE_PANEL __attribute__((swift_name("KEY_ADS_SINCE_PANEL")));
+@property (readonly) NSString *KEY_DAY_COUNT __attribute__((swift_name("KEY_DAY_COUNT")));
+@property (readonly) NSString *KEY_DAY_ID __attribute__((swift_name("KEY_DAY_ID")));
+@property (readonly) NSString *KEY_LAST_PANEL_MS __attribute__((swift_name("KEY_LAST_PANEL_MS")));
+@property (readonly) int32_t MAX_PANELS_PER_DAY __attribute__((swift_name("MAX_PANELS_PER_DAY")));
+@property (readonly) int64_t MIN_GAP_MS __attribute__((swift_name("MIN_GAP_MS")));
+@property (readonly) NSString *PREFS_NAME __attribute__((swift_name("PREFS_NAME")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -5169,10 +5559,12 @@ __attribute__((swift_name("AgeConsentManager")))
 + (instancetype)ageConsentManager __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedAgeConsentManager *shared __attribute__((swift_name("shared")));
 - (SharedAgeConsentManagerAdRequestTags *)adRequestTagsTreatment:(SharedAgeConsentManagerAgeTreatment *)treatment __attribute__((swift_name("adRequestTags(treatment:)")));
+- (BOOL)analyticsAdConsentGrantedTreatment:(SharedAgeConsentManagerAgeTreatment *)treatment __attribute__((swift_name("analyticsAdConsentGranted(treatment:)")));
 - (int32_t)birthYearFromDocDocExists:(BOOL)docExists containsBirthYear:(BOOL)containsBirthYear birthYearValue:(SharedLong * _Nullable)birthYearValue __attribute__((swift_name("birthYearFromDoc(docExists:containsBirthYear:birthYearValue:)")));
 - (BOOL)consentUnderAgeTreatment:(SharedAgeConsentManagerAgeTreatment *)treatment __attribute__((swift_name("consentUnderAge(treatment:)")));
 - (int32_t)getDigitalConsentAgeForCountryCountryCode:(NSString *)countryCode __attribute__((swift_name("getDigitalConsentAgeForCountry(countryCode:)")));
 - (NSString *)resolveCountryCodeSimCountryIso:(NSString * _Nullable)simCountryIso networkCountryIso:(NSString * _Nullable)networkCountryIso localeCountry:(NSString * _Nullable)localeCountry __attribute__((swift_name("resolveCountryCode(simCountryIso:networkCountryIso:localeCountry:)")));
+- (BOOL)shouldRevokeAnalyticsAdConsentConsentUid:(NSString * _Nullable)consentUid currentUid:(NSString * _Nullable)currentUid __attribute__((swift_name("shouldRevokeAnalyticsAdConsent(consentUid:currentUid:)")));
 - (SharedAgeConsentManagerAgeTreatment *)treatmentForIsLoggedIn:(BOOL)isLoggedIn birthYear:(int32_t)birthYear currentYear:(int32_t)currentYear countryCode:(NSString *)countryCode __attribute__((swift_name("treatmentFor(isLoggedIn:birthYear:currentYear:countryCode:)")));
 @property (readonly) NSString *COLLECTION_USERS __attribute__((swift_name("COLLECTION_USERS")));
 @property (readonly) NSString *DEBUG_TEST_DEVICE_ID __attribute__((swift_name("DEBUG_TEST_DEVICE_ID")));
@@ -5281,12 +5673,19 @@ __attribute__((swift_name("BillingCatalog")))
 + (instancetype)billingCatalog __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedBillingCatalog *shared __attribute__((swift_name("shared")));
 - (NSString *)subscriptionForPlanNamePlanName:(NSString *)planName __attribute__((swift_name("subscriptionForPlanName(planName:)")));
+- (int32_t)subscriptionRankProductId:(NSString *)productId __attribute__((swift_name("subscriptionRank(productId:)")));
+@property (readonly) NSString *CREDITS_LARGE __attribute__((swift_name("CREDITS_LARGE")));
+@property (readonly) NSString *CREDITS_MEDIUM __attribute__((swift_name("CREDITS_MEDIUM")));
+@property (readonly) NSString *CREDITS_SMALL __attribute__((swift_name("CREDITS_SMALL")));
 @property (readonly) NSString *GOLD_LARGE __attribute__((swift_name("GOLD_LARGE")));
 @property (readonly) NSString *GOLD_MEDIUM __attribute__((swift_name("GOLD_MEDIUM")));
 @property (readonly) NSString *GOLD_SMALL __attribute__((swift_name("GOLD_SMALL")));
 @property (readonly) NSString *KEYS_LARGE __attribute__((swift_name("KEYS_LARGE")));
 @property (readonly) NSString *KEYS_MEDIUM __attribute__((swift_name("KEYS_MEDIUM")));
 @property (readonly) NSString *KEYS_SMALL __attribute__((swift_name("KEYS_SMALL")));
+@property (readonly) NSString *SOBI_CREDITS_120 __attribute__((swift_name("SOBI_CREDITS_120")));
+@property (readonly) NSString *SOBI_CREDITS_20 __attribute__((swift_name("SOBI_CREDITS_20")));
+@property (readonly) NSString *SOBI_CREDITS_50 __attribute__((swift_name("SOBI_CREDITS_50")));
 @property (readonly) NSString *SUB_LITE __attribute__((swift_name("SUB_LITE")));
 @property (readonly) NSString *SUB_PRO __attribute__((swift_name("SUB_PRO")));
 @property (readonly) NSArray<NSString *> *consumables __attribute__((swift_name("consumables")));
@@ -6429,6 +6828,21 @@ __attribute__((swift_name("OyunLessonItemData")))
 @end
 
 __attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("PlanStatus")))
+@interface SharedPlanStatus : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)planStatus __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedPlanStatus *shared __attribute__((swift_name("shared")));
+- (NSString *)effectivePlanStoredPlan:(NSString * _Nullable)storedPlan planExpiresAt:(SharedLong * _Nullable)planExpiresAt giftProUntil:(SharedLong * _Nullable)giftProUntil nowMs:(int64_t)nowMs __attribute__((swift_name("effectivePlan(storedPlan:planExpiresAt:giftProUntil:nowMs:)")));
+- (SharedLong * _Nullable)giftProUntilGiftProUntil:(SharedLong * _Nullable)giftProUntil nowMs:(int64_t)nowMs __attribute__((swift_name("giftProUntil(giftProUntil:nowMs:)")));
+- (BOOL)isProPlanPlan:(NSString *)plan __attribute__((swift_name("isProPlan(plan:)")));
+@property (readonly) NSString *FIELD_GIFT_PRO_UNTIL __attribute__((swift_name("FIELD_GIFT_PRO_UNTIL")));
+@property (readonly) NSString *FIELD_PLAN __attribute__((swift_name("FIELD_PLAN")));
+@property (readonly) NSString *FIELD_PLAN_EXPIRES_AT __attribute__((swift_name("FIELD_PLAN_EXPIRES_AT")));
+@end
+
+__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("RarityTheme")))
 @interface SharedRarityTheme : SharedBase
 - (instancetype)initWithBgColor:(int32_t)bgColor platformColor:(int32_t)platformColor starColor:(int32_t)starColor stepActiveColor:(int32_t)stepActiveColor stepFutureColor:(int32_t)stepFutureColor __attribute__((swift_name("init(bgColor:platformColor:starColor:stepActiveColor:stepFutureColor:)"))) __attribute__((objc_designated_initializer));
@@ -6480,7 +6894,10 @@ __attribute__((swift_name("ServerEnergy")))
 - (SharedServerEnergyBuyWithKeysResult * _Nullable)parseBuyWithKeysResultData:(id _Nullable)data __attribute__((swift_name("parseBuyWithKeysResult(data:)")));
 - (SharedLong * _Nullable)parseClaimAdEnergyResultData:(id _Nullable)data __attribute__((swift_name("parseClaimAdEnergyResult(data:)")));
 - (SharedLong * _Nullable)readFullTimeData:(id _Nullable)data __attribute__((swift_name("readFullTime(data:)")));
+- (BOOL)shouldRetryClaimAdEnergyIsUnavailable:(BOOL)isUnavailable attempt:(int32_t)attempt __attribute__((swift_name("shouldRetryClaimAdEnergy(isUnavailable:attempt:)")));
 - (NSDictionary<NSString *, id> *)spendEnergyPayloadAmount:(int32_t)amount __attribute__((swift_name("spendEnergyPayload(amount:)")));
+@property (readonly) int32_t AD_VERIFY_MAX_ATTEMPTS __attribute__((swift_name("AD_VERIFY_MAX_ATTEMPTS")));
+@property (readonly) int64_t AD_VERIFY_RETRY_DELAY_MS __attribute__((swift_name("AD_VERIFY_RETRY_DELAY_MS")));
 @property (readonly) NSString *ERROR_BUY_ENERGY_INVALID __attribute__((swift_name("ERROR_BUY_ENERGY_INVALID")));
 @property (readonly) NSString *ERROR_CLAIM_AD_ENERGY_INVALID __attribute__((swift_name("ERROR_CLAIM_AD_ENERGY_INVALID")));
 @property (readonly) NSString *FUNCTION_BUY_ENERGY_WITH_KEYS __attribute__((swift_name("FUNCTION_BUY_ENERGY_WITH_KEYS")));
@@ -6511,18 +6928,24 @@ __attribute__((swift_name("ServerRewards")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)serverRewards __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedServerRewards *shared __attribute__((swift_name("shared")));
+- (NSDictionary<NSString *, id> *)claimCupPathChestPayloadCupField:(NSString *)cupField milestone:(int32_t)milestone __attribute__((swift_name("claimCupPathChestPayload(cupField:milestone:)")));
 - (NSDictionary<NSString *, id> *)openChestPayloadStartRarity:(NSString *)startRarity adNonce:(NSString * _Nullable)adNonce __attribute__((swift_name("openChestPayload(startRarity:adNonce:)")));
 - (NSDictionary<NSString *, id> *)openCrystalPayload __attribute__((swift_name("openCrystalPayload()")));
 - (SharedServerRewardsChestOutcome * _Nullable)parseChestOutcomeData:(id _Nullable)data startRarity:(NSString *)startRarity __attribute__((swift_name("parseChestOutcome(data:startRarity:)")));
 - (SharedServerRewardsCrystalOutcome * _Nullable)parseCrystalOutcomeData:(id _Nullable)data __attribute__((swift_name("parseCrystalOutcome(data:)")));
+- (SharedServerRewardsChestOutcome * _Nullable)parseCupPathChestOutcomeData:(id _Nullable)data __attribute__((swift_name("parseCupPathChestOutcome(data:)")));
 - (BOOL)shouldRetryOpenChestIsUnavailable:(BOOL)isUnavailable attempt:(int32_t)attempt __attribute__((swift_name("shouldRetryOpenChest(isUnavailable:attempt:)")));
 @property (readonly) int32_t AD_VERIFY_MAX_ATTEMPTS __attribute__((swift_name("AD_VERIFY_MAX_ATTEMPTS")));
 @property (readonly) int64_t AD_VERIFY_RETRY_DELAY_MS __attribute__((swift_name("AD_VERIFY_RETRY_DELAY_MS")));
+@property (readonly) NSString *ERROR_CLAIM_CUP_PATH_CHEST_EMPTY __attribute__((swift_name("ERROR_CLAIM_CUP_PATH_CHEST_EMPTY")));
 @property (readonly) NSString *ERROR_OPEN_CHEST_EMPTY __attribute__((swift_name("ERROR_OPEN_CHEST_EMPTY")));
 @property (readonly) NSString *ERROR_OPEN_CRYSTAL_EMPTY __attribute__((swift_name("ERROR_OPEN_CRYSTAL_EMPTY")));
+@property (readonly) NSString *FUNCTION_CLAIM_CUP_PATH_CHEST __attribute__((swift_name("FUNCTION_CLAIM_CUP_PATH_CHEST")));
 @property (readonly) NSString *FUNCTION_OPEN_CHEST __attribute__((swift_name("FUNCTION_OPEN_CHEST")));
 @property (readonly) NSString *FUNCTION_OPEN_CRYSTAL_REWARD __attribute__((swift_name("FUNCTION_OPEN_CRYSTAL_REWARD")));
 @property (readonly) NSString *PARAM_AD_NONCE __attribute__((swift_name("PARAM_AD_NONCE")));
+@property (readonly) NSString *PARAM_CUP_FIELD __attribute__((swift_name("PARAM_CUP_FIELD")));
+@property (readonly) NSString *PARAM_MILESTONE __attribute__((swift_name("PARAM_MILESTONE")));
 @property (readonly) NSString *PARAM_START_RARITY __attribute__((swift_name("PARAM_START_RARITY")));
 @property (readonly) NSString *RESULT_FINAL_RARITY __attribute__((swift_name("RESULT_FINAL_RARITY")));
 @property (readonly) NSString *RESULT_RARITY_PATH __attribute__((swift_name("RESULT_RARITY_PATH")));
@@ -6564,14 +6987,13 @@ __attribute__((swift_name("ServerRewards.ChestPrefetcher")))
 __attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("ServerRewards.CrystalOutcome")))
 @interface SharedServerRewardsCrystalOutcome : SharedBase
-- (instancetype)initWithVideoName:(NSString *)videoName rewardType:(NSString *)rewardType rewardAmount:(int32_t)rewardAmount __attribute__((swift_name("init(videoName:rewardType:rewardAmount:)"))) __attribute__((objc_designated_initializer));
-- (SharedServerRewardsCrystalOutcome *)doCopyVideoName:(NSString *)videoName rewardType:(NSString *)rewardType rewardAmount:(int32_t)rewardAmount __attribute__((swift_name("doCopy(videoName:rewardType:rewardAmount:)")));
+- (instancetype)initWithRewardType:(NSString *)rewardType rewardAmount:(int32_t)rewardAmount __attribute__((swift_name("init(rewardType:rewardAmount:)"))) __attribute__((objc_designated_initializer));
+- (SharedServerRewardsCrystalOutcome *)doCopyRewardType:(NSString *)rewardType rewardAmount:(int32_t)rewardAmount __attribute__((swift_name("doCopy(rewardType:rewardAmount:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
 @property (readonly) int32_t rewardAmount __attribute__((swift_name("rewardAmount")));
 @property (readonly) NSString *rewardType __attribute__((swift_name("rewardType")));
-@property (readonly) NSString *videoName __attribute__((swift_name("videoName")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -6590,6 +7012,7 @@ __attribute__((swift_name("ShopFragmentLogic")))
 - (NSString *)proPriceLabelStorePrice:(NSString * _Nullable)storePrice __attribute__((swift_name("proPriceLabel(storePrice:)")));
 - (SharedShopFragmentLogicProductKind * _Nullable)productKindProductId:(NSString *)productId __attribute__((swift_name("productKind(productId:)")));
 - (NSString * _Nullable)purchaseAnimationIconResNameProductId:(NSString *)productId __attribute__((swift_name("purchaseAnimationIconResName(productId:)")));
+- (SharedInt * _Nullable)purchaseAnimationItemCountProductId:(NSString *)productId __attribute__((swift_name("purchaseAnimationItemCount(productId:)")));
 @property (readonly) int32_t COLOR_BUY_BUTTON_DISABLED __attribute__((swift_name("COLOR_BUY_BUTTON_DISABLED")));
 @property (readonly) int32_t COLOR_BUY_BUTTON_ENABLED __attribute__((swift_name("COLOR_BUY_BUTTON_ENABLED")));
 @property (readonly) int32_t COLOR_BUY_TEXT_DISABLED __attribute__((swift_name("COLOR_BUY_TEXT_DISABLED")));
@@ -6687,12 +7110,30 @@ __attribute__((swift_name("TimeTracker.Companion")))
 + (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
 + (instancetype)companion __attribute__((swift_name("init()")));
 @property (class, readonly, getter=shared) SharedTimeTrackerCompanion *shared __attribute__((swift_name("shared")));
+- (SharedTimeTrackerCompanionSyncWrite *)buildSyncWriteUnsyncedSeconds:(int64_t)unsyncedSeconds nowMs:(int64_t)nowMs timeZone:(SharedKotlinx_datetimeTimeZone *)timeZone __attribute__((swift_name("buildSyncWrite(unsyncedSeconds:nowMs:timeZone:)")));
+- (NSString *)dayKeyOffsetDays:(int32_t)offsetDays nowMs:(int64_t)nowMs timeZone:(SharedKotlinx_datetimeTimeZone *)timeZone __attribute__((swift_name("dayKey(offsetDays:nowMs:timeZone:)")));
+@property (readonly) NSString *DAILY_FIELD __attribute__((swift_name("DAILY_FIELD")));
 @property (readonly) NSString *FIELD_TOTAL_TIME_SPENT __attribute__((swift_name("FIELD_TOTAL_TIME_SPENT")));
 @property (readonly) NSString *KEY_LAST_START_TIME __attribute__((swift_name("KEY_LAST_START_TIME")));
 @property (readonly) NSString *KEY_UNSYNCED_TIME __attribute__((swift_name("KEY_UNSYNCED_TIME")));
 @property (readonly) int64_t MAX_RECOVERABLE_SECONDS __attribute__((swift_name("MAX_RECOVERABLE_SECONDS")));
 @property (readonly) NSString *PREFS_NAME __attribute__((swift_name("PREFS_NAME")));
+@property (readonly) int32_t RETENTION_DAYS __attribute__((swift_name("RETENTION_DAYS")));
 @property (readonly) int64_t TICK_INTERVAL_SECONDS __attribute__((swift_name("TICK_INTERVAL_SECONDS")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("TimeTracker.CompanionSyncWrite")))
+@interface SharedTimeTrackerCompanionSyncWrite : SharedBase
+- (instancetype)initWithTotalIncrement:(int64_t)totalIncrement dailyFieldPath:(NSArray<NSString *> *)dailyFieldPath dailyIncrement:(int64_t)dailyIncrement expiredFieldPath:(NSArray<NSString *> *)expiredFieldPath __attribute__((swift_name("init(totalIncrement:dailyFieldPath:dailyIncrement:expiredFieldPath:)"))) __attribute__((objc_designated_initializer));
+- (SharedTimeTrackerCompanionSyncWrite *)doCopyTotalIncrement:(int64_t)totalIncrement dailyFieldPath:(NSArray<NSString *> *)dailyFieldPath dailyIncrement:(int64_t)dailyIncrement expiredFieldPath:(NSArray<NSString *> *)expiredFieldPath __attribute__((swift_name("doCopy(totalIncrement:dailyFieldPath:dailyIncrement:expiredFieldPath:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSArray<NSString *> *dailyFieldPath __attribute__((swift_name("dailyFieldPath")));
+@property (readonly) int64_t dailyIncrement __attribute__((swift_name("dailyIncrement")));
+@property (readonly) NSArray<NSString *> *expiredFieldPath __attribute__((swift_name("expiredFieldPath")));
+@property (readonly) int64_t totalIncrement __attribute__((swift_name("totalIncrement")));
 @end
 
 __attribute__((swift_name("TimeTrackerPlatform")))
@@ -6706,16 +7147,67 @@ __attribute__((swift_name("TimeTrackerPlatform")))
 @end
 
 __attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("TrustedClock")))
+@interface SharedTrustedClock : SharedBase
+- (instancetype)initWithPrefs:(id<SharedOyunKeyValueStore>)prefs elapsedRealtimeMs:(SharedLong *(^)(void))elapsedRealtimeMs bootCount:(int32_t)bootCount wallNowMs:(SharedLong *(^)(void))wallNowMs __attribute__((swift_name("init(prefs:elapsedRealtimeMs:bootCount:wallNowMs:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedTrustedClockCompanion *companion __attribute__((swift_name("companion")));
+- (void)addAnchorListenerListener:(void (^)(void))listener __attribute__((swift_name("addAnchorListener(listener:)")));
+- (int64_t)nowMs __attribute__((swift_name("nowMs()")));
+- (int64_t)onServerTimeServerNowMs:(int64_t)serverNowMs __attribute__((swift_name("onServerTime(serverNowMs:)")));
+- (void)removeAnchorListenerListener:(void (^)(void))listener __attribute__((swift_name("removeAnchorListener(listener:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("TrustedClock.Companion")))
+@interface SharedTrustedClockCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedTrustedClockCompanion *shared __attribute__((swift_name("shared")));
+@property (readonly) NSString *KEY_BOOT_COUNT __attribute__((swift_name("KEY_BOOT_COUNT")));
+@property (readonly) NSString *KEY_ELAPSED_MS __attribute__((swift_name("KEY_ELAPSED_MS")));
+@property (readonly) NSString *KEY_SERVER_NOW_MS __attribute__((swift_name("KEY_SERVER_NOW_MS")));
+@property (readonly) NSString *PREFS_NAME __attribute__((swift_name("PREFS_NAME")));
+@property (readonly) int32_t UNKNOWN_BOOT __attribute__((swift_name("UNKNOWN_BOOT")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("TrustedClockRules")))
+@interface SharedTrustedClockRules : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)trustedClockRules __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedTrustedClockRules *shared __attribute__((swift_name("shared")));
+- (int64_t)trustedNowAnchor:(SharedTrustedClockRulesAnchor * _Nullable)anchor wallNowMs:(int64_t)wallNowMs elapsedNowMs:(int64_t)elapsedNowMs bootCount:(int32_t)bootCount __attribute__((swift_name("trustedNow(anchor:wallNowMs:elapsedNowMs:bootCount:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("TrustedClockRules.Anchor")))
+@interface SharedTrustedClockRulesAnchor : SharedBase
+- (instancetype)initWithServerNowMs:(int64_t)serverNowMs elapsedMs:(int64_t)elapsedMs bootCount:(int32_t)bootCount __attribute__((swift_name("init(serverNowMs:elapsedMs:bootCount:)"))) __attribute__((objc_designated_initializer));
+- (SharedTrustedClockRulesAnchor *)doCopyServerNowMs:(int64_t)serverNowMs elapsedMs:(int64_t)elapsedMs bootCount:(int32_t)bootCount __attribute__((swift_name("doCopy(serverNowMs:elapsedMs:bootCount:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t bootCount __attribute__((swift_name("bootCount")));
+@property (readonly) int64_t elapsedMs __attribute__((swift_name("elapsedMs")));
+@property (readonly) int64_t serverNowMs __attribute__((swift_name("serverNowMs")));
+@end
+
+__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("UserWallet")))
 @interface SharedUserWallet : SharedBase
-- (instancetype)initWithKeys:(int32_t)keys currency:(int32_t)currency rollbackToken:(NSString * _Nullable)rollbackToken __attribute__((swift_name("init(keys:currency:rollbackToken:)"))) __attribute__((objc_designated_initializer));
-- (SharedUserWallet *)doCopyKeys:(int32_t)keys currency:(int32_t)currency rollbackToken:(NSString * _Nullable)rollbackToken __attribute__((swift_name("doCopy(keys:currency:rollbackToken:)")));
+- (instancetype)initWithKeys:(int32_t)keys currency:(int32_t)currency rollbackToken:(NSString * _Nullable)rollbackToken questionCredits:(int32_t)questionCredits sobiCredits:(int32_t)sobiCredits plan:(NSString *)plan __attribute__((swift_name("init(keys:currency:rollbackToken:questionCredits:sobiCredits:plan:)"))) __attribute__((objc_designated_initializer));
+- (SharedUserWallet *)doCopyKeys:(int32_t)keys currency:(int32_t)currency rollbackToken:(NSString * _Nullable)rollbackToken questionCredits:(int32_t)questionCredits sobiCredits:(int32_t)sobiCredits plan:(NSString *)plan __attribute__((swift_name("doCopy(keys:currency:rollbackToken:questionCredits:sobiCredits:plan:)")));
 - (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
 - (NSUInteger)hash __attribute__((swift_name("hash()")));
 - (NSString *)description __attribute__((swift_name("description()")));
 @property (readonly) int32_t currency __attribute__((swift_name("currency")));
 @property (readonly) int32_t keys __attribute__((swift_name("keys")));
+@property (readonly) NSString *plan __attribute__((swift_name("plan")));
+@property (readonly) int32_t questionCredits __attribute__((swift_name("questionCredits")));
 @property (readonly) NSString * _Nullable rollbackToken __attribute__((swift_name("rollbackToken")));
+@property (readonly) int32_t sobiCredits __attribute__((swift_name("sobiCredits")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -6728,19 +7220,31 @@ __attribute__((swift_name("UserWalletFirestore")))
 - (NSDictionary<NSString *, id> * _Nullable)applyCurrencyDeltaPayloadDelta:(int32_t)delta reason:(NSString *)reason rollbackToken:(NSString * _Nullable)rollbackToken __attribute__((swift_name("applyCurrencyDeltaPayload(delta:reason:rollbackToken:)")));
 - (NSDictionary<NSString *, id> * _Nullable)applyDeltaPayloadKeyDelta:(int32_t)keyDelta currencyDelta:(int32_t)currencyDelta reason:(NSString *)reason rollbackToken:(NSString * _Nullable)rollbackToken __attribute__((swift_name("applyDeltaPayload(keyDelta:currencyDelta:reason:rollbackToken:)")));
 - (NSDictionary<NSString *, id> * _Nullable)applyKeyDeltaPayloadDelta:(int32_t)delta reason:(NSString *)reason rollbackToken:(NSString * _Nullable)rollbackToken __attribute__((swift_name("applyKeyDeltaPayload(delta:reason:rollbackToken:)")));
+- (void)cacheCurrencyPrefs:(id<SharedOyunKeyValueStore>)prefs value:(int32_t)value __attribute__((swift_name("cacheCurrency(prefs:value:)")));
+- (void)cacheKeysPrefs:(id<SharedOyunKeyValueStore>)prefs value:(int32_t)value __attribute__((swift_name("cacheKeys(prefs:value:)")));
+- (NSString *)displayTextPrefs:(id<SharedOyunKeyValueStore>)prefs value:(int32_t)value __attribute__((swift_name("displayText(prefs:value:)")));
 - (int32_t)getCachedCurrencyPrefs:(id<SharedOyunKeyValueStore>)prefs __attribute__((swift_name("getCachedCurrency(prefs:)")));
 - (int32_t)getCachedKeysPrefs:(id<SharedOyunKeyValueStore>)prefs __attribute__((swift_name("getCachedKeys(prefs:)")));
+- (BOOL)isUnlimitedPrefs:(id<SharedOyunKeyValueStore>)prefs __attribute__((swift_name("isUnlimited(prefs:)")));
+- (int32_t)modeOfRole:(NSString * _Nullable)role teacherApproved:(SharedBoolean * _Nullable)teacherApproved __attribute__((swift_name("modeOf(role:teacherApproved:)")));
 - (NSDictionary<NSString *, id> *)registrationWalletFields __attribute__((swift_name("registrationWalletFields()")));
+- (void)rememberModePrefs:(id<SharedOyunKeyValueStore>)prefs role:(NSString * _Nullable)role teacherApproved:(SharedBoolean * _Nullable)teacherApproved __attribute__((swift_name("rememberMode(prefs:role:teacherApproved:)")));
 - (SharedWalletLoadResult *)resolveLoadedWalletPrefs:(id<SharedOyunKeyValueStore>)prefs docKeys:(SharedInt * _Nullable)docKeys docCurrency:(SharedInt * _Nullable)docCurrency __attribute__((swift_name("resolveLoadedWallet(prefs:docKeys:docCurrency:)")));
+- (int32_t)visiblePrefs:(id<SharedOyunKeyValueStore>)prefs raw:(int32_t)raw __attribute__((swift_name("visible(prefs:raw:)")));
 - (SharedUserWallet *)walletFromCachePrefs:(id<SharedOyunKeyValueStore>)prefs __attribute__((swift_name("walletFromCache(prefs:)")));
-- (SharedUserWallet *)walletFromSnapshotPrefs:(id<SharedOyunKeyValueStore>)prefs docKeys:(SharedInt * _Nullable)docKeys docCurrency:(SharedInt * _Nullable)docCurrency __attribute__((swift_name("walletFromSnapshot(prefs:docKeys:docCurrency:)")));
+- (SharedUserWallet *)walletFromSnapshotPrefs:(id<SharedOyunKeyValueStore>)prefs docKeys:(SharedInt * _Nullable)docKeys docCurrency:(SharedInt * _Nullable)docCurrency questionCredits:(int32_t)questionCredits sobiCredits:(int32_t)sobiCredits plan:(NSString *)plan __attribute__((swift_name("walletFromSnapshot(prefs:docKeys:docCurrency:questionCredits:sobiCredits:plan:)")));
 - (SharedUserWallet *)walletFromUpdateResultPrefs:(id<SharedOyunKeyValueStore>)prefs resultData:(id _Nullable)resultData __attribute__((swift_name("walletFromUpdateResult(prefs:resultData:)")));
 @property (readonly) NSString *COLLECTION_USERS __attribute__((swift_name("COLLECTION_USERS")));
 @property (readonly) int32_t DEFAULT_CURRENCY __attribute__((swift_name("DEFAULT_CURRENCY")));
 @property (readonly) int32_t DEFAULT_KEYS __attribute__((swift_name("DEFAULT_KEYS")));
 @property (readonly) NSString *FIELD_CURRENCY __attribute__((swift_name("FIELD_CURRENCY")));
 @property (readonly) NSString *FIELD_KEYS __attribute__((swift_name("FIELD_KEYS")));
+@property (readonly) NSString *FIELD_QUESTION_CREDITS __attribute__((swift_name("FIELD_QUESTION_CREDITS")));
+@property (readonly) NSString *FIELD_SOBI_CREDITS __attribute__((swift_name("FIELD_SOBI_CREDITS")));
 @property (readonly) NSString *FUNCTION_UPDATE_USER_WALLET __attribute__((swift_name("FUNCTION_UPDATE_USER_WALLET")));
+@property (readonly) int32_t MODE_LOCKED __attribute__((swift_name("MODE_LOCKED")));
+@property (readonly) int32_t MODE_NORMAL __attribute__((swift_name("MODE_NORMAL")));
+@property (readonly) int32_t MODE_UNLIMITED __attribute__((swift_name("MODE_UNLIMITED")));
 @property (readonly) NSString *PARAM_CURRENCY __attribute__((swift_name("PARAM_CURRENCY")));
 @property (readonly) NSString *PARAM_KEYS __attribute__((swift_name("PARAM_KEYS")));
 @property (readonly) NSString *PARAM_REASON __attribute__((swift_name("PARAM_REASON")));
@@ -6748,6 +7252,8 @@ __attribute__((swift_name("UserWalletFirestore")))
 @property (readonly) NSString *PREFS_APP __attribute__((swift_name("PREFS_APP")));
 @property (readonly) NSString *PREF_CURRENCY __attribute__((swift_name("PREF_CURRENCY")));
 @property (readonly) NSString *PREF_CURRENCY_MIGRATED __attribute__((swift_name("PREF_CURRENCY_MIGRATED")));
+@property (readonly) NSString *PREF_WALLET_MODE __attribute__((swift_name("PREF_WALLET_MODE")));
+@property (readonly) int32_t UNLIMITED_BALANCE __attribute__((swift_name("UNLIMITED_BALANCE")));
 @end
 
 __attribute__((objc_subclassing_restricted))
@@ -6954,11 +7460,14 @@ __attribute__((swift_name("ProfileFragmentLogic")))
 - (NSString *)completionTextPercentage:(int32_t)percentage __attribute__((swift_name("completionText(percentage:)")));
 - (int32_t)cupScoreRawFieldValue:(id _Nullable)rawFieldValue __attribute__((swift_name("cupScore(rawFieldValue:)")));
 - (NSString *)displayNameDocName:(NSString * _Nullable)docName authDisplayName:(NSString * _Nullable)authDisplayName isOtherUser:(BOOL)isOtherUser __attribute__((swift_name("displayName(docName:authDisplayName:isOtherUser:)")));
+- (BOOL)followButtonTapUnfollowsFollowing:(BOOL)following __attribute__((swift_name("followButtonTapUnfollows(following:)")));
 - (NSString *)followTargetUserIdUsernameAndDateText:(NSString *)usernameAndDateText __attribute__((swift_name("followTargetUserId(usernameAndDateText:)")));
 - (float)frameToProgressFrame:(float)frame startFrame:(float)startFrame endFrame:(float)endFrame __attribute__((swift_name("frameToProgress(frame:startFrame:endFrame:)")));
 - (BOOL)isValidAvatarSelectedAvatar:(int32_t)selectedAvatar __attribute__((swift_name("isValidAvatar(selectedAvatar:)")));
 - (SharedKotlinPair<NSArray<SharedInt *> *, SharedInt *> * _Nullable)levelSpecKind:(SharedBadgeKind *)kind __attribute__((swift_name("levelSpec(kind:)")));
+- (int64_t)longestStreakRawFieldValue:(id _Nullable)rawFieldValue __attribute__((swift_name("longestStreak(rawFieldValue:)")));
 - (NSDictionary<NSString *, id> *)missingBadgeDefaultsExistingFields:(NSSet<NSString *> *)existingFields __attribute__((swift_name("missingBadgeDefaults(existingFields:)")));
+- (int32_t)nudgedFollowersCountCurrent:(int32_t)current delta:(int32_t)delta __attribute__((swift_name("nudgedFollowersCount(current:delta:)")));
 - (NSArray<NSString *> *)ownedPreviewBeadTypesAllTypeNames:(NSArray<NSString *> *)allTypeNames ownedCounts:(NSDictionary<NSString *, SharedInt *> *)ownedCounts initialType:(NSString *)initialType __attribute__((swift_name("ownedPreviewBeadTypes(allTypeNames:ownedCounts:initialType:)")));
 - (NSArray<SharedBadgeState *> *)pickProfileBadgesStates:(NSArray<SharedBadgeState *> *)states progress:(SharedUserBadgeProgress *)progress slotCount:(int32_t)slotCount __attribute__((swift_name("pickProfileBadges(states:progress:slotCount:)")));
 - (int32_t)previewBeadStepIndex:(int32_t)index size:(int32_t)size forward:(BOOL)forward __attribute__((swift_name("previewBeadStep(index:size:forward:)")));
@@ -6968,6 +7477,7 @@ __attribute__((swift_name("ProfileFragmentLogic")))
 - (NSString *)profileCollectionIsOtherUser:(BOOL)isOtherUser __attribute__((swift_name("profileCollection(isOtherUser:)")));
 - (NSString *)subscriptionTextPlan:(NSString * _Nullable)plan __attribute__((swift_name("subscriptionText(plan:)")));
 - (NSString *)totalTimeTextTotalSeconds:(int64_t)totalSeconds __attribute__((swift_name("totalTimeText(totalSeconds:)")));
+- (NSArray<NSString *> *)unfollowDeletePathsMyUid:(NSString *)myUid targetUid:(NSString *)targetUid __attribute__((swift_name("unfollowDeletePaths(myUid:targetUid:)")));
 - (NSString *)usernameAndDateTextUserId:(NSString *)userId year:(int32_t)year __attribute__((swift_name("usernameAndDateText(userId:year:)")));
 @property (readonly) NSArray<NSString *> *ALL_BEAD_TYPE_NAMES __attribute__((swift_name("ALL_BEAD_TYPE_NAMES")));
 @property (readonly) NSString *ALWAYS_OWNED_BEAD __attribute__((swift_name("ALWAYS_OWNED_BEAD")));
@@ -6986,6 +7496,7 @@ __attribute__((swift_name("ProfileFragmentLogic")))
 @property (readonly) NSString *FIELD_CREATED_AT __attribute__((swift_name("FIELD_CREATED_AT")));
 @property (readonly) NSString *FIELD_FOLLOWERS_COUNT __attribute__((swift_name("FIELD_FOLLOWERS_COUNT")));
 @property (readonly) NSString *FIELD_FOLLOWING_COUNT __attribute__((swift_name("FIELD_FOLLOWING_COUNT")));
+@property (readonly) NSString *FIELD_LONGEST_STREAK __attribute__((swift_name("FIELD_LONGEST_STREAK")));
 @property (readonly) NSString *FIELD_NAME __attribute__((swift_name("FIELD_NAME")));
 @property (readonly) NSString *FIELD_PLAN __attribute__((swift_name("FIELD_PLAN")));
 @property (readonly) NSString *FIELD_SELECTED_AVATAR __attribute__((swift_name("FIELD_SELECTED_AVATAR")));
@@ -7138,16 +7649,6 @@ __attribute__((swift_name("KotlinPair")))
 @property (readonly) B _Nullable second __attribute__((swift_name("second")));
 @end
 
-__attribute__((objc_subclassing_restricted))
-__attribute__((swift_name("KotlinUnit")))
-@interface SharedKotlinUnit : SharedBase
-+ (instancetype)alloc __attribute__((unavailable));
-+ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
-+ (instancetype)unit __attribute__((swift_name("init()")));
-@property (class, readonly, getter=shared) SharedKotlinUnit *shared __attribute__((swift_name("shared")));
-- (NSString *)description __attribute__((swift_name("description()")));
-@end
-
 
 /**
  * @note annotations
@@ -7173,6 +7674,16 @@ __attribute__((swift_name("KotlinRandom")))
 - (int64_t)nextLong __attribute__((swift_name("nextLong()")));
 - (int64_t)nextLongUntil:(int64_t)until __attribute__((swift_name("nextLong(until:)")));
 - (int64_t)nextLongFrom:(int64_t)from until:(int64_t)until __attribute__((swift_name("nextLong(from:until:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("KotlinUnit")))
+@interface SharedKotlinUnit : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)unit __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedKotlinUnit *shared __attribute__((swift_name("shared")));
+- (NSString *)description __attribute__((swift_name("description()")));
 @end
 
 

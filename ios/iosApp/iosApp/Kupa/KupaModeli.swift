@@ -6,8 +6,60 @@ import SwiftUI
 //
 // Android karşılığı: TasksFragment.kt — showCupPathPanel, displayCupPathDialog,
 // updateExistingCupPathDialog, showCupDifficultyPanel, launchCupModeLesson, consumePendingCupDelta,
-// animateCupScore. Kurallar ortak koddadır (CupPathLogic, CupRuleEngine); burada yalnızca
-// ekran durumu tutulur ve servisler çağrılır.
+// animateCupScore, bindCupPathRewards / bindCupPathRewardCard / applyCupPathRewardLoadingState /
+// revealCupPathRewards, showCupCardLockedToastIfLocked. Kurallar ortak koddadır (CupPathLogic,
+// CupPathRewardRepository, CupRuleEngine, CupScoreService); burada yalnızca ekran durumu tutulur ve
+// servisler çağrılır.
+//
+// Güncel Android'e göre: kupa puanını istemci YAZMAZ; ders sonucu `submitCupResult` ile sunucuya gider.
+
+/// Bir kupa yolunun ödül durumu (ortak kod). Kotlin iç sınıf adı yalnızca burada yazılır.
+typealias KupaYolDurumu = CupPathRewardRepository.CupPathState
+
+/// Kartın ödül satırı (ilerleme çubuğu + sandık) için ekran durumu.
+struct KupaOdulDurumu: Equatable {
+    /// "250 / 300", "Sandık hazır!" ya da "Tamamlandı".
+    let etiket: String
+    /// 0...1 (`CupPathState.fraction`).
+    let oran: Double
+    /// Sandık hak edildi (Android: applyDailyQuestionProgressOverlayNow `complete` = `claimable`): altın dolgu.
+    let hazir: Bool
+    /// Sıradaki eşiğin sandığı (kapalı çizim): 1000'in katı destansı, 500'ün katı ender, gerisi sıradan.
+    let sandikResmi: String
+}
+
+enum KupaOdulHesabi {
+    /// Ortak koddaki durumdan ekran durumu. `skor` verilirse (sayaç animasyonu) puan onunla değiştirilir.
+    static func olustur(_ kaynak: KupaYolDurumu, skor: Int?) -> KupaOdulDurumu {
+        var durum: KupaYolDurumu = kaynak
+        if let s = skor {
+            durum = KupaYolDurumu(
+                cupField: kaynak.cupField,
+                cupScore: Int32(max(0, s)),
+                lastClaimed: kaynak.lastClaimed,
+                claimedAbove: kaynak.claimedAbove
+            )
+        }
+        let nadirlik: ChestRarity = CupPathRewardRepository.shared.rarityOf(milestone: durum.nextMilestone)
+        return KupaOdulDurumu(
+            etiket: etiket(durum),
+            oran: Double(durum.fraction),
+            hazir: durum.claimable,
+            sandikResmi: nadirlik.drawableRes
+        )
+    }
+
+    /// Android `CupPathState.label` (metinler strings.xml'den).
+    static func etiket(_ durum: KupaYolDurumu) -> String {
+        if durum.finished {
+            return Metin.al("ui_tamamlandi_2")
+        }
+        if durum.claimable {
+            return Metin.al("ui_sandik_hazir")
+        }
+        return String(durum.cupScore) + " / " + String(durum.nextMilestone)
+    }
+}
 
 /// Paneldeki bir kartın ekran durumu.
 struct KupaKartDurumu: Identifiable, Equatable {
@@ -33,6 +85,8 @@ struct KupaKartDurumu: Identifiable, Equatable {
     /// "+24" / "-20"; nil = gizli.
     var deltaMetni: String? = nil
     var deltaRengi: UInt32 = 0x4CAF50
+    /// Ödül satırı; nil = veri gelmedi ya da kartlar henüz açılmadı (gri yükleme hâli).
+    var odul: KupaOdulDurumu? = nil
 
     var id: Int { kartNo }
 }
@@ -52,10 +106,15 @@ struct KupaZorlukPaneliDurumu: Equatable {
 
 final class KupaModeli: ObservableObject {
     @Published private(set) var kartlar: [KupaKartDurumu] = []
-    /// Kilit durumları gelene kadar true: kartlar kapalı görünür, skorlar gizlidir.
+    /// Kilit durumları gelene kadar true: kartlar kapalı görünür, skorlar ve ödül satırları gizlidir.
     @Published private(set) var yukleniyor: Bool = true
+    /// Sonsuz enerjide boştur ("∞" rozeti kalbin üstünde gösterilir; Android EnergyDisplay.apply).
     @Published private(set) var enerjiMetni: String = "0"
+    @Published private(set) var sonsuzEnerji: Bool = false
+    @Published private(set) var proPlan: Bool = false
     @Published var zorlukPaneli: KupaZorlukPaneliDurumu? = nil
+    /// Kilitli karta dokununca çıkan uyarı (Android LockedHint); birkaç saniye sonra kendiliğinden gizlenir.
+    @Published private(set) var kilitIpucu: String? = nil
     /// Kaydırıcı konumu (0..4). Panel kapanıp açılınca korunur (Android lastCupDifficultyProgress).
     @Published var zorluk: Double = 0
 
@@ -66,14 +125,25 @@ final class KupaModeli: ObservableObject {
     private var islenenSonuc: KupaDersSonucu? = nil
     /// Kart → ders başlarken okunan skor (Android GlobalValues.currentLessonOldCupScore).
     private var dersOncesiSkor: [Int: Int] = [:]
+    /// Kart → ders başlarken seçilen zorluk (submitCupResult `difficultyLevel`).
+    private var dersZorlugu: [Int: Int] = [:]
     private var sayacZamanlayicisi: Timer? = nil
+    /// Sayaç animasyonu süren kart (ödül satırı o kart için animasyon bitene kadar elle sürülür).
+    private var animasyonKartNo: Int? = nil
+    /// Alan → ödül durumu (Android cupPathStatesCache).
+    private var odulDurumlari: [String: KupaYolDurumu] = [:]
+    /// Kartlar gerçek durumlarıyla çizildi mi (Android cupPathCardsRevealed): ödül satırı ancak
+    /// ondan sonra çizilir, yoksa panelin yarısı canlı yarısı gri görünürdü.
+    private var kartlarAcildi: Bool = false
+    private var ipucuSayaci: Int = 0
 
     init(ortam: KupaOrtami) {
         self.ortam = ortam
-        self.kartlar = mantik.CARDS.map { k in
-            KupaKartDurumu(
+        self.kartlar = mantik.CARDS.map { (k: CupPathCard) -> KupaKartDurumu in
+            let baslik: String = Metin.al("panel_cup_path_card" + String(k.cardNumber) + "_title")
+            return KupaKartDurumu(
                 kartNo: Int(k.cardNumber),
-                baslik: k.title,
+                baslik: baslik,
                 animasyonDosyasi: k.animFile,
                 acikRenkAdi: k.activeColorRes,
                 alan: k.field,
@@ -90,13 +160,18 @@ final class KupaModeli: ObservableObject {
         sayacZamanlayicisi?.invalidate()
     }
 
-    // MARK: - Metinler (ortak koddan)
+    // MARK: - Metinler
 
-    var panelBasligi: String { mantik.PANEL_TITLE }
-    var zorlukIletisi: String { mantik.DIFFICULTY_MESSAGE }
-    var basamakEtiketi: String { mantik.DIGIT_LABEL }
+    /// panel_cup_path.xml başlığı.
+    var panelBasligi: String { Metin.al("panel_cup_path_text") }
+    /// panel_cup_difficulty.xml "Seviyeyi Ayarla".
+    var zorlukIletisi: String { Metin.al("panel_cup_difficulty_cup_difficulty_message") }
+    /// panel_cup_difficulty.xml "Basamak Sayısı:".
+    var basamakEtiketi: String { Metin.al("panel_cup_difficulty_text") }
+    /// Android bu etiketi koda gömmüştür ("Rastgele"); ortak koddan gelir.
     var rastgeleEtiketi: String { mantik.DIGIT_RANDOM_LABEL }
-    var baslatEtiketi: String { mantik.START_LABEL }
+    /// panel_cup_difficulty.xml BAŞLAT.
+    var baslatEtiketi: String { Metin.al("panel_cup_difficulty_cup_difficulty_start_button") }
     var kaydiriciEnBuyuk: Double { Double(mantik.DIFFICULTY_SEEKBAR_MAX) }
 
     /// Kaydırıcının üstündeki sayı (0, 25, 50, 75, 100).
@@ -112,7 +187,7 @@ final class KupaModeli: ObservableObject {
 
     // MARK: - Yükleme
 
-    /// Panel açılırken: kartlar kapalı gösterilir, skorlar ve kilitler arka planda okunur.
+    /// Panel açılırken: kartlar kapalı gösterilir, skorlar, kilitler ve ödül defteri arka planda okunur.
     func yukle() {
         if yuklendi {
             enerjiyiYenile()
@@ -121,6 +196,7 @@ final class KupaModeli: ObservableObject {
         yuklendi = true
         skorlariOku(atlanacakKart: nil)
         kilitleriOku()
+        odulleriOku()
     }
 
     private func skorlariOku(atlanacakKart: Int?) {
@@ -158,20 +234,74 @@ final class KupaModeli: ObservableObject {
             kartlar[i].acik = sonuclar[kartlar[i].kartNo] ?? false
         }
         yukleniyor = false
+        // Kartlar açıldı: çubuk ve sandık da aynı anda açılsın (Android revealCupPathRewards).
+        kartlarAcildi = true
+        odulleriUygula()
     }
 
-    /// Android startEnergyUpdateTimer: saniyede bir can metnini yeniler.
+    /// Android startEnergyUpdateTimer: saniyede bir can göstergesini yeniler.
     func enerjiyiYenile() {
-        let yeni: String = ortam.enerjiKaynagi.sonsuzEnerji ? "∞" : String(ortam.enerjiKaynagi.guncelEnerji)
+        let sonsuz: Bool = ortam.enerjiKaynagi.sonsuzEnerji
+        let yeni: String = sonsuz ? "" : String(ortam.enerjiKaynagi.guncelEnerji)
         if yeni != enerjiMetni {
             enerjiMetni = yeni
         }
+        if sonsuz != sonsuzEnerji {
+            sonsuzEnerji = sonsuz
+        }
+        let pro: Bool = ortam.enerjiKaynagi.proPlan
+        if pro != proPlan {
+            proPlan = pro
+        }
+    }
+
+    // MARK: - Ödül defteri (Kupa Yolu sandıkları)
+
+    /// Android bindCupPathRewards: iki dokümanı (puanlar + defter) tek okumayla alır, durumu ortak kod kurar.
+    private func odulleriOku() {
+        ortam.yolBelgeDeposu.belgeleriGetir { [weak self] kupaBelgesi, defter in
+            guard let self = self else { return }
+            let durumlar = CupPathRewardRepository.shared.buildStates(cupDoc: kupaBelgesi, ledgerDoc: defter)
+            self.odulDurumlari = durumlar
+            self.odulleriUygula()
+        }
+    }
+
+    /// Android bindCupPathRewardCard: yalnızca kartlar açıldıktan sonra çizer; sayaç animasyonu süren
+    /// kartı atlar (animasyon bitince kendisi çizer).
+    private func odulleriUygula() {
+        if !kartlarAcildi { return }
+        for i in kartlar.indices {
+            if animasyonKartNo == kartlar[i].kartNo { continue }
+            guard let durum = odulDurumlari[kartlar[i].alan] else { continue }
+            kartlar[i].odul = KupaOdulHesabi.olustur(durum, skor: nil)
+        }
+    }
+
+    /// Karttaki sandığa dokunulunca (hak edilmişse) açılacak sandık; değilse nil (kupa yolu ekranı açılır).
+    /// Karttaki sandık her zaman SIRADAKİ eşiği açar; belirli eşik seçmek kupa yolu ekranının işidir.
+    /// Hak ediş kontrolü yalnızca görünüm içindir; asıl doğrulamayı sunucu yapar (claimCupPathChest).
+    func sandikGirdisi(kart: KupaKartDurumu) -> SandikGirdisi? {
+        guard let durum = odulDurumlari[kart.alan] else { return nil }
+        if !durum.claimable { return nil }
+        let nadirlik: ChestRarity = CupPathRewardRepository.shared.rarityOf(milestone: durum.nextMilestone)
+        return SandikGirdisi(
+            baslangicNadirligi: nadirlik.name,
+            reklamNonce: nil,
+            kupaAlani: durum.cupField,
+            kupaEsigi: Int(durum.nextMilestone)
+        )
     }
 
     // MARK: - Kart ve zorluk paneli
 
     func kartaDokunuldu(_ kart: KupaKartDurumu) {
-        guard kart.acik, !yukleniyor else { return }
+        // Kartlar yüklenirken dokunma kapalıdır (Android: isClickable = false).
+        if yukleniyor { return }
+        if !kart.acik {
+            kilitIpucunuGoster(kart)
+            return
+        }
         let simdi = Date()
         let aralik: TimeInterval = Double(mantik.CARD_CLICK_DEBOUNCE_MS) / 1000.0
         if simdi.timeIntervalSince(sonKartTiklamasi) < aralik { return }
@@ -179,13 +309,35 @@ final class KupaModeli: ObservableObject {
 
         zorlukPaneli = KupaZorlukPaneliDurumu(
             kart: kart,
-            baslik: mantik.difficultyTitle(isMultiplication: kart.carpma),
+            baslik: kart.carpma ? Metin.al("ui_carpma_kupa_yolu") : Metin.al("panel_cup_difficulty_cup_difficulty_title"),
             kaydiriciGorunur: mantik.showsDifficultySlider(isMultiplication: kart.carpma)
         )
         // BAŞLAT, kupa skoru okunduktan sonra açılır.
         let kartNo: Int = kart.kartNo
         ortam.skorDeposu.kupaSkorunuGetir(alan: kart.alan) { [weak self] skor in
             self?.panelSkoruGeldi(kartNo: kartNo, skor: skor)
+        }
+    }
+
+    /// Android showCupCardLockedToastIfLocked: "Açmak için \"X\" bölümünün son ünite maratonunu bitir."
+    private func kilitIpucunuGoster(_ kart: KupaKartDurumu) {
+        let bolumlar: [String] = [
+            "ui_abakusun_temeli_ve_toplama",
+            "ui_abakuste_cikarma",
+            "ui_abakuste_carpma",
+            "ui_korleme_toplama",
+            "ui_korleme_cikarma",
+            "ui_korleme_carpma"
+        ]
+        let sira: Int = max(0, min(bolumlar.count - 1, kart.kartNo - 1))
+        let bolum: String = Metin.al(bolumlar[sira])
+        kilitIpucu = Metin.al("ui_x_bolumunun_son_unite_maratonunu_bitir", bolum)
+        ipucuSayaci += 1
+        let sayac: Int = ipucuSayaci
+        // Snackbar LENGTH_LONG ≈ 2,75 sn.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.75) { [weak self] in
+            guard let self = self, self.ipucuSayaci == sayac else { return }
+            self.kilitIpucu = nil
         }
     }
 
@@ -236,6 +388,7 @@ final class KupaModeli: ObservableObject {
             forcedDigitSize: Int32(panel.secilenBasamak)
         )
         dersOncesiSkor[panel.kart.kartNo] = skor
+        dersZorlugu[panel.kart.kartNo] = Int(d.cupDifficultyLevel)
         let baslangic = KupaDersBaslangici(
             kartNo: Int(d.cardNumber),
             alan: panel.kart.alan,
@@ -258,7 +411,8 @@ final class KupaModeli: ObservableObject {
 
     // MARK: - Ders dönüşü
 
-    /// Dersten dönüldüğünde ilgili kartın skorunu eski değerden yenisine sayar, diğerlerini yeniden okur.
+    /// Dersten dönüldüğünde ilgili kartın skorunu eski değerden yenisine sayar, diğerlerini yeniden okur;
+    /// sonucu sunucuya bildirir (Android: BadgePrecalcHelper.executeCupDeltaUpdateAsync → submitCupResult).
     func sonucuIsle(_ sonuc: KupaDersSonucu?) {
         guard let sonuc = sonuc, sonuc != islenenSonuc else { return }
         islenenSonuc = sonuc
@@ -272,21 +426,64 @@ final class KupaModeli: ObservableObject {
         let bitis: Int = Int(mantik.scoreAnimationEnd(updatedScore: yeni))
         kartlar[i].skor = bitis
         dersOncesiSkor[sonuc.kartNo] = nil
+        let zorlukSeviyesi: Int = dersZorlugu[sonuc.kartNo] ?? 0
+        dersZorlugu[sonuc.kartNo] = nil
 
+        // Sayaç hemen başlar (sunucu yanıtı beklenmez); sunucu farklı bir puan döndürürse düzeltilir.
         if !mantik.shouldAnimateScore(delta: Int32(sonuc.delta)) {
             kartlar[i].gosterilenSkor = bitis
-            return
+        } else {
+            let baslangic: Int = Int(mantik.scoreAnimationStart(updatedScore: yeni, delta: Int32(sonuc.delta)))
+            kartlar[i].gosterilenSkor = baslangic
+            kartlar[i].deltaMetni = mantik.deltaText(delta: Int32(sonuc.delta))
+            kartlar[i].deltaRengi = UInt32(mantik.deltaColorRgb(delta: Int32(sonuc.delta)))
+            skoruSay(kartNo: sonuc.kartNo, baslangic: baslangic, bitis: bitis)
         }
-        let baslangic: Int = Int(mantik.scoreAnimationStart(updatedScore: yeni, delta: Int32(sonuc.delta)))
-        kartlar[i].gosterilenSkor = baslangic
-        kartlar[i].deltaMetni = mantik.deltaText(delta: Int32(sonuc.delta))
-        kartlar[i].deltaRengi = UInt32(mantik.deltaColorRgb(delta: Int32(sonuc.delta)))
-        skoruSay(kartNo: sonuc.kartNo, baslangic: baslangic, bitis: bitis)
+        sunucuyaBildir(kart: kartlar[i], delta: sonuc.delta, zorluk: zorlukSeviyesi)
+    }
+
+    /// `submitCupResult`: yalnızca kazanma, zorluk ve mod gönderilir; miktarı sunucu hesaplar.
+    private func sunucuyaBildir(kart: KupaKartDurumu, delta: Int, zorluk: Int) {
+        let yuk: [String: Any] = CupScoreService.shared.buildSubmitPayload(
+            cupField: kart.alan,
+            won: delta > 0,
+            difficultyLevel: Int32(zorluk),
+            isMultiplication: kart.carpma,
+            dayId: KupaModeli.bugunKimligi()
+        )
+        let kartNo: Int = kart.kartNo
+        ortam.skorDeposu.sonucuSunucuyaGonder(yuk: yuk, yerelDelta: delta) { [weak self] yanit in
+            self?.sunucuYaniti(kartNo: kartNo, yanit: yanit)
+        }
+    }
+
+    private func sunucuYaniti(kartNo: Int, yanit: KupaSunucuYaniti?) {
+        // Yanıt ayrıştırılamadıysa arayüz yerel değeri göstermeye devam eder (Android).
+        guard let yanit = yanit else { return }
+        guard let i = kartlar.firstIndex(where: { $0.kartNo == kartNo }) else { return }
+        kartlar[i].skor = yanit.yeniSkor
+        if animasyonKartNo != kartNo {
+            kartlar[i].gosterilenSkor = Int(mantik.shownScore(score: Int32(yanit.yeniSkor)))
+        }
+        // Defter (hangi eşik alındı) ve puan sunucudan yeniden okunur.
+        odulleriOku()
+    }
+
+    /// Yerel saat diliminde "yyyy-MM-dd" (Android CupHistoryRepository.todayId; geçmiş grafiği günü).
+    private static func bugunKimligi() -> String {
+        let bicim = DateFormatter()
+        bicim.calendar = Calendar(identifier: .gregorian)
+        bicim.locale = Locale(identifier: "en_US_POSIX")
+        bicim.timeZone = TimeZone.current
+        bicim.dateFormat = "yyyy-MM-dd"
+        return bicim.string(from: Date())
     }
 
     /// Android animateCupScore: 1 saniyede eski skordan yenisine sayar, bitince delta metnini gizler.
+    /// Ödül çubuğu da aynı anda ve aynı sürede eski değerden yenisine akar (bindCupPathRewardCard `from`).
     private func skoruSay(kartNo: Int, baslangic: Int, bitis: Int) {
         sayacZamanlayicisi?.invalidate()
+        animasyonKartNo = kartNo
         let sure: TimeInterval = Double(mantik.SCORE_ANIMATION_MS) / 1000.0
         let baslama = Date()
         let fark: Double = Double(bitis - baslangic)
@@ -302,12 +499,20 @@ final class KupaModeli: ObservableObject {
             let gecen: TimeInterval = Date().timeIntervalSince(baslama)
             let oran: Double = min(1.0, gecen / sure)
             let ara: Double = Double(baslangic) + fark * oran
-            self.kartlar[i].gosterilenSkor = Int(ara.rounded())
+            let araSkor: Int = Int(ara.rounded())
+            self.kartlar[i].gosterilenSkor = araSkor
+            if let durum = self.odulDurumlari[self.kartlar[i].alan] {
+                self.kartlar[i].odul = KupaOdulHesabi.olustur(durum, skor: araSkor)
+            }
             if oran >= 1.0 {
-                self.kartlar[i].gosterilenSkor = bitis
+                // Sunucu farklı bir puan döndürdüyse o esas alınır (skor alanı güncellenmiş olur).
+                let son: Int = self.kartlar[i].skor ?? bitis
+                self.kartlar[i].gosterilenSkor = Int(self.mantik.shownScore(score: Int32(son)))
                 self.kartlar[i].deltaMetni = nil
-                zamanlayici.invalidate()
+                self.animasyonKartNo = nil
                 self.sayacZamanlayicisi = nil
+                zamanlayici.invalidate()
+                self.odulleriUygula()
             }
         }
     }

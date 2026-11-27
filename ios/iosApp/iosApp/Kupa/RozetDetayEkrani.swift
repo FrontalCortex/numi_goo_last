@@ -451,9 +451,9 @@ private struct RozetDetaySayisi: View {
 /// badgeLockedProgressContainer: 32dp yüksek iz (missions_track, köşe 16), mavi dolgu ve üstünde
 /// ince parlama şeridi, ortada "2/10" yazısı (Android applyMissionProgressOverlay, done=false).
 ///
-/// Yazı Android'de de en üsttedir (elevation=2dp) ve button_disabled (#CCCCCC) rengindedir; bu
-/// renk mavi dolgu ve açık mavi parlama üzerinde soluk kaldığı için burada yazıya ince koyu bir
-/// gölge eklendi (Android'de yok) — sayı dolgunun üzerinde okunur kalır.
+/// Yazı Android'de de en üsttedir (elevation=2dp). Güncel Android'de beyazdır (@color/white) ve
+/// koyu bir gölgesi vardır (shadowColor #E6000000, shadowDy 2, shadowRadius 4): sayı mavi dolgu ve açık
+/// mavi parlama üzerinde okunur kalır. (Eski Android'de button_disabled gri idi.)
 private struct RozetIlerlemeCubugu: View {
     let metin: String
     let yuzde: Int
@@ -477,7 +477,7 @@ private struct RozetIlerlemeCubugu: View {
                 Text(metin)
                     .font(Tema.yazi(18))
                     .foregroundColor(Color.white)
-                    .shadow(color: Color.black.opacity(0.9), radius: 2, x: 0, y: 1)
+                    .shadow(color: KupaStil.renk(0x000000, alfa: 230.0 / 255.0), radius: 4, x: 0, y: 2)
                     .frame(width: geo.size.width, height: geo.size.height)
                     .zIndex(1)
             }
@@ -530,14 +530,14 @@ private struct RozetParcaPaneli: View {
 
     private var baslikSatiri: some View {
         HStack(spacing: 0) {
-            Text(KupaMetin.unite)
+            Text(KupaMetin.uniteBasligi(kupa: durum.parcaKupaMi))
                 .font(Tema.yazi(16))
                 .foregroundColor(Color.white.opacity(0.9))
                 .frame(maxWidth: .infinity, alignment: .leading)
             Color.clear
                 .frame(width: 44, height: 1)
                 .padding(.leading, 14)
-            Text(KupaMetin.sezon)
+            Text(KupaMetin.sezonBasligi(kupa: durum.parcaKupaMi))
                 .font(Tema.yazi(16))
                 .foregroundColor(KupaStil.solukYazi)
                 .padding(.leading, 14)

@@ -1,33 +1,13 @@
 import SwiftUI
 
-// Ekran galerisinin, giriş görünümüyle AÇILAMAYAN iki iç durumu: kayıt ekranı ve profil düzenleme.
+// Ekran galerisinin, giriş görünümüyle AÇILAMAYAN iç durumu: profil düzenleme.
+// (Giriş ve kayıt adımları artık GirisAkisi(servis:girisYapildi:ornek:) ile açılır.)
 //
-// DİKKAT: Bu dosya öteki Yonetim/ dosyalarından farklı olarak ekran klasörlerinin İÇ türlerine
-// dayanır (Giris: GirisModeli, GirisYerelDepo, GirisEkran, KayitGorunumu; Profil: ProfilGezinme,
-// SahteProfilDeposu, ProfilDuzenleEkrani). O türlerin adı ya da kurucusu değişirse derleme burada
-// kırılır; o durumda bu dosya silinip EkranGalerisi.swift'teki "kayit" ve "profil-duzenle"
-// dalları kaldırılabilir (başka hiçbir yer bu iki görünümü kullanmaz). Kalıcı çözüm: GirisAkisi'ne
-// ve ProfilEkrani'ne isteğe bağlı bir "başlangıç ekranı" parametresi eklemek.
-
-/// Kayıt ekranı (öğrenci): giriş akışı modeli doğrudan kayıt adımına getirilir.
-@MainActor
-struct EkranGalerisiKayit: View {
-    @StateObject private var model: GirisModeli
-
-    init() {
-        let nesne = GirisModeli(servis: SahteKimlikServisi(), depo: GirisYerelDepo(), girisYapildi: {})
-        nesne.yigin = [GirisEkran.baslangic, GirisEkran.kayit]
-        _model = StateObject(wrappedValue: nesne)
-    }
-
-    var body: some View {
-        ZStack {
-            // GirisAkisi'nin zemini.
-            Color("dark_background").ignoresSafeArea()
-            KayitGorunumu(model: model)
-        }
-    }
-}
+// DİKKAT: Bu dosya öteki Yonetim/ dosyalarından farklı olarak ekran klasörünün İÇ türlerine
+// dayanır (Profil: ProfilGezinme, SahteProfilDeposu, ProfilDuzenleEkrani). O türlerin adı ya da
+// kurucusu değişirse derleme burada kırılır; o durumda bu dosya silinip EkranGalerisi.swift'teki
+// "profil-duzenle" dalı kaldırılabilir. Kalıcı çözüm: ProfilEkrani'ne isteğe bağlı bir
+// "başlangıç ekranı" parametresi eklemek.
 
 /// "Profili Düzenle" ekranı: profilin geri yığınındaki ekran tek başına açılır.
 @MainActor

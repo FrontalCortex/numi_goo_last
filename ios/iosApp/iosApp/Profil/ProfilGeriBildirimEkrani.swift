@@ -41,12 +41,12 @@ struct ProfilGeriBildirimEkrani: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 24)
 
-            Text("Bize Ulaşın")
+            Text(Metin.al("fragment_feedback_text"))
                 .font(ProfilStil.yazi(22))
                 .foregroundColor(Color("dark_text"))
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 8)
-            Text("Bir sorun mu yaşadınız veya harika bir öneriniz mi var? Uygulamayı daha iyi hale getirmemize yardımcı olun.")
+            Text(Metin.al("fragment_feedback_text_2"))
                 .font(ProfilStil.yazi(14))
                 .foregroundColor(Color("dark_text_secondary"))
                 .multilineTextAlignment(.center)
@@ -54,14 +54,14 @@ struct ProfilGeriBildirimEkrani: View {
                 .frame(maxWidth: .infinity)
                 .padding(.bottom, 32)
 
-            Text("Mesajınız")
+            Text(Metin.al("fragment_feedback_text_3"))
                 .font(ProfilStil.yazi(15))
                 .foregroundColor(Color("dark_text"))
                 .padding(.bottom, 12)
             girisAlani
                 .padding(.bottom, 32)
 
-            Text("Size mail adresinizden ulaşacağız.")
+            Text(Metin.al("fragment_feedback_text_4"))
                 .font(ProfilStil.yazi(14))
                 .foregroundColor(Color("dark_text_secondary"))
                 .frame(maxWidth: .infinity)
@@ -77,7 +77,7 @@ struct ProfilGeriBildirimEkrani: View {
         ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 8).fill(ProfilStil.ipucuZemini)
             if metin.isEmpty {
-                Text("Buraya yazabilirsiniz...")
+                Text(Metin.al("fragment_feedback_feedback_input_hint"))
                     .font(ProfilStil.yazi(14))
                     .foregroundColor(Color.white.opacity(0.5))
                     .padding(16)
@@ -99,7 +99,7 @@ struct ProfilGeriBildirimEkrani: View {
         HStack(spacing: 8) {
             Spacer(minLength: 0)
             Button(action: { kapat() }) {
-                Text("İptal")
+                Text(Metin.al("fragment_feedback_close_button"))
                     .font(ProfilStil.yazi(15))
                     .foregroundColor(Color("dark_text_secondary"))
                     .padding(.horizontal, 24)
@@ -109,7 +109,7 @@ struct ProfilGeriBildirimEkrani: View {
             }
             .buttonStyle(.plain)
             Button(action: { gonder() }) {
-                Text("Gönder")
+                Text(Metin.al("fragment_feedback_send_feedback_button"))
                     .font(ProfilStil.yazi(15))
                     .foregroundColor(gonderEtkin ? Color("button_text_enabled") : Color("button_text_disabled"))
                     .padding(.horizontal, 32)
@@ -141,7 +141,7 @@ struct ProfilGeriBildirimEkrani: View {
         // Temizlenmiş liste her denetimde geri yazılır.
         depo.geriBildirimZamanlari = izin.1
         if !izin.0 {
-            gezinme.bildir(ProfilOrtak.geriBildirim.TOAST_RATE_LIMITED, uzun: true)
+            gezinme.bildir(Metin.al("ui_son_1_saat_icinde_cok_fazla"), uzun: true)
             return
         }
         let mesaj = metin.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -155,12 +155,12 @@ struct ProfilGeriBildirimEkrani: View {
                 depo.geriBildirimZamanlari = ProfilOrtak.geriBildirimKaydi(
                     kayitliZamanlar: depo.geriBildirimZamanlari, simdiMs: bitisMs
                 )
-                gezinme.bildir(ProfilOrtak.geriBildirim.TOAST_SENT, uzun: true)
+                gezinme.bildir(Metin.al("ui_gorusleriniz_basariyla_iletildi_tesekkurler"), uzun: true)
                 kapat()
             } catch {
                 gonderiliyor = false
                 gezinme.bildir(
-                    ProfilOrtak.geriBildirimHataMetni(ProfilSayfaModeli.hataMetni(error)), uzun: true
+                    Metin.al("ui_gonderilemedi_x", ProfilSayfaModeli.hataMetni(error)), uzun: true
                 )
             }
         }

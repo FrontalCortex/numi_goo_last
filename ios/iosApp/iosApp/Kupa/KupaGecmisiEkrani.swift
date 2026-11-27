@@ -43,7 +43,13 @@ final class KupaGecmisModeli: ObservableObject {
         self.kullaniciKimligi = kullaniciKimligi
         self.alan = alan
         self.depo = depo
-        self.sekmeBasliklari = kopru.gecmisSekmeBasliklari()
+        // Android setupTabs: sekme başlıkları strings.xml'den (ortak koddaki Türkçe liste kullanılmaz).
+        self.sekmeBasliklari = [
+            Metin.al("ui_haftalik"),
+            Metin.al("ui_aylik"),
+            Metin.al("ui_yillik"),
+            Metin.al("ui_tum_zamanlar")
+        ]
     }
 
     func basla() {

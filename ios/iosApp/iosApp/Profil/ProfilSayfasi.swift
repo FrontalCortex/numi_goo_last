@@ -3,10 +3,26 @@ import SwiftUI
 // Profil sayfası: kendi profili (hedefUid nil) ya da başkasının profili.
 // Android: ProfileFragment + res/layout/fragment_profile.xml, item_profile_cup_card.xml.
 // Ölçüler layout'tan birebir (dp → pt).
+//
+// Güncel Android düzeni (yukarıdan aşağı):
+//   - Sabit üst panel (56): kendi profilinde ad (22) + ayarlar; başkasınınkinde geri + ad (18). Rengi avatarın
+//     arka plan rengi, telefonun durum çubuğu da aynı renge boyanır; alttaki 2 pt çizgi yalnızca içerik aşağı
+//     kaydırılmışken görünür.
+//   - Avatar alanı: ekran genişliğinde, avatarın arka plan renginde; 240x240 avatar alt kenara oturur.
+//     Kendi profilinde renkli alanın neresine dokunulsa avatar düzenleme ekranı açılır.
+//   - Kullanıcı satırı, takip sayaçları, ARKADAŞ EKLE / TAKİP ET düğmesi.
+//   - Kullanıcı İlerlemesi (tamamlanan %, toplam süre, EN UZUN SERİ — eski "plan" satırı kaldırıldı),
+//     Kullanıcı Abaküsü, Kupa yolu kartları.
+//   - Rozetler.
+//
+// iOS'ta olmayan: kurs öğretmeninin öğrenci profilindeki "ilerleme raporu" düğmesi (btnStudentProgress →
+// ProgressHubFragment; veli paneli/sınıf özelliği ilk iOS sürümünde yok). Yeri Android'deki gibi boş tutulur.
 
 struct ProfilSayfasi: View {
     @ObservedObject var gezinme: ProfilGezinme
     @StateObject private var model: ProfilSayfaModeli
+    /// İçerik aşağı kaydırıldı mı (üst panelin alt çizgisi için).
+    @State private var kaydirildi: Bool = false
 
     init(hedefUid: String?, gezinme: ProfilGezinme) {
         self.gezinme = gezinme
@@ -16,21 +32,13 @@ struct ProfilSayfasi: View {
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
-                if model.baskasi {
-                    // otherUserProfileTopBar: geri + bakılan kullanıcının adı.
-                    ProfilUstCubuk(baslik: model.ad, geri: { gezinme.geri() })
-                }
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        ProfilBaslikKarti(model: model, gezinme: gezinme)
-                        ProfilIlerlemeKarti(model: model, gezinme: gezinme)
-                            .padding(.bottom, 16)
-                        if model.rozetKartiGorunur {
-                            ProfilRozetKarti(model: model, ac: { gezinme.rozetlerAc?() })
-                        }
-                    }
-                    .padding(16)
-                }
+                ProfilUstAlan(
+                    model: model,
+                    cizgiGorunur: kaydirildi,
+                    geri: { gezinme.geri() },
+                    ayarlar: { gezinme.ac(.hesapAyarlari) }
+                )
+                kaydirma
             }
             .background(Color("background_color"))
             panelKatmani
@@ -41,10 +49,48 @@ struct ProfilSayfasi: View {
                 model.yenile()
             }
         }
-        .sheet(isPresented: $model.avatarSeciciAcik) {
-            ProfilAvatarSecici(sec: { avatar in model.avatarSecildi(avatar) })
+        .onChange(of: gezinme.avatarSayaci) { _ in
+            model.yerelAvatariGoster()
+        }
+        .alert(Text(""), isPresented: $model.takipBirakmaOnayiAcik) {
+            Button(Metin.al("ui_takibi_birak"), role: .destructive) {
+                model.takibiBirak(bildir: { metin in gezinme.bildir(metin) })
+            }
+            Button(Metin.al("ui_iptal_2"), role: .cancel) {}
+        } message: {
+            Text(ProfilOrtak.takipBirakmaSorusu(ad: model.ad))
         }
         .animation(.easeInOut(duration: 0.2), value: model.abakusPaneliAcik)
+    }
+
+    private var kaydirma: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 0) {
+                ProfilKaydirmaOlcer()
+                ProfilAvatarAlani(
+                    model: model,
+                    ac: { if !model.baskasi { gezinme.ac(.avatarDuzenle) } }
+                )
+                .padding(.bottom, 16)
+                VStack(spacing: 0) {
+                    ProfilBaslikKarti(model: model, gezinme: gezinme)
+                    ProfilIlerlemeKarti(model: model, gezinme: gezinme)
+                        .padding(.bottom, 16)
+                    if model.rozetKartiGorunur {
+                        ProfilRozetKarti(model: model, ac: { gezinme.rozetlerAc?() })
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+        }
+        .coordinateSpace(name: ProfilKaydirmaOlcer.alanAdi)
+        .onPreferenceChange(ProfilKaydirmaAnahtari.self) { konum in
+            let asagida: Bool = konum < -0.5
+            if asagida != kaydirildi {
+                kaydirildi = asagida
+            }
+        }
     }
 
     /// Android: Dialog (dışına dokununca kapanır, ekranın %92'si genişliğinde).
@@ -61,32 +107,201 @@ struct ProfilSayfasi: View {
     }
 }
 
-// MARK: - 1. kart: avatar, ad, sayaçlar, düğme
+// MARK: - Kaydırma ölçümü (iOS 16'da ScrollView konum API'si yok)
+
+struct ProfilKaydirmaAnahtari: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+/// İçeriğin en üstüne konan sıfır yükseklikli ölçer: kaydırma alanına göre dikey konumu bildirir.
+struct ProfilKaydirmaOlcer: View {
+    static let alanAdi: String = "profilKaydirma"
+
+    var body: some View {
+        GeometryReader { alan in
+            Color.clear.preference(
+                key: ProfilKaydirmaAnahtari.self,
+                value: alan.frame(in: .named(ProfilKaydirmaOlcer.alanAdi)).minY
+            )
+        }
+        .frame(height: 0)
+    }
+}
+
+// MARK: - Üst panel ve avatar alanı
+
+/// Üst alanın renkleri (AARRGGBB metinlerinden).
+struct ProfilUstAlanRenkleri {
+    let zemin: Color
+    let yazi: Color
+    let cizgi: Color
+
+    /// Android: applyHeaderColor — renk yoksa background_color zemin, beyaz yazı; açık zeminde #3C3C3C yazı;
+    /// çizgi zeminin %15 siyahla karışımı.
+    static func hesapla(_ argb: String?) -> ProfilUstAlanRenkleri {
+        guard let renk = argb else {
+            // background_color (#141F23) koyu → beyaz; çizgi #141F23'ün %15 karartılmışı.
+            let zemin: String = "FF141F23"
+            return ProfilUstAlanRenkleri(
+                zemin: Color("background_color"),
+                yazi: Color.white,
+                cizgi: AvatarRenkCevirici.renk(rrggbb: AvatarOrtak.ustAlanCizgiRengi(zemin: zemin))
+            )
+        }
+        return ProfilUstAlanRenkleri(
+            zemin: AvatarRenkCevirici.renk(rrggbb: renk),
+            yazi: AvatarRenkCevirici.renk(rrggbb: AvatarOrtak.ustAlanYaziRengi(zemin: renk)),
+            cizgi: AvatarRenkCevirici.renk(rrggbb: AvatarOrtak.ustAlanCizgiRengi(zemin: renk))
+        )
+    }
+}
+
+/// Kendi profilinde profileTopPanel, başkasınınkinde otherUserProfileTopBar (ikisi de 56 pt).
+struct ProfilUstAlan: View {
+    @ObservedObject var model: ProfilSayfaModeli
+    let cizgiGorunur: Bool
+    let geri: () -> Void
+    let ayarlar: () -> Void
+
+    var body: some View {
+        let renkler: ProfilUstAlanRenkleri = ProfilUstAlanRenkleri.hesapla(model.ustAlanRengi)
+        return ZStack(alignment: .bottom) {
+            if model.baskasi {
+                baskasininCubugu(renkler)
+            } else {
+                kendiPanelim(renkler)
+            }
+            renkler.cizgi
+                .frame(height: 2)
+                .opacity(cizgiGorunur ? 1 : 0)
+        }
+        .frame(height: 56)
+        .frame(maxWidth: .infinity)
+        // Android: setStatusBarTint — durum çubuğu da avatarın renginde.
+        .background(renkler.zemin.ignoresSafeArea(edges: .top))
+    }
+
+    /// tvTopLeftName (22, başta 16, sonda 64 boşluk) + btnAccountSettings (48x48, iç boşluk 10, sağdan 8).
+    private func kendiPanelim(_ renkler: ProfilUstAlanRenkleri) -> some View {
+        ZStack {
+            HStack(spacing: 0) {
+                Text(model.ad)
+                    .font(ProfilStil.yazi(22))
+                    .foregroundColor(renkler.yazi)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .padding(.leading, 16)
+                    .padding(.trailing, 64)
+                Spacer(minLength: 0)
+            }
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                Button(action: ayarlar) {
+                    Image("setting_ic")
+                        .renderingMode(.template)
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(renkler.yazi)
+                        .frame(width: 28, height: 28)
+                        .frame(width: 48, height: 48)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(Metin.al("fragment_profile_btn_account_settings_desc")))
+                .padding(.trailing, 8)
+            }
+        }
+        .frame(height: 56)
+    }
+
+    /// btnOtherUserProfileBack (48, iç boşluk 12) + ad (18, ortada) + 48'lik boş yer (btnStudentProgress).
+    private func baskasininCubugu(_ renkler: ProfilUstAlanRenkleri) -> some View {
+        HStack(spacing: 0) {
+            Button(action: geri) {
+                Image("ic_back_arrow")
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(renkler.yazi)
+                    .frame(width: 24, height: 24)
+                    .frame(width: 48, height: 48)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(Metin.al("fragment_profile_btn_other_user_profile_back_desc")))
+            Text(model.ad)
+                .font(ProfilStil.yazi(18))
+                .foregroundColor(renkler.yazi)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity)
+            // btnStudentProgress (kurs öğretmeni → öğrencinin ilerleme raporu): ilk iOS sürümünde yok; Android'de
+            // görünmezken de yer tuttuğu için (ad ortada kalsın) burada da 48'lik boşluk.
+            Color.clear.frame(width: 48, height: 48)
+        }
+        .padding(.leading, 4)
+        .padding(.trailing, 16)
+        .frame(height: 56)
+    }
+}
+
+/// avatarHeader: ekran genişliğinde, avatarın arka plan renginde; imgProfilePhoto 240x240, üstten 8,
+/// alt kenara ortalı. Avatar dairesiz çizilir (Android: AvatarView.toBitmap(withBackground = false)).
+struct ProfilAvatarAlani: View {
+    @ObservedObject var model: ProfilSayfaModeli
+    let ac: () -> Void
+
+    var body: some View {
+        let renkler: ProfilUstAlanRenkleri = ProfilUstAlanRenkleri.hesapla(model.ustAlanRengi)
+        return Button(action: ac) {
+            ZStack(alignment: .bottom) {
+                renkler.zemin
+                avatar
+                    .frame(width: 240, height: 240)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 248)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(model.baskasi)
+        .accessibilityLabel(Text(Metin.al("fragment_profile_img_profile_photo_desc")))
+    }
+
+    @ViewBuilder
+    private var avatar: some View {
+        if let config = model.avatarConfig {
+            AvatarGorunumu(config: config, arkaPlan: false, yakinPlan: false)
+        } else {
+            Image("non_user")
+                .resizable()
+                .scaledToFit()
+        }
+    }
+}
+
+// MARK: - 1. kart: kullanıcı satırı, sayaçlar, düğme
 
 struct ProfilBaslikKarti: View {
     @ObservedObject var model: ProfilSayfaModeli
     @ObservedObject var gezinme: ProfilGezinme
 
     var body: some View {
-        ZStack(alignment: .top) {
-            orta
-            ustSatir
-        }
-    }
-
-    private var orta: some View {
         VStack(spacing: 0) {
-            avatar
             Text(model.kullaniciSatiri)
                 .font(ProfilStil.yazi(14))
                 .foregroundColor(ProfilStil.soluk)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
             HStack(spacing: 0) {
-                ProfilSayac(sayi: model.takipSayisi, etiket: "Takip edilen") {
+                ProfilSayac(sayi: model.takipSayisi, etiket: Metin.al("fragment_profile_text")) {
                     if !model.baskasi { gezinme.ac(.takipListesi(0)) }
                 }
-                ProfilSayac(sayi: model.takipciSayisi, etiket: "Takipçi") {
+                ProfilSayac(sayi: model.takipciSayisi, etiket: Metin.al("fragment_profile_text_2")) {
                     if !model.baskasi { gezinme.ac(.takipListesi(1)) }
                 }
             }
@@ -98,73 +313,35 @@ struct ProfilBaslikKarti: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// imgProfilePhoto: 300x300; dar ekranda kartın genişliğine sığar.
-    private var avatar: some View {
-        Button(action: { if !model.baskasi { model.avatarSeciciAcik = true } }) {
-            Image(model.avatarAdi)
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: 300, maxHeight: 300)
-                .aspectRatio(1, contentMode: .fit)
-        }
-        .buttonStyle(.plain)
-        .disabled(model.baskasi)
-        .accessibilityLabel(Text("Profil Fotoğrafı"))
-    }
-
     /// btnAddFriend'in görünen gövdesi. Android'de yükseklik wrap_content'tir: 16sp satır (~26dp)
     /// + paddingVertical 12dp x 2 ≈ 50dp; MaterialButton bunun üst ve altından 6'şar dp'yi boş
     /// bırakır (insetTop/insetBottom), görünen gövde ≈ 38–40dp kalır (cihazda ölçülmedi).
+    /// Alttaki 14 = inset 6 + layout_marginBottom 8.
     static let dugmeYuksekligi: CGFloat = 40
 
     @ViewBuilder
     private var dugme: some View {
         if model.baskasi {
+            // Takip edilirken düğme KAPALI değil: ikinci dokunuş onay sorup takibi bırakır (yarı saydamlık yok).
             ProfilCerceveliDugme(
                 metin: model.takipDugmesiMetni,
                 simge: "ic_person_add",
                 yukseklik: ProfilBaslikKarti.dugmeYuksekligi,
                 etkin: model.takipDugmesiEtkin,
-                opaklik: model.takipDugmesiOpaklik,
-                eylem: { model.takipEt(bildir: { metin in gezinme.bildir(metin) }) }
+                eylem: { model.takipDugmesineDokunuldu(bildir: { metin in gezinme.bildir(metin) }) }
             )
         } else {
             ProfilCerceveliDugme(
-                metin: "ARKADAŞ EKLE",
+                metin: Metin.al("fragment_profile_btn_add_friend"),
                 simge: "ic_person_add",
                 yukseklik: ProfilBaslikKarti.dugmeYuksekligi,
                 eylem: { gezinme.ac(.arkadasAra) }
             )
         }
     }
-
-    /// tvTopLeftName (sol üst) ve btnAccountSettings (sağ üst, yalnızca kendi profilinde).
-    private var ustSatir: some View {
-        HStack(alignment: .top, spacing: 0) {
-            Text(model.ad)
-                .font(ProfilStil.yazi(20))
-                .foregroundColor(Color.white)
-                .lineLimit(1)
-            Spacer(minLength: 8)
-            if !model.baskasi {
-                Button(action: { gezinme.ac(.hesapAyarlari) }) {
-                    Image("setting_ic")
-                        .renderingMode(.template)
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundColor(Color.white)
-                        .frame(width: 24, height: 24)
-                        .frame(width: 40, height: 40)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Ayarlar"))
-            }
-        }
-    }
 }
 
-/// Sayaç sütunu: sayı (20) + etiket (14, üstten 4).
+/// Sayaç sütunu: sayı (20) + etiket (14).
 struct ProfilSayac: View {
     let sayi: String
     let etiket: String
@@ -172,7 +349,7 @@ struct ProfilSayac: View {
 
     var body: some View {
         Button(action: eylem) {
-            VStack(spacing: 4) {
+            VStack(spacing: 0) {
                 Text(sayi)
                     .font(ProfilStil.yazi(20))
                     .foregroundColor(Color.white)
@@ -200,7 +377,7 @@ struct ProfilIlerlemeKarti: View {
                 Spacer(minLength: 8)
                 abakus
             }
-            Text("Kupa yolu")
+            Text(Metin.al("fragment_profile_text_4"))
                 .font(ProfilStil.yazi(16))
                 .foregroundColor(ProfilStil.soluk)
                 .padding(.top, 16)
@@ -212,23 +389,24 @@ struct ProfilIlerlemeKarti: View {
 
     private var ilerleme: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Kullanıcı İlerlemesi")
+            Text(Metin.al("fragment_profile_tv_user_progress_title"))
                 .font(ProfilStil.yazi(16))
                 .foregroundColor(ProfilStil.soluk)
                 .padding(.bottom, 14)
             if model.ilerlemeGorunur {
-                ProfilIlerlemeSatiri(simge: "profile_book_ic3", metin: model.tamamlanma)
+                ProfilIlerlemeSatiri(simge: "profile_book_ic3", simgeBoyu: 28, metin: model.tamamlanma)
                     .padding(.bottom, 12)
-                ProfilIlerlemeSatiri(simge: "profile_clock_ic2", metin: model.toplamSure)
+                ProfilIlerlemeSatiri(simge: "profile_clock_ic2", simgeBoyu: 28, metin: model.toplamSure)
                     .padding(.bottom, 12)
-                ProfilIlerlemeSatiri(simge: "profile_crown_ic4", metin: model.abonelik)
+                // tvLongestStreak: streak_flame_ic (24x24), alt boşluk yok.
+                ProfilIlerlemeSatiri(simge: "streak_flame_ic", simgeBoyu: 24, metin: model.enUzunSeri)
             }
         }
     }
 
     private var abakus: some View {
         VStack(spacing: 0) {
-            Text("Kullanıcı Abaküsü")
+            Text(Metin.al("fragment_profile_text_3"))
                 .font(ProfilStil.yazi(16))
                 .foregroundColor(ProfilStil.soluk)
                 .padding(.bottom, 14)
@@ -259,9 +437,10 @@ struct ProfilIlerlemeKarti: View {
     }
 }
 
-/// Simge (28) + 8 + metin (16, beyaz). Android: drawableStartCompat + drawablePadding.
+/// Simge (drawable'ın kendi boyu) + 8 + metin (16, beyaz). Android: drawableStartCompat + drawablePadding.
 struct ProfilIlerlemeSatiri: View {
     let simge: String
+    let simgeBoyu: CGFloat
     let metin: String
 
     var body: some View {
@@ -269,7 +448,7 @@ struct ProfilIlerlemeSatiri: View {
             Image(simge)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 28, height: 28)
+                .frame(width: simgeBoyu, height: simgeBoyu)
             Text(metin)
                 .font(ProfilStil.yazi(16))
                 .foregroundColor(Color.white)
@@ -368,7 +547,7 @@ struct ProfilRozetKarti: View {
         Button(action: ac) {
             VStack(spacing: 12) {
                 HStack(spacing: 0) {
-                    Text("Rozetler")
+                    Text(Metin.al("fragment_profile_tv_profile_badges_title"))
                         .font(ProfilStil.yazi(16))
                         .foregroundColor(ProfilStil.soluk)
                     Spacer(minLength: 0)
@@ -390,7 +569,7 @@ struct ProfilRozetKarti: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text("Rozetler"))
+        .accessibilityLabel(Text(Metin.al("fragment_profile_btn_profile_badges_arrow_desc")))
     }
 }
 

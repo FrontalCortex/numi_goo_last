@@ -42,6 +42,10 @@ protocol MagazaOdemeServisi: AnyObject {
     func satinAl(urunKimligi: String, tamam: @escaping (MagazaSatinAlmaSonucu) -> Void)
     /// Önceki satın alımları (abonelik) geri yükler; `true` = en az bir hak geri geldi.
     func geriYukle(tamam: @escaping (Bool) -> Void)
+    /// Ücretsiz deneme gün sayısı; `nil` = teklif yok ya da kullanıcı uygun değil
+    /// (Android: BillingManager.freeTrialDays; StoreKit: `Product.subscription.introductoryOffer`
+    /// ve `isEligibleForIntroOffer`).
+    func ucretsizDenemeGunu(urunKimligi: String) -> Int?
 }
 
 // MARK: - Cüzdan
@@ -51,6 +55,16 @@ struct MagazaCuzdan: Equatable {
     var altin: Int
     /// Anahtar. Firestore: `users/{uid}.keys`.
     var anahtar: Int
+    /// Öğretmene soru kredisi. Firestore: `users/{uid}.questionCredits` (Öğretmene sor kapalı; satılmıyor).
+    var soruKredisi: Int = 0
+    /// Sobi mesaj kredisi. Firestore: `sobiChats/{uid}.credits` (Android: ServerSobi.balance);
+    /// `nil` = bakiye henüz okunmadı. Negatif olabilir (iade sonrası); göstergede 0 yazılır.
+    var sobiKredisi: Int? = nil
+    /// Günlük ücretsiz Sobi mesaj hakkı (Android: ServerSobi.balance().freeLimit; sunucu: FREE_DAILY).
+    var sobiUcretsizSinir: Int = 0
+    /// Geçerli plan: "Free", "Lite", "Pro", "Premium". Firestore: `users/{uid}.plan` (+ `planExpiresAt`,
+    /// `giftProUntil`; kural ortak koddaki PlanStatus.effectivePlan).
+    var plan: String = "Free"
 }
 
 struct MagazaCuzdanDegisimi {
@@ -68,16 +82,40 @@ protocol MagazaCuzdanServisi: AnyObject {
     func yukle(tamam: @escaping (MagazaCuzdan) -> Void)
     /// Bakiyeyi değiştirir (Android: applyCurrencyDelta / applyKeyDelta). `nil` = başarısız.
     /// `gerekce`: WalletReason.SPEND ya da PURCHASE_ROLLBACK.
+    /// `urunKimligi`: harcamanın ölçüm kimliği (Android: `itemId`; "bead_<Tip>", "bead_color_<Tip>",
+    /// "frame_<Tip>", "frame_color_<Tip>"); iadede `nil`. Ortak kod bu alanı taşımaz, gerçek
+    /// servis `updateUserWallet` isteğine ekler.
     func degistir(
         altinFarki: Int,
         anahtarFarki: Int,
         gerekce: String,
+        urunKimligi: String?,
         geriAlmaJetonu: String?,
         tamam: @escaping (MagazaCuzdanDegisimi?) -> Void
     )
     /// Bakiye her değiştiğinde çağrılır (Android: listenToWallet). Dönen kimlikle bırakılır.
     func dinle(_ dinleyici: @escaping (MagazaCuzdan) -> Void) -> UUID
     func dinlemeyiBirak(_ kimlik: UUID)
+}
+
+extension MagazaCuzdanServisi {
+    /// Ölçüm kimliği (`urunKimligi`) olmayan harcamalar için kısa biçim (ör. Harita: anahtarla ders açma).
+    func degistir(
+        altinFarki: Int,
+        anahtarFarki: Int,
+        gerekce: String,
+        geriAlmaJetonu: String?,
+        tamam: @escaping (MagazaCuzdanDegisimi?) -> Void
+    ) {
+        degistir(
+            altinFarki: altinFarki,
+            anahtarFarki: anahtarFarki,
+            gerekce: gerekce,
+            urunKimligi: nil,
+            geriAlmaJetonu: geriAlmaJetonu,
+            tamam: tamam
+        )
+    }
 }
 
 // MARK: - Can (enerji)
@@ -99,8 +137,32 @@ protocol MagazaEnerjiServisi: AnyObject {
     func durum() -> MagazaEnerjiDurumu
     /// Reklam izlenerek 1 can (Cloud Function `claimAdEnergy`, gövde: ServerEnergy.claimAdEnergyPayload).
     func reklamlaCanAl(reklamNonce: String, tamam: @escaping (Bool) -> Void)
-    /// Anahtar karşılığı 1 can (Cloud Function `buyEnergyWithKeys`). Sonuç: kalan anahtar; `nil` = başarısız.
-    func anahtarlaCanAl(tamam: @escaping (Int?) -> Void)
+    /// Anahtar karşılığı 1 can (Cloud Function `buyEnergyWithKeys`).
+    func anahtarlaCanAl(tamam: @escaping (MagazaAnahtarCanSonucu) -> Void)
+}
+
+/// Anahtarla can alımının sonucu (Android: ServerEnergy.buyWithKeys onResult / onFailure).
+enum MagazaAnahtarCanSonucu: Equatable {
+    /// Can eklendi; kalan anahtar sayısı.
+    case verildi(kalanAnahtar: Int)
+    /// Sunucu günde en çok 5 can satar (RESOURCE_EXHAUSTED, ENERGY_KEY_BUY_DAILY_LIMIT).
+    case gunlukSinir
+    /// Başka hata (yetersiz bakiye, ağ).
+    case hata
+}
+
+// MARK: - Seri dondurma
+
+/// Android: StreakRepository.freezesHeld + StreakSyncService (buyFreeze, refreshFromServer).
+/// Seri ekranı iOS'ta henüz yok; mağazadaki kart bu protokolün sahte uygulamasıyla çalışır.
+protocol MagazaSeriServisi: AnyObject {
+    /// Elde seri dondurma var mı (Android: StreakRepository.freezesHeld(ctx) > 0).
+    var dondurmaVar: Bool { get }
+    /// Sunucudaki durumu okur (Android: StreakSyncService.refreshFromServer).
+    func yenile(tamam: @escaping () -> Void)
+    /// Altınla bir seri dondurma alır (Cloud Function `buyStreakFreeze`; 4000 altın).
+    /// Başarıda yeni altın bakiyesi gelir; başarısızlıkta kullanıcıya gösterilecek metin.
+    func dondurmaAl(tamam: @escaping (_ basarili: Bool, _ mesaj: String?, _ yeniAltin: Int?) -> Void)
 }
 
 // MARK: - Reklam
@@ -120,6 +182,7 @@ struct MagazaBagimliliklar {
     let cuzdan: MagazaCuzdanServisi
     let enerji: MagazaEnerjiServisi
     let reklam: MagazaReklamServisi
+    let seri: MagazaSeriServisi
 
     /// Bütün uygulamada paylaşılan sahte servisler (cüzdan Özelleştirme ekranıyla ortaktır).
     static let sahte: MagazaBagimliliklar = {
@@ -129,7 +192,8 @@ struct MagazaBagimliliklar {
             odeme: MagazaSahteOdemeServisi(cuzdan: cuzdan, enerji: enerji),
             cuzdan: cuzdan,
             enerji: enerji,
-            reklam: MagazaSahteReklamServisi()
+            reklam: MagazaSahteReklamServisi(),
+            seri: MagazaSahteSeriServisi(cuzdan: cuzdan)
         )
     }()
 }
@@ -138,7 +202,14 @@ struct MagazaBagimliliklar {
 
 /// Bellekte tutulan cüzdan. Başlangıç bakiyesi satın alma akışları denenebilsin diye yüksektir.
 final class MagazaSahteCuzdanServisi: MagazaCuzdanServisi {
-    private(set) var cuzdan = MagazaCuzdan(altin: 12_000, anahtar: 45)
+    private(set) var cuzdan = MagazaCuzdan(
+        altin: 12_000,
+        anahtar: 45,
+        soruKredisi: 0,
+        sobiKredisi: 7,
+        sobiUcretsizSinir: 2,
+        plan: "Free"
+    )
     private var dinleyiciler: [UUID: (MagazaCuzdan) -> Void] = [:]
 
     func yukle(tamam: @escaping (MagazaCuzdan) -> Void) {
@@ -150,6 +221,7 @@ final class MagazaSahteCuzdanServisi: MagazaCuzdanServisi {
         altinFarki: Int,
         anahtarFarki: Int,
         gerekce: String,
+        urunKimligi: String?,
         geriAlmaJetonu: String?,
         tamam: @escaping (MagazaCuzdanDegisimi?) -> Void
     ) {
@@ -161,7 +233,10 @@ final class MagazaSahteCuzdanServisi: MagazaCuzdanServisi {
                 tamam(nil)
                 return
             }
-            self.yaz(MagazaCuzdan(altin: yeniAltin, anahtar: yeniAnahtar))
+            var yeni: MagazaCuzdan = self.cuzdan
+            yeni.altin = yeniAltin
+            yeni.anahtar = yeniAnahtar
+            self.yaz(yeni)
             // Harcamalarda geri alma jetonu üretilir.
             let harcamaMi: Bool = altinFarki < 0 || anahtarFarki < 0
             let jeton: String? = harcamaMi ? UUID().uuidString : nil
@@ -179,9 +254,24 @@ final class MagazaSahteCuzdanServisi: MagazaCuzdanServisi {
         dinleyiciler[kimlik] = nil
     }
 
-    /// Sunucunun bakiyeyi kendisinin değiştirdiği durumlar (paket satın alma, anahtarla can).
-    func sunucuDegistirdi(altinFarki: Int, anahtarFarki: Int) {
-        yaz(MagazaCuzdan(altin: cuzdan.altin + altinFarki, anahtar: cuzdan.anahtar + anahtarFarki))
+    /// Sunucunun bakiyeyi kendisinin değiştirdiği durumlar (paket satın alma, anahtarla can,
+    /// seri dondurma). `sobiFarki`: Sobi kredisi paketi.
+    func sunucuDegistirdi(altinFarki: Int, anahtarFarki: Int, sobiFarki: Int) {
+        var yeni: MagazaCuzdan = cuzdan
+        yeni.altin = cuzdan.altin + altinFarki
+        yeni.anahtar = cuzdan.anahtar + anahtarFarki
+        if sobiFarki != 0 {
+            yeni.sobiKredisi = (cuzdan.sobiKredisi ?? 0) + sobiFarki
+        }
+        yaz(yeni)
+    }
+
+    /// Abonelik değişince plan ve günlük ücretsiz Sobi hakkı değişir (sunucu: FREE_DAILY).
+    func planiDegistir(_ plan: String, sobiUcretsizSinir: Int) {
+        var yeni: MagazaCuzdan = cuzdan
+        yeni.plan = plan
+        yeni.sobiUcretsizSinir = sobiUcretsizSinir
+        yaz(yeni)
     }
 
     private func yaz(_ yeni: MagazaCuzdan) {
@@ -200,6 +290,8 @@ final class MagazaSahteEnerjiServisi: MagazaEnerjiServisi {
     private let azami: Int = 5
     private var sonrakiCanZamani = Date().addingTimeInterval(125)
     private let yenilenmeSuresi: TimeInterval = 600
+    /// Bugün anahtarla alınan can sayısı (sunucu günde en çok 5 can satar).
+    private var gunlukAnahtarCani: Int = 0
     /// Sahte Pro aboneliği alınınca `true` olur.
     var sonsuz: Bool = false
 
@@ -229,17 +321,22 @@ final class MagazaSahteEnerjiServisi: MagazaEnerjiServisi {
         }
     }
 
-    func anahtarlaCanAl(tamam: @escaping (Int?) -> Void) {
+    func anahtarlaCanAl(tamam: @escaping (MagazaAnahtarCanSonucu) -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            let bedel: Int = Int(ShopFragmentLogic.shared.LIFE_KEY_COST)
+            if self.gunlukAnahtarCani >= MagazaStil.gunlukAnahtarCanSiniri {
+                tamam(.gunlukSinir)
+                return
+            }
+            let bedel: Int = MagazaStil.canAnahtarBedeli
             if self.cuzdan.cuzdan.anahtar < bedel {
-                tamam(nil)
+                tamam(.hata)
                 return
             }
             // Sunucu anahtarı düşer ve canı aynı işlemde ekler.
-            self.cuzdan.sunucuDegistirdi(altinFarki: 0, anahtarFarki: -bedel)
+            self.cuzdan.sunucuDegistirdi(altinFarki: 0, anahtarFarki: -bedel, sobiFarki: 0)
+            self.gunlukAnahtarCani += 1
             self.canEkle()
-            tamam(self.cuzdan.cuzdan.anahtar)
+            tamam(.verildi(kalanAnahtar: self.cuzdan.cuzdan.anahtar))
         }
     }
 
@@ -256,33 +353,38 @@ final class MagazaSahteOdemeServisi: MagazaOdemeServisi {
     private let cuzdan: MagazaSahteCuzdanServisi
     private let enerji: MagazaSahteEnerjiServisi
 
-    /// Örnek fiyatlar (gerçek fiyat App Store Connect'te belirlenir).
+    /// Örnek fiyatlar (gerçek fiyat App Store Connect'te belirlenir; değerler fragment_shop.xml'deki yedeklerdir).
     private let fiyatlar: [String: String]
-    /// Sunucu kataloğunun taklidi: ürün → (altın, anahtar). Gerçekte miktarı sunucu belirler
-    /// (functions/index.js → PLAY_PRODUCT_CATALOG).
-    private let oduller: [String: (altin: Int, anahtar: Int)]
+    /// Sunucu kataloğunun taklidi: ürün → (altın, anahtar, Sobi kredisi). Gerçekte miktarı sunucu
+    /// belirler (functions/index.js → PLAY_PRODUCT_CATALOG).
+    private let oduller: [String: (altin: Int, anahtar: Int, sobi: Int)]
 
     init(cuzdan: MagazaSahteCuzdanServisi, enerji: MagazaSahteEnerjiServisi) {
         self.cuzdan = cuzdan
         self.enerji = enerji
         let katalog = BillingCatalog.shared
         fiyatlar = [
-            katalog.GOLD_SMALL: "₺29,99",
-            katalog.GOLD_MEDIUM: "₺149,99",
-            katalog.GOLD_LARGE: "₺299,99",
-            katalog.KEYS_SMALL: "₺29,99",
-            katalog.KEYS_MEDIUM: "₺149,99",
-            katalog.KEYS_LARGE: "₺299,99",
-            katalog.SUB_PRO: "₺39,99",
-            katalog.SUB_LITE: "₺19,99",
+            katalog.GOLD_SMALL: "₺39,00",
+            katalog.GOLD_MEDIUM: "₺120,00",
+            katalog.GOLD_LARGE: "₺500,00",
+            katalog.KEYS_SMALL: "₺29,00",
+            katalog.KEYS_MEDIUM: "₺119,00",
+            katalog.KEYS_LARGE: "₺429,00",
+            katalog.SOBI_CREDITS_20: "₺12,99",
+            katalog.SOBI_CREDITS_50: "₺24,99",
+            katalog.SOBI_CREDITS_120: "₺49,99",
+            katalog.SUB_PRO: "₺99,00",
         ]
         oduller = [
-            katalog.GOLD_SMALL: (altin: 1200, anahtar: 0),
-            katalog.GOLD_MEDIUM: (altin: 7000, anahtar: 0),
-            katalog.GOLD_LARGE: (altin: 15000, anahtar: 0),
-            katalog.KEYS_SMALL: (altin: 0, anahtar: 10),
-            katalog.KEYS_MEDIUM: (altin: 0, anahtar: 50),
-            katalog.KEYS_LARGE: (altin: 0, anahtar: 100),
+            katalog.GOLD_SMALL: (altin: 5000, anahtar: 0, sobi: 0),
+            katalog.GOLD_MEDIUM: (altin: 20000, anahtar: 0, sobi: 0),
+            katalog.GOLD_LARGE: (altin: 100000, anahtar: 0, sobi: 0),
+            katalog.KEYS_SMALL: (altin: 0, anahtar: 10, sobi: 0),
+            katalog.KEYS_MEDIUM: (altin: 0, anahtar: 50, sobi: 0),
+            katalog.KEYS_LARGE: (altin: 0, anahtar: 200, sobi: 0),
+            katalog.SOBI_CREDITS_20: (altin: 0, anahtar: 0, sobi: 20),
+            katalog.SOBI_CREDITS_50: (altin: 0, anahtar: 0, sobi: 50),
+            katalog.SOBI_CREDITS_120: (altin: 0, anahtar: 0, sobi: 120),
         ]
     }
 
@@ -305,9 +407,10 @@ final class MagazaSahteOdemeServisi: MagazaOdemeServisi {
                 return
             }
             if let odul = self.oduller[urunKimligi] {
-                self.cuzdan.sunucuDegistirdi(altinFarki: odul.altin, anahtarFarki: odul.anahtar)
+                self.cuzdan.sunucuDegistirdi(altinFarki: odul.altin, anahtarFarki: odul.anahtar, sobiFarki: odul.sobi)
             } else if urunKimligi == BillingCatalog.shared.SUB_PRO {
                 self.enerji.sonsuz = true
+                self.cuzdan.planiDegistir("Pro", sobiUcretsizSinir: 20)
             }
             tamam(.verildi)
         }
@@ -318,6 +421,14 @@ final class MagazaSahteOdemeServisi: MagazaOdemeServisi {
             tamam(self.enerji.sonsuz)
         }
     }
+
+    func ucretsizDenemeGunu(urunKimligi: String) -> Int? {
+        // Pro olan kullanıcı denemeye uygun değildir.
+        if urunKimligi == BillingCatalog.shared.SUB_PRO && !enerji.sonsuz {
+            return 7
+        }
+        return nil
+    }
 }
 
 /// Reklam göstermeden kısa bir beklemeyle ödül nonce'u döndürür.
@@ -325,6 +436,33 @@ final class MagazaSahteReklamServisi: MagazaReklamServisi {
     func odulluReklamGoster(tamam: @escaping (_ nonce: String?, _ hataMetni: String?) -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
             tamam(UUID().uuidString, nil)
+        }
+    }
+}
+
+/// Bellekte tutulan seri dondurma durumu: başlangıçta elde yok; altınla alınır.
+final class MagazaSahteSeriServisi: MagazaSeriServisi {
+    private let cuzdan: MagazaSahteCuzdanServisi
+    private(set) var dondurmaVar: Bool = false
+
+    init(cuzdan: MagazaSahteCuzdanServisi) {
+        self.cuzdan = cuzdan
+    }
+
+    func yenile(tamam: @escaping () -> Void) {
+        DispatchQueue.main.async { tamam() }
+    }
+
+    func dondurmaAl(tamam: @escaping (_ basarili: Bool, _ mesaj: String?, _ yeniAltin: Int?) -> Void) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            let bedel: Int = MagazaStil.dondurmaBedeli
+            if self.dondurmaVar || self.cuzdan.cuzdan.altin < bedel {
+                tamam(false, Metin.al("ui_islem_tamamlanamadi_tekrar_deneyin"), nil)
+                return
+            }
+            self.cuzdan.sunucuDegistirdi(altinFarki: -bedel, anahtarFarki: 0, sobiFarki: 0)
+            self.dondurmaVar = true
+            tamam(true, nil, self.cuzdan.cuzdan.altin)
         }
     }
 }

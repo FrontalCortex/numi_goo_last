@@ -32,7 +32,7 @@ final class ProfilDuzenleModeli: ObservableObject {
     }
 
     var kaydetMetni: String {
-        return kaydediliyor ? ProfilOrtak.duzenleMetinleri.TEXT_SAVING : ProfilOrtak.duzenleMetinleri.TEXT_SAVE
+        return kaydediliyor ? Metin.al("ui_kaydediliyor") : Metin.al("ui_degisiklikleri_kaydet")
     }
 
     /// Android: loadUserData.
@@ -73,16 +73,15 @@ final class ProfilDuzenleModeli: ObservableObject {
             return
         }
         kaydediliyor = true
-        let metinler = ProfilOrtak.duzenleMetinleri
         Task {
             do {
                 try await depo.adGuncelle(yeniAd)
             } catch ProfilHata.veritabani {
-                gezinme.bildir(metinler.TOAST_FIRESTORE_FAILED)
+                gezinme.bildir(Metin.al("ui_firestore_guncellenemedi"))
                 self.kaydediliyor = false
                 return
             } catch {
-                gezinme.bildir(metinler.TOAST_AUTH_FAILED)
+                gezinme.bildir(Metin.al("ui_auth_profil_guncellenemedi"))
                 self.kaydediliyor = false
                 return
             }
@@ -95,20 +94,20 @@ final class ProfilDuzenleModeli: ObservableObject {
                 }
                 do {
                     try await depo.parolaGuncelle(yeniParola)
-                    gezinme.bildir(metinler.TOAST_PASSWORD_UPDATED)
+                    gezinme.bildir(Metin.al("ui_parola_basariyla_guncellendi"))
                     self.parola = ""
                 } catch ProfilHata.yenidenGirisGerekli {
-                    gezinme.bildir(metinler.TOAST_PASSWORD_RECENT_LOGIN, uzun: true)
+                    gezinme.bildir(Metin.al("ui_guvenlik_nedeniyle_parolayi_degistirmek_icin"), uzun: true)
                     self.cikVeYonlendir(gezinme: gezinme)
                     return
                 } catch {
-                    gezinme.bildir("Parola güncellenemedi: " + ProfilSayfaModeli.hataMetni(error))
+                    gezinme.bildir(Metin.al("ui_parola_guncellenemedi_x", ProfilSayfaModeli.hataMetni(error)))
                     self.kaydediliyor = false
                     return
                 }
             }
 
-            gezinme.bildir(metinler.TOAST_SAVED)
+            gezinme.bildir(Metin.al("ui_degisiklikler_kaydedildi"))
             self.kaydediliyor = false
             gezinme.yenilemeSayaci += 1
             gezinme.geri()
@@ -117,15 +116,14 @@ final class ProfilDuzenleModeli: ObservableObject {
 
     /// Android: deleteAccount.
     func hesabiSil(gezinme: ProfilGezinme) {
-        let metinler = ProfilOrtak.duzenleMetinleri
         guard let oturum = depo.oturum else {
-            gezinme.bildir("Hata: Kullanıcı bulunamadı.", uzun: true)
+            gezinme.bildir(Metin.al("ui_hata_x", ProfilOrtak.kullaniciBulunamadi), uzun: true)
             return
         }
         // Güvenlik denetimi: son giriş eskiyse Firestore verisine dokunmadan durulur.
         let simdiMs = Int64(Date().timeIntervalSince1970 * 1000)
         if ProfilOrtak.yenidenGirisGerekli(sonGirisMs: oturum.sonGirisMs, simdiMs: simdiMs) {
-            gezinme.bildir(metinler.TOAST_DELETE_RECENT_LOGIN, uzun: true)
+            gezinme.bildir(Metin.al("ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen"), uzun: true)
             cikVeYonlendir(gezinme: gezinme)
             return
         }
@@ -135,13 +133,13 @@ final class ProfilDuzenleModeli: ObservableObject {
             self.siliniyor = false
             switch sonuc {
             case .basarili:
-                gezinme.bildir(metinler.TOAST_DELETED)
+                gezinme.bildir(Metin.al("ui_hesabiniz_basariyla_silindi"))
                 self.cikVeYonlendir(gezinme: gezinme)
             case .yenidenGirisGerekli:
-                gezinme.bildir(metinler.TOAST_DELETE_RECENT_LOGIN, uzun: true)
+                gezinme.bildir(Metin.al("ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen"), uzun: true)
                 self.cikVeYonlendir(gezinme: gezinme)
             case .hata(let mesaj):
-                gezinme.bildir("Hata: " + mesaj, uzun: true)
+                gezinme.bildir(Metin.al("ui_hata_x", mesaj), uzun: true)
             }
         }
     }
@@ -166,7 +164,7 @@ struct ProfilDuzenleEkrani: View {
         ZStack {
             VStack(spacing: 0) {
                 ProfilUstCubuk(
-                    baslik: "Profili Düzenle",
+                    baslik: Metin.al("fragment_edit_profile_text"),
                     simge: "ic_arrow_back",
                     yaziBoyu: 20,
                     solBosluk: 16,
@@ -183,19 +181,19 @@ struct ProfilDuzenleEkrani: View {
         }
         .task { await model.yukle() }
         .onChange(of: model.ad) { _ in model.adDegisti() }
-        .alert(ProfilOrtak.duzenleMetinleri.DELETE_DIALOG_TITLE, isPresented: $model.silmeOnayiAcik) {
-            Button("SİL", role: .destructive) { model.hesabiSil(gezinme: gezinme) }
-            Button("İPTAL", role: .cancel) {}
+        .alert(Text(Metin.al("ui_hesabi_sil")), isPresented: $model.silmeOnayiAcik) {
+            Button(Metin.al("ui_sil"), role: .destructive) { model.hesabiSil(gezinme: gezinme) }
+            Button(Metin.al("ui_iptal"), role: .cancel) {}
         } message: {
-            Text(ProfilOrtak.duzenleMetinleri.DELETE_DIALOG_MESSAGE)
+            Text(Metin.al("ui_hesabinizi_kalici_olarak_silmek_istediginize"))
         }
     }
 
     private var form: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ProfilAlanEtiketi(metin: "Ad")
+            ProfilAlanEtiketi(metin: Metin.al("fragment_edit_profile_text_2"))
             ProfilGirisKutusu {
-                TextField("", text: $model.ad, prompt: Text("Ad").foregroundColor(Color("gray")))
+                TextField("", text: $model.ad, prompt: Text(Metin.al("fragment_edit_profile_et_name_hint")).foregroundColor(Color("gray")))
                     .font(ProfilStil.yazi(16))
                     .foregroundColor(Color.white)
                     .textInputAutocapitalization(.words)
@@ -208,7 +206,7 @@ struct ProfilDuzenleEkrani: View {
                     .foregroundColor(Color("red"))
             }
 
-            ProfilAlanEtiketi(metin: "Kullanıcı ID")
+            ProfilAlanEtiketi(metin: Metin.al("fragment_edit_profile_text_3"))
             ProfilGirisKutusu {
                 Text(model.kullaniciKodu)
                     .font(ProfilStil.yazi(16))
@@ -217,7 +215,7 @@ struct ProfilDuzenleEkrani: View {
             }
             .padding(.bottom, 24)
 
-            ProfilAlanEtiketi(metin: "E-posta Adresi")
+            ProfilAlanEtiketi(metin: Metin.al("fragment_edit_profile_text_4"))
             ProfilGirisKutusu {
                 Text(model.eposta)
                     .font(ProfilStil.yazi(16))
@@ -246,7 +244,7 @@ struct ProfilDuzenleEkrani: View {
             .padding(.bottom, 12)
 
             ProfilCerceveliDugme(
-                metin: "HESABI KALICI OLARAK SİL",
+                metin: Metin.al("fragment_edit_profile_btn_delete_account"),
                 metinRengi: Color("red"),
                 zemin: Color("outline_button_bg"),
                 cizgi: Color("outline_button_stroke"),
@@ -260,17 +258,17 @@ struct ProfilDuzenleEkrani: View {
 
     private var parolaBolumu: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ProfilAlanEtiketi(metin: "Yeni Parola")
+            ProfilAlanEtiketi(metin: Metin.al("fragment_edit_profile_text_5"))
             ProfilGirisKutusu {
                 SecureField(
                     "", text: $model.parola,
-                    prompt: Text("Yeni parola girin").foregroundColor(Color("gray"))
+                    prompt: Text(Metin.al("fragment_edit_profile_et_password_hint")).foregroundColor(Color("gray"))
                 )
                 .font(ProfilStil.yazi(16))
                 .foregroundColor(Color.white)
             }
             .padding(.bottom, 8)
-            Text("Parolayı değiştirmek için sadece bu alanı doldurun. Değiştirmek istemiyorsanız boş bırakın.")
+            Text(Metin.al("fragment_edit_profile_text_6"))
                 .font(ProfilStil.yazi(12))
                 .foregroundColor(Color("gray"))
                 .fixedSize(horizontal: false, vertical: true)
@@ -286,7 +284,7 @@ struct ProfilDuzenleEkrani: View {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: Color.white))
                     .scaleEffect(1.4)
-                Text(ProfilOrtak.duzenleMetinleri.DELETE_PROGRESS_MESSAGE)
+                Text(Metin.al("ui_hesabiniz_ve_iliskili_verileriniz_siliniyor"))
                     .font(ProfilStil.yazi(15))
                     .foregroundColor(Color.white)
                     .multilineTextAlignment(.center)

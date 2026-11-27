@@ -3,17 +3,31 @@ import Shared
 import SwiftUI
 
 // Giriş akışının durumu ve adımlar arası geçişler.
-// Android karşılıkları: SplashActivity, LoginStartActivity, LoginActivity, RegisterActivity,
-// UserInfoFragment, OtpVerificationFragment, TeacherLoginActivity,
+// Android karşılıkları: SplashActivity, LoginStartActivity, LoginActivity, UserInfoFragment,
+// RegisterActivity, ParentConsentFragment, OtpVerificationFragment, TeacherLoginActivity,
 // TeacherForgotPasswordEmailFragment, TeacherNewPasswordFragment.
 // Doğrulama kuralları, mesajlar ve kararlar ortak koddan çağrılır (AuthRules, OtpRules,
-// SessionDeviceRules, SplashRules, UserInfoRules, TeacherLoginRules, LoginFlowTexts).
+// SessionDeviceRules, SplashRules, UserInfoRules, SignupFlowRules, TeacherLoginRules, LoginFlowTexts).
+//
+// Bu dosya: genel durum, açılış, başlangıç, öğrenci girişi ve kayıt sorularının açılması.
+// GirisModeliKayit.swift: kayıt, veli onayı (13 yaş altı) ve doğrulama kodu.
+// GirisModeliOgretmen.swift: öğretmen girişi ve şifre sıfırlama.
+// Uzantılar ayrı dosyalarda olduğu için durum alanları `private` değildir.
 
-/// Doğrulama kodu ekranının türü (OtpVerificationFragment: isRegistration / forPasswordReset).
+/// Doğrulama kodu ekranının türü (OtpVerificationFragment argümanları).
 enum GirisKodTuru: Hashable {
+    /// Kayıtlı öğrencinin giriş kodu (isRegistration = false).
     case giris
+    /// Kayıt kodu (isRegistration = true).
     case kayit
+    /// Öğretmen şifre sıfırlama (forPasswordReset).
     case sifreSifirlama
+    /// 13 yaş altı veli onay kodu (parentEmail): kod veliye gitti. `saglayici` true ise Google /
+    /// Apple kaydıdır ve hesap confirmParentalConsent ile açılır (googleParental).
+    case veli(veliEposta: String, saglayici: Bool)
+    /// 13 yaş altı, veli adresi farklı: önce çocuğun KENDİ adresinin kodu (pendingParentEmail);
+    /// doğrulanınca veliye kod gider ve veli kodu ekranına geçilir.
+    case cocukEpostasi(veliEposta: String)
 }
 
 /// Akıştaki ekranlar. Yığının tepesindeki ekran gösterilir.
@@ -24,10 +38,12 @@ enum GirisEkran: Hashable {
     case baslangic
     /// LoginActivity (e-posta adımı)
     case ogrenciGiris
-    /// UserInfoFragment (yaş + kaynak)
-    case kullaniciBilgisi
+    /// UserInfoFragment (kayıt soruları; durumu `GirisModeli.sorular`)
+    case sorular
     /// RegisterActivity
     case kayit
+    /// ParentConsentFragment (bağlamı `GirisModeli.veliBaglami`)
+    case veliOnayi
     /// OtpVerificationFragment
     case kod(eposta: String, tur: GirisKodTuru)
     /// TeacherLoginActivity
@@ -38,10 +54,23 @@ enum GirisEkran: Hashable {
     case yeniSifre(eposta: String, kod: String)
 }
 
-/// UserInfoFragment.Step
-enum GirisBilgiAdimi {
-    case yas
-    case kaynak
+/// Hesapsız ilk açılışta (SplashRules.Route.GUEST_MAIN) misafirin gideceği yer
+/// (Android: MainActivity.START_DESTINATION_TUTORIAL / START_DESTINATION_MAP).
+enum GirisMisafirHedefi {
+    /// Bu cihazda hiç hesap açılmadı: ilk öğretici (SplashRules.showsFirstTutorial).
+    case ogretici
+    /// Daha önce hesap açılmış (oturum kapalı): harita.
+    case harita
+}
+
+/// Veli onayı ekranının bağlamı (ParentConsentFragment argümanları).
+struct GirisVeliBaglami {
+    /// Normalleştirilmiş çocuk e-postası (Google / Apple'da hesabın adresi).
+    let cocukEposta: String
+    /// Google / Apple ile kayıt mı (isGoogle).
+    let saglayici: Bool
+    let dogumYili: Int
+    let kaynak: String?
 }
 
 /// Kısa bildirim (Android: Toast / Snackbar).
@@ -52,13 +81,18 @@ struct GirisBildirim: Identifiable, Equatable {
 
 @MainActor
 final class GirisModeli: ObservableObject {
-    private let servis: KimlikServisi
-    private let depo: GirisYerelDepo
-    private let girisYapildi: () -> Void
+    let servis: KimlikServisi
+    let depo: GirisYerelDepo
+    let bildirimServisi: GirisBildirimServisi
+    let surumServisi: GirisSurumServisi
+    let girisYapildi: () -> Void
+    let misafirOlarakDevam: (GirisMisafirHedefi) -> Void
+    /// Ekran galerisi: açılış yönlendirme yapmaz, bayraklar yazılmaz.
+    var ornekKipi: Bool = false
 
     // MARK: Genel durum
 
-    @Published var yigin: [GirisEkran] = [.acilis]
+    @Published var yigin: [GirisEkran]
     /// LoginStartActivity.EXTRA_TEACHER_MODE
     @Published var ogretmenModu: Bool = false
     /// Android: touchBlockOverlay — doğrulama ve Google/Apple işlemi sürerken bütün dokunuşlar kapalı.
@@ -66,18 +100,18 @@ final class GirisModeli: ObservableObject {
     @Published var bildirim: GirisBildirim? = nil
     /// Geri sayımlar için saat (saniyede bir güncellenir).
     @Published var simdiMs: Int64 = GirisYerelDepo.simdiMs()
+    /// Zorunlu güncelleme kilidi (ForceUpdateManager.showBlockingDialog).
+    @Published var surumKilitli: Bool = false
 
     // MARK: Öğrenci girişi (LoginActivity)
 
     @Published var girisEposta: String = ""
     @Published var girisGonderiliyor: Bool = false
 
-    // MARK: Yaş + kaynak (UserInfoFragment)
+    // MARK: Kayıt soruları (UserInfoFragment)
 
-    @Published var yasMetni: String = ""
-    @Published var bilgiAdimi: GirisBilgiAdimi = .yas
-    @Published var seciliKaynak: String? = nil
-    private var dogrulananDogumYili: Int? = nil
+    /// Açık soru akışı; kayıt ekranından geri dönüldüğünde aynı durumla görünür.
+    @Published var sorular: GirisSoruModeli? = nil
 
     // MARK: Kayıt (RegisterActivity)
 
@@ -89,18 +123,24 @@ final class GirisModeli: ObservableObject {
     @Published var ogretmenSifreTekrar: String = ""
     /// RegisterActivity.currentForcedRole == TEACHER
     @Published var kayitOgretmen: Bool = false
-    private var kayitDogumYili: Int? = nil
-    private var kayitKaynak: String? = nil
+    var kayitDogumYili: Int? = nil
+    var kayitKaynak: String? = nil
     /// AuthManager.pendingRegistrations karşılığı: kod doğrulanana kadar yalnızca bellekte.
-    private var bekleyenKayit: GirisBekleyenKayit? = nil
+    var bekleyenKayit: GirisBekleyenKayit? = nil
+
+    // MARK: Veli onayı (ParentConsentFragment)
+
+    @Published var veliEposta: String = ""
+    @Published var veliGonderiliyor: Bool = false
+    var veliBaglami: GirisVeliBaglami? = nil
 
     // MARK: Doğrulama kodu (OtpVerificationFragment)
 
     @Published var kod: String = ""
     @Published var kodDogrulaniyor: Bool = false
     @Published var kodYenidenGonderiliyor: Bool = false
-    private var yanlisDeneme: Int32 = 0
-    private var kilitEkrandaGoruldu: Bool = false
+    var yanlisDeneme: Int32 = 0
+    var kilitEkrandaGoruldu: Bool = false
 
     // MARK: Öğretmen girişi ve şifre sıfırlama
 
@@ -113,10 +153,22 @@ final class GirisModeli: ObservableObject {
     @Published var yeniSifreTekrar: String = ""
     @Published var yeniSifreGuncelleniyor: Bool = false
 
-    init(servis: KimlikServisi, depo: GirisYerelDepo, girisYapildi: @escaping () -> Void) {
+    init(
+        servis: KimlikServisi,
+        depo: GirisYerelDepo,
+        bildirimServisi: GirisBildirimServisi,
+        surumServisi: GirisSurumServisi,
+        baslangic: GirisEkran,
+        girisYapildi: @escaping () -> Void,
+        misafirOlarakDevam: @escaping (GirisMisafirHedefi) -> Void
+    ) {
         self.servis = servis
         self.depo = depo
+        self.bildirimServisi = bildirimServisi
+        self.surumServisi = surumServisi
+        self.yigin = [baslangic]
         self.girisYapildi = girisYapildi
+        self.misafirOlarakDevam = misafirOlarakDevam
     }
 
     // MARK: Yığın
@@ -125,25 +177,36 @@ final class GirisModeli: ObservableObject {
         return yigin.last ?? .baslangic
     }
 
-    private func ac(_ yeni: GirisEkran) {
+    func ac(_ yeni: GirisEkran) {
         yigin.append(yeni)
     }
 
-    /// Sol üstteki geri düğmesi.
+    /// Sol üstteki geri düğmesi (kayıt sorularında kenardan kaydırma).
     func geri() {
         if mesgul { return }
-        if ekran == .kullaniciBilgisi && bilgiAdimi == .kaynak {
-            // UserInfoFragment: kaynak adımından yaş adımına dönülür.
-            bilgiAdimi = .yas
+        if ekran == .sorular, let akis = sorular {
+            // UserInfoFragment.onBackStep: önce bir önceki soruya; ilk adımda `kapat` ile çıkılır.
+            akis.geri()
             return
         }
         if yigin.count > 1 {
             yigin.removeLast()
         }
+        kayitEkraninaDonulduyse()
     }
 
-    private func baslangicaDon() {
-        depo.baslangicGosterildi = true
+    /// RegisterActivity.btnBack: e-posta adımına dönüldüyse veli onayı bağlamı biter; Google / Apple
+    /// kaydının yarım kalan oturumu silinir (deleteIncompleteAuthUser).
+    func kayitEkraninaDonulduyse() {
+        guard ekran == .kayit, let baglam = veliBaglami else { return }
+        veliBaglami = nil
+        if baglam.saglayici {
+            Task { await servis.yarimKaydiSil() }
+        }
+    }
+
+    func baslangicaDon() {
+        sorular = nil
         yigin = [.baslangic]
     }
 
@@ -183,29 +246,50 @@ final class GirisModeli: ObservableObject {
 
     // MARK: Açılış (SplashActivity)
 
+    /// Açılış: en az SPLASH_ANIMATION_MS (1200 ms) marka; zorunlu güncelleme kontrolü animasyonla
+    /// paralel çekilir ve ardından en fazla FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS bekletir; sonra
+    /// SplashRules.route ile yönlendirilir.
     func acilisBasladi() async {
+        if ornekKipi { return }
+        surumServisi.cekmeyiBaslat()
         let bekleme: Int64 = SplashRules.shared.SPLASH_ANIMATION_MS
         try? await Task.sleep(nanoseconds: UInt64(bekleme) * 1_000_000)
         guard ekran == .acilis else { return }
+        let azami: Int64 = SplashRules.shared.FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS
+        if await surumServisi.kilitliMi(azamiBeklemeMs: azami) {
+            surumKilitli = true
+            return
+        }
+        await acilisiYonlendir()
+    }
 
-        // Android burada ağ durumuna da bakar (isOnline); ağ izleme iOS'ta henüz yok, çevrimiçi sayılır.
+    /// SplashActivity.checkLoginStatus.
+    private func acilisiYonlendir() async {
+        let oturumVar: Bool = servis.mevcutOturum != nil
+        // Android burada ağ durumuna da bakar (isOnline → OFFLINE_MAIN: ana ekran çevrimdışı
+        // ekranını gösterir); ağ izleme iOS'ta henüz yok, çevrimiçi sayılır.
         let yol = SplashRules.shared.route(
             isOnline: true,
             loginStartEverShown: depo.baslangicGosterildi,
-            hasExistingLogin: servis.mevcutOturum != nil
+            hasExistingLogin: oturumVar
         )
         if yol == SplashRules.Route.checkSingleDevice {
             await tekCihazDenetimi()
+        } else if yol == SplashRules.Route.guestMain {
+            // İlk açılış, oturum yok: misafir olarak ana ekran. Şart tek: bu cihazda daha önce
+            // hesap açıldı mı (prepareStartupAndLaunchMain).
+            let gecmis: Bool = depo.hesapGecmisiVar(oturumAcik: false)
+            let ogretici: Bool = SplashRules.shared.showsFirstTutorial(hadAccount: gecmis)
+            misafirOlarakDevam(ogretici ? .ogretici : .harita)
         } else {
-            // LOGIN_START ve GUEST_MAIN: Android ilk açılışta misafir olarak öğreticiye girer;
-            // iOS'ta öğretici henüz olmadığı için başlangıç ekranı gösterilir.
+            // LOGIN_START (OFFLINE_MAIN'e düşülmez, yukarıya bakın).
             baslangicaDon()
         }
     }
 
     /// Android: SessionDeviceManager.requireLoggedInAndSingleDevice. Hem açılışta hem de her
     /// başarılı girişten sonra (MainActivity.onResume) çalışır.
-    private func tekCihazDenetimi() async {
+    func tekCihazDenetimi() async {
         let cihaz = depo.cihazKimligi()
         let veri: GirisTekCihazVerisi
         do {
@@ -225,10 +309,10 @@ final class GirisModeli: ObservableObject {
             nowMs: GirisYerelDepo.simdiMs()
         )
         if karar == SessionDeviceRules.Decision.allow {
-            girisYapildi()
+            oturumAcildi()
         } else if karar == SessionDeviceRules.Decision.claimAndAllow {
             await servis.oturumuBuCihazaAl(cihazKimligi: cihaz)
-            girisYapildi()
+            oturumAcildi()
         } else if karar == SessionDeviceRules.Decision.rejectOtherDevice {
             await servis.cikisYap()
             bildir(SessionDeviceRules.shared.MESSAGE_TRY_AGAIN_LATER)
@@ -241,82 +325,85 @@ final class GirisModeli: ObservableObject {
         }
     }
 
+    /// Oturum açık ve bu cihaza izinli: hesap geçmişi bayrağı kalıcılaşır (DeviceAccountStore
+    /// okuması oturum açıkken yazar), sonra dışarıya haber verilir.
+    private func oturumAcildi() {
+        _ = depo.hesapGecmisiVar(oturumAcik: true)
+        girisYapildi()
+    }
+
     /// Oturum açıldıktan sonra: tek cihaz kuralı, sonra dışarıya haber.
-    private func girisTamam() async {
+    func girisTamam() async {
         await tekCihazDenetimi()
     }
 
     // MARK: Başlangıç (LoginStartActivity)
 
     func baslangicGoruldu() {
+        if ornekKipi { return }
         depo.baslangicGosterildi = true
     }
 
-    /// "GİRİŞ YAP"
+    /// "Zaten hesabım var"
     func baslangicGirisYap() {
         ac(ogretmenModu ? .ogretmenGiris : .ogrenciGiris)
     }
 
-    /// "BAŞLA": önce yaş ve kaynak sorulur.
+    /// "Başla": önce kayıt soruları (UserInfoFragment).
     func baslangicBasla() {
-        kullaniciBilgisiniAc(epostaOnDoldurma: nil, ogretmen: ogretmenModu, yonlendirmeBildirimi: false)
+        sorulariAc(ogretmen: ogretmenModu, onDoldurmaEposta: nil, yonlendirmeBildirimi: false)
     }
 
+    /// Sağ üstteki "Öğretmen girişi" / "Öğrenci girişi" (Android ekranı solarak yeniden açar).
     func modDegistir() {
-        ogretmenModu.toggle()
+        withAnimation(.easeInOut(duration: 0.3)) {
+            ogretmenModu.toggle()
+        }
     }
 
-    // MARK: Yaş + kaynak (UserInfoFragment)
+    // MARK: Kayıt soruları (UserInfoFragment)
 
-    private func kullaniciBilgisiniAc(epostaOnDoldurma: String?, ogretmen: Bool, yonlendirmeBildirimi: Bool) {
-        yasMetni = ""
-        bilgiAdimi = .yas
-        seciliKaynak = nil
-        dogrulananDogumYili = nil
+    /// - Parameters:
+    ///   - ogretmen: forceTeacher (öğretmene yalnızca yaş ve kaynak sorulur).
+    ///   - onDoldurmaEposta: girişte kayıtlı çıkmayan e-posta ya da Google/Apple hesabının adresi;
+    ///     kayıt ekranının e-posta alanına konur.
+    ///   - yonlendirmeBildirimi: "Bu e-posta adresi kayıtlı değil…" (Snackbar, uzun).
+    func sorulariAc(ogretmen: Bool, onDoldurmaEposta: String?, yonlendirmeBildirimi: Bool) {
         kayitOgretmen = ogretmen
-        kayitEposta = epostaOnDoldurma ?? ""
-        ac(.kullaniciBilgisi)
+        kayitEposta = onDoldurmaEposta ?? ""
+        sorular = GirisSoruModeli(
+            ogretmen: ogretmen,
+            depo: depo,
+            bildirimServisi: bildirimServisi,
+            bildir: { [weak self] metin in self?.bildir(metin) },
+            kapat: { [weak self] in self?.sorulariKapat() },
+            bitti: { [weak self] sonuc in self?.sorularBitti(sonuc) }
+        )
+        ac(.sorular)
         if yonlendirmeBildirimi {
-            bildir(UserInfoRules.shared.MESSAGE_EMAIL_NOT_REGISTERED_REDIRECT, uzun: true)
+            bildir(Metin.al("ui_bu_e_posta_adresi_kayitli_degil"), uzun: true)
         }
     }
 
-    var bilgiDevamEtkin: Bool {
-        switch bilgiAdimi {
-        case .yas:
-            return UserInfoRules.shared.isValidAge(rawAge: yasMetni)
-        case .kaynak:
-            return seciliKaynak != nil
+    /// İlk soruda geri: soru ekranı kapanır (parentFragmentManager.popBackStack).
+    private func sorulariKapat() {
+        if ekran == .sorular && yigin.count > 1 {
+            yigin.removeLast()
         }
+        sorular = nil
     }
 
-    func kaynakSec(_ ad: String) {
-        seciliKaynak = ad
-    }
-
-    func bilgiDevam() {
-        switch bilgiAdimi {
-        case .yas:
-            let buYil = Int32(Calendar.current.component(.year, from: Date()))
-            let dogumYili: Int32 = UserInfoRules.shared.birthYearFromRawAge(rawAge: yasMetni, currentYear: buYil)
-            if dogumYili <= 0 {
-                bildir(UserInfoRules.shared.MESSAGE_INVALID_AGE)
-                return
-            }
-            dogrulananDogumYili = Int(dogumYili)
-            bilgiAdimi = .kaynak
-        case .kaynak:
-            guard let yil = dogrulananDogumYili, let kaynak = seciliKaynak else { return }
-            // Android burada oturum açıksa `users/{uid}` belgesine birthYear/acquisitionSource
-            // yazmayı dener; kayıt akışında oturum kapalı olduğu için değerler kayıt ekranına taşınır.
-            kayitDogumYili = yil
-            kayitKaynak = kaynak
-            ogretmenAd = ""
-            ogretmenEposta = ""
-            ogretmenSifre = ""
-            ogretmenSifreTekrar = ""
-            ac(.kayit)
-        }
+    /// UserInfoFragment.saveBirthYearAndProceed → navigateToRegister. Oturum kapalıyken değerler
+    /// kayıt ekranına taşınır (doğum yılı kayıt çağrısıyla sunucuya gider).
+    private func sorularBitti(_ sonuc: GirisSoruSonucu) {
+        kayitDogumYili = sonuc.dogumYili
+        kayitKaynak = sonuc.kaynak
+        ogretmenAd = ""
+        ogretmenEposta = ""
+        ogretmenSifre = ""
+        ogretmenSifreTekrar = ""
+        veliBaglami = nil
+        ac(.kayit)
     }
 
     // MARK: Ortak: kod gönderimi öncesi beklemeler
@@ -334,7 +421,7 @@ final class GirisModeli: ObservableObject {
     }
 
     /// Kilit ya da bekleme varsa true döner (ve gerekiyorsa bildirim gösterir).
-    private func gonderimEngelli(normalEposta: String) -> Bool {
+    func gonderimEngelli(normalEposta: String) -> Bool {
         let simdi = GirisYerelDepo.simdiMs()
         if let dakika = depo.yanlisDenemeKalanDakika(eposta: normalEposta, simdiMs: simdi) {
             bildir(OtpRules.shared.wrongCooldownTryLaterMessage(remainingMin: dakika), uzun: true)
@@ -347,7 +434,7 @@ final class GirisModeli: ObservableObject {
         return false
     }
 
-    private func kodEkraniniAc(eposta: String, tur: GirisKodTuru) {
+    func kodEkraniniAc(eposta: String, tur: GirisKodTuru) {
         kod = ""
         kodDogrulaniyor = false
         kodYenidenGonderiliyor = false
@@ -382,8 +469,9 @@ final class GirisModeli: ObservableObject {
             kodEkraniniAc(eposta: eposta, tur: .giris)
         } catch let hata as GirisHatasi {
             if hata.mesaj == kurallar.MESSAGE_USER_NOT_FOUND {
-                // Kayıtlı değil: yaş/kaynak adımından kayıt ekranına.
-                kullaniciBilgisiniAc(epostaOnDoldurma: eposta, ogretmen: false, yonlendirmeBildirimi: true)
+                // Kayıtlı değil: kayıt sorularından kayıt ekranına (LoginActivity.showUserInfoFragment:
+                // forceStudent, e-posta önceden doldurulur).
+                sorulariAc(ogretmen: false, onDoldurmaEposta: eposta, yonlendirmeBildirimi: true)
             } else {
                 bildir(hata.mesaj ?? kurallar.MESSAGE_CODE_NOT_SENT)
             }
@@ -408,367 +496,24 @@ final class GirisModeli: ObservableObject {
             mesgul = false
             let eylem = AuthRules.shared.googleLoginFailureAction(error: hata.mesaj)
             if eylem == AuthRules.GoogleLoginFailureAction.showUserInfo {
-                kullaniciBilgisiniAc(epostaOnDoldurma: hata.hesapEposta, ogretmen: false, yonlendirmeBildirimi: false)
+                sorulariAc(ogretmen: false, onDoldurmaEposta: hata.hesapEposta, yonlendirmeBildirimi: false)
             } else if eylem == AuthRules.GoogleLoginFailureAction.showError {
-                bildir(hata.mesaj ?? (apple ? GirisMetin.appleGirisBasarisiz : LoginFlowTexts.shared.MESSAGE_GOOGLE_LOGIN_FAILED))
+                bildir(hata.mesaj ?? (apple ? GirisMetin.appleGirisBasarisiz : Metin.al("ui_google_girisi_basarisiz")))
             }
         } catch {
             mesgul = false
-            bildir(apple ? GirisMetin.appleGirisBasarisiz : LoginFlowTexts.shared.MESSAGE_GOOGLE_LOGIN_FAILED)
-        }
-    }
-
-    // MARK: Kayıt (RegisterActivity)
-
-    /// Öğrenci kaydı: "Devam Et" (RegisterActivity.sendOtpAndShowCodeStep).
-    func kayitDevam() async {
-        if mesgul || kayitGonderiliyor { return }
-        let kurallar = AuthRules.shared
-        if let hata = kurallar.validateRegisterEmail(rawEmail: kayitEposta) {
-            bildir(hata)
-            return
-        }
-        let eposta = kayitEposta.trimmingCharacters(in: .whitespaces)
-        let normal = kurallar.normalizeEmail(email: eposta)
-        if gonderimEngelli(normalEposta: normal) { return }
-
-        kayitGonderiliyor = true
-        defer { kayitGonderiliyor = false }
-
-        let durum = await servis.epostaKayitliMi(eposta: normal)
-        let akis = kurallar.studentEmailFlow(alreadyRegistered: durum.kayitli, uid: durum.uid, role: durum.rol)
-
-        if akis == AuthRules.StudentEmailFlow.rejectTeacher {
-            bildir(kurallar.MESSAGE_TEACHER_EMAIL_FOR_STUDENT)
-            return
-        }
-        if akis == AuthRules.StudentEmailFlow.errorCodeNotSent {
-            bildir(kurallar.MESSAGE_CODE_NOT_SENT)
-            return
-        }
-        let zatenKayitli = akis == AuthRules.StudentEmailFlow.sendLoginCode
-        let amac: String = kurallar.resendPurpose(isRegistration: !zatenKayitli)
-        if !zatenKayitli {
-            // AuthManager.createPendingRegistrationForOTP: öğrencide ad ve şifre boş.
-            bekleyenKayit = GirisBekleyenKayit(ad: "", sifre: "", rol: kurallar.ROLE_STUDENT)
-        }
-        do {
-            try await servis.dogrulamaKoduGonder(eposta: normal, amac: amac)
-            if zatenKayitli {
-                // Zaten kayıtlı öğrenci: giriş kodu gönderildi.
-                kodEkraniniAc(eposta: normal, tur: .giris)
-            } else {
-                kodEkraniniAc(eposta: eposta, tur: .kayit)
-            }
-        } catch let hata as GirisHatasi {
-            bildir(hata.mesaj ?? kurallar.MESSAGE_CODE_NOT_SENT)
-        } catch {
-            bildir(kurallar.MESSAGE_CODE_NOT_SENT)
-        }
-    }
-
-    /// Öğretmen kaydı: "Devam Et" (RegisterActivity.registerTeacherWithOtp).
-    func ogretmenKayitDevam() async {
-        if mesgul || kayitGonderiliyor { return }
-        let kurallar = AuthRules.shared
-        if let hata = kurallar.validateTeacherRegistration(
-            rawName: ogretmenAd,
-            rawEmail: ogretmenEposta,
-            password: ogretmenSifre,
-            passwordConfirm: ogretmenSifreTekrar
-        ) {
-            bildir(hata)
-            return
-        }
-        let ad = ogretmenAd.trimmingCharacters(in: .whitespaces)
-        let eposta = ogretmenEposta.trimmingCharacters(in: .whitespaces)
-        let sifre = ogretmenSifre
-
-        kayitGonderiliyor = true
-        defer { kayitGonderiliyor = false }
-
-        let durum = await servis.epostaKayitliMi(eposta: eposta)
-        if durum.kayitli {
-            bildir(kurallar.teacherEmailAlreadyRegisteredMessage(role: durum.rol))
-            return
-        }
-        // AuthManager.createPendingTeacherRegistrationForOTP
-        if !kurallar.isValidPendingTeacherRegistration(email: eposta, name: ad, password: sifre) {
-            bildir(kurallar.MESSAGE_INVALID_INFO)
-            return
-        }
-        bekleyenKayit = GirisBekleyenKayit(ad: ad, sifre: sifre, rol: kurallar.ROLE_TEACHER)
-        do {
-            try await servis.dogrulamaKoduGonder(
-                eposta: kurallar.normalizeEmail(email: eposta),
-                amac: kurallar.OTP_PURPOSE_REGISTER
-            )
-            kodEkraniniAc(eposta: eposta, tur: .kayit)
-        } catch let hata as GirisHatasi {
-            bildir(hata.mesaj ?? kurallar.MESSAGE_CODE_NOT_SENT)
-        } catch {
-            bildir(kurallar.MESSAGE_CODE_NOT_SENT)
-        }
-    }
-
-    /// Kayıt ekranındaki Google / Apple düğmesi (otomatik kayıt).
-    func saglayiciIleKayit(apple: Bool) async {
-        if mesgul { return }
-        mesgul = true
-        let varsayilan: String = apple ? GirisMetin.appleKayitBasarisiz : LoginFlowTexts.shared.MESSAGE_GOOGLE_REGISTER_FAILED
-        do {
-            if apple {
-                _ = try await servis.appleIleGiris(otomatikKayit: true, dogumYili: kayitDogumYili, kaynak: kayitKaynak)
-            } else {
-                _ = try await servis.googleIleGiris(otomatikKayit: true, dogumYili: kayitDogumYili, kaynak: kayitKaynak)
-            }
-            await girisTamam()
-            mesgul = false
-        } catch let hata as GirisHatasi {
-            mesgul = false
-            // Kullanıcı vazgeçtiyse sessiz kalınır.
-            if hata.mesaj != AuthRules.shared.MESSAGE_GOOGLE_CANCELLED {
-                bildir(hata.mesaj ?? varsayilan)
-            }
-        } catch {
-            mesgul = false
-            bildir(varsayilan)
-        }
-    }
-
-    // MARK: Doğrulama kodu (OtpVerificationFragment)
-
-    func kodKilitli(eposta: String) -> Bool {
-        return depo.yanlisDenemeKalanDakika(eposta: eposta, simdiMs: simdiMs) != nil
-    }
-
-    /// "Kodu tekrar gönder" düğmesinin metni.
-    func yenidenGonderMetni(eposta: String) -> String {
-        if kodKilitli(eposta: eposta) {
-            let kalanSn = Int(max(0, (depo.yanlisDenemeBitisMs() - simdiMs) / 1000))
-            return GirisMetin.kilitGeriSayim(dakika: kalanSn / 60, saniye: kalanSn % 60)
-        }
-        let kalanMs = depo.yenidenGondermeKalanMs(eposta: eposta, simdiMs: simdiMs)
-        if kalanMs > 0 {
-            return GirisMetin.yenidenGonderGeriSayim(saniye: Int(kalanMs / 1000))
-        }
-        return GirisMetin.koduTekrarGonder
-    }
-
-    func yenidenGonderEtkin(eposta: String) -> Bool {
-        if kodYenidenGonderiliyor || kodKilitli(eposta: eposta) { return false }
-        return depo.yenidenGondermeKalanMs(eposta: eposta, simdiMs: simdiMs) <= 0
-    }
-
-    func dogrulaEtkin(eposta: String) -> Bool {
-        if kodDogrulaniyor || kodKilitli(eposta: eposta) { return false }
-        return yanlisDeneme < OtpRules.shared.MAX_WRONG_ATTEMPTS
-    }
-
-    private func kilidiBaslat(eposta: String) {
-        let simdi = GirisYerelDepo.simdiMs()
-        depo.yanlisDenemeBaslat(eposta: eposta, simdiMs: simdi)
-        depo.yenidenGondermeTemizle()
-        kilitEkrandaGoruldu = true
-        simdiMs = simdi
-    }
-
-    func koduYenidenGonder(eposta: String, tur: GirisKodTuru) async {
-        if !yenidenGonderEtkin(eposta: eposta) { return }
-        let kurallar = AuthRules.shared
-        kodYenidenGonderiliyor = true
-        defer { kodYenidenGonderiliyor = false }
-        let amac: String
-        switch tur {
-        case .sifreSifirlama:
-            amac = kurallar.OTP_PURPOSE_TEACHER_RESET
-        case .kayit:
-            amac = kurallar.resendPurpose(isRegistration: true)
-        case .giris:
-            amac = kurallar.resendPurpose(isRegistration: false)
-        }
-        do {
-            try await servis.dogrulamaKoduGonder(eposta: kurallar.normalizeEmail(email: eposta), amac: amac)
-            bildir(LoginFlowTexts.shared.MESSAGE_CODE_RESENT)
-            let simdi = GirisYerelDepo.simdiMs()
-            depo.yenidenGondermeBaslat(eposta: eposta, simdiMs: simdi)
-            simdiMs = simdi
-        } catch let hata as GirisHatasi {
-            bildir(hata.mesaj ?? kurallar.MESSAGE_CODE_NOT_SENT, uzun: true)
-        } catch {
-            bildir(kurallar.MESSAGE_CODE_NOT_SENT, uzun: true)
-        }
-    }
-
-    func koduDogrula(eposta: String, tur: GirisKodTuru) async {
-        if mesgul || kodDogrulaniyor || kodKilitli(eposta: eposta) { return }
-        let otp = OtpRules.shared
-        if yanlisDeneme >= otp.MAX_WRONG_ATTEMPTS {
-            kilidiBaslat(eposta: eposta)
-            bildir(otp.MESSAGE_TOO_MANY_WRONG, uzun: true)
-            return
-        }
-        if !otp.isValidCodeLength(rawCode: kod) {
-            bildir(otp.MESSAGE_CODE_LENGTH)
-            return
-        }
-        let girilen = kod.trimmingCharacters(in: .whitespaces)
-
-        kodDogrulaniyor = true
-        mesgul = true
-        do {
-            switch tur {
-            case .sifreSifirlama:
-                try await servis.sifreSifirlamaKodunuDogrula(eposta: eposta, kod: girilen)
-                kodDogrulaniyor = false
-                mesgul = false
-                yeniSifre = ""
-                yeniSifreTekrar = ""
-                ac(.yeniSifre(eposta: eposta, kod: girilen))
-            case .kayit:
-                _ = try await servis.kayitKodunuDogrula(
-                    eposta: eposta,
-                    kod: girilen,
-                    bekleyen: bekleyenKayit,
-                    dogumYili: kayitDogumYili,
-                    kaynak: kayitKaynak
-                )
-                bekleyenKayit = nil
-                await girisTamam()
-                kodDogrulaniyor = false
-                mesgul = false
-            case .giris:
-                _ = try await servis.girisKodunuDogrula(eposta: eposta, kod: girilen)
-                await girisTamam()
-                kodDogrulaniyor = false
-                mesgul = false
-            }
-        } catch let hata as GirisHatasi {
-            dogrulamaBasarisiz(eposta: eposta, mesaj: hata.mesaj)
-        } catch {
-            dogrulamaBasarisiz(eposta: eposta, mesaj: nil)
-        }
-    }
-
-    /// OtpVerificationFragment.verify içindeki onVerifyFailed.
-    private func dogrulamaBasarisiz(eposta: String, mesaj: String?) {
-        kodDogrulaniyor = false
-        mesgul = false
-        let otp = OtpRules.shared
-        let sonuc = otp.onVerifyFailed(currentWrongAttempts: yanlisDeneme, error: mesaj)
-        yanlisDeneme = sonuc.wrongAttempts
-        if sonuc.verifyEnabled {
-            bildir(mesaj ?? AuthRules.shared.MESSAGE_CODE_NOT_VERIFIED, uzun: true)
-        } else {
-            bildir(otp.MESSAGE_TOO_MANY_WRONG, uzun: true)
-        }
-        if sonuc.startCooldown {
-            kilidiBaslat(eposta: eposta)
-        }
-    }
-
-    // MARK: Öğretmen girişi (TeacherLoginActivity)
-
-    func ogretmenGiris() async {
-        if mesgul || ogretmenGirisSuruyor { return }
-        if let hata = TeacherLoginRules.shared.validateLogin(rawEmail: ogretmenGirisEposta, password: ogretmenGirisSifre) {
-            bildir(hata)
-            return
-        }
-        let eposta = ogretmenGirisEposta.trimmingCharacters(in: .whitespaces)
-        ogretmenGirisSuruyor = true
-        do {
-            _ = try await servis.sifreIleGiris(eposta: eposta, sifre: ogretmenGirisSifre)
-            await girisTamam()
-            ogretmenGirisSuruyor = false
-        } catch let hata as GirisHatasi {
-            ogretmenGirisSuruyor = false
-            bildir(hata.mesaj ?? AuthRules.shared.MESSAGE_WRONG_PASSWORD_OR_EMAIL)
-        } catch {
-            ogretmenGirisSuruyor = false
-            bildir(AuthRules.shared.MESSAGE_WRONG_PASSWORD_OR_EMAIL)
-        }
-    }
-
-    func sifremiUnuttumAc() {
-        if ogretmenGirisSuruyor { return }
-        sifirlamaEposta = ""
-        ac(.sifremiUnuttum)
-    }
-
-    /// TeacherForgotPasswordEmailFragment: "Devam Et"
-    func sifirlamaDevam() async {
-        if mesgul || sifirlamaGonderiliyor { return }
-        let kurallar = AuthRules.shared
-        if let hata = TeacherLoginRules.shared.validateForgotPasswordEmail(rawEmail: sifirlamaEposta) {
-            bildir(hata)
-            return
-        }
-        let normal = kurallar.normalizeEmail(email: sifirlamaEposta)
-        sifirlamaGonderiliyor = true
-        mesgul = true
-        defer {
-            sifirlamaGonderiliyor = false
-            mesgul = false
-        }
-        do {
-            try await servis.dogrulamaKoduGonder(eposta: normal, amac: kurallar.OTP_PURPOSE_TEACHER_RESET)
-            kodEkraniniAc(eposta: normal, tur: .sifreSifirlama)
-        } catch let hata as GirisHatasi {
-            bildir(hata.mesaj ?? kurallar.MESSAGE_CODE_NOT_SENT, uzun: true)
-        } catch {
-            bildir(kurallar.MESSAGE_CODE_NOT_SENT, uzun: true)
-        }
-    }
-
-    /// TeacherNewPasswordFragment: "Şifreyi güncelle"
-    func sifreyiGuncelle(eposta: String, kod: String) async {
-        if mesgul || yeniSifreGuncelleniyor { return }
-        if let hata = TeacherLoginRules.shared.validateNewPassword(newPassword: yeniSifre, confirm: yeniSifreTekrar) {
-            bildir(hata)
-            return
-        }
-        let sifre = yeniSifre
-        yeniSifreGuncelleniyor = true
-        defer { yeniSifreGuncelleniyor = false }
-        do {
-            try await servis.sifreyiSifirla(eposta: eposta, kod: kod, yeniSifre: sifre)
-        } catch let hata as GirisHatasi {
-            bildir(hata.mesaj ?? AuthRules.shared.MESSAGE_PASSWORD_NOT_UPDATED, uzun: true)
-            return
-        } catch {
-            bildir(AuthRules.shared.MESSAGE_PASSWORD_NOT_UPDATED, uzun: true)
-            return
-        }
-        // Şifre güncellendi: yeni şifreyle hemen giriş denenir.
-        do {
-            _ = try await servis.sifreIleGiris(eposta: eposta, sifre: sifre)
-            await girisTamam()
-        } catch {
-            bildir(TeacherLoginRules.shared.MESSAGE_PASSWORD_UPDATED_LOGIN_MANUALLY, uzun: true)
+            bildir(apple ? GirisMetin.appleGirisBasarisiz : Metin.al("ui_google_girisi_basarisiz"))
         }
     }
 }
 
-/// Giriş ekranlarının strings.xml metinleri (Metin.al ile okunur) ve yalnızca iOS için eklenen metinler.
+/// Giriş ekranlarının strings.xml metinleri (Metin.al ile okunur) ve Android'de koda gömülü ya da
+/// yalnızca iOS için eklenen metinler.
 enum GirisMetin {
     /// strings.xml: otp_resend_button
     static var koduTekrarGonder: String { Metin.al("otp_resend_button") }
     /// strings.xml: otp_can_retry
     static var tekrarDeneyebilirsiniz: String { Metin.al("otp_can_retry") }
-    /// strings.xml: login_start_student_title / login_start_teacher_title
-    static var ogrenciBaslik: String { Metin.al("login_start_student_title") }
-    static var ogretmenBaslik: String { Metin.al("login_start_teacher_title") }
-    /// strings.xml: login_start_student_subtitle / login_start_teacher_subtitle
-    static var ogrenciAltBaslik: String { Metin.al("login_start_student_subtitle") }
-    static var ogretmenAltBaslik: String { Metin.al("login_start_teacher_subtitle") }
-    /// strings.xml: login_start_login_button ("Zaten hesabım var") / login_start_start_button ("Başla");
-    /// eski primary/secondary anahtarları Android'de silindi. Düğme işlevine göre eşlendi (yerleşim değişmedi).
-    static var girisYap: String { Metin.al("login_start_login_button") }
-    static var basla: String { Metin.al("login_start_start_button") }
-    /// strings.xml: login_start_teacher_mode_button / login_start_student_mode_button
-    static var ogretmenGirisi: String { Metin.al("login_start_teacher_mode_button") }
-    static var ogrenciGirisi: String { Metin.al("login_start_student_mode_button") }
 
     /// strings.xml: otp_resend_cooldown ("%1$d sn")
     static func yenidenGonderGeriSayim(saniye: Int) -> String {
@@ -779,6 +524,13 @@ enum GirisMetin {
     static func kilitGeriSayim(dakika: Int, saniye: Int) -> String {
         return Metin.al("otp_wrong_cooldown_btn", dakika, saniye)
     }
+
+    // Android'de koda gömülü Türkçe metinler (strings.xml'de karşılığı yok).
+    /// UserInfoFragment.bindStep: meydan okuma adımının düğmesi.
+    static let hedefimiOnayla = "Hedefimi onayla"
+    /// StreakViews.reminderHourLabel(16) / (20).
+    static let okuldanSonra = "Okuldan sonra"
+    static let yemektenSonra = "Yemekten sonra"
 
     // Android'de karşılığı olmayan metinler (Apple ile giriş yalnızca iOS'ta var).
     static let appleIleGirisYap = "Apple ile Giriş Yap"

@@ -41,6 +41,12 @@ final class AbakusDenetleyici: ObservableObject {
         return tahta?.hareketEdiyor ?? false
     }
 
+    /// Sıfırlama animasyonu sürüyor mu (Android: isResetInProgress). Sürerken görülen ara değerler
+    /// soru kaydına (hata analizi) alınmaz.
+    var sifirlaniyor: Bool {
+        return tahta?.sifirlaniyor ?? false
+    }
+
     /// Bütün boncukları sıfır konumuna döndürür (Android: abacusController.reset()).
     func sifirla(animasyonlu: Bool = true) {
         bekleyenDeger = nil
@@ -87,16 +93,18 @@ struct AbakusGorunumu: View {
     private let animasyonSuresiMs: Int
     private let ses: AbakusBoncukSesi?
     private let degerDegisti: ((Int) -> Void)?
+    private let boncukAyari: AbakusBoncukAyari
 
     /// - Parameters:
     ///   - denetleyici: değer okuma, sıfırlama ve değer yerleştirme tutamağı.
     ///   - basamakSayisi: gösterilecek çubuk sayısı (1...5); sağdan (birler) başlayarak sayılır.
     ///   - kilitli: true iken dokunmalar yutulur, boncuklar oynamaz.
     ///   - stil: boncuk ve çerçeve görünümü.
-    ///   - animasyonSuresiMs: boncuğun bir adımı kaç ms'de aldığı (Android: sandıkta 50, diğerlerinde
-    ///     300). Yalnızca görünüm ilk kurulurken okunur.
+    ///   - animasyonSuresiMs: boncuğun bir adımı kaç ms'de aldığı (güncel Android: her derste 300).
+    ///     Yalnızca görünüm ilk kurulurken okunur.
     ///   - ses: boncuk tık sesi; nil ise sessiz.
     ///   - degerDegisti: değer her değiştiğinde çağrılır (`denetleyici.deger` ile aynı bilgi).
+    ///   - boncukAyari: ayar panelindeki boncuk ölçeği ve boşlukları (varsayılan: değişiklik yok).
     init(
         denetleyici: AbakusDenetleyici,
         basamakSayisi: Int = 5,
@@ -104,7 +112,8 @@ struct AbakusGorunumu: View {
         stil: AbakusStili = .varsayilan,
         animasyonSuresiMs: Int = 300,
         ses: AbakusBoncukSesi? = nil,
-        degerDegisti: ((Int) -> Void)? = nil
+        degerDegisti: ((Int) -> Void)? = nil,
+        boncukAyari: AbakusBoncukAyari = AbakusBoncukAyari.varsayilan
     ) {
         self.denetleyici = denetleyici
         self.basamakSayisi = basamakSayisi
@@ -113,6 +122,7 @@ struct AbakusGorunumu: View {
         self.animasyonSuresiMs = animasyonSuresiMs
         self.ses = ses
         self.degerDegisti = degerDegisti
+        self.boncukAyari = boncukAyari
     }
 
     /// Bileşenin pt cinsinden boyutu.
@@ -129,7 +139,8 @@ struct AbakusGorunumu: View {
             stil: stil,
             animasyonSuresiMs: animasyonSuresiMs,
             ses: ses,
-            degerDegisti: degerDegisti
+            degerDegisti: degerDegisti,
+            boncukAyari: boncukAyari
         )
         .frame(width: boyut.width, height: boyut.height)
     }
@@ -144,6 +155,7 @@ private struct AbakusTahtaKoprusu: UIViewRepresentable {
     let animasyonSuresiMs: Int
     let ses: AbakusBoncukSesi?
     let degerDegisti: ((Int) -> Void)?
+    let boncukAyari: AbakusBoncukAyari
 
     func makeUIView(context: Context) -> AbakusTahtaGorunumu {
         let tahta = AbakusTahtaGorunumu(animasyonSuresiMs: animasyonSuresiMs)
@@ -162,6 +174,7 @@ private struct AbakusTahtaKoprusu: UIViewRepresentable {
         tahta.stiliAyarla(stil)
         tahta.kilitle(kilitli)
         tahta.ses = ses
+        tahta.boncukAyariniAyarla(boncukAyari)
         let tutamak = denetleyici
         let bildirim = degerDegisti
         tahta.degerDegisti = { [weak tutamak] yeni in

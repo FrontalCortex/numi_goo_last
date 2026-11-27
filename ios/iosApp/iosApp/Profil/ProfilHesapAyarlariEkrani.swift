@@ -1,39 +1,57 @@
 import SwiftUI
 import UIKit
 
-// "Ayarlar" ekranı: Profil, Ses ve Bildirimler, Abonelik İptali, Geri bildirim, OTURUMU KAPAT.
-// Android: AccountSettingsFragment + res/layout/fragment_account_settings.xml.
+// "Ayarlar" ekranı. Android: AccountSettingsFragment + res/layout/fragment_account_settings.xml.
+//
+// Güncel Android kartları (yukarıdan aşağı) ve iOS'taki durumu:
+//   Hesap: Profil · Ses ve Bildirimler · Dil · (Reklam gizlilik seçenekleri)
+//   Sınıf: Sınıfa katıl / Sınıfım                         — iOS'ta GİZLİ (sınıf/kurs özelliği ilk sürümde yok)
+//   Veliler için: Veli Paneli · Arkadaşını davet et        — iOS'ta GİZLİ (veli paneli ilk iOS sürümünün dışında;
+//                                                            davet sistemi / Universal Links henüz yok)
+//   Ödemeler ve abonelikler: Abonelik İptali (plan Free değilse)
+//   Destek: Geri bildirim · Kaynaklar ve lisanslar
+//   OTURUMU KAPAT
+// "Reklam gizlilik seçenekleri" Android'de yalnızca UMP "gerekli" dediğinde (AEA/İngiltere/İsviçre) görünür,
+// Türkiye'de gizli; iOS'ta reklam SDK'sı / UMP henüz yok, satır gizli.
 // Hesap silme Android'de bu ekranda değil, "Profil" satırının açtığı profil düzenleme ekranındadır
-// (EditProfileFragment); akış aynen korunmuştur.
+// (EditProfileFragment; App Store kuralı 5.1.1(v) için uygulama içinde) — akış aynen korunmuştur.
 
 struct ProfilHesapAyarlariEkrani: View {
     @ObservedObject var gezinme: ProfilGezinme
     /// "Ödemeler ve abonelikler" bölümü plan okunana kadar gizlidir; plan "Free" ise hiç görünmez.
     @State private var odemelerGorunur: Bool = false
+    @State private var dilSeciciAcik: Bool = false
 
     /// App Store abonelik yönetimi (Android'de Play Store abonelik sayfası açılır).
     private static let abonelikAdresi = "https://apps.apple.com/account/subscriptions"
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 0) {
-                baslik
-                ProfilStil.ayarAyirici
-                    .frame(height: 2)
-                    .padding(.top, 3)
-                icerik
-                    .padding(.horizontal, 16)
-                    .padding(.top, 14)
-                    .padding(.bottom, 24)
+        ZStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    baslik
+                    ProfilStil.ayarAyirici
+                        .frame(height: 2)
+                        .padding(.top, 3)
+                    icerik
+                        .padding(.horizontal, 16)
+                        .padding(.top, 14)
+                        .padding(.bottom, 24)
+                }
+            }
+            if dilSeciciAcik {
+                ProfilDilSecici(kapat: { dilSeciciAcik = false })
+                    .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.15), value: dilSeciciAcik)
         .task { await planiYukle() }
     }
 
     /// accountSettingsHeader: ortada "Ayarlar" (20, #BDBDBD), solda 48x48 geri düğmesi.
     private var baslik: some View {
         ZStack {
-            Text("Ayarlar")
+            Text(Metin.al("fragment_account_settings_account_settings_header_title"))
                 .font(ProfilStil.yazi(20))
                 .foregroundColor(ProfilStil.ayarBaslik)
             HStack(spacing: 0) {
@@ -48,7 +66,7 @@ struct ProfilHesapAyarlariEkrani: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text("Geri"))
+                .accessibilityLabel(Text(Metin.al("fragment_followers_following_btn_back_desc")))
                 Spacer(minLength: 0)
             }
         }
@@ -58,31 +76,20 @@ struct ProfilHesapAyarlariEkrani: View {
 
     private var icerik: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ProfilAyarBolumBasligi(metin: "Hesap")
-            ProfilAyarKarti {
-                ProfilAyarSatiri(metin: "Profil", eylem: { gezinme.ac(.profilDuzenle) })
-                ProfilStil.ayarAyirici.frame(height: 1)
-                // Android: SoundSettingsFragment (başka klasörün ekranı; henüz bağlı değil).
-                ProfilAyarSatiri(metin: "Ses ve Bildirimler", eylem: {})
-            }
-            .padding(.bottom, 28)
-
+            hesapBolumu
             if odemelerGorunur {
-                ProfilAyarBolumBasligi(metin: "Ödemeler ve abonelikler")
+                ProfilAyarBolumBasligi(metin: Metin.al("fragment_account_settings_tv_payments_header"))
                 ProfilAyarKarti {
-                    ProfilAyarSatiri(metin: "Abonelik İptali", eylem: { abonelikSayfasiniAc() })
+                    ProfilAyarSatiri(
+                        metin: Metin.al("fragment_account_settings_text_6"),
+                        eylem: { abonelikSayfasiniAc() }
+                    )
                 }
                 .padding(.bottom, 28)
             }
-
-            ProfilAyarBolumBasligi(metin: "Destek")
-            ProfilAyarKarti {
-                ProfilAyarSatiri(metin: "Geri bildirim", eylem: { gezinme.ac(.geriBildirim) })
-            }
-            .padding(.bottom, 28)
-
+            destekBolumu
             ProfilCerceveliDugme(
-                metin: "OTURUMU KAPAT",
+                metin: Metin.al("fragment_account_settings_btn_account_settings_logout"),
                 metinRengi: ProfilStil.cikisMetni,
                 zemin: Color("background_color"),
                 cizgi: ProfilStil.cikisCizgisi,
@@ -91,6 +98,45 @@ struct ProfilHesapAyarlariEkrani: View {
                 yaziBoyu: 20,
                 eylem: { oturumuKapat() }
             )
+        }
+    }
+
+    private var hesapBolumu: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ProfilAyarBolumBasligi(metin: Metin.al("fragment_account_settings_text"))
+            ProfilAyarKarti {
+                ProfilAyarSatiri(
+                    metin: Metin.al("fragment_account_settings_text_2"),
+                    eylem: { gezinme.ac(.profilDuzenle) }
+                )
+                ProfilStil.ayarAyirici.frame(height: 1)
+                // Android: SoundSettingsFragment (başka klasörün ekranı; henüz bağlı değil).
+                ProfilAyarSatiri(metin: Metin.al("fragment_account_settings_text_3"), eylem: {})
+                ProfilStil.ayarAyirici.frame(height: 1)
+                // Dil (Android: AppLanguage; seçim uygulamayı yeniden başlatır). Çoklu dil iOS'ta henüz açılmadı:
+                // satır Android'deki yerinde, değer "Türkçe"; seçicide yalnızca Türkçe etkin.
+                ProfilAyarSatiri(
+                    metin: Metin.al("settings_language"),
+                    deger: Metin.al("settings_language_tr"),
+                    eylem: { dilSeciciAcik = true }
+                )
+            }
+            .padding(.bottom, 28)
+        }
+    }
+
+    private var destekBolumu: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ProfilAyarBolumBasligi(metin: Metin.al("fragment_account_settings_text_7"))
+            ProfilAyarKarti {
+                ProfilAyarSatiri(
+                    metin: Metin.al("fragment_account_settings_text_8"),
+                    eylem: { gezinme.ac(.geriBildirim) }
+                )
+                ProfilStil.kartIciAyirici.frame(height: 1)
+                ProfilAyarSatiri(metin: Metin.al("credits_title"), eylem: { gezinme.ac(.kaynaklar) })
+            }
+            .padding(.bottom, 28)
         }
     }
 
@@ -106,6 +152,7 @@ struct ProfilHesapAyarlariEkrani: View {
         if UIApplication.shared.canOpenURL(adres) {
             UIApplication.shared.open(adres)
         } else {
+            // Android: `ui_play_store_acilamadi` ("Play Store açılamadı"); iOS karşılığı metinlerde yok.
             gezinme.bildir("App Store açılamadı")
         }
     }
@@ -114,6 +161,106 @@ struct ProfilHesapAyarlariEkrani: View {
     private func oturumuKapat() {
         gezinme.depo.cikisYap()
         gezinme.oturumKapandi()
+    }
+}
+
+/// Dil seçimi (Android: showLanguagePicker — başlık "Dil", tek seçimli liste, "Vazgeç").
+/// Seçenekler Android'deki sırayla: Telefonun dili, Türkçe, English, Bahasa Indonesia, العربية
+/// (dil adları kendi dillerinde). ÇOKLU DİL HENÜZ AÇILMADI: yalnızca Türkçe seçili ve etkin, diğerleri soluk ve
+/// dokunulmaz. Dil açılınca `Metin.diliAyarla(_:)` çağrılmalı ve seçim saklanmalı (Android: AppLanguage.apply).
+struct ProfilDilSecici: View {
+    let kapat: () -> Void
+
+    private struct Secenek: Identifiable {
+        let id: String
+        let etiket: String
+        let etkin: Bool
+    }
+
+    private var secenekler: [Secenek] {
+        return [
+            Secenek(id: "system", etiket: Metin.al("settings_language_system"), etkin: false),
+            Secenek(id: "tr", etiket: Metin.al("settings_language_tr"), etkin: true),
+            Secenek(id: "en", etiket: Metin.al("settings_language_en"), etkin: false),
+            Secenek(id: "id", etiket: Metin.al("settings_language_id"), etkin: false),
+            Secenek(id: "ar", etiket: Metin.al("settings_language_ar"), etkin: false),
+        ]
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture(perform: kapat)
+            pencere
+                .padding(.horizontal, 32)
+        }
+    }
+
+    private var pencere: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(Metin.al("settings_language"))
+                .font(ProfilStil.yazi(20))
+                .foregroundColor(ProfilStil.ayarMetni)
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
+                .padding(.bottom, 8)
+            ForEach(secenekler) { secenek in
+                ProfilDilSatiri(etiket: secenek.etiket, secili: secenek.id == "tr", etkin: secenek.etkin, sec: kapat)
+            }
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                Button(action: kapat) {
+                    Text(Metin.al("class_cancel"))
+                        .font(ProfilStil.yazi(16))
+                        .foregroundColor(Color("dark_primary"))
+                        .padding(.horizontal, 16)
+                        .frame(height: 48)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 8)
+            .padding(.bottom, 4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color("bright_background_color")))
+    }
+}
+
+/// Tek seçimli liste satırı (radyo düğmesi + etiket, 48 pt).
+struct ProfilDilSatiri: View {
+    let etiket: String
+    let secili: Bool
+    let etkin: Bool
+    let sec: () -> Void
+
+    var body: some View {
+        Button(action: sec) {
+            HStack(spacing: 20) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(secili ? Color("dark_primary") : ProfilStil.soluk, lineWidth: 2)
+                        .frame(width: 20, height: 20)
+                    if secili {
+                        Circle()
+                            .fill(Color("dark_primary"))
+                            .frame(width: 10, height: 10)
+                    }
+                }
+                Text(etiket)
+                    .font(ProfilStil.yazi(16))
+                    .foregroundColor(ProfilStil.ayarMetni)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 24)
+            .frame(height: 48)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!etkin)
+        .opacity(etkin ? 1.0 : 0.4)
     }
 }
 
@@ -143,9 +290,11 @@ struct ProfilAyarKarti<Icerik: View>: View {
     }
 }
 
-/// 72 pt satır: metin (20, #E6EEF2) + sağda 20x20 ok (#607887); yatay iç boşluk 18.
+/// 72 pt satır: metin (20, #E6EEF2) + isteğe bağlı değer (16, #9FB3BF, oktan 8 önce) + sağda 20x20 ok
+/// (#607887); yatay iç boşluk 18.
 struct ProfilAyarSatiri: View {
     let metin: String
+    var deger: String? = nil
     let eylem: () -> Void
 
     var body: some View {
@@ -156,6 +305,13 @@ struct ProfilAyarSatiri: View {
                     .foregroundColor(ProfilStil.ayarMetni)
                     .lineLimit(1)
                 Spacer(minLength: 8)
+                if let degerMetni = deger {
+                    Text(degerMetni)
+                        .font(ProfilStil.yazi(16))
+                        .foregroundColor(ProfilStil.ayarIkincil)
+                        .lineLimit(1)
+                        .padding(.trailing, 8)
+                }
                 Image("dualingo_arrow_ic")
                     .renderingMode(.template)
                     .resizable()

@@ -17,7 +17,19 @@ struct EkranGalerisi: View {
     /// Geçerli ekran adları (küçük harf, ASCII).
     static let adlar: [String] = [
         "giris",
+        "giris-acilis",
+        "giris-tanisma",
+        "giris-eposta",
         "kayit",
+        "kayit-yas",
+        "kayit-kaynak",
+        "kayit-abakus",
+        "kayit-hedef",
+        "kayit-yol",
+        "kayit-meydan-okuma",
+        "kayit-hatirlatma",
+        "kayit-veli-onayi",
+        "kayit-kod",
         "kabuk",
         "harita-kisim",
         "harita-ders",
@@ -32,17 +44,20 @@ struct EkranGalerisi: View {
         "sonuc-sandik",
         "sandik",
         "gorevler",
-        "gunluk-soru",
-        "gunluk-soru-odul",
+        "gorevler-yeni",
         "kupa",
         "kupa-gecmisi",
+        "kupa-yolu-odul",
         "lider-tablosu",
         "rozetler",
         "rozet-detay",
         "ozellestirme",
         "magaza",
+        "magaza-alt",
         "profil",
         "profil-duzenle",
+        "avatar",
+        "avatar-duzenle",
         "yer-tutucu",
         "yazi-tipi",
         "lottie",
@@ -83,6 +98,9 @@ struct EkranGalerisi: View {
             dersEkranlari
         } else if EkranGalerisi.sekmeAdlari.contains(ad) {
             sekmeEkranlari
+        } else if let ornek = GirisOrnekAdimi(rawValue: ad) {
+            // Giriş ve kayıt akışının adımları ("giris", "kayit", "giris-…", "kayit-…").
+            GirisAkisi(servis: SahteKimlikServisi(), girisYapildi: {}, ornek: ornek)
         } else {
             digerEkranlar
         }
@@ -94,8 +112,8 @@ struct EkranGalerisi: View {
     ]
 
     private static let sekmeAdlari: Set<String> = [
-        "gorevler", "gunluk-soru", "gunluk-soru-odul", "kupa", "kupa-gecmisi", "lider-tablosu",
-        "rozetler", "rozet-detay", "ozellestirme", "magaza", "profil",
+        "gorevler", "gorevler-yeni", "kupa", "kupa-gecmisi", "kupa-yolu-odul", "lider-tablosu",
+        "rozetler", "rozet-detay", "ozellestirme", "magaza", "magaza-alt", "profil",
     ]
 
     // MARK: Ders, sonuç, sandık
@@ -129,11 +147,11 @@ struct EkranGalerisi: View {
     private var sekmeEkranlari: some View {
         switch ad {
         case "gorevler":
+            // İlerlemiş kullanıcı: görev sayaçları dolu, günlük soru havuzu dolu.
             GorevlerEkrani()
-        case "gunluk-soru":
-            GunlukSoruEkrani()
-        case "gunluk-soru-odul":
-            GunlukSoruOdulEkrani(periodKey: "period_0", rozetKuyrugu: [], kapat: { _ in })
+        case "gorevler-yeni":
+            // Hiç oynamamış kullanıcı: görev sayaçları sıfır, günlük soru havuzu boş.
+            GorevlerEkrani.yeniKullanici()
         case "kupa":
             KupaEkrani(kapat: nil, kupaDersiBaslat: nil)
         case "kupa-gecmisi":
@@ -144,6 +162,9 @@ struct EkranGalerisi: View {
                 animasyonDosyasi: "dinosaur_anim.json",
                 kapat: nil
             )
+        case "kupa-yolu-odul":
+            // Sahte defter: toplama yolunda 500'e kadar alınmış, 640 kupa (600 sandığı hazır).
+            KupaYoluOdulEkrani(kupaAlani: "addition_abacus_cup", kapat: nil)
         case "lider-tablosu":
             KupaLiderTablosuEkrani(partId: 1, dersAnahtari: "p1_i04_unite_maratonu", dersBasligi: "Ünite Maratonu", kapat: nil)
         case "rozetler":
@@ -154,6 +175,9 @@ struct EkranGalerisi: View {
             OzellestirmeEkrani()
         case "magaza":
             MagazaEkrani(kapat: {})
+        case "magaza-alt":
+            // Alta kaydırılmış durum: Sobi kredisi, altın, anahtar bölümleri ve geri yükle düğmesi.
+            MagazaEkrani(kapat: {}, odak: .alt)
         default:
             ProfilEkrani()
         }
@@ -164,10 +188,6 @@ struct EkranGalerisi: View {
     @ViewBuilder
     private var digerEkranlar: some View {
         switch ad {
-        case "giris":
-            GirisAkisi(servis: SahteKimlikServisi(), girisYapildi: {})
-        case "kayit":
-            EkranGalerisiKayit()
         case "kabuk":
             // Giriş atlanır; kabuk bütün geçişleriyle çalışır.
             UygulamaKokGorunumu(girisAtla: true)
@@ -181,6 +201,15 @@ struct EkranGalerisi: View {
             EkranGalerisiHarita(durum: .kilitliPanel)
         case "profil-duzenle":
             EkranGalerisiProfilDuzenle()
+        case "avatar":
+            // Farklı avatar dizgeleriyle 12 avatar (varsayılan, maskeler, degrade, dairesiz, yakın plan).
+            AvatarOrnekIzgarasi()
+        case "avatar-duzenle":
+            AvatarDuzenleEkrani(
+                baslangic: "personas|hair=curly;eyes=happy;hairColor=6c4545;backgroundColor=c0aede",
+                kaydet: { _ in },
+                kapat: {}
+            )
         case "yer-tutucu":
             YonetimYerTutucuEkrani(
                 baslik: "Sayıları Abaküste Tanıma",
@@ -210,11 +239,12 @@ struct EkranGalerisi: View {
 
 /// Galerideki ekranların örnek girdileri.
 enum EkranGalerisiVeri {
-    /// Dört soruluk olağan ders (iki tek sayı, iki işlem).
+    /// Dört soruluk olağan ders (iki tek sayı, iki işlem). Harita sırası 5: abaküs ayar düğmesi görünür
+    /// (bölüm 1'de ilk üç ders için gizlidir) ve iki sayılı sorularda "Sobi ile analiz et" çıkabilir.
     static var abakusDersi: AbakusDersBaslangici {
         return AbakusDersBaslangici(
             partId: 1,
-            haritaSirasi: 1,
+            haritaSirasi: 5,
             dersTuru: 0,
             baslik: "Sayıları Abaküste Tanıma",
             ipucu: "En sağdaki sütunu kullan.",

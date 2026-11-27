@@ -8,7 +8,7 @@ import SwiftUI
 //   harita    → PartSelectionFragment / MapFragment            → HaritaEkrani
 //   profil    → ProfileFragment                                → ProfilEkrani
 //   gorevler  → TasksFragment(MODE_MISSIONS): görev listesi, günlük soru kartı, Abaküs kartı
-//                                                              → GorevlerEkrani + GunlukSoruEkrani
+//                                                              → GorevlerEkrani (tek giriş görünümü)
 //   magaza    → AbacusCustomizationFragment                    → OzellestirmeEkrani
 //   bildirim  → öğrencide SobiChatFragment, öğretmende TeacherClassesFragment → YakindaEkrani
 //               ("öğretmene sor" / NotificationFragment: TeacherQuestionsFeature.ENABLED = false)
@@ -149,28 +149,11 @@ struct AnaKabuk: View {
     }
 
     /// Android: TasksFragment(MODE_MISSIONS) tek listede görevler, günlük soru kartı ve Abaküs
-    /// kartı gösterir. iOS'ta bu ikisi henüz ayrı giriş görünümleri (Gorevler/, GunlukSoru/) ve
-    /// her biri kendi kaydırma alanına sahip; o klasörler güncellenene dek alt alta iki bölme.
+    /// kartı gösterir; iOS'ta üçü de GorevlerEkrani'nın tek kaydırma alanındadır.
     private var gorevlerSekmesi: some View {
-        VStack(spacing: 0) {
-            gorevler
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            KabukAyirici()
-            gunlukSoru
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    private var gorevler: some View {
         let nesne: UygulamaYoneticisi = yonetici
         var ekran = GorevlerEkrani()
         ekran.sandikAc = { istek in nesne.gorevSandiginiAc(istek) }
-        return ekran
-    }
-
-    private var gunlukSoru: some View {
-        let nesne: UygulamaYoneticisi = yonetici
-        var ekran = GunlukSoruEkrani()
         ekran.soruBaslat = { veri in nesne.gunlukSoruyuBaslat(veri) }
         ekran.odulAc = { istek in nesne.gunlukSoruOdulunuAc(istek) }
         ekran.kartSecildi = { kart in nesne.kesfetKartiSecildi(kart) }

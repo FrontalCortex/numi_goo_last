@@ -52,20 +52,63 @@ enum KupaStil {
     }
 }
 
-/// Android layout'larında sabit yazılmış metinler (strings.xml'de karşılığı yok).
+/// Android layout metinleri. Güncel Android'de hepsi strings.xml'dedir; adlar aynıdır, `Metin.al` ile okunur
+/// (dil değişince güncel kalsın diye hesaplanan özelliklerdir).
 enum KupaMetin {
-    // panel_cup_path.xml / panel_cup_difficulty.xml metinleri ortak koddan (CupPathLogic) gelir.
     // fragment_cup_history.xml
-    static let guncelKupa = "Güncel Kupa"
-    static let tekNoktaIpucu = "Tek veri noktası var — karşılaştırma için birkaç gün sonra tekrar bak"
-    static let gecmisYok = "Henüz geçmiş veri yok"
+    static var guncelKupa: String { return Metin.al("fragment_cup_history_text") }
+    static var tekNoktaIpucu: String { return Metin.al("fragment_cup_history_tv_cup_history_single_hint") }
+    static var gecmisYok: String { return Metin.al("fragment_cup_history_tv_cup_history_empty") }
     // fragment_badge_detail.xml
-    static let basarilar = "Başarılar"
-    static let kisiselRekorlar = "Kişisel Rekorlar"
-    static let rozetler = "Rozetler"
-    // fragment_badge.xml
-    static let unite = "Ünite"
-    static let sezon = "Sezon"
+    static var basarilar: String { return Metin.al("fragment_badge_detail_tv_badge_detail_title") }
+    static var kisiselRekorlar: String { return Metin.al("fragment_badge_detail_tv_personal_records_title") }
+    static var rozetler: String { return Metin.al("fragment_badge_detail_tv_awards_title") }
+    // fragment_badge.xml (parça paneli başlıkları; madalya ve kupa için ayrı anahtarlar)
+    static func uniteBasligi(kupa: Bool) -> String {
+        return Metin.al(kupa ? "fragment_badge_tv_badge_piece_header_unit_cup" : "fragment_badge_tv_badge_piece_header_unit_medal")
+    }
+    static func sezonBasligi(kupa: Bool) -> String {
+        return Metin.al(kupa ? "fragment_badge_tv_badge_piece_header_season_cup" : "fragment_badge_tv_badge_piece_header_season_medal")
+    }
+}
+
+/// Kısa süreli bilgi balonu (Android Toast: ortalanmış kapsül; alt kenarda). Kupa Yolu ekranlarının
+/// "Bu sandığı zaten aldın" / "X kupaya ulaşınca açılır" uyarıları için. Gösterip gizlemeyi çağıran yapar.
+struct KupaToast: View {
+    let metin: String
+
+    var body: some View {
+        Text(metin)
+            .font(Tema.yazi(14, kalin: false))
+            .foregroundColor(Color.white)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Capsule().fill(KupaStil.renk(0x323232)))
+            .padding(.horizontal, 24)
+            .padding(.bottom, 48)
+            .allowsHitTesting(false)
+    }
+}
+
+/// Kilitli karta dokununca çıkan uyarı (Android LockedHint: Snackbar, alt kenarda tam genişlik,
+/// 4 köşe yuvarlaklığı, en çok 5 satır).
+struct KupaKilitIpucu: View {
+    let metin: String
+
+    var body: some View {
+        Text(metin)
+            .font(Tema.yazi(14, kalin: false))
+            .foregroundColor(Color.white)
+            .lineLimit(5)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(RoundedRectangle(cornerRadius: 4).fill(KupaStil.renk(0x323232)))
+            .padding(8)
+            .allowsHitTesting(false)
+    }
 }
 
 /// Yalnızca üst köşeleri yuvarlatılmış dikdörtgen (bottom_sheet_background.xml).

@@ -2,12 +2,13 @@ import SwiftUI
 
 // Profil sekmesinin giriş noktası.
 //
-// Android'deki akış: ProfileFragment (alt çubuğun 2. sekmesi) → aynı kapsayıcıda `replace` +
+// Android'deki akış: ProfileFragment (alt çubuğun profil sekmesi) → aynı kapsayıcıda `replace` +
 // `addToBackStack` ile açılan alt ekranlar:
 //   ARKADAŞ EKLE → AddFriendFragment → (satıra dokununca) ProfileFragment.newInstance(uid)
 //   Takip edilen / Takipçi → FollowersFollowingFragment → ProfileFragment.newInstance(uid)
-//   Ayarlar → AccountSettingsFragment → EditProfileFragment (hesap silme burada) / FeedbackFragment
-//   Avatar → AvatarPickerFragment (alttan açılan sayfa)
+//   Ayarlar → AccountSettingsFragment → EditProfileFragment (hesap silme burada) / FeedbackFragment /
+//             CreditsFragment ("Kaynaklar ve lisanslar")
+//   Avatar alanı → AvatarCustomFragment (avatar düzenleme; eski 12'li AvatarPickerFragment silindi)
 // Burada bunlar tek kök görünümde, kendi geri yığınıyla (ProfilGezinme.yigin) toplanır; geçiş
 // Android'deki slide_in_right / slide_out_right karşılığı sağdan kaymadır.
 //
@@ -22,6 +23,8 @@ enum ProfilHedef: Equatable {
     case hesapAyarlari
     case profilDuzenle
     case geriBildirim
+    case avatarDuzenle
+    case kaynaklar
 }
 
 struct ProfilRota: Identifiable, Equatable {
@@ -36,12 +39,15 @@ final class ProfilGezinme: ObservableObject {
     @Published var bildirim: ProfilBildirim? = nil
     /// Profil düzenlemeden dönünce kök profilin yeniden yüklenmesi için artırılır.
     @Published var yenilemeSayaci: Int = 0
+    /// Avatar kaydedilince artırılır; kök profil yerel kopyadan yeniden çizer.
+    @Published var avatarSayaci: Int = 0
 
     let depo: ProfilDeposu
     var kupaAc: ((ProfilKupaSecimi) -> Void)?
     var rozetlerAc: (() -> Void)?
     var magazaAc: (() -> Void)?
     var cikisYapildi: (() -> Void)?
+    var avatarDegisti: ((String) -> Void)?
 
     private var rotaSayaci: Int = 0
     private var bildirimSayaci: Int = 0
@@ -80,6 +86,26 @@ final class ProfilGezinme: ObservableObject {
         yigin = []
         cikisYapildi?()
     }
+
+    /// Kullanılan avatar (Android: AvatarStore.loadActive; hiç kaydedilmemişse varsayılan).
+    var etkinAvatar: String {
+        return depo.yerelAvatar ?? AvatarOrtak.varsayilan
+    }
+
+    /// Android: AvatarCustomFragment "Kaydet" → AvatarStore.save (yerel + `users/{uid}.avatarConfig`;
+    /// Firestore yazımı başarısız olsa da yerel kayıt kalır) → MainActivity.refreshProfileNavIcon →
+    /// "Avatarın kaydedildi".
+    func avatarKaydet(_ config: String) {
+        let duz: String = AvatarOrtak.duzgun(config)
+        depo.yerelAvatar = duz
+        let kaynak: ProfilDeposu = depo
+        Task {
+            try? await kaynak.avatarKaydet(duz)
+        }
+        avatarSayaci += 1
+        avatarDegisti?(duz)
+        bildir(Metin.al("ui_avatarin_kaydedildi"))
+    }
 }
 
 struct ProfilEkrani: View {
@@ -92,12 +118,15 @@ struct ProfilEkrani: View {
     ///     (kabuk bağlantısı için ayrılmıştır).
     ///   - cikisYapildi: Oturum kapatılınca ya da hesap silinince (Android: LoginStartActivity).
     ///   - depo: Veri kaynağı; verilmezse örnek veriyle çalışan sahte depo kullanılır.
+    ///   - avatarDegisti: Avatar kaydedilince yeni dizgeyle (Android: MainActivity.refreshProfileNavIcon —
+    ///     alt çubuktaki profil sekmesi ikonu kullanıcının avatarı). Kabuk bağlamazsa nil.
     init(
         kupaAc: ((ProfilKupaSecimi) -> Void)? = nil,
         rozetlerAc: (() -> Void)? = nil,
         magazaAc: (() -> Void)? = nil,
         cikisYapildi: (() -> Void)? = nil,
-        depo: ProfilDeposu? = nil
+        depo: ProfilDeposu? = nil,
+        avatarDegisti: ((String) -> Void)? = nil
     ) {
         let kaynak: ProfilDeposu = depo ?? SahteProfilDeposu()
         let nesne = ProfilGezinme(depo: kaynak)
@@ -105,6 +134,7 @@ struct ProfilEkrani: View {
         nesne.rozetlerAc = rozetlerAc
         nesne.magazaAc = magazaAc
         nesne.cikisYapildi = cikisYapildi
+        nesne.avatarDegisti = avatarDegisti
         _gezinme = StateObject(wrappedValue: nesne)
     }
 
@@ -163,6 +193,19 @@ struct ProfilRotaGorunumu: View {
             ProfilDuzenleEkrani(gezinme: gezinme)
         case .geriBildirim:
             ProfilGeriBildirimEkrani(gezinme: gezinme)
+        case .avatarDuzenle:
+            avatarDuzenleme
+        case .kaynaklar:
+            ProfilKaynaklarEkrani(geri: { gezinme.geri() })
         }
+    }
+
+    private var avatarDuzenleme: some View {
+        let nesne: ProfilGezinme = gezinme
+        return AvatarDuzenleEkrani(
+            baslangic: nesne.etkinAvatar,
+            kaydet: { yeni in nesne.avatarKaydet(yeni) },
+            kapat: { nesne.geri() }
+        )
     }
 }

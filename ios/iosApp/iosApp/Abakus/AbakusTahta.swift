@@ -144,6 +144,28 @@ final class AbakusBoncukEvSahibi: NSObject, AbacusBeadHost {
     }
 }
 
+/// Abaküs ayar panelinden gelen boncuk ölçüleri (Android: AbacusSettingsPanel.setAllBeadsScale /
+/// setAllBeadsMargins). Ölçek yalnızca çizimi değiştirir (boncuğun merkezinden); boşluklar boncuğun
+/// çubuktaki dinlenme konumunu ve bariyere olan mesafesini (yani hareket mesafesini) değiştirir.
+struct AbakusBoncukAyari: Equatable {
+    /// 0,5...2,0
+    var olcekX: CGFloat
+    var olcekY: CGFloat
+    /// Üst boncuğun üst boşluğu, dp (0...30).
+    var ustBosluk: CGFloat
+    /// Alt boncukların alt boşluğuna eklenen değer, dp (0...50).
+    var altBosluk: CGFloat
+
+    init(olcekX: CGFloat = 1, olcekY: CGFloat = 1, ustBosluk: CGFloat = 0, altBosluk: CGFloat = 0) {
+        self.olcekX = olcekX
+        self.olcekY = olcekY
+        self.ustBosluk = ustBosluk
+        self.altBosluk = altBosluk
+    }
+
+    static let varsayilan = AbakusBoncukAyari()
+}
+
 final class AbakusTahtaGorunumu: UIView {
     // MARK: Ölçüler (fragment_abacus.xml + dimens.xml; dp → pt birebir)
 
@@ -190,6 +212,7 @@ final class AbakusTahtaGorunumu: UIView {
     private(set) var basamakSayisi: Int = 5
     private(set) var stil: AbakusStili = .varsayilan
     private(set) var kilitli: Bool = false
+    private(set) var boncukAyari: AbakusBoncukAyari = .varsayilan
 
     /// Değer her değiştiğinde çağrılır.
     var degerDegisti: ((Int) -> Void)?
@@ -223,7 +246,7 @@ final class AbakusTahtaGorunumu: UIView {
 
     // MARK: Kurulum
 
-    /// `animasyonSuresiMs`: Android'de sandık dersinde 50, diğerlerinde 300.
+    /// `animasyonSuresiMs`: güncel Android'de her ders türünde 300 (BEAD_ANIMATION_MS).
     init(animasyonSuresiMs: Int) {
         self.yogunluk = max(UIScreen.main.scale, 1)
         super.init(frame: CGRect(origin: .zero, size: AbakusTahtaGorunumu.boyut(basamakSayisi: 5)))
@@ -315,13 +338,17 @@ final class AbakusTahtaGorunumu: UIView {
     private func mesafeleriOlc() {
         let boncukPx: CGFloat = AbakusTahtaGorunumu.boncukBoyu * yogunluk
         // 1. alt boncuğun üst kenarı: 250 − 82 − 40 = 128 dp.
+        // Ayar panelindeki alt boşluk alt boncukları yukarı iter (marginBottom artar).
         let alt1Ustu: CGFloat = AbakusTahtaGorunumu.cubukYuksekligi - 82 - AbakusTahtaGorunumu.boncukBoyu
+            - boncukAyari.altBosluk
         let alt1Px: CGFloat = alt1Ustu * yogunluk
+        // Ayar panelindeki üst boşluk üst boncuğu aşağı iter (topMargin artar).
+        let ustPx: CGFloat = boncukAyari.ustBosluk * yogunluk
         let bariyerPx: CGFloat = AbakusTahtaGorunumu.bariyerUstu * yogunluk
         let bariyerYukseklikPx: CGFloat = AbakusTahtaGorunumu.bariyerYuksekligi * yogunluk
         _ = kopru.mesafeleriOlc(
             denetleyici: denetleyici,
-            topBeadY: 0,
+            topBeadY: Int32(ustPx.rounded()),
             topBeadHeight: Int32(boncukPx.rounded()),
             bottom1Y: Int32(alt1Px.rounded()),
             barrierY: Int32(bariyerPx.rounded()),
@@ -348,6 +375,20 @@ final class AbakusTahtaGorunumu: UIView {
         for (kod, secili) in seciliDurumu {
             boncukGorunumunuGuncelle(kod: kod, secili: secili)
         }
+    }
+
+    /// Android: AbacusSettingsPanel.setAllBeadsScale / setAllBeadsMargins + setBeadMarginOffsets +
+    /// computeMovementDistancesFromLayout(force = true).
+    func boncukAyariniAyarla(_ yeni: AbakusBoncukAyari) {
+        if yeni == boncukAyari { return }
+        boncukAyari = yeni
+        mesafeleriOlc()
+        modeldenYerlestir()
+    }
+
+    /// Android: abacusController.isResetInProgress().
+    var sifirlaniyor: Bool {
+        return denetleyici.isResetInProgress()
     }
 
     /// Android: abacusController.setEnabled(false) — dokunmalar yutulur, boncuk oynamaz.
@@ -466,9 +507,16 @@ final class AbakusTahtaGorunumu: UIView {
             if kod % 10 != 0 {
                 // layout_gravity=bottom: üst kenar = çubuk yüksekliği − alt marj − boncuk boyu.
                 let altMarj: CGFloat = CGFloat(boncuk.bottomMargin) / yogunluk
-                y += AbakusTahtaGorunumu.cubukYuksekligi - altMarj - boy
+                y += AbakusTahtaGorunumu.cubukYuksekligi - altMarj - boy - boncukAyari.altBosluk
+            } else {
+                y += boncukAyari.ustBosluk
             }
+            // Ölçek çerçeveyi bozmasın diye önce sıfırlanır, çerçeve verilir, sonra uygulanır.
+            g.transform = CGAffineTransform.identity
             g.frame = CGRect(x: x, y: y, width: boy, height: boy)
+            if boncukAyari.olcekX != 1 || boncukAyari.olcekY != 1 {
+                g.transform = CGAffineTransform(scaleX: boncukAyari.olcekX, y: boncukAyari.olcekY)
+            }
         }
     }
 

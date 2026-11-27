@@ -31,6 +31,65 @@ final class GirisYerelDepo {
         set { depo.set(newValue, forKey: SplashRules.shared.PREF_LOGIN_START_EVER_SHOWN) }
     }
 
+    // MARK: Hesap geçmişi (DeviceAccountStore)
+
+    /// "Bu cihazda daha önce hesap açıldı mı" (AppPrefs "account_ever_created"). İlk öğreticinin
+    /// gösterilme şartı tek bu: açıldıysa oturum kapalı olsa bile öğretici gösterilmez.
+    var hesapAcildi: Bool {
+        get { depo.bool(forKey: SplashRules.shared.PREF_ACCOUNT_EVER_CREATED) }
+        set { depo.set(newValue, forKey: SplashRules.shared.PREF_ACCOUNT_EVER_CREATED) }
+    }
+
+    /// Eski kurulumlardan devralınan bayrak (yalnızca okunur).
+    var eskiOgreticiBayragi: Bool {
+        return depo.bool(forKey: SplashRules.shared.PREF_LEGACY_FIRST_TUTORIAL_SHOWN)
+    }
+
+    /// Android: DeviceAccountStore.hasEverHadAccount — okuma yan etkilidir: oturum açıksa (ya da eski
+    /// bayrak varsa) kalıcı bayrak yazılır.
+    func hesapGecmisiVar(oturumAcik: Bool) -> Bool {
+        let kurallar = SplashRules.shared
+        let acildi: Bool = hesapAcildi
+        let eski: Bool = eskiOgreticiBayragi
+        if kurallar.shouldPersistAccountFlag(accountEverCreated: acildi, signedIn: oturumAcik, legacyFirstTutorialShown: eski) {
+            hesapAcildi = true
+        }
+        return kurallar.hasEverHadAccount(accountEverCreated: acildi, signedIn: oturumAcik, legacyFirstTutorialShown: eski)
+    }
+
+    // MARK: Kayıt sorularının bekleyen cevapları
+    //
+    // Hesap henüz yokken verilen cevaplar cihazda bekler; giriş yapılınca hesap yeniyse uygulanır
+    // (Android: StreakRepository.applyPendingSignup, SorobanLevel.applyFromUserDoc). Uygulama
+    // tarafı bu klasörün kapsamı dışında (seri ve profil). Anahtarlar Android'deki ayrı prefs
+    // dosyalarının ("streak_signup_pending", "soroban_level_pending") alan adlarıdır; çakışmasın
+    // diye dosya adı ön ek olarak eklendi.
+
+    private static let seriOnEki = "streak_signup_pending."
+    private static let abakusOnEki = "soroban_level_pending."
+
+    /// Android: StreakRepository.savePendingSignup.
+    func seriCevaplariniKaydet(hedefDakika: Int, meydanGun: Int, hatirlatmaSaati: Int, simdiMs: Int64) {
+        let on = GirisYerelDepo.seriOnEki
+        depo.set(hedefDakika, forKey: on + "goal_minutes")
+        depo.set(meydanGun, forKey: on + "challenge_days")
+        depo.set(hatirlatmaSaati, forKey: on + "reminder_hour")
+        uzunYaz(simdiMs, on + "saved_at")
+    }
+
+    /// Android: SorobanLevel.savePending (SignupFlowRules.SOROBAN_LEVELS değerlerinden biri).
+    func abakusSeviyesiniKaydet(_ seviye: String, simdiMs: Int64) {
+        let on = GirisYerelDepo.abakusOnEki
+        depo.set(seviye, forKey: on + "level")
+        uzunYaz(simdiMs, on + "saved_at")
+    }
+
+    /// Android: MainActivity.markNotificationPermissionPrompted — ana ekranın ilk açılıştaki
+    /// bağlamsız izin isteği kapatılır (kayıtta zaten soruldu ya da "şimdi değil" denildi).
+    func bildirimIzniSoruldu() {
+        depo.set(true, forKey: "notif_permission_prompted")
+    }
+
     // MARK: Cihaz kimliği (SessionDeviceManager.getOrCreateDeviceId)
 
     func cihazKimligi() -> String {

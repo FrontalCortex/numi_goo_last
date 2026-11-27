@@ -6,13 +6,15 @@ import UIKit
 // gelmedikleri için SwiftUI'da çizilir. Ölçüler layout XML'lerinden (dp → pt birebir).
 
 enum GirisStil {
-    /// Ekran kenar boşluğu (activity_login.xml, activity_register.xml, activity_login_start.xml: padding).
+    /// Ekran kenar boşluğu (activity_login.xml, activity_register.xml: padding).
     static let kenarBoslugu: CGFloat = 24
     /// MaterialButton köşe yarıçapı (app:cornerRadius).
     static let dugmeKosesi: CGFloat = 8
     /// MaterialButton'ın üst/alt iç boşluğu (Material bileşenlerinin varsayılan insetTop/insetBottom):
     /// 56dp yüksekliğindeki düğmenin görünen gövdesi 44dp'dir.
     static let dugmeIcBoslugu: CGFloat = 6
+    /// Göçen düğmenin dudak kalınlığı (DepthButtons.DEPTH_DP).
+    static let dudak: CGFloat = 4
 
     /// 0xRRGGBB biçimindeki sabit renk (layout XML'lerinde kaynak adı olmadan yazılmış renkler için).
     static func renk(_ rgb: UInt32, alfa: Double = 1.0) -> Color {
@@ -24,10 +26,8 @@ enum GirisStil {
 
     /// Google düğmesinin yazı rengi (activity_login.xml: #453535).
     static let saglayiciYaziRengi: Color = GirisStil.renk(0x453535)
-    /// Seçili olmayan kaynak kartının çizgisi (fragment_user_info.xml: #33FFFFFF).
-    static let kartCizgisi: Color = Color.white.opacity(Double(0x33) / 255.0)
-    /// bg_edit_profile_input.xml çizgisi (#30363D).
-    static let yasAlaniCizgisi: Color = GirisStil.renk(0x30363D)
+    /// dark_primary (#58A6FF) yüzün dudağı: DepthButtons.darken (kanal × 0,78, aşağı yuvarlanır) → #4481C6.
+    static let anaDudak: Color = GirisStil.renk(0x4481C6)
     /// Android teması (Theme.MaterialComponents, koyu) colorPrimary tanımlamaz; Material'ın koyu
     /// tema varsayılanı #BB86FC kalır. TextInputLayout odak çizgisi ve imleç bu rengi kullanır.
     static let materyalAnaRenk: Color = GirisStil.renk(0xBB86FC)
@@ -57,11 +57,12 @@ struct GirisGeriDugmesi: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Geri")
+        .accessibilityLabel(Metin.al("activity_login_btn_back_desc"))
     }
 }
 
-/// Dolu ana düğme (MaterialButton, backgroundTint = dark_primary, yazı beyaz).
+/// Dolu düz düğme (MaterialButton, backgroundTint = dark_primary, yazı beyaz). Göçen biçim
+/// verilmeyen düğmeler için (doğrulama kodu, veli onayı, öğretmen girişi).
 /// Material düğmeleri metni büyük harfe çevirir; `buyukHarf` false ise (textAllCaps="false") çevrilmez.
 @MainActor
 struct GirisDoluDugme: View {
@@ -70,23 +71,12 @@ struct GirisDoluDugme: View {
     var buyukHarf: Bool = true
     var yaziBoyu: CGFloat = 16
     var yukseklik: CGFloat = 56
-    /// Devre dışı zemin rengi; nil ise Material varsayılanı (yüzey üstünde %12).
-    var devreDisiZemin: Color? = nil
     let eylem: () -> Void
 
-    private var zemin: Color {
+    var body: some View {
         // app:backgroundTint tek renktir (durum listesi değil): devre dışıyken de zemin aynı kalır,
         // yalnızca yazı soluklaşır (mtrl_btn_text_color_selector: colorOnSurface %38).
-        if etkin { return Color("dark_primary") }
-        return devreDisiZemin ?? Color("dark_primary")
-    }
-
-    private var yaziRengi: Color {
-        if etkin || devreDisiZemin != nil { return Color.white }
-        return Color.white.opacity(0.38)
-    }
-
-    var body: some View {
+        let yaziRengi: Color = etkin ? Color.white : Color.white.opacity(0.38)
         Button(action: eylem) {
             Text(metin)
                 .tracking(yaziBoyu * GirisStil.dugmeHarfAraligi)
@@ -97,7 +87,7 @@ struct GirisDoluDugme: View {
                 .minimumScaleFactor(0.7)
                 .frame(maxWidth: .infinity)
                 .frame(height: yukseklik - GirisStil.dugmeIcBoslugu * 2)
-                .background(RoundedRectangle(cornerRadius: GirisStil.dugmeKosesi).fill(zemin))
+                .background(RoundedRectangle(cornerRadius: GirisStil.dugmeKosesi).fill(Color("dark_primary")))
                 .padding(.vertical, GirisStil.dugmeIcBoslugu)
                 .contentShape(Rectangle())
         }
@@ -139,74 +129,153 @@ struct GirisCerceveliDugme: View {
     }
 }
 
-/// Google ile giriş düğmesi (btnGoogleSignIn: beyaz zemin, 1dp dark_text_secondary çizgi,
-/// ic_google 24dp, simge ile yazı arası 12dp, yazı #453535).
+/// Göçen (derinlikli) düğme. Android: DepthButtons.style — altta 4dp koyu dudak, basılıyken dudak
+/// gizlenir ve yüz 4dp iner (Ortak/GocenDugmeStili). Devre dışıyken dudak yok, düz yüz
+/// ("basılamayacağı belli olsun"); yazı soluk (colorOnSurface %38).
+/// Android'de bu arka plan MaterialButton'ın kendi zemininin YERİNE konduğu için Material'ın
+/// üst/alt 6dp iç boşluğu yoktur: yüz + dudak bütün yüksekliği kaplar.
 @MainActor
-struct GirisGoogleDugmesi: View {
+struct GirisGocenDugme: View {
     let metin: String
+    var etkin: Bool = true
+    var buyukHarf: Bool = true
+    var yaziBoyu: CGFloat = 16
+    var yukseklik: CGFloat = 56
+    var kose: CGFloat = GirisStil.dugmeKosesi
+    var zemin: Color = Color("dark_primary")
+    /// Dudak; Android varsayılanı yüzün %78 koyusu (DepthButtons.darken).
+    var golge: Color = GirisStil.anaDudak
+    var yaziRengi: Color = Color.white
+    /// Yüzün kenar çizgisi (1,5dp); nil = yok.
+    var cizgi: Color? = nil
+    /// Metnin solundaki görsel (Google: ic_google 24dp, aralık 12dp).
+    var simge: String? = nil
+    /// Metnin solundaki sistem yazı tipi karakteri (Apple logosu U+F8FF).
+    var harfSimge: String? = nil
+    /// Yazı rengi layout'ta sabit verildiyse (ör. Google düğmesinin #453535'i) devre dışıyken de
+    /// aynı kalır; verilmediyse Material'ın durum listesi gibi soluklaşır.
+    var sabitYaziRengi: Bool = false
     let eylem: () -> Void
 
     var body: some View {
-        Button(action: eylem) {
-            HStack(spacing: 12) {
-                Image("ic_google")
+        if etkin {
+            Button(action: eylem) {
+                etiket(soluk: false)
+            }
+            .buttonStyle(GocenDugmeStili(zemin: zemin, golge: golge, koseYaricapi: kose, derinlik: GirisStil.dudak))
+            .frame(height: yukseklik)
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: kose).fill(zemin)
+                etiket(soluk: true)
+            }
+            .padding(.bottom, GirisStil.dudak)
+            .frame(height: yukseklik)
+        }
+    }
+
+    private func etiket(soluk: Bool) -> some View {
+        let renk: Color = (soluk && !sabitYaziRengi) ? Color.white.opacity(0.38) : yaziRengi
+        let aralik: CGFloat = buyukHarf ? yaziBoyu * GirisStil.dugmeHarfAraligi : 0
+        return HStack(spacing: 12) {
+            if let ad = simge {
+                Image(ad)
                     .resizable()
                     .scaledToFit()
                     .frame(width: 24, height: 24)
-                Text(metin)
-                    .tracking(16 * GirisStil.dugmeHarfAraligi)
-                    .font(Tema.yazi(16))
-                    .textCase(.uppercase)
-                    .foregroundColor(GirisStil.saglayiciYaziRengi)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56 - GirisStil.dugmeIcBoslugu * 2)
-            .background(RoundedRectangle(cornerRadius: GirisStil.dugmeKosesi).fill(Color.white))
-            .overlay(
-                RoundedRectangle(cornerRadius: GirisStil.dugmeKosesi)
-                    .stroke(Color("dark_text_secondary"), lineWidth: 1)
-            )
-            .padding(.vertical, GirisStil.dugmeIcBoslugu)
-            .contentShape(Rectangle())
+            if let harf = harfSimge {
+                Text(harf)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(renk)
+            }
+            Text(metin)
+                .tracking(aralik)
+                .font(Tema.yazi(yaziBoyu))
+                .textCase(buyukHarf ? .uppercase : nil)
+                .foregroundColor(renk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(cizgiKatmani)
+        .contentShape(Rectangle())
+    }
+
+    @ViewBuilder
+    private var cizgiKatmani: some View {
+        if let renk = cizgi {
+            RoundedRectangle(cornerRadius: kose).strokeBorder(renk, lineWidth: 1.5)
+        }
     }
 }
 
-/// Apple ile giriş düğmesi. Android'de karşılığı yok (App Store kuralı 4.8 gereği eklendi).
-/// `AuthenticationServices` içe aktarılmadığı için sistemin hazır düğmesi yerine yalın bir düğme
-/// çizilir: siyah zemin, beyaz yazı, Apple logosu (sistem yazı tipindeki U+F8FF karakteri).
-/// Firebase bağlanırken `ASAuthorizationAppleIDButton` ile değiştirilmesi önerilir.
+/// Google ile giriş/kayıt düğmesi. Android: btnGoogleSignIn + DepthButtons.google — beyaz yüz,
+/// dark_text_secondary dudak ve 1,5dp kenar; ic_google 24dp, simge ile yazı arası 12dp, yazı #453535.
+@MainActor
+struct GirisGoogleDugmesi: View {
+    let metin: String
+    var etkin: Bool = true
+    let eylem: () -> Void
+
+    var body: some View {
+        GirisGocenDugme(
+            metin: metin,
+            etkin: etkin,
+            zemin: Color.white,
+            golge: Color("dark_text_secondary"),
+            yaziRengi: GirisStil.saglayiciYaziRengi,
+            cizgi: Color("dark_text_secondary"),
+            simge: "ic_google",
+            sabitYaziRengi: true,
+            eylem: eylem
+        )
+    }
+}
+
+/// Apple ile giriş/kayıt düğmesi. Android'de karşılığı yok: App Store kuralı 4.8 (üçüncü taraf
+/// giriş varsa Apple ile giriş şart). Google düğmesinin hemen altında, aynı göçen biçimde: siyah
+/// yüz, beyaz yazı, Apple logosu (sistem yazı tipindeki U+F8FF). `AuthenticationServices` içe
+/// aktarılmadı; Firebase bağlanırken `ASAuthorizationAppleIDButton` ile değiştirilmesi önerilir.
 @MainActor
 struct GirisAppleDugmesi: View {
     let metin: String
+    var etkin: Bool = true
+    let eylem: () -> Void
+
+    var body: some View {
+        GirisGocenDugme(
+            metin: metin,
+            etkin: etkin,
+            zemin: Color.black,
+            golge: Color("dark_text_secondary"),
+            yaziRengi: Color.white,
+            cizgi: Color("dark_text_secondary"),
+            harfSimge: "\u{F8FF}",
+            sabitYaziRengi: true,
+            eylem: eylem
+        )
+    }
+}
+
+/// Bağlantı görünümlü ikincil düğme ("Zaten hesabım var", "Şimdi değil"): kalın dark_primary,
+/// en az 48dp yükseklik, yanlarda 16dp iç boşluk (selectableItemBackground; zemin yok).
+@MainActor
+struct GirisBaglantiDugmesi: View {
+    let metin: String
+    var yaziBoyu: CGFloat = 17
     let eylem: () -> Void
 
     var body: some View {
         Button(action: eylem) {
-            HStack(spacing: 12) {
-                Text("\u{F8FF}")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(Color.white)
-                Text(metin)
-                    .tracking(16 * GirisStil.dugmeHarfAraligi)
-                    .font(Tema.yazi(16))
-                    .textCase(.uppercase)
-                    .foregroundColor(Color.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56 - GirisStil.dugmeIcBoslugu * 2)
-            .background(RoundedRectangle(cornerRadius: GirisStil.dugmeKosesi).fill(Color.black))
-            .overlay(
-                RoundedRectangle(cornerRadius: GirisStil.dugmeKosesi)
-                    .stroke(Color("dark_text_secondary"), lineWidth: 1)
-            )
-            .padding(.vertical, GirisStil.dugmeIcBoslugu)
-            .contentShape(Rectangle())
+            Text(metin)
+                .font(Tema.yazi(yaziBoyu))
+                .foregroundColor(Color("dark_primary"))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .frame(minHeight: 48)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -344,7 +413,7 @@ struct GirisMetinAlani: View {
     }
 }
 
-/// Kısa bildirim (Android Toast): ekranın altında, ortada.
+/// Kısa bildirim (Android Toast / Snackbar): ekranın altında, ortada.
 @MainActor
 struct GirisBildirimGorunumu: View {
     let metin: String

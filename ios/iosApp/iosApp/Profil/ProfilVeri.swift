@@ -32,11 +32,14 @@ struct ProfilBelgesi {
     var ad: String?
     /// `userId`
     var kullaniciKodu: String
-    /// `selectedAvatar` (1...12; yoksa 0)
-    var seciliAvatar: Int
+    /// `avatarConfig` (Android AvatarConfig.encode biçimi; AvatarStore.FIRESTORE_FIELD). Yoksa nil.
+    /// Eski `selectedAvatar` (1...12) alanı güncel Android'de okunmuyor.
+    var avatarConfig: String?
     /// `totalTimeSpent` (saniye)
     var toplamSureSn: Int64
-    /// `plan` ("Free", "Lite", "Pro")
+    /// `longestStreak` — en uzun günlük seri (gün; sunucu yazar, publicProfiles'a da aynalanır). Yoksa 0.
+    var enUzunSeri: Int64
+    /// `plan` ("Free", "Lite", "Pro") — profilde artık gösterilmiyor; Ayarlar'daki "Ödemeler" bölümü için.
     var plan: String?
     /// `followersCount` — sunucudaki takip tetikleyicileri günceller, istemci yazmaz.
     var takipciSayisi: Int
@@ -57,12 +60,13 @@ struct ProfilTakipKaydi: Identifiable, Equatable {
     var id: String { uid }
 }
 
-/// Arama sonucu: `publicProfiles/{uid}` dokümanı (`name`, `userId`, `selectedAvatar`).
+/// Arama sonucu: `publicProfiles/{uid}` dokümanı (`name`, `userId`, `avatarConfig`).
 struct ProfilAramaSonucu: Identifiable, Equatable {
     var uid: String
     var ad: String
     var kullaniciKodu: String
-    var seciliAvatar: Int
+    /// `publicProfiles/{uid}.avatarConfig`; nil → harfli daire.
+    var avatarConfig: String?
     var id: String { uid }
 }
 
@@ -102,8 +106,9 @@ enum ProfilHesapSilmeSonucu {
 
 /// Profil ekranlarının bütün ağ/oturum/yerel depolama işleri.
 /// Gerçek uygulama Firebase iOS SDK ile yazılacak; yol ve alan adları için
-/// `ios/shared/.../model/SessionDeviceRules.kt` (FollowRules, AccountDeletionRules) ve
-/// `ios/shared/.../profil/ProfileFragmentLogic.kt` içindeki sabitler kullanılmalı.
+/// `ios/shared/.../model/SessionDeviceRules.kt` (FollowRules, AccountDeletionRules),
+/// `ios/shared/.../profil/ProfileFragmentLogic.kt` ve `.../profil/AvatarConfigLogic.kt` içindeki sabitler
+/// kullanılmalı.
 @MainActor
 protocol ProfilDeposu: AnyObject {
     /// Oturumdaki kullanıcı; oturum yoksa nil.
@@ -149,13 +154,16 @@ protocol ProfilDeposu: AnyObject {
     func takipEdiyorMuyum(hedefUid: String) async throws -> Bool
 
     /// Tek batch'te iki yazım (FollowRules.followWrites):
-    /// `users/{hedef}/followers/{ben}` = benim kodum/adım, `users/{ben}/following/{hedef}` = hedefin kodu/adı.
+    /// `users/{hedef}/followers/{ben}` = BENİM kodum/adım, `users/{ben}/following/{hedef}` = HEDEFİN kodu/adı.
+    /// Takipçi sekmesindeki "+" (geri takip et) da güncel Android'de bu yazımı yapar
+    /// (FollowersFollowingFragment.followUser; eski çapraz yazım düzeltildi). DİKKAT: ortak koddaki
+    /// `FollowRules.followBackWrites` hâlâ eski ÇAPRAZ yazımı veriyor; kullanılmamalı.
     func takipEt(hedefUid: String, hedefKod: String, hedefAd: String) async throws
 
-    /// Takipçi sekmesindeki "+" düğmesi (FollowRules.followBackWrites). DİKKAT: Android burada adları
-    /// ÇAPRAZ yazar (hedefin followers kaydına hedefin, benim following kaydıma benim bilgim);
-    /// davranış aynen korunacaksa bu yöntem ayrı tutulmalı.
-    func geriTakipEt(hedefUid: String, hedefKod: String, hedefAd: String) async throws
+    /// Takibi bırakma (Android: ProfileFragment.unfollowTargetUser, FollowersFollowingFragment.unfollowUser):
+    /// tek batch'te `ProfileFragmentLogic.unfollowDeletePaths` yolları silinir
+    /// (`users/{hedef}/followers/{ben}`, `users/{ben}/following/{hedef}`); sayaçları sunucu tetikleyicileri düşürür.
+    func takibiBirak(hedefUid: String) async throws
 
     /// `users/{ben}/following` doküman kimlikleri.
     func takipEttiklerim() async -> Set<String>
@@ -164,20 +172,26 @@ protocol ProfilDeposu: AnyObject {
     /// `name` ya da `userId` alanı olmayan kayıtlar atlanır.
     func takipListesi(sekme: Int) async throws -> [ProfilTakipKaydi]
 
-    /// `publicProfiles/{uid}.selectedAvatar` (uid -> avatar; yoksa 0).
-    func acikAvatarlar(uidler: [String]) async throws -> [String: Int]
+    /// `publicProfiles/{uid}.avatarConfig` (uid -> dizge; alanı olmayanlar sözlükte yok).
+    /// Firestore `whereIn` en çok 30 değer alır; Android listeyi tek sorguda okuyor.
+    func acikAvatarlar(uidler: [String]) async throws -> [String: String]
 
     /// `publicProfiles` üzerinde iki önek sorgusu (FriendSearchRules.queryEnd):
     /// `name` ve `userId` alanlarında `>= sorgu && <= sorgu + "\u{F8FF}"`, `limit(sayfaBoyu)`.
     /// `devam` true ise iki sorgu da kendi son belgesinden sürer (`startAfter`).
-    /// Kendi kaydımız ve eksik alanlı belgeler atılır (FollowRules.parseSearchResult).
+    /// Kendi kaydımız ve eksik alanlı belgeler atılır; avatar `avatarConfig` alanından.
     /// Sorgu hataları yutulur (boş sonuç). Dönen liste tekilleştirilmemiştir.
     func ara(sorgu: String, sayfaBoyu: Int, devam: Bool) async -> [ProfilAramaSonucu]
 
-    // MARK: Avatar ve profil düzenleme (AvatarPickerFragment, EditProfileFragment)
+    // MARK: Avatar (AvatarStore) ve profil düzenleme (EditProfileFragment)
 
-    /// `users/{uid}.selectedAvatar` güncellemesi.
-    func avatarKaydet(_ avatar: Int) async throws
+    /// Cihazdaki avatar kopyası (Android: SharedPreferences `avatar_prefs`, anahtar `active_{uid}`; kullanıcıya
+    /// göre ayrı). Hiç kaydedilmemişse nil (çizen taraf varsayılan avatarı çizer). Alt çubuk ikonu ve profil
+    /// açılışta ağı beklemeden bundan çizilir.
+    var yerelAvatar: String? { get set }
+
+    /// `users/{uid}.avatarConfig` güncellemesi (Android: AvatarStore.save; yazım başarısız olsa da yerel kayıt kalır).
+    func avatarKaydet(_ config: String) async throws
 
     /// Auth `updateProfile(displayName)` (hata: `.kimlik`), ardından `users/{uid}.name` (hata: `.veritabani`).
     func adGuncelle(_ ad: String) async throws

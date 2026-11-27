@@ -37,6 +37,12 @@ import Foundation
 //    (firestore.rules); bu yolda ise istemci yazıyor. Kurallar reddederse kayıt başarısız olur —
 //    Firebase bağlanırken denenmeli. Apple ile kayıt da bu yolu izleyecek.
 //
+// 2b) 13 YAŞ ALTI (veli onayı) — belgeyi her iki yolda da SUNUCU yazar; kurallar
+//    (`noUnconsentedChild`) bu yaşla istemci yazımını reddeder. E-posta yolunda veli kodu
+//    `verifyRegistrationCode` ile girilir (doğum yılı sunucudaki veli kaydından alınır); Google /
+//    Apple yolunda `confirmParentalConsent` belgeyi googleStudentUserData alanlarıyla açar.
+//    Bkz. KimlikServisi.veliKayitKoduGonder / saglayiciVeliOnayiniDogrula.
+//
 // 3) E-POSTA/ŞİFRE İLE KAYIT (AuthManager.registerStudent / registerTeacher) — arayüzde
 //    kullanılmıyor; AuthRules.emailStudentUserData (verified = false) ve AuthRules.teacherUserData
 //    (verified alanı yok) ile istemci yazar.

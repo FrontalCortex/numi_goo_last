@@ -115,7 +115,8 @@ final class ProfilAramaModeli: ObservableObject {
             sayiMetni = nil
             dahaFazlaGorunur = false
         } else {
-            sayiMetni = ProfilOrtak.sonucSayisiMetni(tekil.count)
+            // Android: appPlural(R.plurals.ui_x_sonuc_gosteriliyor, n, n).
+            sayiMetni = Metin.cogul("ui_x_sonuc_gosteriliyor", tekil.count, tekil.count)
             bulunamadi = false
             dahaFazlaGorunur = dahaVar
             sonuclar = tekil
@@ -126,25 +127,25 @@ final class ProfilAramaModeli: ObservableObject {
     func takipEt(_ sonuc: ProfilAramaSonucu, bildir: @escaping (String) -> Void) {
         gonderilenler.insert(sonuc.uid)
         guard depo.oturum != nil else {
-            bildir(ProfilOrtak.arama.TOAST_NO_SESSION)
+            bildir(Metin.al("ui_oturum_bilgisi_alinamadi"))
             return
         }
         Task {
             do {
                 // Önce zaten takip edilip edilmediğine bakılır.
                 if try await depo.takipEdiyorMuyum(hedefUid: sonuc.uid) {
-                    bildir(ProfilOrtak.arama.TOAST_ALREADY_FOLLOWING)
+                    bildir(Metin.al("ui_zaten_takip_ediyorsunuz"))
                     return
                 }
             } catch {
-                bildir("Hata: " + ProfilSayfaModeli.hataMetni(error))
+                bildir(Metin.al("ui_hata_x", ProfilSayfaModeli.hataMetni(error)))
                 return
             }
             do {
                 try await depo.takipEt(hedefUid: sonuc.uid, hedefKod: sonuc.kullaniciKodu, hedefAd: sonuc.ad)
-                bildir(ProfilOrtak.takipEdildiMetni(ad: sonuc.ad))
+                bildir(Metin.al("ui_x_takip_edildi", sonuc.ad))
             } catch {
-                bildir("Takip edilemedi: " + ProfilSayfaModeli.hataMetni(error))
+                bildir(Metin.al("ui_takip_edilemedi_x", ProfilSayfaModeli.hataMetni(error)))
             }
         }
     }
@@ -161,7 +162,7 @@ struct ProfilArkadasAraEkrani: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ProfilUstCubuk(baslik: "Arkadaş ara", geri: { gezinme.geri() })
+            ProfilUstCubuk(baslik: Metin.al("fragment_add_friend_text"), geri: { gezinme.geri() })
             aramaCubugu
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
@@ -178,7 +179,7 @@ struct ProfilArkadasAraEkrani: View {
             if model.dahaFazlaGorunur {
                 ProfilCerceveliDugme(
                     metin: model.dahaFazlaYukleniyor
-                        ? ProfilOrtak.arama.TEXT_LOADING_MORE : ProfilOrtak.arama.TEXT_LOAD_MORE,
+                        ? Metin.al("ui_yukleniyor") : Metin.al("ui_daha_fazla_yukle"),
                     etkin: !model.dahaFazlaYukleniyor,
                     eylem: { model.dahaFazlaYukle() }
                 )
@@ -197,7 +198,10 @@ struct ProfilArkadasAraEkrani: View {
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(ProfilStil.soluk)
                 .frame(width: 20, height: 20)
-            TextField("", text: $model.sorgu, prompt: Text("İsim ara...").foregroundColor(ProfilStil.aramaIpucu))
+            TextField(
+                "", text: $model.sorgu,
+                prompt: Text(Metin.al("fragment_add_friend_et_search_hint")).foregroundColor(ProfilStil.aramaIpucu)
+            )
                 .font(ProfilStil.yazi(16))
                 .foregroundColor(Color.white)
                 .textInputAutocapitalization(.words)
@@ -213,7 +217,7 @@ struct ProfilArkadasAraEkrani: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text("Temizle"))
+                .accessibilityLabel(Text(Metin.al("fragment_add_friend_btn_clear_search_desc")))
             }
         }
         .padding(.leading, 14)
@@ -231,7 +235,7 @@ struct ProfilArkadasAraEkrani: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if model.bulunamadi {
-            Text(ProfilOrtak.arama.TEXT_NOT_FOUND)
+            Text(Metin.al("fragment_add_friend_text_2"))
                 .font(ProfilStil.yazi(16))
                 .foregroundColor(ProfilStil.soluk)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -267,7 +271,7 @@ struct ProfilAramaSatiri: View {
         HStack(spacing: 12) {
             ProfilSatirAvatari(
                 ad: sonuc.ad,
-                seciliAvatar: sonuc.seciliAvatar,
+                avatarConfig: sonuc.avatarConfig,
                 boyut: 48,
                 harfBoyu: 20,
                 renk: ProfilOrtak.aramaAvatarRengi(sira: sira)
@@ -287,7 +291,8 @@ struct ProfilAramaSatiri: View {
                 gonderildi: gonderildi,
                 etkin: !gonderildi,
                 opaklik: gonderildi ? 0.5 : 1.0,
-                eylem: takipEt
+                eylem: takipEt,
+                erisimMetni: "item_friend_result_btn_add_friend_desc"
             )
         }
         .padding(.horizontal, 16)

@@ -67,6 +67,9 @@ struct KorDersBaslangici {
     /// stepIsFinish.
     var adimBitti: Bool = false
 
+    /// LessonItem.title ("Sobi ile analiz et" penceresinin başlığı için; yoksa boş).
+    var baslik: String = ""
+
     /// lessonHint.
     var ipucu: String? = nil
     /// worstCupTime (sandık puanı çarpanı için).
@@ -136,7 +139,7 @@ enum KorDersYonlendirme: Equatable {
 struct KorDersSonucu {
     var yonlendirme: KorDersYonlendirme
 
-    // Sonuç ekranlarına aktarılanlar (Android: lessonResultArgs / showChestResult / QuestionPanelFragment).
+    // Sonuç ekranlarına aktarılanlar (Android: lessonResultArgs / showChestResult).
 
     /// correctAnswers.
     var dogruSayisi: Int
@@ -150,18 +153,12 @@ struct KorDersSonucu {
     var sure: String
     /// ChestResult'a giden worstCupTime (yedekli: güncel → şablon → 240).
     var enKotuKupaSuresi: Int
-    /// QuestionPanelFragment'a giden worstCupTime (yoksa 0).
-    var soruPaneliKupaSuresi: Int
     /// carpan.
     var carpan: Float
     /// toplamPuan.
     var toplamPuan: Int
     /// isChestFailure.
     var sandikBasarisiz: Bool
-
-    /// Android bu sonuçtan önce QuestionPanelFragment'ı (soru özeti) gösterir; sonuç ekranı
-    /// onun "devam" düğmesinden sonra açılır. Özet ekranı bu klasörde değildir.
-    var soruPaneliGosterilmeli: Bool
 
     /// Yarış dersi (raceBusyLevel != nil).
     var yarisDersi: Bool
@@ -177,4 +174,8 @@ struct KorDersSonucu {
     var kupaDeltaHedefi: String?
     /// Bu oturumda harcanan enerji (kupa modunda yanlış cevap ya da bırakma: 1).
     var harcananEnerji: Int
+
+    /// Android: lessonResultArgs'taki "questionElapsedMs" — ekrana girişten bitişe geçen süre (ms). Sonuç
+    /// ekranlarına verilir ve ChestFragmentLogic.updateMapProgress(questionElapsedMs:) ile sunucuya gider.
+    var soruSuresiMs: Int? = nil
 }

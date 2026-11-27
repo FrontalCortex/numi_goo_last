@@ -5,9 +5,12 @@ import SwiftUI
 // Abaküs dersi ekranının görünüm modeli.
 //
 // Android karşılığı: AbacusFragment (setupStartButton, showCurrentOperation, controlButtonAnim,
-// updateProgressBar, showResultPanel, showQuestionPanel, closeFragment, showHint/hideHint).
+// updateProgressBar, showResultPanel, finishLesson, closeFragment, bindReviewButton).
 // Kurallar ortak koddan gelir (AbacusLessonSession; Swift'e AbakusDersKoprusu / AbakusDersAkisi
 // üzerinden yalın imzalarla açılır). Ortak koda yapılan bütün çağrılar bu dosyadadır.
+//
+// Güncel Android'de ipucu düğmesi ekrandan kaldırıldı (hintContainer gone); ipucu durumu bu modelden
+// de silindi. Ders sonu anketi (QuestionPanelFragment) de kalktı: sorular bitince doğrudan sonuç.
 
 /// Alttan çıkan sonuç paneli.
 enum AbakusSonucPaneli {
@@ -40,8 +43,9 @@ final class AbakusDersModeli: ObservableObject {
     @Published private(set) var cevapMetni: String = ""
     @Published private(set) var dogruCevapMetni: String = ""
 
-    @Published private(set) var ipucuAcik: Bool = false
-    /// Kapatma düğmesine basıldı; ekran sağa kayıyor.
+    /// Yanlış panelinde "Sobi ile analiz et" düğmesi görünür mü (Android: bindReviewButton).
+    @Published private(set) var analizGorunur: Bool = false
+    /// Kapatma düğmesine basıldı; ekran sola kayıyor.
     @Published private(set) var kapaniyor: Bool = false
     /// Kısa bilgi balonu (Android: Toast).
     @Published private(set) var bildirim: String?
@@ -56,22 +60,31 @@ final class AbakusDersModeli: ObservableObject {
         return akis?.sureGorunur ?? false
     }
 
-    /// Android: lessonItem.type == 2 ise 50 ms, değilse 300 ms.
+    /// Android: BEAD_ANIMATION_MS — her ders türünde aynı (eskiden sandıkta 50 ms'ydi). Değer ortak
+    /// koddadır.
     var boncukAnimasyonSuresiMs: Int {
-        return baslangic.sandikMi ? 50 : 300
-    }
-
-    /// Android: showHint → splitTextEqually(lessonHint).
-    var ipucuMetni: String {
-        if baslangic.ipucu.isEmpty { return "" }
-        return AbakusDersKoprusu.shared.ipucuMetni(lessonHint: baslangic.ipucu)
+        return Int(AbacusLessonRules.shared.beadAnimationDurationMs(lessonType: Int32(baslangic.dersTuru)))
     }
 
     // MARK: İç durum
 
     private let akis: AbakusDersAkisi?
     private let bitti: (AbakusDersSonucu) -> Void
+    private let sobiAnaliz: AbakusSobiAnalizBaglantisi?
     private var zamanlayici: Timer?
+    /// Android: mistakeLog — bu sorudaki abaküs değerleri, sırayla (0'dan başlar). Yanlış cevapta hata
+    /// analizi çocuğun nerede yanıldığını bununla bulur. Sıfırlama ara değerleri alınmaz.
+    private var hataKaydi: [Int] = [0]
+    private static let hataKaydiEnCok: Int = 400
+    /// Yanlış panelindeki analiz düğmesi için o anın görüntüsü (cevap, kayıt, sayılar).
+    private var analizSayilari: [Int] = []
+    private var analizCevabi: Int = 0
+    private var analizKaydi: [Int] = []
+    private var analizAcik: Bool = false
+    /// Android: questionSessionStartMs / hasSubmittedAnyAnswer (başarı oranı ölçümü).
+    private let girisAni: Date = Date()
+    private var cevapVerildi: Bool = false
+    private var terkKaydedildi: Bool = false
     private var panelAnimasyonda: Bool = false
     private var dersBitti: Bool = false
     private var basladi: Bool = false
@@ -86,10 +99,12 @@ final class AbakusDersModeli: ObservableObject {
     init(
         baslangic: AbakusDersBaslangici,
         hizmetler: AbakusDersHizmetleri,
+        sobiAnaliz: AbakusSobiAnalizBaglantisi?,
         bitti: @escaping (AbakusDersSonucu) -> Void
     ) {
         self.baslangic = baslangic
         self.hizmetler = hizmetler
+        self.sobiAnaliz = sobiAnaliz
         self.bitti = bitti
         self.akis = AbakusDersModeli.akisOlustur(baslangic)
     }
@@ -133,6 +148,10 @@ final class AbakusDersModeli: ObservableObject {
             bildir("Bu dersin soruları açılamadı.")
             return
         }
+        // Android: onCreate → LessonSuccessRateRepository.recordQuestionEntry (ders ve sandık).
+        if baslangic.basariOraniKapsaminda {
+            hizmetler.soruGirisiniKaydet(baslangic: baslangic)
+        }
         if akis.baslaDugmesiGerekli {
             // Sandık: "Başla" düğmesine basılana kadar soru ve süre başlamaz.
             baslaGorunur = true
@@ -146,6 +165,11 @@ final class AbakusDersModeli: ObservableObject {
 
     /// Android: onPause / onDestroyView → stopLearningSessionTracking.
     func kayboldu() {
+        // Android: onDestroyView → hiç cevap verilmeden çıkıldıysa recordAbandonWithoutAnswer.
+        if !cevapVerildi && !dersBitti && baslangic.basariOraniKapsaminda && !terkKaydedildi {
+            terkKaydedildi = true
+            hizmetler.cevapsizTerkiKaydet(baslangic: baslangic)
+        }
         guard let an = gorunmeAni else { return }
         gorunmeAni = nil
         let gecen: Double = Date().timeIntervalSince(an) * 1000.0
@@ -198,9 +222,21 @@ final class AbakusDersModeli: ObservableObject {
         zamanlayici = nil
     }
 
+    /// Android: analiz penceresi kapanınca `handler.postDelayed(runnable, 1000)` — ilk adım 1 sn sonra.
+    private func sureyiDevamEttir() {
+        zamanlayici?.invalidate()
+        let yeni = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+            self?.sureAdimi()
+        }
+        RunLoop.main.add(yeni, forMode: .common)
+        zamanlayici = yeni
+    }
+
     /// Android: showCurrentOperation.
     private func soruyuGoster() {
         guard let akis = akis else { return }
+        // Yeni soru: abaküs sıfırdan başlıyor, hata kaydı da.
+        hataKaydi = [0]
         if let metin = akis.ilkSayiMetni() {
             ilkSayi = metin
         }
@@ -228,9 +264,10 @@ final class AbakusDersModeli: ObservableObject {
         }
         if durum == 1 {
             hizmetler.cevrimdisiGoster()
-            bildir("İnternet bağlantınız yok.")
+            bildir(Metin.al("ui_internet_baglantiniz_yok"))
             return
         }
+        cevapVerildi = true
         if sonuc.sureDurdu {
             sureyiDurdur()
         }
@@ -281,6 +318,7 @@ final class AbakusDersModeli: ObservableObject {
             hizmetler.titret(.yanlis)
             cevapMetni = sonuc.cevapMetni
             dogruCevapMetni = sonuc.dogruCevapMetni
+            analizDugmesiniHazirla()
         }
         ortuAcik = true
         kontrolEtkin = false
@@ -301,6 +339,7 @@ final class AbakusDersModeli: ObservableObject {
         let soruVar: Bool = akis.devam()
         abakus.sifirla(animasyonlu: true)
         ortuAcik = false
+        analizGorunur = false
 
         // Kontrol düğmesi doğrudan sonra 0,2 sn, yanlıştan sonra 0,7 sn kapalı kalır.
         let gecikme: Double = dogruydu ? 0.2 : 0.7
@@ -322,8 +361,8 @@ final class AbakusDersModeli: ObservableObject {
         }
     }
 
-    /// Android: showQuestionPanel + sonuç dinleyicisi. Ders sonu anketi (QuestionPanelFragment)
-    /// bu ekranın kapsamında değil; sonuç doğrudan dışarı verilir.
+    /// Android: finishLesson + sonuç ekranı seçimi. Ders sonu anketi (QuestionPanelFragment) güncel
+    /// Android'de yok; sonuç doğrudan dışarı verilir. Kapı (`dersBitti`): Android'de `lessonFinishStarted`.
     private func dersiBitir() {
         guard let akis = akis, !dersBitti else { return }
         dersBitti = true
@@ -343,29 +382,85 @@ final class AbakusDersModeli: ObservableObject {
             saniye: Int(b.seconds),
             enKotuKupaSuresi: Int(b.worstCupTime),
             carpan: b.carpan,
-            toplamPuan: Int(b.toplamPuan)
+            toplamPuan: Int(b.toplamPuan),
+            soruSuresiMs: Int(Date().timeIntervalSince(girisAni) * 1000.0)
         )
         hizmetler.ilerlemeyiKaydet(sonuc: sonuc)
         bitti(sonuc)
     }
 
-    // MARK: İpucu ve kapatma
+    // MARK: Hata analizi
 
-    /// Android: fabHintTouchArea tıklaması (showHint / hideHint).
-    func ipucuDokunuldu() {
-        withAnimation(.linear(duration: 0.5)) {
-            ipucuAcik.toggle()
+    /// Android: bindReviewButton — yalnızca toplama/çıkarma sorusunda ve analiz yapılabiliyorsa düğme
+    /// görünür. Cevap ve abaküs değer kaydı bu anki hâliyle alınır.
+    private func analizDugmesiniHazirla() {
+        analizGorunur = false
+        guard let akis = akis, let baglanti = sobiAnaliz else { return }
+        guard let ilk = akis.ilkSayiMetni().flatMap({ Int($0) }),
+              let ikinci = akis.ikinciSayiMetni().flatMap({ Int($0) }),
+              let isaret = akis.islecMetni() else {
+            return
+        }
+        if isaret != "+" && isaret != "-" { return }
+        let sayilar: [Int] = [ilk, isaret == "-" ? -ikinci : ikinci]
+        if !baglanti.yapilabilir(sayilar) { return }
+        analizSayilari = sayilar
+        analizCevabi = abakus.anlikDeger
+        analizKaydi = hataKaydi
+        analizGorunur = true
+    }
+
+    /// Android: incorrectSobiAnalyze tıklaması. Sandık dersinde analiz açıkken süre durur (süre sandık
+    /// puanına giriyor), pencere kapanınca kaldığı yerden devam eder.
+    func sobiAnaliziDokunuldu() {
+        guard let baglanti = sobiAnaliz, analizGorunur, !analizAcik else { return }
+        analizAcik = true
+        let calisiyor: Bool = zamanlayici != nil
+        if calisiyor {
+            sureyiDurdur()
+        }
+        let istek = AbakusSobiAnalizIstegi(
+            sayilar: analizSayilari,
+            cevap: analizCevabi,
+            kayit: analizKaydi,
+            isaretler: [],
+            dersBasligi: baslangic.baslik,
+            kapandi: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.analizKapandi(sureDevamEtsin: calisiyor)
+                }
+            }
+        )
+        baglanti.istendi(istek)
+    }
+
+    private func analizKapandi(sureDevamEtsin: Bool) {
+        analizAcik = false
+        if sureDevamEtsin && !dersBitti && zamanlayici == nil {
+            sureyiDevamEttir()
         }
     }
 
-    /// Android: closeFragment — ekran 300 ms'de sağa kayar, sonra kapanır.
+    /// Abaküs değeri değişince (AbakusGorunumu.degerDegisti): hata analizi için kayda eklenir.
+    /// Android: onValueChanged — sıfırlama sürerken ve aynı değer üst üste gelince eklenmez.
+    func abakusDegeriDegisti(_ deger: Int) {
+        if abakus.sifirlaniyor { return }
+        if hataKaydi.last == deger { return }
+        if hataKaydi.count >= AbakusDersModeli.hataKaydiEnCok { return }
+        hataKaydi.append(deger)
+    }
+
+    // MARK: Kapatma
+
+    /// Android: closeFragment — ekran 400 ms'de SOLA kayar (ders akışındaki bütün ekranlar gibi; eskiden
+    /// 300 ms ve sağa), sonra kapanır.
     func kapatDokunuldu(_ kapat: @escaping () -> Void) {
         if kapaniyor { return }
         sureyiDurdur()
-        withAnimation(.easeInOut(duration: 0.3)) {
+        withAnimation(.easeInOut(duration: 0.4)) {
             kapaniyor = true
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
             kapat()
         }
     }

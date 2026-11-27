@@ -22,6 +22,8 @@ final class SahteProfilDeposu: ProfilDeposu {
     private var aramaKonumu: Int = 0
     private var sonArama: String = ""
     private var zamanlar: String = ""
+    /// Cihazdaki avatar kopyası (Android: avatar_prefs `active_{uid}`); örnekte hiç kaydedilmemiş.
+    private var yerelAvatarKopyasi: String? = nil
 
     private static let benimUid = "ornek-uid-ben"
 
@@ -42,8 +44,10 @@ final class SahteProfilDeposu: ProfilDeposu {
 
     private func ornekVeriyiKur() {
         let ben = ProfilBelgesi(
-            uid: SahteProfilDeposu.benimUid, ad: "Elif", kullaniciKodu: "ELIF482913", seciliAvatar: 3,
-            toplamSureSn: 93_784, plan: "Free", takipciSayisi: 2, takipSayisi: 2, olusturmaYili: 2025, rol: "STUDENT"
+            uid: SahteProfilDeposu.benimUid, ad: "Elif", kullaniciKodu: "ELIF482913",
+            avatarConfig: "personas|backgroundColor=ffd5dc;body=rounded;clothingColor=7555ca;eyes=happy;facialHair=;hair=pigtails;hairColor=6c4545;mouth=bigSmile;nose=smallRound;skinColor=eeb4a4",
+            toplamSureSn: 93_784, enUzunSeri: 7, plan: "Free", takipciSayisi: 2, takipSayisi: 2,
+            olusturmaYili: 2025, rol: "STUDENT"
         )
         kisiler[ben.uid] = Kisi(
             belge: ben,
@@ -55,18 +59,19 @@ final class SahteProfilDeposu: ProfilDeposu {
             boncuk: "SOROBAN"
         )
 
-        let ornekler: [(String, String, String, Int, String)] = [
-            ("ornek-uid-1", "Ahmet", "AHME120344", 5, "Pro"),
-            ("ornek-uid-2", "Zeynep", "ZEYN558210", 0, "Free"),
-            ("ornek-uid-3", "Mert", "MERT903117", 8, "Lite"),
-            ("ornek-uid-4", "Elçin", "ELCI774402", 11, "Free"),
-            ("ornek-uid-5", "Elanur", "ELAN230915", 0, "Free"),
-            ("ornek-uid-6", "Defne", "DEFN661208", 2, "Free")
+        // Avatarı olmayan kullanıcı (nil) listelerde harfli daireyle çizilir.
+        let ornekler: [(String, String, String, String?, String)] = [
+            ("ornek-uid-1", "Ahmet", "AHME120344", "personas|backgroundColor=65c9ff;body=squared;clothingColor=456dff;eyes=open;facialHair=;hair=shortCombover;hairColor=362c47;mouth=smile;nose=mediumRound;skinColor=d78774", "Pro"),
+            ("ornek-uid-2", "Zeynep", "ZEYN558210", nil, "Free"),
+            ("ornek-uid-3", "Mert", "MERT903117", "personas|backgroundColor=262e33;body=checkered;clothingColor=e24553;eyes=sunglasses;facialHair=;hair=cap;hairColor=f29c65;mouth=smirk;nose=wrinkles;skinColor=92594b", "Lite"),
+            ("ornek-uid-4", "Elçin", "ELCI774402", "personas|backgroundColor=a7ffc4;body=small;clothingColor=f3b63a;eyes=wink;facialHair=;hair=curlyBun;hairColor=e16381;mouth=lips;nose=smallRound;skinColor=e7a391", "Free"),
+            ("ornek-uid-5", "Elanur", "ELAN230915", nil, "Free"),
+            ("ornek-uid-6", "Defne", "DEFN661208", "personas|backgroundColor=ffdfbf;body=rounded;clothingColor=54d7c7;eyes=glasses;facialHair=;hair=bobCut;hairColor=dee1f5;mouth=surprise;nose=mediumRound;skinColor=623d36", "Free")
         ]
         for (sira, ornek) in ornekler.enumerated() {
             let belge = ProfilBelgesi(
-                uid: ornek.0, ad: ornek.1, kullaniciKodu: ornek.2, seciliAvatar: ornek.3,
-                toplamSureSn: Int64(3_600 * (sira + 1) + 540), plan: ornek.4,
+                uid: ornek.0, ad: ornek.1, kullaniciKodu: ornek.2, avatarConfig: ornek.3,
+                toplamSureSn: Int64(3_600 * (sira + 1) + 540), enUzunSeri: Int64(sira * 3), plan: ornek.4,
                 takipciSayisi: sira + 1, takipSayisi: sira, olusturmaYili: 2024 + (sira % 2), rol: nil
             )
             kisiler[belge.uid] = Kisi(
@@ -155,9 +160,19 @@ final class SahteProfilDeposu: ProfilDeposu {
         }
     }
 
-    func geriTakipEt(hedefUid: String, hedefKod: String, hedefAd: String) async throws {
-        // Android'deki çapraz yazım burada canlandırılmaz; liste doğru adla tutulur.
-        try await takipEt(hedefUid: hedefUid, hedefKod: hedefKod, hedefAd: hedefAd)
+    func takibiBirak(hedefUid: String) async throws {
+        await bekle(300)
+        guard oturumBilgisi != nil else { throw ProfilHata.diger("Oturum yok") }
+        if takipEdilenler.contains(where: { $0.uid == hedefUid }) {
+            takipEdilenler.removeAll { $0.uid == hedefUid }
+            // Sayaçları gerçekte sunucudaki tetikleyiciler (onFollowerDeleted / onFollowingDeleted) düşürür.
+            if let sayi = kisiler[hedefUid]?.belge.takipciSayisi, sayi > 0 {
+                kisiler[hedefUid]?.belge.takipciSayisi = sayi - 1
+            }
+            if let sayi = kisiler[SahteProfilDeposu.benimUid]?.belge.takipSayisi, sayi > 0 {
+                kisiler[SahteProfilDeposu.benimUid]?.belge.takipSayisi = sayi - 1
+            }
+        }
     }
 
     func takipEttiklerim() async -> Set<String> {
@@ -169,10 +184,12 @@ final class SahteProfilDeposu: ProfilDeposu {
         return sekme == 0 ? takipEdilenler : takipciler
     }
 
-    func acikAvatarlar(uidler: [String]) async throws -> [String: Int] {
-        var sonuc: [String: Int] = [:]
+    func acikAvatarlar(uidler: [String]) async throws -> [String: String] {
+        var sonuc: [String: String] = [:]
         for uid in uidler {
-            sonuc[uid] = kisiler[uid]?.belge.seciliAvatar ?? 0
+            if let config = kisiler[uid]?.belge.avatarConfig {
+                sonuc[uid] = config
+            }
         }
         return sonuc
     }
@@ -197,14 +214,19 @@ final class SahteProfilDeposu: ProfilDeposu {
         aramaKonumu += dilim.count
         return dilim.map { belge in
             ProfilAramaSonucu(
-                uid: belge.uid, ad: belge.ad ?? "", kullaniciKodu: belge.kullaniciKodu, seciliAvatar: belge.seciliAvatar
+                uid: belge.uid, ad: belge.ad ?? "", kullaniciKodu: belge.kullaniciKodu, avatarConfig: belge.avatarConfig
             )
         }
     }
 
-    func avatarKaydet(_ avatar: Int) async throws {
+    var yerelAvatar: String? {
+        get { yerelAvatarKopyasi }
+        set { yerelAvatarKopyasi = newValue }
+    }
+
+    func avatarKaydet(_ config: String) async throws {
         await bekle(200)
-        kisiler[SahteProfilDeposu.benimUid]?.belge.seciliAvatar = avatar
+        kisiler[SahteProfilDeposu.benimUid]?.belge.avatarConfig = config
     }
 
     func adGuncelle(_ ad: String) async throws {

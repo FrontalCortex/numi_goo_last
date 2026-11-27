@@ -24,6 +24,11 @@ enum ProfilStil {
         return Tema.yazi(boyut, kalin: true)
     }
 
+    /// `textStyle="normal"` ya da kodda `Typeface.NORMAL` verilmiş metinler (CreditsFragment).
+    static func yaziNormal(_ boyut: CGFloat) -> Font {
+        return Tema.yazi(boyut, kalin: false)
+    }
+
     /// #93A5B3 — ikincil metin (fragment_profile, item_follow_user, fragment_add_friend).
     static let soluk: Color = ProfilStil.renk(0x93A5B3)
     /// #131F24 / #37464F — çerçeveli düğme zemini ve çizgisi (btnAddFriend, btnLoadMore).
@@ -50,6 +55,12 @@ enum ProfilStil {
     static let ayarBaslik: Color = ProfilStil.renk(0xBDBDBD)
     static let cikisMetni: Color = ProfilStil.renk(0x47B0F2)
     static let cikisCizgisi: Color = ProfilStil.renk(0x4A5A67)
+    /// #9FB3BF — ikincil ayar metni (dil değeri tvLanguageValue, CreditsFragment bölüm başlıkları).
+    static let ayarIkincil: Color = ProfilStil.renk(0x9FB3BF)
+    /// #33FFFFFF — "Veliler için" ve "Destek" kartlarındaki satır ayırıcısı.
+    static let kartIciAyirici: Color = Color.white.opacity(Double(0x33) / 255.0)
+    /// #8CC63F — davet satırının açıklaması (invite_entry_desc).
+    static let davetYesili: Color = ProfilStil.renk(0x8CC63F)
     /// #292E2C — hint_background (@color/message_getter).
     static let ipucuZemini: Color = ProfilStil.renk(0x292E2C)
     /// #FF8F00 — açık rozet değerinin dış çizgisi (ProfileFragment.unlockedValueStrokeColor).
@@ -143,11 +154,12 @@ struct ProfilCerceveliDugme: View {
 
 // MARK: - Avatar
 
-/// Liste satırlarındaki avatar: 1...12 ise `avatar_icN` görseli, değilse renkli daire içinde adın ilk harfi.
-/// Android: FollowUserAdapter / FriendSearchAdapter (tvAvatarLetter).
+/// Liste satırlarındaki avatar: `publicProfiles/{uid}.avatarConfig` okunabiliyorsa kullanıcının avatarı
+/// (arkasında renkli daireyle; Android: AvatarView.drawableFor → toBitmap(withBackground = true)), değilse
+/// renkli daire içinde adın ilk harfi. Android: FollowUserAdapter / FriendSearchAdapter (tvAvatarLetter).
 struct ProfilSatirAvatari: View {
     let ad: String
-    let seciliAvatar: Int
+    let avatarConfig: String?
     let boyut: CGFloat
     let harfBoyu: CGFloat
     /// "#RRGGBB"
@@ -155,10 +167,8 @@ struct ProfilSatirAvatari: View {
 
     var body: some View {
         Group {
-            if ProfilOrtak.avatarGecerli(seciliAvatar) {
-                Image(ProfilOrtak.avatarAdi(seciliAvatar))
-                    .resizable()
-                    .scaledToFit()
+            if let config = avatarConfig, AvatarOrtak.avatarVar(config) {
+                AvatarGorunumu(config: config)
             } else {
                 ZStack {
                     Circle().fill(ProfilStil.renk(onaltilik: renk))
@@ -204,7 +214,34 @@ struct ProfilKisiEkleDugmesi: View {
         .buttonStyle(.plain)
         .disabled(!etkin)
         .opacity(opaklik)
-        .accessibilityLabel(Text("Takip Et"))
+        .accessibilityLabel(Text(Metin.al(erisimMetni)))
+    }
+
+    /// item_follow_user / item_friend_result içerik açıklaması.
+    var erisimMetni: String = "item_follow_user_btn_follow_back_desc"
+}
+
+/// 44x44 takibi bırakma (X) düğmesi: içi boş, 2 pt #37464F çizgi, 12 pt köşe; ic_close_black (iç boşluk 12 →
+/// 20 pt), #93A5B3 boyalı. Android: item_follow_user.xml btnUnfollow + bg_unfollow_btn.
+struct ProfilTakibiBirakDugmesi: View {
+    let eylem: () -> Void
+
+    var body: some View {
+        Button(action: eylem) {
+            Image("ic_close_black")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(ProfilStil.soluk)
+                .frame(width: 20, height: 20)
+                .frame(width: 44, height: 44)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12).strokeBorder(ProfilStil.dugmeCizgisi, lineWidth: 2)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(Metin.al("item_follow_user_btn_unfollow_desc")))
     }
 }
 

@@ -23,6 +23,14 @@ protocol KorDersKayitServisi {
 
     /// Ekranda geçirilen süre. Android: MissionsProgressStore.recordLearningDurationMs.
     func ogrenmeSuresiniKaydet(milisaniye: Int)
+
+    /// Android: LessonSuccessRateRepository.recordQuestionEntry(partId, mapIndex, currentStep) — ekrana
+    /// girişte; yalnızca ders ve sandık adımları için (günlük soru ve kupa modu hariç).
+    func soruGirisiniKaydet(partId: Int, dersIndeksi: Int)
+
+    /// Android: onDestroyView → LessonSuccessRateRepository.recordAbandonWithoutAnswer — hiç cevap
+    /// verilmeden çıkıldı.
+    func cevapsizTerkiKaydet(partId: Int, dersIndeksi: Int)
 }
 
 /// Enerji. Android: MainActivity.getEnergyManager().useEnergy(n).
@@ -53,4 +61,10 @@ struct SahteKorDersEnerjiServisi: KorDersEnerjiServisi {
 
 struct SahteKorDersSesServisi: KorDersSesServisi {
     func cal(ad: String, sesDuzeyi: Float) {}
+}
+
+extension KorDersKayitServisi {
+    func soruGirisiniKaydet(partId: Int, dersIndeksi: Int) {}
+
+    func cevapsizTerkiKaydet(partId: Int, dersIndeksi: Int) {}
 }

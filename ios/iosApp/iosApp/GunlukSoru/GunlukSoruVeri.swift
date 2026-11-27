@@ -1,12 +1,12 @@
 import Foundation
 import Shared
 
-// Günlük soru (keşfet sekmesi) veri katmanı.
+// Günlük soru (Görevler sekmesi) veri katmanı.
 //
 // Ortak Kotlin koduna yapılan BÜTÜN çağrılar bu dosyadadır. Kurallar ortak koddadır:
 // DailyQuestionPeriod (periyot anahtarı, geri sayım), DailyQuestionCardLogic (kart tıklama kararları,
 // ilerleme planı, kırık kalp sırası), DailyQuestionRepository (belge eşlemesi), DailyQuestionPoolBuilder
-// (soru havuzu), ChestCrystalPolicy (ödül etiketi) ve GorevGunlukSoruKopruleri.kt (TasksFragment ile
+// (soru havuzu) ve GorevGunlukSoruKopruleri.kt (TasksFragment ile
 // DailyQuestionRepository içinde kalmış akışların kopyası).
 
 // MARK: - Görünümlerin okuduğu veri yapıları
@@ -81,21 +81,6 @@ enum GunlukSoruYukleme {
     case hazir(DailyQuestionChallenge)
 }
 
-/// Kristal ödülünün sonucu (ortak kod: ServerRewards.CrystalOutcome).
-struct GunlukSoruKristalSonucu {
-    /// Oynatılacak kristal videosunun adı.
-    let videoAdi: String
-    /// "GOLD" ya da "KEY".
-    let odulTuru: String
-    let miktar: Int
-}
-
-/// Ödül ekranında gösterilen görsel ve etiket (ortak kod: ChestRewardOutcome).
-struct GunlukSoruOdulGorunumu {
-    let simge: String
-    let etiket: String
-}
-
 // MARK: - Protokoller
 
 /// Günlük soru verisinin kaynağı.
@@ -141,18 +126,18 @@ protocol GunlukSoruOdulServisi: AnyObject {
     func rozetIlerlet(periodKey: String, tamam: @escaping ([String]) -> Void)
     /// Android: ServerRewards.prefetchChest → Cloud Function `openChest`.
     func sandikOnIstegi(nadirlik: String)
-    /// Android: ServerRewards.openCrystal → Cloud Function `openCrystalReward` (ödülü verir ve
-    /// bakiyeyi yazar). Hata durumunda nil.
-    func kristalAc(tamam: @escaping (GunlukSoruKristalSonucu?) -> Void)
 }
 
 // MARK: - Sahte uygulamalar
 
 /// Firestore bağlanana dek: ortak koddaki gerçek kurallar çalışır, belge bellekte durur.
-/// Ders listeleri yerel şablondan gelir (şablonda bitmiş sandıklar olduğu için havuz doludur).
+/// Ders listeleri yerel şablondan gelir. Güncel şablonda hiçbir sandık bitmiş gelmediği için havuz
+/// boştur (hiç oynamamış kullanıcı); örnek bir ilerleme için 1. kısmın ilk `bitenSandikSayisi`
+/// sandığı bitmiş sayılır (havuz, bitmiş sandıklardan kurulur).
 final class SahteGunlukSoruDeposu: GunlukSoruDeposu {
-    /// Sekme değişince ilerleme kaybolmasın diye tek örnek.
-    static let ortak = SahteGunlukSoruDeposu()
+    /// Sekme değişince ilerleme kaybolmasın diye tek örnek (ilerlemiş kullanıcı). Havuza ilk bitmiş
+    /// sandık girmez (DailyQuestionPoolBuilder: 1. sandığın üreteci yok); 2. ve sonrakiler girer.
+    static let ortak = SahteGunlukSoruDeposu(bitenSandikSayisi: 4)
 
     private static let ornekKullanici = "ornek"
 
@@ -160,9 +145,17 @@ final class SahteGunlukSoruDeposu: GunlukSoruDeposu {
     let animDeposu: DailyQuestionCardProgressAnimStore
     private let havuz: DailyQuestionPoolBuilder
     private let depo: BellekIciGunlukSoruDeposu
+    /// Kısımların ders listeleri (Android: Firestore `lessonProgress`); sandık ilerlemesi bunlardadır.
+    private let kisim1: [LessonItem]
+    private let kisim2: [LessonItem]
+    private let kisim3: [LessonItem]
 
-    init() {
+    init(bitenSandikSayisi: Int) {
         let uid: String = SahteGunlukSoruDeposu.ornekKullanici
+        let veri = GlobalLessonData.shared
+        kisim1 = SahteGunlukSoruDeposu.sandiklariBitir(veri.createLessonItems(partId: 1), adet: bitenSandikSayisi)
+        kisim2 = veri.createLessonItems(partId: 2)
+        kisim3 = veri.createLessonItems(partId: 3)
         havuz = GorevGunlukSoruKopruleriKt.gunlukSoruHavuzuVarsayilan()
         depo = GorevGunlukSoruKopruleriKt.bellekIciGunlukSoruDeposuKur(
             uid: uid,
@@ -173,12 +166,28 @@ final class SahteGunlukSoruDeposu: GunlukSoruDeposu {
         animDeposu = GorevGunlukSoruKopruleriKt.bellekIciKartAnimDeposuKur(uid: uid)
     }
 
+    /// Listedeki ilk `adet` sandığı bitmiş sayar (Android: sandık bitince `stepIsFinish = true`).
+    private static func sandiklariBitir(_ liste: [LessonItem], adet: Int) -> [LessonItem] {
+        let sandikTuru: Int32 = LessonItem.companion.TYPE_CHEST
+        var kalan: Int = adet
+        for oge in liste {
+            if kalan <= 0 {
+                break
+            }
+            if oge.type == sandikTuru {
+                oge.stepIsFinish = true
+                kalan -= 1
+            }
+        }
+        return liste
+    }
+
     /// TasksFragment.loadDailyQuestionSources: part 1, 2 ve 3.
     private func kaynaklar() -> [DailyQuestionSource] {
         let veri = GlobalLessonData.shared
-        let p1: [LessonItem] = veri.loadLessonItemsForPart(partId: 1, cloudItems: nil)
-        let p2: [LessonItem] = veri.loadLessonItemsForPart(partId: 2, cloudItems: nil)
-        let p3: [LessonItem] = veri.loadLessonItemsForPart(partId: 3, cloudItems: nil)
+        let p1: [LessonItem] = veri.loadLessonItemsForPart(partId: 1, cloudItems: kisim1)
+        let p2: [LessonItem] = veri.loadLessonItemsForPart(partId: 2, cloudItems: kisim2)
+        let p3: [LessonItem] = veri.loadLessonItemsForPart(partId: 3, cloudItems: kisim3)
         return GorevGunlukSoruKopruleriKt.gunlukSoruKaynaklari(
             builder: havuz,
             part1Items: p1,
@@ -250,7 +259,7 @@ final class SahteGunlukSoruCuzdani: GunlukSoruCuzdani {
     }
 }
 
-/// Sunucu bağlanana dek: rozet seviye atlaması yok, sandık ön isteği boş, kristal ödülü sabit.
+/// Sunucu bağlanana dek: rozet seviye atlaması yok, sandık ön isteği boş.
 final class SahteGunlukSoruOdulServisi: GunlukSoruOdulServisi {
     func rozetIlerlet(periodKey: String, tamam: @escaping ([String]) -> Void) {
         DispatchQueue.main.async {
@@ -259,13 +268,6 @@ final class SahteGunlukSoruOdulServisi: GunlukSoruOdulServisi {
     }
 
     func sandikOnIstegi(nadirlik: String) {}
-
-    func kristalAc(tamam: @escaping (GunlukSoruKristalSonucu?) -> Void) {
-        let video: String = ChestCrystalPolicy.shared.FALLBACK_VIDEO
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            tamam(GunlukSoruKristalSonucu(videoAdi: video, odulTuru: "GOLD", miktar: 50))
-        }
-    }
 }
 
 // MARK: - Ortak kurallara ince sarmalayıcılar
@@ -567,16 +569,5 @@ enum GunlukSoruMantik {
                 sonuc(periyot, slot, dogru)
             }
         )
-    }
-
-    // -- Ödül --
-
-    /// ChestCrystalPolicy.outcomeFromServer: sunucudan gelen ödülün görseli ve etiketi.
-    static func odulGorunumu(_ sonuc: GunlukSoruKristalSonucu) -> GunlukSoruOdulGorunumu {
-        let o: ChestRewardOutcome = ChestCrystalPolicy.shared.outcomeFromServer(
-            rewardType: sonuc.odulTuru,
-            amount: Int32(sonuc.miktar)
-        )
-        return GunlukSoruOdulGorunumu(simge: o.iconRes, etiket: o.label)
     }
 }

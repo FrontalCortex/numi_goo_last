@@ -70,6 +70,8 @@ enum YonetimEkrani {
     case sandik(SandikGirdisi, kapandi: (SandikSonucu) -> Void)
     case magaza
     case kupa
+    /// Kupa Yolu ödül yolu (Android CupPathRoadFragment); kupa alanı ("addition_abacus_cup" ...).
+    case kupaYoluOdul(kupaAlani: String)
     case kupaGecmisi(ProfilKupaSecimi)
     case rozetler
     case rozetDetay(modAdi: String)
@@ -158,6 +160,16 @@ final class UygulamaYoneticisi: ObservableObject {
 
     /// GirisAkisi.girisYapildi.
     func girisYapildi() {
+        asama = .kabuk
+        oturumuYenile()
+    }
+
+    /// GirisAkisi.misafirOlarakDevam: hesapsız ilk açılış (SplashRules.Route.GUEST_MAIN).
+    /// Android hesap geçmişi yoksa öğreticiye (START_DESTINATION_TUTORIAL), varsa haritaya gider;
+    /// ilk ders bitince başlangıç ekranı (kayıt) açılır.
+    /// YAPILACAK: öğretici (TutorialFragment) iOS'ta henüz yok; `.ogretici` de şimdilik doğrudan
+    /// haritaya (kabuğa) geçer. İlk ders sonrası kayda yönlendirme de henüz bağlı değil.
+    func misafirOlarakDevam(_ hedef: GirisMisafirHedefi) {
         asama = .kabuk
         oturumuYenile()
     }
@@ -269,7 +281,7 @@ final class UygulamaYoneticisi: ObservableObject {
 
     // MARK: Keşfet (günlük soru)
 
-    /// GunlukSoruEkrani.soruBaslat (Android: BlindingLessonFragment.newDailyQuestionInstance).
+    /// GorevlerEkrani.soruBaslat (Android: BlindingLessonFragment.newDailyQuestionInstance).
     func gunlukSoruyuBaslat(_ veri: GunlukSoruBaslangici) {
         var islemler: [KorDersIslemi] = []
         if let islem = veri.islem {
@@ -288,14 +300,14 @@ final class UygulamaYoneticisi: ObservableObject {
         ac(.korDers(baslangic, .gunlukSoru(sonuc: veri.sonuc)))
     }
 
-    /// GunlukSoruEkrani.odulAc (Android: TasksFragment.startDailyQuestionRewardFlow →
+    /// GorevlerEkrani.odulAc (Android: TasksFragment.startDailyQuestionRewardFlow →
     /// NewChestFragment.newInstance(RARE)).
     func gunlukSoruOdulunuAc(_ istek: GunlukSoruOdulIstegi) {
         let kapandi: () -> Void = istek.kapandi
         ac(.sandik(SandikGirdisi(baslangicNadirligi: istek.nadirlik), kapandi: { _ in kapandi() }))
     }
 
-    /// GunlukSoruEkrani.kartSecildi.
+    /// GorevlerEkrani.kartSecildi (Abaküs kartı) ve Kupa Yolu sekmesinin kartı.
     func kesfetKartiSecildi(_ kart: GunlukSoruKesfetKarti) {
         switch kart {
         case .kupaYolu:
@@ -303,8 +315,6 @@ final class UygulamaYoneticisi: ObservableObject {
             ac(.kupa)
         case .abakusPratik:
             yerTutucuAc("Abaküs", "Serbest abaküs alıştırması", ["Android: AbacusPracticeFragment"])
-        case .bizeUlasin:
-            yerTutucuAc("Bize Ulaşın", "Geri bildirim ekranı", ["Android: FeedbackFragment"])
         }
     }
 

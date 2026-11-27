@@ -533,6 +533,7 @@ final class OzellestirmeModeli: ObservableObject {
             )
             satinAl(
                 denetim: denetim,
+                urunKimligi: "bead_" + tip.name,
                 kurallar: ui.BEAD_PURCHASE_PANEL,
                 kaydet: { [weak self] tamam in
                     self?.servisler.sahiplik.boncukAdediniYaz(
@@ -560,6 +561,7 @@ final class OzellestirmeModeli: ObservableObject {
             )
             satinAl(
                 denetim: denetim,
+                urunKimligi: "bead_color_" + tip.name,
                 kurallar: ui.BEAD_COLOR_FEATURE_PANEL,
                 kaydet: { [weak self] tamam in
                     self?.servisler.sahiplik.boncukRenkOzelliginiAc(boncukKimligi: tip.name, tamam: tamam)
@@ -581,6 +583,7 @@ final class OzellestirmeModeli: ObservableObject {
             )
             satinAl(
                 denetim: denetim,
+                urunKimligi: "frame_" + tip.name,
                 kurallar: ui.FRAME_PURCHASE_PANEL,
                 kaydet: { [weak self] tamam in
                     self?.servisler.sahiplik.cerceveyiSahiplen(cerceveKimligi: tip.name, tamam: tamam)
@@ -604,6 +607,7 @@ final class OzellestirmeModeli: ObservableObject {
             )
             satinAl(
                 denetim: denetim,
+                urunKimligi: "frame_color_" + tip.name,
                 kurallar: ui.FRAME_PURCHASE_PANEL,
                 kaydet: { [weak self] tamam in
                     self?.servisler.sahiplik.cerceveRenkOzelliginiAc(cerceveKimligi: tip.name, tamam: tamam)
@@ -635,6 +639,7 @@ final class OzellestirmeModeli: ObservableObject {
         )
         satinAl(
             denetim: denetim,
+            urunKimligi: "bead_" + tip.name,
             kurallar: ui.SLOT_PANEL_PURCHASE,
             kaydet: { [weak self] tamam in
                 self?.servisler.sahiplik.boncukAdediniYaz(
@@ -673,6 +678,7 @@ final class OzellestirmeModeli: ObservableObject {
     /// Kayıt başarısız olursa ve akışın kuralı izin veriyorsa harcama geri alınır.
     private func satinAl(
         denetim: AbacusCustomizationUiLogic.PurchaseCheck,
+        urunKimligi: String,
         kurallar: AbacusCustomizationUiLogic.PurchasePanelRules,
         kaydet: @escaping (@escaping (Bool) -> Void) -> Void,
         basari: @escaping () -> Void
@@ -692,6 +698,7 @@ final class OzellestirmeModeli: ObservableObject {
             altinFarki: anahtarlaMi ? 0 : -fiyat,
             anahtarFarki: anahtarlaMi ? -fiyat : 0,
             gerekce: gerekceler.SPEND,
+            urunKimligi: urunKimligi,
             geriAlmaJetonu: nil
         ) { [weak self] degisim in
             guard let self = self else { return }
@@ -714,6 +721,7 @@ final class OzellestirmeModeli: ObservableObject {
                         altinFarki: anahtarlaMi ? 0 : fiyat,
                         anahtarFarki: anahtarlaMi ? fiyat : 0,
                         gerekce: gerekceler.PURCHASE_ROLLBACK,
+                        urunKimligi: nil,
                         geriAlmaJetonu: degisim.geriAlmaJetonu
                     ) { [weak self] iade in
                         if let iade = iade {

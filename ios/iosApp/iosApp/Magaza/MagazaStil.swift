@@ -13,6 +13,20 @@ enum MagazaStil {
         return Color(.sRGB, red: kirmizi, green: yesil, blue: mavi, opacity: alfa)
     }
 
+    /// Android DepthButtons.darken: her kanal 0.78 ile çarpılıp tam sayıya indirilir (düğme dudağı).
+    static func koyulastir(_ rgb: UInt32) -> Color {
+        let kirmizi: Double = (Double((rgb >> 16) & 0xFF) * 0.78).rounded(.down)
+        let yesil: Double = (Double((rgb >> 8) & 0xFF) * 0.78).rounded(.down)
+        let mavi: Double = (Double(rgb & 0xFF) * 0.78).rounded(.down)
+        return Color(.sRGB, red: kirmizi / 255.0, green: yesil / 255.0, blue: mavi / 255.0, opacity: 1.0)
+    }
+
+    /// Ortak kodun verdiği ARGB renginin düğme dudağı (bkz. koyulastir(_:)).
+    static func koyulastir(argb: Int32) -> Color {
+        let deger: UInt32 = UInt32(bitPattern: argb)
+        return koyulastir(deger & 0x00FF_FFFF)
+    }
+
     /// Ortak kodun verdiği ARGB tam sayıdan renk (Kotlin Int → Swift Int32).
     static func renk(argb: Int32) -> Color {
         let deger: UInt32 = UInt32(bitPattern: argb)
@@ -34,6 +48,33 @@ enum MagazaStil {
     static let anahtarYaziRengi: Color = MagazaStil.renk(0xAEEA00)
     /// Süper kart alt yazısı: #E0E0E0.
     static let superAltYaziRengi: Color = MagazaStil.renk(0xE0E0E0)
+    /// Üst çubuktaki Sobi kredisi: #A99AF0.
+    static let sobiYaziRengi: Color = MagazaStil.renk(0xA99AF0)
+    /// Süper kartın düğme dudağı: #C7CCD1 (DepthButtons.style lip).
+    static let beyazDugmeDudagi: Color = MagazaStil.renk(0xC7CCD1)
+    /// Seri dondurma "HAZIR" durumu: düğme zemini #17394B, yazı #4FC3F7.
+    static let dondurmaHazirZemini: Color = MagazaStil.renk(0x17394B)
+    static let dondurmaHazirYazi: Color = MagazaStil.renk(0x4FC3F7)
+    /// Seri dondurma düğmesi (alınabilir): #37474F.
+    static let dondurmaDugmeZemini: Color = MagazaStil.renk(0x37474F)
+    /// Seri dondurma onay penceresi (bg_streak_dialog, bg_streak_option*): renkler.
+    static let pencereZemini: Color = MagazaStil.renk(0x18272D)
+    static let pencereCizgisi: Color = MagazaStil.renk(0x2E4149)
+    static let secenekZemini: Color = MagazaStil.renk(0x203137)
+    static let seciliSecenekZemini: Color = MagazaStil.renk(0x2A3B42)
+    static let seciliSecenekCizgisi: Color = MagazaStil.renk(0xFF9800)
+    static let pencereAltYazi: Color = MagazaStil.renk(0x93A5B3)
+    static let pencereAltin: Color = MagazaStil.renk(0xFFC107)
+
+    // MARK: Sabitler
+
+    /// 1 can satın almanın anahtar bedeli. Android: ShopFragment.LIFE_KEY_COST = 1.
+    /// Ortak koddaki ShopFragmentLogic.LIFE_KEY_COST eski değerde (3) kaldığı için burada ayrı tutulur.
+    static let canAnahtarBedeli: Int = 1
+    /// Seri dondurmanın altın bedeli. Android: StreakRepository.FREEZE_COST_GOLD = 4000 (ortak kodda yok).
+    static let dondurmaBedeli: Int = 4000
+    /// Anahtarla günde en çok alınabilen can (sunucu: ENERGY_KEY_BUY_DAILY_LIMIT).
+    static let gunlukAnahtarCanSiniri: Int = 5
 
     // MARK: Ölçüler (fragment_shop.xml; dp → pt)
 
@@ -73,6 +114,39 @@ struct MagazaGorsel: View {
             .resizable()
             .scaledToFit()
             .frame(width: genislik, height: yukseklik)
+    }
+}
+
+/// Sobi'nin yalnızca kafası. Android: SobiHeadView (BunnyMascotArt şekillerinin kafa kısmı).
+/// iOS'ta ayrı kafa çizimi yok: durağan tam gövde maskot, kafa bölgesine kırpılarak gösterilir.
+/// Kırpma bölgesi (maskotun 314 birimlik karesinde yaklaşık x 288..498, y 6..216) çıktı
+/// görülmeden seçilmiş bir tahmindir; gerekirse `kafaBirimi` ve `kayma` ayarlanır.
+struct MagazaSobiKafasi: View {
+    let boyut: CGFloat
+
+    var body: some View {
+        let kafaBirimi: CGFloat = 210
+        let tuval: CGFloat = boyut * 314.0 / kafaBirimi
+        let kayma: CGFloat = tuval * 52.0 / 314.0
+        SobiMaskotGorunumu(emote: "NOTR", animasyonlu: false)
+            .frame(width: tuval, height: tuval)
+            .offset(y: kayma)
+            .frame(width: boyut, height: boyut)
+            .clipped()
+    }
+}
+
+/// Mağazanın kaydırılacağı / vurgulanacağı yerin işareti: kimlik verir, vurgulanırken %4 büyür
+/// (Android: ShopFragment.focusCard, FOCUS_PULSE_SCALE = 1.04, yarım süre 160 ms).
+struct MagazaOdakIsareti: ViewModifier {
+    let odak: MagazaOdak
+    let vurgulanan: MagazaOdak?
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(vurgulanan == odak ? 1.04 : 1.0)
+            .animation(.easeInOut(duration: 0.16), value: vurgulanan)
+            .id(odak)
     }
 }
 

@@ -1,59 +1,105 @@
 import SwiftUI
 
-// Görevler sekmesi (alt çubuğun 3. sekmesi).
-// Android karşılığı: MissionsFragment + res/layout/fragment_missions.xml.
+// Görevler sekmesi (alt çubuğun 3. sekmesi) — tek giriş görünümü.
+// Android karşılığı: TasksFragment(MODE_MISSIONS) + res/layout/fragment_tasks.xml. Android'de
+// sekme TEK kaydırılabilir listedir (RecyclerView); sırası (TasksFragment.submitBulletinList):
+//   1. görev bölümleri: haftalık ve günlük görevler (MissionsSection, item_missions_sections.xml),
+//   2. günlük soru kartı (item_bulletin_daily_question_card.xml),
+//   3. Abaküs kartı (item_bulletin_card.xml; serbest çalışma).
+// Android'de bunların ardından Hata Avcısı kartı, ayrıca yalnızca admin ve onaylı öğretmen
+// kartları gelir; bunlar ilk iOS sürümünün dışındadır.
+// Günlük soru kartı ve panelleri GunlukSoru/ klasöründe bileşen olarak durur; ilerleme ve
+// geçişlerini GunlukSoruModeli yönetir.
 // Ölçüler layout XML'inden birebir alınmıştır (dp → pt, sp → pt).
 struct GorevlerEkrani: View {
-    /// Ödül sandığı ekranını açan kapanış. nil ise ekranın kendi yer tutucusu gösterilir.
+    /// Görev ödül sandığını açan kapanış. nil ise ekranın kendi yer tutucusu gösterilir.
     /// Sandık kapanınca isteğin `kapandi` kapanışı çağrılmalıdır.
     var sandikAc: ((GorevlerSandikIstegi) -> Void)?
+    /// Günlük soruyu oynatan ekranı (kör ders) açan kapanış. Soru bitince başlangıcın `sonuc`
+    /// kapanışı çağrılmalıdır. nil ise ekranın kendi yer tutucusu gösterilir.
+    var soruBaslat: ((GunlukSoruBaslangici) -> Void)?
+    /// Günlük soru ödül sandığını (Android: NewChestFragment, RARE) açan kapanış. Sandık kapanınca
+    /// isteğin `kapandi` kapanışı çağrılmalıdır. nil ise görev sandığının yer tutucusu gösterilir.
+    var odulAc: ((GunlukSoruOdulIstegi) -> Void)?
+    /// Abaküs kartına dokunulunca çağrılır. nil ise "Yakında" balonu.
+    var kartSecildi: ((GunlukSoruKesfetKarti) -> Void)?
+    /// Ödülden sonra rozet seviye atlama kuyruğu doluysa çağrılır.
+    var rozetGoster: (([String]) -> Void)?
 
     @StateObject private var model: GorevlerModeli
+    @StateObject private var gunluk: GunlukSoruModeli
     @Environment(\.scenePhase) private var sahneDurumu
 
     /// Dakikada bir yenileme: geri sayım saatleri ve gün/hafta devri ekrandayken de güncellensin.
     private let saat = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
-    /// Alt çubuk sekmesi olarak gömülen hâl: örnek veriyle çalışır.
+    /// Alt çubuk sekmesi olarak gömülen hâl: ilerlemiş bir kullanıcının örnek verisiyle çalışır.
     init() {
         self.init(
             sandikAc: nil,
+            soruBaslat: nil,
+            odulAc: nil,
+            kartSecildi: nil,
+            rozetGoster: nil,
             veri: SahteGorevlerVeriKaynagi.ortak,
-            odul: SahteGorevlerOdulServisi()
+            odul: SahteGorevlerOdulServisi(),
+            gunlukDepo: SahteGunlukSoruDeposu.ortak,
+            cuzdan: SahteGunlukSoruCuzdani.ortak,
+            gunlukOdul: SahteGunlukSoruOdulServisi()
+        )
+    }
+
+    /// Hiç oynamamış kullanıcı: görev sayaçları sıfır; hiçbir sandık bitmediği için günlük soru
+    /// havuzu boş (kart varsayılan hâlde, dokununca "havuz boş" balonu).
+    static func yeniKullanici() -> GorevlerEkrani {
+        return GorevlerEkrani(
+            sandikAc: nil,
+            soruBaslat: nil,
+            odulAc: nil,
+            kartSecildi: nil,
+            rozetGoster: nil,
+            veri: SahteGorevlerVeriKaynagi(ilerlemis: false),
+            odul: SahteGorevlerOdulServisi(),
+            gunlukDepo: SahteGunlukSoruDeposu(bitenSandikSayisi: 0),
+            cuzdan: SahteGunlukSoruCuzdani.ortak,
+            gunlukOdul: SahteGunlukSoruOdulServisi()
         )
     }
 
     init(
         sandikAc: ((GorevlerSandikIstegi) -> Void)?,
+        soruBaslat: ((GunlukSoruBaslangici) -> Void)?,
+        odulAc: ((GunlukSoruOdulIstegi) -> Void)?,
+        kartSecildi: ((GunlukSoruKesfetKarti) -> Void)?,
+        rozetGoster: (([String]) -> Void)?,
         veri: GorevlerVeriKaynagi,
-        odul: GorevlerOdulServisi
+        odul: GorevlerOdulServisi,
+        gunlukDepo: GunlukSoruDeposu,
+        cuzdan: GunlukSoruCuzdani,
+        gunlukOdul: GunlukSoruOdulServisi
     ) {
         self.sandikAc = sandikAc
+        self.soruBaslat = soruBaslat
+        self.odulAc = odulAc
+        self.kartSecildi = kartSecildi
+        self.rozetGoster = rozetGoster
         _model = StateObject(wrappedValue: GorevlerModeli(veri: veri, odul: odul))
+        _gunluk = StateObject(
+            wrappedValue: GunlukSoruModeli(depo: gunlukDepo, cuzdan: cuzdan, odul: gunlukOdul)
+        )
     }
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 20) {
-                GorevlerBolumu(
-                    baslik: Metin.al("missions_weekly_title"),
-                    sayac: model.haftalikSayac,
-                    satirlar: model.haftalik,
-                    dokunuldu: satiraDokun
-                )
-                GorevlerBolumu(
-                    baslik: Metin.al("missions_daily_title"),
-                    sayac: model.gunlukSayac,
-                    satirlar: model.gunluk,
-                    dokunuldu: satiraDokun
-                )
-            }
-            .padding(16)
+        ZStack {
+            liste
+            GunlukSoruKatmanlari(model: gunluk)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("background_color"))
         .onAppear {
+            cikislariBagla()
             model.yenile()
+            gunluk.gorundu()
         }
         .onReceive(saat) { _ in
             model.yenile()
@@ -61,11 +107,69 @@ struct GorevlerEkrani: View {
         .onChange(of: sahneDurumu) { yeni in
             if yeni == .active {
                 model.yenile()
+                gunluk.kartiYenile()
             }
         }
         .fullScreenCover(item: $model.yerTutucuIstegi) { istek in
             GorevlerSandikYerTutucu(istek: istek)
         }
+        .fullScreenCover(item: $gunluk.yerTutucuSoru) { veri in
+            GunlukSoruYerTutucuSoru(veri: veri)
+        }
+    }
+
+    /// fragment_tasks.xml: RecyclerView — yatay 16dp, üst 8dp, alt 16dp iç boşluk. Satırların her
+    /// birinde üst ve alt 10dp dış boşluk vardır (arada toplam 20dp); görev satırı içindeki iki
+    /// çerçeve arası da 20dp'dir (item_missions_sections.xml).
+    private var liste: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 20) {
+                gorevBolumleri
+                GunlukSoruKarti(model: gunluk)
+                GunlukSoruKesfetKartGorunumu(tur: .abakusPratik) {
+                    gunluk.kesfetKartinaDokunuldu(.abakusPratik)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 18)
+            .padding(.bottom, 26)
+        }
+    }
+
+    private var gorevBolumleri: some View {
+        VStack(spacing: 20) {
+            GorevlerBolumu(
+                baslik: Metin.al("missions_weekly_title"),
+                sayac: model.haftalikSayac,
+                satirlar: model.haftalik,
+                dokunuldu: satiraDokun
+            )
+            GorevlerBolumu(
+                baslik: Metin.al("missions_daily_title"),
+                sayac: model.gunlukSayac,
+                satirlar: model.gunluk,
+                dokunuldu: satiraDokun
+            )
+        }
+    }
+
+    /// Günlük soru modelinin geçişlerini dışarıya bağlar. Ödül sandığı dışarıya bağlanmadıysa görev
+    /// sandığının yer tutucusu gösterilir.
+    private func cikislariBagla() {
+        let gorevler: GorevlerModeli = model
+        let disaridakiOdul: ((GunlukSoruOdulIstegi) -> Void)? = odulAc
+        var cikislar = GunlukSoruCikislari()
+        cikislar.soruBaslat = soruBaslat
+        cikislar.odulAc = { (istek: GunlukSoruOdulIstegi) -> Void in
+            if let ac = disaridakiOdul {
+                ac(istek)
+            } else {
+                gorevler.gunlukOdulYerTutucusunuAc(istek)
+            }
+        }
+        cikislar.kartSecildi = kartSecildi
+        cikislar.rozetGoster = rozetGoster
+        gunluk.cikislar = cikislar
     }
 
     private func satiraDokun(_ satir: GorevlerSatiri) {
@@ -280,9 +384,9 @@ enum GorevlerStil {
     static let cerceveZemini = Color(red: 26.0 / 255.0, green: 38.0 / 255.0, blue: 43.0 / 255.0)
     /// bg_mission_section_frame.xml: çizgi #4D6673.
     static let cerceveCizgisi = Color(red: 77.0 / 255.0, green: 102.0 / 255.0, blue: 115.0 / 255.0)
-    /// fragment_missions.xml: başlık altı çizgisi #20FFFFFF (alfa 0x20).
+    /// item_missions_sections.xml: başlık altı çizgisi #20FFFFFF (alfa 0x20).
     static let baslikCizgisi = Color.white.opacity(32.0 / 255.0)
-    /// MissionsFragment.addDivider: 0x1AFFFFFF (alfa 0x1A).
+    /// MissionsSection.addDivider: 0x1AFFFFFF (alfa 0x1A).
     static let satirCizgisi = Color.white.opacity(26.0 / 255.0)
     /// fragment_chest.xml / yer tutucu zemini: #101820.
     static let sandikZemini = Color(red: 16.0 / 255.0, green: 24.0 / 255.0, blue: 32.0 / 255.0)

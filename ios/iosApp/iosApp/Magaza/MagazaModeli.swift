@@ -6,7 +6,21 @@ import SwiftUI
 //
 // Ortak Kotlin koduna yapılan BÜTÜN çağrılar bu dosyada (ve sahte servislerde) toplanmıştır;
 // görünümler yalnızca aşağıdaki Swift yapılarını okur. Kurallar ortak koddadır:
-// ShopFragmentLogic (ios/shared/.../oyun/ShopFragmentLogic.kt) ve BillingCatalog.
+// ShopFragmentLogic (ios/shared/.../oyun/ShopFragmentLogic.kt), BillingCatalog ve PlanStatus.
+//
+// Ortak koddan ALINMAYANLAR (ShopFragmentLogic Android'in eski hâlinde kaldığı için Swift'te
+// güncel Android değerleriyle tutulur): can bedeli (1 anahtar), altın/anahtar kartlarındaki
+// miktar ve yedek fiyatlar (fragment_shop.xml), seri dondurma bedeli (4000 altın).
+
+/// Mağazanın açılışta kaydırılacağı yer (Android: ARG_FOCUS_STREAK_FREEZE / ARG_FOCUS_SOBI_CREDITS).
+enum MagazaOdak: Hashable {
+    /// Seri dondurma kartı.
+    case seriDondurma
+    /// Sobi kredisi bölümü (üstteki Sobi kredisi göstergesine dokununca açılır).
+    case sobiKredisi
+    /// Sayfanın sonu (altın, anahtar ve geri yükle bölümleri; ekran galerisi için).
+    case alt
+}
 
 /// Altın / anahtar paketi kartı.
 struct MagazaPaketKarti: Identifiable {
@@ -19,17 +33,82 @@ struct MagazaPaketKarti: Identifiable {
     var id: String { urunKimligi }
 }
 
+/// Sobi kredisi paketi kartı (shopSobiCreditCard1..3).
+struct MagazaSobiPaketi: Identifiable {
+    let urunKimligi: String
+    let miktarMetni: String
+    let fiyatMetni: String
+
+    var id: String { urunKimligi }
+}
+
 /// "Can" bölümünün anlık görünümü (Android: updateEnergyUi).
 struct MagazaCanBolumu: Equatable {
+    /// Üst çubuktaki can sayısı ("∞" yerine boş: sonsuzda rozet çizilir).
     var ustCanMetni: String = "0"
+    /// Sonsuz can (Pro ya da onaylı öğretmen): kalbin üzerinde "∞" rozeti görünür.
+    var sonsuz: Bool = false
     var sayacMetni: String = ""
     var sayacRengi: Color = .white
     var canAlinabilir: Bool = false
     var dugmeRengi: Color = .clear
+    var dugmeDudagi: Color = .clear
     var dugmeYaziRengi: Color = .white
     var dugmeSimgeOpakligi: Double = 1
     var reklamOpakligi: Double = 1
     var bedelMetni: String = ""
+}
+
+/// Katalogdaki bir paket kartının sabit tanımı (fragment_shop.xml: görsel, miktar, yedek fiyat).
+private struct MagazaKartTanimi {
+    let urunKimligi: String
+    let gorselAdi: String
+    let birimSimgeAdi: String
+    let miktarMetni: String
+    let yedekFiyat: String
+}
+
+/// Kartların sabit listeleri. Miktarlar yalnızca etikettir; verilecek miktarı sunucu belirler
+/// (functions/index.js → PLAY_PRODUCT_CATALOG).
+private enum MagazaKatalog {
+    static func altin() -> [MagazaKartTanimi] {
+        let katalog = BillingCatalog.shared
+        return [
+            MagazaKartTanimi(urunKimligi: katalog.GOLD_SMALL, gorselAdi: "shop_coin_ic1", birimSimgeAdi: "gold_ic", miktarMetni: "5 000", yedekFiyat: "₺39,00"),
+            MagazaKartTanimi(urunKimligi: katalog.GOLD_MEDIUM, gorselAdi: "shop_coin_ic2", birimSimgeAdi: "gold_ic", miktarMetni: "20 000", yedekFiyat: "₺120,00"),
+            MagazaKartTanimi(urunKimligi: katalog.GOLD_LARGE, gorselAdi: "shop_coin_ic3", birimSimgeAdi: "gold_ic", miktarMetni: "100 000", yedekFiyat: "₺500,00"),
+        ]
+    }
+
+    static func anahtar() -> [MagazaKartTanimi] {
+        let katalog = BillingCatalog.shared
+        return [
+            MagazaKartTanimi(urunKimligi: katalog.KEYS_SMALL, gorselAdi: "key", birimSimgeAdi: "key", miktarMetni: "10", yedekFiyat: "₺29,00"),
+            MagazaKartTanimi(urunKimligi: katalog.KEYS_MEDIUM, gorselAdi: "key", birimSimgeAdi: "key", miktarMetni: "50", yedekFiyat: "₺119,00"),
+            MagazaKartTanimi(urunKimligi: katalog.KEYS_LARGE, gorselAdi: "key", birimSimgeAdi: "key", miktarMetni: "200", yedekFiyat: "₺429,00"),
+        ]
+    }
+
+    /// Sobi kredisi paketleri: (ürün, miktar metni anahtarı, yedek fiyat).
+    static func sobi() -> [(urunKimligi: String, miktarAnahtari: String, yedekFiyat: String)] {
+        let katalog = BillingCatalog.shared
+        return [
+            (urunKimligi: katalog.SOBI_CREDITS_20, miktarAnahtari: "shop_sobi_credit_amount_20", yedekFiyat: "₺12,99"),
+            (urunKimligi: katalog.SOBI_CREDITS_50, miktarAnahtari: "shop_sobi_credit_amount_50", yedekFiyat: "₺24,99"),
+            (urunKimligi: katalog.SOBI_CREDITS_120, miktarAnahtari: "shop_sobi_credit_amount_120", yedekFiyat: "₺49,99"),
+        ]
+    }
+
+    /// Mağazadan fiyatı sorgulanacak ürünler: ekranda kartı olanlar (Öğretmene sor kredileri ve
+    /// Lite aboneliği satılmaz).
+    static func urunKimlikleri() -> [String] {
+        var kimlikler: [String] = []
+        for kart in altin() { kimlikler.append(kart.urunKimligi) }
+        for kart in anahtar() { kimlikler.append(kart.urunKimligi) }
+        for kart in sobi() { kimlikler.append(kart.urunKimligi) }
+        kimlikler.append(ShopFragmentLogic.shared.PRO_PRODUCT_ID)
+        return kimlikler
+    }
 }
 
 final class MagazaModeli: ObservableObject {
@@ -37,10 +116,23 @@ final class MagazaModeli: ObservableObject {
 
     @Published private(set) var altin: Int = 0
     @Published private(set) var anahtar: Int = 0
+    /// Üst çubuktaki Sobi kredisi (negatif bakiye 0 görünür).
+    @Published private(set) var sobiKredisi: Int = 0
+    /// Sobi bölümünün alt yazısı: bakiye gelene kadar genel bilgi, sonra "Sobi kredin: N · …".
+    @Published private(set) var sobiBilgiMetni: String = Metin.al("shop_sobi_credit_info")
+    /// Plan Pro / Premium mi (kalp simgesi Pro'da farklıdır).
+    @Published private(set) var proPlan: Bool = false
     @Published private(set) var canBolumu = MagazaCanBolumu()
     @Published private(set) var altinKartlari: [MagazaPaketKarti] = []
     @Published private(set) var anahtarKartlari: [MagazaPaketKarti] = []
+    @Published private(set) var sobiPaketleri: [MagazaSobiPaketi] = []
     @Published private(set) var proFiyatMetni: String = ""
+    /// Süper kartın düğmesi (Android: SubscriptionCta: "1 HAFTA ÜCRETSİZ DENE" / "PRO'YA GEÇ").
+    @Published private(set) var superDugmeMetni: String = Metin.al("fragment_shop_super_button")
+    /// Elde seri dondurma var mı (kart "HAZIR" rozetine döner).
+    @Published private(set) var dondurmaVar: Bool = false
+    /// Seri dondurma onay penceresi açık mı.
+    @Published var dondurmaOnayiAcik: Bool = false
     /// Kısa süreli bilgi balonu.
     @Published private(set) var bildirim: String?
     /// Satın alınan paketin kartından fırlayan simgeler (kart, ürün kimliğiyle eşleşir).
@@ -49,13 +141,21 @@ final class MagazaModeli: ObservableObject {
     @Published private(set) var anahtarKalpUcusu: MagazaUcusIstegi?
     /// "CAN KAZAN" düğmesinden fırlayan kalp.
     @Published private(set) var reklamKalpUcusu: MagazaUcusIstegi?
+    /// Seri dondurma düğmesinden fırlayan simge.
+    @Published private(set) var dondurmaUcusu: MagazaUcusIstegi?
+    /// Şu an vurgulanan (hafifçe büyüyen) kart.
+    @Published private(set) var vurgulanan: MagazaOdak?
 
     // MARK: Sabit metinler (fragment_shop.xml)
 
-    let ozelTekliflerBasligi: String = ShopFragmentLogic.shared.TITLE_SPECIAL_OFFERS
-    let canBasligi: String = ShopFragmentLogic.shared.TITLE_LIFE
-    let altinBasligi: String = ShopFragmentLogic.shared.TITLE_GOLD
-    let anahtarBasligi: String = ShopFragmentLogic.shared.TITLE_KEYS
+    let ozelTekliflerBasligi: String = Metin.al("fragment_shop_text")
+    let canBasligi: String = Metin.al("fragment_shop_text_9")
+    let altinBasligi: String = Metin.al("fragment_shop_text_15")
+    let anahtarBasligi: String = Metin.al("fragment_shop_text_16")
+    let sobiBasligi: String = Metin.al("shop_sobi_credit_title")
+
+    /// Açılışta kaydırılacak yer (yoksa tepeden açılır).
+    let baslangicOdagi: MagazaOdak?
 
     // MARK: Bağımlılıklar
 
@@ -69,23 +169,26 @@ final class MagazaModeli: ObservableObject {
     private var bildirimSirasi: Int = 0
     /// Android: buyLifeInProgress.
     private var canAlimiSuruyor: Bool = false
+    /// Android: buyFreezeInProgress.
+    private var dondurmaAlimiSuruyor: Bool = false
     private var satinAlmaSuruyor: Bool = false
     private var reklamSuruyor: Bool = false
 
     init(
         servisler: MagazaBagimliliklar,
         sandikAc: ((String) -> Void)?,
-        planKarsilastirmaAc: (() -> Void)?
+        planKarsilastirmaAc: (() -> Void)?,
+        baslangicOdagi: MagazaOdak?
     ) {
         self.servisler = servisler
         self.sandikAc = sandikAc
         self.planKarsilastirmaAc = planKarsilastirmaAc
+        self.baslangicOdagi = baslangicOdagi
         // Android: önce önbellekteki bakiye yazılır.
-        let onbellek: MagazaCuzdan = servisler.cuzdan.cuzdan
-        altin = onbellek.altin
-        anahtar = onbellek.anahtar
+        cuzdaniYaz(servisler.cuzdan.cuzdan)
         kartlariKur()
         canBolumunuYenile()
+        dondurmaVar = servisler.seri.dondurmaVar
     }
 
     deinit {
@@ -108,13 +211,18 @@ final class MagazaModeli: ObservableObject {
             self?.cuzdaniYaz(cuzdan)
         }
         // Fiyatlar mağazadan gelene kadar layout'taki yedek değerler görünür (applyStorePrices).
-        let kimlikler: [String] = ShopFragmentLogic.shared.allProductIds()
-        servisler.odeme.urunleriGetir(kimlikler: kimlikler) { [weak self] urunler in
+        servisler.odeme.urunleriGetir(kimlikler: MagazaKatalog.urunKimlikleri()) { [weak self] urunler in
             guard let self = self else { return }
             for urun in urunler {
                 self.fiyatlar[urun.kimlik] = urun.fiyatMetni
             }
             self.kartlariKur()
+            self.superDugmesiniYaz()
+        }
+        // Seri dondurma kartı önbellekten çizilir, sonra sunucudaki durumla yenilenir.
+        dondurmaKartiniYenile()
+        servisler.seri.yenile { [weak self] in
+            self?.dondurmaKartiniYenile()
         }
         // Can sayacı saniyede bir yenilenir.
         sayac?.invalidate()
@@ -131,9 +239,21 @@ final class MagazaModeli: ObservableObject {
         sayac = nil
     }
 
+    /// Ekran belirli bir karta kaydırılarak açıldıktan sonra kart bir kez vurgulanır; vurgu açılış
+    /// animasyonu bittikten sonra başlar (Android: FOCUS_PULSE_DELAY_MS = 450, yarım süre 160 ms).
+    func vurguyuBaslat() {
+        guard let odak = baslangicOdagi, odak != .alt else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            self?.vurgulanan = odak
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) { [weak self] in
+                self?.vurgulanan = nil
+            }
+        }
+    }
+
     // MARK: Eylemler
 
-    /// Süper kart (Android: ProDiffirentFragment açılır — plan karşılaştırma penceresi).
+    /// Süper kart ve Pro kartı (Android: ProDiffirentFragment açılır — plan karşılaştırma penceresi).
     func superKartaDokunuldu() {
         if let ac = planKarsilastirmaAc {
             ac()
@@ -166,7 +286,7 @@ final class MagazaModeli: ObservableObject {
                     self.reklamKalpUcusu = self.kalpUcusu()
                     self.canBolumunuYenile()
                 } else {
-                    self.bildir(ShopFragmentLogic.shared.MESSAGE_AD_LIFE_FAILED)
+                    self.bildir(Metin.al("ui_can_alinamadi_tekrar_deneyin"))
                 }
             }
         }
@@ -176,36 +296,82 @@ final class MagazaModeli: ObservableObject {
     func anahtarlaCanAl() {
         guard canBolumu.canAlinabilir else { return }
         if canAlimiSuruyor { return }
-        let mantik = ShopFragmentLogic.shared
-        if !mantik.canBuyLifeWithKeys(currentKeys: Int32(anahtar)) {
-            bildir(mantik.MESSAGE_NOT_ENOUGH_KEYS)
+        let bedel: Int = MagazaStil.canAnahtarBedeli
+        if anahtar < bedel {
+            bildir(Metin.al("ui_yetersiz_anahtar_2"))
             return
         }
         canAlimiSuruyor = true
         // İyimser gösterim: sunucu reddederse aşağıda önbellekteki değere dönülür.
-        anahtar = Int(mantik.optimisticKeysAfterBuyLife(currentKeys: Int32(anahtar)))
-        servisler.enerji.anahtarlaCanAl { [weak self] kalanAnahtar in
+        anahtar = anahtar - bedel
+        servisler.enerji.anahtarlaCanAl { [weak self] sonuc in
             guard let self = self else { return }
             self.canAlimiSuruyor = false
-            if let kalan = kalanAnahtar {
-                self.anahtar = kalan
+            switch sonuc {
+            case .verildi(let kalanAnahtar):
+                self.anahtar = kalanAnahtar
                 self.anahtarKalpUcusu = self.kalpUcusu()
                 self.canBolumunuYenile()
-            } else {
+            case .gunlukSinir:
                 self.cuzdaniYaz(self.servisler.cuzdan.cuzdan)
-                self.bildir(ShopFragmentLogic.shared.MESSAGE_BUY_LIFE_FAILED)
+                self.bildir(Metin.al("ui_gunluk_sinira_ulasildi_yarin_tekrar_deneyin"))
+            case .hata:
+                self.cuzdaniYaz(self.servisler.cuzdan.cuzdan)
+                self.bildir(Metin.al("ui_islem_tamamlanamadi_tekrar_deneyin"))
             }
         }
     }
 
-    /// Pro kartı: aylık abonelik.
-    func proSatinAl() {
-        satinAl(urunKimligi: ShopFragmentLogic.shared.PRO_PRODUCT_ID)
+    /// Seri dondurma düğmesi: yeterli altın varsa onay penceresi açılır (Android: confirmBuyStreakFreeze).
+    func seriDondurmayaDokunuldu() {
+        if dondurmaAlimiSuruyor || dondurmaVar { return }
+        if altin < MagazaStil.dondurmaBedeli {
+            bildir(Metin.al("ui_yetersiz_altin_2"))
+            return
+        }
+        dondurmaOnayiAcik = true
+    }
+
+    /// Onay penceresinde "Satın al" (Android: buyStreakFreeze). Bakiye iyimser düşülmez; yeni
+    /// bakiye sunucu yanıtından yazılır.
+    func seriDondurmayiOnayla() {
+        dondurmaOnayiAcik = false
+        if dondurmaAlimiSuruyor { return }
+        dondurmaAlimiSuruyor = true
+        servisler.seri.dondurmaAl { [weak self] basarili, mesaj, yeniAltin in
+            guard let self = self else { return }
+            self.dondurmaAlimiSuruyor = false
+            if basarili {
+                if let yeni = yeniAltin {
+                    self.altin = yeni
+                }
+                self.dondurmaUcusu = MagazaUcusIstegi(simgeAdi: "streak_freeze_ic", adet: 1, yayilma: 0)
+                self.dondurmaKartiniYenile()
+            } else {
+                if let metin = mesaj {
+                    self.bildir(metin)
+                }
+                // Reddin sebebi bayat önbellek olabilir: doğrusu sunucudan çekilip kart ona göre çizilir.
+                self.servisler.seri.yenile { [weak self] in
+                    self?.dondurmaKartiniYenile()
+                }
+            }
+        }
+    }
+
+    /// Pro kartı: Android'de önce plan karşılaştırma ekranı açılır, doğrudan ödeme başlamaz.
+    func proKartinaDokunuldu() {
+        superKartaDokunuldu()
     }
 
     /// Altın / anahtar paketi kartı.
     func paketSatinAl(_ kart: MagazaPaketKarti) {
         satinAl(urunKimligi: kart.urunKimligi)
+    }
+
+    /// Sobi kredisi paketi kartı.
+    func sobiPaketiSatinAl(_ paket: MagazaSobiPaketi) {
+        satinAl(urunKimligi: paket.urunKimligi)
     }
 
     /// Önceki satın alımları geri yükler. Android'de karşılığı yoktur (Play bunu kendiliğinden
@@ -217,6 +383,7 @@ final class MagazaModeli: ObservableObject {
             guard let self = self else { return }
             self.satinAlmaSuruyor = false
             self.canBolumunuYenile()
+            self.cuzdaniYaz(self.servisler.cuzdan.cuzdan)
             self.bildir(bulundu ? "Satın alımların geri yüklendi." : "Geri yüklenecek satın alım bulunamadı.")
         }
     }
@@ -231,9 +398,10 @@ final class MagazaModeli: ObservableObject {
             self.satinAlmaSuruyor = false
             switch sonuc {
             case .verildi:
-                // Android: onPurchaseGranted → bakiye yenilenir, kutlama animasyonu oynar.
+                // Android: onPurchaseGranted → bakiye ve Sobi kredisi yenilenir, kutlama animasyonu oynar.
                 self.cuzdaniYaz(self.servisler.cuzdan.cuzdan)
                 self.canBolumunuYenile()
+                self.superDugmesiniYaz()
                 self.paketUcusunuBaslat(urunKimligi: urunKimligi)
             case .iptal, .beklemede:
                 break
@@ -257,12 +425,14 @@ final class MagazaModeli: ObservableObject {
         }
     }
 
+    /// Android: animatePurchasedItem. Simge ve adet ortak koddadır (altın/anahtar/Sobi: 30 simge).
     private func paketUcusunuBaslat(urunKimligi: String) {
         let mantik = ShopFragmentLogic.shared
-        guard let simge = mantik.purchaseAnimationIconResName(productId: urunKimligi) else { return }
+        guard let simge = mantik.purchaseAnimationIconResName(productId: urunKimligi),
+              let adet = mantik.purchaseAnimationItemCount(productId: urunKimligi) else { return }
         let istek = MagazaUcusIstegi(
             simgeAdi: simge,
-            adet: Int(mantik.PURCHASE_ANIMATION_ITEM_COUNT),
+            adet: Int(adet.intValue),
             yayilma: Double(mantik.PURCHASE_ANIMATION_SPREAD_MS) / 1000.0
         )
         paketUcusu = (urunKimligi: urunKimligi, istek: istek)
@@ -278,25 +448,79 @@ final class MagazaModeli: ObservableObject {
         if !canAlimiSuruyor {
             anahtar = cuzdan.anahtar
         }
+        // Android: refreshSobiCredits — bakiye yazılır; negatif bakiye göstergede 0 görünür.
+        if let kredi = cuzdan.sobiKredisi {
+            sobiKredisi = max(0, kredi)
+            sobiBilgiMetni = Metin.al("shop_sobi_credit_balance", kredi, cuzdan.sobiUcretsizSinir)
+        }
+        proPlan = PlanStatus.shared.isProPlan(plan: cuzdan.plan)
+    }
+
+    private func dondurmaKartiniYenile() {
+        let yeni: Bool = servisler.seri.dondurmaVar
+        if yeni != dondurmaVar {
+            dondurmaVar = yeni
+        }
     }
 
     private func kartlariKur() {
-        let mantik = ShopFragmentLogic.shared
-        altinKartlari = mantik.GOLD_CARDS.map { kartaCevir($0) }
-        anahtarKartlari = mantik.KEY_CARDS.map { kartaCevir($0) }
-        // Android: textAllCaps="true".
-        let proMetni: String = mantik.proPriceLabel(storePrice: fiyatlar[mantik.PRO_PRODUCT_ID])
+        var altinListesi: [MagazaPaketKarti] = []
+        for tanim in MagazaKatalog.altin() {
+            altinListesi.append(paketKarti(tanim))
+        }
+        altinKartlari = altinListesi
+        var anahtarListesi: [MagazaPaketKarti] = []
+        for tanim in MagazaKatalog.anahtar() {
+            anahtarListesi.append(paketKarti(tanim))
+        }
+        anahtarKartlari = anahtarListesi
+        var sobiListesi: [MagazaSobiPaketi] = []
+        for tanim in MagazaKatalog.sobi() {
+            let fiyat: String = fiyatlar[tanim.urunKimligi] ?? tanim.yedekFiyat
+            sobiListesi.append(
+                MagazaSobiPaketi(
+                    urunKimligi: tanim.urunKimligi,
+                    miktarMetni: Metin.al(tanim.miktarAnahtari),
+                    fiyatMetni: fiyat
+                )
+            )
+        }
+        sobiPaketleri = sobiListesi
+        // Android: applyStorePrices → "aylık $price"; layout'ta yedek metin; textAllCaps="true".
+        let proKimligi: String = ShopFragmentLogic.shared.PRO_PRODUCT_ID
+        let proMetni: String
+        if let fiyat = fiyatlar[proKimligi] {
+            proMetni = Metin.al("ui_aylik_x", fiyat)
+        } else {
+            proMetni = Metin.al("fragment_shop_shop_pro_price_text")
+        }
         proFiyatMetni = proMetni.uppercased(with: Locale(identifier: "tr_TR"))
     }
 
-    private func kartaCevir(_ kart: ShopFragmentLogic.PackCard) -> MagazaPaketKarti {
-        MagazaPaketKarti(
-            urunKimligi: kart.productId,
-            gorselAdi: kart.imageResName,
-            birimSimgeAdi: kart.currencyIconResName,
-            miktarMetni: kart.amountLabel,
-            fiyatMetni: ShopFragmentLogic.shared.priceLabel(card: kart, storePrice: fiyatlar[kart.productId])
+    private func paketKarti(_ tanim: MagazaKartTanimi) -> MagazaPaketKarti {
+        let fiyat: String = fiyatlar[tanim.urunKimligi] ?? tanim.yedekFiyat
+        return MagazaPaketKarti(
+            urunKimligi: tanim.urunKimligi,
+            gorselAdi: tanim.gorselAdi,
+            birimSimgeAdi: tanim.birimSimgeAdi,
+            miktarMetni: tanim.miktarMetni,
+            fiyatMetni: fiyat
         )
+    }
+
+    /// Android: SubscriptionCta.apply. Ücretsiz deneme yoksa ya da kullanıcı uygun değilse deneme
+    /// vaat edilmez; 7, 14, 21 … gün "1 hafta / 2 hafta" olarak yazılır.
+    private func superDugmesiniYaz() {
+        let gun: Int? = servisler.odeme.ucretsizDenemeGunu(urunKimligi: ShopFragmentLogic.shared.PRO_PRODUCT_ID)
+        guard let gun = gun else {
+            superDugmeMetni = Metin.al("sub_cta_no_trial_pro")
+            return
+        }
+        if gun % 7 == 0 {
+            superDugmeMetni = Metin.al("sub_cta_trial_weeks", gun / 7)
+        } else {
+            superDugmeMetni = Metin.al("sub_cta_trial_days", gun)
+        }
     }
 
     private func canBolumunuYenile() {
@@ -308,15 +532,18 @@ final class MagazaModeli: ObservableObject {
             timeUntilNextEnergyMs: durum.sonrakiCanaKalanMs
         )
         let yeni = MagazaCanBolumu(
-            ustCanMetni: d.headerEnergyText,
+            ustCanMetni: durum.sonsuz ? "" : d.headerEnergyText,
+            sonsuz: durum.sonsuz,
             sayacMetni: d.timerText,
             sayacRengi: MagazaStil.renk(argb: d.timerColor),
             canAlinabilir: d.canGetLife,
             dugmeRengi: MagazaStil.renk(argb: d.buyButtonColor),
+            dugmeDudagi: d.canGetLife ? MagazaStil.koyulastir(argb: d.buyButtonColor) : Color.clear,
             dugmeYaziRengi: MagazaStil.renk(argb: d.buyTextColor),
             dugmeSimgeOpakligi: Double(d.buyIconAlpha),
             reklamOpakligi: Double(d.watchAdAlpha),
-            bedelMetni: d.buyCostText
+            // Ortak koddaki bedel (3) eski; Android'de 1.
+            bedelMetni: String(MagazaStil.canAnahtarBedeli)
         )
         if yeni != canBolumu {
             canBolumu = yeni

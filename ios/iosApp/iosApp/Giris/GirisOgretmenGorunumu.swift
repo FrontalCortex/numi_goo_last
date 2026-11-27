@@ -28,11 +28,11 @@ struct GirisOgretmenGorunumu: View {
                     .frame(width: 120, height: 120)
                     .background(Circle().fill(Color("dark_primary")))
                     .padding(.top, 60)
-                Text("Eğitim Uygulaması")
+                Text(Metin.al("activity_teacher_login_text"))
                     .font(Tema.yazi(24))
                     .foregroundColor(Color("dark_text"))
                     .padding(.top, 24)
-                Text("Öğretmen Girişi")
+                Text(Metin.al("activity_teacher_login_text_2"))
                     .font(Tema.yazi(16))
                     .foregroundColor(Color("dark_text_secondary"))
                     .padding(.top, 8)
@@ -45,14 +45,14 @@ struct GirisOgretmenGorunumu: View {
 
     private var form: some View {
         VStack(alignment: .leading, spacing: 0) {
-            GirisMetinAlani(ipucu: "E-posta", metin: $model.ogretmenGirisEposta, tur: .eposta)
-            GirisMetinAlani(ipucu: "Şifre", metin: $model.ogretmenGirisSifre, tur: .sifre)
+            GirisMetinAlani(ipucu: Metin.al("activity_teacher_login_et_email_hint"), metin: $model.ogretmenGirisEposta, tur: .eposta)
+            GirisMetinAlani(ipucu: Metin.al("activity_teacher_login_et_password_hint"), metin: $model.ogretmenGirisSifre, tur: .sifre)
                 .padding(.top, 16)
             Button {
                 GirisStil.klavyeyiKapat()
                 model.sifremiUnuttumAc()
             } label: {
-                Text("Şifremi unuttum")
+                Text(Metin.al("activity_teacher_login_tv_forgot_password"))
                     .font(Tema.yazi(14))
                     .underline()
                     .foregroundColor(Color("dark_primary"))
@@ -60,7 +60,7 @@ struct GirisOgretmenGorunumu: View {
             .buttonStyle(.plain)
             .disabled(model.ogretmenGirisSuruyor)
             .padding(.top, 12)
-            GirisDoluDugme(metin: "Giriş Yap", etkin: !model.ogretmenGirisSuruyor) {
+            GirisDoluDugme(metin: Metin.al("activity_teacher_login_btn_login"), etkin: !model.ogretmenGirisSuruyor) {
                 GirisStil.klavyeyiKapat()
                 Task { await model.ogretmenGiris() }
             }
@@ -87,14 +87,14 @@ struct GirisSifremiUnuttumGorunumu: View {
                     model.geri()
                 }
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Şifremi unuttum")
+                    Text(Metin.al("fragment_teacher_forgot_password_email_tv_title"))
                         .font(Tema.yazi(20))
                         .foregroundColor(Color("dark_text"))
-                    Text("E-posta adresinizi girin. Size doğrulama kodu göndereceğiz.")
+                    Text(Metin.al("fragment_teacher_forgot_password_email_text"))
                         .font(Tema.yazi(14))
                         .foregroundColor(Color("dark_text_secondary"))
                         .padding(.top, 8)
-                    GirisMetinAlani(ipucu: "E-posta", metin: $model.sifirlamaEposta, tur: .eposta)
+                    GirisMetinAlani(ipucu: Metin.al("fragment_teacher_forgot_password_email_et_email_hint"), metin: $model.sifirlamaEposta, tur: .eposta)
                         .padding(.top, 16)
                     GirisDoluDugme(
                         metin: model.sifirlamaGonderiliyor ? metinler.BUTTON_SENDING : metinler.BUTTON_CONTINUE,
@@ -131,16 +131,16 @@ struct GirisYeniSifreGorunumu: View {
                 }
                 .disabled(model.yeniSifreGuncelleniyor)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Yeni şifre")
+                    Text(Metin.al("fragment_teacher_new_password_tv_title"))
                         .font(Tema.yazi(20))
                         .foregroundColor(Color("dark_text"))
-                    Text("Yeni şifrenizi girin.")
+                    Text(Metin.al("fragment_teacher_new_password_text"))
                         .font(Tema.yazi(14))
                         .foregroundColor(Color("dark_text_secondary"))
                         .padding(.top, 8)
-                    GirisMetinAlani(ipucu: "Yeni şifre", metin: $model.yeniSifre, tur: .sifre)
+                    GirisMetinAlani(ipucu: Metin.al("fragment_teacher_new_password_et_new_password_hint"), metin: $model.yeniSifre, tur: .sifre)
                         .padding(.top, 16)
-                    GirisMetinAlani(ipucu: "Şifre tekrar", metin: $model.yeniSifreTekrar, tur: .sifre)
+                    GirisMetinAlani(ipucu: Metin.al("fragment_teacher_new_password_et_new_password_confirm_hint"), metin: $model.yeniSifreTekrar, tur: .sifre)
                         .padding(.top, 12)
                     GirisDoluDugme(
                         metin: model.yeniSifreGuncelleniyor ? metinler.BUTTON_UPDATING : metinler.BUTTON_UPDATE_PASSWORD,

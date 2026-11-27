@@ -6,10 +6,11 @@ import Shared
 //
 // Çağrılan Kotlin dosyaları:
 //   ios/shared/.../profil/ProfileFragmentLogic.kt  (ProfileFragmentLogic, EditProfileRules,
-//       AccountSettingsRules, FriendSearchRules, FeedbackRules) — bu iş sırasında eklendi;
-//       `ios/docs/Shared.h` içinde HENÜZ YOK. Adlar başlıktaki kurallara göre yazıldı
-//       (object -> `.shared`, const val -> aynı adlı özellik, Int -> Int32, Long -> Int64).
+//       AccountSettingsRules, FriendSearchRules, FeedbackRules) — burada kullanılan adlar
+//       `ios/docs/Shared.h` içinde doğrulandı (`followButtonTapUnfollows(following:)`,
+//       `nudgedFollowersCount(current:delta:)` dahil).
 //   ios/shared/.../model/AuthRules.kt, SessionDeviceRules.kt — başlıkta doğrulandı.
+// Avatar kuralları ayrı kapıdan: Profil/Avatar/AvatarOrtakKod.swift (AvatarOrtak).
 
 /// Kupa yolu kartının sabit bilgisi (ortak kod: ProfileCupCard).
 struct ProfilKupaKartTanimi {
@@ -41,45 +42,73 @@ enum ProfilOrtak {
     private static var mantik: ProfileFragmentLogic { ProfileFragmentLogic.shared }
 
     // MARK: Profil başlığı
+    //
+    // Güncel Android metinleri strings.xml'den okuyor (appString); burada da `Metin.al`. Ortak koddaki
+    // TEXT_* / TOAST_* sabitleri eski gömülü Türkçe metinlerdir, Türkçede aynıdır ama kullanılmıyor.
 
-    static func avatarAdi(_ seciliAvatar: Int) -> String {
-        return mantik.avatarDrawableName(selectedAvatar: Int32(seciliAvatar))
-    }
-
-    static func avatarGecerli(_ seciliAvatar: Int) -> Bool {
-        return mantik.isValidAvatar(selectedAvatar: Int32(seciliAvatar))
-    }
-
+    /// Doküman adı → (yalnızca kendi profilinde) Auth görünen adı → "Kullanıcı" (ortak kodun sabiti;
+    /// Android'de `ui_kullanici`, Türkçesi aynı).
     static func gorunenAd(belgeAdi: String?, oturumAdi: String?, baskasi: Bool) -> String {
         return mantik.displayName(docName: belgeAdi, authDisplayName: oturumAdi, isOtherUser: baskasi)
     }
 
+    /// "@kimlik • 2024 YILINDA KATILDI"; kimlik boşsa yalnızca "2024 YILINDA KATILDI".
     static func kullaniciSatiri(kod: String, yil: Int) -> String {
-        return mantik.usernameAndDateText(userId: kod, year: Int32(yil))
+        if kod.isEmpty {
+            return Metin.al("ui_x_yilinda_katildi", yil)
+        }
+        return Metin.al("ui_x_x_yilinda_katildi", kod, yil)
     }
 
+    /// Android: followTargetUser — hedefin kullanıcı kimliği ekrandaki satırdan ayıklanır.
     static func hedefKod(kullaniciSatiri: String) -> String {
         return mantik.followTargetUserId(usernameAndDateText: kullaniciSatiri)
     }
 
     static func tamamlanmaMetni(_ yuzde: Int) -> String {
-        return mantik.completionText(percentage: Int32(yuzde))
+        return Metin.al("ui_x_tamamlandi", yuzde)
     }
 
-    static var tamamlanmaBekleme: String { mantik.TEXT_COMPLETION_LOADING }
+    static var tamamlanmaBekleme: String { Metin.al("ui_hesaplaniyor") }
 
+    /// Android: updateTotalTimeDisplay (gün / saat / dakika ayrımı ortak kodda; metinler Türkçede aynı).
     static func sureMetni(_ saniye: Int64) -> String {
         return mantik.totalTimeText(totalSeconds: saniye)
     }
 
-    static func abonelikMetni(_ plan: String?) -> String {
-        return mantik.subscriptionText(plan: plan)
+    /// "En uzun seri: 7 gün" (Android: appPlural(R.plurals.ui_en_uzun_seri_x_gun, n, n)).
+    static func enUzunSeriMetni(_ gun: Int64) -> String {
+        let adet: Int = Int(clamping: gun)
+        return Metin.cogul("ui_en_uzun_seri_x_gun", adet, adet)
     }
 
-    static var takipEtMetni: String { mantik.TEXT_FOLLOW }
-    static var takipEdiliyorMetni: String { mantik.TEXT_FOLLOWING }
-    static var takipEdildiBildirimi: String { mantik.TOAST_FOLLOWED }
-    static var tekBoncukBildirimi: String { mantik.TOAST_SINGLE_BEAD }
+    /// Belge yokken (Android: `ui_en_uzun_seri_0_gun`).
+    static var enUzunSeriSifir: String { Metin.al("ui_en_uzun_seri_0_gun") }
+
+    static var takipEtMetni: String { Metin.al("ui_takip_et") }
+    static var takipEdiliyorMetni: String { Metin.al("ui_takip_ediliyor") }
+    static var takipEdildiBildirimi: String { Metin.al("ui_takip_edildi") }
+    static var takipBirakildiBildirimi: String { Metin.al("ui_takip_birakildi") }
+    static var tekBoncukBildirimi: String { Metin.al("ui_sadece_1_adet_boncugun_var") }
+
+    static func hataBildirimi(_ mesaj: String) -> String {
+        return Metin.al("ui_hata_x", mesaj)
+    }
+
+    /// Takibi bırakma onayı: "X adlı kullanıcıyı takip etmeyi bırakmak istiyor musun?"
+    static func takipBirakmaSorusu(ad: String) -> String {
+        return Metin.al("ui_x_adli_kullaniciyi_takip_etmeyi_birakmak", ad)
+    }
+
+    /// Takip düğmesine dokunuş takibi bırakır mı (önce onay sorulur). Android: applyFollowButtonState.
+    static func dokunusTakibiBirakir(takipte: Bool) -> Bool {
+        return mantik.followButtonTapUnfollows(following: takipte)
+    }
+
+    /// Takip/bırakma sonrası ekrandaki takipçi sayısı (Android: nudgeFollowersCount); negatife inmez.
+    static func duzeltilmisTakipciSayisi(_ simdiki: Int, _ fark: Int) -> Int {
+        return Int(mantik.nudgedFollowersCount(current: Int32(clamping: simdiki), delta: Int32(clamping: fark)))
+    }
 
     // MARK: Kupa yolu
 
@@ -208,6 +237,9 @@ enum ProfilOrtak {
     static func odemelerGorunur(plan: String?) -> Bool {
         return AccountSettingsRules.shared.showPayments(plan: plan)
     }
+
+    /// "Kullanıcı bulunamadı." (AccountDeletionHelper'ın oturum yokken verdiği hata metni).
+    static var kullaniciBulunamadi: String { AccountDeletionRules.shared.MESSAGE_USER_NOT_FOUND }
 
     /// Son girişten bu yana 270 sn'den fazla geçtiyse silmeden önce yeniden giriş istenir.
     static func yenidenGirisGerekli(sonGirisMs: Int64?, simdiMs: Int64) -> Bool {

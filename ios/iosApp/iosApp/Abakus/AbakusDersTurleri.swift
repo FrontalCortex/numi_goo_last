@@ -41,7 +41,7 @@ struct AbakusDersBaslangici: Equatable {
     var partId: Int
     /// Android: GlobalValues.mapFragmentStepIndex (haritadaki sıra).
     var haritaSirasi: Int
-    /// Android: LessonItem.type — 0 ders, 2 sandık (süre tutulur, "Başla" düğmesi, 50 ms boncuk).
+    /// Android: LessonItem.type — 0 ders, 2 sandık (süre tutulur, "Başla" düğmesi).
     var dersTuru: Int
     /// Android: LessonItem.isBlinding == true. Kör dersler ayrı ekranda oynanır; burada yalnızca
     /// bilgi olarak taşınır.
@@ -49,11 +49,16 @@ struct AbakusDersBaslangici: Equatable {
     /// Android: GlobalValues.lessonStep'e yazılan başlangıç adımı (LessonItem.startStepNumber).
     var dersAdimi: Int
     var baslik: String
-    /// Android: LessonItem.lessonHint; yoksa boş.
+    /// Android: LessonItem.lessonHint; yoksa boş. Güncel Android abaküs dersinde ipucu düğmesini
+    /// göstermiyor (hintContainer gone); alan, çağıranlar değişmesin diye taşınıyor.
     var ipucu: String
     /// Android: resolveWorstCupTimeFallback() (sandık puanının çarpanı için, sn).
     var enKotuKupaSuresi: Int
     var soruKaynagi: AbakusSoruKaynagi
+    /// Android: `GlobalLessonData.lessonItems.indexOfFirst { it.type == TYPE_CHEST }` — bölümdeki ilk
+    /// sandığın liste sırası; sandık yoksa nil. Bölüm 1'de abaküs ayar düğmesi ilk sandığa kadar gizlidir
+    /// (abacusModeVisibility); nil ise Android'in "sandık yok" dalı uygulanır (sıra ≤ 3 gizli).
+    var ilkSandikSirasi: Int? = nil
 
     static let sandikTuru: Int = 2
 
@@ -83,11 +88,30 @@ struct AbakusDersBaslangici: Equatable {
         return dersTuru == AbakusDersBaslangici.sandikTuru
     }
 
+    /// Android: isLessonSuccessRateScope — yalnızca TYPE_LESSON (0) ve TYPE_CHEST (2) adımları başarı
+    /// oranı ölçümüne girer.
+    var basariOraniKapsaminda: Bool {
+        return AbacusLessonRules.shared.isLessonSuccessRateType(lessonType: Int32(dersTuru))
+    }
+
+    /// Android: AbacusFragment.abacusModeVisibility — ayar paneli düğmesi kör derste yok; bölüm 1'de
+    /// ilk ders ve ilk sandığa kadarki dersler için de yok.
+    var ayarDugmesiGorunur: Bool {
+        if korMu { return false }
+        if partId != 1 { return true }
+        if haritaSirasi == 1 { return false }
+        if let sandik = ilkSandikSirasi {
+            return haritaSirasi >= sandik
+        }
+        return haritaSirasi > 3
+    }
+
     /// Haritadaki ders öğesinden başlangıç değerlerini çıkarır (Android: AbacusFragment.onCreate +
     /// uploadLessonData). Öğenin başlangıç adımı yoksa (Android'de çöker) nil döner.
     /// `hazirSorular` boş değilse tablo yerine onlar kullanılır.
     static func dersOgesinden(
-        _ oge: LessonItem, partId: Int, haritaSirasi: Int, hazirSorular: [AbakusSoru] = []
+        _ oge: LessonItem, partId: Int, haritaSirasi: Int, hazirSorular: [AbakusSoru] = [],
+        ilkSandikSirasi: Int? = nil
     ) -> AbakusDersBaslangici? {
         guard let girdi = AbakusDersKoprusu.shared.dersGirdisi(
             lessonItem: oge, partId: Int32(partId), mapIndex: Int32(haritaSirasi)
@@ -97,7 +121,7 @@ struct AbakusDersBaslangici: Equatable {
         let kaynak: AbakusSoruKaynagi = hazirSorular.isEmpty
             ? .dersAdimi(kimlik: Int(girdi.lessonOperationsId))
             : .hazir(hazirSorular)
-        return AbakusDersBaslangici(
+        var sonuc = AbakusDersBaslangici(
             partId: partId,
             haritaSirasi: haritaSirasi,
             dersTuru: Int(girdi.lessonType),
@@ -108,6 +132,8 @@ struct AbakusDersBaslangici: Equatable {
             enKotuKupaSuresi: Int(girdi.worstCupTime),
             soruKaynagi: kaynak
         )
+        sonuc.ilkSandikSirasi = ilkSandikSirasi
+        return sonuc
     }
 }
 
@@ -115,7 +141,7 @@ struct AbakusDersBaslangici: Equatable {
 enum AbakusDersYonlendirmesi: Int {
     /// LessonResult
     case dersSonucu = 0
-    /// LessonResultFalse (başarı < %10)
+    /// LessonResultFalse (başarı < %75; ortak koddaki LESSON_PASS_MIN_SUCCESS_RATE)
     case dersBasarisiz = 1
     /// ChestResult
     case sandikSonucu = 2
@@ -147,6 +173,9 @@ struct AbakusDersSonucu: Equatable {
     let carpan: Float
     /// "toplamPuan" = ceil(dersPuanı × çarpan)
     let toplamPuan: Int
+    /// "questionElapsedMs": ekrana girişten bitişe geçen süre (ms). Android bunu sonuç ekranlarına
+    /// verir ve ChestFragmentLogic.updateMapProgress(questionElapsedMs:) ile sunucuya gider.
+    var soruSuresiMs: Int? = nil
 }
 
 /// Ekranın çaldığı sesler (Android: res/raw).
@@ -188,6 +217,20 @@ protocol AbakusDersHizmetleri: AbakusBoncukSesi {
     /// Android'de ilerleme sonuç ekranlarında yazılır (LessonResult / ChestResult →
     /// Firestore users/{uid}/lessonData). Ekran, ders bitince bir kez haber verir.
     func ilerlemeyiKaydet(sonuc: AbakusDersSonucu)
+
+    /// Android: LessonSuccessRateRepository.recordQuestionEntry(partId, mapIndex, currentStep) —
+    /// ekrana girişte, yalnızca ders ve sandık adımları için (`baslangic.basariOraniKapsaminda`).
+    func soruGirisiniKaydet(baslangic: AbakusDersBaslangici)
+
+    /// Android: onDestroyView → LessonSuccessRateRepository.recordAbandonWithoutAnswer — hiç cevap
+    /// verilmeden çıkıldı.
+    func cevapsizTerkiKaydet(baslangic: AbakusDersBaslangici)
+}
+
+extension AbakusDersHizmetleri {
+    func soruGirisiniKaydet(baslangic: AbakusDersBaslangici) {}
+
+    func cevapsizTerkiKaydet(baslangic: AbakusDersBaslangici) {}
 }
 
 /// Hiçbir şey yapmayan örnek uygulama.

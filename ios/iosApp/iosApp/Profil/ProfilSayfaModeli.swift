@@ -2,9 +2,11 @@ import Foundation
 import SwiftUI
 
 // Profil sayfasının (kendi profili ya da başkasının profili) durumu.
-// Android karşılığı: ProfileFragment — loadUserData, updateFollowButtonState, followTargetUser,
+// Android karşılığı: ProfileFragment — loadUserData, showAvatar / applyHeaderColor, updateFollowButtonState,
+// applyFollowButtonState, followTargetUser, confirmUnfollow / unfollowTargetUser, nudgeFollowersCount,
 // loadBadgeProgressFromFirestore, loadAbacusPreview, loadCupPathScores(ForUser).
-// Metin biçimleri, rozet seçimi ve kupa kartı tablosu ortak koddan gelir (ProfilOrtak).
+// Metin biçimleri, rozet seçimi, kupa kartı tablosu ve avatar kuralları ortak koddan gelir
+// (ProfilOrtak, AvatarOrtak).
 
 /// Kupa yolu kartının ekrandaki hali.
 struct ProfilKupaKarti: Identifiable {
@@ -20,7 +22,10 @@ final class ProfilSayfaModeli: ObservableObject {
     let hedefUid: String?
     private let depo: ProfilDeposu
 
-    @Published var avatarAdi: String = "non_user"
+    /// Büyük avatarın dizgesi; nil ise `non_user` görseli (Android: showAvatar(null)).
+    @Published var avatarConfig: String? = nil
+    /// Avatar alanının, üst panelin ve durum çubuğunun rengi (AARRGGBB); nil → background_color.
+    @Published var ustAlanRengi: String? = nil
     @Published var ad: String = ""
     @Published var kullaniciSatiri: String = ""
     @Published var takipSayisi: String = "-"
@@ -30,7 +35,8 @@ final class ProfilSayfaModeli: ObservableObject {
     @Published var ilerlemeGorunur: Bool = false
     @Published var tamamlanma: String = ""
     @Published var toplamSure: String = ""
-    @Published var abonelik: String = ""
+    /// "En uzun seri: N gün" (Android: tvLongestStreak; eski "plan" satırının yerinde).
+    @Published var enUzunSeri: String = ""
 
     @Published var kupalar: [ProfilKupaKarti] = []
     @Published var rozetler: [ProfilRozetYuvasi] = []
@@ -40,12 +46,12 @@ final class ProfilSayfaModeli: ObservableObject {
     /// Abaküs önizleme kartındaki boncuk tipi (BeadType adı); bilinmiyorsa nil.
     @Published var boncukTipi: String? = nil
     @Published var abakusPaneliAcik: Bool = false
-    @Published var avatarSeciciAcik: Bool = false
 
-    // Başkasının profilindeki TAKİP ET düğmesi.
-    @Published var takipDugmesiMetni: String = ProfilOrtak.takipEtMetni
+    // Başkasının profilindeki takip düğmesi (Android: applyFollowButtonState — metin ve davranış birlikte).
+    @Published var takipte: Bool = false
     @Published var takipDugmesiEtkin: Bool = true
-    @Published var takipDugmesiOpaklik: Double = 1.0
+    /// "Takibi bırak" onayı açık mı (Android: confirmUnfollow).
+    @Published var takipBirakmaOnayiAcik: Bool = false
 
     private var yuklendi: Bool = false
     private var yukleniyor: Bool = false
@@ -73,6 +79,10 @@ final class ProfilSayfaModeli: ObservableObject {
         return hedefUid ?? depo.oturum?.uid
     }
 
+    var takipDugmesiMetni: String {
+        return takipte ? ProfilOrtak.takipEdiliyorMetni : ProfilOrtak.takipEtMetni
+    }
+
     /// Android: onViewCreated → loadUserData; onResume'da henüz yüklenmediyse yeniden.
     func gorundu() {
         if !yuklendi && !yukleniyor {
@@ -87,6 +97,35 @@ final class ProfilSayfaModeli: ObservableObject {
         }
     }
 
+    // MARK: Avatar
+
+    /// Android: showAvatar + applyHeaderColor. Avatar dairesiz çizilir; arka plan rengi bütün avatar alanını,
+    /// kendi profilimizde sabit üst paneli ve durum çubuğunu kaplar.
+    private func avatariGoster(_ config: String?) {
+        guard let c = config, AvatarOrtak.avatarVar(c) else {
+            avatarConfig = nil
+            ustAlanRengi = nil
+            return
+        }
+        avatarConfig = c
+        ustAlanRengi = AvatarOrtak.ustAlanRengi(c)
+    }
+
+    /// Kendi profilimizde kullanılan avatar (Android: AvatarStore.loadActive — hiç kaydedilmemişse varsayılan).
+    private var yerelAvatar: String {
+        return depo.yerelAvatar ?? AvatarOrtak.varsayilan
+    }
+
+    /// Avatar düzenleme ekranında kaydedilince (ProfilGezinme.avatarKaydet) yerel kopyadan yeniden çizer.
+    /// Android'de profil geri yığından dönünce yeniden kurulup `AvatarStore.loadActive` ile çizer.
+    func yerelAvatariGoster() {
+        if !baskasi {
+            avatariGoster(yerelAvatar)
+        }
+    }
+
+    // MARK: Yükleme
+
     func yukle() async {
         if yukleniyor { return }
         guard let uid = uid else { return }
@@ -95,6 +134,9 @@ final class ProfilSayfaModeli: ObservableObject {
             yukleniyor = false
             yuklendi = true
         }
+
+        // Kendi profilimizde yerel avatar hemen; başkasınınki Firestore'dan gelene kadar non_user.
+        avatariGoster(baskasi ? nil : yerelAvatar)
 
         let belge: ProfilBelgesi?
         do {
@@ -107,10 +149,10 @@ final class ProfilSayfaModeli: ObservableObject {
         }
 
         guard let profil = belge else {
-            // Android: belge yok — boş rozet durumu, avatar yok, plan "Free".
+            // Android: belge yok — boş rozet durumu, avatar (kendi: yerel), seri 0.
             rozetler = ProfilOrtak.rozetYuvalari(durumBelgesi: nil)
-            avatarAdi = ProfilOrtak.avatarAdi(0)
-            abonelik = ProfilOrtak.abonelikMetni(nil)
+            avatariGoster(baskasi ? nil : yerelAvatar)
+            enUzunSeri = ProfilOrtak.enUzunSeriSifir
             ilerlemeGorunur = true
             return
         }
@@ -120,7 +162,16 @@ final class ProfilSayfaModeli: ObservableObject {
         Task { await boncuguYukle(uid: uid) }
         Task { await kupalariYukle(uid: uid) }
 
-        avatarAdi = ProfilOrtak.avatarAdi(profil.seciliAvatar)
+        if baskasi {
+            avatariGoster(profil.avatarConfig)
+        } else {
+            // Yeni cihaz / yeniden kurulum: Firestore'daki avatar yerele alınır (AvatarStore.applyRemote).
+            if let alinacak = AvatarOrtak.yereleAlinacak(yerel: depo.yerelAvatar, uzak: profil.avatarConfig) {
+                depo.yerelAvatar = alinacak
+            }
+            avatariGoster(yerelAvatar)
+        }
+
         let oturum = depo.oturum
         ad = ProfilOrtak.gorunenAd(belgeAdi: profil.ad, oturumAdi: oturum?.gorunenAd, baskasi: baskasi)
 
@@ -142,7 +193,9 @@ final class ProfilSayfaModeli: ObservableObject {
             sure += depo.senkronlanmamisSureSn()
         }
         toplamSure = ProfilOrtak.sureMetni(sure)
-        abonelik = ProfilOrtak.abonelikMetni(profil.plan)
+
+        // En uzun günlük seri: dokümandan (başkasının profilinde publicProfiles aynası).
+        enUzunSeri = ProfilOrtak.enUzunSeriMetni(profil.enUzunSeri)
 
         takipciSayisi = String(profil.takipciSayisi)
         takipSayisi = String(profil.takipSayisi)
@@ -223,38 +276,26 @@ final class ProfilSayfaModeli: ObservableObject {
         return await depo.sahipOlunanBoncuklar(uid: uid)
     }
 
-    // MARK: Avatar
-
-    /// Android: AvatarPickerFragment.onAvatarSelected — yazım başarısız olsa da ekran güncellenir.
-    func avatarSecildi(_ avatar: Int) {
-        avatarSeciciAcik = false
-        let kaynak = depo
-        Task {
-            try? await kaynak.avatarKaydet(avatar)
-            if ProfilOrtak.avatarGecerli(avatar) {
-                self.avatarAdi = ProfilOrtak.avatarAdi(avatar)
-            }
-        }
-    }
-
     // MARK: Takip (başkasının profili)
 
     private func takipDugmesiniGuncelle(hedef: String) async {
         // Android: okuma hatasında düğme olduğu gibi kalır.
-        guard let takipte = try? await depo.takipEdiyorMuyum(hedefUid: hedef) else { return }
-        if takipte {
-            takipDugmesiMetni = ProfilOrtak.takipEdiliyorMetni
-            takipDugmesiEtkin = false
-            takipDugmesiOpaklik = 0.5
+        guard let durum = try? await depo.takipEdiyorMuyum(hedefUid: hedef) else { return }
+        takipte = durum
+        takipDugmesiEtkin = true
+    }
+
+    /// Takip düğmesine dokunuş: takip ediliyorsa onay sorar (sonra bırakır), değilse takip eder.
+    func takipDugmesineDokunuldu(bildir: @escaping (String) -> Void) {
+        if ProfilOrtak.dokunusTakibiBirakir(takipte: takipte) {
+            takipBirakmaOnayiAcik = true
         } else {
-            takipDugmesiMetni = ProfilOrtak.takipEtMetni
-            takipDugmesiEtkin = true
-            takipDugmesiOpaklik = 1.0
+            takipEt(bildir: bildir)
         }
     }
 
     /// Android: followTargetUser. Sonuç bildirimi `bildir` ile dışarı verilir.
-    func takipEt(bildir: @escaping (String) -> Void) {
+    private func takipEt(bildir: @escaping (String) -> Void) {
         guard let hedef = hedefUid, depo.oturum != nil else { return }
         // Hedefin adı ve kodu ekrandaki metinlerden alınır (Android'deki gibi).
         let hedefAd = ad
@@ -264,14 +305,41 @@ final class ProfilSayfaModeli: ObservableObject {
         Task {
             do {
                 try await kaynak.takipEt(hedefUid: hedef, hedefKod: hedefKod, hedefAd: hedefAd)
-                self.takipDugmesiMetni = ProfilOrtak.takipEdiliyorMetni
-                self.takipDugmesiOpaklik = 0.5
+                self.takipte = true
+                self.takipDugmesiEtkin = true
+                self.takipciSayisiniDuzelt(1)
                 bildir(ProfilOrtak.takipEdildiBildirimi)
             } catch {
                 self.takipDugmesiEtkin = true
-                bildir("Hata: " + ProfilSayfaModeli.hataMetni(error))
+                bildir(ProfilOrtak.hataBildirimi(ProfilSayfaModeli.hataMetni(error)))
             }
         }
+    }
+
+    /// Android: unfollowTargetUser (onaydan sonra).
+    func takibiBirak(bildir: @escaping (String) -> Void) {
+        guard let hedef = hedefUid, depo.oturum != nil else { return }
+        takipDugmesiEtkin = false
+        let kaynak = depo
+        Task {
+            do {
+                try await kaynak.takibiBirak(hedefUid: hedef)
+                self.takipte = false
+                self.takipDugmesiEtkin = true
+                self.takipciSayisiniDuzelt(-1)
+                bildir(ProfilOrtak.takipBirakildiBildirimi)
+            } catch {
+                self.takipDugmesiEtkin = true
+                bildir(ProfilOrtak.hataBildirimi(ProfilSayfaModeli.hataMetni(error)))
+            }
+        }
+    }
+
+    /// Android: nudgeFollowersCount — gerçek sayaç sunucuda birkaç saniyede güncellenir; ekrandaki sayı hemen
+    /// düzeltilir. Sayı henüz yüklenmediyse ("-") dokunulmaz.
+    private func takipciSayisiniDuzelt(_ fark: Int) {
+        guard let simdiki = Int(takipciSayisi) else { return }
+        takipciSayisi = String(ProfilOrtak.duzeltilmisTakipciSayisi(simdiki, fark))
     }
 
     static func hataMetni(_ hata: Error) -> String {

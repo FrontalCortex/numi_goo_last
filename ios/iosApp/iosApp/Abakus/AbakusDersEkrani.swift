@@ -2,109 +2,98 @@ import SwiftUI
 
 // Abaküs dersi ekranı.
 //
-// Android karşılığı: AbacusFragment + res/layout/fragment_abacus.xml. Ölçüler dimens.xml'deki
-// abacus_fragment_* ve tutorial_* değerleridir (dp → pt birebir).
+// Android karşılığı: AbacusFragment + res/layout/fragment_abacus.xml (güncel, versionCode 26). Ölçüler
+// dimens.xml'deki abacus_fragment_*, tutorial_* ve flash_card_height değerleridir (dp → pt birebir).
 //
-// Kapsam dışı bırakılan Android parçaları (ayrı işler): rehber paneli (panelContent, btnBack,
-// btnForward), kurallar kitabı ve kural tabloları (rulesBookButton, rulesPanelButton,
-// rulesPanelScrollView), öğretmene sor düğmesi, abaküs ayar paneli (abacusModeButton,
-// abacusSettingsPanel), ders sonu anketi (QuestionPanelFragment).
+// Yerleşim (kök dolgu 10): solda çıkış düğmesi, üstte ortada ilerleme çubuğu, çıkış düğmesinin 12 altında
+// 140 yüksekliğinde sayı kartı (eski kara tahta görselinin yerine), kartın altında (sandıkta) süre;
+// altta abaküs ve 48 yüksekliğinde göçen "Kontrol Et" / "Başla" düğmesi; sağ kenarda, düğmenin üstünde
+// yan düğme sütunu (abaküs ayarı); alttan kayan doğru / yanlış panelleri.
 //
-// Kısa ekran: Android yerleşimi sabit dp kullanır (tahta 300, abaküs 290, düğme 72) ve ekran
-// yüksekliğine göre ölçeklemez; kısa ekranda abaküs tahtanın üstüne biner (kullanıcı abaküsü ayar
-// panelindeki kaydırıcılarla elle küçültür). iOS'ta bunun yerine tahta ile abaküs, mevcut
-// yüksekliğe sığacak ortak bir oranla küçültülür (bkz. AbakusDersOlcegi); yer yetiyorsa oran 1'dir
-// ve yerleşim Android ile aynıdır.
+// Kapsam dışı bırakılan Android parçaları (ayrı işler; ayrıntı raporda):
+//  - rehber paneli (panelContent, btnBack, btnForward; Sobi maskotlu adım adım rehber),
+//  - kural kitabı ve kural paneli (rulesBookButton, rulesPanelButton, view_rules_panel; LessonRulesPanel),
+//  - öğretmene sor düğmesi (TeacherQuestionsFeature.ENABLED = false; Android'de de gizli),
+//  - "Sobi ile analiz et" penceresinin kendisi (MistakeReviewDialog, MistakeAnalyzer, StepExplainer):
+//    düğme ve çıkış noktası burada, pencereyi dışarıdaki `sobiAnalizi` bağlantısı açar.
+// Ipucu düğmesi güncel Android'de gizli olduğundan ekranda yoktur.
+//
+// Kısa ekran: Android yerleşimi sabit dp kullanır ve ekran yüksekliğine göre ölçeklemez. iOS'ta
+// abaküs, mevcut yüksekliğe sığacak oranda küçültülür (bkz. AbakusDersOlcu.abakusOlcegi); yer
+// yetiyorsa oran 1'dir ve yerleşim Android ile aynıdır.
 
 struct AbakusDersEkrani: View {
     @StateObject private var model: AbakusDersModeli
+    @StateObject private var ayar: AbakusGorunumAyari
     private let kapat: () -> Void
     private let stil: AbakusStili
+    private let cikisGizli: Bool
 
     /// - Parameters:
     ///   - dersBaslangici: hangi ders, hangi sorular.
     ///   - hizmetler: ses, titreşim, çevrimiçi durumu, ilerleme / enerji / süre kayıtları.
     ///   - stil: abaküsün görünümü (kullanıcının mağazadan seçtiği boncuk ve çerçeve).
+    ///   - sobiAnalizi: yanlış cevap panelindeki "Sobi ile analiz et" düğmesinin bağlantısı; nil ise düğme
+    ///     hiç görünmez (Android: bindReviewButton).
+    ///   - cikisGizli: hesapsız kullanıcının ilk açılış akışındaki derste çıkış düğmesi gizlidir
+    ///     (Android: isFirstRunLesson → quitButton INVISIBLE).
     ///   - bitti: bütün sorular bitince bir kez çağrılır; sonuç ekranını yönetici oturum açar.
     ///   - kapat: kapatma düğmesine basılınca (kayma animasyonundan sonra) çağrılır.
     init(
         dersBaslangici: AbakusDersBaslangici,
         hizmetler: AbakusDersHizmetleri = SahteAbakusDersHizmetleri(),
         stil: AbakusStili = .varsayilan,
+        sobiAnalizi: AbakusSobiAnalizBaglantisi? = nil,
+        cikisGizli: Bool = false,
         bitti: @escaping (AbakusDersSonucu) -> Void,
         kapat: @escaping () -> Void
     ) {
         _model = StateObject(
-            wrappedValue: AbakusDersModeli(baslangic: dersBaslangici, hizmetler: hizmetler, bitti: bitti)
+            wrappedValue: AbakusDersModeli(
+                baslangic: dersBaslangici, hizmetler: hizmetler, sobiAnaliz: sobiAnalizi, bitti: bitti
+            )
         )
+        _ayar = StateObject(wrappedValue: AbakusGorunumAyari())
         self.kapat = kapat
         self.stil = stil
+        self.cikisGizli = cikisGizli
     }
 
     var body: some View {
         GeometryReader { alan in
             ZStack {
                 Color("background_color").ignoresSafeArea()
-                AbakusDersIcerigi(model: model, stil: stil, kapat: kapat)
-                    // abacus_fragment_root_padding
-                    .padding(10)
+                AbakusDersIcerigi(
+                    model: model, ayar: ayar, stil: stil, kapat: kapat, cikisGizli: cikisGizli,
+                    ekranGenisligi: alan.size.width
+                )
+                // abacus_fragment_root_padding
+                .padding(AbakusDersOlcu.kokBosluk)
+                AbakusYanDugmeKatmani(model: model, ayar: ayar)
+                AbakusAyarKatmani(ayar: ayar, ekran: alan.size)
                 AbakusDersOrtusu(model: model)
                 AbakusKonfetiKatmani(goster: model.konfeti)
                 AbakusSonucPanelKatmani(model: model)
                 AbakusBildirimKatmani(metin: model.bildirim)
             }
-            // closeFragment: ekran genişliği kadar sağa kayar.
-            .offset(x: model.kapaniyor ? alan.size.width : 0)
+            // closeFragment: ekran genişliği kadar SOLA kayar, 400 ms.
+            .offset(x: model.kapaniyor ? -alan.size.width : 0)
         }
         .onAppear { model.gorundu() }
         .onDisappear { model.kayboldu() }
     }
 }
 
-// MARK: - Ölçek
-
-/// Kısa ekranlarda tahta ile abaküsün birlikte küçültülme oranı.
-enum AbakusDersOlcegi {
-    /// blackboardImage: layout_marginTop
-    static let tahtaUstBosluk: CGFloat = 20
-    /// blackboardImage: layout_height
-    static let tahtaYuksekligi: CGFloat = 300
-    /// abacusContainer: layout_marginBottom (tutorial_abacus_linear_margin_bottom)
-    static let abakusAltBosluk: CGFloat = 10
-    /// kontrolButton: 56 + tutorial_bottom_panel_margin_bottom 16
-    static let dugmeAlani: CGFloat = 72
-    /// Tahta ile abaküs arasında bırakılan en az boşluk (süre yazısı buraya düşer).
-    static let enAzAra: CGFloat = 20
-    static let enKucuk: CGFloat = 0.5
-
-    /// - Parameters:
-    ///   - yukseklik: kök dolgunun (10 pt) içinde kalan alanın yüksekliği.
-    ///   - sabit: ölçeklenmeyen parçaların (boşluklar, düğme) toplam yüksekliği.
-    static func hesapla(yukseklik: CGFloat, sabit: CGFloat) -> CGFloat {
-        let abakusBoyu: CGFloat = AbakusGorunumu.boyut(basamakSayisi: 5).height
-        let olceklenen: CGFloat = tahtaYuksekligi + abakusBoyu
-        let kalan: CGFloat = yukseklik - sabit
-        if kalan >= olceklenen {
-            return 1
-        }
-        let oran: CGFloat = kalan / olceklenen
-        return min(max(oran, enKucuk), 1)
-    }
-
-    /// Abaküs dersi ekranı için oran.
-    static func dersIcin(yukseklik: CGFloat) -> CGFloat {
-        let sabit: CGFloat = tahtaUstBosluk + enAzAra + abakusAltBosluk + dugmeAlani
-        return hesapla(yukseklik: yukseklik, sabit: sabit)
-    }
-}
-
 // MARK: - İçerik
 
-/// Kök ConstraintLayout'un içindekiler: üstte ilerleme ve tahta, altta abaküs ve düğme.
+/// Kök ConstraintLayout'un içindekiler: üstte çıkış, ilerleme, sayı kartı; altta abaküs ve düğme.
 private struct AbakusDersIcerigi: View {
     @ObservedObject var model: AbakusDersModeli
+    @ObservedObject var ayar: AbakusGorunumAyari
     let stil: AbakusStili
     let kapat: () -> Void
+    let cikisGizli: Bool
+    let ekranGenisligi: CGFloat
 
     var body: some View {
         GeometryReader { alan in
@@ -113,74 +102,70 @@ private struct AbakusDersIcerigi: View {
     }
 
     private func katmanlar(boyut: CGSize) -> some View {
-        let olcek: CGFloat = AbakusDersOlcegi.dersIcin(yukseklik: boyut.height)
+        // Ölçeklenmeyen parçalar: çıkış satırı + boşluk, kart, tahta ile abaküs arası en az boşluk,
+        // abaküsün alt boşluğu, düğme alanı (48 + 16).
+        let ust: CGFloat = AbakusDersOlcu.cikisBoyu + AbakusDersOlcu.kartUstBosluk
+            + AbakusDersOlcu.kartYuksekligi
+        let alt: CGFloat = CGFloat(ayar.altBosluk) + AbakusDersAltBolumu.dugmeAlaniYuksekligi
+        let sabit: CGFloat = ust + AbakusDersOlcu.enAzAra + alt
+        let olcek: CGFloat = AbakusDersOlcu.abakusOlcegi(yukseklik: boyut.height, sabit: sabit)
         return ZStack(alignment: .top) {
-            AbakusDersUstBolumu(model: model, kapat: kapat, olcek: olcek)
-            AbakusDersAltBolumu(model: model, stil: stil, olcek: olcek)
-            // hintContainer XML'de abaküsten sonra gelir: abaküsün üstüne çizilir.
-            AbakusDersIpucuKatmani(model: model, olcek: olcek)
+            AbakusDersUstBolumu(model: model, kapat: kapat, cikisGizli: cikisGizli)
+            AbakusDersAltBolumu(
+                model: model, ayar: ayar, stil: stil, olcek: olcek, ekranGenisligi: ekranGenisligi
+            )
         }
         .frame(width: boyut.width, height: boyut.height, alignment: .top)
     }
 }
 
-/// Tahta, soru, ilerleme çubuğu, kapatma düğmesi ve süre.
+/// Çıkış düğmesi, ilerleme çubuğu, sayı kartı ve süre.
 private struct AbakusDersUstBolumu: View {
     @ObservedObject var model: AbakusDersModeli
     let kapat: () -> Void
-    let olcek: CGFloat
+    let cikisGizli: Bool
 
     var body: some View {
         ZStack(alignment: .top) {
-            tahtaVeSure
+            kartVeSure
             AbakusIlerlemeCubugu(oran: model.ilerleme, renk: model.ilerlemeRengi)
                 // abacus_fragment_progress_margin
                 .padding(.top, 16)
             HStack {
-                Button(action: { model.kapatDokunuldu(kapat) }) {
-                    Image("cross")
-                        .resizable()
-                        .scaledToFit()
-                        // abacus_fragment_quit_size
-                        .frame(width: 48, height: 48)
-                }
-                .buttonStyle(.plain)
+                cikisDugmesi
                 Spacer(minLength: 0)
             }
         }
     }
 
-    private var tahtaVeSure: some View {
+    /// quitButton: 48 dp, `cross` görseli. Hesapsız ilk akışta görünmez ve dokunulmaz.
+    private var cikisDugmesi: some View {
+        Button(action: { model.kapatDokunuldu(kapat) }) {
+            Image("cross")
+                .resizable()
+                .scaledToFit()
+                // abacus_fragment_quit_size
+                .frame(width: AbakusDersOlcu.cikisBoyu, height: AbakusDersOlcu.cikisBoyu)
+        }
+        .buttonStyle(.plain)
+        .opacity(cikisGizli ? 0 : 1)
+        .allowsHitTesting(!cikisGizli)
+    }
+
+    /// blackboardImage: çıkış düğmesinin 12 altında, kenarlarda 24; timerTextView kartın 6 altında.
+    private var kartVeSure: some View {
         VStack(spacing: 0) {
-            AbakusKaraTahta(
-                ilkSayi: model.ilkSayi, islec: model.islec, ikinciSayi: model.ikinciSayi,
-                olcek: olcek
-            )
-            // blackboardImage: layout_marginTop
-            .padding(.top, AbakusDersOlcegi.tahtaUstBosluk)
+            AbakusSayiKarti(ilkSayi: model.ilkSayi, islec: model.islec, ikinciSayi: model.ikinciSayi)
+                .padding(.horizontal, AbakusDersOlcu.kartYanBosluk)
+                .padding(.top, AbakusDersOlcu.cikisBoyu + AbakusDersOlcu.kartUstBosluk)
             if model.sureGorunur {
                 Text(model.sureMetni)
+                    // abacus_fragment_timer_text_size
                     .font(Tema.yazi(18))
                     .foregroundColor(Color("yellow"))
                     // abacus_fragment_timer_margin_top
-                    .padding(.top, -10)
+                    .padding(.top, AbakusDersOlcu.sureUstBosluk)
             }
-            Spacer(minLength: 0)
-        }
-    }
-}
-
-/// hintContainer: tahtanın altına hizalı (üst boşluk + tahta yüksekliği).
-private struct AbakusDersIpucuKatmani: View {
-    @ObservedObject var model: AbakusDersModeli
-    let olcek: CGFloat
-
-    var body: some View {
-        let tahtaBoyu: CGFloat = AbakusDersOlcegi.tahtaYuksekligi * olcek
-        let ust: CGFloat = AbakusDersOlcegi.tahtaUstBosluk + tahtaBoyu
-        return VStack(spacing: 0) {
-            AbakusIpucuBolumu(model: model)
-                .padding(.top, ust)
             Spacer(minLength: 0)
         }
     }
@@ -189,44 +174,63 @@ private struct AbakusDersIpucuKatmani: View {
 /// Abaküs ve altındaki "Kontrol Et" / "Başla" düğmesi.
 private struct AbakusDersAltBolumu: View {
     @ObservedObject var model: AbakusDersModeli
+    @ObservedObject var ayar: AbakusGorunumAyari
     let stil: AbakusStili
     let olcek: CGFloat
+    let ekranGenisligi: CGFloat
+
+    /// kontrolButton: yükseklik 48 + alt boşluk 16 (tutorial_bottom_panel_margin_bottom).
+    static let dugmeAlaniYuksekligi: CGFloat = AbakusDersOlcu.anaDugmeYuksekligi + 16
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
             abakus
-                // tutorial_abacus_linear_margin_bottom
-                .padding(.bottom, AbakusDersOlcegi.abakusAltBosluk)
+                // tutorial_abacus_linear_margin_bottom (ayar panelindeki alt boşluk kaydırıcısı)
+                .padding(.bottom, CGFloat(ayar.altBosluk))
             dugmeAlani
         }
     }
 
-    /// Abaküs kendi sabit boyutunda kurulur, görsel olarak `olcek` kadar küçültülür ve yerleşimde
-    /// küçülmüş boyutu kadar yer tutar. Dokunma hesabı görünümün kendi koordinatında yapılır.
+    /// Abaküs kendi sabit boyutunda kurulur; kısa ekran oranıyla küçültülür ve yerleşimde küçülmüş boyutu
+    /// kadar yer tutar. Ayar panelindeki ölçek ve yan düğme sığdırması yalnızca çizimi değiştirir
+    /// (Android: view.scaleX/scaleY, pivot alt-orta; yerleşim değişmez).
     private var abakus: some View {
         let boyut: CGSize = AbakusGorunumu.boyut(basamakSayisi: 5)
         let en: CGFloat = boyut.width * olcek
         let boy: CGFloat = boyut.height * olcek
+        let kullaniciX: CGFloat = CGFloat(ayar.abakusX)
+        let kullaniciY: CGFloat = CGFloat(ayar.abakusY)
+        let pay: CGFloat = AbakusYanSigdirma.pay(
+            ekranGenisligi: ekranGenisligi, kullaniciX: kullaniciX,
+            sutunVar: model.baslangic.ayarDugmesiGorunur
+        )
+        let gorunenOlcek: CGSize = CGSize(width: kullaniciX * pay, height: kullaniciY * pay)
+        let kilitli: Bool = model.ortuAcik || ayar.acik
         return AbakusGorunumu(
             denetleyici: model.abakus,
             basamakSayisi: 5,
-            kilitli: model.ortuAcik,
+            kilitli: kilitli,
             stil: stil,
             animasyonSuresiMs: model.boncukAnimasyonSuresiMs,
-            ses: model.hizmetler
+            ses: model.hizmetler,
+            degerDegisti: { (deger: Int) -> Void in model.abakusDegeriDegisti(deger) },
+            boncukAyari: ayar.boncukAyari
         )
         .scaleEffect(olcek)
         .frame(width: en, height: boy)
+        .scaleEffect(gorunenOlcek, anchor: .bottom)
     }
 
     /// kontrolButton ve startButton aynı yerde durur; biri görünürken öbürü gizlidir.
     private var dugmeAlani: some View {
         ZStack(alignment: .bottom) {
             if model.kontrolGorunur {
-                AbakusAnaDugme(
-                    metin: "Kontrol Et", yaziBoyu: 17, kose: 10, yukseklik: 56,
-                    renk: AbakusRenk.renk(0x8CC63F), eylem: { model.kontrolDokunuldu() }
+                AbakusGocenDugme(
+                    metin: Metin.al("fragment_abacus_kontrol_button"), yaziBoyu: 17, yaziRengi: .black,
+                    yuz: AbakusDersRenk.kontrolYuz, dudak: AbakusDersRenk.kontrolDudak, kose: 10,
+                    yukseklik: AbakusDersOlcu.anaDugmeYuksekligi,
+                    eylem: { model.kontrolDokunuldu() }
                 )
                 // Android: panel açıkken dinleyici kaldırılır; düğmenin görünümü değişmez.
                 .allowsHitTesting(model.kontrolEtkin)
@@ -234,18 +238,73 @@ private struct AbakusDersAltBolumu: View {
                 .padding(.bottom, 16)
             }
             if model.baslaGorunur {
-                AbakusAnaDugme(
-                    metin: "Başla", yaziBoyu: 18, kose: 15, yukseklik: 56,
-                    renk: AbakusRenk.renk(0x8CC63F), eylem: { model.baslaDokunuldu() }
+                AbakusGocenDugme(
+                    metin: Metin.al("fragment_abacus_start_button"), yaziBoyu: 18, yaziRengi: .black,
+                    yuz: AbakusDersRenk.kontrolYuz, dudak: AbakusDersRenk.kontrolDudak, kose: 10,
+                    yukseklik: AbakusDersOlcu.anaDugmeYuksekligi,
+                    eylem: { model.baslaDokunuldu() }
                 )
                 // startButton: layout_marginBottom
                 .padding(.bottom, 15)
             }
         }
-        // Düğme görünmezken de yer tutar (Android: visibility=invisible): 56 + 16.
-        .frame(height: AbakusDersOlcegi.dugmeAlani, alignment: .bottom)
+        // Düğme görünmezken de yer tutar (Android: visibility=invisible): 48 + 16.
+        .frame(height: AbakusDersAltBolumu.dugmeAlaniYuksekligi, alignment: .bottom)
         // tutorial_control_button_side_margin
         .padding(.horizontal, 16)
+    }
+}
+
+// MARK: - Yan düğmeler ve ayar paneli
+
+/// Sağ kenardaki düğme sütunu: kontrolButton'ın 4 üstünde, ekran kenarına yaslı (marginEnd −10 + kök
+/// dolgu 10). Abaküs dersinde yalnızca abaküs ayarı düğmesi vardır; sihirli değnek (kural paneli) ve
+/// kural kitabı düğmeleri henüz yazılmadı, öğretmene sor düğmesi Android'de de gizli.
+private struct AbakusYanDugmeKatmani: View {
+    @ObservedObject var model: AbakusDersModeli
+    @ObservedObject var ayar: AbakusGorunumAyari
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                if model.baslangic.ayarDugmesiGorunur {
+                    AbakusAyarDugmesi(acik: ayar.acik, eylem: { ayarDugmesiDokunuldu() })
+                }
+            }
+        }
+        // kök dolgu + kontrolButton alt boşluğu + kontrolButton yüksekliği + abacus_fragment_ask_button_margin_top
+        .padding(.bottom, AbakusDersOlcu.kokBosluk + AbakusDersAltBolumu.dugmeAlaniYuksekligi
+            + AbakusDersOlcu.yanDugmeAraligi)
+    }
+
+    /// Android: abacusModeButtonClick → açılırken resetAbacus + denetleyici kapalı.
+    private func ayarDugmesiDokunuldu() {
+        let denetleyici: AbakusDenetleyici = model.abakus
+        ayar.degistir(
+            acildi: { denetleyici.sifirla(animasyonlu: true) },
+            kapandi: {}
+        )
+    }
+}
+
+/// abacusSettingsPanel: 340 dp, ekranın sağından kayarak girer (300 ms), dikey konum yaklaşık %10
+/// (layout_constraintVertical_bias = 0.1; panel yüksekliği ~300 dp varsayılarak).
+struct AbakusAyarKatmani: View {
+    @ObservedObject var ayar: AbakusGorunumAyari
+    let ekran: CGSize
+
+    var body: some View {
+        let ust: CGFloat = max(0.1 * (ekran.height - 300), 0)
+        return VStack(spacing: 0) {
+            AbakusAyarPaneli(ayar: ayar, kaydet: { ayar.kaydet(kapandi: {}) })
+                .padding(.top, ust)
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity)
+        .offset(x: ayar.acik ? 0 : ekran.width)
+        .allowsHitTesting(ayar.acik)
     }
 }
 
@@ -299,12 +358,20 @@ private struct AbakusSonucPanelKatmani: View {
     @ViewBuilder
     private var panelIcerigi: some View {
         if model.panel == .dogru {
-            AbakusDogruPaneli(devam: { model.panelDugmesiDokunuldu() })
+            AbakusDogruPaneli(
+                baslik: Metin.al("fragment_abacus_correct_text"),
+                dugmeMetni: Metin.al("fragment_abacus_continue_button"),
+                devam: { model.panelDugmesiDokunuldu() }
+            )
         } else {
             AbakusYanlisPaneli(
                 dogruCevapMetni: model.dogruCevapMetni,
                 cevapMetni: model.cevapMetni,
-                tamam: { model.panelDugmesiDokunuldu() }
+                analizGorunur: model.analizGorunur,
+                analiz: { model.sobiAnaliziDokunuldu() },
+                tamam: { model.panelDugmesiDokunuldu() },
+                baslik: Metin.al("fragment_abacus_incorrect_text"),
+                dugmeMetni: Metin.al("fragment_abacus_okay_button")
             )
         }
     }

@@ -7,9 +7,17 @@ import SwiftUI
 // Android karşılığı: RecordFragment.kt + RecordLeaderboardAdapter.kt,
 // res/layout/fragment_record.xml ve item_record_leaderboard_row.xml.
 // Haritada bitmiş bir sandık (ünite maratonu) dersinin "rekor" alanına basınca açılır
-// (LessonAdapter / MapFragment → RecordFragment.newInstance(partId, lessonIndex, title)).
+// (LessonAdapter / MapFragment → RecordFragment.newInstance(partId, lessonKey, title)).
 // Üstte sezon etiketi ("s14") ve sezon bitişine geri sayım; birinci büyük gösterilir, kalanlar listede.
 // Sıralama, renkler ve metinler ortak koddadır (RecordLogic, SeasonClock, LessonLeaderboardRepository).
+//
+// Güncel Android'e göre (RecordFragment / RecordLeaderboardAdapter):
+//  - Tahta kimliği dersin kalıcı kimliğidir (LessonItem.stableId), liste konumu değil.
+//  - Satırda Google fotoğrafı yerine uygulama avatarı (avatarConfig) çizilir.
+//  - Sezon, düz cihaz saatinden değil sunucu sapmasıyla düzeltilmiş saatten (SeasonClock.nowUtcMs)
+//    hesaplanır ve ekran açılınca sunucudan saat istenir (SeasonClock.refreshFromServer).
+//    Köprüdeki `sezonVerisi` düz cihaz saatini kullandığı için sezon etiketi ve geri sayım burada
+//    doğrudan `SeasonClock` / `RecordLogic` ile, düzeltilmiş saatle hesaplanır.
 
 /// Liderlik tablosunun bir satırı (ekran durumu).
 struct KupaLiderSatirDurumu: Identifiable, Equatable {
@@ -39,25 +47,38 @@ final class KupaLiderTablosuModeli: ObservableObject {
     private let partId: Int
     private let dersAnahtari: String
     private let depo: KupaLiderlikDeposu
+    private let sezonSaati: KupaSezonSaatiKaynagi
     private let kopru: KupaEkranKoprusu = KupaEkranKoprusu.shared
     private var tutamak: KupaDinlemeTutamagi? = nil
     private var bagliSezon: Int = -1
 
-    init(partId: Int, dersAnahtari: String, depo: KupaLiderlikDeposu) {
+    init(partId: Int, dersAnahtari: String, depo: KupaLiderlikDeposu, sezonSaati: KupaSezonSaatiKaynagi) {
         self.partId = partId
         self.dersAnahtari = dersAnahtari
         self.depo = depo
+        self.sezonSaati = sezonSaati
     }
 
     deinit {
         tutamak?.iptalEt()
     }
 
+    /// Android onStart: önce güncel sezona bağlanır, sonra sunucudan saat istenir; sapma düzelince
+    /// sezon değişirse `saniyeGecti` doğru tahtaya yeniden bağlar.
     func basla() {
         if tutamak == nil {
-            bagla(sezon: Int(kopru.guncelSezon()))
+            bagla(sezon: guncelSezon())
+            sezonSaati.sunucuSaatiniYenile { [weak self] in
+                self?.saniyeGecti()
+            }
         }
         saniyeGecti()
+    }
+
+    /// Sunucu sapmasıyla düzeltilmiş saate göre güncel sezon (Android SeasonClock.currentSeason()).
+    private func guncelSezon() -> Int {
+        let simdi: Int64 = SeasonClock.shared.nowUtcMs()
+        return Int(SeasonClock.shared.currentSeason(nowUtcMs: simdi))
     }
 
     func dur() {
@@ -69,14 +90,15 @@ final class KupaLiderTablosuModeli: ObservableObject {
     /// Saniyede bir: geri sayımı yeniler; sezon değiştiyse dinleyiciyi yeni sezona bağlar
     /// (Android: countdownRunnable + SeasonClock sezon değişimi dinleyicisi).
     func saniyeGecti() {
-        let v: SezonVerisi = kopru.sezonVerisi(boundSeason: Int32(bagliSezon))
-        geriSayim = v.countdownText
-        sezonEtiketi = v.seasonLabel
-        let guncel: Int = Int(v.season)
+        let simdi: Int64 = SeasonClock.shared.nowUtcMs()
+        let guncel: Int = Int(SeasonClock.shared.currentSeason(nowUtcMs: simdi))
+        let kalan: Int64 = SeasonClock.shared.millisUntilCurrentSeasonEnds(nowUtcMs: simdi)
+        let sayim = RecordLogic.shared.formatSeasonCountdown(remainingMs: kalan)
+        geriSayim = Metin.al(sayim.stringKey, Int(sayim.arg1), Int(sayim.arg2))
         if tutamak != nil && guncel != bagliSezon {
             bagla(sezon: guncel)
-            sezonEtiketi = kopru.sezonVerisi(boundSeason: Int32(bagliSezon)).seasonLabel
         }
+        sezonEtiketi = RecordLogic.shared.seasonIndexLabel(boundLeaderboardSeason: Int32(bagliSezon), nowUtcMs: simdi)
     }
 
     private func bagla(sezon: Int) {
@@ -162,7 +184,12 @@ struct KupaLiderTablosuEkrani: View {
         self.dersBasligi = dersBasligi
         self.kapat = kapat
         _model = StateObject(
-            wrappedValue: KupaLiderTablosuModeli(partId: partId, dersAnahtari: dersAnahtari, depo: ortam.liderlikDeposu)
+            wrappedValue: KupaLiderTablosuModeli(
+                partId: partId,
+                dersAnahtari: dersAnahtari,
+                depo: ortam.liderlikDeposu,
+                sezonSaati: ortam.sezonSaati
+            )
         )
     }
 
@@ -280,22 +307,19 @@ struct KupaLiderTablosuEkrani: View {
 
 // MARK: - Parçalar
 
-/// Satır avatarı. Android avatarı `AvatarConfig` ile kodla çizer (leaderboardAvatarBitmap); iOS'ta liderlik
-/// satırı için avatar çizici henüz yok, bu yüzden `avatarConfig` taşınır ama şimdilik varsayılan simge
-/// ("user" görseli; boş avatar için Android de varsayılan avatarı çizer) gösterilir.
+/// Satır avatarı. Android avatarı `AvatarConfig` ile kodla çizer (RecordLeaderboardAdapter.leaderboardAvatarBitmap:
+/// avatar yoksa varsayılan Personas avatarı). Avatar çizici iOS'ta başka bir oturumda yazılıyor
+/// (`Profil/` altında `AvatarGorunumu(config: String)` adıyla gelecek).
+///
+/// `AvatarGorunumu` (Profil/Avatar) dizge boş ya da bozuksa varsayılan Personas avatarını çizer;
+/// boyutu çağıranın verdiği çerçeveye uyar.
 private struct KupaLiderFotografi: View {
     let avatarConfig: String
     let avatarVar: Bool
     let doldur: Bool
 
     var body: some View {
-        varsayilan
-    }
-
-    private var varsayilan: some View {
-        Image("user")
-            .resizable()
-            .scaledToFit()
+        AvatarGorunumu(config: avatarConfig)
     }
 }
 

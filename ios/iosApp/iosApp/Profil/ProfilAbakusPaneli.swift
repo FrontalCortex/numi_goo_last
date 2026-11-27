@@ -1,9 +1,9 @@
 import SwiftUI
 
-// Profil sayfasından açılan iki küçük yüzey:
-//   - ProfilAbakusPaneli: "Kullanıcı Abaküsü" kartına dokununca açılan panel
-//     (Android: ProfileFragment.showOwnAbacusPanel / showOtherUserAbacusPanel, panel_profile_abacus.xml)
-//   - ProfilAvatarSecici: avatar seçme sayfası (Android: AvatarPickerFragment, fragment_avatar_picker.xml)
+// "Kullanıcı Abaküsü" kartına dokununca açılan panel
+// (Android: ProfileFragment.showOwnAbacusPanel / showOtherUserAbacusPanel, panel_profile_abacus.xml:
+// zemin bg_panel_daily_question_continue (18dp köşe) + backgroundTint background_color, iç boşluk 20).
+// Eski 12'li avatar seçici (AvatarPickerFragment) güncel Android'de silindi; yerine Profil/Avatar/.
 
 /// Android'de panelin içinde gerçek boyutlu, sürüklenebilir abaküs durur (layout_customization_preview +
 /// AbacusBeadController). Abaküs çizimi Abakus klasörünün işi olduğu için burada yalnızca yer tutucu
@@ -45,7 +45,7 @@ struct ProfilAbakusPaneli: View {
             }
             .padding(20)
             .frame(width: genislik)
-            .background(RoundedRectangle(cornerRadius: 24).fill(Color("panel_background")))
+            .background(RoundedRectangle(cornerRadius: 18).fill(Color("background_color")))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .task { await tipleriYukle() }
@@ -54,7 +54,7 @@ struct ProfilAbakusPaneli: View {
     /// previewBeadSelectorRow: "Profil ikonunu değiştir" + < kart >.
     private var secici: some View {
         VStack(spacing: 10) {
-            Text("Profil ikonunu değiştir")
+            Text(Metin.al("panel_profile_abacus_text"))
                 .font(ProfilStil.yazi(14))
                 .foregroundColor(ProfilStil.soluk)
             HStack(spacing: 8) {
@@ -100,54 +100,5 @@ struct ProfilAbakusPaneli: View {
         }
         sira = yeni
         model.boncukSecildi(tipler[yeni])
-    }
-}
-
-/// 12 avatar, 3 sütun x 4 satır. Seçim `users/{uid}.selectedAvatar` alanına yazılır.
-struct ProfilAvatarSecici: View {
-    let sec: (Int) -> Void
-
-    private let sutunlar: [GridItem] = [
-        GridItem(.flexible(), spacing: 0),
-        GridItem(.flexible(), spacing: 0),
-        GridItem(.flexible(), spacing: 0)
-    ]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Tutamaç
-            Capsule()
-                .fill(Color.white.opacity(0.3))
-                .frame(width: 40, height: 4)
-                .padding(.top, 16)
-                .padding(.bottom, 16)
-            Text("Avatar Seç")
-                .font(ProfilStil.yazi(18))
-                .foregroundColor(Color.white)
-                .padding(.bottom, 20)
-            ScrollView(.vertical, showsIndicators: false) {
-                LazyVGrid(columns: sutunlar, spacing: 0) {
-                    ForEach(1...12, id: \.self) { sira in
-                        Button(action: { sec(sira) }) {
-                            Image(ProfilOrtak.avatarAdi(sira))
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 80, height: 80)
-                                .frame(maxWidth: .infinity)
-                                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.1)))
-                                .padding(8)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(Text("Avatar \(sira)"))
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color("background_color").ignoresSafeArea())
-        .presentationDetents([.medium, .large])
-        .preferredColorScheme(.dark)
     }
 }

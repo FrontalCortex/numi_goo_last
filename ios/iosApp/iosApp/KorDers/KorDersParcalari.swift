@@ -1,6 +1,8 @@
 import SwiftUI
 
-// Kör ders ekranının parçaları: ilerleme çubuğu, tahta, sayı kutusu, yan düğmeler, sonuç panelleri.
+// Kör ders ekranının parçaları: ilerleme çubuğu, sayı kartı, sayı kutusu, yan düğmeler. Sonuç panelleri,
+// göçen düğme ve yan düğme zemini abaküs dersiyle ortaktır (Abakus/AbakusDersOrtak.swift,
+// Abakus/AbakusDersParcalari.swift).
 
 /// Android: progressBarContainer (progressBarFill + progressBarEmpty; ağırlıklar 0...1).
 struct KorDersIlerlemeCubugu: View {
@@ -25,27 +27,19 @@ struct KorDersIlerlemeCubugu: View {
     }
 }
 
-/// Android: blackboardImage + üstündeki sayı metinleri.
+/// Android: blackboardImage (artık bg_flash_card sayı kartı) + üstündeki sayı metinleri.
 struct KorDersTahta: View {
     @ObservedObject var model: KorDersModeli
-    /// Kısa ekranlarda tahtanın küçültülme oranı; 1 = Android ölçüleri.
-    var olcek: CGFloat = 1
 
     var body: some View {
-        ZStack {
-            Color.clear
-                .overlay(
-                    Image("class_board")
-                        .resizable()
-                        .scaledToFill()
-                )
-                .clipped()
-            yazilar
-                .padding(.bottom, KorDersStil.tahtaYaziAltBosluk * olcek)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: KorDersStil.tahtaYukseklik * olcek)
-        .allowsHitTesting(false)
+        AbakusKartZemini()
+            // flash_card_height
+            .frame(height: AbakusDersOlcu.kartYuksekligi)
+            .overlay(
+                yazilar
+                    .padding(.bottom, KorDersStil.tahtaYaziAltBosluk)
+            )
+            .allowsHitTesting(false)
     }
 
     @ViewBuilder
@@ -53,12 +47,12 @@ struct KorDersTahta: View {
         if model.carpmaGosterimi {
             carpmaYazilari
         } else {
-            // firstNumberText: tahtanın ortasında tek sayı.
+            // firstNumberText: kartın ortasında tek sayı.
             sayi(model.tahtaMetni)
         }
     }
 
-    /// firstNumberText2 ve secondNumberText tahtaya eşit aralıkla yayılır; operator ikisinin ortasında.
+    /// firstNumberText2 ve secondNumberText karta eşit aralıkla yayılır; operator ikisinin ortasında.
     private var carpmaYazilari: some View {
         ZStack {
             HStack(spacing: 0) {
@@ -69,18 +63,18 @@ struct KorDersTahta: View {
                 Spacer(minLength: 0)
             }
             Text(model.islec)
-                .font(Tema.yazi(KorDersStil.tahtaYaziBoyu * olcek))
+                .font(Tema.yazi(KorDersStil.tahtaYaziBoyu))
                 .foregroundColor(.white)
         }
     }
 
     private func sayi(_ metin: String) -> some View {
         Text(metin)
-            .font(Tema.yazi(KorDersStil.tahtaYaziBoyu * olcek))
+            .font(Tema.yazi(KorDersStil.tahtaYaziBoyu))
             .foregroundColor(.white)
             .lineLimit(1)
             .minimumScaleFactor(0.5)
-            .padding(KorDersStil.tahtaYaziBosluk * olcek)
+            .padding(KorDersStil.tahtaYaziBosluk)
     }
 }
 
@@ -112,18 +106,24 @@ struct KorDersSayiKutusu: View {
     }
 }
 
-/// Sağ kenardaki düğme sütunu. Android'de alttan üste: skipStepButton, resetButton,
-/// askQuestionButton, hintContainer (aralarında 4dp; hepsi startButton'ın üstünde).
-/// Ekran kenarına uzaklık (kök dolgu 10dp + marginEnd): skipStepButton ve askQuestionButton
-/// −10dp → 0, resetButton −9dp → 1, fabHint (16 − 25 = −9dp) → 1.
+/// Sağ kenardaki düğme sütunu. Android'de alttan üste (hepsi startButton'ın üstünde, aralarında 4dp):
+/// abacusModeButton, skipStepButton, rulesPanelButton, resetButton, askQuestionButton, hintContainer.
+/// Sihirli değnek (rulesPanelButton, kural paneli) henüz yazılmadı; öğretmene sor düğmesi Android'de
+/// gizli (TeacherQuestionsFeature.ENABLED = false), ikisinin yeri de boş kalır.
+/// Ekran kenarına uzaklık (kök dolgu 10dp + marginEnd): skipStepButton, abacusModeButton −10dp → 0;
+/// resetButton −9dp → 1; fabHint (16 − 25 = −9dp) → 1.
 ///
-/// Üçü de Android'de LottieAnimationView'dur (autoPlay=false, loop=false):
+/// Dördü de Android'de LottieAnimationView'dur (autoPlay=false, loop=false):
 ///  - fabHint (raw/lesson_hint_ic): showHint'te bir kez oynar, hideHint'te ilk kareye döner.
 ///  - resetButton (raw/reset): 20. karede bekler; dokununca baştan sona bir kez oynar, bitişten
-///    1 sn sonra yeniden 20. kareye alınır.
-///  - skipStepButton (skip_step_arrow_anim.json): dokununca (dizi gösterilirken) bir kez oynar.
+///    1 sn sonra yeniden 20. kareye alınır (LessonSideButtons.setupReset).
+///  - skipStepButton (skip_step_arrow_anim.json): dokununca (dizi gösterilirken) bir kez oynar,
+///    10. kareden başlar (LessonSideButtons.setupSkip).
+///  - abacusModeButton (abacus_mode_ic_anim.json): ayar paneli (bkz. AbakusAyarDugmesi).
 struct KorDersYanDugmeler: View {
     @ObservedObject var model: KorDersModeli
+    @ObservedObject var ayar: AbakusGorunumAyari
+    let ayarDokunuldu: () -> Void
 
     @State private var sifirlaOynuyor: Bool = false
     @State private var sifirlaSayaci: Int = 0
@@ -136,15 +136,11 @@ struct KorDersYanDugmeler: View {
     private static let atlaSuresi: Double = 27.0 / 30.0 + 0.1
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: KorDersStil.yanDugmeAraligi) {
+        VStack(alignment: .trailing, spacing: AbakusDersOlcu.yanDugmeAraligi) {
             if !model.ipucuGizli {
                 ipucu
                     .padding(.trailing, 1)
             }
-            // askQuestionButton (öğretmene soru sor) bu ekranda yok; yeri boş bırakılır.
-            Color.clear
-                .frame(width: KorDersStil.yanDugmeBoyu, height: KorDersStil.yanDugmeBoyu)
-                .allowsHitTesting(false)
             if !model.sifirlaGizli {
                 sifirlaDugmesi
                     .padding(.trailing, 1)
@@ -152,19 +148,22 @@ struct KorDersYanDugmeler: View {
             if !model.adimAtlaGizli {
                 atlaDugmesi
             }
+            if model.ayarGorunur {
+                AbakusAyarDugmesi(acik: ayar.acik, eylem: ayarDokunuldu)
+            }
         }
     }
 
     // MARK: Sıfırla
 
     private var sifirlaDugmesi: some View {
-        KorDersYanDugme(eylem: { sifirlaDokunuldu() }) {
+        AbakusYanDugme(eylem: { sifirlaDokunuldu() }) {
             sifirlaSimgesi
         }
     }
 
     /// Animasyonun ilk ve son karesi boştur; Android bu yüzden 20. karede bekletir
-    /// (findsId: resetButton.frame = 20). Beklerken 20. kare, oynarken 0. kareden sona.
+    /// (LessonSideButtons: RESET_IDLE_FRAME = 20). Beklerken 20. kare, oynarken 0. kareden sona.
     /// Kimlik her dokunuşta değişir: oynarken yeniden dokunulursa baştan başlar.
     private var sifirlaSimgesi: some View {
         let kare: Double = sifirlaOynuyor ? 0.0 : 20.0
@@ -173,7 +172,7 @@ struct KorDersYanDugmeler: View {
             .id(sifirlaSayaci)
     }
 
-    /// Android: resetButton.setOnClickListener — her dokunuşta playAnimation (baştan başlar).
+    /// Android: resetButton — her dokunuşta playAnimation (baştan başlar) ve sıfırlama.
     private func sifirlaDokunuldu() {
         let no: Int = sifirlaSayaci + 1
         sifirlaSayaci = no
@@ -189,7 +188,7 @@ struct KorDersYanDugmeler: View {
     // MARK: Adım atla
 
     private var atlaDugmesi: some View {
-        KorDersYanDugme(eylem: { atlaDokunuldu() }) {
+        AbakusYanDugme(eylem: { atlaDokunuldu() }) {
             // Android: setMinFrame(10) — 10. karede bekler, dokununca 10. kareden sona oynar.
             LottieGorunumu("skip_step_arrow_anim", dongu: false, oynat: atlaOynuyor, baslangicKare: 10.0)
                 .frame(width: KorDersStil.adimAtlaLottieBoyu, height: KorDersStil.adimAtlaLottieBoyu)
@@ -197,7 +196,8 @@ struct KorDersYanDugmeler: View {
         }
     }
 
-    /// Android: setupSkipStepButton — dizi gösterilmiyorsa hiçbir şey yapmaz (animasyon da oynamaz).
+    /// Android: skipToNextSequenceNumber — dizi gösterilmiyorsa hiçbir şey yapmaz (animasyon da oynamaz);
+    /// boşluk sürerken animasyon oynar ama sayı atlanmaz.
     private func atlaDokunuldu() {
         if !model.adimAtlanabilir { return }
         let no: Int = atlaSayaci + 1
@@ -213,13 +213,15 @@ struct KorDersYanDugmeler: View {
 
     // MARK: İpucu
 
-    /// Android: hintContainer — fabHint (lottie lesson_hint_ic) ve soldan açılan tvHint.
+    /// Android: hintContainer — fabHint (lottie lesson_hint_ic) ve solunda açılan tvHint.
     private var ipucu: some View {
         ZStack(alignment: .trailing) {
             if model.ipucuAcik {
                 ipucuBalonu
+                    // Balon ampulün sol kenarından 3dp uzakta (düğme 48dp).
+                    .padding(.trailing, AbakusDersOlcu.yanDugmeBoyu + KorDersStil.ipucuDugmeAraligi)
             }
-            KorDersYanDugme(eylem: { model.ipucunuDegistir() }) {
+            AbakusYanDugme(eylem: { model.ipucunuDegistir() }) {
                 ipucuSimgesi
             }
         }
@@ -234,136 +236,43 @@ struct KorDersYanDugmeler: View {
             .frame(width: KorDersStil.yanDugmeLottieBoyu, height: KorDersStil.yanDugmeLottieBoyu)
     }
 
+    /// hint_bubble_background: gövde (köşe 16, sağdan 9dp içeride) + sağ kenarda 45° döndürülmüş 12dp'lik
+    /// kuyruk (merkezi sağ kenardan 9dp içeride), ikisi de side_button_background renginde.
     private var ipucuBalonu: some View {
         Text(model.ipucuMetni)
             .font(Tema.yazi(KorDersStil.ipucuYaziBoyu))
             .foregroundColor(.white)
-            .lineLimit(2)
-            .fixedSize(horizontal: true, vertical: false)
-            .padding(.leading, 10)
-            .padding(.trailing, 30)
-            .frame(height: KorDersStil.ipucuYukseklik)
-            .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(KorDersStil.ipucuZemin)
+            .lineSpacing(KorDersStil.ipucuSatirAraligi)
+            .multilineTextAlignment(.leading)
+            .fixedSize(horizontal: true, vertical: true)
+            .padding(.leading, KorDersStil.ipucuBasBosluk)
+            .padding(.trailing, KorDersStil.ipucuSonBosluk)
+            .padding(.vertical, KorDersStil.ipucuDikeyBosluk)
+            // minHeight abacus_side_button_size
+            .frame(minHeight: AbakusDersOlcu.yanDugmeBoyu)
+            .background(ipucuZemini)
+            // hint_bubble_in: ampule doğru kuyruğundan büyüyerek 350 ms'de açılır (hafif aşma);
+            // hint_bubble_out: 200 ms'de 0,6'ya küçülüp kaybolur.
+            .transition(
+                AnyTransition.asymmetric(
+                    insertion: AnyTransition.scale(scale: 0.5, anchor: .trailing)
+                        .combined(with: AnyTransition.opacity),
+                    removal: AnyTransition.scale(scale: 0.6, anchor: .trailing)
+                        .combined(with: AnyTransition.opacity)
+                )
             )
-            // tvHint'in sağ kenarı düğmenin sağ kenarından 40dp içeridedir (15 + 25).
-            .padding(.trailing, 40)
-            // anim/slide_in_right ve slide_out_right_hint: 500 ms, kayma + belirme.
-            .transition(.move(edge: .trailing).combined(with: .opacity))
     }
-}
 
-/// Android: correctPanel.
-struct KorDersDogruPaneli: View {
-    let devam: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 0) {
-                Image("circle_correct")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: KorDersStil.panelSimgeBoyu, height: KorDersStil.panelSimgeBoyu)
-                Text(KorDersStil.dogruBaslik)
-                    .font(Tema.yazi(KorDersStil.panelBaslikYaziBoyu))
-                    .foregroundColor(KorDersStil.dogruYesil)
-                    .padding(.leading, KorDersStil.panelBaslikSolBosluk)
-                Spacer(minLength: 0)
-            }
-            KorDersBasmaDugmesi(
-                baslik: KorDersStil.dogruDugme,
-                zemin: KorDersStil.dogruYesil,
-                yaziRengi: .black,
-                eylem: devam
-            )
-            .padding(.top, KorDersStil.panelDugmeUstBosluk)
+    private var ipucuZemini: some View {
+        ZStack(alignment: .trailing) {
+            RoundedRectangle(cornerRadius: KorDersStil.ipucuKose, style: .continuous)
+                .fill(AbakusDersRenk.yanDugme)
+                .padding(.trailing, KorDersStil.ipucuKuyrukPayi)
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(AbakusDersRenk.yanDugme)
+                .frame(width: 12, height: 12)
+                .rotationEffect(.degrees(45))
+                .padding(.trailing, 3)
         }
-        .padding(KorDersStil.panelBosluk)
-        .frame(maxWidth: .infinity)
-        .background(KorDersPanelZemini())
-    }
-}
-
-/// Android: incorrectPanel.
-struct KorDersYanlisPaneli: View {
-    let dogruCevapEtiketi: String
-    let seninCevabinMetni: String
-    let tamam: () -> Void
-
-    var body: some View {
-        let oge: CGFloat = KorDersStil.panelOgeBoslugu
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 0) {
-                Image("ic_delete")
-                    .renderingMode(.template)
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundColor(KorDersStil.yanlisKirmizi)
-                    .frame(width: KorDersStil.panelSimgeBoyu, height: KorDersStil.panelSimgeBoyu)
-                    .padding(oge)
-                Text(KorDersStil.yanlisBaslik)
-                    .font(Tema.yazi(KorDersStil.panelBaslikYaziBoyu))
-                    .foregroundColor(KorDersStil.yanlisKirmizi)
-                    .padding(.leading, KorDersStil.panelBaslikSolBosluk)
-                    .padding(.top, oge)
-                Spacer(minLength: 0)
-            }
-            Text(dogruCevapEtiketi)
-                .font(Tema.yazi(KorDersStil.panelGovdeYaziBoyu))
-                .foregroundColor(KorDersStil.yanlisKirmizi)
-                .padding(.horizontal, oge)
-                .padding(.top, KorDersStil.panelEtiketUstBosluk)
-                .padding(.bottom, oge)
-            Text(seninCevabinMetni)
-                .font(Tema.yazi(KorDersStil.panelGovdeYaziBoyu))
-                .foregroundColor(.white)
-                .padding(oge)
-            KorDersBasmaDugmesi(
-                baslik: KorDersStil.yanlisDugme,
-                zemin: KorDersStil.yanlisKirmizi,
-                yaziRengi: .black,
-                eylem: tamam
-            )
-            .padding(.horizontal, oge)
-            .padding(.top, KorDersStil.panelDugmeUstBosluk)
-        }
-        // incorrectPanel: padding 3dp.
-        .padding(3)
-        .frame(maxWidth: .infinity)
-        .background(KorDersPanelZemini())
-    }
-}
-
-/// bottom_sheet_background: #222, yalnızca üst köşeler yuvarlak; alt güvenli alana taşar.
-struct KorDersPanelZemini: View {
-    var body: some View {
-        KorDersUstKoseliSekil(yaricap: KorDersStil.panelKose)
-            .fill(KorDersStil.panelZemin)
-            .ignoresSafeArea(.container, edges: .bottom)
-    }
-}
-
-/// Yalnızca üst köşeleri yuvarlatılmış dikdörtgen.
-struct KorDersUstKoseliSekil: Shape {
-    let yaricap: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let r: CGFloat = min(yaricap, min(rect.width, rect.height) / 2)
-        var yol = Path()
-        yol.move(to: CGPoint(x: rect.minX, y: rect.maxY))
-        yol.addLine(to: CGPoint(x: rect.minX, y: rect.minY + r))
-        yol.addArc(
-            center: CGPoint(x: rect.minX + r, y: rect.minY + r),
-            radius: r, startAngle: .degrees(180), endAngle: .degrees(270), clockwise: false
-        )
-        yol.addLine(to: CGPoint(x: rect.maxX - r, y: rect.minY))
-        yol.addArc(
-            center: CGPoint(x: rect.maxX - r, y: rect.minY + r),
-            radius: r, startAngle: .degrees(270), endAngle: .degrees(0), clockwise: false
-        )
-        yol.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        yol.closeSubpath()
-        return yol
     }
 }

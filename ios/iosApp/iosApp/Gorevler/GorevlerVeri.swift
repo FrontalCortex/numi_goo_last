@@ -6,7 +6,7 @@ import Shared
 // Ortak Kotlin koduna yapılan BÜTÜN çağrılar bu dosyadadır; görünümler ve görünüm modeli yalnızca
 // aşağıdaki Swift yapılarını okur. Kurallar ortak koddadır: MissionsProgressStore (görev seçimi,
 // sayaçlar, gün/hafta sıfırlama, güvenilir saat), MissionUiLogic (satır durumu, geri sayım,
-// ilerleme çubuğu ölçüleri) ve GorevGunlukSoruKopruleri.kt (MissionsFragment.updateMissionsUI'nin
+// ilerleme çubuğu ölçüleri) ve GorevGunlukSoruKopruleri.kt (MissionsSection.bind'in
 // okuma sırası).
 
 // MARK: - Görünümlerin okuduğu veri yapıları
@@ -77,7 +77,7 @@ struct GorevlerCubukOlcusu {
 /// bulutta Firestore `users/{uid}/missionProgress/state` belgesi (sayaç alanları, `day_id`,
 /// `week_id`, seçili görev kimlikleri, `rewardClaimedKeys`).
 protocol GorevlerVeriKaynagi: AnyObject {
-    /// MissionsFragment.updateMissionsUI: sayaçlar, seçili görevler, ödül durumu, geri sayımlar.
+    /// MissionsSection.bind: sayaçlar, seçili görevler, ödül durumu, geri sayımlar.
     func durumuOku() -> GorevlerDurumu
     /// MissionsProgressStore.markMissionRewardClaimed (sandık kapanınca çağrılır).
     func odulAlindiIsaretle(_ satir: GorevlerSatiri)
@@ -101,29 +101,33 @@ final class SahteGorevlerOdulServisi: GorevlerOdulServisi {
 
 /// Firestore ve kalıcı depo bağlanana dek kullanılan kaynak: ortak koddaki gerçek
 /// MissionsProgressStore çalışır, ama tercih dosyaları ve bulut belgesi bellektedir
-/// (uygulama kapanınca sıfırlanır). Örnek sayaçlar "buluttan gelmiş" gibi yüklenir.
+/// (uygulama kapanınca sıfırlanır). `ilerlemis` ise örnek sayaçlar "buluttan gelmiş" gibi
+/// yüklenir; değilse hiç oynamamış kullanıcı gibi bütün sayaçlar sıfırdır.
 final class SahteGorevlerVeriKaynagi: GorevlerVeriKaynagi {
-    /// Sekme değişince ilerleme kaybolmasın diye tek örnek.
-    static let ortak = SahteGorevlerVeriKaynagi()
+    /// Sekme değişince ilerleme kaybolmasın diye tek örnek (ilerlemiş kullanıcı).
+    static let ortak = SahteGorevlerVeriKaynagi(ilerlemis: true)
 
     private let depo: MissionsProgressStore
 
-    init() {
+    init(ilerlemis: Bool) {
         // Anahtarlar MissionsProgressStore.KEY_*_COUNT sabitleridir (Firestore alan adları).
-        let ornek: [String: KotlinInt] = [
-            "daily_step_finish_count": KotlinInt(int: 1),
-            "weekly_step_finish_count": KotlinInt(int: 3),
-            "daily_step_increment_count": KotlinInt(int: 5),
-            "weekly_step_increment_count": KotlinInt(int: 12),
-            "daily_perfect_step_increment_count": KotlinInt(int: 1),
-            "weekly_perfect_step_increment_count": KotlinInt(int: 4),
-            "daily_chest_record_break_count": KotlinInt(int: 0),
-            "weekly_chest_record_break_count": KotlinInt(int: 1),
-            "daily_chest_star_gain_count": KotlinInt(int: 2),
-            "weekly_chest_star_gain_count": KotlinInt(int: 3),
-            "daily_learn_minutes_count": KotlinInt(int: 6),
-            "weekly_learn_minutes_count": KotlinInt(int: 25),
-        ]
+        var ornek: [String: KotlinInt] = [:]
+        if ilerlemis {
+            ornek = [
+                "daily_step_finish_count": KotlinInt(int: 1),
+                "weekly_step_finish_count": KotlinInt(int: 3),
+                "daily_step_increment_count": KotlinInt(int: 5),
+                "weekly_step_increment_count": KotlinInt(int: 12),
+                "daily_perfect_step_increment_count": KotlinInt(int: 1),
+                "weekly_perfect_step_increment_count": KotlinInt(int: 4),
+                "daily_chest_record_break_count": KotlinInt(int: 0),
+                "weekly_chest_record_break_count": KotlinInt(int: 1),
+                "daily_chest_star_gain_count": KotlinInt(int: 2),
+                "weekly_chest_star_gain_count": KotlinInt(int: 3),
+                "daily_learn_minutes_count": KotlinInt(int: 6),
+                "weekly_learn_minutes_count": KotlinInt(int: 25),
+            ]
+        }
         depo = GorevGunlukSoruKopruleriKt.bellekIciGorevDeposuKur(
             elapsedRealtimeMs: { KotlinLong(longLong: GorevlerSaat.acilistanBeriMs()) },
             ornekSayaclar: ornek

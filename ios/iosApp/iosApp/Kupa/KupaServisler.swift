@@ -1,4 +1,5 @@
 import Foundation
+import Shared
 
 // Kupa / rozet / liderlik ekranlarının dış dünyaya (Firestore, enerji, ders ilerlemesi, ses)
 // açılan kapıları. Firebase henüz bağlı olmadığı için her protokolün örnek veri döndüren
@@ -68,18 +69,65 @@ struct KupaLiderKaydi: Equatable {
 
 // MARK: - Protokoller
 
+/// Sunucunun `submitCupResult` yanıtı (ortak kod: `CupScoreService.CupScoreResult`).
+struct KupaSunucuYaniti: Equatable {
+    /// Gönderimden önceki puan (yanıttaki `oldScore`).
+    let eskiSkor: Int
+    /// Sunucunun hesapladığı yeni puan (yanıttaki `newScore`); 0'ın altına düşmez.
+    let yeniSkor: Int
+}
+
 /// Kupa skorları.
+///
 /// Android: `users/{uid}/cupWayProgress/progress` dokümanı; alanlar `addition_abacus_cup`,
 /// `extraction_abacus_cup`, `impact_abacus_cup`, `blinding_addition_abacus_cup`,
-/// `blinding_extraction_abacus_cup`, `blinding_impact_abacus_cup`. Alan yoksa 200 ile
-/// tohumlanır (ortak kod: `CupScoreRepositorySpec.resolveFetchedCupScore`); okuma hatasında 200.
+/// `blinding_extraction_abacus_cup`, `blinding_impact_abacus_cup`.
+///
+/// OKUMA: alan yoksa ya da okuma hatasında 200 döner, hiçbir şey YAZILMAZ (güncel Android'de
+/// tohumlama yok; ortak kod `CupScoreRepositorySpec.resolveFetchedCupScore`, `shouldSeed` hep false).
+///
+/// YAZMA: istemci kupa puanını yazamaz (`cupWayProgress` ve `cupHistory` kurallarla yazmaya kapalı).
+/// Ders bitince yalnızca sonuç `submitCupResult` Cloud Function'ına gönderilir; miktarı sunucu
+/// kendi tablosundan hesaplar, puanı ve geçmiş gününü tek işlemde yazar.
 protocol KupaSkorDeposu: AnyObject {
     func kupaSkorunuGetir(alan: String, tamam: @escaping (Int) -> Void)
+
+    /// Android: `CupScoreService.submitResult` → Cloud Function `submitCupResult`.
+    ///
+    /// - Parameters:
+    ///   - yuk: istek gövdesi (`cupField`, `won`, `difficultyLevel`, `isMultiplication`, `dayId`);
+    ///     ortak kod `CupScoreService.buildSubmitPayload` / `BadgePrecalcHelper.buildCupSubmitPayload`
+    ///     üretir. Gerçek uygulama yanıtı `CupScoreService.parseResult(resultData:)` ile ayrıştırır.
+    ///   - yerelDelta: YALNIZCA sahte servis içindir (gerçek sunucu bunu görmez, kendi tablosunu kullanır):
+    ///     sahte servis puanı yerelde bu kadar değiştirip döndürür.
+    ///   - tamam: yanıt; ayrıştırılamadıysa ya da hata olursa nil (Android: arayüz eski değeri göstermeye devam eder).
+    func sonucuSunucuyaGonder(yuk: [String: Any], yerelDelta: Int, tamam: @escaping (KupaSunucuYaniti?) -> Void)
+}
+
+/// Kupa Yolu ödül defteri (sandık eşikleri).
+///
+/// Android: `CupPathRewardRepository.fetchStates` TEK çağrıda iki dokümanı okur:
+/// `users/{uid}/cupWayProgress/progress` (puanlar) ve `users/{uid}/cupPathRewards/progress`
+/// (defter: her alan için `{lastClaimed: Int, claimed: [Int]}`; yalnızca sunucu yazar).
+/// Ham dokümanlar verilir; durumu ortak kod kurar (`CupPathRewardRepository.buildStates`).
+/// Belge yoksa ilgili parametre nil; okuma hatasında Android varsayılan durumu (puan 200, ödül yok) kullanır.
+protocol KupaYolBelgeDeposu: AnyObject {
+    func belgeleriGetir(tamam: @escaping (_ kupaBelgesi: [String: Any]?, _ defter: [String: Any]?) -> Void)
+}
+
+/// Sezon saati. Android: `SeasonClock.refreshFromServer` → Cloud Function `getSeasonInfo`
+/// (yanıtta `serverNowMs`) → `SeasonClock.onServerTime`. Sezon hesapları düz cihaz saatinden değil
+/// sunucu sapmasıyla düzeltilmiş saatten yapılır; sezon yanlışsa başka tahta okunur ve liste boş kalır.
+protocol KupaSezonSaatiKaynagi: AnyObject {
+    /// Sunucu saatini sorar; yanıt gelince ortak koddaki sapmayı günceller (`SeasonClock.onServerTime`),
+    /// sonra `tamam` çağrılır. Hata olursa sapma değişmez ama `tamam` yine çağrılır.
+    func sunucuSaatiniYenile(tamam: @escaping () -> Void)
 }
 
 /// Kupa Yolu kartının kilidi.
 /// Android: `GlobalLessonData.loadLessonItemsForPart(partId)` → o part'ın SON sandık dersinin
-/// `stepIsFinish` değeri (ortak kod: `CupPathLogic.isCardActive`).
+/// `stepIsFinish` değeri; ONAYLI ÖĞRETMENDE hepsi açıktır (ortak kod:
+/// `CupPathLogic.isCardActive(lessonItemTypes:stepIsFinish:isApprovedTeacher:)`).
 protocol KupaKilitKaynagi: AnyObject {
     func kartAcikMi(partId: Int, tamam: @escaping (Bool) -> Void)
 }
@@ -88,6 +136,9 @@ protocol KupaKilitKaynagi: AnyObject {
 protocol KupaEnerjiKaynagi: AnyObject {
     var sonsuzEnerji: Bool { get }
     var guncelEnerji: Int { get }
+    /// Pro/Premium plan mı (Android: `PlanStatus.isProPlan(energyManager.getUserPlan())`): kalp `heart_pro_ic` olur.
+    /// Sonsuz enerjiden AYRIDIR: onaylı öğretmenin enerjisi sonsuzdur ama abone değildir.
+    var proPlan: Bool { get }
 }
 
 /// Kupa geçmişi.
@@ -142,6 +193,9 @@ protocol KupaLiderlikDeposu: AnyObject {
 /// Rozet ilerlemesi.
 /// Android: `users/{uid}/badgeProgress/state` dokümanı (alan adları ortak kodda
 /// `BadgeProgressFirestore.F_*`). Doküman ham hâliyle verilir; ayrıştırmayı ortak kod yapar.
+/// Yalnızca OKUMA: rozet sayaçları ve madalya/kupa parçaları güncel Android'de istemci yazımına
+/// kapalıdır (kurallar; yazmayı sunucu yapar). Kademe eşikleri tek tablodadır
+/// (`BadgeProgressEngine.levelSpec`; Golf [3,5,10,15,20], Roket [3,10,15,25,30]).
 protocol KupaRozetDeposu: AnyObject {
     func rozetDurumunuGetir(tamam: @escaping ([String: Any]?) -> Void)
 }
@@ -157,6 +211,8 @@ protocol KupaSesCalici: AnyObject {
 /// Ekranlara verilen servis demeti. Firebase bağlanınca yönetici oturum gerçek uygulamaları verir.
 struct KupaOrtami {
     var skorDeposu: KupaSkorDeposu
+    var yolBelgeDeposu: KupaYolBelgeDeposu
+    var sezonSaati: KupaSezonSaatiKaynagi
     var kilitKaynagi: KupaKilitKaynagi
     var enerjiKaynagi: KupaEnerjiKaynagi
     var gecmisDeposu: KupaGecmisDeposu
@@ -169,6 +225,8 @@ struct KupaOrtami {
         let depo = SahteKupaDeposu()
         return KupaOrtami(
             skorDeposu: depo,
+            yolBelgeDeposu: depo,
+            sezonSaati: SahteKupaSezonSaati(),
             kilitKaynagi: depo,
             enerjiKaynagi: depo,
             gecmisDeposu: depo,
@@ -182,7 +240,7 @@ struct KupaOrtami {
 // MARK: - Sahte uygulamalar
 
 /// Kupa skorları, kart kilitleri, enerji ve kupa geçmişi için örnek veri.
-final class SahteKupaDeposu: KupaSkorDeposu, KupaKilitKaynagi, KupaEnerjiKaynagi, KupaGecmisDeposu {
+final class SahteKupaDeposu: KupaSkorDeposu, KupaYolBelgeDeposu, KupaKilitKaynagi, KupaEnerjiKaynagi, KupaGecmisDeposu {
     /// Alan → skor. Olmayan alan 200 (Android varsayılanı) döner.
     var skorlar: [String: Int] = [
         "addition_abacus_cup": 640,
@@ -196,8 +254,13 @@ final class SahteKupaDeposu: KupaSkorDeposu, KupaKilitKaynagi, KupaEnerjiKaynagi
     /// Son sandığı bitmiş part'lar (kart N ↔ part N).
     var bitenPartlar: Set<Int> = [1, 2, 3, 4]
 
+    /// Kupa Yolu ödül defteri: alan → `{lastClaimed, claimed}` (Android `cupPathRewards/progress`).
+    /// Olmayan alan = hiç sandık alınmamış (su seviyesi 200, ilk eşik 300).
+    var defter: [String: Any] = SahteKupaDeposu.ornekDefter()
+
     var sonsuzEnerji: Bool = false
     var guncelEnerji: Int = 5
+    var proPlan: Bool = false
 
     /// Ağ gecikmesini taklit eder.
     private let gecikme: TimeInterval = 0.35
@@ -206,6 +269,27 @@ final class SahteKupaDeposu: KupaSkorDeposu, KupaKilitKaynagi, KupaEnerjiKaynagi
         let skor: Int = skorlar[alan] ?? 200
         DispatchQueue.main.asyncAfter(deadline: .now() + gecikme) {
             tamam(skor)
+        }
+    }
+
+    func sonucuSunucuyaGonder(yuk: [String: Any], yerelDelta: Int, tamam: @escaping (KupaSunucuYaniti?) -> Void) {
+        // Sunucunun işini yerelde taklit eder: puan yerelDelta kadar değişir, 0'ın altına düşmez
+        // (gerçek sunucu miktarı kendi tablosundan hesaplar; istemci miktar göndermez).
+        let alan: String = (yuk["cupField"] as? String) ?? ""
+        let eski: Int = skorlar[alan] ?? 200
+        let yeni: Int = max(0, eski + yerelDelta)
+        skorlar[alan] = yeni
+        let yanit = KupaSunucuYaniti(eskiSkor: eski, yeniSkor: yeni)
+        DispatchQueue.main.asyncAfter(deadline: .now() + gecikme) {
+            tamam(yanit)
+        }
+    }
+
+    func belgeleriGetir(tamam: @escaping (_ kupaBelgesi: [String: Any]?, _ defter: [String: Any]?) -> Void) {
+        let kupaBelgesi: [String: Any] = skorlar
+        let defterBelgesi: [String: Any] = defter
+        DispatchQueue.main.asyncAfter(deadline: .now() + gecikme) {
+            tamam(kupaBelgesi, defterBelgesi)
         }
     }
 
@@ -243,6 +327,17 @@ final class SahteKupaDeposu: KupaSkorDeposu, KupaKilitKaynagi, KupaEnerjiKaynagi
         }
     }
 
+    /// Örnek defter: toplama yolunda 500'e kadar alınmış (600 hazır), körleme toplamada 3000'e kadar
+    /// alınmış ve 3200 tek başına alınmış (3100 hazır).
+    private static func ornekDefter() -> [String: Any] {
+        let toplama: [String: Any] = ["lastClaimed": 500, "claimed": [Any]()]
+        let korleme: [String: Any] = ["lastClaimed": 3000, "claimed": [3200] as [Any]]
+        var d: [String: Any] = [:]
+        d["addition_abacus_cup"] = toplama
+        d["blinding_addition_abacus_cup"] = korleme
+        return d
+    }
+
     /// Son 75 günün bir kısmında oynanmış gibi görünen, bugünkü skorda biten örnek geçmiş.
     private static func ornekGecmis(bitisSkoru: Int) -> [KupaGecmisKaydi] {
         var takvim = Calendar(identifier: .gregorian)
@@ -265,6 +360,17 @@ final class SahteKupaDeposu: KupaSkorDeposu, KupaKilitKaynagi, KupaEnerjiKaynagi
             sonuc.append(KupaGecmisKaydi(tarihKimligi: bicim.string(from: gun), deger: skor))
         }
         return sonuc.sorted { $0.tarihKimligi < $1.tarihKimligi }
+    }
+}
+
+/// Sunucu saatini cihaz saatiyle aynı sayan sahte sezon saati (sapma 0).
+final class SahteKupaSezonSaati: KupaSezonSaatiKaynagi {
+    func sunucuSaatiniYenile(tamam: @escaping () -> Void) {
+        let simdi: Int64 = Int64(Date().timeIntervalSince1970 * 1000.0)
+        _ = SeasonClock.shared.onServerTime(serverNowUtcMs: simdi, deviceNowMs: simdi)
+        DispatchQueue.main.async {
+            tamam()
+        }
     }
 }
 

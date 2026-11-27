@@ -12,6 +12,10 @@ import Shared
 // Ayar değiştirmeden denenebilen hata durumları (e-postanın @ öncesi kısmına göre):
 //   "hata…"   → kod gönderimi sunucu hatası verir ("Doğrulama kodu gönderilemedi.")
 //   "sessiz…" → kod gönderimi mesajsız hata verir (ekran "Kod gönderilemedi" gösterir)
+//
+// 13 yaş altı (veli onayı): yaş adımında 13 ya da daha küçük yaş girilince kayıt veli e-postası
+// ekranına gider. Veli adresi çocuğunkinden farklıysa önce çocuğun kendi adresine kod gider
+// (sunucu kuralı). Veli adresi "hata…" ile başlarsa veli kodu gönderilemez.
 
 /// Google / Apple hesap seçiminin sahte sonucu.
 enum SahteSaglayiciSonucu {
@@ -38,6 +42,23 @@ struct SahteKimlikAyarlari {
     var acilistaOturumEposta: String? = nil
 }
 
+/// Sunucudaki veli onayı kaydının (`parentalConsents`) sahte karşılığı: kod hangi veliye, hangi
+/// doğum yılıyla gitti. Doğum yılını hesap açılırken sunucu buradan alır (çocuk değiştiremesin).
+struct SahteVeliKaydi {
+    let veliEposta: String
+    let dogumYili: Int
+    let kaynak: String?
+    /// Google / Apple kaydı mı (hesap confirmParentalConsent ile açılır).
+    let saglayici: Bool
+}
+
+/// 13 yaş altı Google / Apple kaydında açık kalan, belgesi olmayan oturum.
+struct SahteBekleyenSaglayici {
+    let uid: String
+    let eposta: String
+    let ad: String
+}
+
 @MainActor
 final class SahteKimlikServisi: KimlikServisi {
     var ayarlar: SahteKimlikAyarlari
@@ -50,6 +71,11 @@ final class SahteKimlikServisi: KimlikServisi {
     private var gonderilenKodlar: [String: String]
     private var yanlisDenemeler: [String: Int]
     private var hazirlandi: Bool
+    /// Çocuk e-postası → veli onayı kaydı.
+    private var veliKayitlari: [String: SahteVeliKaydi]
+    /// Veli adımı için adresi doğrulanmış çocuk e-postaları (sunucuda 30 dk geçerli).
+    private var dogrulanmisCocuklar: Set<String>
+    private var bekleyenSaglayici: SahteBekleyenSaglayici?
 
     nonisolated init(
         ayarlar: SahteKimlikAyarlari = SahteKimlikAyarlari(),
@@ -62,6 +88,9 @@ final class SahteKimlikServisi: KimlikServisi {
         self.gonderilenKodlar = [:]
         self.yanlisDenemeler = [:]
         self.hazirlandi = false
+        self.veliKayitlari = [:]
+        self.dogrulanmisCocuklar = []
+        self.bekleyenSaglayici = nil
     }
 
     // MARK: Örnek veri
@@ -196,16 +225,21 @@ final class SahteKimlikServisi: KimlikServisi {
 
     /// Sunucudaki kod denetimi: yanlış kodda sayaç artar, 5. yanlıştan sonra 15 dk kilit mesajı döner.
     private func koduDenetle(eposta: String, kod: String, amac: String) throws {
+        try koduDenetle(eposta: eposta, kod: kod, amaclar: [amac])
+    }
+
+    /// `amaclar`: kabul edilen gönderim amaçları (kayıt kodu ile veli kodu aynı çağrıyla doğrulanır).
+    private func koduDenetle(eposta: String, kod: String, amaclar: [String]) throws {
         let azami = Int(OtpRules.shared.MAX_WRONG_ATTEMPTS)
         let sayac = yanlisDenemeler[eposta] ?? 0
         if sayac >= azami {
             throw GirisHatasi(OtpRules.shared.wrongCooldownTryLaterMessage(remainingMin: 15))
         }
-        if kod != ayarlar.gecerliKod || gonderilenKodlar[eposta] == nil {
+        guard let gonderilen = gonderilenKodlar[eposta], kod == ayarlar.gecerliKod else {
             yanlisDenemeler[eposta] = sayac + 1
             throw GirisHatasi("Geçersiz kod")
         }
-        if gonderilenKodlar[eposta] != amac {
+        if !amaclar.contains(gonderilen) {
             throw GirisHatasi("Geçersiz veya süresi dolmuş kod")
         }
         yanlisDenemeler[eposta] = 0
@@ -239,8 +273,27 @@ final class SahteKimlikServisi: KimlikServisi {
         try await bekle()
         let kurallar = AuthRules.shared
         let normal = kurallar.normalizeEmail(email: eposta)
-        try koduDenetle(eposta: normal, kod: kod, amac: kurallar.OTP_PURPOSE_REGISTER)
+        // Veli kodu (e-posta yolu) da buradan doğrulanır: sunucu kodun veli kodu olduğunu kendi
+        // kaydından bilir, doğum yılını ve kaynağı da oradan alır.
+        try koduDenetle(
+            eposta: normal,
+            kod: kod,
+            amaclar: [kurallar.OTP_PURPOSE_REGISTER, kurallar.OTP_PURPOSE_REGISTER_PARENTAL]
+        )
+        let veliKodu: Bool = gonderilenKodlar[normal] == kurallar.OTP_PURPOSE_REGISTER_PARENTAL
         gonderilenKodlar[normal] = nil
+        let veliKaydi: SahteVeliKaydi? = veliKodu ? veliKayitlari[normal] : nil
+        if !veliKodu {
+            // Sunucu: 13 yaş altı doğum yılıyla gelen olağan kayıt kodu reddedilir.
+            let kutuluYil: KotlinInt? = dogumYili.map { KotlinInt(int: Int32($0)) }
+            if kurallar.requiresParentalConsent(birthYear: kutuluYil, utcYear: SahteKimlikServisi.utcYili()) {
+                throw GirisHatasi("Veli onayı gerekiyor")
+            }
+        }
+        veliKayitlari[normal] = nil
+        dogrulanmisCocuklar.remove(normal)
+        let yil: Int? = veliKaydi?.dogumYili ?? dogumYili
+        let kaynakDegeri: String? = veliKaydi?.kaynak ?? kaynak
 
         // Sunucunun yazdığı belge (functions/index.js verifyRegistrationCode); alanlar
         // KullaniciKayitServisi.swift başındaki 1. yol ile aynıdır.
@@ -262,10 +315,10 @@ final class SahteKimlikServisi: KimlikServisi {
         for (anahtar, deger) in cuzdan {
             alanlar[anahtar] = deger
         }
-        if let yil = dogumYili {
-            alanlar[kurallar.FIELD_BIRTH_YEAR] = yil
+        if let dogum = yil {
+            alanlar[kurallar.FIELD_BIRTH_YEAR] = dogum
         }
-        if let kaynakAdi = kaynak, !kaynakAdi.isEmpty {
+        if let kaynakAdi = kaynakDegeri, !kaynakAdi.isEmpty {
             alanlar[kurallar.FIELD_ACQUISITION_SOURCE] = kaynakAdi
         }
         if rol == kurallar.ROLE_TEACHER {
@@ -281,6 +334,120 @@ final class SahteKimlikServisi: KimlikServisi {
         let yeni = oturumOlustur(uid: uid, alanlar: alanlar, eposta: eposta)
         oturum = yeni
         return yeni
+    }
+
+    // MARK: 13 yaş altı: veli onayı
+
+    /// Sahte sunucunun "bu yıl"ı (sunucu ve kurallar UTC yılı kullanır).
+    static func utcYili() -> Int32 {
+        var takvim = Calendar(identifier: .gregorian)
+        takvim.timeZone = TimeZone(identifier: "UTC") ?? TimeZone.current
+        return Int32(takvim.component(.year, from: Date()))
+    }
+
+    func veliKayitKoduGonder(cocukEposta: String, veliEposta: String, dogumYili: Int, kaynak: String?) async throws {
+        try await bekle()
+        let kurallar = AuthRules.shared
+        // Gerçek çağrının gövdesi (functions/index.js sendStudentVerificationCode).
+        let govde: [String: Any] = kurallar.sendParentalRegistrationCodePayload(
+            childEmail: cocukEposta,
+            parentEmail: veliEposta,
+            birthYear: Int32(dogumYili),
+            acquisitionSource: kaynak,
+            lang: Metin.dil
+        )
+        let cocuk: String = (govde["email"] as? String) ?? kurallar.normalizeEmail(email: cocukEposta)
+        let veli: String = (govde["parentEmail"] as? String) ?? kurallar.normalizeEmail(email: veliEposta)
+        if veli.hasPrefix("hata") {
+            throw GirisHatasi("Doğrulama kodu gönderilemedi.")
+        }
+        if kayit.epostaIleBul(cocuk) != nil {
+            throw GirisHatasi("Bu e-posta zaten kayıtlı. Lütfen giriş yapın.")
+        }
+        // Veli adresi farklıysa önce çocuğun kendi adresi doğrulanmış olmalı
+        // (sunucu: details.reason = child_email_unverified).
+        if veli != cocuk && !dogrulanmisCocuklar.contains(cocuk) {
+            throw GirisHatasi(kurallar.ERROR_CHILD_EMAIL_NOT_VERIFIED)
+        }
+        veliKayitlari[cocuk] = SahteVeliKaydi(veliEposta: veli, dogumYili: dogumYili, kaynak: kaynak, saglayici: false)
+        gonderilenKodlar[cocuk] = kurallar.OTP_PURPOSE_REGISTER_PARENTAL
+    }
+
+    func cocukEpostasiniDogrula(eposta: String, kod: String, dogumYili: Int) async throws {
+        try await bekle()
+        let kurallar = AuthRules.shared
+        let govde: [String: Any] = kurallar.verifyChildEmailForParentalConsentPayload(
+            email: eposta,
+            code: kod,
+            birthYear: Int32(dogumYili)
+        )
+        let normal: String = (govde["email"] as? String) ?? kurallar.normalizeEmail(email: eposta)
+        try koduDenetle(eposta: normal, kod: kod, amac: kurallar.OTP_PURPOSE_REGISTER)
+        gonderilenKodlar[normal] = nil
+        dogrulanmisCocuklar.insert(normal)
+    }
+
+    func saglayiciVeliOnayiIste(veliEposta: String, dogumYili: Int, kaynak: String?) async throws {
+        try await bekle()
+        let kurallar = AuthRules.shared
+        guard let bekleyen = bekleyenSaglayici else {
+            throw GirisHatasi(Metin.al("ui_oturum_acilamadi"))
+        }
+        let govde: [String: Any] = kurallar.requestGoogleParentalConsentPayload(
+            childEmail: bekleyen.eposta,
+            parentEmail: veliEposta,
+            birthYear: Int32(dogumYili),
+            acquisitionSource: kaynak,
+            lang: Metin.dil
+        )
+        let veli: String = (govde["parentEmail"] as? String) ?? kurallar.normalizeEmail(email: veliEposta)
+        if veli.hasPrefix("hata") {
+            throw GirisHatasi("Doğrulama kodu gönderilemedi.")
+        }
+        // Sağlayıcı hesabının adresi doğrulanmış sayılır; çocuk adresi adımı yok.
+        veliKayitlari[bekleyen.eposta] = SahteVeliKaydi(veliEposta: veli, dogumYili: dogumYili, kaynak: kaynak, saglayici: true)
+        gonderilenKodlar[bekleyen.eposta] = kurallar.OTP_PURPOSE_REGISTER_PARENTAL
+    }
+
+    func saglayiciVeliOnayiniDogrula(kod: String) async throws -> GirisOturumu {
+        try await bekle()
+        let kurallar = AuthRules.shared
+        guard let bekleyen = bekleyenSaglayici else {
+            throw GirisHatasi(Metin.al("ui_oturum_acilamadi"))
+        }
+        try koduDenetle(eposta: bekleyen.eposta, kod: kod, amac: kurallar.OTP_PURPOSE_REGISTER_PARENTAL)
+        gonderilenKodlar[bekleyen.eposta] = nil
+        let veliKaydi: SahteVeliKaydi? = veliKayitlari[bekleyen.eposta]
+        veliKayitlari[bekleyen.eposta] = nil
+
+        // Belgeyi sunucu yazar (functions/index.js confirmParentalConsent); alanlar Google ile
+        // otomatik kayıttakilerle aynı.
+        let kimlik = await benzersizKullaniciKimligi()
+        let kutuluYil: KotlinInt? = veliKaydi.map { KotlinInt(int: Int32($0.dogumYili)) }
+        let alanlar: [String: Any] = kurallar.googleStudentUserData(
+            uid: bekleyen.uid,
+            userId: kimlik,
+            email: bekleyen.eposta,
+            displayName: bekleyen.ad,
+            firstTutorialShown: false,
+            nowMs: GirisYerelDepo.simdiMs(),
+            birthYear: kutuluYil,
+            acquisitionSource: veliKaydi?.kaynak,
+            walletFields: UserWalletFirestore.shared.registrationWalletFields()
+        )
+        kayit.anlikYaz(uid: bekleyen.uid, alanlar: alanlar)
+        bekleyenSaglayici = nil
+        let yeni = oturumOlustur(uid: bekleyen.uid, alanlar: alanlar, eposta: bekleyen.eposta)
+        oturum = yeni
+        return yeni
+    }
+
+    func yarimKaydiSil() async {
+        if let bekleyen = bekleyenSaglayici {
+            veliKayitlari[bekleyen.eposta] = nil
+            gonderilenKodlar[bekleyen.eposta] = nil
+        }
+        bekleyenSaglayici = nil
     }
 
     // MARK: E-posta + şifre
@@ -450,8 +617,15 @@ final class SahteKimlikServisi: KimlikServisi {
             throw GirisHatasi(kurallar.ERROR_ACCOUNT_NOT_REGISTERED, hesapEposta: eposta, hesapAd: ad)
         }
 
-        let kimlik = await benzersizKullaniciKimligi()
         let kutuluYil: KotlinInt? = dogumYili.map { KotlinInt(int: Int32($0)) }
+        if kurallar.requiresParentalConsent(birthYear: kutuluYil, utcYear: SahteKimlikServisi.utcYili()) {
+            // 13 yaş altı: belge YAZILMAZ, oturum açık kalır (veli onayı çağrıları kimliği
+            // oradan alır). Android: AuthManager.signInWithGoogle → PARENTAL_CONSENT_REQUIRED.
+            bekleyenSaglayici = SahteBekleyenSaglayici(uid: uid, eposta: kurallar.normalizeEmail(email: eposta), ad: ad)
+            throw GirisHatasi(kurallar.ERROR_PARENTAL_CONSENT_REQUIRED, hesapEposta: eposta, hesapAd: ad)
+        }
+
+        let kimlik = await benzersizKullaniciKimligi()
         let alanlar: [String: Any] = kurallar.googleStudentUserData(
             uid: uid,
             userId: kimlik,

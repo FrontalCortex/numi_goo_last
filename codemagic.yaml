@@ -90,7 +90,7 @@ workflows:
           # Ekran galerisi: her ekran -ekran <ad> ile tek tek açılıp görüntülenir
           # (adlar: iosApp/Yonetim/EkranGalerisi.swift içindeki EkranGalerisi.adlar).
           mkdir -p build/ekranlar
-          for AD in giris kayit kabuk harita-kisim harita-ders harita-popover harita-kilitli-popover abakus-ders abakus-sandik kor-ders sonuc-basarili sonuc-basarisiz sonuc-sandik-basarisiz sonuc-sandik sandik gorevler gunluk-soru gunluk-soru-odul kupa kupa-gecmisi lider-tablosu rozetler rozet-detay ozellestirme magaza profil profil-duzenle yer-tutucu yazi-tipi lottie maskot maskot-2 maskot-3; do
+          for AD in giris giris-acilis giris-tanisma giris-eposta kayit kayit-yas kayit-kaynak kayit-abakus kayit-hedef kayit-yol kayit-meydan-okuma kayit-hatirlatma kayit-veli-onayi kayit-kod kabuk harita-kisim harita-ders harita-popover harita-kilitli-popover abakus-ders abakus-sandik kor-ders sonuc-basarili sonuc-basarisiz sonuc-sandik-basarisiz sonuc-sandik sandik gorevler gorevler-yeni kupa kupa-gecmisi kupa-yolu-odul lider-tablosu rozetler rozet-detay ozellestirme magaza magaza-alt profil profil-duzenle avatar avatar-duzenle yer-tutucu yazi-tipi lottie maskot maskot-2 maskot-3; do
             xcrun simctl launch "$UDID" com.sorobit.app -ekran "$AD" || true
             sleep 5
             xcrun simctl io "$UDID" screenshot "build/ekranlar/$AD.png" || true

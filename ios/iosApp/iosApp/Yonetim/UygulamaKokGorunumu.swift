@@ -52,11 +52,17 @@ struct UygulamaKokGorunumu: View {
         }
     }
 
-    /// Çıkıştan sonra `girisKimligi` değişir; akış (ve görünüm modeli) sıfırdan kurulur.
+    /// Çıkıştan sonra `girisKimligi` değişir; akış (ve görünüm modeli) sıfırdan kurulur ve açılış
+    /// atlanıp başlangıç ekranından başlanır (Android: çıkışta LoginStartActivity doğrudan açılır).
     private var girisAkisi: some View {
         let nesne: UygulamaYoneticisi = yonetici
-        return GirisAkisi(servis: nesne.kimlikServisi, girisYapildi: { nesne.girisYapildi() })
-            .id(nesne.girisKimligi)
+        return GirisAkisi(
+            servis: nesne.kimlikServisi,
+            girisYapildi: { nesne.girisYapildi() },
+            misafirOlarakDevam: { hedef in nesne.misafirOlarakDevam(hedef) },
+            acilisiAtla: nesne.girisKimligi > 0
+        )
+        .id(nesne.girisKimligi)
     }
 }
 
@@ -95,6 +101,8 @@ struct YonetimKatmanGorunumu: View {
             magaza
         case .kupa:
             kupa
+        case .kupaYoluOdul(let kupaAlani):
+            kupaYoluOdul(kupaAlani)
         case .kupaGecmisi(let secim):
             kupaGecmisi(secim)
         case .rozetler:
@@ -120,8 +128,31 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return AbakusDersEkrani(
             dersBaslangici: baslangic,
+            sobiAnalizi: sobiAnalizBaglantisi(nesne),
             bitti: { sonuc in nesne.abakusDersiBitti(sonuc, baslangic: baslangic, katman: no) },
             kapat: { nesne.kapat(no) }
+        )
+    }
+
+    /// Yanlış cevap panelindeki "Sobi ile analiz et" düğmesinin bağlantısı (Android: MistakeReviewDialog).
+    /// Hata analizi motoru (MistakeAnalyzer, StepExplainer) ortak kodda yok; pencere yazılana kadar yer
+    /// tutucu açılır. Yer tutucu kapanışı ekrana haber vermediği için süre durdurulmaz: `kapandi` hemen
+    /// çağrılır (gerçek pencere kapanınca çağıracak).
+    private func sobiAnalizBaglantisi(_ nesne: UygulamaYoneticisi) -> AbakusSobiAnalizBaglantisi {
+        return AbakusSobiAnalizBaglantisi(
+            yapilabilir: { _ in true },
+            istendi: { istek in
+                nesne.yerTutucuAc(
+                    Metin.al("review_open_button"),
+                    "Hata analizi penceresi (Sobi)",
+                    [
+                        "Android: MistakeReviewDialog, MistakeAnalyzer, StepExplainer",
+                        "Sayılar: \(istek.sayilar)",
+                        "Cevap: \(istek.cevap)",
+                    ]
+                )
+                istek.kapandi()
+            }
         )
     }
 
@@ -130,6 +161,7 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return KorDersEkrani(
             baslangic: baslangic,
+            sobiAnalizi: sobiAnalizBaglantisi(nesne),
             bitti: { sonuc in nesne.korDersBitti(sonuc, kaynak: kaynak, baslangic: baslangic, katman: no) },
             kapat: { nesne.kapat(no) }
         )
@@ -175,7 +207,22 @@ struct YonetimKatmanGorunumu: View {
             kapat: { nesne.kapat(no) },
             kupaDersiBaslat: { veri in nesne.kupaDersiniBaslat(veri) },
             magazaAc: { nesne.magazaAc() },
-            sonuc: nesne.kupaSonucu
+            sonuc: nesne.kupaSonucu,
+            // Android: karttaki çubuk/sandık panelden CupPathRoadFragment'ı ya da kupa yolu sandığını
+            // (NewChestFragment) açar; panel kapanmış olur (KupaEkrani kapat'ı önce çağırır).
+            yolAc: { alan in nesne.ac(.kupaYoluOdul(kupaAlani: alan)) },
+            sandikAc: { girdi in nesne.ac(.sandik(girdi, kapandi: { _ in })) }
+        )
+    }
+
+    /// Kupa Yolu ödül yolu: hazır eşiğe dokunulunca sandık üstte açılır, kapanınca bu ekran tazelenir.
+    private func kupaYoluOdul(_ kupaAlani: String) -> some View {
+        let nesne: UygulamaYoneticisi = yonetici
+        let no: Int = katman.id
+        return KupaYoluOdulEkrani(
+            kupaAlani: kupaAlani,
+            kapat: { nesne.kapat(no) },
+            sandikAc: { girdi, kapandi in nesne.ac(.sandik(girdi, kapandi: kapandi)) }
         )
     }
 

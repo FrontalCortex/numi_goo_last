@@ -109,6 +109,47 @@ protocol KimlikServisi: AnyObject {
         kaynak: String?
     ) async throws -> GirisOturumu
 
+    // MARK: 13 yaş altı: veli onayı (COPPA / GDPR / KVKK)
+    //
+    // Hesap veli kodu girilene kadar hiçbir yerde açılmaz. Gerekip gerekmediğine
+    // AuthRules.requiresParentalConsent karar verir (UTC yılı − doğum yılı ≤ 13; sunucu
+    // `requiresParentalConsent` ve kurallar `noUnconsentedChild` aynı formülü kullanır).
+    // Android: ParentConsentFragment, OtpVerificationFragment, AuthManager.
+
+    /// E-posta ile kayıt: kayıt kodunu VELİNİN adresine gönderir. Cloud Function
+    /// `sendStudentVerificationCode` (amaç AuthRules.OTP_PURPOSE_REGISTER_PARENTAL; gövde
+    /// AuthRules.sendParentalRegistrationCodePayload). Kod sonra `kayitKodunuDogrula` ile girilir;
+    /// sunucu kodun veli kodu olduğunu ve doğum yılını kendi kaydından bilir.
+    /// Veli adresi çocuğunkinden farklı ve çocuğun adresi henüz doğrulanmadıysa sunucu
+    /// `details.reason = child_email_unverified` döndürür; servis bunu mesajı
+    /// AuthRules.ERROR_CHILD_EMAIL_NOT_VERIFIED olan `GirisHatasi` olarak fırlatmalıdır.
+    /// Android: AuthManager.sendParentalRegistrationCode.
+    func veliKayitKoduGonder(cocukEposta: String, veliEposta: String, dogumYili: Int, kaynak: String?) async throws
+
+    /// Çocuğun KENDİ adresinin kayıt kodunu veli adımı için doğrular; hesap AÇILMAZ, sunucu adresin
+    /// doğrulandığını 30 dakikalığına kaydeder. Cloud Function `verifyRegistrationCode` (gövde
+    /// AuthRules.verifyChildEmailForParentalConsentPayload: `parentalStep = true`); yanıtta
+    /// `emailVerified == true` değilse AuthRules.MESSAGE_CODE_NOT_VERIFIED.
+    /// Android: AuthManager.verifyChildEmailForParentalConsent.
+    func cocukEpostasiniDogrula(eposta: String, kod: String, dogumYili: Int) async throws
+
+    /// Google / Apple ile kayıt: veli koduna istek. Aynı `sendStudentVerificationCode` çağrısı
+    /// (gövde AuthRules.requestGoogleParentalConsentPayload, `google = true`); çocuğun adresini
+    /// sunucu açık oturumdan alır, bu yüzden oturum açık bırakılmış olmalıdır. Oturum yoksa
+    /// "Oturum açılamadı". Android: AuthManager.requestGoogleParentalConsent.
+    func saglayiciVeliOnayiIste(veliEposta: String, dogumYili: Int, kaynak: String?) async throws
+
+    /// Google / Apple ile kayıt: veli kodunu doğrular; `users/{uid}` belgesini SUNUCU yazar
+    /// (kurallar bu yaşla istemci yazımını reddeder). Cloud Function `confirmParentalConsent`
+    /// (gövde AuthRules.confirmParentalConsentPayload: code, firstTutorialShown).
+    /// Android: AuthManager.confirmGoogleParentalConsent.
+    func saglayiciVeliOnayiniDogrula(kod: String) async throws -> GirisOturumu
+
+    /// Google / Apple kaydında veli onayı beklenirken vazgeçildi: `users` belgesi olmayan yarım
+    /// Auth kaydı silinir ve oturum kapatılır (sunucudaki saatlik temizlik ikinci emniyet).
+    /// Android: RegisterActivity.deleteIncompleteAuthUser.
+    func yarimKaydiSil() async
+
     // MARK: E-posta + şifre
 
     /// Öğretmen girişi. Android: loginTeacher (`signInWithEmailAndPassword` → rol denetimi).
@@ -142,6 +183,9 @@ protocol KimlikServisi: AnyObject {
     /// (AuthRules.googleStudentUserData). False iken belge yoksa çıkış yapılıp
     /// AuthRules.ERROR_ACCOUNT_NOT_REGISTERED ile hata verilir (hesapEposta/hesapAd dolu).
     /// Kullanıcı vazgeçerse mesaj AuthRules.MESSAGE_GOOGLE_CANCELLED olur.
+    /// 13 yaş altı otomatik kayıtta (AuthRules.requiresParentalConsent(dogumYili)) belge YAZILMAZ:
+    /// oturum açık bırakılır ve AuthRules.ERROR_PARENTAL_CONSENT_REQUIRED ile hata verilir
+    /// (hesapEposta dolu); hesap veli onayıyla `saglayiciVeliOnayiniDogrula` üzerinden açılır.
     func googleIleGiris(otomatikKayit: Bool, dogumYili: Int?, kaynak: String?) async throws -> GirisOturumu
 
     /// Apple ile giriş (App Store kuralı 4.8). Android'de karşılığı yok; Google ile aynı

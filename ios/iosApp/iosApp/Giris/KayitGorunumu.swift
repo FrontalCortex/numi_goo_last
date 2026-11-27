@@ -2,25 +2,29 @@ import Shared
 import SwiftUI
 
 // Kayıt ekranı. Android: RegisterActivity + activity_register.xml.
-// Yerleşim (kenar boşluğu 24dp): geri düğmesi 44dp; üstten 54dp'de başlık "Hesap Oluştur" (24sp);
-// 8dp altında alt başlık (16sp, dark_text_secondary); 32dp altında
-//   - öğrenci: e-posta alanı, 16dp altında "Devam Et" (56dp), 6dp altında "Google ile Kayıt Ol"
+// Yerleşim (kenar boşluğu 24dp, zemin background_color): geri düğmesi 44dp; üstten 54dp'de başlık
+// "Hesap Oluştur" (24sp); 8dp altında alt başlık (16sp, dark_text_secondary); 32dp altında
+//   - öğrenci: e-posta alanı, 16dp altında "Devam Et" (56dp, göçen), 6dp altında "Google ile Kayıt
+//     Ol" (56dp, göçen beyaz) ve iOS'a özgü "Apple ile Kayıt Ol" (Google'ın altında, 6dp)
 //   - öğretmen: dark_surface kart (köşe 16dp, iç boşluk 24dp): kullanıcı adı, e-posta, şifre,
 //     şifre tekrar (aralarında 16dp) ve "Devam Et". Öğretmen kaydında Google/Apple düğmesi yoktur.
 // En altta (alt boşluk 16dp) kullanım şartları ve gizlilik metni (12sp, ortalı).
+// Android'de kod ve veli onayı adımları bu ekranın içinde açılır (başlıklar gizlenir); burada
+// ayrı ekrandır (GirisKodGorunumu, GirisVeliOnayiGorunumu) ve geri düğmesi bir adım geri götürür.
 @MainActor
 struct KayitGorunumu: View {
     @ObservedObject var model: GirisModeli
 
     private var devamMetni: String {
         if model.kayitGonderiliyor {
-            return LoginFlowTexts.shared.BUTTON_SENDING
+            return Metin.al("ui_gonderiliyor")
         }
         if model.devamBekliyor(eposta: model.kayitEposta) {
             let kalan: Int32 = model.devamKalanSaniye(eposta: model.kayitEposta)
+            // strings.xml: otp_resend_cooldown_try_again
             return OtpRules.shared.resendCooldownTryAgainLabel(sec: kalan)
         }
-        return LoginFlowTexts.shared.BUTTON_CONTINUE
+        return Metin.al("activity_register_btn_continue")
     }
 
     private var devamEtkin: Bool {
@@ -48,11 +52,11 @@ struct KayitGorunumu: View {
 
     private var icerik: some View {
         VStack(spacing: 0) {
-            Text("Hesap Oluştur")
+            Text(Metin.al("activity_register_tv_title"))
                 .font(Tema.yazi(24))
                 .foregroundColor(Color("dark_text"))
                 .padding(.top, 54)
-            Text("Eğitim yolculuğuna başla")
+            Text(Metin.al("activity_register_tv_subtitle"))
                 .font(Tema.yazi(16))
                 .foregroundColor(Color("dark_text_secondary"))
                 .padding(.top, 8)
@@ -69,33 +73,32 @@ struct KayitGorunumu: View {
 
     private var ogrenciAdimi: some View {
         VStack(spacing: 0) {
-            GirisMetinAlani(ipucu: "E-posta", metin: $model.kayitEposta, tur: .eposta)
-            GirisDoluDugme(metin: devamMetni, etkin: devamEtkin) {
+            GirisMetinAlani(ipucu: Metin.al("activity_register_et_email_hint"), metin: $model.kayitEposta, tur: .eposta)
+            GirisGocenDugme(metin: devamMetni, etkin: devamEtkin) {
                 GirisStil.klavyeyiKapat()
                 Task { await model.kayitDevam() }
             }
             .padding(.top, 16)
-            GirisGoogleDugmesi(metin: "Google ile Kayıt Ol") {
+            GirisGoogleDugmesi(metin: Metin.al("activity_register_btn_google_sign_in"), etkin: !model.kayitGonderiliyor) {
                 GirisStil.klavyeyiKapat()
                 Task { await model.saglayiciIleKayit(apple: false) }
             }
-            .disabled(model.kayitGonderiliyor)
             .padding(.top, 6)
-            GirisAppleDugmesi(metin: GirisMetin.appleIleKayitOl) {
+            GirisAppleDugmesi(metin: GirisMetin.appleIleKayitOl, etkin: !model.kayitGonderiliyor) {
                 GirisStil.klavyeyiKapat()
                 Task { await model.saglayiciIleKayit(apple: true) }
             }
-            .disabled(model.kayitGonderiliyor)
+            .padding(.top, 6)
         }
     }
 
     private var ogretmenFormu: some View {
         VStack(spacing: 16) {
-            GirisMetinAlani(ipucu: "Kullanıcı adı", metin: $model.ogretmenAd, tur: .ad)
-            GirisMetinAlani(ipucu: "E-posta", metin: $model.ogretmenEposta, tur: .eposta)
-            GirisMetinAlani(ipucu: "Şifre", metin: $model.ogretmenSifre, tur: .sifre)
-            GirisMetinAlani(ipucu: "Şifreyi tekrar girin", metin: $model.ogretmenSifreTekrar, tur: .sifre)
-            GirisDoluDugme(metin: LoginFlowTexts.shared.BUTTON_CONTINUE, etkin: !model.kayitGonderiliyor) {
+            GirisMetinAlani(ipucu: Metin.al("activity_register_et_name_hint"), metin: $model.ogretmenAd, tur: .ad)
+            GirisMetinAlani(ipucu: Metin.al("activity_register_et_teacher_email_hint"), metin: $model.ogretmenEposta, tur: .eposta)
+            GirisMetinAlani(ipucu: Metin.al("activity_register_et_password_hint"), metin: $model.ogretmenSifre, tur: .sifre)
+            GirisMetinAlani(ipucu: Metin.al("activity_register_et_approval_code_hint"), metin: $model.ogretmenSifreTekrar, tur: .sifre)
+            GirisGocenDugme(metin: Metin.al("activity_register_btn_register"), etkin: !model.kayitGonderiliyor) {
                 GirisStil.klavyeyiKapat()
                 Task { await model.ogretmenKayitDevam() }
             }
@@ -108,19 +111,20 @@ struct KayitGorunumu: View {
 
 /// "Hesap oluşturarak Kullanım Şartlarını ve Gizlilik Politikasını kabul etmiş olursunuz."
 /// Android: RegisterActivity.setupTermsAndPrivacyText — iki bağlantı kalın ve dark_text renginde,
-/// altı çizili değil; dokununca tarayıcıda açılır. Metin ve adresler ortak koddadır.
+/// altı çizili değil; dokununca tarayıcıda açılır. Sayfa uygulamanın dilinde (privacy-policy-tr …);
+/// metin strings.xml'den, adresler ortak koddan (LoginFlowTexts.termsUrl / privacyUrl).
 @MainActor
 struct KayitSartlarMetni: View {
     private var metin: AttributedString {
         let metinler = LoginFlowTexts.shared
-        var sonuc = AttributedString(metinler.TERMS_FULL_TEXT)
+        var sonuc = AttributedString(Metin.al("ui_hesap_olusturarak_kullanim_sartlarini_ve_giz"))
         // Tema bütün TextView'ları kalın çizer (Widget.NumiGoo.TextView); bağlantılar yalnızca
         // renkle ayrılır.
         sonuc.font = Tema.yazi(12)
         sonuc.foregroundColor = Color("dark_text_secondary")
         let baglantilar: [(String, String)] = [
-            (metinler.TERMS_LINK_TEXT, metinler.TERMS_URL),
-            (metinler.PRIVACY_LINK_TEXT, metinler.PRIVACY_URL),
+            (Metin.al("ui_kullanim_sartlarini"), metinler.termsUrl(langCode: Metin.dil)),
+            (Metin.al("ui_gizlilik_politikasini"), metinler.privacyUrl(langCode: Metin.dil)),
         ]
         for (parca, adres) in baglantilar {
             if let aralik = sonuc.range(of: parca) {

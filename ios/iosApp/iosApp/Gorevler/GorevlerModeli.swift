@@ -3,7 +3,7 @@ import SwiftUI
 
 /// Görev ödül sandığını açma isteği. Sandık ekranını başka bir oturum yazar; bu ekran yalnızca
 /// isteği dışarı verir ve sandık kapanınca `kapandi` çağrılmasını bekler.
-/// Android: MissionsFragment.onQuestClicked → NewChestFragment.newInstance(startRarity) ve
+/// Android: MissionsSection.onQuestClicked → NewChestFragment.newInstance(startRarity) ve
 /// "chest_closed" fragment sonucu.
 struct GorevlerSandikIstegi: Identifiable {
     let id = UUID()
@@ -17,7 +17,7 @@ struct GorevlerSandikIstegi: Identifiable {
     let kapandi: () -> Void
 }
 
-/// Görevler ekranının görünüm modeli. Android karşılığı: MissionsFragment.
+/// Görev bölümlerinin görünüm modeli. Android karşılığı: MissionsSection (eski MissionsFragment).
 final class GorevlerModeli: ObservableObject {
     @Published private(set) var haftalik: [GorevlerSatiri] = []
     @Published private(set) var gunluk: [GorevlerSatiri] = []
@@ -68,6 +68,21 @@ final class GorevlerModeli: ObservableObject {
         } else {
             yerTutucuIstegi = istek
         }
+    }
+
+    /// Günlük soru ödül sandığı dışarıya bağlanmadıysa (Android: NewChestFragment RARE) aynı yer
+    /// tutucu gösterilir; kapanınca yer tutucu kalkar ve günlük soru isteğinin `kapandi` çağrılır.
+    func gunlukOdulYerTutucusunuAc(_ gunlukIstek: GunlukSoruOdulIstegi) {
+        let istek = GorevlerSandikIstegi(
+            nadirlik: gunlukIstek.nadirlik,
+            simge: "new_chest_close_ic2",
+            gorevBasligi: Metin.al("daily_question_card_title"),
+            kapandi: { [weak self] in
+                self?.yerTutucuIstegi = nil
+                gunlukIstek.kapandi()
+            }
+        )
+        yerTutucuIstegi = istek
     }
 
     /// Android: "chest_closed" sonucu → markMissionRewardClaimed + updateMissionsUI.

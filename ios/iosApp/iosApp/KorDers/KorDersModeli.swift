@@ -43,6 +43,8 @@ final class KorDersModeli: ObservableObject {
     @Published private(set) var ipucuAcik: Bool = false
     /// Android: lottieView (animaton_thirteen) — son soruda bütün cevaplar doğruysa bir kez oynar.
     @Published private(set) var konfeti: Bool = false
+    /// Yanlış panelinde "Sobi ile analiz et" düğmesi görünür mü (Android: bindReviewButton).
+    @Published private(set) var analizGorunur: Bool = false
 
     /// Android: abacusContainer + AbacusBeadController (cevabı abaküsle verilen derslerde görünür).
     let abakus = AbakusDenetleyici()
@@ -56,6 +58,9 @@ final class KorDersModeli: ObservableObject {
     let ipucuGizli: Bool
     let adimAtlaGizli: Bool
     let sifirlaGizli: Bool
+    /// Android: abacusModeVisibility — ayar paneli düğmesi yalnızca bölüm 7, 8, 9'da ve cevabı abaküsle
+    /// verilen derste görünür.
+    let ayarGorunur: Bool
     /// Android: splitTextEqually(lessonHint).
     let ipucuMetni: String
 
@@ -66,8 +71,30 @@ final class KorDersModeli: ObservableObject {
     private let kayit: KorDersKayitServisi
     private let enerji: KorDersEnerjiServisi
     private let ses: KorDersSesServisi
+    private let sobiAnaliz: AbakusSobiAnalizBaglantisi?
     private let bitti: (KorDersSonucu) -> Void
     private let kapat: () -> Void
+
+    /// Android: flashLog / flashMarks — flaş dizisinde her sayı göründüğü anda abaküsün değeri (abaküslü
+    /// derste) ve o değerlerin kayıttaki sırası. Dizi her başladığında (yeniden başlatma dahil) sıfırlanır.
+    private var flashKaydi: [Int] = []
+    private var flashIsaretleri: [Int] = []
+    private static let flashKaydiEnCok: Int = 400
+    /// Bu soruda kartta gösterilen sayılar, sırayla. Android analizi `operations[currentIndex]`'ten
+    /// alır; ortak koddaki soru listesi Swift'e açılmadığından gösterim sırasında toplanır (dizi
+    /// bitmeden kontrol açılmadığı için cevap anında tam dizi bellidir).
+    private var gosterilenSayilar: [Int] = []
+    /// Android: lastWrongAnswer — son yanlış cevap; kontrolden sonra girdi sıfırlandığı için saklanır.
+    private var sonCevap: Int = 0
+    private var analizSayilari: [Int] = []
+    private var analizKaydi: [Int] = []
+    private var analizIsaretleri: [Int] = []
+    private var analizAcik: Bool = false
+    /// Android: questionSessionStartMs / hasSubmittedAnyAnswer (başarı oranı ölçümü).
+    private let girisAni: Date = Date()
+    private var cevapVerildi: Bool = false
+    private var terkKaydedildi: Bool = false
+    private var girisKaydedildi: Bool = false
 
     /// Android: showNextNumberRunnable / sequenceRevealRunnable / restartSequenceRunnable.
     private var diziIsi: DispatchWorkItem?
@@ -92,6 +119,7 @@ final class KorDersModeli: ObservableObject {
         kayit: KorDersKayitServisi,
         enerji: KorDersEnerjiServisi,
         ses: KorDersSesServisi,
+        sobiAnaliz: AbakusSobiAnalizBaglantisi?,
         bitti: @escaping (KorDersSonucu) -> Void,
         kapat: @escaping () -> Void
     ) {
@@ -99,6 +127,7 @@ final class KorDersModeli: ObservableObject {
         self.kayit = kayit
         self.enerji = enerji
         self.ses = ses
+        self.sobiAnaliz = sobiAnaliz
         self.bitti = bitti
         self.kapat = kapat
 
@@ -110,6 +139,8 @@ final class KorDersModeli: ObservableObject {
         self.ilerlemeGizli = oturum.ilerlemeGizli
         self.adimAtlaGizli = oturum.adimAtlaGizli
         self.sifirlaGizli = oturum.sifirlaGizli
+        let ayarPartlari: [Int] = [7, 8, 9]
+        self.ayarGorunur = ayarPartlari.contains(baslangic.partId) && !oturum.klavyeyleCevap
 
         let hamIpucu: String = baslangic.ipucu ?? ""
         self.ipucuGizli = oturum.ipucuGizli || hamIpucu.isEmpty
@@ -121,7 +152,7 @@ final class KorDersModeli: ObservableObject {
         sureSayaci?.invalidate()
     }
 
-    /// Android: setupAbacusController — lessonItem.type == 2 ise 50 ms, değilse 300 ms.
+    /// Android: setupAbacusController — BEAD_ANIMATION_MS, her ders türünde 300 ms (ortak koddan).
     var boncukAnimasyonMs: Int {
         return Int(oturum.boncukAnimasyonMs)
     }
@@ -129,6 +160,12 @@ final class KorDersModeli: ObservableObject {
     /// Android: skipStepButton yalnızca dizi gösterilirken (isShowingSequence) çalışır ve oynar.
     var adimAtlanabilir: Bool {
         return oturum.diziGosteriliyor
+    }
+
+    /// Abaküsle aynı yükseklikte görünen en az bir yan düğme var mı (abaküsü sütuna sığdırmak için;
+    /// Android: AbacusSideButtonFit yalnızca görünür düğmeleri sayar).
+    var yanDugmeVar: Bool {
+        return !ipucuGizli || !sifirlaGizli || !adimAtlaGizli || ayarGorunur
     }
 
     /// Android: onCreate (lessonItem) + uploadLessonData.
@@ -182,10 +219,23 @@ final class KorDersModeli: ObservableObject {
     /// Android: onResume → startLearningSessionTracking.
     func gorundu() {
         if ogrenmeBaslangici == nil { ogrenmeBaslangici = Date() }
+        // Android: onCreate → LessonSuccessRateRepository.recordQuestionEntry (günlük soru ve kupa modu
+        // hariç; yalnızca ders ve sandık adımları). Ekran bir kez kurulur.
+        if !girisKaydedildi {
+            girisKaydedildi = true
+            if oturum.basariOraniKapsaminda() {
+                kayit.soruGirisiniKaydet(partId: baslangic.partId, dersIndeksi: baslangic.dersIndeksi)
+            }
+        }
     }
 
     /// Android: onPause / onDestroyView.
     func kayboldu() {
+        // Android: onDestroyView → hiç cevap verilmeden çıkıldıysa recordAbandonWithoutAnswer.
+        if !cevapVerildi && !sonlandi && !terkKaydedildi && oturum.basariOraniKapsaminda() {
+            terkKaydedildi = true
+            kayit.cevapsizTerkiKaydet(partId: baslangic.partId, dersIndeksi: baslangic.dersIndeksi)
+        }
         if let baslangicAni = ogrenmeBaslangici {
             ogrenmeBaslangici = nil
             let gecen: Int = Int(Date().timeIntervalSince(baslangicAni) * 1000)
@@ -240,6 +290,7 @@ final class KorDersModeli: ObservableObject {
             return
         }
         diziZamanlayicisiniIptalEt()
+        diziKayitlariniSifirla()
         if let adim = oturum.diziBaslat() {
             adimiUygula(adim)
         } else if let m = oturum.tekSayiMetni() {
@@ -247,9 +298,40 @@ final class KorDersModeli: ObservableObject {
         }
     }
 
+    /// Android: startShowingSequence → flashLog.clear(); flashMarks.clear() (dizi her başladığında).
+    private func diziKayitlariniSifirla() {
+        flashKaydi = []
+        flashIsaretleri = []
+        gosterilenSayilar = []
+    }
+
+    /// Android: markFlashNumber — abaküslü derste (isBlinding == null) sayı göründüğü anda abaküsün
+    /// değeri kayda eklenir ve sırası işaretlenir.
+    private func sayiGoruldu(_ metin: String) {
+        guard let sayi = Int(metin) else { return }
+        gosterilenSayilar.append(sayi)
+        if !oturum.abakusleCevap { return }
+        if flashKaydi.count >= KorDersModeli.flashKaydiEnCok { return }
+        flashKaydi.append(abakus.anlikDeger)
+        flashIsaretleri.append(flashKaydi.count - 1)
+    }
+
+    /// Abaküs değeri değişince (AbakusGorunumu.degerDegisti): işaretli kayıt varsa değer eklenir.
+    /// Android: onValueChanged — sıfırlama sürerken, kayıt boşken, üst sınırda ve aynı değer üst üste
+    /// gelince eklenmez.
+    func abakusDegeriDegisti(_ deger: Int) {
+        if flashIsaretleri.isEmpty || abakus.sifirlaniyor { return }
+        if flashKaydi.count >= KorDersModeli.flashKaydiEnCok { return }
+        if flashKaydi.last == deger { return }
+        flashKaydi.append(deger)
+    }
+
     /// Ortak kodun döndürdüğü dizi adımını ekrana ve zamanlayıcıya uygular.
     private func adimiUygula(_ adim: KorDersAdimi) {
-        if let metin = adim.metin { tahtaMetni = metin }
+        if let metin = adim.metin {
+            tahtaMetni = metin
+            if !metin.isEmpty { sayiGoruldu(metin) }
+        }
         if adim.kontrolKapat { kontrolEtkin = false }
         if adim.bitti { kontrolEtkin = true }
 
@@ -280,11 +362,14 @@ final class KorDersModeli: ObservableObject {
         diziIsi = nil
     }
 
-    /// Android: setupSkipStepButton — beklemeden sıradaki sayıya geçer.
+    /// Android: skipToNextSequenceNumber — süresini beklemeden sıradaki sayıya geçer; kendiliğinden geçişle
+    /// aynı yoldan gider (sayı silinir, 200 ms sonra sıradaki gelir). Ortak kod `nil` döndürürse basış
+    /// yok sayılır (gösterim yok ya da boşluk sürüyor); değilse bekleyen zamanlayıcı iptal edilip dönen
+    /// adım uygulanır.
     func adimAtla() {
-        if !oturum.diziGosteriliyor { return }
+        guard let adim = oturum.diziAtla() else { return }
         diziZamanlayicisiniIptalEt()
-        adimiUygula(oturum.sayiGosterAdimi())
+        adimiUygula(adim)
     }
 
     /// Android: resetClickListener.
@@ -300,6 +385,7 @@ final class KorDersModeli: ObservableObject {
             let gecikme: Double = Double(BlindingLessonRules.shared.SEQUENCE_RESTART_DELAY_MS) / 1000.0
             diziIsiniKur(gecikme: gecikme) { [weak self] in
                 guard let self = self else { return }
+                self.diziKayitlariniSifirla()
                 self.adimiUygula(self.oturum.diziYenidenBaslat())
             }
         }
@@ -307,9 +393,14 @@ final class KorDersModeli: ObservableObject {
 
     // MARK: İpucu
 
-    /// Android: fubHintClickListener.
+    /// Android: fubHintClickListener. Balon ampulün kuyruğundan büyüyerek açılır (hint_bubble_in:
+    /// 350 ms, hafif aşan eğri) ve ampule doğru küçülerek kapanır (hint_bubble_out: 200 ms).
     func ipucunuDegistir() {
-        withAnimation(.linear(duration: 0.5)) { ipucuAcik.toggle() }
+        if ipucuAcik {
+            withAnimation(.easeIn(duration: 0.2)) { ipucuAcik = false }
+        } else {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) { ipucuAcik = true }
+        }
     }
 
     // MARK: Kontrol
@@ -327,13 +418,15 @@ final class KorDersModeli: ObservableObject {
 
         // Android: controlNumber = abacusController.getCurrentValue() (abaküsle cevaplanan dersler).
         let abakusDegeri: Int32 = oturum.abakusleCevap ? Int32(abakus.anlikDeger) : 0
+        // Android: lastWrongAnswer = controlNumber (kutudaki sayı ya da abaküs değeri).
+        let cevapDegeri: Int = klavyeyleCevap ? (Int(girdi) ?? 0) : Int(abakusDegeri)
         let dogru: Bool = oturum.kontrolEt(girdi: girdi, abakusDegeri: abakusDegeri)
+        cevapVerildi = true
+        sonCevap = cevapDegeri
         ilerlemeyiGuncelle(dogru: dogru)
 
         if oturum.kupaModu {
-            let delta: Int = Int(oturum.kupaDeltasi(dogru: dogru))
-            sonKupaDeltasi = delta
-            kayit.kupaDeltasiniIsle(hedef: oturum.kupaDeltaHedefi(), delta: delta)
+            kupaSonucunuYaz(delta: Int(oturum.kupaDeltasi(dogru: dogru)))
         }
 
         sonucPaneliniGoster(dogru: dogru)
@@ -373,6 +466,7 @@ final class KorDersModeli: ObservableObject {
             ses.cal(ad: kurallar.SOUND_INCORRECT, sesDuzeyi: 1.0)
             dogruCevapEtiketi = oturum.dogruCevapEtiketi
             seninCevabinMetni = oturum.seninCevabinMetni
+            analizDugmesiniHazirla()
         }
         kontrolKilitli = true
         panelAnimasyonda = true
@@ -398,7 +492,7 @@ final class KorDersModeli: ObservableObject {
         if panelAnimasyonda || panel != .dogru { return }
         panelAnimasyonda = true
         if oturum.kupaModu {
-            paneliGizle { [weak self] in self?.dersiBitir(soruPaneli: false) }
+            paneliGizle { [weak self] in self?.dersiBitir() }
             return
         }
         let gecikme: Double = Double(AbacusLessonRules.shared.CONTROL_REENABLE_DELAY_CORRECT_MS) / 1000.0
@@ -412,18 +506,24 @@ final class KorDersModeli: ObservableObject {
         let sonraki: String = oturum.yanlisSonrasi()
         switch sonraki {
         case "CUP_RESULT_FALSE":
-            paneliGizle { [weak self] in self?.basarisizSonuc(sandikBasarisiz: false, soruPaneli: false) }
+            paneliGizle { [weak self] in self?.basarisizSonuc(sandikBasarisiz: false) }
         case "DAILY_QUESTION_PANEL":
-            // Android: önce soru paneli (isWrongDailyQuestion), sonra handleDailyQuestionWrongAnswer.
+            // Android: finishLesson(isWrongDailyQuestion = true) → handleDailyQuestionWrongAnswer.
             paneliGizle { [weak self] in
-                self?.sureyiDurdur()
-                self?.gunlukSoruyuBitir(basarili: false, soruPaneli: true)
+                guard let self = self else { return }
+                self.sureyiDurdur()
+                if self.oturum.dersBitisiHakkiAl() {
+                    self.gunlukSoruyuBitir(basarili: false)
+                }
             }
         case "RACE_QUESTION_PANEL":
-            // Android: önce soru paneli (isWrongRaceLesson), sonra showLessonResultFalse.
+            // Android: finishLesson(isWrongRaceLesson = true) → showLessonResultFalse.
             paneliGizle { [weak self] in
-                self?.sureyiDurdur()
-                self?.basarisizSonuc(sandikBasarisiz: false, soruPaneli: true)
+                guard let self = self else { return }
+                self.sureyiDurdur()
+                if self.oturum.dersBitisiHakkiAl() {
+                    self.basarisizSonuc(sandikBasarisiz: false)
+                }
             }
         default:
             let gecikme: Double =
@@ -444,9 +544,12 @@ final class KorDersModeli: ObservableObject {
         if soruKaldi {
             suankiSoruyuGoster()
         } else {
-            // Android: showQuestionPanel — süre durur, özet ekranından sonra ders biter.
+            // Android: finishLesson — süre durur; kapı (lessonFinishStarted) ikinci çağrıyı yok sayar.
+            // Ders sonu anketi güncel Android'de kalktı: doğrudan sonuç.
             sureyiDurdur()
-            dersiBitir(soruPaneli: true)
+            if oturum.dersBitisiHakkiAl() {
+                dersiBitir()
+            }
         }
     }
 
@@ -456,60 +559,125 @@ final class KorDersModeli: ObservableObject {
     func cik() {
         if sonlandi || panel != nil { return }
         if baslangic.gunlukSoru != nil && basladi {
-            gunlukSoruyuBitir(basarili: false, soruPaneli: false)
+            gunlukSoruyuBitir(basarili: false)
             return
         }
-        if oturum.kupaModu && basladi {
-            let delta: Int = Int(oturum.kupaDeltasi(dogru: false))
-            sonKupaDeltasi = delta
-            kayit.kupaDeltasiniIsle(hedef: oturum.kupaDeltaHedefi(), delta: delta)
-            enerjiHarca(1)
-            sonucuVer(.kapat, sandikBasarisiz: false, soruPaneli: false)
-            return
+        if oturum.kupaModu {
+            // Android: `globalPartId == 9 && lessonStarted && !cupResultSubmitted` — cevabını verip ekranı
+            // kapatan kullanıcı "terk etti" sayılmaz: ikinci kez kupa kaybetmez, ikinci kez enerji ödemez.
+            if oturum.kupaCikisCezasiVerilmeli(dersBasladi: basladi) {
+                kupaSonucunuYaz(delta: Int(oturum.kupaDeltasi(dogru: false)))
+                enerjiHarca(1)
+            }
+            if basladi {
+                sonucuVer(.kapat, sandikBasarisiz: false)
+                return
+            }
         }
         sonlandir()
         kapat()
     }
 
+    /// Android: submitCupResultOnce — kupa sonucu tur başına bir kez yazılır (cevap, çıkış düğmesi ve geri
+    /// tuşu aynı turun sonucunu göndermeye çalışabilir). Kapı ortak kodda.
+    private func kupaSonucunuYaz(delta: Int) {
+        if !oturum.kupaSonucuHakkiAl() { return }
+        sonKupaDeltasi = delta
+        kayit.kupaDeltasiniIsle(hedef: oturum.kupaDeltaHedefi(), delta: delta)
+    }
+
+    // MARK: Hata analizi
+
+    /// Android: bindReviewButton — yalnızca sayı dizisi sorularında (çarpma yok) ve analiz yapılabiliyorsa
+    /// düğme görünür. Kupa modunda da vardır. Kayıt yalnızca dizi tam izlendiyse (her sayı bir kez
+    /// işaretli) verilir.
+    private func analizDugmesiniHazirla() {
+        analizGorunur = false
+        guard let baglanti = sobiAnaliz else { return }
+        if carpmaGosterimi || !oturum.diziVar || gosterilenSayilar.isEmpty { return }
+        if !baglanti.yapilabilir(gosterilenSayilar) { return }
+        let tam: Bool = flashIsaretleri.count == gosterilenSayilar.count
+        analizSayilari = gosterilenSayilar
+        analizKaydi = tam ? flashKaydi : []
+        analizIsaretleri = tam ? flashIsaretleri : []
+        analizGorunur = true
+    }
+
+    /// Android: incorrectSobiAnalyze tıklaması. Sandık dersinde analiz açıkken süre durur, pencere kapanınca
+    /// kaldığı yerden devam eder.
+    func sobiAnaliziDokunuldu() {
+        guard let baglanti = sobiAnaliz, analizGorunur, !analizAcik else { return }
+        analizAcik = true
+        let calisiyor: Bool = sureSayaci != nil
+        if calisiyor {
+            sureyiDurdur()
+        }
+        let istek = AbakusSobiAnalizIstegi(
+            sayilar: analizSayilari,
+            cevap: sonCevap,
+            kayit: analizKaydi,
+            isaretler: analizIsaretleri,
+            dersBasligi: baslangic.baslik,
+            kapandi: { [weak self] in
+                DispatchQueue.main.async {
+                    self?.analizKapandi(sureDevamEtsin: calisiyor)
+                }
+            }
+        )
+        baglanti.istendi(istek)
+    }
+
+    /// Android: MistakeReviewDialog.RESULT_CLOSED → `handler.postDelayed(runnable, 1000)`.
+    private func analizKapandi(sureDevamEtsin: Bool) {
+        analizAcik = false
+        if sureDevamEtsin && !sonlandi && sureSayaci == nil {
+            let sayac = Timer(timeInterval: 1.0, repeats: true) { [weak self] _ in
+                self?.sureTik()
+            }
+            RunLoop.main.add(sayac, forMode: .common)
+            sureSayaci = sayac
+        }
+    }
+
     // MARK: Bitiş
 
     /// Android: finishLessonAfterLastQuestion.
-    private func dersiBitir(soruPaneli: Bool) {
+    private func dersiBitir() {
         let sonuc: String = oturum.bitis(sureMetni: sureMetni)
         switch sonuc {
         case "DAILY_QUESTION_COMPLETE":
-            gunlukSoruyuBitir(basarili: true, soruPaneli: soruPaneli)
+            gunlukSoruyuBitir(basarili: true)
         case "CLOSE":
-            sonucuVer(.kapat, sandikBasarisiz: false, soruPaneli: soruPaneli)
+            sonucuVer(.kapat, sandikBasarisiz: false)
         case "CHEST_RESULT":
-            sonucuVer(.sandikSonucu, sandikBasarisiz: false, soruPaneli: soruPaneli)
+            sonucuVer(.sandikSonucu, sandikBasarisiz: false)
         case "CHEST_FAILURE":
-            basarisizSonuc(sandikBasarisiz: true, soruPaneli: soruPaneli)
+            basarisizSonuc(sandikBasarisiz: true)
         case "LESSON_RESULT_FALSE":
-            basarisizSonuc(sandikBasarisiz: false, soruPaneli: soruPaneli)
+            basarisizSonuc(sandikBasarisiz: false)
         default:
-            sonucuVer(.dersSonucu, sandikBasarisiz: false, soruPaneli: soruPaneli)
+            sonucuVer(.dersSonucu, sandikBasarisiz: false)
         }
     }
 
     /// Android: showLessonResultFalse.
-    private func basarisizSonuc(sandikBasarisiz: Bool, soruPaneli: Bool) {
+    private func basarisizSonuc(sandikBasarisiz: Bool) {
         let eylem: String = oturum.yanlisSonucEylemi()
         switch eylem {
         case "CUP_USE_ENERGY_AND_CLOSE":
             enerjiHarca(1)
-            sonucuVer(.kapat, sandikBasarisiz: false, soruPaneli: soruPaneli)
+            sonucuVer(.kapat, sandikBasarisiz: false)
         case "CLOSE":
-            sonucuVer(.kapat, sandikBasarisiz: false, soruPaneli: soruPaneli)
+            sonucuVer(.kapat, sandikBasarisiz: false)
         default:
-            sonucuVer(.dersSonucuBasarisiz, sandikBasarisiz: sandikBasarisiz, soruPaneli: soruPaneli)
+            sonucuVer(.dersSonucuBasarisiz, sandikBasarisiz: sandikBasarisiz)
         }
     }
 
     /// Android: handleDailyQuestionLessonComplete / handleDailyQuestionWrongAnswer.
-    private func gunlukSoruyuBitir(basarili: Bool, soruPaneli: Bool) {
+    private func gunlukSoruyuBitir(basarili: Bool) {
         guard let gunluk = baslangic.gunlukSoru else {
-            sonucuVer(.kapat, sandikBasarisiz: false, soruPaneli: soruPaneli)
+            sonucuVer(.kapat, sandikBasarisiz: false)
             return
         }
         if sonlandi { return }
@@ -517,7 +685,7 @@ final class KorDersModeli: ObservableObject {
         kayit.gunlukSoruSonucunuKaydet(
             donemAnahtari: gunluk.donemAnahtari, yuva: gunluk.yuva, basarili: basarili
         ) { [weak self] in
-            self?.sonucuVer(yon, sandikBasarisiz: false, soruPaneli: soruPaneli)
+            self?.sonucuVer(yon, sandikBasarisiz: false)
         }
     }
 
@@ -533,7 +701,7 @@ final class KorDersModeli: ObservableObject {
         sureyiDurdur()
     }
 
-    private func sonucuVer(_ yon: KorDersYonlendirme, sandikBasarisiz: Bool, soruPaneli: Bool) {
+    private func sonucuVer(_ yon: KorDersYonlendirme, sandikBasarisiz: Bool) {
         if sonlandi { return }
         sonlandir()
         let kupaHedefi: String? = sonKupaDeltasi == nil ? nil : oturum.kupaDeltaHedefi()
@@ -545,18 +713,17 @@ final class KorDersModeli: ObservableObject {
             dersPuani: Int(oturum.dersPuani()),
             sure: sureMetni,
             enKotuKupaSuresi: Int(oturum.enKotuKupaSuresi),
-            soruPaneliKupaSuresi: Int(oturum.soruPaneliKupaSuresi),
             carpan: oturum.carpan,
             toplamPuan: Int(oturum.toplamPuan),
             sandikBasarisiz: sandikBasarisiz,
-            soruPaneliGosterilmeli: soruPaneli,
             yarisDersi: oturum.yarisDersi,
             partId: baslangic.partId,
             dersIndeksi: baslangic.dersIndeksi,
             dersTuru: baslangic.dersTuru,
             kupaDeltasi: sonKupaDeltasi,
             kupaDeltaHedefi: kupaHedefi,
-            harcananEnerji: harcananEnerji
+            harcananEnerji: harcananEnerji,
+            soruSuresiMs: Int(Date().timeIntervalSince(girisAni) * 1000.0)
         )
         bitti(sonuc)
     }

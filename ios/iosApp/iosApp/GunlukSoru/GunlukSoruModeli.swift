@@ -4,14 +4,14 @@ import SwiftUI
 
 // MARK: - Dışarı verilen istekler
 
-/// Keşfet sekmesindeki, günlük soru dışındaki kartlar (TasksFragment.submitBulletinList).
+/// Günlük soru dışındaki sıradan kartlar (TasksFragment.submitBulletinList): Görevler sekmesinde
+/// Abaküs, Kupa Yolu sekmesinde Kupa Yolu. ("Bize Ulaşın" kartı Android'de kaldırıldı; geri
+/// bildirim hesap ayarlarında.)
 enum GunlukSoruKesfetKarti: Int, CaseIterable, Identifiable {
     /// "Abaküs" — Android: AbacusPracticeFragment.
     case abakusPratik
     /// "Kupa Yolu" — Android: TasksFragment.showCupPathPanel.
     case kupaYolu
-    /// "Bize Ulaşın" — Android: FeedbackFragment.
-    case bizeUlasin
 
     var id: Int { rawValue }
 }
@@ -64,7 +64,7 @@ struct GunlukSoruCikislari {
 
 // MARK: - Görünüm modeli
 
-/// Keşfet sekmesinin görünüm modeli. Android karşılığı: TasksFragment'ın günlük soru kısmı
+/// Günlük soru kartının ve panellerinin görünüm modeli. Android karşılığı: TasksFragment'ın günlük soru kısmı
 /// (BulletinAdapter.DailyQuestionVH + handleDailyQuestionCardClick + ödül ve devam akışları).
 final class GunlukSoruModeli: ObservableObject {
     @Published private(set) var kart: GunlukSoruKartGorunumu
@@ -77,9 +77,8 @@ final class GunlukSoruModeli: ObservableObject {
     @Published private(set) var dokunmaKilitli: Bool = false
     @Published private(set) var bildirim: GunlukSoruBildirimi? = nil
     @Published var devamPaneli: GunlukSoruDevamIstegi? = nil
-    /// Dışarıya bağlanmamış geçişlerin yer tutucuları.
+    /// Dışarıya bağlanmamış soru geçişinin yer tutucusu.
     @Published var yerTutucuSoru: GunlukSoruBaslangici? = nil
-    @Published var yerTutucuOdul: GunlukSoruOdulIstegi? = nil
 
     var cikislar = GunlukSoruCikislari()
 
@@ -466,14 +465,14 @@ final class GunlukSoruModeli: ObservableObject {
             if let ac = ben.cikislar.odulAc {
                 ac(istek)
             } else {
-                ben.yerTutucuOdul = istek
+                // Sandık ekranı bağlı değil: doğrudan kapanmış sayılır (kilit takılı kalmasın).
+                istek.kapandi()
             }
         }
     }
 
     /// Android: "chest_closed" sonucu — kilit kalkar, rozet kuyruğu varsa rozet ekranı açılır.
     private func odulKapandi(kuyruk: [String]) {
-        yerTutucuOdul = nil
         dokunmaKilitli = false
         if !kuyruk.isEmpty {
             cikislar.rozetGoster?(kuyruk)
@@ -483,7 +482,7 @@ final class GunlukSoruModeli: ObservableObject {
 
     // MARK: Diğer kartlar
 
-    /// Android: BulletinAdapter onClick (Abaküs / Kupa Yolu / Bize Ulaşın).
+    /// Android: BulletinAdapter onClick (Abaküs / Kupa Yolu).
     func kesfetKartinaDokunuldu(_ secilen: GunlukSoruKesfetKarti) {
         if dokunmaKilitli {
             return
