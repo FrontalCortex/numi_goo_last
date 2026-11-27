@@ -476,8 +476,8 @@ private struct RozetIlerlemeCubugu: View {
                     .offset(x: 14, y: 8)
                 Text(metin)
                     .font(Tema.yazi(18))
-                    .foregroundColor(Color("button_disabled"))
-                    .shadow(color: Color.black.opacity(0.55), radius: 1.5, x: 0, y: 1)
+                    .foregroundColor(Color.white)
+                    .shadow(color: Color.black.opacity(0.9), radius: 2, x: 0, y: 1)
                     .frame(width: geo.size.width, height: geo.size.height)
                     .zIndex(1)
             }

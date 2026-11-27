@@ -210,7 +210,8 @@ struct GorevlerSatirGorunumu: View {
         switch satir.durum {
         case .alindi: return Color("black")
         case .bitti: return Color("background_color")
-        case .suruyor: return Color("button_disabled")
+        // Android'de de aynı: beyaz yazı + koyu gölge (mavi dolgu ve parlama üstünde okunsun diye).
+        case .suruyor: return Color.white
         }
     }
 }
@@ -263,6 +264,8 @@ struct GorevlerIlerlemeCubugu: View {
             Text(etiket)
                 .font(Tema.yazi(18))
                 .foregroundColor(etiketRengi)
+                // Yalnızca süren görevde (beyaz sayı) koyu gölge; bitmiş/alınmış etiketler koyu renklidir.
+                .shadow(color: Color.black.opacity(satir.durum == .suruyor ? 0.9 : 0), radius: 2, x: 0, y: 1)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(width: genislik, height: 32, alignment: .center)
