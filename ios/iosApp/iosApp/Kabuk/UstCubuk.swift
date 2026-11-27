@@ -79,7 +79,7 @@ private struct UstGosterge: View {
                     .scaledToFit()
                     .frame(width: simgeBoyutu, height: simgeBoyutu)
                 Text(metin)
-                    .font(.system(size: KabukOlculeri.gostergeYazi, weight: .bold, design: .rounded))
+                    .font(Tema.yazi(KabukOlculeri.gostergeYazi))
                     .foregroundColor(metinRengi)
                     .lineLimit(1)
             }

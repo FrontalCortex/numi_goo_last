@@ -10,7 +10,13 @@ struct SorobitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AnaKabuk()
+            // `-ekran <ad>` başlatma argümanı verildiyse yalnızca o ekran açılır (hata ayıklama:
+            // Yonetim/EkranGalerisi.swift); verilmediyse uygulamanın olağan akışı.
+            if let ad = EkranGalerisi.istenenAd {
+                EkranGalerisi(ad: ad)
+            } else {
+                UygulamaKokGorunumu()
+            }
         }
     }
 }

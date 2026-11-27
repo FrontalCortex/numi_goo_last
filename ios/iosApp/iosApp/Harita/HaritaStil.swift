@@ -35,9 +35,9 @@ enum HaritaStil {
     // MARK: Yazı
 
     /// Android temasında bütün yazılar kalındır (Widget.NumiGoo.TextView: textStyle=bold).
-    /// Uygulamanın yazı tipi yardımcısı (Tema.yazi) hazır olunca buradan ona bağlanacak.
+    /// Uygulamanın ortak yazı tipi yardımcısına (Baloo 2) bağlıdır.
     static func yazi(_ boyut: CGFloat, kalin: Bool = true) -> Font {
-        return Font.system(size: boyut, weight: kalin ? .bold : .regular, design: .rounded)
+        return Tema.yazi(boyut, kalin: kalin)
     }
 
     // MARK: Renk

@@ -82,12 +82,24 @@ workflows:
           xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/dd/Build/Products/Debug-iphonesimulator/iosApp.app
+          # Açılış ekranı (giriş akışı).
           xcrun simctl launch "$UDID" com.sorobit.app
           sleep 8
           xcrun simctl io "$UDID" screenshot build/ekran.png
+          xcrun simctl terminate "$UDID" com.sorobit.app || true
+          # Ekran galerisi: her ekran -ekran <ad> ile tek tek açılıp görüntülenir
+          # (adlar: iosApp/Yonetim/EkranGalerisi.swift içindeki EkranGalerisi.adlar).
+          mkdir -p build/ekranlar
+          for AD in giris kayit kabuk harita-kisim harita-ders harita-alt-panel abakus-ders abakus-sandik kor-ders sonuc-basarili sonuc-basarisiz sonuc-sandik-basarisiz sonuc-sandik sandik kristal gorevler gunluk-soru gunluk-soru-odul kupa kupa-gecmisi lider-tablosu rozetler rozet-detay ozellestirme magaza profil profil-duzenle yer-tutucu yazi-tipi; do
+            xcrun simctl launch "$UDID" com.sorobit.app -ekran "$AD" || true
+            sleep 5
+            xcrun simctl io "$UDID" screenshot "build/ekranlar/$AD.png" || true
+            xcrun simctl terminate "$UDID" com.sorobit.app || true
+          done
     # Yollar tam verilir: göreli yollar working_directory nedeniyle bulunamadı.
     artifacts:
       - $CM_BUILD_DIR/ios/iosApp/build/ekran.png
+      - $CM_BUILD_DIR/ios/iosApp/build/ekranlar/*.png
       - $CM_BUILD_DIR/ios/iosApp/build/xcodebuild.log
       # Ortak Kotlin kodunun Swift'e görünen adları (derleme hatası ayıklamak için).
       - $CM_BUILD_DIR/ios/shared/build/xcode-frameworks/**/Shared.framework/Headers/Shared.h

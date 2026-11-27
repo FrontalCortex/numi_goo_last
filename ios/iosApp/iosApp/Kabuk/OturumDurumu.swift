@@ -1,7 +1,9 @@
 import SwiftUI
 
 // Üst çubuktaki göstergelerin (elmas, enerji, anahtar) değerlerini tutar.
-// Şimdilik sabit örnek değerler taşır; ileride Firestore dinleyicileri bu alanları güncelleyecek.
+// Değerleri yönetici (Yonetim/UygulamaYoneticisi.oturumuYenile) yazar: elmas ve anahtar mağazanın
+// (şimdilik sahte) cüzdanından, enerji mağazanın (şimdilik sahte) can servisinden gelir; öğretmen
+// ve enerji engeli alanları hâlâ sabittir. İleride Firestore dinleyicileri bu alanları güncelleyecek.
 // Kurallar (azami enerji, sonsuz enerji, yenilenme süresi, cüzdan varsayılanları) ortak Kotlin
 // kodunda hazırdır (ios/shared/.../oyun/EnergyManager.kt, UserWalletFirestore.kt); bağlanırken
 // buradaki alanlar o sınıfların sonuçlarıyla doldurulmalı, mantık Swift'te yeniden yazılmamalı.

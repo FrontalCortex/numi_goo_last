@@ -12,10 +12,10 @@ struct YakindaEkrani: View {
                 .scaledToFit()
                 .frame(width: 72, height: 72)
             Text(sekme.ad)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .font(Tema.yazi(24))
                 .foregroundColor(Color.white)
             Text("Yakında")
-                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .font(Tema.yazi(17))
                 .foregroundColor(Color.white.opacity(0.6))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
