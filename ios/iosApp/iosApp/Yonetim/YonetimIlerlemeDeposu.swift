@@ -26,6 +26,14 @@ final class YonetimIlerlemeDeposu: HaritaIlerlemeKaynagi {
         return partlar[partId]
     }
 
+    /// Haritada anahtarla açılan ders (Android: LessonAdapter.unlockLessonWithKey →
+    /// LessonManager.updateLessonItem(context, position, unlocked)). `sira`: listedeki konum.
+    func dersiYaz(partId: Int32, sira: Int32, oge: LessonItem) {
+        bellegeYukle(partId: partId)
+        LessonManager.shared.updateLessonItem(position: sira, item: oge, season: sezon)
+        bellektenAl()
+    }
+
     // MARK: Bellek
 
     /// Android: GlobalLessonData.globalPartId.

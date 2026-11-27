@@ -77,7 +77,8 @@ final class SandikModeli: ObservableObject {
     @Published var adimEtkinRengi: Color = SandikStil.renk(0xFFB300)
     @Published var adimGelecekRengi: Color = SandikStil.renk(0x3A3010)
     /// fragment_new_chest.xml'deki ilk ipucu metni.
-    @Published var ipucuMetni: String = "Daha iyisini alma şansı için dokun!"
+    /// (Android: R.string.fragment_new_chest_chest_hint_text)
+    @Published var ipucuMetni: String = Metin.al("fragment_new_chest_chest_hint_text")
     @Published var ipucuGorunur = false
     /// Her zıplamada bir artar; görünüm bunu izleyip zıplama animasyonunu oynatır.
     @Published var ziplamaSayaci: Int = 0
@@ -140,11 +141,17 @@ final class SandikModeli: ObservableObject {
     /// requestOutcomeFromServer: yanıt gelene kadar dokunuşlar yok sayılır.
     private func sonucuIste() {
         let baslangicAdi: String = durum.currentRarity.name
-        odulServisi.sandikAc(baslangicNadirligi: baslangicAdi, reklamNonce: girdi.reklamNonce) { [weak self] sonuc in
+        let yanitGeldi: (Result<SandikSunucuSonucu, Error>) -> Void = { [weak self] sonuc in
             DispatchQueue.main.async {
                 self?.sunucuYaniti(sonuc, baslangicAdi: baslangicAdi)
             }
         }
+        // Kupa yolu sandığı ayrı çağrıdan gelir (Android: ARG_CUP_FIELD doluysa claimCupPathChest).
+        if let kupaAlani = girdi.kupaAlani, !kupaAlani.isEmpty {
+            odulServisi.kupaYoluSandiginiAc(kupaAlani: kupaAlani, esik: girdi.kupaEsigi, tamamla: yanitGeldi)
+            return
+        }
+        odulServisi.sandikAc(baslangicNadirligi: baslangicAdi, reklamNonce: girdi.reklamNonce, tamamla: yanitGeldi)
     }
 
     private func sunucuYaniti(_ sonuc: Result<SandikSunucuSonucu, Error>, baslangicAdi: String) {
@@ -182,7 +189,8 @@ final class SandikModeli: ObservableObject {
             }
             zipla()
             if sonuc.showOpenHint {
-                ipucuMetni = mantik.HINT_OPEN_CHEST
+                // Android: appString(R.string.ui_sandigi_acmak_icin_dokun)
+                ipucuMetni = Metin.al("ui_sandigi_acmak_icin_dokun")
             }
         } else if eylem == ChestTapAction.openChest {
             bosBaslangic = nil
@@ -205,9 +213,24 @@ final class SandikModeli: ObservableObject {
         yildizRengi = SandikStil.renk(argb: tema.starColor)
         adimEtkinRengi = SandikStil.renk(argb: tema.stepActiveColor)
         adimGelecekRengi = SandikStil.renk(argb: tema.stepFutureColor)
-        etiket = nadirlik.label
+        // Android: appString(rarity.labelRes) — ortak koddaki `label` Türkçe sabittir, dile bağlı değil.
+        etiket = Metin.al(SandikModeli.etiketAnahtari(nadirlikAdi: nadirlik.name))
         etiketRengi = SandikStil.renk(argb: nadirlik.labelColor)
         nadirlikSirasi = Int(nadirlik.ordinal)
+    }
+
+    /// ChestRarity.labelRes karşılığı: nadirlik adı → strings.xml anahtarı.
+    private static func etiketAnahtari(nadirlikAdi: String) -> String {
+        switch nadirlikAdi {
+        case "RARE":
+            return "ui_ender"
+        case "EPIC":
+            return "ui_destansi"
+        case "LEGENDARY":
+            return "ui_efsanevi"
+        default:
+            return "ui_siradan"
+        }
     }
 
     /// updateStepIndicators

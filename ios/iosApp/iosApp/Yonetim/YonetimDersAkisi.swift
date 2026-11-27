@@ -16,8 +16,8 @@ extension UygulamaYoneticisi {
 
     // MARK: Harita hedefi
 
-    /// Haritanın dışarı verdiği hedef. `panel`: hedeften hemen önce açık olan alt panel.
-    func haritaHedefiGeldi(_ hedef: HaritaHedefi, panel: HaritaAltPanelDurumu?) {
+    /// Haritanın dışarı verdiği hedef. `panel`: hedeften hemen önce açık olan ders paneli.
+    func haritaHedefiGeldi(_ hedef: HaritaHedefi, panel: HaritaPanelDurumu?) {
         haritaModeli.hedef = nil
         if asama != .kabuk {
             return
@@ -25,7 +25,7 @@ extension UygulamaYoneticisi {
         // Hedefin türü açık bir alandır (HaritaHedefi.tur); metinlere bakılmaz.
         switch hedef.tur {
         case .magaza:
-            // Android: panel kapanır, mağaza (enerji yenileme) açılır.
+            // Android: panel kapanır, mağaza açılır (enerji ya da kilit açmaya anahtar yetmedi).
             magazaAc()
             return
         case .liderlikTablosu:
@@ -37,13 +37,13 @@ extension UygulamaYoneticisi {
                 yerTutucuAc(hedef.baslik, hedef.aciklama, hedef.ayrintilar)
             }
             return
-        case .yarisPaneli, .soruSorma:
+        case .yarisPaneli:
             yerTutucuAc(hedef.baslik, hedef.aciklama, hedef.ayrintilar)
             return
         case .abakusDersi, .korDers, .ogretici, .ogreticiTekrari:
             break
         }
-        // Ders hedefi: başlığı ve açıklaması alt panelinkiyle aynıdır.
+        // Ders hedefi: başlığı ve açıklaması ders panelininkiyle aynıdır.
         guard let acik = panel, acik.baslik == hedef.baslik else {
             yerTutucuAc(hedef.baslik, hedef.aciklama, hedef.ayrintilar)
             return
@@ -53,7 +53,7 @@ extension UygulamaYoneticisi {
     }
 
     /// Android: LessonAdapter.continueWithLesson. Açılacak ekranı ortak kural seçer.
-    private func haritaDersiniBaslat(_ panel: HaritaAltPanelDurumu, ogreticiIstendi: Bool) {
+    private func haritaDersiniBaslat(_ panel: HaritaPanelDurumu, ogreticiIstendi: Bool) {
         let partId: Int32 = haritaModeli.seciliPart ?? ilerleme.aktifPart
         let sira: Int32 = ilerleme.haritaSirasi(panel.oge.oge, listeSirasi: panel.id)
         ilerleme.bellegeYukle(partId: partId)
@@ -195,6 +195,11 @@ extension UygulamaYoneticisi {
     // MARK: Sonuç ekranı → sandık → harita
 
     /// SonucEkrani.devam ("Devam et" / "Çıkış").
+    ///
+    /// SERİ AKIŞI YOK (henüz yazılmadı): güncel Android'de sonuç → sandık → rozet → SERİ ekranı
+    /// (NewStreakFragment / seri kutlama şeridi) → reklam tek öncelik kuyruğundan geçer
+    /// (MainActivity.pumpPostLessonQueue, finalizeMapReturnAfterLessonClaim(isLessonTypeReturn)).
+    /// Seri ekranı yazılınca `haritayaDon` ve sandığın `kapandi` dönüşünden önce sıraya girecek.
     func sonucDevam(_ girdi: SonucGirdisi, baglam: YonetimSonucBaglami, katman: Int) {
         ilerleme.bellegeYukle(partId: baglam.partId)
         switch girdi.tur {

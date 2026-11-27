@@ -1,8 +1,8 @@
 import Foundation
 import SwiftUI
 
-// Sandık ve kristal ekranlarının ortak küçük parçaları: renk ve ölçü yardımcıları, animasyon
-// eğrileri, video yer tutucusu (gerçek oynatıcı: SandikVideoOynatici.swift).
+// Sandık ekranının küçük parçaları: renk ve ölçü yardımcıları, animasyon eğrileri.
+// (Kristal ekranı ve video yer tutucusu güncel Android'de silindiği için kaldırıldı.)
 
 enum SandikStil {
     /// 0xRRGGBB biçimindeki sabit renk.
@@ -25,7 +25,7 @@ enum SandikStil {
 
     /// Android animasyon kodundaki ham piksel değerlerini pt'ye çevirir.
     ///
-    /// NewChestFragment ve CrystalBreakVideoFragment'te kayma/zıplama mesafeleri dp değil
+    /// NewChestFragment'te kayma/zıplama mesafeleri dp değil
     /// PİKSEL olarak yazılmıştır (ör. `translationY` −35f); görünen büyüklük telefonun ekran
     /// yoğunluğuna bağlıdır. Burada yoğunluk 3 (xxhdpi, yaygın telefonlar) varsayıldı.
     static func pikseldenNokta(_ piksel: CGFloat) -> CGFloat {
@@ -88,25 +88,5 @@ enum SandikStil {
         let ham: Double = konum < yarim ? konum / yarim : 2.0 - konum / yarim
         let oran: Double = hizlanYavasla(ham)
         return pikseldenNokta(CGFloat(-15.0 * oran))
-    }
-}
-
-/// Video dosyası pakette yokken çizilen durağan görsel.
-///
-/// Kristal videoları depoda yok; dosya `iosApp/Videolar/<ad>.mp4` olarak eklendiğinde ekran
-/// kendiliğinden gerçek videoya (SandikVideoGorunumu) geçer. `ad` Android `res/raw/` içindeki
-/// video dosyasının uzantısız adıdır (ör. "crystal_blue_blue").
-struct SandikVideoYerTutucu: View {
-    let ad: String
-
-    var body: some View {
-        ZStack {
-            Color.black
-            Image("crystal_ic")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 180, height: 180)
-        }
-        .accessibilityHidden(true)
     }
 }

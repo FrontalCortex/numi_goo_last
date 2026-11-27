@@ -7,11 +7,25 @@ import SwiftUI
 //   LessonResultFalse.kt  + fragment_lesson_result_false.xml  (başarısız ders / başarısız sandık)
 //   ChestResult.kt        + fragment_chest_result.xml         (sandık = ünite maratonu sonucu)
 //
+// Güncel Android (versionCode 26) tasarımı:
+//   - Ders sonundaki 12 rastgele Lottie kalktı; yerine Sobi maskot sahnesi (LessonEndMascot):
+//     başarıda 9 sahnelik "torbadan" sıradaki (ortak kod: LessonEndMascotLogic), başarısızlıkta
+//     hep "DETERMINED". Sahne ekran girişinden 450 ms sonra başlar.
+//   - Devam / Çıkış düğmesi göçen (derinlikli) stil: Ortak/GocenDugmeStili.
+//   - Zemin @color/background_color; üst boşluk 80 → 48 (ders ve başarısız ekranı; sandık sonucu 80).
+//   - Ekranlar sağdan girip SOLA çıkar (400 ms): bu geçiş ekranı bağlayan Yonetim/ tarafındadır.
+//   - Başarısızlık eşiği metni %75 (ortak kod + strings).
+//
 // Bu ekran yalnızca gösterir. Android'de "Devam et" düğmesinin arkasındaki işler (ders zaten
 // bitmişse haritaya dönmek, değilse sandık ekranını açmak, başarı oranı ve görev kayıtları,
 // rekor güncellemesi) ekranı açan yöneticiye aittir; kuralları ortak koddadır:
 // LessonResultLogic.onClaim, LessonResultFalseLogic.failRecordFor / shouldRedirectToLogin,
 // ChestResultLogic.record / shouldSkipChest / replayFinishedChest (ders paketi).
+//
+// YAZILMAMIŞ AKIŞ (seri): Android ders sonrası zinciri tek öncelik kuyruğundadır
+// (MainActivity.pumpPostLessonQueue; isLessonTypeReturn). Sonuç → sandık → rozet → SERİ
+// ekranı (NewStreakFragment / seri kutlama şeridi) → reklam sırasında seri ekranı iOS'ta henüz
+// yoktur; sonuç ekranından sonraki yeri Yonetim/YonetimDersAkisi.sonucDevam içinde işaretlidir.
 
 struct SonucEkrani: View {
     private let devam: () -> Void
@@ -76,20 +90,18 @@ struct SonucDersBasariliGorunumu: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SonucAnimasyonu(ad: model.animasyonAdi)
-                .frame(width: 200, height: 200)
-            Text("Ders Bitti!")
+            // Sobi: üstte kalan bütün yeri kaplar (layout_height 0dp, weight 1).
+            SonucMaskotu(emote: model.maskotSahnesi, basladi: model.maskotBasladi)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Text(Metin.al("fragment_lesson_result_result_title"))
                 .font(Tema.yazi(28))
                 .foregroundColor(SonucStil.baslikSarisi)
             kutular
-                .padding(.bottom, 32)
-            Spacer(minLength: 0)
+                .padding(.top, 12)
             SonucDugmesi(
-                metin: "Devam et",
-                zemin: SonucStil.devamDugmesi,
+                metin: Metin.al("fragment_lesson_result_claim_button"),
                 yaziRengi: .black,
                 yukseklik: 60,
-                kose: 15,
                 eylem: devam
             )
             .padding(.horizontal, 10)
@@ -100,21 +112,21 @@ struct SonucDersBasariliGorunumu: View {
             .disabled(!model.dugmeEtkin)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 80)
+        .padding(.top, 48)
     }
 
     /// İki kutu eşit genişlikte; Android kenar boşlukları: [kutu]–8–8–[kutu]–8.
     private var kutular: some View {
         HStack(spacing: 16) {
             SonucKutusu(
-                baslik: "TOPLAM PUAN",
+                baslik: Metin.al("fragment_lesson_result_text"),
                 deger: model.puanMetni,
                 yaziRengi: SonucStil.kutuSarisi,
                 cerceveRengi: SonucStil.kutuSarisi
             )
             .modifier(SonucKutuBelirme(gorunur: model.puanKutusuGorunur))
             SonucKutusu(
-                baslik: "BAŞARI",
+                baslik: Metin.al("fragment_lesson_result_text_2"),
                 deger: model.basariMetni,
                 yaziRengi: SonucStil.kutuYesilYazi,
                 cerceveRengi: SonucStil.kutuYesilCerceve
@@ -146,55 +158,56 @@ struct SonucBasarisizGorunumu: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SonucAnimasyonu(ad: model.animasyonAdi)
-                .frame(width: 200, height: 200)
-            Text("Ders Geçilemedi!")
+            // Sobi: üstte kalan bütün yeri kaplar; başarısızlıkta hep "kararlı" hâl.
+            SonucMaskotu(emote: model.maskotSahnesi, basladi: model.maskotBasladi)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Text(Metin.al("fragment_lesson_result_false_result_title"))
                 .font(Tema.yazi(28))
                 .foregroundColor(SonucStil.hataBaslik)
             Text(model.aciklama)
                 .font(Tema.yazi(20))
                 .foregroundColor(SonucStil.hataAciklama)
                 .multilineTextAlignment(.center)
-                .padding(.bottom, 32)
             kutular
-                .padding(.bottom, 32)
-            Spacer(minLength: 0)
-            if model.girdi.tekrarDugmesiGoster {
-                // Android'de yok; yalnızca girdi isterse görünür.
-                SonucDugmesi(
-                    metin: "Tekrar dene",
-                    zemin: SonucStil.devamDugmesi,
-                    yaziRengi: SonucStil.zemin,
-                    yukseklik: 56,
-                    kose: 4,
-                    eylem: tekrar
-                )
-                .padding(.bottom, 12)
-            }
+                .padding(.top, 12)
+                .padding(.bottom, 16)
+            tekrarDugmesi
             SonucDugmesi(
-                metin: "Çıkış",
-                zemin: SonucStil.cikisDugmesi,
-                yaziRengi: SonucStil.zemin,
+                metin: Metin.al("fragment_lesson_result_false_claim_button"),
+                yaziRengi: SonucStil.cikisYazisi,
                 yukseklik: 56,
-                kose: 4,
                 eylem: cikis
             )
             .padding(.bottom, 20)
         }
         .padding(.horizontal, 24)
-        .padding(.top, 80)
+        .padding(.top, 48)
+    }
+
+    /// Android'de yok; yalnızca girdi isterse görünür (metin Android'de karşılıksız: Swift sabiti).
+    @ViewBuilder
+    private var tekrarDugmesi: some View {
+        if model.girdi.tekrarDugmesiGoster {
+            SonucDugmesi(
+                metin: "Tekrar dene",
+                yaziRengi: SonucStil.cikisYazisi,
+                yukseklik: 56,
+                eylem: tekrar
+            )
+            .padding(.bottom, 12)
+        }
     }
 
     private var kutular: some View {
         HStack(spacing: 16) {
             SonucKutusu(
-                baslik: "TOPLAM PUAN",
+                baslik: Metin.al("fragment_lesson_result_false_text"),
                 deger: model.puanMetni,
                 yaziRengi: SonucStil.kutuSarisi,
                 cerceveRengi: SonucStil.kutuSarisi
             )
             SonucKutusu(
-                baslik: "BAŞARI",
+                baslik: Metin.al("fragment_lesson_result_false_text_2"),
                 deger: model.basariMetni,
                 yaziRengi: SonucStil.kutuYesilYazi,
                 cerceveRengi: SonucStil.kutuYesilCerceve
@@ -229,9 +242,10 @@ struct SonucSandikGorunumu: View {
 
     private var sutun: some View {
         VStack(spacing: 0) {
-            SonucAnimasyonu(ad: model.animasyonAdi)
+            // Sobi: 200×200, ortada (başarı sahnesi; dersle aynı torba).
+            SonucMaskotu(emote: model.maskotSahnesi, basladi: model.maskotBasladi)
                 .frame(width: 200, height: 200)
-            Text("Ders Bitti!")
+            Text(Metin.al("fragment_chest_result_result_title"))
                 .font(Tema.yazi(28))
                 .foregroundColor(SonucStil.baslikSarisi)
                 .padding(.bottom, 50)
@@ -243,11 +257,9 @@ struct SonucSandikGorunumu: View {
                 .padding(.bottom, 10)
             Spacer(minLength: 0)
             SonucDugmesi(
-                metin: "Devam et",
-                zemin: SonucStil.devamDugmesi,
+                metin: Metin.al("fragment_chest_result_claim_button"),
                 yaziRengi: .black,
                 yukseklik: 60,
-                kose: 15,
                 eylem: devam
             )
             .padding(.horizontal, 10)
@@ -265,7 +277,7 @@ struct SonucSandikGorunumu: View {
     private var kutular: some View {
         HStack(spacing: 16) {
             SonucKutusu(
-                baslik: "Süre",
+                baslik: Metin.al("fragment_chest_result_text"),
                 deger: model.sureMetni,
                 yaziRengi: SonucStil.kutuSarisi,
                 cerceveRengi: SonucStil.kutuSarisi,
@@ -275,7 +287,7 @@ struct SonucSandikGorunumu: View {
             .opacity(model.sureKutusuGorunur ? 1 : 0)
             .animation(.linear(duration: 0.22), value: model.sureKutusuGorunur)
             SonucKutusu(
-                baslik: "BAŞARI",
+                baslik: Metin.al("fragment_chest_result_text_2"),
                 deger: model.basariMetni,
                 yaziRengi: SonucStil.kutuYesilYazi,
                 cerceveRengi: SonucStil.kutuYesilCerceve

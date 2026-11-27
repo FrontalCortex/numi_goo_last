@@ -2,133 +2,92 @@ import SwiftUI
 import UIKit
 
 // Seçili kısmın ders listesi (Android: fragment_map.xml + MapFragment.setupRecyclerView).
-// Yapı: tam ekran kaydırılan liste, üstünde sabit duran ünite başlığı (stickyHeader),
-// sağ ortada "öğretmene sor" düğmesi (askQuestionButton), sol üstte geri düğmesi
-// (Android'de MainActivity araç çubuğundaki lessonPartBackButton).
-
-/// Listenin en üstünde görünen satırın sırası (Android: findFirstVisibleItemPosition).
-struct HaritaIlkGorunenAnahtari: PreferenceKey {
-    static var defaultValue: Int = Int.max
-
-    static func reduce(value: inout Int, nextValue: () -> Int) {
-        value = min(value, nextValue())
-    }
-}
-
-/// Sabit başlığın ölçülen yüksekliği (liste üst boşluğu buna göre verilir).
-struct HaritaYapiskanYukseklikAnahtari: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
-}
+// Yapı: tam ekran kaydırılan liste (üst 16, alt 92 boşluk; dersler alt alta kartlar), üstünde
+// derse dokununca karta bağlı ders paneli. Sabit bölüm başlığı ve zikzak yerleşim Android'de
+// kaldırıldı; "Öğretmene sor" düğmesi TeacherQuestionsFeature.ENABLED = false olduğu için gizli.
+// Geri düğmesi Android'de MainActivity araç çubuğundadır (lessonPartBackButton); kabuk çizer.
 
 struct HaritaDersListesi: View {
     @ObservedObject var model: HaritaModeli
 
-    @State private var ilkGorunen: Int = 0
-    @State private var yapiskanYukseklik: CGFloat = 81
-    /// askQuestionButton'ın süzülme animasyonu başladı mı.
-    @State private var suzuluyor: Bool = false
     /// true ise geri düğmesini kabuğun üst çubuğu çizer (Android'deki yeri).
     @Environment(\.haritaGeriKabukta) private var geriKabukta: Bool
 
-    private let listeAlani = "haritaListesi"
-
     var body: some View {
-        GeometryReader { geo in
-            liste(genislik: geo.size.width)
-                .overlay(alignment: .top) { ustKatman }
-                .overlay(alignment: .trailing) { soruDugmesi }
-        }
-        .background(Color("background_color"))
+        liste
+            .overlayPreferenceValue(HaritaKartKonumAnahtari.self) { konumlar in
+                GeometryReader { geo in
+                    panelKatmani(konumlar: konumlar, geo: geo)
+                }
+                // Panel kapalıyken katman listeye gelen dokunuşları almasın.
+                .allowsHitTesting(model.panel != nil)
+            }
+            .overlay(alignment: .topLeading) { geriKatmani }
+            .background(Color("background_color"))
+            .animation(Animation.easeOut(duration: 0.18), value: model.panel?.id)
     }
 
     // MARK: Liste
 
-    private func liste(genislik: CGFloat) -> some View {
+    private var liste: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
                 ForEach(model.ogeler) { oge in
-                    satir(oge, genislik: genislik)
+                    HaritaSatiri(oge: oge, dokun: { model.ogeyeDokun(oge) })
                 }
             }
-            // Android: liste sabit başlığın altından başlar (başlık yüksekliği + 16dp), altta 16dp.
-            .padding(.top, yapiskanYukseklik + HaritaStil.listeUstBosluk)
-            .padding(.bottom, 16)
+            .padding(.top, HaritaStil.listeUstBosluk)
+            .padding(.bottom, HaritaStil.listeAltBosluk)
             .frame(maxWidth: .infinity)
         }
-        .coordinateSpace(name: listeAlani)
-        .onPreferenceChange(HaritaIlkGorunenAnahtari.self) { deger in
-            ilkGorunen = (deger == Int.max) ? 0 : deger
-        }
     }
 
-    private func satir(_ oge: HaritaOgesi, genislik: CGFloat) -> some View {
-        HaritaSatiri(
-            oge: oge,
-            kayma: model.yatayKayma(oge, listeGenisligi: genislik),
-            dokun: { model.ogeyeDokun(oge) }
-        )
-        .background(gorunurlukOlcer(sira: oge.id))
-    }
+    // MARK: Ders paneli
 
-    /// Satırın alt kenarı listenin üst kenarının altındaysa satır "görünür" sayılır;
-    /// en küçük sıra, Android'deki findFirstVisibleItemPosition karşılığıdır.
-    private func gorunurlukOlcer(sira: Int) -> some View {
-        GeometryReader { geo in
-            Color.clear.preference(
-                key: HaritaIlkGorunenAnahtari.self,
-                value: geo.frame(in: .named(listeAlani)).maxY > 0 ? sira : Int.max
+    @ViewBuilder
+    private func panelKatmani(konumlar: [Int: Anchor<CGRect>], geo: GeometryProxy) -> some View {
+        if let panel = model.panel {
+            HaritaPanelKatmani(
+                panel: panel,
+                kart: kartCercevesi(panel: panel, konumlar: konumlar, geo: geo),
+                alan: geo.size,
+                model: model
             )
+            .id(panel.id)
+            .transition(AnyTransition.opacity)
         }
     }
 
-    // MARK: Sabit başlık ve geri düğmesi
+    /// Kart listede görünmüyorsa (tembel listede kurulmamışsa) nil: panel ortada, oksuz açılır.
+    private func kartCercevesi(panel: HaritaPanelDurumu, konumlar: [Int: Anchor<CGRect>], geo: GeometryProxy) -> CGRect? {
+        guard let capa = konumlar[panel.id] else {
+            return nil
+        }
+        let cerceve: CGRect = geo[capa]
+        let gorunur: Bool = cerceve.maxY > 0 && cerceve.minY < geo.size.height
+        return gorunur ? cerceve : nil
+    }
 
-    private var ustKatman: some View {
-        ZStack(alignment: .topLeading) {
-            yapiskanAlan
-            if !geriKabukta {
-                geriDugmesi
+    // MARK: Geri düğmesi (yalnızca kabuksuz açılışta)
+
+    @ViewBuilder
+    private var geriKatmani: some View {
+        if !geriKabukta && model.panel == nil {
+            Button(action: { model.kisimSeciminDon() }) {
+                geriGorseli
+                    .frame(width: HaritaStil.geriOkuBoyu, height: HaritaStil.geriOkuBoyu)
+                    .frame(width: HaritaStil.geriDugmesiBoyu, height: HaritaStil.geriDugmesiBoyu)
+                    .background(Circle().fill(Color("background_color").opacity(0.85)))
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .padding(.leading, 12)
+            .padding(.top, 6)
+            .accessibilityLabel(Text("Geri"))
         }
     }
 
-    private var yapiskanAlan: some View {
-        VStack(spacing: 0) {
-            if let baslik = model.yapiskanBaslik(ilkGorunen: ilkGorunen) {
-                HaritaYapiskanBaslikGorunumu(baslik: baslik)
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .background(yukseklikOlcer)
-        .onPreferenceChange(HaritaYapiskanYukseklikAnahtari.self) { deger in
-            yapiskanYukseklik = deger
-        }
-    }
-
-    private var yukseklikOlcer: some View {
-        GeometryReader { geo in
-            Color.clear.preference(key: HaritaYapiskanYukseklikAnahtari.self, value: geo.size.height)
-        }
-    }
-
-    /// Kısım seçimine dönüş; yalnızca harita kabuksuz açıldığında (ekran galerisi) çizilir.
-    /// Sabit başlığın solundaki 32pt'lik boşlukta durur.
-    private var geriDugmesi: some View {
-        Button(action: { model.kisimSeciminDon() }) {
-            geriGorseli
-                .frame(width: HaritaStil.geriOkuBoyu, height: HaritaStil.geriOkuBoyu)
-                .frame(width: HaritaStil.yapiskanYatayBosluk, height: max(yapiskanYukseklik, 44))
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text("Geri"))
-    }
-
-    /// Görsel henüz asset catalog'a taşınmadıysa geri dönüş yolu kaybolmasın diye sistem simgesi.
+    /// Görsel asset catalog'da yoksa geri dönüş yolu kaybolmasın diye sistem simgesi.
     @ViewBuilder
     private var geriGorseli: some View {
         if UIImage(named: "ic_back_arrow") != nil {
@@ -142,67 +101,5 @@ struct HaritaDersListesi: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.white)
         }
-    }
-
-    // MARK: Öğretmene sor düğmesi (askQuestionButton)
-
-    private var soruDugmesi: some View {
-        Button(action: { model.soruSorDokunuldu() }) {
-            Image("teacher_ask_ic")
-                .resizable()
-                .scaledToFit()
-                .padding(8)
-                .frame(width: HaritaStil.soruDugmesiBoyu, height: HaritaStil.soruDugmesiBoyu)
-                .background(Circle().fill(HaritaStil.soruDugmesiZemini))
-        }
-        .buttonStyle(.plain)
-        .padding(.trailing, 6)
-        .offset(x: 0, y: suzuluyor ? -HaritaStil.soruDugmesiSuzulme : 0)
-        .animation(suzulmeAnimasyonu, value: suzuluyor)
-        .onAppear {
-            // Sonsuz animasyon ilk yerleşimle aynı işlemde başlarsa konuma da bulaşabiliyor.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                suzuluyor = true
-            }
-        }
-    }
-
-    /// Android: ObjectAnimator.ofFloat(btn, "translationY", 0f, -20f, 0f), 1800 ms, sonsuz.
-    private var suzulmeAnimasyonu: Animation {
-        return Animation.easeInOut(duration: 0.9).repeatForever(autoreverses: true)
-    }
-}
-
-/// fragment_map.xml: stickyHeader (corner_background + ünite rengi).
-struct HaritaYapiskanBaslikGorunumu: View {
-    let baslik: HaritaYapiskanBaslik
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Text(baslik.kisimUnite)
-                .font(HaritaStil.yazi(16))
-                .foregroundColor(HaritaStil.yapiskanUstYaziRengi)
-                .multilineTextAlignment(.center)
-                .padding(.top, 10)
-                .padding(.leading, 5)
-                .frame(maxWidth: .infinity)
-            Text(baslik.baslik)
-                .font(HaritaStil.yazi(27))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-                .padding(.leading, 6)
-                .padding(.bottom, 12)
-                .frame(maxWidth: .infinity)
-        }
-        .background(RoundedRectangle(cornerRadius: 16).fill(zemin))
-        .padding(.horizontal, HaritaStil.yapiskanYatayBosluk)
-    }
-
-    /// Android: başlıkta renk yoksa geçerli renk korunur; burada nötr gri kullanılır.
-    private var zemin: Color {
-        if let ad = baslik.renk {
-            return Color(ad)
-        }
-        return Color.gray
     }
 }

@@ -66,8 +66,9 @@ final class SonucModeli: ObservableObject {
     let basariYuzdesi: Int
     /// Ders puanı = başarı yüzdesi × 5.
     let dersPuani: Int
-    /// Üstte oynatılacak Lottie dosyası (assets içindeki adıyla, rastgele seçilir).
-    let animasyonAdi: String
+    /// Ders sonu Sobi sahnesi: `BunnyMascotView.Emote` enum adı. Başarıda torbadan çekilir
+    /// (LessonEndMascot.nextSuccess), başarısızlıkta hep "DETERMINED" (Android: LessonEndMascot).
+    let maskotSahnesi: String
     /// Başarısız sonuçtaki neden satırı.
     let aciklama: String
     let puanTavani: Int
@@ -78,6 +79,8 @@ final class SonucModeli: ObservableObject {
 
     // MARK: Yayınlanan durum
 
+    /// Sobi sahnesi başladı mı (ekran girişinden 450 ms sonra; Android: ENTER_DELAY_MS).
+    @Published var maskotBasladi = false
     @Published var puanKutusuGorunur = false
     @Published var basariKutusuGorunur = false
     @Published var puanMetni = "0"
@@ -126,8 +129,19 @@ final class SonucModeli: ObservableObject {
         let oran: Float = kopru.basariOrani(dogru: Int32(girdi.dogruSayisi), toplam: Int32(girdi.toplamSoru))
         self.basariYuzdesi = Int(oran)
         self.dersPuani = Int(kopru.dersPuani(basariOrani: oran))
-        self.animasyonAdi = kopru.rastgeleAnimasyon()
-        self.aciklama = kopru.basarisizlikAciklamasi(sandikBasarisizligi: girdi.tur == .sandikBasarisiz)
+        // Sobi sahnesi: başarısızlıkta hep kararlı hâl; başarıda (ders ve sandık) torbadan sıradaki.
+        let sahne: String
+        switch girdi.tur {
+        case .dersBasarisiz, .sandikBasarisiz:
+            sahne = LessonEndMascotLogic.shared.FAILURE
+        case .dersBasarili, .sandikSonucu:
+            sahne = SonucModeli.basariSahnesiCek()
+        }
+        self.maskotSahnesi = sahne
+        // Android: appString(R.string.ui_puan_500_den_dusuk / ui_basari_orani_75_ten_dusuk).
+        self.aciklama = girdi.tur == .sandikBasarisiz
+            ? Metin.al("ui_puan_500_den_dusuk")
+            : Metin.al("ui_basari_orani_75_ten_dusuk")
 
         // Ortak kuralın bölme yapabilmesi için tavan en az 1 olmalı (Android: resolveScoreCap en az 1 döner).
         let tavan: Int = max(1, girdi.puanTavani)
@@ -152,6 +166,11 @@ final class SonucModeli: ObservableObject {
     func basla() {
         if basladi { return }
         basladi = true
+        // Ekran sağdan kayarak girerken Sobi bekler; giriş bitince sahne başlar.
+        let maskotGecikmesi: Double = Double(LessonEndMascotLogic.shared.ENTER_DELAY_MS) / 1000.0
+        zaman.sonra(maskotGecikmesi) { [weak self] in
+            self?.maskotBasladi = true
+        }
         switch girdi.tur {
         case .dersBasarili:
             ses.sonucSesiCal()
@@ -343,6 +362,22 @@ final class SonucModeli: ObservableObject {
     }
 
     // MARK: Yardımcılar
+
+    private static let torbaAnahtari: String = "lesson_end_mascot.bag"
+    private static let sonSahneAnahtari: String = "lesson_end_mascot.last"
+
+    /// LessonEndMascot.nextSuccess: torba cihazda saklanır (Android: SharedPreferences
+    /// "lesson_end_mascot" → "bag", "last"); ders ve sandık sonucu aynı torbayı paylaşır.
+    /// Çekim kuralı ortak koddadır (LessonEndMascotLogic); burada yalnızca saklama vardır.
+    private static func basariSahnesiCek() -> String {
+        let depo: UserDefaults = UserDefaults.standard
+        let torba: String? = depo.string(forKey: torbaAnahtari)
+        let sonSahne: String? = depo.string(forKey: sonSahneAnahtari)
+        let cekim: LessonEndMascotDraw = LessonEndMascotLogic.shared.nextSuccess(storedBag: torba, storedLast: sonSahne)
+        depo.set(cekim.bag, forKey: torbaAnahtari)
+        depo.set(cekim.last, forKey: sonSahneAnahtari)
+        return cekim.emote
+    }
 
     /// ValueAnimator.ofInt(a, b) ara değeri (kesirli kısım atılır).
     static func araDeger(_ baslangic: Int, _ bitis: Int, _ oran: Double) -> Int {

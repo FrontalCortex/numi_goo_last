@@ -1,50 +1,71 @@
 import SwiftUI
 import UIKit
 
-// Harita klasörünün ortak görsel yardımcıları: ölçüler (Android dimens.xml), yazı tipi,
-// layout XML'lerinde doğrudan yazılmış (kaynak adı olmayan) renkler ve küçük şekiller.
+// Harita klasörünün ortak görsel yardımcıları: ölçüler (Android dimens.xml ve layout XML'leri),
+// yazı tipi, kaynak adı olmayan renkler, bilgi balonu ve yer tutucu.
 
 enum HaritaStil {
-    // MARK: Ölçüler (dimens.xml; dp → pt birebir)
+    // MARK: Ölçüler (dp → pt birebir)
 
-    /// map_sticky_padding_horizontal
-    static let yapiskanYatayBosluk: CGFloat = 32
-    /// map_sticky_recycler_padding_top
+    /// map_sticky_padding_horizontal (item_header.xml yatay iç boşluğu)
+    static let baslikYatayBosluk: CGFloat = 32
+    /// map_item_header_padding
+    static let baslikDikeyBosluk: CGFloat = 14
+    /// map_sticky_recycler_padding_top (fragment_map.xml liste üst boşluğu)
     static let listeUstBosluk: CGFloat = 16
-    /// map_lesson_item_padding
-    static let kartSatirBoslugu: CGFloat = 17
+    /// map_list_padding_bottom
+    static let listeAltBosluk: CGFloat = 92
+    /// map_lesson_card_margin_horizontal (kart ve panel yatay boşluğu)
+    static let kartYatayBosluk: CGFloat = 16
+    /// map_lesson_card_margin_vertical
+    static let kartDikeyBosluk: CGFloat = 6
+    /// item_lesson_card.xml: cardCornerRadius
+    static let kartKoseYaricapi: CGFloat = 16
+    /// item_lesson_card.xml: strokeWidth
+    static let kartCizgi: CGFloat = 2
+    /// item_lesson_card.xml: lessonIcon
+    static let kartSimgeBoyu: CGFloat = 40
+    /// item_lesson_card.xml: lessonStateIcon, chestStar1..3
+    static let kartDurumSimgesi: CGFloat = 22
+    /// item_lesson_card.xml: lessonStepBar yüksekliği
+    static let kartCubukYuksekligi: CGFloat = 10
+    /// SegmentBarView: dilimler arası 4dp
+    static let dilimBoslugu: CGFloat = 4
+    /// item_race.xml: map_lesson_item_padding
+    static let yarisSatirBoslugu: CGFloat = 17
     /// map_lesson_card_size
-    static let kartBoyu: CGFloat = 85
-    /// map_lesson_outer_ring_size
-    static let halkaBoyu: CGFloat = 102
-    /// map_lesson_progress_thickness
-    static let halkaKalinligi: CGFloat = 7
-    /// LessonAdapter.applyStepSegments: setSegmentGapAngle(16f)
-    static let dilimBoslugu: Double = 16
-    /// map_lesson_icon_size
-    static let simgeBoyu: CGFloat = 38
-    /// map_lesson_chest_stars_size
-    static let yildizAlani: CGFloat = 76
+    static let yarisKartBoyu: CGFloat = 85
     /// map_race_icon_size
     static let yarisSimgeBoyu: CGFloat = 64
-    /// map_fab_size
-    static let soruDugmesiBoyu: CGFloat = 60
-    /// main_toolbar_icon_back (düğmenin kutusu)
+    /// main_toolbar_icon_back (kabuksuz açılışta geri düğmesinin kutusu)
     static let geriDugmesiBoyu: CGFloat = 30
-    /// ic_back_arrow.xml: 24dp'lik vektör, ImageButton içinde ölçeklenmeden ortalanır.
+    /// ic_back_arrow.xml: 24dp'lik vektör
     static let geriOkuBoyu: CGFloat = 24
-    /// lesson_sheet_top_row_height
-    static let altPanelUstSatir: CGFloat = 38
-    /// lesson_sheet_lottie_size
-    static let altPanelAtesBoyu: CGFloat = 53
-    /// lesson_sheet_lottie_padding_bottom
-    static let altPanelAtesAltBosluk: CGFloat = 6
-    /// Widget.MaterialComponents.Button: minHeight 48dp - insetTop 6dp - insetBottom 6dp
-    static let altPanelDugmeBoyu: CGFloat = 36
-    /// Widget.MaterialComponents.Button: insetTop / insetBottom
-    static let altPanelDugmeIcBosluk: CGFloat = 6
-    /// MapFragment.startAskQuestionBounceAnimation: translationY 0 → -20 → 0
-    static let soruDugmesiSuzulme: CGFloat = 20
+
+    // Ders paneli (lesson_popover.xml, LessonAdapter.placeLessonPanel)
+
+    /// lessonPanelCard: padding
+    static let panelIcBosluk: CGFloat = 16
+    /// GradientDrawable cornerRadius 18dp
+    static let panelKoseYaricapi: CGFloat = 18
+    /// setStroke(2dp)
+    static let panelCizgi: CGFloat = 2
+    /// lessonPanelArrow
+    static let okGenisligi: CGFloat = 22
+    static let okYuksekligi: CGFloat = 11
+    /// placeLessonPanel: kart ile ok arası
+    static let okKartArasi: CGFloat = 6
+    /// placeLessonPanel: ekran kenarına en az uzaklık
+    static let panelKenarPayi: CGFloat = 12
+    /// placeLessonPanel: okun panelin kenarını örttüğü miktar
+    static let okBindirme: CGFloat = 2
+    /// actionButton: layout_height 56dp (dudak dahil), cornerRadius 14dp
+    static let dugmeYuksekligi: CGFloat = 56
+    static let dugmeKoseYaricapi: CGFloat = 14
+    /// DepthButtons.DEPTH_DP
+    static let dugmeDerinligi: CGFloat = 4
+    /// LESSON_PANEL_DIM_ALPHA
+    static let karartma: Double = 0.7
 
     // MARK: Yazı
 
@@ -64,16 +85,24 @@ enum HaritaStil {
         return Color(.sRGB, red: kirmizi, green: yesil, blue: mavi, opacity: alfa)
     }
 
-    /// item_header.xml: #44A89C9C (alfa 0x44).
-    static let baslikCizgiRengi: Color = HaritaStil.renk(0xA89C9C, alfa: Double(0x44) / 255.0)
-    /// fragment_map.xml stickySectionUnit: #C7C5C5.
-    static let yapiskanUstYaziRengi: Color = HaritaStil.renk(0xC7C5C5)
-    /// fab_background.xml: #263C31.
-    static let soruDugmesiZemini: Color = HaritaStil.renk(0x263C31)
-    /// bottom_sheet_background.xml: #222.
-    static let altPanelZemini: Color = HaritaStil.renk(0x222222)
-    /// record_background.xml: #FFB703.
-    static let rekorZemini: Color = HaritaStil.renk(0xFFB703)
+    /// Göçen düğmenin dudağı: yüz renginin koyusu (Android: DepthButtons.darken, f = 0.78).
+    static func dudak(_ renkAdi: String) -> Color {
+        guard let kaynak = UIColor(named: renkAdi) else {
+            return Color.black.opacity(0.3)
+        }
+        var k: CGFloat = 0
+        var y: CGFloat = 0
+        var m: CGFloat = 0
+        var a: CGFloat = 0
+        _ = kaynak.getRed(&k, green: &y, blue: &m, alpha: &a)
+        let f: CGFloat = 0.78
+        return Color(.sRGB, red: Double(k * f), green: Double(y * f), blue: Double(m * f), opacity: Double(a))
+    }
+
+    /// item_header.xml: #44A89C9C (alfa 0x44), çizgi ve yazı.
+    static let baslikRengi: Color = HaritaStil.renk(0xA89C9C, alfa: Double(0x44) / 255.0)
+    /// Toast / Snackbar zemini (Material: #323232).
+    static let balonZemini: Color = HaritaStil.renk(0x323232)
 }
 
 /// Geri düğmesini (Android: lessonPartBackButton) uygulama kabuğu kendi üst çubuğunda mı çiziyor.
@@ -91,48 +120,68 @@ extension EnvironmentValues {
     }
 }
 
-/// Yalnızca üst köşeleri yuvarlatılmış dikdörtgen (bottom_sheet_background.xml).
-struct HaritaUstYuvarlakSekil: Shape {
-    let yaricap: CGFloat
-
-    func path(in rect: CGRect) -> Path {
-        let yol = UIBezierPath(
-            roundedRect: rect,
-            byRoundingCorners: [.topLeft, .topRight],
-            cornerRadii: CGSize(width: yaricap, height: yaricap)
-        )
-        return Path(yol.cgPath)
-    }
-}
-
-/// Kart basma animasyonu (lesson_state_animator.xml: basınca 0.80'e küçül, bırakınca geri yaylan).
+/// Ders kartına basınca hafif küçülme (lesson_card_press_animator.xml: basınca 150 ms'de 0,97;
+/// bırakınca 250 ms'de taşarak 1).
 struct HaritaKartBasmaStili: ButtonStyle {
+    let olcek: CGFloat
+
+    init(olcek: CGFloat = 0.97) {
+        self.olcek = olcek
+    }
+
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.80 : 1.0)
-            .animation(.spring(response: 0.3, dampingFraction: 0.5), value: configuration.isPressed)
+        let basili: Bool = configuration.isPressed
+        let animasyon: Animation = basili
+            ? Animation.easeOut(duration: 0.15)
+            : Animation.spring(response: 0.25, dampingFraction: 0.55)
+        return configuration.label
+            .scaleEffect(basili ? olcek : 1.0)
+            .animation(animasyon, value: basili)
     }
 }
 
-/// Kısa süreli bilgi balonu (Android: Toast).
+/// Kısa süreli bilgi balonu. Toast: ortalanmış kapsül; Snackbar (LockedHint): alt kenarda,
+/// tam genişlikte, 4pt köşeli, 5 satıra kadar.
 struct HaritaBildirimGorunumu: View {
-    let metin: String
+    let bildirim: HaritaBildirimi
 
     var body: some View {
-        Text(metin)
+        if bildirim.uzun {
+            snackbar
+        } else {
+            toast
+        }
+    }
+
+    private var toast: some View {
+        Text(bildirim.metin)
             .font(HaritaStil.yazi(14, kalin: false))
             .foregroundColor(.white)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
-            .background(Capsule().fill(HaritaStil.renk(0x323232)))
+            .background(Capsule().fill(HaritaStil.balonZemini))
             .padding(.horizontal, 24)
             .padding(.bottom, 48)
+    }
+
+    private var snackbar: some View {
+        Text(bildirim.metin)
+            .font(HaritaStil.yazi(14, kalin: false))
+            .foregroundColor(.white)
+            .lineLimit(5)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(RoundedRectangle(cornerRadius: 4).fill(HaritaStil.balonZemini))
+            .padding(8)
     }
 }
 
 /// Henüz yazılmamış ekranların (abaküs dersi, öğretici, yarış paneli, liderlik tablosu, mağaza)
-/// yerine gösterilen yer tutucu. Ortak kuralın verdiği kararı metin olarak gösterir.
+/// yerine gösterilen yer tutucu (yalnızca harita kabuksuz açıldığında). Ortak kuralın verdiği
+/// kararı metin olarak gösterir.
 struct HaritaYerTutucuEkrani: View {
     let hedef: HaritaHedefi
     @Environment(\.dismiss) private var kapat
@@ -152,7 +201,7 @@ struct HaritaYerTutucuEkrani: View {
                 ayrintilar
                 Text("Bu ekran henüz hazır değil.")
                     .font(HaritaStil.yazi(14, kalin: false))
-                    .foregroundColor(HaritaStil.yapiskanUstYaziRengi)
+                    .foregroundColor(Color.white.opacity(0.6))
                 kapatDugmesi
             }
             .padding(24)

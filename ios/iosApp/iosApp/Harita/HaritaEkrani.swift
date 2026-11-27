@@ -2,11 +2,11 @@ import SwiftUI
 
 // Ders haritası sekmesinin giriş noktası.
 //
-// Android'deki akış: PartSelectionFragment (kısım seçimi) → MapFragment (ders listesi) →
-// derse dokununca lesson_bottom_sheet (alt panel). Burada üçü tek kök görünümde toplanır:
+// Android'deki akış: PartSelectionFragment (kısım seçimi) → MapFragment (alt alta ders kartları)
+// → derse dokununca karta bağlı ders paneli (lesson_popover). Burada ikisi tek kök görünümde:
 //   - kısım seçilmemişse HaritaKisimSecimi,
-//   - seçilmişse HaritaDersListesi,
-//   - üstlerinde karartma + HaritaDersAltPaneli ve kısa bilgi balonu.
+//   - seçilmişse HaritaDersListesi (ders paneli onun içinde, karta göre yerleşir),
+//   - üstlerinde kısa bilgi balonu (Toast / LockedHint).
 // Abaküs dersi, öğretici, yarış paneli gibi henüz yazılmamış ekranlar yer tutucu olarak açılır.
 //
 // `HaritaEkrani()` kendi modeliyle ve yer tutucularla çalışır (ekran galerisi). Uygulama kabuğu
@@ -34,11 +34,9 @@ struct HaritaEkrani: View {
         ZStack {
             Color("background_color").ignoresSafeArea()
             icerik
-            altPanelKatmani
             bildirimKatmani
         }
         .animation(.easeInOut(duration: 0.25), value: model.seciliPart)
-        .animation(.easeOut(duration: 0.3), value: model.altPanel?.id)
         .animation(.easeInOut(duration: 0.2), value: model.bildirim)
         .fullScreenCover(item: yerTutucuHedefi) { hedef in
             HaritaYerTutucuEkrani(hedef: hedef)
@@ -67,31 +65,13 @@ struct HaritaEkrani: View {
         }
     }
 
-    /// Android: scrimView (alfa 0.5; dokununca panel kapanır) + bottom sheet.
-    @ViewBuilder
-    private var altPanelKatmani: some View {
-        if let panel = model.altPanel {
-            Color.black.opacity(0.5)
-                .ignoresSafeArea()
-                .onTapGesture { model.altPaneliKapat() }
-                .transition(.opacity)
-                .zIndex(1)
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                HaritaDersAltPaneli(durum: panel, model: model)
-            }
-            .transition(.move(edge: .bottom))
-            .zIndex(2)
-        }
-    }
-
-    /// Android: Toast.
+    /// Android: Toast (kısa) ya da LockedHint Snackbar'ı (alt kenarda).
     @ViewBuilder
     private var bildirimKatmani: some View {
         if let bildirim = model.bildirim {
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
-                HaritaBildirimGorunumu(metin: bildirim.metin)
+                HaritaBildirimGorunumu(bildirim: bildirim)
             }
             .allowsHitTesting(false)
             .transition(.opacity)

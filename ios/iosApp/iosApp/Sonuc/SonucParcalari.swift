@@ -1,7 +1,8 @@
 import Foundation
 import SwiftUI
 
-// Sonuç ekranının küçük parçaları: renk yardımcıları, Lottie görünümü, sonuç kutusu, düğme.
+// Sonuç ekranının küçük parçaları: renk yardımcıları, Lottie görünümü (yalnızca sandık yıldızları),
+// Sobi sahnesi, sonuç kutusu, göçen düğme.
 
 enum SonucStil {
     /// 0xRRGGBB biçimindeki sabit renk (layout XML'lerinde kaynak adı olmadan yazılmış renkler).
@@ -12,8 +13,9 @@ enum SonucStil {
         return Color(.sRGB, red: kirmizi, green: yesil, blue: mavi, opacity: alfa)
     }
 
-    /// fragment_lesson_result.xml / fragment_chest_result.xml kök arka planı: #101820
-    static let zemin: Color = SonucStil.renk(0x101820)
+    /// Üç sonuç layout'unun kök arka planı: `@color/background_color` (#141F23).
+    /// (Eski tasarımda #101820 idi; güncel Android hepsinde background_color kullanır.)
+    static let zemin: Color = Color("background_color")
     /// "Ders Bitti!" başlığı: #FFF200
     static let baslikSarisi: Color = SonucStil.renk(0xFFF200)
     /// Sarı kutunun yazıları ve çerçevesi (result_box_yellow.xml): #FFD600
@@ -28,10 +30,12 @@ enum SonucStil {
     static let hataBaslik: Color = SonucStil.renk(0xE93939)
     /// Başarısızlık nedeni satırı: #E00000
     static let hataAciklama: Color = SonucStil.renk(0xE00000)
-    /// "Devam et" düğmesi: #8CC63F
+    /// Devam / Çıkış göçen düğmesinin yüzü: bg_depth_result_continue.xml, #8CC63F.
     static let devamDugmesi: Color = SonucStil.renk(0x8CC63F)
-    /// "Çıkış" düğmesi: #29B6F6
-    static let cikisDugmesi: Color = SonucStil.renk(0x29B6F6)
+    /// Aynı düğmenin dudağı (alttaki koyu şerit): #62A12E.
+    static let devamDudagi: Color = SonucStil.renk(0x62A12E)
+    /// Başarısız ekranındaki düğme yazısı: #101820 (layout `textColor`).
+    static let cikisYazisi: Color = SonucStil.renk(0x101820)
     /// Puan çubuğunun zemini (#333333) ve boş kısmı (#444444)
     static let cubukZemin: Color = SonucStil.renk(0x333333)
     static let cubukBos: Color = SonucStil.renk(0x444444)
@@ -42,9 +46,6 @@ enum SonucStil {
     /// hep tint rengidir. `true`: Android'de GÖRÜNEN sabit renk; `false`: kodun hesapladığı geçişli
     /// renk (SonucModeli.cubukRengi, ortak koddan). Android cihazda doğrulanamadı; tek satırla döner.
     static let cubukSabitRenkli: Bool = true
-    /// MaterialButton (Widget.MaterialComponents.Button) üst/alt iç boşluğu: mtrl_btn_inset = 6dp.
-    /// layout_height bu boşlukları İÇERİR; görünen düğme 12dp daha kısadır.
-    static let dugmeIcBosluk: CGFloat = 6
     /// TextAppearance.MaterialComponents.Button harf aralığı: 0.0892857143 em.
     static let dugmeHarfAraligi: CGFloat = 0.0892857143
 
@@ -96,8 +97,10 @@ enum SonucStil {
 
 /// Android `LottieAnimationView` karşılığı: ortak sarmalayıcıyı (Ortak/LottieGorunumu.swift) çağırır.
 ///
-/// - `ad`: Android `assets/` klasöründeki dosya adı; ".json" uzantılı da verilebilir
-///   (ortak kod "animation_one.json" biçiminde döndürür), uzantı burada atılır.
+/// Güncel Android'de yalnızca sandık sonucunun üç yıldızı (star.json) Lottie'dir; ders sonu
+/// animasyonları Sobi maskotuyla (`SonucMaskotu`) değişti.
+///
+/// - `ad`: Android `assets/` klasöründeki dosya adı; ".json" uzantılı da verilebilir, uzantı atılır.
 /// - `dongu`: Android `lottie_loop`.
 /// - `oynat`: `false` iken ilk karede bekler; `true` olunca oynar (döngüsüzse son karede kalır).
 struct SonucAnimasyonu: View {
@@ -107,6 +110,22 @@ struct SonucAnimasyonu: View {
 
     var body: some View {
         LottieGorunumu(SonucStil.lottieAdi(ad), dongu: dongu, hiz: 1.0, oynat: oynat, bitti: nil)
+            .accessibilityHidden(true)
+    }
+}
+
+/// Ders sonu Sobi sahnesi (Android: `BunnyMascotView` `mascotView`).
+///
+/// Android'de ekran sağdan kayarak girerken Sobi bekler; giriş bitince (`ENTER_DELAY_MS`, 450 ms)
+/// `play(emote)` ile sahne başlar. Burada `basladi` false iken `animasyonlu: false`, sonra true olur.
+/// Boyutu çağıran `.frame` ile verir (derste kalan bütün yer, sandık sonucunda 200×200).
+struct SonucMaskotu: View {
+    /// `BunnyMascotView.Emote` enum adı ("GUITAR", "DETERMINED" ...).
+    let emote: String
+    let basladi: Bool
+
+    var body: some View {
+        SobiMaskotGorunumu(emote: emote, animasyonlu: basladi)
             .accessibilityHidden(true)
     }
 }
@@ -135,17 +154,15 @@ struct SonucKutusu: View {
     }
 }
 
-/// Alt düğme (Android: tema gereği MaterialButton).
+/// Alt düğme: göçen (derinlikli) Devam / Çıkış düğmesi.
 ///
-/// `yukseklik` Android `layout_height` değeridir; MaterialButton bunun üstünden ve altından
-/// 6dp'yi boş bırakır (insetTop / insetBottom), yani renkli gövde `yukseklik - 12` yüksekliğindedir.
-/// Dokunma alanı Android'deki gibi bütün yüksekliktir.
+/// Android: `bg_depth_result_continue` arka planı + `DepthPress`; `layout_height` dudak (4dp)
+/// DAHİL toplam yüksekliktir, etiket yüzde ortalanır (paddingBottom 4dp). Çizimi ortak
+/// `GocenDugmeStili` yapar. Yazı 18sp kalın; harf aralığı MaterialButton'dan gelir.
 struct SonucDugmesi: View {
     let metin: String
-    let zemin: Color
     let yaziRengi: Color
     let yukseklik: CGFloat
-    let kose: CGFloat
     let eylem: () -> Void
 
     private let yaziBoyu: CGFloat = 18
@@ -154,22 +171,24 @@ struct SonucDugmesi: View {
         Button(action: eylem) {
             etiket
         }
-        .buttonStyle(.plain)
+        .buttonStyle(
+            GocenDugmeStili(
+                zemin: SonucStil.devamDugmesi,
+                golge: SonucStil.devamDudagi,
+                koseYaricapi: 15,
+                derinlik: 4
+            )
+        )
+        .frame(height: yukseklik)
     }
 
     private var etiket: some View {
         let aralik: CGFloat = yaziBoyu * SonucStil.dugmeHarfAraligi
-        let govdeYuksekligi: CGFloat = max(0, yukseklik - SonucStil.dugmeIcBosluk * 2)
         return Text(metin)
             .kerning(aralik)
             .font(Tema.yazi(yaziBoyu))
             .foregroundColor(yaziRengi)
             .lineLimit(1)
-            .frame(maxWidth: .infinity)
-            .frame(height: govdeYuksekligi)
-            .background(RoundedRectangle(cornerRadius: kose).fill(zemin))
-            .frame(height: yukseklik)
-            .contentShape(Rectangle())
     }
 }
 

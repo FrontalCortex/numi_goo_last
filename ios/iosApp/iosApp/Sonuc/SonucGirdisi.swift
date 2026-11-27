@@ -12,7 +12,7 @@ struct SonucGirdisi {
     enum Tur {
         /// LessonResult — "Ders Bitti!", toplam puan ve başarı kutuları, "Devam et".
         case dersBasarili
-        /// LessonResultFalse — "Ders Geçilemedi!", neden: başarı oranı %80'den düşük.
+        /// LessonResultFalse — "Ders Geçilemedi!", neden: başarı oranı %75'ten düşük.
         case dersBasarisiz
         /// LessonResultFalse (isChestFailure = true) — neden: puan 500'den düşük.
         case sandikBasarisiz

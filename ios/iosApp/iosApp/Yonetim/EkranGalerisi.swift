@@ -21,7 +21,8 @@ struct EkranGalerisi: View {
         "kabuk",
         "harita-kisim",
         "harita-ders",
-        "harita-alt-panel",
+        "harita-popover",
+        "harita-kilitli-popover",
         "abakus-ders",
         "abakus-sandik",
         "kor-ders",
@@ -30,7 +31,6 @@ struct EkranGalerisi: View {
         "sonuc-sandik-basarisiz",
         "sonuc-sandik",
         "sandik",
-        "kristal",
         "gorevler",
         "gunluk-soru",
         "gunluk-soru-odul",
@@ -46,6 +46,9 @@ struct EkranGalerisi: View {
         "yer-tutucu",
         "yazi-tipi",
         "lottie",
+        "maskot",
+        "maskot-2",
+        "maskot-3",
     ]
 
     /// `-ekran <ad>` ile istenen ekran; argüman yoksa nil (uygulama olağan akışla açılır).
@@ -87,7 +90,7 @@ struct EkranGalerisi: View {
 
     private static let dersAdlari: Set<String> = [
         "abakus-ders", "abakus-sandik", "kor-ders", "sonuc-basarili", "sonuc-basarisiz",
-        "sonuc-sandik-basarisiz", "sonuc-sandik", "sandik", "kristal",
+        "sonuc-sandik-basarisiz", "sonuc-sandik", "sandik",
     ]
 
     private static let sekmeAdlari: Set<String> = [
@@ -114,10 +117,9 @@ struct EkranGalerisi: View {
             SonucEkrani(girdi: EkranGalerisiVeri.sonucSandikBasarisiz, devam: {}, tekrar: {})
         case "sonuc-sandik":
             SonucEkrani(girdi: EkranGalerisiVeri.sonucSandik, devam: {}, tekrar: {})
-        case "sandik":
-            SandikEkrani(girdi: SandikGirdisi(baslangicNadirligi: "COMMON"), kapat: { _ in })
         default:
-            SandikKristalEkrani(girdi: SandikKristalGirdisi(), kapat: {})
+            // "sandik" (kristal ekranı güncel Android'de silindi)
+            SandikEkrani(girdi: SandikGirdisi(baslangicNadirligi: "COMMON"), kapat: { _ in })
         }
     }
 
@@ -173,8 +175,10 @@ struct EkranGalerisi: View {
             EkranGalerisiHarita(durum: .kisim)
         case "harita-ders":
             EkranGalerisiHarita(durum: .dersListesi)
-        case "harita-alt-panel":
-            EkranGalerisiHarita(durum: .altPanel)
+        case "harita-popover":
+            EkranGalerisiHarita(durum: .panel)
+        case "harita-kilitli-popover":
+            EkranGalerisiHarita(durum: .kilitliPanel)
         case "profil-duzenle":
             EkranGalerisiProfilDuzenle()
         case "yer-tutucu":
@@ -190,6 +194,12 @@ struct EkranGalerisi: View {
             EkranGalerisiYaziTipi()
         case "lottie":
             LottieDenemeEkrani()
+        case "maskot":
+            SobiMaskotDenemeEkrani(sayfa: 1)
+        case "maskot-2":
+            SobiMaskotDenemeEkrani(sayfa: 2)
+        case "maskot-3":
+            SobiMaskotDenemeEkrani(sayfa: 3)
         default:
             EkranGalerisiAdListesi(istenen: ad)
         }
@@ -279,8 +289,10 @@ struct EkranGalerisiHarita: View {
         case kisim
         /// 1. kısmın ders listesi.
         case dersListesi
-        /// 1. kısmın ilk dersinin alt paneli.
-        case altPanel
+        /// 1. kısmın ilk açık dersinin karta bağlı ders paneli.
+        case panel
+        /// 1. kısmın ilk kilitli dersinin paneli (anahtarla açma önerisi).
+        case kilitliPanel
     }
 
     @StateObject private var model: HaritaModeli
@@ -308,8 +320,12 @@ struct EkranGalerisiHarita: View {
         if let kart = ilkKisim {
             model.kisimSec(kart)
         }
-        if durum == .altPanel {
-            if let ders = model.ogeler.first(where: { $0.tur == .ders }) {
+        if durum == .panel {
+            if let ders = model.ogeler.first(where: { $0.tur == .ders && $0.kilitsiz }) {
+                model.ogeyeDokun(ders)
+            }
+        } else if durum == .kilitliPanel {
+            if let ders = model.ogeler.first(where: { $0.tur == .ders && !$0.kilitsiz }) {
                 model.ogeyeDokun(ders)
             }
         }

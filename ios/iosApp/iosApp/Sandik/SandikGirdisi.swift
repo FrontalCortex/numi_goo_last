@@ -4,6 +4,8 @@ import Foundation
 //
 // Android'de ders sonrası akış: ChestFragment (kendisi görünmez; ilerlemeyi yazar) →
 // NewChestFragment (görünen sandık mini oyunu). iOS'ta `SandikEkrani` yalnızca görünen kısımdır.
+// Güncel Android'de kristal kırma akışı (CrystalBreakVideoFragment) TAMAMEN silindi: sandık
+// tek ekrandır (NewChestFragment); kristal videosu, kristal sesi ve video ses düzeyi yoktur.
 
 /// Sandık ekranına aktarılan değerler (Android: NewChestFragment.newInstance argümanları).
 struct SandikGirdisi {
@@ -15,9 +17,24 @@ struct SandikGirdisi {
     /// (Android: ARG_AD_NONCE). Ders ve görev sandıklarında `nil`.
     var reklamNonce: String? = nil
 
-    init(baslangicNadirligi: String = "COMMON", reklamNonce: String? = nil) {
+    /// Kupa yolu sandığı: doluysa sandık `claimCupPathChest` ile açılır (Android: ARG_CUP_FIELD;
+    /// bkz. CupPathRewardRepository). Sunucu kupa puanını ve "en son hangi eşik alındı" defterini
+    /// kendisi doğrular; sonuç biçimi `openChest` ile aynıdır, ekranın geri kalanı değişmez.
+    var kupaAlani: String? = nil
+
+    /// Kupa yolu sandığının eşiği: 300, 400, ... (Android: ARG_CUP_MILESTONE). Yalnızca `kupaAlani` ile anlamlı.
+    var kupaEsigi: Int = 0
+
+    init(
+        baslangicNadirligi: String = "COMMON",
+        reklamNonce: String? = nil,
+        kupaAlani: String? = nil,
+        kupaEsigi: Int = 0
+    ) {
         self.baslangicNadirligi = baslangicNadirligi
         self.reklamNonce = reklamNonce
+        self.kupaAlani = kupaAlani
+        self.kupaEsigi = kupaEsigi
     }
 }
 
@@ -33,8 +50,11 @@ struct SandikSonucu {
     /// Kapanıştaki nadirlik adı ("COMMON" …).
     let sonNadirlik: String
 
-    /// NewChestFragment.requestOutcomeFromServer hata dalındaki Toast metni.
-    static let acilamadiMetni = "Sandık açılamadı. Tekrar deneyin."
+    /// NewChestFragment.requestOutcomeFromServer hata dalındaki Toast metni
+    /// (Android: R.string.ui_sandik_acilamadi_tekrar_deneyin).
+    static var acilamadiMetni: String {
+        return Metin.al("ui_sandik_acilamadi_tekrar_deneyin")
+    }
 }
 
 /// Sunucunun sandık yanıtı (ortak kod: ServerRewards.ChestOutcome).
@@ -54,10 +74,20 @@ struct SandikSunucuSonucu {
 /// atılır ve ödül bu çağrıda bakiyeye YAZILIR (`users/{uid}.currency` / `keys`); ekran yalnızca
 /// sonucu oynatır. Gerçek uygulama ortak koddaki `ServerRewards.ChestPrefetcher` üzerinden
 /// çağırmalıdır: aynı sandık için ikinci kez ağa gidilmemesi oradaki kuralla sağlanır.
+///
+/// Kupa yolu sandığı (`SandikGirdisi.kupaAlani` dolu) ayrı çağrıdır: Android
+/// ServerRewards.claimCupPathChest → Cloud Function `claimCupPathChest` (gövde: `cupField`,
+/// `milestone`; yanıt `openChest` ile aynı). Kupa puanını istemci yazamaz; sunucu doğrular.
 protocol SandikOdulServisi {
     func sandikAc(
         baslangicNadirligi: String,
         reklamNonce: String?,
+        tamamla: @escaping (Result<SandikSunucuSonucu, Error>) -> Void
+    )
+
+    func kupaYoluSandiginiAc(
+        kupaAlani: String,
+        esik: Int,
         tamamla: @escaping (Result<SandikSunucuSonucu, Error>) -> Void
     )
 }
@@ -85,15 +115,27 @@ final class SahteSandikOdulServisi: SandikOdulServisi {
         reklamNonce: String?,
         tamamla: @escaping (Result<SandikSunucuSonucu, Error>) -> Void
     ) {
-        let yanit = sonuc
+        yanitla(tamamla)
+    }
+
+    func kupaYoluSandiginiAc(
+        kupaAlani: String,
+        esik: Int,
+        tamamla: @escaping (Result<SandikSunucuSonucu, Error>) -> Void
+    ) {
+        yanitla(tamamla)
+    }
+
+    private func yanitla(_ tamamla: @escaping (Result<SandikSunucuSonucu, Error>) -> Void) {
+        let yanit: SandikSunucuSonucu = sonuc
         DispatchQueue.main.asyncAfter(deadline: .now() + gecikme) {
             tamamla(.success(yanit))
         }
     }
 }
 
-/// Sandık ve kristal ekranlarının sesleri. "Ses açık" tercihi (Android: AppPrefs /
-/// "sound_enabled") gerçek uygulamanın içinde denetlenmeli.
+/// Sandık ekranının sesleri. "Ses açık" tercihi (Android: AppPrefs / "sound_enabled") gerçek
+/// uygulamanın içinde denetlenmeli.
 protocol SandikSesCalar {
     /// Ekran açılırken sesleri hazırlar (Android: ChestSoundPlayer.preload).
     func hazirla()
@@ -102,25 +144,12 @@ protocol SandikSesCalar {
     func seviyeSesiCal(hiz: Float)
     /// Ödül görünürken bir kez. Android: res/raw/reward_sound.mp3, ses düzeyi 0.7.
     func odulSesiCal()
-    /// Kristal videosunda her dokunuş. Android: res/raw/crystal_click1.mp3, ses düzeyi 0.5.
-    func kristalTikSesiCal()
-    /// Kristal videosunun kendi ses düzeyi, 0…1. Android: "ses açık" ise 0.5, kapalıysa 0
-    /// (CrystalBreakVideoFragment: `player.volume = if (soundEnabled) 0.5f else 0f`).
-    /// Varsayılan uygulaması 0.5 döndürür; gerçek uygulama tercihe göre 0 döndürmeli.
-    var videoSesDuzeyi: Float { get }
-}
-
-extension SandikSesCalar {
-    var videoSesDuzeyi: Float {
-        return 0.5
-    }
 }
 
 struct SahteSandikSesCalar: SandikSesCalar {
     func hazirla() {}
     func seviyeSesiCal(hiz: Float) {}
     func odulSesiCal() {}
-    func kristalTikSesiCal() {}
 }
 
 /// Ödüllü reklam.

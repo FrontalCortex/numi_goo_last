@@ -20,12 +20,26 @@ struct UygulamaKokGorunumu: View {
             ForEach(yonetici.katmanlar) { katman in
                 YonetimKatmanGorunumu(katman: katman, yonetici: yonetici)
                     .zIndex(Double(katman.id))
-                    .transition(katman.ekran.saydam ? AnyTransition.opacity : AnyTransition.move(edge: .trailing))
+                    .transition(UygulamaKokGorunumu.gecis(katman.ekran))
             }
         }
         .animation(.easeInOut(duration: 0.25), value: yonetici.katmanKimlikleri)
         // Uygulama sistem temasından bağımsız hep koyudur (Android: Theme.NumiGoo).
         .preferredColorScheme(.dark)
+    }
+
+    /// Katmanın giriş/çıkış geçişi. Ders akışı ekranları (abaküs, kör ders, sonuç, sandık) sağdan
+    /// girip SOLA çıkar, 400 ms (Android: queue_screen_in / queue_screen_out); ötekiler eskisi gibi.
+    private static func gecis(_ ekran: YonetimEkrani) -> AnyTransition {
+        if ekran.saydam {
+            return AnyTransition.opacity
+        }
+        switch ekran {
+        case .abakusDers, .korDers, .sonuc, .sandik:
+            return SonucGecisi.sagdanGirSolaCik
+        default:
+            return AnyTransition.move(edge: .trailing)
+        }
     }
 
     @ViewBuilder

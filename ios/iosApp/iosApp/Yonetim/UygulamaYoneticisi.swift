@@ -112,9 +112,9 @@ final class UygulamaYoneticisi: ObservableObject {
     let ilerleme = YonetimIlerlemeDeposu()
 
     private var abonelikler: Set<AnyCancellable> = []
-    /// Haritada en son açılan alt panel; `HaritaHedefi` yalnızca metin taşıdığı için dersin
+    /// Haritada en son açılan ders paneli; `HaritaHedefi` yalnızca metin taşıdığı için dersin
     /// kendisi buradan okunur.
-    private var sonAltPanel: HaritaAltPanelDurumu? = nil
+    private var sonPanel: HaritaPanelDurumu? = nil
     private var katmanSayaci: Int = 0
     private var cuzdanDinleyicisi: UUID? = nil
 
@@ -375,10 +375,10 @@ final class UygulamaYoneticisi: ObservableObject {
     // MARK: Harita
 
     private func haritayiDinle() {
-        haritaModeli.$altPanel
+        haritaModeli.$panel
             .sink { [weak self] panel in
                 if let acilan = panel {
-                    self?.sonAltPanel = acilan
+                    self?.sonPanel = acilan
                 }
             }
             .store(in: &abonelikler)
@@ -388,7 +388,7 @@ final class UygulamaYoneticisi: ObservableObject {
             .compactMap { $0 }
             .receive(on: DispatchQueue.main)
             .sink { [weak self] hedef in
-                self?.haritaHedefiGeldi(hedef, panel: self?.sonAltPanel)
+                self?.haritaHedefiGeldi(hedef, panel: self?.sonPanel)
             }
             .store(in: &abonelikler)
     }

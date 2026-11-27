@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Üst çubuktaki göstergelerin (elmas, enerji, anahtar) değerlerini tutar.
+// Üst çubuktaki göstergelerin (seri, elmas, enerji, anahtar) değerlerini tutar.
 // Değerleri yönetici (Yonetim/UygulamaYoneticisi.oturumuYenile) yazar: elmas ve anahtar mağazanın
 // (şimdilik sahte) cüzdanından, enerji mağazanın (şimdilik sahte) can servisinden gelir; öğretmen
 // ve enerji engeli alanları hâlâ sabittir. İleride Firestore dinleyicileri bu alanları güncelleyecek.
@@ -41,13 +41,24 @@ final class OturumDurumu: ObservableObject {
     // öğretmende üst çubuktaki bütün göstergeler gizlenir (MainActivity.onCreate).
     @Published var ogretmenMi: Bool = false
 
-    // Enerji göstergesinin metni; Android MainActivity.updateEnergyDisplay ile aynı sıra.
+    // Günlük seri (gün sayısı).
+    // Android: StreakRepository.refresh(context).current → MainActivity.refreshStreakUi
+    // (binding.streakText); 0 iken alev söner. Seri altyapısı iOS'ta henüz yok: hep 0.
+    @Published var seri: Int = 0
+
+    // Kalbin üstünde "∞" rozeti gösterilir mi (Android: EnergyDisplay.apply, isInfinite =
+    // !isEnergyBlocked && isInfiniteEnergy); gösterilirken yanındaki sayı boşalır.
+    var sonsuzRozeti: Bool {
+        return !enerjiEngelli && sonsuzEnerji
+    }
+
+    // Enerji göstergesinin metni; Android MainActivity.updateEnergyDisplay + EnergyDisplay.apply.
     var enerjiMetni: String {
+        if sonsuzRozeti {
+            return ""
+        }
         if enerjiEngelli {
             return "0/\(azamiEnerji)"
-        }
-        if sonsuzEnerji {
-            return "∞"
         }
         return "\(enerji)/\(azamiEnerji)"
     }

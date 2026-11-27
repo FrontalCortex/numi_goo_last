@@ -4,7 +4,9 @@ import SwiftUI
 // Kısım (part) seçim ekranı.
 // Android karşılıkları: fragment_part_selection.xml (üç başlık + üç yatay liste),
 // item_part_card.xml (160x180 kart), PartSelectionFragment + PartCardAdapter.
-// Kartların açık/kapalı durumu, başlığı ve rengi ortak koddan (PartSelectionLogic) gelir.
+// Kartların açık/kapalı durumu, kilit mesajı ve rengi ortak koddan (PartSelectionLogic) gelir:
+// 2–6. kartların kapısı önceki bölümün son ünite maratonu, onaylı öğretmende hepsi açık.
+// Kilitli karta dokununca mesaj Snackbar olarak (Android: LockedHint) HaritaEkrani'nda çıkar.
 
 struct HaritaKisimSecimi: View {
     @ObservedObject var model: HaritaModeli
@@ -21,7 +23,9 @@ struct HaritaKisimSecimi: View {
                 }
             }
             .padding(.top, 16)
-            .padding(.bottom, 32)
+            // fragment_part_selection.xml: paddingBottom 88dp (Sobi testi düğmesinin altından son kartlar
+            // kaydırılıp çıkarılabilsin diye; düğme iOS'ta henüz yok, boşluk Android'le aynı tutuldu).
+            .padding(.bottom, 88)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(Color("background_color"))
