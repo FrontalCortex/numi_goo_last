@@ -6,7 +6,7 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSValue.h>
 
-@class SharedAbacusBead, SharedAbacusBeadController, SharedAbacusBeadMetrics, SharedAbacusBeadMetricsMoveDistancesPx, SharedAbacusBeadMetricsRodMeasurement, SharedAbacusBeadRenderer, SharedAbacusBeadRendererBeadRenderKind, SharedAbacusBeadRendererSoroban2Geometry, SharedAbacusCupRepository, SharedAbacusCustomizationFirestore, SharedAbacusCustomizationRules, SharedAbacusCustomizationRulesPlaceResult, SharedAbacusCustomizationSnapshot, SharedAbacusCustomizationUiLogic, SharedAbacusCustomizationUiLogicBeadCard, SharedAbacusCustomizationUiLogicBeadCardState, SharedAbacusCustomizationUiLogicBeadPaint, SharedAbacusCustomizationUiLogicColorRow, SharedAbacusCustomizationUiLogicFrameCard, SharedAbacusCustomizationUiLogicFrameCardState, SharedAbacusCustomizationUiLogicFrameLayer, SharedAbacusCustomizationUiLogicFramePaint, SharedAbacusCustomizationUiLogicPillGeometry, SharedAbacusCustomizationUiLogicPlaceOutcome, SharedAbacusCustomizationUiLogicPurchaseCheck, SharedAbacusCustomizationUiLogicPurchasePanelRules, SharedAbacusCustomizationUiLogicSlotBead, SharedAbacusCustomizationUiLogicSlotPanelState, SharedAbacusFrameRenderer, SharedAbacusFrameRendererRoundRectLayer, SharedAbacusLessonOutcome, SharedAbacusLessonRules, SharedAbacusLessonSessionControlResult, SharedAbacusLessonSessionControlResultAnswered, SharedAbacusLessonSessionControlResultIgnored, SharedAbacusLessonSessionControlResultOffline, SharedAbacusOperation, SharedAbacusPracticeLogic, SharedAbacusPracticeLogicKontrolResult, SharedAbacusPreferences, SharedAbacusPreferencesBeadColorSpec, SharedAbacusPreferencesBeadType, SharedAbacusPreferencesFrameType, SharedAbacusPreviewMetrics, SharedAbacusSoundPlayer, SharedAbacusTouchAction, SharedAbacusUiSettings, SharedAbakusBoncukKoprusu, SharedAbakusDersAkisi, SharedAbakusDersBitisi, SharedAbakusDersGirdisi, SharedAbakusDersKoprusu, SharedAbakusKontrolSonucu, SharedAbakusKontrolSonucuCompanion, SharedAbakusSoruListesi, SharedAccountDeletionRules, SharedAccountSettingsRules, SharedAdRules, SharedAdRulesAdSkipPolicyCompanion, SharedAgeConsentManager, SharedAgeConsentManagerAdRequestTags, SharedAgeConsentManagerAgeTreatment, SharedAnimatedQuest, SharedAppRatingManagerCompanion, SharedAuthRules, SharedAuthRulesGoogleLoginFailureAction, SharedAuthRulesPendingRegistration, SharedAuthRulesStudentEmailFlow, SharedBadgeAnimMode, SharedBadgeDetailLogic, SharedBadgeDetailLogicBadgeDetailUiState, SharedBadgeDetailLogicBadgeRenderConfig, SharedBadgeFragmentLogic, SharedBadgeFragmentLogicCelebrationQueueItem, SharedBadgeFragmentLogicLevelUpAnimConfig, SharedBadgeFragmentLogicLevelUpCelebrationPlan, SharedBadgeFragmentLogicPieceCountBadge, SharedBadgeFragmentLogicProgressUi, SharedBadgeIncrementTransactionResult, SharedBadgeKind, SharedBadgeKindCompanion, SharedBadgeLevelTone, SharedBadgeLevelUpPayload, SharedBadgePieceLeaderboardSync, SharedBadgePrecalcHelper, SharedBadgeProgressEngine, SharedBadgeProgressFirestore, SharedBadgeProgressRepository, SharedBadgeProgressWindow, SharedBadgeState, SharedBeadAnimationCompanion, SharedBeadAnimationPlan, SharedBeadData, SharedBeadMoveDistances, SharedBeadPurchaseFirestore, SharedBeadsBehavior, SharedBellekIciGunlukSoruDeposu, SharedBillingCatalog, SharedBlindingAdditionCupRepository, SharedBlindingExtractionCupRepository, SharedBlindingImpactCupRepository, SharedBlindingLessonFlags, SharedBlindingLessonOutcome, SharedBlindingLessonRules, SharedBlindingLessonRulesResultFalseAction, SharedBlindingOperation, SharedBlindingOperationMath, SharedBlindingOperationOther, SharedBlindingOperationSequence, SharedBlindingSequencePlaybackStep, SharedBlindingSequencePlaybackTimer, SharedBlindingWrongAnswerNext, SharedChestCrystalPolicy, SharedChestFragmentLogic, SharedChestFragmentLogicCupIconChange, SharedChestFragmentLogicMapProgressResult, SharedChestFragmentLogicPendingLessonProgressAnimation, SharedChestFragmentLogicSuccessRateEvent, SharedChestFragmentLogicSuccessRateEventItemFirstFinish, SharedChestFragmentLogicSuccessRateEventPass, SharedChestIcons, SharedChestRarity, SharedChestRarityCompanion, SharedChestResultLogic, SharedChestResultLogicReplayResult, SharedChestResultLogic_, SharedChestRewardDisplay, SharedChestRewardOutcome, SharedChestRewardType, SharedChestStepIndicator, SharedChestTapAction, SharedChestTapResult, SharedChestTypeProgressHelper, SharedChestTypeProgressHelper_, SharedCrystalBreakLogic, SharedCrystalRarityBehavior, SharedCrystalRarityTier, SharedCrystalTapAction, SharedCrystalTapResult, SharedCrystalTickResult, SharedCupBadgeSyncResult, SharedCupDeltaPrecalc, SharedCupDeltaTarget, SharedCupFetchResult, SharedCupFragmentLogic, SharedCupHistoryLogic, SharedCupHistoryLogicRangeTab, SharedCupHistoryRepository, SharedCupIconChange, SharedCupLessonLaunch, SharedCupMathOperation, SharedCupPathCard, SharedCupPathKind, SharedCupPathLogic, SharedCupPathRewardRepository, SharedCupPathRewardRepositoryCupPathState, SharedCupPathRewardRepositoryMilestone, SharedCupPathRewardRepositoryMilestoneStatus, SharedCupPieceRow, SharedCupRuleEngine, SharedCupRuleEngineBlindingMultiplicationConfig, SharedCupRuleEngineCupLessonItemOverride, SharedCupRuleEngineCupRange, SharedCupRuleEngineDigitConfig, SharedCupRuleEngineMultiplicationConfig, SharedCupScoreRepositorySpec, SharedCupScoreService, SharedCupScoreServiceCupScoreResult, SharedCupTier, SharedCupUpdateResult, SharedDailyQuestionBrokenHeartAction, SharedDailyQuestionBrokenHeartStore, SharedDailyQuestionBrokenHeartStoreCompanion, SharedDailyQuestionCardClickAction, SharedDailyQuestionCardLogic, SharedDailyQuestionCardProgressAnimStore, SharedDailyQuestionCardProgressAnimStoreCompanion, SharedDailyQuestionCardUiState, SharedDailyQuestionChallenge, SharedDailyQuestionChallengeClickAction, SharedDailyQuestionPeriod, SharedDailyQuestionPoolBuilder, SharedDailyQuestionPoolBuilderCompanion, SharedDailyQuestionProgressPlan, SharedDailyQuestionRepository, SharedDailyQuestionSlot, SharedDailyQuestionSource, SharedEditProfileRules, SharedEnergyManagerCompanion, SharedExtractionCupRepository, SharedFcmRules, SharedFcmRulesIncoming, SharedFeedbackGate, SharedFeedbackRules, SharedFirstTutorialShownStoreCompanion, SharedFirstTutorialShownStoreResolution, SharedFishingStreakPeriod, SharedFollowRules, SharedFollowRulesFriendSearchResult, SharedFrameData, SharedFramePurchaseFirestore, SharedFriendSearchRules, SharedGlobalLessonData, SharedGlobalLessonDataChestLessonRef, SharedGlobalLessonDataFirestoreLoadStatus, SharedGlobalLessonDataItemWrite, SharedGlobalLessonDataLeaderboardSubmit, SharedGlobalLessonDataLegacyMigrationPlan, SharedGlobalValues, SharedGorevEkraniDurumu, SharedGuidePanelData, SharedGunlukSoruBaslatma, SharedGunlukSoruCubukGorunumu, SharedGunlukSoruCubukModu, SharedImpactCupRepository, SharedJavaRandom, SharedKorDersAdimi, SharedKorDersAdimiCompanion, SharedKorDersOturumu, SharedKotlinArray<T>, SharedKotlinByteArray, SharedKotlinByteIterator, SharedKotlinEnum<E>, SharedKotlinEnumCompanion, SharedKotlinException, SharedKotlinFloatArray, SharedKotlinFloatIterator, SharedKotlinIntArray, SharedKotlinIntIterator, SharedKotlinNothing, SharedKotlinPair<__covariant A, __covariant B>, SharedKotlinRandom, SharedKotlinRandomDefault, SharedKotlinThrowable, SharedKotlinTriple<__covariant A, __covariant B, __covariant C>, SharedKotlinUnit, SharedKotlinx_datetimeDayOfWeek, SharedKotlinx_datetimeDayOfWeekNames, SharedKotlinx_datetimeDayOfWeekNamesCompanion, SharedKotlinx_datetimeFixedOffsetTimeZone, SharedKotlinx_datetimeFixedOffsetTimeZoneCompanion, SharedKotlinx_datetimeInstant, SharedKotlinx_datetimeInstantCompanion, SharedKotlinx_datetimeLocalDate, SharedKotlinx_datetimeLocalDateCompanion, SharedKotlinx_datetimeLocalDateTime, SharedKotlinx_datetimeLocalDateTimeCompanion, SharedKotlinx_datetimeLocalTime, SharedKotlinx_datetimeLocalTimeCompanion, SharedKotlinx_datetimeMonth, SharedKotlinx_datetimeMonthNames, SharedKotlinx_datetimeMonthNamesCompanion, SharedKotlinx_datetimePadding, SharedKotlinx_datetimeTimeZone, SharedKotlinx_datetimeTimeZoneCompanion, SharedKotlinx_datetimeUtcOffset, SharedKotlinx_datetimeUtcOffsetCompanion, SharedKotlinx_serialization_coreSerialKind, SharedKotlinx_serialization_coreSerializersModule, SharedKupaEkranKoprusu, SharedKupaGecmisNoktasi, SharedKupaGrafikNoktasi, SharedKupaGrafikVerisi, SharedLessonAdapterLogic, SharedLessonAdapterLogicActionButtonDecision, SharedLessonAdapterLogicCardState, SharedLessonAdapterLogicChestCardStars, SharedLessonAdapterLogicChestStarSlot, SharedLessonAdapterLogicChestStarsRow, SharedLessonAdapterLogicLessonBottomSheetState, SharedLessonAdapterLogicLessonStartGlobals, SharedLessonAdapterLogicLessonStartTarget, SharedLessonAdapterLogicPanelState, SharedLessonAdapterLogicProgressAnimationAction, SharedLessonAdapterLogicProgressAnimationDecision, SharedLessonAdapterLogicRaceLessonBottomSheetState, SharedLessonAdapterLogicRaceRowStatus, SharedLessonAdapterLogicStepSegments, SharedLessonDataManager, SharedLessonEndMascotDraw, SharedLessonEndMascotLogic, SharedLessonItem, SharedLessonItemCompanion, SharedLessonLeaderboardRepository, SharedLessonLeaderboardRepositoryLeaderboardEntry, SharedLessonManager, SharedLessonOperations, SharedLessonProgressMerge, SharedLessonResultFalseLogic, SharedLessonResultFalseLogicFailRecord, SharedLessonResultLogic, SharedLessonResultLogicClaimBranch, SharedLessonResultLogicClaimDecision, SharedLessonSuccessRateRepository, SharedLessonSuccessRateRepositoryStateRefs, SharedLessonSuccessRateRepositoryStepWrite, SharedLiderHamKayit, SharedLiderSatirVerisi, SharedLoginFlowTexts, SharedMapFragmentLogic, SharedMapFragmentLogicStickyHeader, SharedMapLayoutLogic, SharedMarathonGuideLogic, SharedMarathonGuideStoreCompanion, SharedMatematikDailyQuestionGenerators, SharedMathOperation, SharedMathOperationGenerator, SharedMathOperation_, SharedMedalPieceRow, SharedMessageReport, SharedMessageReportCompanion, SharedMissionCountdownLabel, SharedMissionCounterType, SharedMissionProgressOverlay, SharedMissionQuestCatalog, SharedMissionQuestData, SharedMissionQuestDefinition, SharedMissionQuestState, SharedMissionUiLogic, SharedMissionWindow, SharedMissionsProgressStore, SharedMissionsProgressStoreCompanion, SharedMissionsProgressStoreSnapshot, SharedNewChestLogic, SharedNewChestLogicCloseRoute, SharedOtpRules, SharedOtpRulesWrongAttemptResult, SharedOyunLessonItemCompanion, SharedOyunLessonItemData, SharedPartSelectionLogic, SharedPartState, SharedPendingUploadMeta, SharedPlanStatus, SharedProfileBadgeRenderConfig, SharedProfileBadgeSlotUi, SharedProfileCupCard, SharedProfileFragmentLogic, SharedQuestionMessage, SharedQuestionMessageCompanion, SharedRarityTheme, SharedRastgeleKaynagi, SharedRatingPromptDecision, SharedRecordLogic, SharedRecordLogicLeaderboardSections, SharedRecordLogicRowColors, SharedRecordLogicSeasonCountdown, SharedRecordTimeUtils, SharedRestrictedUser, SharedRestrictedUserCompanion, SharedRestrictedUserRestrictionUpdate, SharedRozetEkranVerisi, SharedRozetKutuVerisi, SharedRozetParcaVerisi, SharedScoreBarColorBlend, SharedSeasonClock, SharedSeasonLeaderboardRewardPayloads, SharedServerEnergy, SharedServerEnergyBuyWithKeysResult, SharedServerRewards, SharedServerRewardsChestOutcome, SharedServerRewardsCrystalOutcome, SharedSessionDeviceRules, SharedSessionDeviceRulesDecision, SharedSezonVerisi, SharedShopFragmentLogic, SharedShopFragmentLogicEnergySectionState, SharedShopFragmentLogicPackCard, SharedShopFragmentLogicProductKind, SharedSignupFlowRules, SharedSignupFlowRulesStep, SharedSonucEkraniKoprusu, SharedSplashRules, SharedSplashRulesRoute, SharedStudentQuestion, SharedStudentQuestionCompanion, SharedSurum, SharedTeacherLoginRules, SharedTimeTrackerCompanion, SharedTimeTrackerCompanionSyncWrite, SharedTrustedClockCompanion, SharedTrustedClockRules, SharedTrustedClockRulesAnchor, SharedUploadLessonDataLogic, SharedUploadLessonDataLogicYuklenenDers<T>, SharedUserAskQuestionRestriction, SharedUserBadgeProgress, SharedUserIdRules, SharedUserInfoRules, SharedUserWallet, SharedUserWalletFirestore, SharedWalletLoadResult, SharedWalletReason;
+@class SharedAbacusBead, SharedAbacusBeadController, SharedAbacusBeadMetrics, SharedAbacusBeadMetricsMoveDistancesPx, SharedAbacusBeadMetricsRodMeasurement, SharedAbacusBeadRenderer, SharedAbacusBeadRendererBeadRenderKind, SharedAbacusBeadRendererSoroban2Geometry, SharedAbacusCupRepository, SharedAbacusCustomizationFirestore, SharedAbacusCustomizationRules, SharedAbacusCustomizationRulesPlaceResult, SharedAbacusCustomizationSnapshot, SharedAbacusCustomizationUiLogic, SharedAbacusCustomizationUiLogicBeadCard, SharedAbacusCustomizationUiLogicBeadCardState, SharedAbacusCustomizationUiLogicBeadPaint, SharedAbacusCustomizationUiLogicColorRow, SharedAbacusCustomizationUiLogicFrameCard, SharedAbacusCustomizationUiLogicFrameCardState, SharedAbacusCustomizationUiLogicFrameLayer, SharedAbacusCustomizationUiLogicFramePaint, SharedAbacusCustomizationUiLogicPillGeometry, SharedAbacusCustomizationUiLogicPlaceOutcome, SharedAbacusCustomizationUiLogicPurchaseCheck, SharedAbacusCustomizationUiLogicPurchasePanelRules, SharedAbacusCustomizationUiLogicSlotBead, SharedAbacusCustomizationUiLogicSlotPanelState, SharedAbacusFrameRenderer, SharedAbacusFrameRendererRoundRectLayer, SharedAbacusLessonOutcome, SharedAbacusLessonRules, SharedAbacusLessonSessionControlResult, SharedAbacusLessonSessionControlResultAnswered, SharedAbacusLessonSessionControlResultIgnored, SharedAbacusLessonSessionControlResultOffline, SharedAbacusOperation, SharedAbacusPracticeLogic, SharedAbacusPracticeLogicKontrolResult, SharedAbacusPreferences, SharedAbacusPreferencesBeadColorSpec, SharedAbacusPreferencesBeadType, SharedAbacusPreferencesFrameType, SharedAbacusPreviewMetrics, SharedAbacusSoundPlayer, SharedAbacusTouchAction, SharedAbacusUiSettings, SharedAbakusBoncukKoprusu, SharedAbakusDersAkisi, SharedAbakusDersBitisi, SharedAbakusDersGirdisi, SharedAbakusDersKoprusu, SharedAbakusKontrolSonucu, SharedAbakusKontrolSonucuCompanion, SharedAbakusSoruListesi, SharedAccountDeletionRules, SharedAccountSettingsRules, SharedAdRules, SharedAdRulesAdSkipPolicyCompanion, SharedAgeConsentManager, SharedAgeConsentManagerAdRequestTags, SharedAgeConsentManagerAgeTreatment, SharedAnimatedQuest, SharedAppRatingManagerCompanion, SharedAuthRules, SharedAuthRulesGoogleLoginFailureAction, SharedAuthRulesPendingRegistration, SharedAuthRulesStudentEmailFlow, SharedAvatarConfig, SharedAvatarConfigCompanion, SharedAvatarParts, SharedAvatarPartsCompanion, SharedAvatarRect, SharedAvatarRules, SharedAvatarStyle, SharedAvatarStyleCompanion, SharedAvatarTab, SharedAvatarTabCompanion, SharedBadgeAnimMode, SharedBadgeDetailLogic, SharedBadgeDetailLogicBadgeDetailUiState, SharedBadgeDetailLogicBadgeRenderConfig, SharedBadgeFragmentLogic, SharedBadgeFragmentLogicCelebrationQueueItem, SharedBadgeFragmentLogicLevelUpAnimConfig, SharedBadgeFragmentLogicLevelUpCelebrationPlan, SharedBadgeFragmentLogicPieceCountBadge, SharedBadgeFragmentLogicProgressUi, SharedBadgeIncrementTransactionResult, SharedBadgeKind, SharedBadgeKindCompanion, SharedBadgeLevelTone, SharedBadgeLevelUpPayload, SharedBadgePieceLeaderboardSync, SharedBadgePrecalcHelper, SharedBadgeProgressEngine, SharedBadgeProgressFirestore, SharedBadgeProgressRepository, SharedBadgeProgressWindow, SharedBadgeState, SharedBeadAnimationCompanion, SharedBeadAnimationPlan, SharedBeadData, SharedBeadMoveDistances, SharedBeadPurchaseFirestore, SharedBeadsBehavior, SharedBellekIciGunlukSoruDeposu, SharedBillingCatalog, SharedBlindingAdditionCupRepository, SharedBlindingExtractionCupRepository, SharedBlindingImpactCupRepository, SharedBlindingLessonFlags, SharedBlindingLessonOutcome, SharedBlindingLessonRules, SharedBlindingLessonRulesResultFalseAction, SharedBlindingOperation, SharedBlindingOperationMath, SharedBlindingOperationOther, SharedBlindingOperationSequence, SharedBlindingSequencePlaybackStep, SharedBlindingSequencePlaybackTimer, SharedBlindingWrongAnswerNext, SharedChestCrystalPolicy, SharedChestFragmentLogic, SharedChestFragmentLogicCupIconChange, SharedChestFragmentLogicMapProgressResult, SharedChestFragmentLogicPendingLessonProgressAnimation, SharedChestFragmentLogicSuccessRateEvent, SharedChestFragmentLogicSuccessRateEventItemFirstFinish, SharedChestFragmentLogicSuccessRateEventPass, SharedChestIcons, SharedChestRarity, SharedChestRarityCompanion, SharedChestResultLogic, SharedChestResultLogicReplayResult, SharedChestResultLogic_, SharedChestRewardDisplay, SharedChestRewardOutcome, SharedChestRewardType, SharedChestStepIndicator, SharedChestTapAction, SharedChestTapResult, SharedChestTypeProgressHelper, SharedChestTypeProgressHelper_, SharedCrystalBreakLogic, SharedCrystalRarityBehavior, SharedCrystalRarityTier, SharedCrystalTapAction, SharedCrystalTapResult, SharedCrystalTickResult, SharedCupBadgeSyncResult, SharedCupDeltaPrecalc, SharedCupDeltaTarget, SharedCupFetchResult, SharedCupFragmentLogic, SharedCupHistoryLogic, SharedCupHistoryLogicRangeTab, SharedCupHistoryRepository, SharedCupIconChange, SharedCupLessonLaunch, SharedCupMathOperation, SharedCupPathCard, SharedCupPathKind, SharedCupPathLogic, SharedCupPathRewardRepository, SharedCupPathRewardRepositoryCupPathState, SharedCupPathRewardRepositoryMilestone, SharedCupPathRewardRepositoryMilestoneStatus, SharedCupPieceRow, SharedCupRuleEngine, SharedCupRuleEngineBlindingMultiplicationConfig, SharedCupRuleEngineCupLessonItemOverride, SharedCupRuleEngineCupRange, SharedCupRuleEngineDigitConfig, SharedCupRuleEngineMultiplicationConfig, SharedCupScoreRepositorySpec, SharedCupScoreService, SharedCupScoreServiceCupScoreResult, SharedCupTier, SharedCupUpdateResult, SharedDailyQuestionBrokenHeartAction, SharedDailyQuestionBrokenHeartStore, SharedDailyQuestionBrokenHeartStoreCompanion, SharedDailyQuestionCardClickAction, SharedDailyQuestionCardLogic, SharedDailyQuestionCardProgressAnimStore, SharedDailyQuestionCardProgressAnimStoreCompanion, SharedDailyQuestionCardUiState, SharedDailyQuestionChallenge, SharedDailyQuestionChallengeClickAction, SharedDailyQuestionPeriod, SharedDailyQuestionPoolBuilder, SharedDailyQuestionPoolBuilderCompanion, SharedDailyQuestionProgressPlan, SharedDailyQuestionRepository, SharedDailyQuestionSlot, SharedDailyQuestionSource, SharedEditProfileRules, SharedEnergyManagerCompanion, SharedExtractionCupRepository, SharedFcmRules, SharedFcmRulesIncoming, SharedFeedbackGate, SharedFeedbackRules, SharedFirstTutorialShownStoreCompanion, SharedFirstTutorialShownStoreResolution, SharedFishingStreakPeriod, SharedFollowRules, SharedFollowRulesFriendSearchResult, SharedFrameData, SharedFramePurchaseFirestore, SharedFriendSearchRules, SharedGlobalLessonData, SharedGlobalLessonDataChestLessonRef, SharedGlobalLessonDataFirestoreLoadStatus, SharedGlobalLessonDataItemWrite, SharedGlobalLessonDataLeaderboardSubmit, SharedGlobalLessonDataLegacyMigrationPlan, SharedGlobalValues, SharedGorevEkraniDurumu, SharedGuidePanelData, SharedGunlukSoruBaslatma, SharedGunlukSoruCubukGorunumu, SharedGunlukSoruCubukModu, SharedImpactCupRepository, SharedJavaRandom, SharedKorDersAdimi, SharedKorDersAdimiCompanion, SharedKorDersOturumu, SharedKotlinArray<T>, SharedKotlinByteArray, SharedKotlinByteIterator, SharedKotlinEnum<E>, SharedKotlinEnumCompanion, SharedKotlinException, SharedKotlinFloatArray, SharedKotlinFloatIterator, SharedKotlinIntArray, SharedKotlinIntIterator, SharedKotlinNothing, SharedKotlinPair<__covariant A, __covariant B>, SharedKotlinRandom, SharedKotlinRandomDefault, SharedKotlinThrowable, SharedKotlinTriple<__covariant A, __covariant B, __covariant C>, SharedKotlinUnit, SharedKotlinx_datetimeDayOfWeek, SharedKotlinx_datetimeDayOfWeekNames, SharedKotlinx_datetimeDayOfWeekNamesCompanion, SharedKotlinx_datetimeFixedOffsetTimeZone, SharedKotlinx_datetimeFixedOffsetTimeZoneCompanion, SharedKotlinx_datetimeInstant, SharedKotlinx_datetimeInstantCompanion, SharedKotlinx_datetimeLocalDate, SharedKotlinx_datetimeLocalDateCompanion, SharedKotlinx_datetimeLocalDateTime, SharedKotlinx_datetimeLocalDateTimeCompanion, SharedKotlinx_datetimeLocalTime, SharedKotlinx_datetimeLocalTimeCompanion, SharedKotlinx_datetimeMonth, SharedKotlinx_datetimeMonthNames, SharedKotlinx_datetimeMonthNamesCompanion, SharedKotlinx_datetimePadding, SharedKotlinx_datetimeTimeZone, SharedKotlinx_datetimeTimeZoneCompanion, SharedKotlinx_datetimeUtcOffset, SharedKotlinx_datetimeUtcOffsetCompanion, SharedKotlinx_serialization_coreSerialKind, SharedKotlinx_serialization_coreSerializersModule, SharedKupaEkranKoprusu, SharedKupaGecmisNoktasi, SharedKupaGrafikNoktasi, SharedKupaGrafikVerisi, SharedLessonAdapterLogic, SharedLessonAdapterLogicActionButtonDecision, SharedLessonAdapterLogicCardState, SharedLessonAdapterLogicChestCardStars, SharedLessonAdapterLogicChestStarSlot, SharedLessonAdapterLogicChestStarsRow, SharedLessonAdapterLogicLessonBottomSheetState, SharedLessonAdapterLogicLessonStartGlobals, SharedLessonAdapterLogicLessonStartTarget, SharedLessonAdapterLogicPanelState, SharedLessonAdapterLogicProgressAnimationAction, SharedLessonAdapterLogicProgressAnimationDecision, SharedLessonAdapterLogicRaceLessonBottomSheetState, SharedLessonAdapterLogicRaceRowStatus, SharedLessonAdapterLogicStepSegments, SharedLessonDataManager, SharedLessonEndMascotDraw, SharedLessonEndMascotLogic, SharedLessonItem, SharedLessonItemCompanion, SharedLessonLeaderboardRepository, SharedLessonLeaderboardRepositoryLeaderboardEntry, SharedLessonManager, SharedLessonOperations, SharedLessonProgressMerge, SharedLessonResultFalseLogic, SharedLessonResultFalseLogicFailRecord, SharedLessonResultLogic, SharedLessonResultLogicClaimBranch, SharedLessonResultLogicClaimDecision, SharedLessonSuccessRateRepository, SharedLessonSuccessRateRepositoryStateRefs, SharedLessonSuccessRateRepositoryStepWrite, SharedLiderHamKayit, SharedLiderSatirVerisi, SharedLoginFlowTexts, SharedMapFragmentLogic, SharedMapFragmentLogicStickyHeader, SharedMapLayoutLogic, SharedMarathonGuideLogic, SharedMarathonGuideStoreCompanion, SharedMatematikDailyQuestionGenerators, SharedMathOperation, SharedMathOperationGenerator, SharedMathOperation_, SharedMedalPieceRow, SharedMessageReport, SharedMessageReportCompanion, SharedMissionCountdownLabel, SharedMissionCounterType, SharedMissionProgressOverlay, SharedMissionQuestCatalog, SharedMissionQuestData, SharedMissionQuestDefinition, SharedMissionQuestState, SharedMissionUiLogic, SharedMissionWindow, SharedMissionsProgressStore, SharedMissionsProgressStoreCompanion, SharedMissionsProgressStoreSnapshot, SharedNewChestLogic, SharedNewChestLogicCloseRoute, SharedOtpRules, SharedOtpRulesWrongAttemptResult, SharedOyunLessonItemCompanion, SharedOyunLessonItemData, SharedPartSelectionLogic, SharedPartState, SharedPendingUploadMeta, SharedPlanStatus, SharedProfileBadgeRenderConfig, SharedProfileBadgeSlotUi, SharedProfileCupCard, SharedProfileFragmentLogic, SharedProfileHeaderColors, SharedQuestionMessage, SharedQuestionMessageCompanion, SharedRarityTheme, SharedRastgeleKaynagi, SharedRatingPromptDecision, SharedRecordLogic, SharedRecordLogicLeaderboardSections, SharedRecordLogicRowColors, SharedRecordLogicSeasonCountdown, SharedRecordTimeUtils, SharedRestrictedUser, SharedRestrictedUserCompanion, SharedRestrictedUserRestrictionUpdate, SharedRozetEkranVerisi, SharedRozetKutuVerisi, SharedRozetParcaVerisi, SharedScoreBarColorBlend, SharedSeasonClock, SharedSeasonLeaderboardRewardPayloads, SharedServerEnergy, SharedServerEnergyBuyWithKeysResult, SharedServerRewards, SharedServerRewardsChestOutcome, SharedServerRewardsCrystalOutcome, SharedSessionDeviceRules, SharedSessionDeviceRulesDecision, SharedSezonVerisi, SharedShopFragmentLogic, SharedShopFragmentLogicEnergySectionState, SharedShopFragmentLogicPackCard, SharedShopFragmentLogicProductKind, SharedSignupFlowRules, SharedSignupFlowRulesStep, SharedSignupStreakRules, SharedSonucEkraniKoprusu, SharedSplashRules, SharedSplashRulesRoute, SharedStudentQuestion, SharedStudentQuestionCompanion, SharedSurum, SharedTeacherLoginRules, SharedTimeTrackerCompanion, SharedTimeTrackerCompanionSyncWrite, SharedTrustedClockCompanion, SharedTrustedClockRules, SharedTrustedClockRulesAnchor, SharedUploadLessonDataLogic, SharedUploadLessonDataLogicYuklenenDers<T>, SharedUserAskQuestionRestriction, SharedUserBadgeProgress, SharedUserIdRules, SharedUserInfoRules, SharedUserWallet, SharedUserWalletFirestore, SharedWalletLoadResult, SharedWalletReason;
 
 @protocol SharedAbacusBeadHost, SharedAbacusPrefsStore, SharedDailyQuestionChallengeCache, SharedDailyQuestionGenerators, SharedEnergyPlatform, SharedKotlinAnnotation, SharedKotlinAppendable, SharedKotlinComparable, SharedKotlinIterator, SharedKotlinKAnnotatedElement, SharedKotlinKClass, SharedKotlinKClassifier, SharedKotlinKDeclarationContainer, SharedKotlinx_datetimeDateTimeFormat, SharedKotlinx_datetimeDateTimeFormatBuilder, SharedKotlinx_datetimeDateTimeFormatBuilderWithDate, SharedKotlinx_datetimeDateTimeFormatBuilderWithDateTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithUtcOffset, SharedKotlinx_serialization_coreCompositeDecoder, SharedKotlinx_serialization_coreCompositeEncoder, SharedKotlinx_serialization_coreDecoder, SharedKotlinx_serialization_coreDeserializationStrategy, SharedKotlinx_serialization_coreEncoder, SharedKotlinx_serialization_coreKSerializer, SharedKotlinx_serialization_coreSerialDescriptor, SharedKotlinx_serialization_coreSerializationStrategy, SharedKotlinx_serialization_coreSerializersModuleCollector, SharedLessonManagerLessonAdapterBridge, SharedLessonManagerRaceAdapterBridge, SharedLessonProgressSink, SharedMissionCloudGateway, SharedOyunKeyValueStore, SharedOyunLessonItem, SharedServerRewardsChestCaller, SharedTimeTrackerPlatform;
 
@@ -5334,6 +5334,28 @@ __attribute__((swift_name("SignupFlowRules.Step")))
 @end
 
 __attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SignupStreakRules")))
+@interface SharedSignupStreakRules : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)signupStreakRules __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedSignupStreakRules *shared __attribute__((swift_name("shared")));
+- (int32_t)challengeRewardDays:(int32_t)days __attribute__((swift_name("challengeReward(days:)")));
+- (int32_t)daysForStepsSteps:(int32_t)steps goalMinutes:(int32_t)goalMinutes __attribute__((swift_name("daysForSteps(steps:goalMinutes:)")));
+- (int32_t)daysToMentalMathGoalMinutes:(int32_t)goalMinutes __attribute__((swift_name("daysToMentalMath(goalMinutes:)")));
+- (NSArray<SharedInt *> *)hourGrid __attribute__((swift_name("hourGrid()")));
+- (NSString *)hourTextHour:(int32_t)hour __attribute__((swift_name("hourText(hour:)")));
+- (BOOL)isPresetReminderHourHour:(int32_t)hour __attribute__((swift_name("isPresetReminderHour(hour:)")));
+- (int32_t)stepsToMentalMath __attribute__((swift_name("stepsToMentalMath()")));
+@property (readonly) int32_t HOUR_GRID_START __attribute__((swift_name("HOUR_GRID_START")));
+@property (readonly) int32_t MENTAL_MATH_LAST_PART __attribute__((swift_name("MENTAL_MATH_LAST_PART")));
+@property (readonly) double MINUTES_PER_STEP __attribute__((swift_name("MINUTES_PER_STEP")));
+@property (readonly) double PRACTICE_DAYS_PER_WEEK __attribute__((swift_name("PRACTICE_DAYS_PER_WEEK")));
+@property (readonly) NSArray<SharedInt *> *REMINDER_HOUR_OPTIONS __attribute__((swift_name("REMINDER_HOUR_OPTIONS")));
+@property (readonly) int32_t STREAK_STEP_DAYS __attribute__((swift_name("STREAK_STEP_DAYS")));
+@end
+
+__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("SplashRules")))
 @interface SharedSplashRules : SharedBase
 + (instancetype)alloc __attribute__((unavailable));
@@ -7291,6 +7313,157 @@ __attribute__((swift_name("AccountSettingsRules")))
 @end
 
 __attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarConfig")))
+@interface SharedAvatarConfig : SharedBase
+- (instancetype)initWithStyle:(SharedAvatarStyle *)style values:(NSDictionary<NSString *, NSString *> *)values __attribute__((swift_name("init(style:values:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedAvatarConfigCompanion *companion __attribute__((swift_name("companion")));
+- (SharedAvatarConfig *)doCopyStyle:(SharedAvatarStyle *)style values:(NSDictionary<NSString *, NSString *> *)values __attribute__((swift_name("doCopy(style:values:)")));
+- (NSString *)encode __attribute__((swift_name("encode()")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+- (SharedAvatarConfig *)withKey:(NSString *)key value:(NSString *)value __attribute__((swift_name("with(key:value:)")));
+@property (readonly) SharedAvatarStyle *style __attribute__((swift_name("style")));
+@property (readonly) NSDictionary<NSString *, NSString *> *values __attribute__((swift_name("values")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarConfig.Companion")))
+@interface SharedAvatarConfigCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedAvatarConfigCompanion *shared __attribute__((swift_name("shared")));
+- (SharedAvatarConfig * _Nullable)decodeS:(NSString * _Nullable)s __attribute__((swift_name("decode(s:)")));
+- (SharedAvatarConfig *)defaultStyle:(SharedAvatarStyle *)style __attribute__((swift_name("default(style:)")));
+- (SharedAvatarConfig *)randomParts:(SharedAvatarParts *)parts style:(SharedAvatarStyle *)style rng:(SharedKotlinRandom *)rng __attribute__((swift_name("random(parts:style:rng:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarParts")))
+@interface SharedAvatarParts : SharedBase
+@property (class, readonly, getter=companion) SharedAvatarPartsCompanion *companion __attribute__((swift_name("companion")));
+- (NSArray<NSString *> *)groupNames __attribute__((swift_name("groupNames()")));
+- (NSArray<NSString *> *)namesGroup:(NSString *)group __attribute__((swift_name("names(group:)")));
+- (NSString * _Nullable)templateGroup:(NSString *)group name:(NSString *)name __attribute__((swift_name("template(group:name:)")));
+@property (readonly) BOOL isEmpty __attribute__((swift_name("isEmpty")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarParts.Companion")))
+@interface SharedAvatarPartsCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedAvatarPartsCompanion *shared __attribute__((swift_name("shared")));
+- (SharedAvatarParts *)parseJson:(NSString *)json __attribute__((swift_name("parse(json:)")));
+@property (readonly) SharedAvatarParts *EMPTY __attribute__((swift_name("EMPTY")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarRect")))
+@interface SharedAvatarRect : SharedBase
+- (instancetype)initWithLeft:(float)left top:(float)top right:(float)right bottom:(float)bottom __attribute__((swift_name("init(left:top:right:bottom:)"))) __attribute__((objc_designated_initializer));
+- (SharedAvatarRect *)doCopyLeft:(float)left top:(float)top right:(float)right bottom:(float)bottom __attribute__((swift_name("doCopy(left:top:right:bottom:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (float)height __attribute__((swift_name("height()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+- (float)width __attribute__((swift_name("width()")));
+@property (readonly) float bottom __attribute__((swift_name("bottom")));
+@property (readonly) float left __attribute__((swift_name("left")));
+@property (readonly) float right __attribute__((swift_name("right")));
+@property (readonly) float top __attribute__((swift_name("top")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarRules")))
+@interface SharedAvatarRules : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)avatarRules __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedAvatarRules *shared __attribute__((swift_name("shared")));
+- (NSString *)buildSvgParts:(SharedAvatarParts *)parts config:(SharedAvatarConfig *)config circle:(BOOL)circle viewBox:(SharedAvatarRect *)viewBox __attribute__((swift_name("buildSvg(parts:config:circle:viewBox:)")));
+- (int32_t)changedPartCountBaseline:(NSString * _Nullable)baseline current:(NSString * _Nullable)current __attribute__((swift_name("changedPartCount(baseline:current:)")));
+- (NSString *)currentValueEncoded:(NSString * _Nullable)encoded tab:(SharedAvatarTab *)tab __attribute__((swift_name("currentValue(encoded:tab:)")));
+- (SharedAvatarConfig *)decodeOrDefaultEncoded:(NSString * _Nullable)encoded __attribute__((swift_name("decodeOrDefault(encoded:)")));
+- (NSString *)defaultEncoded __attribute__((swift_name("defaultEncoded()")));
+- (BOOL)hasAvatarEncoded:(NSString * _Nullable)encoded __attribute__((swift_name("hasAvatar(encoded:)")));
+- (NSString * _Nullable)headerColorArgbEncoded:(NSString * _Nullable)encoded __attribute__((swift_name("headerColorArgb(encoded:)")));
+- (NSString *)normalizedEncoded:(NSString * _Nullable)encoded __attribute__((swift_name("normalized(encoded:)")));
+- (NSArray<NSString *> *)optionsParts:(SharedAvatarParts *)parts style:(SharedAvatarStyle *)style tab:(SharedAvatarTab *)tab __attribute__((swift_name("options(parts:style:tab:)")));
+- (NSArray<NSString *> *)optionsParts:(SharedAvatarParts *)parts encoded:(NSString * _Nullable)encoded tab:(SharedAvatarTab *)tab __attribute__((swift_name("options(parts:encoded:tab:)")));
+- (NSString *)randomEncodedParts:(SharedAvatarParts *)parts encoded:(NSString * _Nullable)encoded __attribute__((swift_name("randomEncoded(parts:encoded:)")));
+- (NSString * _Nullable)remoteToApplyLocalEncoded:(NSString * _Nullable)localEncoded remoteEncoded:(NSString * _Nullable)remoteEncoded __attribute__((swift_name("remoteToApply(localEncoded:remoteEncoded:)")));
+- (NSString *)svgParts:(SharedAvatarParts *)parts encoded:(NSString * _Nullable)encoded circle:(BOOL)circle closeUp:(BOOL)closeUp __attribute__((swift_name("svg(parts:encoded:circle:closeUp:)")));
+- (NSArray<SharedAvatarTab *> *)tabsEncoded:(NSString * _Nullable)encoded __attribute__((swift_name("tabs(encoded:)")));
+- (NSString *)valueEncoded:(NSString * _Nullable)encoded key:(NSString *)key __attribute__((swift_name("value(encoded:key:)")));
+- (NSString *)withTabValueEncoded:(NSString * _Nullable)encoded tab:(SharedAvatarTab *)tab value:(NSString *)value __attribute__((swift_name("withTabValue(encoded:tab:value:)")));
+@property (readonly) NSString *CHIP_IDLE_COLOR __attribute__((swift_name("CHIP_IDLE_COLOR")));
+@property (readonly) NSString *FIRESTORE_FIELD __attribute__((swift_name("FIRESTORE_FIELD")));
+@property (readonly) int32_t GRID_COLUMNS __attribute__((swift_name("GRID_COLUMNS")));
+@property (readonly) NSString *NO_SELECTION __attribute__((swift_name("NO_SELECTION")));
+@property (readonly) NSString *PARTS_RESOURCE_EXTENSION __attribute__((swift_name("PARTS_RESOURCE_EXTENSION")));
+@property (readonly) NSString *PARTS_RESOURCE_NAME __attribute__((swift_name("PARTS_RESOURCE_NAME")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarStyle")))
+@interface SharedAvatarStyle : SharedKotlinEnum<SharedAvatarStyle *>
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
+- (instancetype)initWithName:(NSString *)name ordinal:(int32_t)ordinal __attribute__((swift_name("init(name:ordinal:)"))) __attribute__((objc_designated_initializer)) __attribute__((unavailable));
+@property (class, readonly, getter=companion) SharedAvatarStyleCompanion *companion __attribute__((swift_name("companion")));
+@property (class, readonly) SharedAvatarStyle *personas __attribute__((swift_name("personas")));
++ (SharedKotlinArray<SharedAvatarStyle *> *)values __attribute__((swift_name("values()")));
+@property (class, readonly) NSArray<SharedAvatarStyle *> *entries __attribute__((swift_name("entries")));
+@property (readonly) NSString *asset __attribute__((swift_name("asset")));
+@property (readonly) SharedAvatarRect *canvas __attribute__((swift_name("canvas")));
+@property (readonly) NSDictionary<NSString *, NSString *> *defaults __attribute__((swift_name("defaults")));
+@property (readonly) SharedAvatarRect *faceCloseUp __attribute__((swift_name("faceCloseUp")));
+@property (readonly) NSString *key __attribute__((swift_name("key")));
+@property (readonly) NSString *label __attribute__((swift_name("label")));
+@property (readonly) NSArray<SharedAvatarTab *> *tabs __attribute__((swift_name("tabs")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarStyle.Companion")))
+@interface SharedAvatarStyleCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedAvatarStyleCompanion *shared __attribute__((swift_name("shared")));
+- (SharedAvatarStyle *)fromKeyKey:(NSString * _Nullable)key __attribute__((swift_name("fromKey(key:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarTab")))
+@interface SharedAvatarTab : SharedBase
+@property (class, readonly, getter=companion) SharedAvatarTabCompanion *companion __attribute__((swift_name("companion")));
+@property (readonly) BOOL closeUp __attribute__((swift_name("closeUp")));
+@property (readonly) BOOL isColor __attribute__((swift_name("isColor")));
+@property (readonly) NSString *key __attribute__((swift_name("key")));
+@property (readonly) NSString *label __attribute__((swift_name("label")));
+@property (readonly) NSString * _Nullable labelRes __attribute__((swift_name("labelRes")));
+@property (readonly) BOOL optional __attribute__((swift_name("optional")));
+@property (readonly) NSArray<NSString *> *palette __attribute__((swift_name("palette")));
+@property (readonly) NSString * _Nullable requiresKey __attribute__((swift_name("requiresKey")));
+@property (readonly) NSString * _Nullable requiresValue __attribute__((swift_name("requiresValue")));
+@property (readonly) BOOL swatch __attribute__((swift_name("swatch")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("AvatarTab.Companion")))
+@interface SharedAvatarTabCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedAvatarTabCompanion *shared __attribute__((swift_name("shared")));
+- (SharedAvatarTab *)colorLabelRes:(NSString * _Nullable)labelRes label:(NSString *)label key:(NSString *)key palette:(NSArray<NSString *> *)palette swatch:(BOOL)swatch __attribute__((swift_name("color(labelRes:label:key:palette:swatch:)")));
+- (SharedAvatarTab *)partLabelRes:(NSString * _Nullable)labelRes label:(NSString *)label group:(NSString *)group optional:(BOOL)optional closeUp:(BOOL)closeUp requires:(SharedKotlinPair<NSString *, NSString *> * _Nullable)requires __attribute__((swift_name("part(labelRes:label:group:optional:closeUp:requires:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
 __attribute__((swift_name("EditProfileRules")))
 @interface SharedEditProfileRules : SharedBase
 + (instancetype)alloc __attribute__((unavailable));
@@ -7512,6 +7685,21 @@ __attribute__((swift_name("ProfileFragmentLogic")))
 @property (readonly) NSString *TEXT_FOLLOWING __attribute__((swift_name("TEXT_FOLLOWING")));
 @property (readonly) NSString *TOAST_FOLLOWED __attribute__((swift_name("TOAST_FOLLOWED")));
 @property (readonly) NSString *TOAST_SINGLE_BEAD __attribute__((swift_name("TOAST_SINGLE_BEAD")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("ProfileHeaderColors")))
+@interface SharedProfileHeaderColors : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)profileHeaderColors __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedProfileHeaderColors *shared __attribute__((swift_name("shared")));
+- (NSString *)blendArgb1:(NSString *)argb1 argb2:(NSString *)argb2 ratio:(float)ratio __attribute__((swift_name("blend(argb1:argb2:ratio:)")));
+- (NSString *)dividerBackgroundArgb:(NSString *)backgroundArgb __attribute__((swift_name("divider(backgroundArgb:)")));
+- (NSString *)foregroundBackgroundArgb:(NSString *)backgroundArgb __attribute__((swift_name("foreground(backgroundArgb:)")));
+- (double)luminanceArgbHex:(NSString *)argbHex __attribute__((swift_name("luminance(argbHex:)")));
+@property (readonly) NSString *DARK_TEXT __attribute__((swift_name("DARK_TEXT")));
+@property (readonly) NSString *WHITE __attribute__((swift_name("WHITE")));
 @end
 
 @interface SharedLessonItem (Extensions)
