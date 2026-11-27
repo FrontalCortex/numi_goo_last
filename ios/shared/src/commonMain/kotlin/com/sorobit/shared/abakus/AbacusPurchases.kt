@@ -91,7 +91,10 @@ object AbacusCustomizationRules {
     /** Bir tipten sahip olunabilecek en çok boncuk (abaküsteki 25 yuva). */
     const val MAX_BEAD_COUNT = 25
 
-    /** Boncuk ve çerçeve için "renk özelliği" fiyatı (altın). */
+    /**
+     * "Renk özelliği" fiyatı (altın): çerçeveler ve altınla satılan boncuklar. Anahtarla satılan
+     * boncuklarda fiyat [COLOR_FEATURE_KEY_PRICE] anahtardır ([getBeadColorFeaturePrice]).
+     */
     const val COLOR_FEATURE_PRICE = 2000
 
     /** Para birimi kaynak adları (R.drawable.key / R.drawable.gold_ic). */
@@ -161,6 +164,20 @@ object AbacusCustomizationRules {
 
     fun isKeyCurrency(beadType: BeadType): Boolean =
         (beadType == BeadType.ANIMAL3 || beadType == BeadType.ANIMAL8)
+
+    /** Android: getBeadColorFeaturePrice. Anahtarla satılan iki boncukta 40 anahtar, diğerlerinde [COLOR_FEATURE_PRICE] altın. */
+    const val COLOR_FEATURE_KEY_PRICE = 40
+
+    /**
+     * Boncuğun renk kişileştirmesinin fiyatı (Android: getBeadColorFeaturePrice). Para birimi
+     * boncuğun kendisiyle aynıdır: bkz. [isKeyCurrency]. Çerçeve renk özelliği her zaman
+     * [COLOR_FEATURE_PRICE] altındır.
+     */
+    fun getBeadColorFeaturePrice(beadType: BeadType): Int =
+        if (isKeyCurrency(beadType)) COLOR_FEATURE_KEY_PRICE else COLOR_FEATURE_PRICE
+
+    /** Renk özelliği kilit katmanı / paneli para birimi simgesi (boncukla aynı para birimi). */
+    fun colorFeatureCurrencyIconResName(beadType: BeadType): String = currencyIconResName(beadType)
 
     fun currencyIconResName(beadType: BeadType): String = if (isKeyCurrency(beadType)) ICON_KEY else ICON_GOLD
 

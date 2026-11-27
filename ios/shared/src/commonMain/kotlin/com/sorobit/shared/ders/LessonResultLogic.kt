@@ -8,6 +8,10 @@
 // Sonuç ekranlarındaki görünümden bağımsız hesaplar: başarı oranı, ders puanı, "ödül ekranına mı / haritaya mı"
 // kararı, başarısızlık kaydı, sandık rekoru ve yıldız kazanımı.
 //
+// Android'de yeni (ortak kopyada karşılığı yok, platform işi): sonuç ekranlarında Sobi maskotu sahnesi (LessonEndMascot),
+// çıkış kaymasının 400 ms'ye uzaması, LessonMilestones.recordChestRun (haftalık kart için sandık süresi; arka plan
+// yazımı), ses efektleri kapalıysa yıldız sesinin çalmaması ("sound_enabled" tercihi).
+//
 // Android'den bilinçli farklar: Fragment / animasyon / navigasyon yok; SeasonClock yerine `season` parametresi;
 // depo çağrıları (LessonSuccessRateRepository, MissionsProgressStore, rozetler) karar/sonuç nesnesi olarak döner.
 package com.sorobit.shared.ders
@@ -28,6 +32,11 @@ object LessonResultLogic {
         val branch: ClaimBranch,
         /** SKIP_TO_MAP dalında `LessonSuccessRateRepository.recordItemReplay(globalPartId, mapIdx)` çağrılmalı mı. */
         val recordItemReplay: Boolean,
+        /**
+         * SKIP_TO_MAP dalında haritaya dönüş "ders türü" dönüşü mü (Android: `isLessonTypeReturn = isLessonTypeItem`,
+         * item türü TYPE_LESSON). GO_TO_CHEST dalında anlamsız (false).
+         */
+        val isLessonTypeReturn: Boolean = false,
     )
 
     /** Başarı yüzdesi: doğru / toplam * 100; toplam 0 ise 0. */
@@ -54,6 +63,7 @@ object LessonResultLogic {
             ClaimDecision(
                 branch = ClaimBranch.SKIP_TO_MAP,
                 recordItemReplay = lessonItem.type == LessonItem.TYPE_LESSON || lessonItem.type == LessonItem.TYPE_CHEST,
+                isLessonTypeReturn = lessonItem.type == LessonItem.TYPE_LESSON,
             )
         } else {
             ClaimDecision(branch = ClaimBranch.GO_TO_CHEST, recordItemReplay = false)
@@ -64,8 +74,12 @@ object LessonResultLogic {
 /** Başarısız ders sonucu ekranı (Android: LessonResultFalse). */
 object LessonResultFalseLogic {
 
-    /** `LessonSuccessRateRepository.recordFail(partId, position, step)` argümanları. */
-    data class FailRecord(val partId: Int, val position: Int, val step: Int)
+    /**
+     * `LessonSuccessRateRepository.recordFail(partId, position, step, answerSuccessRatePercent)` argümanları.
+     * [answerSuccessRatePercent]: o başarısız denemenin başarı oranı (0–100); Android bunu yalnızca part 1–6 için
+     * Analytics'e gönderir (platform `partId in 1..6` ise kullanır).
+     */
+    data class FailRecord(val partId: Int, val position: Int, val step: Int, val answerSuccessRatePercent: Float? = null)
 
     /**
      * Ekran açıldığında bir kez: item TYPE_LESSON ya da TYPE_CHEST ise başarısızlık kaydı; değilse null.
@@ -74,20 +88,27 @@ object LessonResultFalseLogic {
         item: LessonItem?,
         mapFragmentStepIndex: Int,
         globalPartId: Int = GlobalLessonData.globalPartId,
+        successRate: Float? = null,
     ): FailRecord? {
         if (item?.type == LessonItem.TYPE_LESSON || item?.type == LessonItem.TYPE_CHEST) {
-            return FailRecord(globalPartId, mapFragmentStepIndex, item.currentStep)
+            return FailRecord(globalPartId, mapFragmentStepIndex, item.currentStep, successRate)
         }
         return null
     }
 
-    /** Başarısızlık nedeni metni: sandıkta puan eşiği (500), derste başarı oranı eşiği (%80). */
+    /**
+     * Başarısızlık nedeni metni (Android: ui_puan_500_den_dusuk / ui_basari_orani_75_ten_dusuk, Türkçe):
+     * sandıkta puan eşiği (500), derste başarı oranı eşiği (artık %75; eskiden %80).
+     */
     fun resultTitleComment(isChestFailure: Boolean): String =
         if (isChestFailure) {
             "Puan 500'den düşük!"
         } else {
-            "Başarı oranı %80'den düşük!"
+            "Başarı oranı %75'ten düşük!"
         }
+
+    /** LessonResultFalse'tan haritaya dönüş "ders türü" dönüşü mü (Android: `isLessonTypeItem` args). */
+    fun isLessonTypeReturn(item: LessonItem?): Boolean = item?.type == LessonItem.TYPE_LESSON
 
     /**
      * Tutorial 1'de ve giriş yapılmamışsa claim'de giriş ekranına yönlendirilir (currentTutorialNumber 0'lanır).

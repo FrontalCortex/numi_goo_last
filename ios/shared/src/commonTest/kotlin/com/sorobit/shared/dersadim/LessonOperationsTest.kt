@@ -12,9 +12,9 @@ class LessonOperationsTest {
     @Test
     fun dalSayilariAndroidDosyasiylaAyni() {
         // Android dosyasından bağımsız betikle sayılan değerler.
-        assertEquals(70, ANDROID_DALLAR_OPERATIONS.size)
+        assertEquals(69, ANDROID_DALLAR_OPERATIONS.size)
         assertEquals(55, ANDROID_DALLAR_BLINDING.size)
-        assertEquals(70, ANDROID_DALLAR_OPERATIONS.toSet().size, "tekrarlı dal olmamalı")
+        assertEquals(69, ANDROID_DALLAR_OPERATIONS.toSet().size, "tekrarlı dal olmamalı")
         assertEquals(55, ANDROID_DALLAR_BLINDING.toSet().size, "tekrarlı dal olmamalı")
     }
 
@@ -41,7 +41,8 @@ class LessonOperationsTest {
 
     @Test
     fun bilinmeyenKimlikBosListe() {
-        for (id in listOf(Int.MIN_VALUE, -1, 0, 3, 6, 10, 11, 154, 999, 1001, 1014, 5000, Int.MAX_VALUE)) {
+        // 18: güncel Android'de dal KALDIRILDI (eskiden 7 soruluk tabloydu)
+        for (id in listOf(Int.MIN_VALUE, -1, 0, 3, 6, 10, 11, 18, 154, 999, 1001, 1014, 5000, Int.MAX_VALUE)) {
             assertEquals(emptyList(), LessonOperations.getLessonOperations(id), "id=$id")
         }
         for (id in listOf(Int.MIN_VALUE, -1, 0, 6, 10, 92, 99, 101, 999, 1012, 5000, Int.MAX_VALUE)) {
@@ -51,11 +52,33 @@ class LessonOperationsTest {
 
     @Test
     fun altinVeriTumDallariVeTohumlariKapsar() {
+        // 17 ve 1013'ün altın satırı yok (Android'de değişti; JVM referansı çalıştırılamadı) — yapısal testle sınanır.
         val beklenenAnahtarlar = DersAdimTestYardimci.TOHUMLAR.flatMap { t ->
-            ANDROID_DALLAR_OPERATIONS.map { "$t|O|$it" } + ANDROID_DALLAR_BLINDING.map { "$t|B|$it" }
+            ANDROID_DALLAR_OPERATIONS.filter { it !in ALTIN_ELLE_DALLAR }.map { "$t|O|$it" } +
+                ANDROID_DALLAR_BLINDING.map { "$t|B|$it" }
         }
         assertEquals(beklenenAnahtarlar, ALTIN_DERS_ADIM.map { it.split("|").take(3).joinToString("|") })
-        assertEquals(3 * (70 + 55), ALTIN_DERS_ADIM.size)
+        assertEquals(3 * (67 + 55), ALTIN_DERS_ADIM.size)
+    }
+
+    /** Altın satırı olmayan, Android'de değişmiş dallar. */
+    private val ALTIN_ELLE_DALLAR = setOf(17, 1013)
+
+    @Test
+    fun guncelAndroidDegisiklikleri_1013_17_18() {
+        for (tohum in 1..10) {
+            // 1013: artık 6 soru, 4 ve 5 basamaklı ilişkili sayılar dönüşümlü (eskiden tek soru, 1 basamaklı)
+            val s1013 = DersAdimTestYardimci.tohumla(tohum) { LessonOperations.getLessonOperations(1013) }
+            assertEquals(6, s1013.size)
+            assertTrue(s1013.all { it.operator != null })
+            // 17: 6 soru (sondaki generateRelatedNumbers2(5, 4) kalktı; eskiden 7)
+            val s17 = DersAdimTestYardimci.tohumla(tohum) { LessonOperations.getLessonOperations(17) }
+            assertEquals(6, s17.size)
+        }
+        // 18: dal kalktı → boş
+        assertEquals(emptyList(), LessonOperations.getLessonOperations(18))
+        // Çözümleme: 18 istenirse 17'ye iner (alt sınır izin veriyorsa)
+        assertEquals(17, LessonOperations.resolveLessonOperationsId(18, 16))
     }
 
     @Test

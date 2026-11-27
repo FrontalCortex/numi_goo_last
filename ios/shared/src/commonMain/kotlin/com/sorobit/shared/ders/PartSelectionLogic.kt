@@ -9,6 +9,9 @@
 //   app/src/main/java/com/example/app/DynamicOffsetDecoration.kt
 //     - getItemOffsets()      → [MapLayoutLogic.lessonHorizontalShift]
 //
+// Android'de yeni (platform işi): Sobi günlük test düğmesi (MapSobiTestButton), `openingPart` argümanı (Sobi sekmesinden
+// kısma git), kilitli kart uyarısının Toast yerine LockedHint, abonelik süresi dolmuşsa Free sayma (PlanStatus.effectivePlan).
+//
 // Android'den bilinçli farklar: View / Lottie / Toast yok; R.color kimlikleri yerine renk kaynağı adları;
 // DynamicOffsetDecoration piksel (Int) yerine dp/pt (Float) ile hesaplanır (kesirli kısım atılmaz).
 package com.sorobit.shared.ders
@@ -46,19 +49,37 @@ object PartSelectionLogic {
     fun lastChestComplete(items: List<LessonItem>): Boolean =
         items.lastOrNull { it.type == LessonItem.TYPE_CHEST }?.stepIsFinish == true
 
+    /** Kapı mesajı (Android: ui_x_bolumunun_son_unite_maratonunu_bitir, Türkçe). */
+    fun marathonGateMessage(prerequisitePart: Int): String =
+        "Açmak için \"${gatePartTitle(prerequisitePart)}\" bölümünün son ünite maratonunu bitir."
+
+    private fun gatePartTitle(partId: Int): String = when (partId) {
+        1 -> "Abaküsün Temeli ve Toplama"
+        2 -> "Abaküste Çıkarma"
+        else -> "Abaküste Çarpma"
+    }
+
+    /**
+     * [teacherApproved]: onaylı öğretmende bölüm sırası yoktur (Android): dersleri tek seferde açılır ama sandıkları bitmiş
+     * sayılmaz, bu yüzden bütün kartlar (1–8) açık ve kullanılabilirdir. Kapı: 2–4 → 1. bölümün, 5 → 2.'nin, 6 → 3.'nün
+     * SON ünite maratonu ([lastChestComplete]; maraton da 1 anahtarla açılabildiği için anahtarla da geçilebilir).
+     */
     fun partState(
         partId: Int,
         hasProPlan: Boolean,
         part1ChestComplete: Boolean,
         part2ChestComplete: Boolean,
         part3ChestComplete: Boolean,
-    ): PartState = when (partId) {
+        teacherApproved: Boolean = false,
+    ): PartState = if (teacherApproved) {
+        PartState(partId, visualActive = true, functionalActive = true, inactiveMessage = "")
+    } else when (partId) {
         1 -> PartState(1, visualActive = true, functionalActive = true, inactiveMessage = "")
-        2 -> PartState(2, part1ChestComplete, part1ChestComplete, "Abaküsün Temeli ve Toplama kısmını bitir.")
-        3 -> PartState(3, part1ChestComplete, part1ChestComplete, "Abaküsün Temeli ve Toplama kısmını bitir.")
-        4 -> PartState(4, part1ChestComplete, part1ChestComplete, "Abaküsün Temeli ve Toplama kısmını bitir.")
-        5 -> PartState(5, part2ChestComplete, part2ChestComplete, "Abaküste Çıkarma kısmını bitir.")
-        6 -> PartState(6, part3ChestComplete, part3ChestComplete, "Abaküste Çarpma kısmını bitir.")
+        2 -> PartState(2, part1ChestComplete, part1ChestComplete, marathonGateMessage(1))
+        3 -> PartState(3, part1ChestComplete, part1ChestComplete, marathonGateMessage(1))
+        4 -> PartState(4, part1ChestComplete, part1ChestComplete, marathonGateMessage(1))
+        5 -> PartState(5, part2ChestComplete, part2ChestComplete, marathonGateMessage(2))
+        6 -> PartState(6, part3ChestComplete, part3ChestComplete, marathonGateMessage(3))
         7 -> {
             val functional = hasProPlan && part1ChestComplete
             val msg = if (!hasProPlan) "Bu kısmı açmak için planı Pro'ya yükselt." else "Abaküste Toplama kısmını bitir."
@@ -79,8 +100,9 @@ object PartSelectionLogic {
         part1ChestComplete: Boolean,
         part2ChestComplete: Boolean,
         part3ChestComplete: Boolean,
+        teacherApproved: Boolean = false,
     ): List<PartState> =
-        partIds.map { partState(it, hasProPlan, part1ChestComplete, part2ChestComplete, part3ChestComplete) }
+        partIds.map { partState(it, hasProPlan, part1ChestComplete, part2ChestComplete, part3ChestComplete, teacherApproved) }
 
     fun partTitle(partId: Int): String = when (partId) {
         1 -> "Abaküsün Temeli ve Toplama"

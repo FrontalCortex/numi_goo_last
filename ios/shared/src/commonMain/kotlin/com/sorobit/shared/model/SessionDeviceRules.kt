@@ -129,7 +129,7 @@ object AccountDeletionRules {
     )
 
     /** Çok dokümanlı düz alt koleksiyonlar. */
-    val LEAF_SUBCOLLECTIONS: List<String> = listOf("cupHistory", "lessonSuccessRateState")
+    val LEAF_SUBCOLLECTIONS: List<String> = listOf("cupHistory", "lessonSuccessRateState", "weeklyStats", "lessonMilestones")
 
     /** Toplu silmede bir batch'e konan en çok doküman. */
     const val DELETE_BATCH_SIZE = 450

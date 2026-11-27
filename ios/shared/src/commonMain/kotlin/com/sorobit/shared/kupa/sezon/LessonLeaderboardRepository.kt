@@ -1,7 +1,9 @@
 // Kaynak (Android): app/src/main/java/com/example/app/LessonLeaderboardRepository.kt — saf kısım:
-// sabitler/yollar, leaderboardDocumentId, rankingScore, competitionRanksForOrderedDocs, submitBestIfNeeded'in
-// ön koşulları ve Cloud Function yükü, fetchUserRankInLessonLeaderboard'un sıra bulma mantığı,
-// syncAbacusLeaderboardRankToBadgeProgress'in yazdığı değer, LeaderboardEntry ve listenLeaderboard eşlemesi.
+// sabitler/yollar, leaderboardDocumentId (ders anahtarıyla), rankingScore, competitionRanksForOrderedDocs,
+// submitBestIfNeeded'in ön koşulları ve Cloud Function yükü, LeaderboardEntry ve listenLeaderboard eşlemesi
+// (avatar eşlemesi dahil).
+// Android'de kaldırılanlar ortak koddan da çıkarıldı: fetchUserRankInLessonLeaderboard ve
+// syncAbacusLeaderboardRankToBadgeProgress (rozetin abacusLeaderboardRank alanı artık yok).
 // Taşınmayanlar: Firestore/Functions/Auth çağrıları, Log satırları, GlobalLessonData'ya bağlı Chest çözümleme
 // (yalnızca tür listesinden indeks bulan saf yardımcı var).
 package com.sorobit.shared.kupa.sezon
@@ -9,7 +11,7 @@ package com.sorobit.shared.kupa.sezon
 /**
  * Firestore: `lessonLeaderboards/{boardDocId}` (meta) + `entries/{uid}`.
  * Kupa/altın/gümüş/bronz rozet satırları sezon sonunda Cloud Function [finalizeSeasonLeaderboardMedals] ile yazılır;
- * istemci yalnızca skor gönderir. Tahta üst dokümanında `season` / `partId` / `lessonIndex` tutulur (sorgu için).
+ * istemci yalnızca skor gönderir. Tahta üst dokümanında `season` / `partId` / `lessonKey` tutulur (sorgu için).
  */
 object LessonLeaderboardRepository {
 
@@ -19,23 +21,24 @@ object LessonLeaderboardRepository {
     const val F_SCORE = "recordScore"
     const val F_LABEL = "recordLabel"
     const val F_NAME = "displayName"
-    const val F_PHOTO = "photoUrl"
     const val F_UPDATED = "updatedAt"
     const val F_TITLE_UNIT = "titleUnit"
 
     const val META_PART_ID = "partId"
-    const val META_LESSON_INDEX = "lessonIndex"
+    const val META_LESSON_KEY = "lessonKey"
     const val META_SEASON = "season"
 
     /** Skor gönderen Cloud Function (callable) adı. */
     const val CF_SUBMIT_LEADERBOARD_SCORE = "submitLeaderboardScore"
 
-    /** Kupa liderliği → rozet abacusLeaderboardRank senkronu: bu parttaki ilk Chest satırının liste indeksi. */
-    const val ABACUS_BADGE_LEADERBOARD_PART_ID = 1
-    const val ABACUS_BADGE_LEADERBOARD_TOP_N = 100L
-
     /** Kayıt ekranı liderlik listesi: Firestore sorgu limiti (tahta seed ile uyumlu, max 100). */
     const val LEADERBOARD_LIST_QUERY_LIMIT = 100L
+
+    /** Avatar okuması için Firestore `whereIn` en fazla 30 değer alır. */
+    const val AVATAR_QUERY_CHUNK = 30
+
+    /** Avatar kaynağı: `publicProfiles/{uid}` dokümanı. */
+    const val PUBLIC_PROFILES_COLLECTION = "publicProfiles"
 
     /** Android `LessonItem.TYPE_CHEST`. */
     const val LESSON_ITEM_TYPE_CHEST = 2
@@ -49,27 +52,26 @@ object LessonLeaderboardRepository {
         return idx.takeIf { it >= 0 }
     }
 
-    const val USERS = "users"
-    const val BADGE_PROGRESS = "badgeProgress"
-    const val BADGE_STATE = "state"
-    const val F_ABACUS_LEADERBOARD_RANK = "abacusLeaderboardRank"
-
     /**
      * Sezon bazlı tahta doküman id'si (`lessonLeaderboards/{id}/entries/...`).
+     *
+     * Android (güncel): tahta kimliği liste konumuyla DEĞİL dersin kalıcı kimliğiyle ([lessonKey], ör.
+     * `p1_i04_unite_maratonu`) kurulur: müfredata ders eklenince konum kayar ve eski biçimde tahta ikiye bölünürdü.
+     * Sunucu (functions/index.js → submitLeaderboardScore) aynı biçimi üretir.
      */
     fun leaderboardDocumentId(
         partId: Int,
-        lessonIndex: Int,
+        lessonKey: String,
         season: Int = SeasonClock.currentSeason(),
     ): String =
-        "part_${partId}_lesson_${lessonIndex}_season_$season"
+        "part_${partId}_lesson_${lessonKey}_season_$season"
 
     /** `lessonLeaderboards/{boardId}/entries` koleksiyon yolu (sorgu: orderBy recordScore DESC, limit N). */
     fun entriesCollectionPath(
         partId: Int,
-        lessonIndex: Int,
+        lessonKey: String,
         season: Int = SeasonClock.currentSeason(),
-    ): String = "$COLLECTION/${leaderboardDocumentId(partId, lessonIndex, season)}/$ENTRIES"
+    ): String = "$COLLECTION/${leaderboardDocumentId(partId, lessonKey, season)}/$ENTRIES"
 
     /**
      * Android `DocumentSnapshot.rankingScore()`: `recordScore` alanının sıralama değeri.
@@ -112,30 +114,28 @@ object LessonLeaderboardRepository {
 
     /**
      * Android `submitBestIfNeeded` içinde Cloud Function'a gönderilen yük; gönderim atlanacaksa null
-     * (kullanıcı yok ya da `recordScore <= 0`). Sezonu SUNUCU belirler; yükte sezon yoktur.
+     * (kullanıcı yok, `recordScore <= 0` ya da [lessonKey] boş). Sezonu SUNUCU belirler; yükte sezon yoktur.
+     *
+     * Android (güncel): ad ve avatar GÖNDERİLMEZ — ikisi de başka çocukların ekranında gösterildiği için sunucu
+     * onları publicProfiles aynasından ve kimlik jetonundan kendisi çözer.
      *
      * @param hasUser oturum açmış kullanıcı var mı (Android: `FirebaseAuth.currentUser != null`).
-     * @param userDisplayName `user.displayName`
-     * @param userPhotoUrl `user.photoUrl?.toString()`
      */
     fun buildSubmitData(
         hasUser: Boolean,
         partId: Int,
-        lessonIndex: Int,
+        lessonKey: String,
         recordScore: Int,
-        userDisplayName: String?,
-        userPhotoUrl: String?,
         titleUnit: String? = null,
     ): Map<String, Any>? {
         if (!hasUser) return null
         if (recordScore <= 0) return null
+        if (lessonKey.isBlank()) return null
 
         val data = mutableMapOf<String, Any>(
             "partId" to partId,
-            "lessonIndex" to lessonIndex,
+            "lessonKey" to lessonKey,
             "recordScore" to recordScore,
-            "displayName" to (userDisplayName?.trim()?.take(127)?.ifBlank { null } ?: "Kullanıcı"),
-            "photoUrl" to (userPhotoUrl ?: ""),
         )
         val titleTrimmed = titleUnit?.trim()?.take(127)?.takeIf { it.isNotEmpty() }
         if (titleTrimmed != null) {
@@ -143,38 +143,6 @@ object LessonLeaderboardRepository {
         }
         return data
     }
-
-    /**
-     * Android `fetchUserRankInLessonLeaderboard` başarı dalı: ilk N içindeki ödül sırası (beraberlikte paylaşılan
-     * en iyi sıra); listede yoksa null. Önce kırpılmış id eşleşmesi, sonra ham id eşleşmesi aranır.
-     *
-     * @param orderedEntries `orderBy recordScore DESC limit N` sonucu: (doküman id, ham recordScore değeri).
-     */
-    fun userRankInOrderedEntries(orderedEntries: List<Pair<String, Any?>>, userId: String): Int? {
-        val uidNorm = userId.trim()
-        val idxTrim = orderedEntries.indexOfFirst { it.first.trim() == uidNorm }
-        val idxRaw = orderedEntries.indexOfFirst { it.first == userId }
-        val idx = when {
-            idxTrim >= 0 -> idxTrim
-            idxRaw >= 0 -> idxRaw
-            else -> -1
-        }
-        val ranks = competitionRanksForOrderedDocs(orderedEntries.map { it.second })
-        return if (idx >= 0) ranks[idx] else null
-    }
-
-    /**
-     * Android `syncAbacusLeaderboardRankToBadgeProgress`: `users/{uid}/badgeProgress/state.abacusLeaderboardRank`
-     * alanına yazılacak değer. İlk 100'de yoksa (rank == null) Int.MAX_VALUE yazılır.
-     * (Sorgu başarısızsa ya da partta Chest yoksa alan HİÇ güncellenmez — o karar platform katmanındadır.)
-     */
-    fun abacusLeaderboardRankToStore(rank: Int?): Int = rank ?: Int.MAX_VALUE
-
-    /** [abacusLeaderboardRankToStore] değerinin merge ile yazıldığı harita. */
-    fun abacusLeaderboardRankUpdate(rank: Int?): Map<String, Any> =
-        mapOf(F_ABACUS_LEADERBOARD_RANK to abacusLeaderboardRankToStore(rank))
-
-    fun badgeStateDocumentPath(uid: String): String = "$USERS/$uid/$BADGE_PROGRESS/$BADGE_STATE"
 
     data class LeaderboardEntry(
         val userId: String,
@@ -184,25 +152,57 @@ object LessonLeaderboardRepository {
         val rewardRank: Int,
         val displayName: String,
         val recordLabel: String,
-        val photoUrl: String?,
+        /**
+         * Uygulama içi avatar (publicProfiles.avatarConfig, AvatarConfig.encode biçiminde).
+         * null: henüz okunmadı ya da kullanıcının avatarı yok → çizen taraf varsayılan avatarı koyar.
+         * (Android güncel: eski `photoUrl` — Google fotoğrafı — artık gösterilmiyor.)
+         */
+        val avatarConfig: String?,
     )
 
     /**
-     * Android `listenLeaderboard` anlık görüntü eşlemesi.
+     * Android `listenLeaderboard` içindeki `buildList`: anlık görüntü eşlemesi.
      *
      * @param documents `orderBy recordScore DESC limit LEADERBOARD_LIST_QUERY_LIMIT` sonucu: (doküman id, veri).
+     * @param avatarCache uid → avatarConfig ("" = profilde avatar yok); boş değerler null sayılır.
+     * @param ownUid [ownAvatarConfig] ile birlikte: kendi satırımız için yerel avatar (ağ beklenmez).
      */
-    fun mapLeaderboardEntries(documents: List<Pair<String, Map<String, Any?>>>): List<LeaderboardEntry> {
+    fun mapLeaderboardEntries(
+        documents: List<Pair<String, Map<String, Any?>>>,
+        avatarCache: Map<String, String> = emptyMap(),
+        ownUid: String? = null,
+        ownAvatarConfig: String? = null,
+    ): List<LeaderboardEntry> {
         val ranks = competitionRanksForOrderedDocs(documents.map { it.second[F_SCORE] })
+        val useOwnLocal = !ownUid.isNullOrBlank() && !ownAvatarConfig.isNullOrBlank()
         return documents.mapIndexed { index, (id, data) ->
+            val avatar = if (useOwnLocal && id == ownUid) ownAvatarConfig
+            else avatarCache[id]?.takeIf { it.isNotBlank() }
             LeaderboardEntry(
                 userId = id,
                 displayRank = index + 1,
                 rewardRank = ranks[index],
                 displayName = (data[F_NAME] as? String) ?: "",
                 recordLabel = (data[F_LABEL] as? String) ?: "",
-                photoUrl = (data[F_PHOTO] as? String)?.takeIf { it.isNotBlank() }
+                avatarConfig = avatar,
             )
         }
+    }
+
+    /**
+     * Android `listenLeaderboard`: avatarı henüz okunmamış uid'ler (kendi satırımız yerelden geldiyse hariç);
+     * [AVATAR_QUERY_CHUNK]'lık parçalara bölünüp `publicProfiles`'tan sorgulanır.
+     */
+    fun missingAvatarChunks(
+        uids: List<String>,
+        avatarCache: Map<String, String>,
+        ownUid: String? = null,
+        ownAvatarConfig: String? = null,
+    ): List<List<String>> {
+        val useOwnLocal = !ownUid.isNullOrBlank() && !ownAvatarConfig.isNullOrBlank()
+        return uids
+            .filterNot { useOwnLocal && it == ownUid }
+            .filterNot { avatarCache.containsKey(it) }
+            .chunked(AVATAR_QUERY_CHUNK)
     }
 }

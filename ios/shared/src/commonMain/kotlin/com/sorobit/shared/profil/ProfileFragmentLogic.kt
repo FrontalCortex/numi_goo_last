@@ -163,6 +163,31 @@ object ProfileFragmentLogic {
             else -> "Free"
         }
 
+    /** Profil dokümanındaki en uzun günlük seri alanı (Android: `doc.getLong("longestStreak") ?: 0L`). */
+    const val FIELD_LONGEST_STREAK = "longestStreak"
+
+    fun longestStreak(rawFieldValue: Any?): Long = (rawFieldValue as? Number)?.toLong() ?: 0L
+
+    /**
+     * Takibi bırakma (Android: unfollowTargetUser): iki takip kaydı da tek batch'te silinir; sayaçları sunucu
+     * tetikleyicileri düşürür. Dönüş: silinecek doküman yolları (önce hedefin takipçi kaydı, sonra kendi
+     * takip kaydım).
+     */
+    fun unfollowDeletePaths(myUid: String, targetUid: String): List<String> = listOf(
+        "users/$targetUid/followers/$myUid",
+        "users/$myUid/following/$targetUid",
+    )
+
+    /**
+     * Takip düğmesi (Android: applyFollowButtonState): takip edilirken düğme KAPALI değildir, ikinci dokunuş
+     * onay sorup takibi bırakır; yarı saydamlık yoktur. Dönüş true → dokunuş [unfollowDeletePaths] akışını
+     * (önce onay) başlatır, false → takip eder.
+     */
+    fun followButtonTapUnfollows(following: Boolean): Boolean = following
+
+    /** Takip/bırakma sonrası ekrandaki takipçi sayısı anında düzeltilir (Android: nudgeFollowersCount); negatife inmez. */
+    fun nudgedFollowersCount(current: Int, delta: Int): Int = (current + delta).coerceAtLeast(0)
+
     /** Android: followTargetUser — hedefin kullanıcı kimliği ekrandaki satırdan ayıklanır. */
     fun followTargetUserId(usernameAndDateText: String): String =
         usernameAndDateText.removePrefix("@").substringBefore(" •")
@@ -227,23 +252,12 @@ object ProfileFragmentLogic {
         else -> null
     }
 
-    /** (kademe eşikleri, 5. kademeden sonraki adım). Kademesiz rozetlerde null. */
-    fun levelSpec(kind: BadgeKind): Pair<List<Int>, Int>? = when (kind) {
-        BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
-        BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-        BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
-        BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
-        BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
-        BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
-        BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-        BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
-        BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-        BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
-        BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-        BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
-        BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
-        else -> null
-    }
+    /**
+     * (kademe eşikleri, 5. kademeden sonraki adım). Kademesiz rozetlerde null. Güncel Android'de eşikler
+     * tek kaynaktan gelir ([BadgeProgressEngine.levelSpec]); profil eskiden kendi kopyasını tutuyordu ve
+     * roket rozetinde ızgaradan farklı bir tablo kullanıyordu. Bu kopya da artık motoru kullanır.
+     */
+    fun levelSpec(kind: BadgeKind): Pair<List<Int>, Int>? = BadgeProgressEngine.levelSpec(kind)
 
     /** Android: getBadgeLevel — tam sayı kademe (5. kademeden sonra tam bölme). */
     fun badgeLevel(kind: BadgeKind, progress: UserBadgeProgress): Int {

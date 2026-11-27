@@ -8,6 +8,13 @@
 //   app/src/main/java/com/example/app/LessonLeaderboardRepository.kt
 //     - firstChestLessonIndexForPart()            → [MarathonGuideLogic.firstChestLessonIndexForPart]
 //
+// GÜNCEL ANDROID NOTLARI (soban-gamified-education): haritadaki SABİT ÜNİTE BAŞLIĞI ve ders kartlarının sağa-sola kayması
+// (DynamicOffsetDecoration, LessonItem.offset) Android'de KALDIRILDI; dersler alt alta kartlar (item_lesson_card).
+// [stickyHeaderFor] ve [MapLayoutLogic] (PartSelectionLogic.kt) bu yüzden Android'de artık kullanılmıyor; ortak kopyada
+// yalnızca geriye uyum için duruyor — iOS ekranı da kaldırılmalı. Rekor ekranı artık `RecordFragment.newInstance(partId,
+// stableId, title)` ile açılır (konum yerine kalıcı kimlik). "Sobi günlük testi" düğmesi ve ders sonrası kuyruk
+// (pumpPostLessonQueue) platform işidir.
+//
 // ATLANAN: MapFragment.getLessonOperations() / getLessonOperationsBlinding() (ders adımı → soru listesi tablosu).
 // Bu tablo MathOperation / MathOperationGenerator'a bağlıdır (başka paket: `matematik`); bu pakete alınmadı.
 //

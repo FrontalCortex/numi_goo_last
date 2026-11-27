@@ -75,7 +75,7 @@ class AbacusLessonRulesTest {
 
     @Test
     fun cesitliKurallar() {
-        assertEquals(50L, k.beadAnimationDurationMs(2))
+        assertEquals(300L, k.beadAnimationDurationMs(2)) // güncel Android: sandıkta da 300 ms
         assertEquals(300L, k.beadAnimationDurationMs(0))
         assertEquals(300L, k.beadAnimationDurationMs(3))
         assertEquals(0.25f, k.progressEndWeight(0, 4))
@@ -157,6 +157,10 @@ class AbacusLessonSessionTest {
         assertFailsWith<NullPointerException> { AbacusLessonSession(listOf(op(null, "+", 4)), 0).stepAnswerAlgorithm(0) }
         // Boş listede yanlış döner
         assertFalse(AbacusLessonSession(emptyList(), 0).stepAnswerAlgorithm(0))
+        // Son sorudan sonra gelen dokunuş (dizin sınır dışı): çökmez, yanlış döner
+        val bitmis = AbacusLessonSession(listOf(op(3, "+", 4)), 0)
+        bitmis.onContinue()
+        assertFalse(bitmis.stepAnswerAlgorithm(7))
     }
 
     @Test
@@ -202,7 +206,7 @@ class AbacusLessonSessionTest {
         assertTrue(r.isCorrect)
         assertFalse(r.playPerfectAnimation)
         assertEquals(50f, s.currentSuccessRate())
-        assertEquals(AbacusLessonOutcome.LESSON_RESULT, s.outcome(240))
+        assertEquals(AbacusLessonOutcome.LESSON_RESULT_FALSE, s.outcome(240)) // %50 < %75
     }
 
     @Test
@@ -218,10 +222,13 @@ class AbacusLessonSessionTest {
             }
             return s
         }
-        // Başarı < %10 → başarısız ekranı
+        // Başarı < %75 → başarısız ekranı (güncel Android; eskiden %10)
         assertEquals(AbacusLessonOutcome.LESSON_RESULT_FALSE, oturum(0, 2).outcome(240))
         assertEquals(AbacusLessonOutcome.LESSON_RESULT_FALSE, oturum(1, 11).outcome(240)) // %9.09
-        assertEquals(AbacusLessonOutcome.LESSON_RESULT, oturum(1, 10).outcome(240)) // tam %10
+        assertEquals(AbacusLessonOutcome.LESSON_RESULT_FALSE, oturum(1, 2).outcome(240)) // %50
+        assertEquals(AbacusLessonOutcome.LESSON_RESULT_FALSE, oturum(74, 100).outcome(240)) // %74
+        assertEquals(AbacusLessonOutcome.LESSON_RESULT, oturum(3, 4).outcome(240)) // tam %75
+        assertEquals(AbacusLessonOutcome.LESSON_RESULT, oturum(1, 1).outcome(240)) // %100
         // Sandık: süre "0:00" (hiç tik yok) → çarpan 4
         assertEquals(AbacusLessonOutcome.CHEST_FAILURE, oturum(0, 4, tip = 2).outcome(240)) // 0 puan
         assertEquals(AbacusLessonOutcome.CHEST_FAILURE, oturum(1, 5, tip = 2).outcome(240)) // 100·4 = 400
@@ -388,9 +395,11 @@ class BlindingLessonLogicTest {
         // Sandık (4. ve 5. bölüm dışında)
         assertEquals(BlindingLessonOutcome.CHEST_RESULT, bitir(bolum = 3, f = BlindingLessonFlags(type = 2), puan = 500))
         assertEquals(BlindingLessonOutcome.CHEST_FAILURE, bitir(bolum = 6, f = BlindingLessonFlags(type = 2), puan = 0))
-        // 4./5. bölümde sandık tipi de başarı oranına göre değerlendirilir (%50 sınırı)
+        // 4./5. bölümde sandık tipi de başarı oranına göre değerlendirilir (güncel Android: %75 sınırı, eskiden %50)
         assertEquals(BlindingLessonOutcome.LESSON_RESULT_FALSE, bitir(bolum = 4, f = BlindingLessonFlags(type = 2), dogru = 1, toplam = 3, puan = 9999))
-        assertEquals(BlindingLessonOutcome.LESSON_RESULT, bitir(bolum = 5, f = BlindingLessonFlags(type = 2), dogru = 1, toplam = 2))
+        assertEquals(BlindingLessonOutcome.LESSON_RESULT_FALSE, bitir(bolum = 5, f = BlindingLessonFlags(type = 2), dogru = 1, toplam = 2)) // %50
+        assertEquals(BlindingLessonOutcome.LESSON_RESULT_FALSE, bitir(bolum = 4, dogru = 74, toplam = 100)) // %74
+        assertEquals(BlindingLessonOutcome.LESSON_RESULT, bitir(bolum = 5, f = BlindingLessonFlags(type = 2), dogru = 3, toplam = 4)) // tam %75
         assertEquals(BlindingLessonOutcome.LESSON_RESULT_FALSE, bitir(bolum = 5, dogru = 0, toplam = 0))
         // Diğer: her zaman ders sonucu
         assertEquals(BlindingLessonOutcome.LESSON_RESULT, bitir(bolum = 1, dogru = 0, toplam = 5))
@@ -451,6 +460,67 @@ class BlindingLessonLogicTest {
         assertEquals("1", p.start(p.currentSequence).display)
         assertEquals(1, p.currentSequenceIndex)
         assertEquals(200L, BlindingLessonRules.SEQUENCE_RESTART_DELAY_MS)
+    }
+
+    @Test
+    fun diziAtlamaDugmesi() {
+        val p = BlindingSequencePlayback(timePeriod = null)
+        // Gösterim yokken yok sayılır
+        assertNull(p.skip())
+        p.start(listOf(3, 5, 2))
+        // Süre beklemeden sıradaki sayıya geçer: kendiliğinden geçişle aynı adım (sayı silinir, 200 ms sonra gelir)
+        assertEquals(
+            BlindingSequencePlayback.Step(display = "", schedule = BlindingSequencePlayback.Timer.SEQUENCE_REVEAL, delayMs = 200),
+            p.skip(),
+        )
+        assertTrue(p.isBlankPending)
+        // Boşluk sürerken ikinci basış yok sayılır (yoksa ekran boş kalırdı)
+        assertNull(p.skip())
+        assertEquals("5", p.onSequenceRevealStep().display)
+        assertFalse(p.isBlankPending)
+        // Sıradaki sayı geldi; yeniden atlanabilir
+        assertEquals("", p.skip()!!.display)
+        assertEquals(BlindingSequencePlayback.Step(display = "2", finished = true), p.onSequenceRevealStep())
+        assertNull(p.skip()) // gösterim bitti
+        // Durdurma bekleyen boşluğu temizler
+        p.start(listOf(1, 2, 3)); p.skip(); p.stop()
+        assertFalse(p.isBlankPending)
+    }
+
+    @Test
+    fun kupaSonucuTekSefer() {
+        val k = BlindingLessonRules
+        assertTrue(k.shouldSubmitCupQuitResult(9, lessonStarted = true, cupResultSubmitted = false))
+        assertFalse(k.shouldSubmitCupQuitResult(9, lessonStarted = true, cupResultSubmitted = true)) // cevabını verip çıkan terk sayılmaz
+        assertFalse(k.shouldSubmitCupQuitResult(9, lessonStarted = false, cupResultSubmitted = false))
+        assertFalse(k.shouldSubmitCupQuitResult(3, lessonStarted = true, cupResultSubmitted = false))
+        val s = BlindingLessonSession(listOf(BlindingOperation.Sequence(listOf(1, 2))), BlindingLessonFlags())
+        assertFalse(s.cupResultSubmitted)
+        assertTrue(s.claimCupResult())
+        assertFalse(s.claimCupResult())
+        assertTrue(s.cupResultSubmitted)
+        assertTrue(s.claimCupRaceLog()); assertFalse(s.claimCupRaceLog())
+        assertTrue(s.claimLessonFinish()); assertFalse(s.claimLessonFinish())
+        // Ölçüm adı: körleme birleşimleri önce
+        assertEquals("blinding_multiplication", k.cupModeName(BlindingLessonFlags(isMultiplication = true, isBlinding = true)))
+        assertEquals("multiplication", k.cupModeName(BlindingLessonFlags(isMultiplication = true)))
+        assertEquals("blinding_extraction", k.cupModeName(BlindingLessonFlags(isExtraction = true, isBlinding = true)))
+        assertEquals("extraction", k.cupModeName(BlindingLessonFlags(isExtraction = true)))
+        assertEquals("blinding", k.cupModeName(BlindingLessonFlags(isBlinding = true)))
+        assertEquals("normal", k.cupModeName(BlindingLessonFlags()))
+    }
+
+    @Test
+    fun basariOraniTelemetriKapsami() {
+        val k = BlindingLessonRules
+        assertTrue(k.isLessonSuccessRateScope(false, 1, 0))
+        assertTrue(k.isLessonSuccessRateScope(false, 3, 2))
+        assertFalse(k.isLessonSuccessRateScope(true, 1, 0)) // günlük soru
+        assertFalse(k.isLessonSuccessRateScope(false, 9, 0)) // kupa modu
+        assertFalse(k.isLessonSuccessRateScope(false, 1, 1)) // ders/sandık dışı tip
+        assertTrue(AbacusLessonRules.isLessonSuccessRateType(0))
+        assertTrue(AbacusLessonRules.isLessonSuccessRateType(2))
+        assertFalse(AbacusLessonRules.isLessonSuccessRateType(3))
     }
 
     @Test

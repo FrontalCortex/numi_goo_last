@@ -85,7 +85,6 @@ object BadgeProgressFirestore {
     const val F_USER_GOAT_PROGRESS = "userGoatProgress"
     const val F_USER_EAGLE_PROGRESS = "userEagleProgress"
     const val F_USER_FLY_PROGRESS = "userFlyProgress"
-    const val F_ABACUS_LEADERBOARD_RANK = "abacusLeaderboardRank"
     const val F_GOLD_MEDAL_PIECE = "goldMedalPiece"
     const val F_SILVER_MEDAL_PIECE = "silverMedalPiece"
     const val F_BRONZE_MEDAL_PIECE = "bronzeMedalPiece"
@@ -108,7 +107,6 @@ object BadgeProgressFirestore {
         currentPeriodKey: String = FishingStreakPeriod.currentPeriodKey(),
     ): UserBadgeProgress {
         if (doc == null) return UserBadgeProgress()
-        val abacusRank = doc.numInt(F_ABACUS_LEADERBOARD_RANK) ?: Int.MAX_VALUE
         val progress = UserBadgeProgress(
             userDartProgress = doc.numInt(F_USER_DART_PROGRESS) ?: 0,
             userKarateProgress = doc.numInt(F_USER_KARATE_PROGRESS) ?: 0,
@@ -128,7 +126,6 @@ object BadgeProgressFirestore {
             userGoatProgress = doc.numInt(F_USER_GOAT_PROGRESS) ?: 0,
             userEagleProgress = doc.numInt(F_USER_EAGLE_PROGRESS) ?: 0,
             userFlyProgress = doc.numInt(F_USER_FLY_PROGRESS) ?: 0,
-            abacusLeaderboardRank = abacusRank,
             goldMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc[F_GOLD_MEDAL_PIECE]),
             silverMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc[F_SILVER_MEDAL_PIECE]),
             bronzeMedalPiece = BadgePieceLeaderboardSync.parseMedalPieceList(doc[F_BRONZE_MEDAL_PIECE]),
@@ -192,12 +189,17 @@ object BadgeProgressFirestore {
         return after to currentPeriodKey
     }
 
+    /**
+     * Android (güncel): eşikler [BadgeProgressEngine.levelSpec]'ten okunur; çağıran liste geçmez.
+     * [levels] parametresi yalnızca eski çağrıların derlenmesi için duruyor (varsayılanı tek kaynaktan gelir).
+     */
     fun resolveLevelUpPayload(
         mode: BadgeAnimMode,
         before: Int,
         after: Int,
-        levels: List<Int>,
+        levels: List<Int>? = BadgeProgressEngine.levelSpec(mode)?.first,
     ): BadgeLevelUpPayload? {
+        if (levels == null) return null
         val nextTargetBefore = levels.firstOrNull { it > before } ?: return null
         if (nextTargetBefore > levels.last()) return null
         if (after < nextTargetBefore) return null
@@ -442,7 +444,6 @@ object BadgeProgressFirestore {
                 BadgeAnimMode.BOWLING_WITH_BASE,
                 result.beforeBowling,
                 result.afterBowling,
-                listOf(5, 10, 20, 50, 100),
             )?.let { payloads.add(it) }
         }
         if (incrementDart) {
@@ -450,7 +451,6 @@ object BadgeProgressFirestore {
                 BadgeAnimMode.DAILY_ONLY,
                 result.beforeDart,
                 result.afterDart,
-                listOf(3, 10, 20, 30, 50),
             )?.let { payloads.add(it) }
         }
         if (incrementKarate) {
@@ -462,7 +462,6 @@ object BadgeProgressFirestore {
                 BadgeAnimMode.GOLF_WITH_BASE,
                 result.beforeGolf,
                 result.afterGolf,
-                listOf(5, 10, 20, 50, 100),
             )?.let { payloads.add(it) }
         }
         if (incrementFishing) {
@@ -473,7 +472,6 @@ object BadgeProgressFirestore {
                 BadgeAnimMode.TORNADO,
                 result.beforeTornado,
                 result.afterTornado,
-                listOf(1, 3, 5, 10, 15),
             )?.let { payloads.add(it) }
         }
         if (incrementVolcano) {
@@ -481,7 +479,6 @@ object BadgeProgressFirestore {
                 BadgeAnimMode.VOLCANO,
                 result.beforeVolcano,
                 result.afterVolcano,
-                listOf(1, 3, 5, 10, 15),
             )?.let { payloads.add(it) }
         }
         return payloads

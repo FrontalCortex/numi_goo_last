@@ -16,6 +16,7 @@ internal fun ders(
     isCompleted: Boolean = true,
     title: String = "Ders",
 ): LessonItem = LessonItem(
+    stableId = "test_ders",
     type = LessonItem.TYPE_LESSON,
     title = title,
     offset = 0,
@@ -30,6 +31,7 @@ internal fun sandik(
     record: Int? = null,
     title: String = "Ünite Maratonu",
 ): LessonItem = LessonItem(
+    stableId = "test_sandik",
     type = LessonItem.TYPE_CHEST,
     title = title,
     offset = 0,
@@ -42,6 +44,7 @@ internal fun sandik(
 )
 
 internal fun baslik(title: String = "Başlık"): LessonItem = LessonItem(
+    stableId = "test_baslik",
     type = LessonItem.TYPE_HEADER,
     title = title,
     offset = 0,
@@ -70,9 +73,9 @@ class LessonItemTest {
         // ikisi de yoksa 1
         assertEquals(-1, ders(stepCount = 3).minLessonOperationsId())
         assertEquals(1, ders(stepCount = 1).minLessonOperationsId())
-        // Katalog: part 1 "10'luk Toplama - 3 Basamaklı" start 28, finish 31, stepCount 3 → 29 (Android tutarsızlığı aynen)
+        // Katalog: part 1 "10'luk Toplama - 3 Basamaklı" start 28, finish 30, stepCount 3 → 28 (güncel Android'de eski tutarsızlık düzeltildi)
         val p1 = GlobalLessonData.createLessonItems(1)
-        assertEquals(29, p1[19].minLessonOperationsId())
+        assertEquals(28, p1[19].minLessonOperationsId())
         assertEquals(1, p1[1].minLessonOperationsId())
     }
 

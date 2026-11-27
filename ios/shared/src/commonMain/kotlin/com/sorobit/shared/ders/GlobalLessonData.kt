@@ -14,6 +14,11 @@
 //  - `SeasonClock.currentSeason()` yerine `season` parametresi; SharedPreferences'taki
 //    `tutorial1_login_flow_pending` bayrağı yerine `tutorial1Pending` parametresi.
 //  - Log / debugLog çağrıları kaldırıldı.
+//  - Kimlik: Android artık ilerleme dokümanlarını liste sırasıyla DEĞİL `LessonItem.stableId` ile anahtarlıyor
+//    (`items/{stableId}`); eski sıra anahtarlı ("0","1",...) dokümanlar okunurken tanınır ve göç planı
+//    ([legacyMigrationPlan]) ile taşınır. Kilit durumu liste durumundan türetilir ([withDerivedUnlocks]); onaylı
+//    öğretmenin dersleri bir kez açılır ([teacherUnlockPlan]). Ders adı/ipucu Android'de strings_lessons.xml'den gelir;
+//    ortak kopyada katalog Türkçe sabit metindir ([turkishItem], [localizeLessonText] bu yüzden kimlik/aynen döner).
 //  - `stepCupIcon` Android'de Firestore'a R.drawable TAM SAYI kimliği olarak yazılıyor (derlemeye özgü bir sayı).
 //    Ortak kodda bu alan kaynak adı (String). Bkz. [GlobalLessonData.progressFieldsOf] ve
 //    [GlobalLessonData.applyProgressFields] açıklamaları.
@@ -26,14 +31,26 @@ package com.sorobit.shared.ders
  * yapılır; uid yoksa çağrı sessizce yok sayılır.
  */
 interface LessonProgressSink {
-    /** `users/{uid}/lessonProgress/{partId}/items/{position}` dokümanını [fields] ile `set()` eder (merge DEĞİL). */
-    fun writeSingleItem(partId: Int, position: Int, fields: Map<String, Any?>)
+    /** `users/{uid}/lessonProgress/{partId}/items/{stableId}` dokümanını [fields] ile `set()` eder (merge DEĞİL). */
+    fun writeSingleItem(partId: Int, stableId: String, fields: Map<String, Any?>)
 
-    /** [itemsFields] listesindeki her öğeyi `items/{index}` dokümanına tek batch içinde `set()` eder. */
-    fun writeAllItems(partId: Int, itemsFields: List<Map<String, Any?>>)
+    /**
+     * [itemsFields] listesindeki her öğeyi, [stableIds] listesindeki aynı sıradaki kimlikle `items/{stableId}`
+     * dokümanına tek batch içinde `set()` eder (iki liste aynı uzunlukta).
+     */
+    fun writeAllItems(partId: Int, stableIds: List<String>, itemsFields: List<Map<String, Any?>>)
 
-    /** Android: LessonLeaderboardRepository.submitBestIfNeeded(partId, lessonIndex, score, season, titleUnit). */
-    fun submitBestIfNeeded(partId: Int, lessonIndex: Int, score: Int, season: Int, titleUnit: String?)
+    /**
+     * Eski sıra anahtarlı dokümanların göçü (Android: migrateLegacyItemKeys): [stableIds]/[itemsFields] yazılır,
+     * [legacyDocIds] ("0","1",...) aynı batch'te silinir. Başarısızsa sessiz kalınmamalı; bir sonraki okumada yeniden denenir.
+     */
+    fun migrateLegacyItemKeys(partId: Int, stableIds: List<String>, itemsFields: List<Map<String, Any?>>, legacyDocIds: List<String>)
+
+    /**
+     * Android: LessonLeaderboardRepository.submitBestIfNeeded(partId, lessonKey, score, season, titleUnit).
+     * Tahta kimliği artık `part_{partId}_lesson_{lessonKey}_season_{season}` ([lessonKey] = stableId).
+     */
+    fun submitBestIfNeeded(partId: Int, lessonKey: String, score: Int, season: Int, titleUnit: String?)
 }
 
 object GlobalLessonData {
@@ -46,7 +63,8 @@ object GlobalLessonData {
     /** Liderlik tablosuna gönderilecek skor (Android: submitBestIfNeeded argümanları). */
     data class LeaderboardSubmit(
         val partId: Int,
-        val lessonIndex: Int,
+        /** Dersin kalıcı kimliği ([LessonItem.stableId]); eskiden liste konumuydu. */
+        val lessonKey: String,
         val score: Int,
         val season: Int,
         val titleUnit: String?,
@@ -91,9 +109,16 @@ object GlobalLessonData {
     fun itemsCollectionPath(uid: String, partId: Int): String =
         "$FIRESTORE_USERS/$uid/$FIRESTORE_LESSON_PROGRESS/$partId/$FIRESTORE_LESSON_ITEMS"
 
-    /** `users/{uid}/lessonProgress/{partId}/items/{position}` doküman yolu. */
-    fun itemDocumentPath(uid: String, partId: Int, position: Int): String =
+    /** `users/{uid}/lessonProgress/{partId}/items/{stableId}` doküman yolu. */
+    fun itemDocumentPath(uid: String, partId: Int, stableId: String): String =
+        "${itemsCollectionPath(uid, partId)}/$stableId"
+
+    /** ESKİ sıra anahtarlı doküman yolu (`items/{position}`); yalnızca göç/okuma için. */
+    fun legacyItemDocumentPath(uid: String, partId: Int, position: Int): String =
         "${itemsCollectionPath(uid, partId)}/$position"
+
+    /** `users/{uid}` alanı: onaylı öğretmenin dersleri bir kez açıldı mı (Android: FIELD_TEACHER_LESSONS_UNLOCKED). */
+    const val FIELD_TEACHER_LESSONS_UNLOCKED = "teacherLessonsUnlocked"
 
     // ---------------------------------------------------------------------------------------------
     // Genel tamamlanma yüzdesi (Android: calculateGlobalCompletionPercentage)
@@ -170,7 +195,7 @@ object GlobalLessonData {
      * Canlı snapshot geldiğinde çağrılır (Android: addSnapshotListener gövdesi). Hata durumunda platform bu
      * fonksiyonu hiç çağırmamalı (Android'de hata sessizce yok sayılır).
      *
-     * @param docs belge kimliği ("0", "1", ...) → alan haritası.
+     * @param docs belge kimliği (stableId; eski kayıtlarda "0", "1", ...) → alan haritası.
      * @return bellek listesi değiştiyse true (Android'de ardından LessonManager.refreshLessonsFromGlobalData çağrılır;
      *         burada da çağrılıyor).
      */
@@ -187,7 +212,7 @@ object GlobalLessonData {
             if (LessonProgressMerge.sameProgressState(_lessonItems, merged)) {
                 return false
             }
-            _lessonItems = merged
+            _lessonItems = withDerivedUnlocks(partId, merged)
             LessonManager.refreshLessonsFromGlobalData()
             return true
         } catch (_: Exception) {
@@ -207,7 +232,7 @@ object GlobalLessonData {
         }
         if (error) return FirestoreLoadStatus.ERROR
         return if (items != null) {
-            _lessonItems = items.toMutableList()
+            _lessonItems = withDerivedUnlocks(partId, items)
             FirestoreLoadStatus.LOADED
         } else {
             FirestoreLoadStatus.NOT_FOUND
@@ -251,7 +276,7 @@ object GlobalLessonData {
 
     /** Varsayılan ders listesini oluşturur ve [lessonItems] + tercihe göre Firestore'a kaydeder. */
     fun applyDefaultLessonItems(partId: Int, tutorial1Pending: Boolean, saveRemote: Boolean = true) {
-        _lessonItems = buildDefaultLessonItemsForPart(partId, tutorial1Pending).toMutableList()
+        _lessonItems = withDerivedUnlocks(partId, buildDefaultLessonItemsForPart(partId, tutorial1Pending))
         saveToPreferences(saveRemote = saveRemote)
     }
 
@@ -267,6 +292,86 @@ object GlobalLessonData {
         return items.map { progressFieldsOf(it) }
     }
 
+    /** [seedItemsForPart] çıktısıyla aynı sırada doküman kimlikleri (`items/{stableId}`). */
+    fun seedStableIdsForPart(partId: Int): List<String> = createLessonItems(partId).map { it.stableId }
+
+    /** Bir doküman yazımı: kimlik + alanlar. */
+    data class ItemWrite(val stableId: String, val fields: Map<String, Any?>)
+
+    /**
+     * Onaylı öğretmenin derslerini İLK SEFERDE açma kuralı (Android: withTeacherUnlocks); yalnızca AÇAR.
+     *  - 1–6: türü ders veya sandık olan her item `isCompleted = true` (başlık/yarışa dokunulmaz).
+     *  - 7–8: kilitli (`raceBusyLevel == 2`) her item 1'e (BAŞLAT) çekilir; çözülmüş (0) item'a dokunulmaz.
+     */
+    fun withTeacherUnlocks(partId: Int, items: List<LessonItem>): List<LessonItem> = when (partId) {
+        in 1..6 -> items.map { item ->
+            val playable = item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST
+            if (playable && !item.isCompleted) item.copy(isCompleted = true) else item
+        }
+        7, 8 -> items.map { item ->
+            if (item.raceBusyLevel == 2) item.copy(raceBusyLevel = 1) else item
+        }
+        else -> items
+    }
+
+    /**
+     * Android `unlockLessonsForApprovedTeacherOnce` içindeki bir bölümün yazım planı. Platform akışı: [SEED_PART_IDS]
+     * sırasıyla her bölüm için (tohumlama sürüyorsa bitmesini bekle; aynı anda ikinci çalıştırma yok) `items` koleksiyonunu
+     * oku ([lessonItemsFromFirestoreDocs]; boşsa null) → bu fonksiyonun döndürdüğü yazımları [LessonProgressSink.writeAllItems]
+     * ile yaz; okuma/yazma hatasında akışı durdur (bayrak konmaz). Sekiz bölümün hepsi yazılınca
+     * `users/{uid}.`[FIELD_TEACHER_LESSONS_UNLOCKED] = true yazılır, ardından [applyTeacherUnlocksToMemory] çağrılır.
+     *
+     * [cloudItems] null ise (bölüm hiç oynanmamış) bütün liste (varsayılan + açılmış hâli) yazılır; doluysa yalnızca
+     * değişen item'lar.
+     */
+    fun teacherUnlockPlan(partId: Int, cloudItems: List<LessonItem>?, tutorial1Pending: Boolean = false): List<ItemWrite> {
+        val base = cloudItems ?: buildDefaultLessonItemsForPart(partId, tutorial1Pending)
+        val unlocked = withTeacherUnlocks(partId, base)
+        val changed = if (cloudItems == null) unlocked else unlocked.filterIndexed { i, item -> item != base[i] }
+        return changed.map { ItemWrite(it.stableId, progressFieldsOf(it)) }
+    }
+
+    /**
+     * Öğretmen açması bittikten sonra bellekteki aktif bölümü de açar (Android: finish() içindeki blok). Platform
+     * yalnızca oturum uid'si öğretmen uid'siyle aynıysa çağırmalı. Bellek boşsa dokunmaz.
+     * @return bellek değiştiyse true (LessonManager.refreshLessonsFromGlobalData da çağrılır).
+     */
+    fun applyTeacherUnlocksToMemory(): Boolean {
+        if (_lessonItems.isEmpty()) return false
+        _lessonItems = withDerivedUnlocks(globalPartId, withTeacherUnlocks(globalPartId, _lessonItems))
+        LessonManager.refreshLessonsFromGlobalData()
+        return true
+    }
+
+    /**
+     * Kilit durumunu LİSTE DURUMUNDAN türetir (Android: withDerivedUnlocks): bir ders kendisi açıksa ya da bir önceki
+     * oynanabilir ders bitirilmişse (`stepIsFinish`) açıktır; başlıklar zincirde şeffaftır. Yalnızca AÇAR, asla kilitlemez.
+     * Yalnızca 1–6 için (7–8'de kilit `raceBusyLevel`).
+     */
+    fun withDerivedUnlocks(partId: Int, items: List<LessonItem>): MutableList<LessonItem> {
+        if (partId !in 1..6) return items.toMutableList()
+        var previousFinished = true // ilk oynanabilir ders her zaman açıktır
+        return items.map { item ->
+            if (item.type == LessonItem.TYPE_HEADER) return@map item
+            val unlocked = item.isCompleted || previousFinished
+            previousFinished = item.stepIsFinish
+            if (unlocked && !item.isCompleted) item.copy(isCompleted = true) else item
+        }.toMutableList()
+    }
+
+    /** Şablondaki [position]'daki dersin kalıcı kimliği; konum dışındaysa null (Android: stableIdAt). */
+    fun stableIdAt(partId: Int, position: Int): String? = createLessonItems(partId).getOrNull(position)?.stableId
+
+    /** Android: turkishItem. Ortak katalog zaten Türkçe olduğundan şablondaki item'ın kendisi. */
+    fun turkishItem(partId: Int, stableId: String): LessonItem? =
+        createLessonItems(partId).firstOrNull { it.stableId == stableId }
+
+    /** Android: createLessonItemsInTurkish. Ortak katalog Türkçe olduğundan [createLessonItems] ile aynı. */
+    fun createLessonItemsInTurkish(partId: Int): List<LessonItem> = createLessonItems(partId)
+
+    /** Android: localizeLessonText (Türkçe kimlik metnini uygulama diline çevirir). Ortak kopyada çeviri yok → aynen. */
+    fun localizeLessonText(turkish: String): String = turkish
+
     // ---------------------------------------------------------------------------------------------
     // Güncelleme / okuma
     // ---------------------------------------------------------------------------------------------
@@ -280,20 +385,20 @@ object GlobalLessonData {
         }
         if (position in _lessonItems.indices) {
             _lessonItems[position] = newItem
-            sink?.writeSingleItem(globalPartId, position, progressFieldsOf(newItem))
+            sink?.writeSingleItem(globalPartId, newItem.stableId, progressFieldsOf(newItem))
             // Kupa dersi tamamlandığında liderlik senkronu: [record] tüm zamanların en iyisi (UI);
             // Firestore tahtasına yalnızca [leaderboardSeasonBest] (mevcut sezon) yazılır.
             // Not: globalPartId 4 ve 5 liderlik tablosunu desteklemiyor; bu partlar için submit atlanır.
             val submit = leaderboardSubmitFor(globalPartId, position, newItem, season)
             if (submit != null) {
-                sink?.submitBestIfNeeded(submit.partId, submit.lessonIndex, submit.score, submit.season, submit.titleUnit)
+                sink?.submitBestIfNeeded(submit.partId, submit.lessonKey, submit.score, submit.season, submit.titleUnit)
             }
             return true
         }
         return false
     }
 
-    /** [updateLessonItem] içindeki liderlik gönderim kararı; gönderilmeyecekse null. */
+    /** [updateLessonItem] içindeki liderlik gönderim kararı; gönderilmeyecekse null. [position] artık kimliğe girmez. */
     fun leaderboardSubmitFor(partId: Int, position: Int, newItem: LessonItem, season: Int): LeaderboardSubmit? {
         if (newItem.type == LessonItem.TYPE_CHEST && newItem.stepIsFinish &&
             partId in LEADERBOARD_SUPPORTED_PARTS
@@ -302,10 +407,12 @@ object GlobalLessonData {
             if (lbScore != null && lbScore > 0) {
                 return LeaderboardSubmit(
                     partId = partId,
-                    lessonIndex = position,
+                    lessonKey = newItem.stableId,
                     score = lbScore,
                     season = season,
-                    titleUnit = newItem.titleUnit?.trim()?.take(127),
+                    // Sezon sonunda madalya/kupa parçasının adı olur: Türkçe kimlik (ortak katalog zaten Türkçe).
+                    titleUnit = (turkishItem(partId, newItem.stableId)?.titleUnit ?: newItem.titleUnit)
+                        ?.trim()?.take(127),
                 )
             }
         }
@@ -345,7 +452,8 @@ object GlobalLessonData {
     }
 
     /**
-     * Android `backfillLeaderboardFromStoredChest` kararı: lessonProgress'ta [chestIndex] sandığı tamamlanmış ve
+     * (Android'de bu akış KALDIRILDI — soban-gamified-education dalında `backfillLeaderboardFromStoredChest` yok; ortak kopyada
+     * geriye uyum için duruyor, kullanılmayabilir.) Android `backfillLeaderboardFromStoredChest` kararı: lessonProgress'ta [chestIndex] sandığı tamamlanmış ve
      * mevcut sezon için [LessonItem.leaderboardSubmitScore] doluysa gönderilecek liderlik girişini döner.
      *
      * Platform ön koşulları (Android ile aynı): uid boş değil VE uid == oturum uid; okuma hatasında / boş
@@ -365,7 +473,7 @@ object GlobalLessonData {
         if (r == null || r <= 0) return null
         return LeaderboardSubmit(
             partId = partId,
-            lessonIndex = chestIndex,
+            lessonKey = item.stableId,
             score = r,
             season = season,
             titleUnit = item.titleUnit?.trim()?.take(127),
@@ -502,19 +610,37 @@ object GlobalLessonData {
         )
     }
 
+    /** Belge haritasındaki ESKİ sıra anahtarlı ("0","1",...) belgeler: indeks → alanlar. */
+    private fun legacyDocsByIndex(docs: Map<String, Map<String, Any?>?>): Map<Int, Map<String, Any?>?> =
+        docs.entries.mapNotNull { (id, data) -> id.toIntOrNull()?.let { it to data } }.toMap()
+
     /**
-     * Şablonu ([createLessonItems]) belge haritasıyla birleştirir: kimliği tam sayıya çevrilemeyen belgeler atlanır,
-     * belgesi olmayan indekslerde şablon item'ı kalır, şablondan fazla indeksler yok sayılır.
+     * Şablonu ([createLessonItems]) belge haritasıyla birleştirir (Android: readLessonItemsFromFirestore).
+     * Önce belge kimliği = [LessonItem.stableId] aranır; yoksa ESKİ biçim (belge kimliği = liste sırası) denenir;
+     * ikisi de yoksa şablon item'ı kalır. Şablonda olmayan belgeler yok sayılır.
      */
     fun mergeTemplateWithDocs(partId: Int, docs: Map<String, Map<String, Any?>?>): List<LessonItem> {
         val template = createLessonItems(partId)
-        val byIndex = docs.entries.mapNotNull { (id, data) ->
-            id.toIntOrNull()?.let { it to data }
-        }.toMap()
+        val byLegacyIndex = legacyDocsByIndex(docs)
         return template.mapIndexed { index, item ->
-            val data = byIndex[index] ?: return@mapIndexed item
+            val data = docs[item.stableId] ?: byLegacyIndex[index] ?: return@mapIndexed item
             applyProgressFields(item, data)
         }
+    }
+
+    /** Göç planı: yazılacak yeni anahtarlı belgeler + silinecek eski belge kimlikleri. */
+    data class LegacyMigrationPlan(val writes: List<ItemWrite>, val legacyDocIds: List<String>)
+
+    /**
+     * Android `migrateLegacyItemKeys`: [docs] içinde eski sıra anahtarlı belge varsa, [merged] ([lessonItemsFromFirestoreDocs]
+     * çıktısı) içindeki o indekslerin item'ları `items/{stableId}` olarak yazılır ve eski belgeler silinir. Eski belge yoksa null.
+     * Platform okuma sonucunu önce uygulamaya verir, göçü arkada yapar ([LessonProgressSink.migrateLegacyItemKeys]).
+     */
+    fun legacyMigrationPlan(docs: Map<String, Map<String, Any?>?>, merged: List<LessonItem>): LegacyMigrationPlan? {
+        val legacy = legacyDocsByIndex(docs).keys
+        if (legacy.isEmpty()) return null
+        val writes = merged.filterIndexed { index, _ -> index in legacy }.map { ItemWrite(it.stableId, progressFieldsOf(it)) }
+        return LegacyMigrationPlan(writes, legacy.map { it.toString() })
     }
 
     /**
@@ -580,7 +706,7 @@ object GlobalLessonData {
      */
     fun saveToPreferences(saveRemote: Boolean = true) {
         if (saveRemote) {
-            sink?.writeAllItems(globalPartId, _lessonItems.map { progressFieldsOf(it) })
+            sink?.writeAllItems(globalPartId, _lessonItems.map { it.stableId }, _lessonItems.map { progressFieldsOf(it) })
         }
     }
 
@@ -591,7 +717,7 @@ object GlobalLessonData {
     fun loadFromParsedCache(items: List<LessonItem>, partId: Int = globalPartId) {
         val list = items.toMutableList()
         list.forEach { it.partId = partId }
-        _lessonItems = list
+        _lessonItems = withDerivedUnlocks(partId, list)
     }
 
     /**

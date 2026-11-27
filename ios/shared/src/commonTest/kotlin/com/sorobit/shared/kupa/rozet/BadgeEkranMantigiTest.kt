@@ -22,9 +22,9 @@ class BadgeEkranMantigiTest {
     fun metinTablolariTumModlariKapsar() {
         assertEquals(BadgeAnimMode.entries.toSet(), B.unlockedDetailTextOverrides.keys)
         assertEquals(BadgeAnimMode.entries.toSet(), B.lockedDetailTextOverrides.keys)
-        assertEquals("x dersi hatasız tamamlayarak Kusursuz Odak rozetini kazandın.", B.unlockedDetailTemplate(BadgeAnimMode.DAILY_ONLY))
+        assertEquals("%1\$s dersi hatasız tamamlayarak Kusursuz Odak rozetini kazandın.", B.unlockedDetailTemplate(BadgeAnimMode.DAILY_ONLY))
         assertEquals("Ünite maratonunda 1. olarak Altın Madalya kazandın.", B.unlockedDetailTemplate(BadgeAnimMode.GOLD_MEDAL))
-        assertEquals("Bu rozeti kazanmak için 5 kere öğretmene danış.", B.lockedDetailText(BadgeAnimMode.GOLF_WITH_BASE))
+        assertEquals("Bu rozeti kazanmak için 3 kere öğretmene danış.", B.lockedDetailText(BadgeAnimMode.GOLF_WITH_BASE))
         assertEquals(
             "Bu kupayı kazanmak için ünite maratonunda ilk 100'e girerek başarı elde et.",
             B.lockedDetailText(BadgeAnimMode.CUP_GOOGLE),
@@ -74,10 +74,10 @@ class BadgeEkranMantigiTest {
         // Kupa yoksa ilerleme değeri null → şablon aynen kalır
         BadgeProgressRepository.update(UserBadgeProgress())
         assertEquals(
-            "Ünite Maratonunda x. olarak Elit Seviye kupasını kazandın.",
+            "Ünite Maratonunda %1\$s. olarak Elit Seviye kupasını kazandın.",
             B.badgeDetailText(BadgeAnimMode.CUP_GOOGLE),
         )
-        assertEquals("a5b5", B.formatUnlockedDetailText(BadgeAnimMode.DINO, "axbx", celebrateTarget = 5))
+        assertEquals("a5b5", B.formatUnlockedDetailText(BadgeAnimMode.DINO, "a%1\$sb%1\$s", celebrateTarget = 5))
         assertEquals("axbx", B.formatUnlockedDetailText(BadgeAnimMode.GOLD_MEDAL, "axbx", celebrateTarget = 5))
     }
 

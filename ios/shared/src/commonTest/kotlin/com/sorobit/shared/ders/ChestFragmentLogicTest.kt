@@ -56,10 +56,10 @@ class ChestFragmentLogicTest {
         assertFalse(r.shouldIncrementPerfectStepCountMission)
         assertEquals(listOf<SuccessRateEvent>(SuccessRateEvent.Pass(1, 1, 1)), r.successRateEvents)
         assertEquals(
-            ChestFragmentLogic.PendingLessonProgressAnimation("0_-1_1_Sayıları Abaküste Tanıma_1", 0, 1),
+            ChestFragmentLogic.PendingLessonProgressAnimation("0_p1_i01_sayilari_abakuste_tanima", 0, 1),
             r.pendingAnimation,
         )
-        assertEquals(listOf("tek:1"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(1, 1)}"), sink.sira)
         assertEquals(2, sink.tekliler[0].fields["currentStep"])
         assertEquals(listOf(1), adapter.guncellenen.map { it.first })
     }
@@ -102,10 +102,10 @@ class ChestFragmentLogicTest {
             r.successRateEvents,
         )
         assertEquals(
-            ChestFragmentLogic.PendingLessonProgressAnimation("0_-1_1_Sayıları Abaküste Tanıma_1", 1, 2),
+            ChestFragmentLogic.PendingLessonProgressAnimation("0_p1_i01_sayilari_abakuste_tanima", 1, 2),
             r.pendingAnimation,
         )
-        assertEquals(listOf("tek:1", "tek:2"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(1, 1)}", "tek:${kimlik(1, 2)}"), sink.sira)
         assertEquals(listOf(1, 2), adapter.guncellenen.map { it.first })
     }
 
@@ -121,7 +121,7 @@ class ChestFragmentLogicTest {
         assertTrue(r.successRateEvents.isEmpty())
         assertNull(r.pendingAnimation)
         // Yine de item ve sıradaki item yeniden yazılır (Android ile aynı)
-        assertEquals(listOf("tek:1", "tek:2"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(1, 1)}", "tek:${kimlik(1, 2)}"), sink.sira)
         assertTrue(item(1).stepIsFinish)
     }
 
@@ -160,7 +160,7 @@ class ChestFragmentLogicTest {
         assertEquals(1700, s.record)
         assertEquals(7, s.leaderboardSeasonId)
         assertEquals(1700, s.leaderboardSeasonBest)
-        // cupPoint1 dolu olduğu için index + 2: başlık atlanır, idx 6 açılır
+        // Sonraki item (idx 5) başlık olduğu için atlanır (index + 2): başlık değişmez, idx 6 açılır
         assertEquals(baslikOnce, item(5))
         assertTrue(item(6).isCompleted)
 
@@ -173,12 +173,12 @@ class ChestFragmentLogicTest {
             r.successRateEvents,
         )
         assertEquals(
-            ChestFragmentLogic.PendingLessonProgressAnimation("2_-1_1_Ünite Maratonu_4", 0, 1),
+            ChestFragmentLogic.PendingLessonProgressAnimation("2_p1_i04_unite_maratonu", 0, 1),
             r.pendingAnimation,
         )
-        assertEquals(listOf("tek:4", "lb:4", "tek:6"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(1, 4)}", "lb:${kimlik(1, 4)}", "tek:${kimlik(1, 6)}"), sink.sira)
         assertEquals(
-            GlobalLessonData.LeaderboardSubmit(1, 4, 1700, 7, "Sayıları Abaküste Tanıma"),
+            GlobalLessonData.LeaderboardSubmit(1, "p1_i04_unite_maratonu", 1700, 7, "Sayıları Abaküste Tanıma"),
             sink.gonderimler.single(),
         )
     }
@@ -201,24 +201,49 @@ class ChestFragmentLogicTest {
         ChestFragmentLogic.updateMapProgress(32, 600, 70f, "chest_stars_tier1", 7)
         assertTrue(item(32).stepIsFinish)
         assertEquals(1, sink.tekliler.size)
-        assertEquals(32, sink.tekliler[0].position)
+        assertEquals(kimlik(1, 32), sink.tekliler[0].stableId)
     }
 
     @Test
-    fun cupPointsizSandik_part4_basligiAtlamaz() {
-        // Part 4 sandıklarında cupPoint1 yok → index + 1 (araya giren BAŞLIK'ın isCompleted'ı true olur; Android ile aynı)
+    fun cupPointsizSandik_part4_basligiYineAtlar() {
+        // Eski Android: "sandık mı" cupPoint1 ile soruluyordu; part 4'te cupPoint1 yok → kilidi araya giren BAŞLIK alıyordu.
+        // Güncel Android: sonraki item'ın TÜRÜ başlıksa atlanır → ders (idx 6) açılır, başlığa dokunulmaz.
         yukle(4)
         assertEquals(LessonItem.TYPE_CHEST, item(4).type)
         assertNull(item(4).cupPoint1)
         assertEquals(LessonItem.TYPE_HEADER, item(5).type)
         assertFalse(item(5).isCompleted)
+        assertFalse(item(6).isCompleted)
         ChestFragmentLogic.updateMapProgress(4, 700, 100f, "star_on_ic", 7)
         assertTrue(item(4).stepIsFinish)
         assertEquals("star_on_ic", item(4).stepCupIcon)
-        assertTrue(item(5).isCompleted)
+        assertFalse(item(5).isCompleted)
+        assertTrue(item(6).isCompleted)
         // Part 4 liderliği desteklemez → gönderim yok
         assertTrue(sink.gonderimler.isEmpty())
-        assertEquals(listOf("tek:4", "tek:5"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(4, 4)}", "tek:${kimlik(4, 6)}"), sink.sira)
+    }
+
+    @Test
+    fun questionElapsedMs_basariOlaylarinaTasinir() {
+        yukle(1)
+        val ara = ChestFragmentLogic.updateMapProgress(1, 450, 90f, "", 3, questionElapsedMs = 12_345L)
+        assertEquals(listOf<SuccessRateEvent>(SuccessRateEvent.Pass(1, 1, 1, 12_345L)), ara.successRateEvents)
+        val bitis = ChestFragmentLogic.updateMapProgress(1, 500, 100f, "", 3, questionElapsedMs = 20_000L)
+        assertEquals(
+            listOf(SuccessRateEvent.Pass(1, 1, 2, 20_000L), SuccessRateEvent.ItemFirstFinish(1, 1, null)),
+            bitis.successRateEvents,
+        )
+        // Süre bilinmiyorsa null (varsayılan)
+        yukle(1)
+        assertNull((ChestFragmentLogic.updateMapProgress(1, 450, 90f, "", 3).successRateEvents.single() as SuccessRateEvent.Pass).elapsedMs)
+    }
+
+    @Test
+    fun isLessonTypeReturn() {
+        assertTrue(ChestFragmentLogic.isLessonTypeReturn(ders()))
+        assertFalse(ChestFragmentLogic.isLessonTypeReturn(sandik()))
+        assertFalse(ChestFragmentLogic.isLessonTypeReturn(null))
     }
 
     // ---- updateMapProgress: yarış ----
@@ -230,15 +255,19 @@ class ChestFragmentLogicTest {
         assertEquals(0, item(0).raceBusyLevel)
         assertEquals(1, item(1).raceBusyLevel)
         assertEquals(2, item(2).raceBusyLevel)
-        // Yarışta stepIsFinish / adım durumu ayarlanmaz, görev ve olay üretilmez
+        // Yarışta stepIsFinish / adım durumu ayarlanmaz, görev üretilmez
         assertFalse(item(0).stepIsFinish)
         assertEquals(listOf(false), item(0).stepCompletionStatus)
         assertFalse(r.shouldIncrementStepFinishMission)
         assertFalse(r.shouldIncrementStepCountMission)
         assertFalse(r.shouldIncrementPerfectStepCountMission)
-        assertTrue(r.successRateEvents.isEmpty())
+        // Güncel Android: yarış bitişi de başarı istatistiğine yazılır (TYPE_LESSON item'ı için pass + ilk bitiş)
+        assertEquals(
+            listOf(SuccessRateEvent.Pass(7, 0, 1), SuccessRateEvent.ItemFirstFinish(7, 0, null)),
+            r.successRateEvents,
+        )
         assertNull(r.pendingAnimation)
-        assertEquals(listOf("tek:0", "tek:1"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(7, 0)}", "tek:${kimlik(7, 1)}"), sink.sira)
         assertEquals(listOf(0, 1), adapter.yarisGuncellenen.map { it.first })
         assertTrue(adapter.guncellenen.isEmpty())
     }
@@ -246,11 +275,15 @@ class ChestFragmentLogicTest {
     @Test
     fun yaris_seviye2_ileriSar_yalnizcaKendisi() {
         yukle(7)
-        ChestFragmentLogic.updateMapProgress(3, 300, 100f, "", 7)
+        val r = ChestFragmentLogic.updateMapProgress(3, 300, 100f, "", 7, questionElapsedMs = 777L)
         assertEquals(0, item(3).raceBusyLevel)
         assertEquals(2, item(4).raceBusyLevel)
         assertEquals(1, item(0).raceBusyLevel)
-        assertEquals(listOf("tek:3"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(7, 3)}"), sink.sira)
+        assertEquals(
+            listOf(SuccessRateEvent.Pass(7, 3, 1, 777L), SuccessRateEvent.ItemFirstFinish(7, 3, null)),
+            r.successRateEvents,
+        )
     }
 
     @Test
@@ -270,7 +303,7 @@ class ChestFragmentLogicTest {
         }
         ChestFragmentLogic.updateMapProgress(0, 300, 100f, "", 7)
         assertEquals(listOf<Int?>(0, 1, 2, 2), (0..3).map { item(it).raceBusyLevel })
-        assertEquals(listOf("tek:0"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(7, 0)}"), sink.sira)
     }
 
     @Test
@@ -370,9 +403,15 @@ class ChestFragmentLogicTest {
 
     @Test
     fun lessonProgressKey() {
-        assertEquals("0_-1_-1_Ders_7", ChestFragmentLogic.lessonProgressKey(ders(), 7))
+        // Güncel Android: anahtar `{type}_{stableId}` (konum, başlık, id ve partId artık girmez)
+        assertEquals("0_test_ders", ChestFragmentLogic.lessonProgressKey(ders(), 7))
         val s = sandik().copy(id = 12, partId = 3)
-        assertEquals("2_12_3_Ünite Maratonu_0", ChestFragmentLogic.lessonProgressKey(s, 0))
+        assertEquals("2_test_sandik", ChestFragmentLogic.lessonProgressKey(s, 0))
+        assertEquals("2_test_sandik", ChestFragmentLogic.lessonProgressKey(s, 99))
+        // Harita kartıyla (LessonAdapterLogic) aynı biçim
+        val k = GlobalLessonData.createLessonItems(1)[4]
+        assertEquals(LessonAdapterLogic.lessonProgressKey(k, 4), ChestFragmentLogic.lessonProgressKey(k, 4))
+        assertEquals("2_p1_i04_unite_maratonu", ChestFragmentLogic.lessonProgressKey(k, 4))
     }
 
     // ---- Claim kararları ----

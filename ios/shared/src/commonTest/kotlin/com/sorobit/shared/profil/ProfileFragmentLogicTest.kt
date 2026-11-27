@@ -116,6 +116,19 @@ class ProfileFragmentLogicTest {
     }
 
     @Test
+    fun takibiBirakma() {
+        assertEquals(listOf("users/t/followers/ben", "users/ben/following/t"), L.unfollowDeletePaths("ben", "t"))
+        assertTrue(L.followButtonTapUnfollows(true))
+        assertFalse(L.followButtonTapUnfollows(false))
+        assertEquals(4, L.nudgedFollowersCount(5, -1))
+        assertEquals(0, L.nudgedFollowersCount(0, -1))
+        assertEquals(6, L.nudgedFollowersCount(5, 1))
+        assertEquals(7L, L.longestStreak(7))
+        assertEquals(0L, L.longestStreak(null))
+        assertEquals("longestStreak", L.FIELD_LONGEST_STREAK)
+    }
+
+    @Test
     fun rozetKademesi() {
         // DART: [3,10,20,30,50], adım 5
         assertEquals(0, L.badgeLevel(BadgeKind.DART, UserBadgeProgress(userDartProgress = 2)))
@@ -127,8 +140,14 @@ class ProfileFragmentLogicTest {
         assertEquals(0, L.badgeLevel(BadgeKind.DART, UserBadgeProgress(userDartProgress = -4)))
         // Kademesiz rozet
         assertEquals(0, L.badgeLevel(BadgeKind.KARATE, UserBadgeProgress(userKarateProgress = 9)))
-        // ROCKET profil tablosu: [3,5,10,15,25]
-        assertEquals(2, L.badgeLevel(BadgeKind.ROCKET, UserBadgeProgress(userRocketProgress = 5)))
+        // ROCKET: güncel Android tek kaynak tablosu [3,10,15,25,30], adım 10 (eskiden profilde [3,5,10,15,25])
+        assertEquals(1, L.badgeLevel(BadgeKind.ROCKET, UserBadgeProgress(userRocketProgress = 5)))
+        assertEquals(5, L.badgeLevel(BadgeKind.ROCKET, UserBadgeProgress(userRocketProgress = 30)))
+        assertEquals(6, L.badgeLevel(BadgeKind.ROCKET, UserBadgeProgress(userRocketProgress = 40)))
+        // GOLF: güncel tablo [3,5,10,15,20]
+        assertEquals(5, L.badgeLevel(BadgeKind.GOLF, UserBadgeProgress(userGolfProgress = 20)))
+        // Profil tablosu motorla aynı
+        assertEquals(com.sorobit.shared.kupa.rozet.BadgeProgressEngine.levelSpec(BadgeKind.ROCKET), L.levelSpec(BadgeKind.ROCKET))
         // DINO: adım 500
         assertEquals(7, L.badgeLevel(BadgeKind.DINO, UserBadgeProgress(userDinoProgress = 3500)))
     }
@@ -176,13 +195,13 @@ class ProfileFragmentLogicTest {
         val hepsi = BadgeKind.entries.map { durum(it, it in acik) }
         val ilerleme = UserBadgeProgress(
             userDinoProgress = 500, // kademe 1
-            userGolfProgress = 20, // kademe 3
+            userGolfProgress = 10, // kademe 3 ([3,5,10,15,20])
             userDartProgress = 20, // kademe 3
-            userRocketProgress = 30, // 5 + (30-25)/5 = 6
+            userRocketProgress = 30, // kademe 5 ([3,10,15,25,30])
             userBowlingProgress = 5, // kademe 1
         )
         val secilen = L.pickProfileBadges(hepsi, ilerleme)
-        // ROCKET(6) > DART(3) = GOLF(3) (varsayılan sırada DART önce) > DINO(1) = BOWLING(1) (DINO önce)
+        // ROCKET(5) > DART(3) = GOLF(3) (varsayılan sırada DART önce) > DINO(1) = BOWLING(1) (DINO önce)
         assertEquals(
             listOf(BadgeKind.ROCKET, BadgeKind.DART, BadgeKind.GOLF, BadgeKind.DINO),
             secilen.map { it.kind },

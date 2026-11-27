@@ -245,16 +245,26 @@ class BillingCatalogTest {
     @Test
     fun urunKimlikleri() {
         assertEquals(
-            listOf("gold_1200", "gold_7000", "gold_15000", "keys_10", "keys_50", "keys_100"),
+            listOf(
+                "gold_small", "gold_medium", "gold_large", "keys_small", "keys_medium", "keys_large",
+                "credits_small", "credits_medium", "credits_large",
+                "sobi_credits_20", "sobi_credits_50", "sobi_credits_120",
+            ),
             BillingCatalog.consumables,
         )
         assertEquals(listOf("pro_monthly", "lite_monthly"), BillingCatalog.subscriptions)
-        assertEquals("gold_1200", BillingCatalog.GOLD_SMALL)
-        assertEquals("gold_7000", BillingCatalog.GOLD_MEDIUM)
-        assertEquals("gold_15000", BillingCatalog.GOLD_LARGE)
-        assertEquals("keys_10", BillingCatalog.KEYS_SMALL)
-        assertEquals("keys_50", BillingCatalog.KEYS_MEDIUM)
-        assertEquals("keys_100", BillingCatalog.KEYS_LARGE)
+        assertEquals("gold_small", BillingCatalog.GOLD_SMALL)
+        assertEquals("gold_medium", BillingCatalog.GOLD_MEDIUM)
+        assertEquals("gold_large", BillingCatalog.GOLD_LARGE)
+        assertEquals("keys_small", BillingCatalog.KEYS_SMALL)
+        assertEquals("credits_large", BillingCatalog.CREDITS_LARGE)
+        assertEquals("sobi_credits_20", BillingCatalog.SOBI_CREDITS_20)
+        assertEquals("keys_medium", BillingCatalog.KEYS_MEDIUM)
+        assertEquals("keys_large", BillingCatalog.KEYS_LARGE)
+        // Abonelik rütbesi
+        assertEquals(2, BillingCatalog.subscriptionRank(BillingCatalog.SUB_PRO))
+        assertEquals(1, BillingCatalog.subscriptionRank(BillingCatalog.SUB_LITE))
+        assertEquals(0, BillingCatalog.subscriptionRank("gold_small"))
     }
 
     @Test
@@ -461,7 +471,11 @@ class AdRulesTest {
         assertTrue(AdRules.canShowRewardedAd("u"))
         assertFalse(AdRules.canShowRewardedAd(null))
         assertEquals("ca-app-pub-8436855856536384/7535644549", AdRules.ANDROID_REWARDED_AD_UNIT_ID)
-        assertEquals("ca-app-pub-3940256099942544/1033173712", AdRules.ANDROID_INTERSTITIAL_AD_UNIT_ID)
+        // Android güncel: geçiş reklamı release'te GERÇEK birim, debug'da Google'ın test birimi
+        assertEquals("ca-app-pub-8436855856536384/8539721523", AdRules.ANDROID_INTERSTITIAL_AD_UNIT_ID)
+        assertEquals("ca-app-pub-3940256099942544/1033173712", AdRules.TEST_INTERSTITIAL_AD_UNIT_ID)
+        assertEquals(AdRules.ANDROID_INTERSTITIAL_AD_UNIT_ID, AdRules.interstitialAdUnitId(isDebug = false))
+        assertEquals(AdRules.TEST_INTERSTITIAL_AD_UNIT_ID, AdRules.interstitialAdUnitId(isDebug = true))
     }
 
     @Test
@@ -469,6 +483,78 @@ class AdRulesTest {
         assertTrue(AdRules.shouldShowAdSkipAfterRewarded(showAdSkipAfter = true, hostSupportsDialogs = true))
         assertFalse(AdRules.shouldShowAdSkipAfterRewarded(showAdSkipAfter = false, hostSupportsDialogs = true))
         assertFalse(AdRules.shouldShowAdSkipAfterRewarded(showAdSkipAfter = true, hostSupportsDialogs = false))
+    }
+
+    @Test
+    fun yuklemeYenidenDenemeKurali() {
+        assertEquals(listOf(30_000L, 60_000L, 120_000L, 240_000L), AdRules.RETRY_DELAYS_MS)
+        // Düzelebilir hatalar: dahili hata, ağ, dolgu yok, aracı dolgu yok
+        for (kod in listOf(0, 2, 3, 9)) assertTrue(AdRules.isRetryable(kod))
+        // Hatalı istek ve diğer kodlar düzelmez
+        for (kod in listOf(1, 4, 8, 99)) assertFalse(AdRules.isRetryable(kod))
+        assertEquals(30_000L, AdRules.nextRetryDelayMs(3, 0))
+        assertEquals(240_000L, AdRules.nextRetryDelayMs(2, 3))
+        // Bütçe doldu (4 yeniden deneme) ya da düzelmeyen hata → yok
+        assertNull(AdRules.nextRetryDelayMs(3, 4))
+        assertNull(AdRules.nextRetryDelayMs(1, 0))
+        // Yalnızca zincirin ilk hatası olaya yazılır
+        assertTrue(AdRules.shouldLogLoadFailure(0))
+        assertFalse(AdRules.shouldLogLoadFailure(1))
+    }
+
+    @Test
+    fun reklamGecPaneliPolitikasi() {
+        var t = 1_800_000_000_000L
+        val saat = 3_600_000L
+        val depo = InMemoryKeyValueStore()
+        val p = AdRules.AdSkipPolicy(depo, nowMs = { t }, timeZone = kotlinx.datetime.TimeZone.UTC)
+
+        // İlk üç reklamda panel yok, dördüncüde var; sayaç sıfırlanır
+        repeat(3) { assertFalse(p.onAdClosed(eligible = true)) }
+        assertTrue(p.onAdClosed(eligible = true))
+        assertEquals(0, depo.getInt("ads_since_panel", -1))
+        assertEquals(1, depo.getInt("panel_day_count", 0))
+
+        // İki panel arası 2 saat: sayaç eşikte bekler (sıfırlanmaz)
+        repeat(4) { assertFalse(p.onAdClosed(eligible = true)) }
+        assertEquals(4, depo.getInt("ads_since_panel", -1))
+        t += 2 * saat - 1
+        assertFalse(p.onAdClosed(eligible = true))
+        t += 1
+        // Süre doldu: bir sonraki uygun reklamda panel (baştan 4 reklam beklenmez); günün 2. paneli
+        assertTrue(p.onAdClosed(eligible = true))
+        assertEquals(2, depo.getInt("panel_day_count", 0))
+
+        // Gün içi tavan: iki panel doldu
+        t += 3 * saat
+        repeat(6) { assertFalse(p.onAdClosed(eligible = true)) }
+
+        // Ertesi gün tavan sıfırlanır
+        t += 24 * saat
+        assertTrue(p.onAdClosed(eligible = true))
+        assertEquals(1, depo.getInt("panel_day_count", 0))
+
+        // Uygun olmayan reklam panel çıkarmaz ama sayılır
+        t += 3 * saat
+        val d2 = InMemoryKeyValueStore()
+        val q = AdRules.AdSkipPolicy(d2, nowMs = { t }, timeZone = kotlinx.datetime.TimeZone.UTC)
+        repeat(5) { assertFalse(q.onAdClosed(eligible = false)) }
+        assertEquals(5, d2.getInt("ads_since_panel", -1))
+        assertTrue(q.onAdClosed(eligible = true))
+
+        // Saat geri alındı: negatif süre "dolmuş" sayılır, kilitlenmez
+        val d3 = InMemoryKeyValueStore()
+        d3.putLong("last_panel_ms", t + 10 * saat)
+        d3.putInt("ads_since_panel", 3)
+        assertTrue(AdRules.AdSkipPolicy(d3, nowMs = { t }, timeZone = kotlinx.datetime.TimeZone.UTC).onAdClosed(eligible = true))
+
+        // Test anahtarı: uygun her reklamdan sonra
+        val d4 = InMemoryKeyValueStore()
+        val r = AdRules.AdSkipPolicy(d4, nowMs = { t }, timeZone = kotlinx.datetime.TimeZone.UTC, debugEveryAd = true)
+        assertTrue(r.onAdClosed(eligible = true))
+        assertFalse(r.onAdClosed(eligible = false))
+        r.resetForDebug()
+        assertFalse(d4.contains("panel_day_count"))
     }
 
     @Test

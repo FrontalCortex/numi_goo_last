@@ -154,7 +154,8 @@ class AbakusDersKoprusuTest {
         assertFalse(akis.devam())
 
         val b = akis.bitis(240)
-        assertEquals(0, b.yonlendirme)
+        // Güncel Android (AbacusFragment: successRate < 75f) → %50 başarı başarısız ekranına gider
+        assertEquals(1, b.yonlendirme)
         assertEquals(1, b.correctAnswers)
         assertEquals(2, b.totalQuestions)
         assertEquals(50f, b.successRate)
@@ -170,6 +171,9 @@ class AbakusDersKoprusuTest {
         assertFalse(akis.kontrol(1_000L, true, 5).konfeti)
         akis.devam()
         assertTrue(akis.kontrol(2_000L, true, 7).konfeti)
+        assertFalse(akis.devam())
+        // %100 başarı ≥ %75 → ders sonucu ekranı
+        assertEquals(0, akis.bitis(240).yonlendirme)
     }
 
     @Test

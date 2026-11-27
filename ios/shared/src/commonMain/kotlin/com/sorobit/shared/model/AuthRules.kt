@@ -25,6 +25,9 @@ object AuthRules {
     const val OTP_PURPOSE_LOGIN = "login"
     const val OTP_PURPOSE_TEACHER_RESET = "teacher_reset"
 
+    /** 13 yaş altı e-posta kaydı: kod çocuğa değil veliye gider (Android: OTP_PURPOSE_REGISTER_PARENTAL). */
+    const val OTP_PURPOSE_REGISTER_PARENTAL = "register_parental"
+
     // ── Yerel önbellek (SharedPreferences "auth_prefs") ───────────────────────
     const val PREFS_NAME = "auth_prefs"
     const val PREF_USER_EMAIL = "user_email"
@@ -53,6 +56,8 @@ object AuthRules {
     const val FN_RESET_TEACHER_PASSWORD = "resetTeacherPassword"
     const val FN_FIND_TEACHER_EMAIL_BY_USER_ID = "findTeacherEmailByUserId"
     const val FN_CREATE_TEACHER_INVITE = "createTeacherInvite"
+    /** 13 yaş altı Google kaydı: veli kodunu doğrular, `users` dokümanını sunucu yazar. */
+    const val FN_CONFIRM_PARENTAL_CONSENT = "confirmParentalConsent"
 
     // ── Firestore ─────────────────────────────────────────────────────────────
     const val COLLECTION_USERS = "users"
@@ -79,6 +84,17 @@ object AuthRules {
     /** Google ile gelen ama Firestore'da kaydı olmayan hesap için dönen özel hata kodu. */
     const val ERROR_ACCOUNT_NOT_REGISTERED = "ACCOUNT_NOT_REGISTERED"
     const val MESSAGE_GOOGLE_CANCELLED = "Kullanıcı girişi iptal edildi"
+
+    /**
+     * Google ile kayıtta 13 yaş altı çocuk için `users` dokümanı yazılmadı, veli onayı bekleniyor
+     * (Android: AuthManager.PARENTAL_CONSENT_REQUIRED). Oturum AÇIK bırakılır: onay çağrıları kimliği
+     * oradan alır.
+     */
+    const val ERROR_PARENTAL_CONSENT_REQUIRED = "PARENTAL_CONSENT_REQUIRED"
+
+    /** Veli e-postası çocuğunkinden farklı ve çocuğun adresi doğrulanmadı (sunucu reason = child_email_unverified). */
+    const val ERROR_CHILD_EMAIL_NOT_VERIFIED = "CHILD_EMAIL_NOT_VERIFIED"
+    const val SERVER_REASON_CHILD_EMAIL_UNVERIFIED = "child_email_unverified"
 
     // ── E-posta ───────────────────────────────────────────────────────────────
 
@@ -269,6 +285,64 @@ object AuthRules {
         "email" to email,
         "purpose" to purpose,
     )
+
+    /**
+     * 13 yaş altı e-posta kaydında veli koduna istek (Android: sendParentalRegistrationCode):
+     * `email` çocuğun adresi, kod `parentEmail`'e gider. [acquisitionSource] null ise alan eklenmez.
+     */
+    fun sendParentalRegistrationCodePayload(
+        childEmail: String,
+        parentEmail: String,
+        birthYear: Int,
+        acquisitionSource: String?,
+        lang: String,
+    ): Map<String, Any> = buildMap {
+        put("email", normalizeEmail(childEmail))
+        put("purpose", OTP_PURPOSE_REGISTER_PARENTAL)
+        put("lang", lang)
+        put("parentEmail", normalizeEmail(parentEmail))
+        put("birthYear", birthYear)
+        if (acquisitionSource != null) put("acquisitionSource", acquisitionSource)
+    }
+
+    /**
+     * 13 yaş altı Google kaydında veli koduna istek (Android: requestGoogleParentalConsent). `email`
+     * yalnızca alan zorunlu olduğu için gider; sunucu çocuğun adresini açık oturumdan alır.
+     */
+    fun requestGoogleParentalConsentPayload(
+        childEmail: String,
+        parentEmail: String,
+        birthYear: Int,
+        acquisitionSource: String?,
+        lang: String,
+    ): Map<String, Any> = sendParentalRegistrationCodePayload(childEmail, parentEmail, birthYear, acquisitionSource, lang) + ("google" to true)
+
+    /** Çocuğun KENDİ adresinin kodunu veli adımı için doğrulama (Android: verifyChildEmailForParentalConsent). */
+    fun verifyChildEmailForParentalConsentPayload(email: String, code: String, birthYear: Int): Map<String, Any> = mapOf(
+        "email" to normalizeEmail(email),
+        "code" to code,
+        "birthYear" to birthYear,
+        "parentalStep" to true,
+    )
+
+    /** confirmParentalConsent gövdesi (Android: confirmGoogleParentalConsent). */
+    fun confirmParentalConsentPayload(code: String, firstTutorialShown: Boolean): Map<String, Any> = mapOf(
+        "code" to code,
+        "firstTutorialShown" to firstTutorialShown,
+    )
+
+    /**
+     * 13 yaş altı için veli onayı gerekir mi (Android: ParentalConsentPolicy.requiresParentalConsent).
+     * "Bu yıl − doğum yılı ≤ 13"; yıl UTC alınır (sunucu ve Firestore kuralları da UTC yılı kullanır;
+     * biri değişirse üçü birlikte değişmeli). [utcYear] çağıranın UTC yılıdır. Doğum yılı yoksa ya da
+     * <= 0 ise false.
+     */
+    const val MAX_AGE_DIFF_NEEDING_CONSENT = 13
+
+    fun requiresParentalConsent(birthYear: Int?, utcYear: Int): Boolean {
+        if (birthYear == null || birthYear <= 0) return false
+        return utcYear - birthYear <= MAX_AGE_DIFF_NEEDING_CONSENT
+    }
 
     /** Android: resendStudentVerificationCode'un seçtiği amaç. */
     fun resendPurpose(isRegistration: Boolean): String =

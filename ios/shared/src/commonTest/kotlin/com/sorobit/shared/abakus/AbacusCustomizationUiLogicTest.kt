@@ -106,10 +106,24 @@ class AbacusCustomizationUiLogicTest {
         assertEquals(5, ui.beadCountAfterPurchase(emptyMap(), BeadType.BALL1, fromSlotPanel = false))
         assertEquals(25, ui.beadCountAfterPurchase(mapOf(BeadType.BALL1.name to BeadData(20, true)), BeadType.BALL1, true))
 
-        // İade kuralı: yalnızca boncuk renk özelliğinde iade yok.
+        // Boncuk renk özelliği: fiyat ve para birimi boncuğa bağlı (güncel Android).
+        val altin = ui.checkBeadColorFeaturePurchase(BeadType.BALL1, cachedKeys = 999, cachedCurrency = 1999)
+        assertFalse(altin.allowed)
+        assertEquals("Yetersiz altın", altin.message)
+        assertEquals(2000, altin.price)
+        assertFalse(altin.isKeyCurrency)
+        assertTrue(ui.checkBeadColorFeaturePurchase(BeadType.BALL1, 0, 2000).allowed)
+        val anahtar = ui.checkBeadColorFeaturePurchase(BeadType.ANIMAL3, cachedKeys = 39, cachedCurrency = 99999)
+        assertFalse(anahtar.allowed)
+        assertEquals("Yetersiz anahtar", anahtar.message)
+        assertEquals(40, anahtar.price)
+        assertTrue(anahtar.isKeyCurrency)
+        assertTrue(ui.checkBeadColorFeaturePurchase(BeadType.ANIMAL8, 40, 0).allowed)
+
+        // İade kuralı: güncel Android beş akışta da iade eder.
         assertTrue(ui.BEAD_PURCHASE_PANEL.rollbackOnSaveFailure)
         assertTrue(ui.SLOT_PANEL_PURCHASE.rollbackOnSaveFailure)
-        assertFalse(ui.BEAD_COLOR_FEATURE_PANEL.rollbackOnSaveFailure)
+        assertTrue(ui.BEAD_COLOR_FEATURE_PANEL.rollbackOnSaveFailure)
         assertTrue(ui.FRAME_PURCHASE_PANEL.rollbackOnSaveFailure)
         assertEquals("İşlem başarısız. Tekrar deneyin.", ui.BEAD_PURCHASE_PANEL.walletFailureMessage)
         assertEquals("Kayıt hatası. Tekrar deneyin.", ui.BEAD_PURCHASE_PANEL.saveFailureMessage)

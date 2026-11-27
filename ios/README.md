@@ -2,6 +2,8 @@
 
 Bu klasör, Android uygulamasından **tamamen bağımsız** bir Gradle projesidir. Kök `settings.gradle.kts` bu klasörü içermez; Android derlemesi buradan etkilenmez ve Android `ios/shared` modülüne bağlanmaz. Buradaki Kotlin kodu, `app/` içindeki mantığın **kopyasıdır**: Android'de bir kural değişirse aynı değişiklik burada elle yapılmalıdır.
 
+> **27.11.2026:** ortak kod (`shared/`) güncel Android'e (`claude/soban-gamified-education-prb70m`, versionCode 26) eşitlendi: **JVM 893 test, Kotlin/Native (mingwX64) 890 test, 0 hata.** Swift ekranları henüz bu değişikliklere uyarlanmadı; derlemeyi kıran yerler `docs/SWIFT_KIRILMA_LISTESI.md` içinde. Eski (Eylül) Android ile yeni Android arasındaki farkların dökümü: `docs/ANDROID_FARK_ENVANTERI.md`.
+
 ```
 ios/
   shared/   Kotlin Multiplatform; Android mantığının kopyası (Aşama 1 — bitti)
@@ -14,13 +16,13 @@ ios/
 
 - `iosApp/`: 100'den fazla Swift dosyası, ekran başına bir klasör. Codemagic'te (6. derleme, commit `5ef439c`) **0 hata ile derlendi** ve 29 ekranın simülatör görüntüsü alındı.
 - Yazılan ekranlar: kabuk (üst çubuk + 6 sekme), harita (kısım seçimi, ders listesi, alt panel), abaküs dersi, kör ders, ders sonucu, sandık, kristal, görevler, günlük soru, kupa yolu, kupa geçmişi, lider tablosu, rozetler, özelleştirme, mağaza, giriş/kayıt, profil. `Yonetim/` bunları birbirine bağlar.
-- Ortak koda eklenenler (Fragment içinde kalmış kurallar ve Swift için köprüler) ile birlikte: **JVM 845 test, Kotlin/Native 842 test, 0 hata.**
+- Ortak koda eklenenler (Fragment içinde kalmış kurallar ve Swift için köprüler) ile birlikte: JVM 845 test, Kotlin/Native 842 test, 0 hata (eşitlemeden önce). Güncel Android'e eşitlemeden sonra (27.11.2026): **JVM 893 test, Kotlin/Native 890 test, 0 hata.**
 - **Hepsi sahte veriyle çalışıyor.** Firebase, StoreKit, reklam ve ses bağlı değil; her biri bir Swift protokolünün arkasında yer tutucu.
 - Yazılmayanlar: öğretici (`TutorialFragment`), bildirimler/öğretmene soru, ders sonu soru özeti, yarış paneli, plan karşılaştırma, rozet kutlaması.
 - Doğrulanmayanlar: dokunma/sürükleme hissi ve animasyonlar (yalnızca durağan ekran görüntüsüne bakıldı), gerçek cihaz, küçük ekranlar, Android ile piksel karşılaştırması.
 - **İkinci tur (7. derleme, commit `50dd1f7`, 0 hata, 30 ekran görüntüsü):** her ekran Android layout'una karşı denetlendi ve düzeltildi. Lottie bağlandı (`lottie-ios` 4.6.1, `Ortak/LottieGorunumu.swift`, `iosApp/Lottie/` altında 54 dosya); kristal için video oynatıcı yazıldı ama `crystal_*.mp4` dosyaları depoda yok (`iosApp/Videolar/` altına konunca çalışır). Kısa ekranlar için abaküs/kör ders ölçeklemesi eklendi (simülatörde yalnızca büyük ekranda görüldü).
 - Bu turda kesinleşenler: gri boncuklar Android varsayılanıdır (soroban, `#737373`); Android'de misafir girişi yoktur (yalnızca hesapsız ilk öğretici); hesap silme iki platformda da Profili Düzenle'dedir; lider tablosundaki soluk daireler Android'de de vardır.
-- Android'den geldiği için bilerek aynı bırakılanlar: görevlerde ve rozet detayında ilerleme sayısının dolgu üstünde okunmaması (`#CCCCCC` yazı, mavi dolgu); hiç oynamamış kullanıcıda "Körleme Çıkarma/Çarpma"nın açık gelmesi (şablonda 2. ve 3. kısmın son sandığı `stepIsFinish = true`).
+- Android'den geldiği için bilerek aynı bırakılmışlardı, ikisi de artık geçersiz: görevlerde ve rozet detayında ilerleme sayısının dolgu üstünde okunmaması (iki platformda da düzeltildi: beyaz yazı + koyu gölge); hiç oynamamış kullanıcıda "Körleme Çıkarma/Çarpma"nın açık gelmesi (güncel Android şablonunda hiçbir sandık bitmiş gelmiyor).
 - Yaklaşık kalanlar: kilitli rozet/kupa kartlarının düz gri boyanması ve kademe tonları (SwiftUI karışım kipleriyle), mor ton (Android OVERLAY).
 - Ekran galerisi: uygulama `-ekran <ad>` argümanıyla açılırsa o ekranı örnek veriyle gösterir (`Yonetim/EkranGalerisi.swift`); Codemagic her derlemede hepsinin görüntüsünü çıktı olarak bırakır.
 
@@ -57,16 +59,16 @@ Kök paket `com.sorobit.shared`. Android yolları `app/src/main/java/com/example
 
 Doğrulama: özgün Android dosyası JVM'de referans olarak derlenip 231 durum × 400 tohum = **92.400 karşılaştırmada birebir aynı çıktı** verdi. Bu karşılaştırmadan üretilen 693 satırlık altın veri depoda (`AltinVeri.kt`) ve hem JVM'de hem Native'de doğrulanıyor.
 
-### `ders` — ders kataloğu ve ilerleme (153 test)
+### `ders` — ders kataloğu ve ilerleme (183 test)
 
 | Ortak dosya | Android kaynağı |
 |---|---|
-| `LessonItem.kt` | `model/LessonItem.kt` — tamamı |
-| `GlobalLessonDataKatalog.kt` | `GlobalLessonData.createLessonItems` — 9 part, 169 item; betikle üretildi |
-| `GlobalLessonData.kt` | `GlobalLessonData.kt`'nin geri kalanı (varsayılanlar, Firestore alanları ↔ model, `updateLessonItem`, backfill, tamamlanma yüzdesi) + `LessonDataManager.kt` anahtarları |
+| `LessonItem.kt` | `model/LessonItem.kt` — tamamı (ilk alan `stableId`: dersin kalıcı kimliği, ör. `p1_i04_unite_maratonu`) |
+| `GlobalLessonDataKatalog.kt` | `GlobalLessonData.createLessonItems` — 9 part, 169 item; betikle üretildi. Android ders adlarını ve ipuçlarını artık `strings_lessons.xml`'den okuyor; betik bunları varsayılan (Türkçe) metinle yerine koyar. Her item `stableId` taşır. |
+| `GlobalLessonData.kt` | `GlobalLessonData.kt`'nin geri kalanı (varsayılanlar, Firestore alanları ↔ model, `updateLessonItem`, backfill, tamamlanma yüzdesi, `stableId` ile doküman yolları ve konum anahtarlı eski dokümanlardan taşıma planı, öğretmen kilit açmaları) + `LessonDataManager.kt` anahtarları |
 | `LessonProgressMerge.kt`, `ChestTypeProgressHelper.kt`, `LessonManager.kt` | aynı adlı dosyalar — tamamı |
 | `GuidePanelData.kt` | `model/GuidePanelData.kt` + `MapFragment.showGuidePanel` verisi |
-| `LessonSuccessRateRepository.kt` | dört transaction gövdesinin saf hesabı, alan adları, yollar |
+| `LessonSuccessRateRepository.kt` | kullanıcı adım durumu (`users/{uid}/lessonSuccessRateState`, `stableId` anahtarlı; eski konum anahtarlı yoldan okuma), analitik kararları. Android'de genel başarı oranı toplamları artık istemcide hesaplanmıyor. |
 | `ChestFragmentLogic.kt` | `ChestFragment.kt` — `updateMapProgress`, kilit açma, `changeCupIcon` |
 | `LessonResultLogic.kt` | `LessonResult.kt`, `LessonResultFalse.kt`, `ChestResult.kt` hesapları |
 | `LessonAdapterLogic.kt` | `LessonAdapter.kt`, `RaceAdapter.kt` — alt panel durumu, enerji kararı, açılacak ekran |
@@ -74,18 +76,21 @@ Doğrulama: özgün Android dosyası JVM'de referans olarak derlenip 231 durum �
 
 Katalog, Android dosyasını bağımsız bir ayrıştırıcıyla okuyan betikten üretilmiş sabit beklentilerle doğrulanıyor (part başına adet, tür dağılımı, 23 alanın parmak izi).
 
-### `dersadim` — ders adımı → soru listesi (21 test)
+### `dersadim` — ders adımı → soru listesi (34 test)
 
 | Ortak dosya | Android kaynağı |
 |---|---|
-| `LessonOperations.kt` | `MapFragment.kt` companion: `getLessonOperations`, `getLessonOperationsBlinding`, iki `resolve*` — 70 + 55 dalın tamamı, mekanik dönüşümle |
+| `LessonOperations.kt` | `MapFragment.kt` companion: `getLessonOperations`, `getLessonOperationsBlinding`, iki `resolve*` — 69 + 55 dalın tamamı, mekanik dönüşümle (güncel Android'de 18 dalı kaldırıldı, 17 ve 1013 değişti) |
 | `UploadLessonDataLogic.kt` | `AbacusFragment.uploadLessonData`, `BlindingLessonFragment.uploadLessonData` |
 
-### `kupa` — kupa, rozet, sezon, lider tablosu (110 test)
+Altın veri (`DersAdimAltinVeri.kt`): değişen 17 ve 1013 dallarının tohumlu özetleri, Android referansı JVM'de çalıştırılamadığı için çıkarıldı; bu iki dal yapısal testle (soru sayısı, basamak) sınanıyor. Metinleri Android `MapFragment.kt` ile satır satır aynı (27.11.2026'da elle karşılaştırıldı).
+
+### `kupa` — kupa, rozet, sezon, lider tablosu (149 test)
 
 | Ortak dosya | Android kaynağı |
 |---|---|
 | `CupRuleEngine.kt` | `CupRuleEngine.kt` — tamamı |
+| `CupScoreService.kt`, `CupPathRewardRepository.kt`, `CupPathLogic.kt` | `CupScoreService.kt` (kupa sonucu sunucuda yazılır: `submitCupResult` yükü), `CupPathRewardRepository.kt` (kupa yolu sandıkları), Kupa Yolu paneli kuralları |
 | `CupRepositories.kt` | altı `*CupRepository.kt` — alanlar, yollar, skor güncelleme hesabı |
 | `CupHistoryRepository.kt`, `CupHistoryLogic.kt` | `CupHistoryRepository.kt`, `CupHistoryFragment.kt` |
 | `BadgePrecalcHelper.kt`, `CupFragmentLogic.kt`, `KupaZaman.kt` | `BadgePrecalcHelper.kt`, `CupFragment.kt`; gün kimliği yardımcıları |
@@ -94,9 +99,9 @@ Katalog, Android dosyasını bağımsız bir ayrıştırıcıyla okuyan betikten
 | `rozet/BadgeFragmentLogic.kt`, `rozet/BadgeDetailLogic.kt`, `rozet/BadgeAnimMode.kt` | `BadgeFragment.kt`, `BadgeDetailFragment.kt` içindeki hesap ve metin tabloları |
 | `rozet/FishingStreakPeriod.kt` | `DailyQuestionPeriod.kt` içinden rozetin kullandığı altı fonksiyon (aşağıdaki "yinelenen kod" notuna bakın) |
 | `sezon/SeasonClock.kt`, `sezon/SeasonLeaderboardRewardPayloads.kt` | aynı adlı dosyalar — tamamı |
-| `sezon/LessonLeaderboardRepository.kt`, `sezon/RecordLogic.kt` | `LessonLeaderboardRepository.kt`, `RecordFragment.kt`, `RecordLeaderboardAdapter.kt` |
+| `sezon/LessonLeaderboardRepository.kt`, `sezon/RecordLogic.kt` | `LessonLeaderboardRepository.kt`, `RecordFragment.kt`, `RecordLeaderboardAdapter.kt`. Tahta kimliği artık `part_{p}_lesson_{stableId}_season_{s}` (liste konumu değil); fotoğraf yerine `publicProfiles` avatarı. |
 
-### `oyun` — günlük soru, görevler, sandık, enerji, cüzdan (168 test)
+### `oyun` — günlük soru, görevler, sandık, enerji, cüzdan (200 test)
 
 | Ortak dosya | Android kaynağı |
 |---|---|
@@ -107,9 +112,10 @@ Katalog, Android dosyasını bağımsız bir ayrıştırıcıyla okuyan betikten
 | `ChestCrystalPolicy.kt`, `NewChestLogic.kt`, `ChestResultLogic.kt` | `ChestCrystalPolicy.kt`, `NewChestFragment.kt`, `ChestResult.kt` |
 | `EnergyManager.kt`, `ServerEnergy.kt`, `ServerRewards.kt`, `UserWalletFirestore.kt`, `TimeTracker.kt`, `BillingCatalog.kt` | aynı adlı dosyalar |
 | `AgeConsentManager.kt`, `AppRatingManager.kt`, `AdRules.kt`, `GuideStores.kt` | `AgeConsentManager.kt`, `AppRatingManager.kt`, `AdManager.kt`, `MarathonGuideStore.kt`, `FirstTutorialShownStore.kt` — kural kısmı |
+| `PlanStatus.kt`, `TrustedClock.kt` | `PlanStatus.kt`, `TrustedClock.kt` + `TrustedClockRules.kt` — saf kısım |
 | `OyunKeyValueStore.kt`, `OyunSaat.kt`, `OyunBagimliliklari.kt` | Android karşılığı yok: SharedPreferences karşılığı arayüz, saat, geçici bağımlılık türleri |
 
-### `abakus` ve `model` (147 test)
+### `abakus` ve `model` (181 test)
 
 | Ortak dosya | Android kaynağı |
 |---|---|
@@ -123,9 +129,13 @@ Katalog, Android dosyasını bağımsız bir ayrıştırıcıyla okuyan betikten
 | `model/AuthRules.kt` | `auth/AuthManager.kt`, `RegisterActivity.kt`, `LoginActivity.kt`, `EditProfileFragment.kt`, `OtpVerificationFragment.kt` — doğrulama kuralları, kullanıcı dokümanı alanları, Cloud Function adları ve gövdeleri |
 | `model/SessionDeviceRules.kt` | `SessionDeviceManager.kt`, `AccountDeletionHelper.kt`, `MyFirebaseMessagingService.kt`, `AddFriendFragment.kt`, `FollowersFollowingFragment.kt` |
 
-### `baglanti` — paketler arası köprüler (5 test)
+### `baglanti` — paketler arası köprüler (44 test)
 
-Paketler birbirinden bağımsız kopyalandığı için bazıları komşu türlerin küçük yerel kopyalarını tanımladı. `PaketKopruleri.kt` bunları asıl türlere bağlar: günlük soru havuzu → `MathOperationGenerator`, `LessonItem` → `OyunLessonItem`, kupa dersi → part 9 yer tutucusu.
+Paketler birbirinden bağımsız kopyalandığı için bazıları komşu türlerin küçük yerel kopyalarını tanımladı. `PaketKopruleri.kt` bunları asıl türlere bağlar: günlük soru havuzu → `MathOperationGenerator`, `LessonItem` → `OyunLessonItem`, kupa dersi → part 9 yer tutucusu. `KorDersKoprusu.kt`, `SonucEkraniKoprusu.kt`, `GorevGunlukSoruKopruleri.kt` Swift ekranları için çağrı sırasını tek yerde toplar.
+
+### `profil` (35 test)
+
+`ProfileFragmentLogic.kt`: `ProfileFragment.kt` ve ilgili ekranların saf hesapları (kaynak listesi dosya başında). Rozet kademe tablosu artık `kupa/rozet/BadgeProgressEngine.levelSpec`'e delege edilir (tek tablo).
 
 ## Android'den bilinçli farklar
 
@@ -135,6 +145,8 @@ Paketler birbirinden bağımsız kopyalandığı için bazıları komşu türler
 - "Şimdi", saat dilimi, sezon numarası ve `globalPartId` gibi genel durumlar parametre oldu (varsayılanlar Android davranışını verir).
 - `DocumentSnapshot` → `Map<String, Any?>`. Android'de tipi uyuşmayan alan istisna atar; ortak kodda varsayılana düşer.
 - Rastgelelik enjekte edilebilir (`RastgeleKaynagi.rastgele`); varsayılanı tohumsuzdur. Bu nesne iş parçacığı güvenli değildir.
+- `LessonItem.stableId` varsayılanı `""` (Android'de varsayılansız zorunlu alan). Katalogdaki her item dolu `stableId` taşır; boş değer yalnızca testlerde ve elle kurulan item'larda görülür. Boş `stableId`'li derste liderlik gönderimi atlanır (Android'deki `lessonKey.isBlank()` kapısı).
+- Ders metinleri Android'de `strings_lessons.xml`'den yerelleştirilir; ortak katalog Türkçe metni sabit taşır (`GlobalLessonData.localizeLessonText` şimdilik metni olduğu gibi döndürür).
 
 ## Atlananlar ve nedenleri
 
@@ -163,27 +175,26 @@ Paketler birbirinden bağımsız kopyalandığı için bazıları komşu türler
 
 Kopyalama sırasında fark edildi. **Hepsi ortak kodda aynen korundu** ve testlerle sabitlendi; Android'de düzeltilirse burada da düzeltilmeli. Yayını etkileyebilecek olanlar:
 
-- **Ders şablonu:** part 1–6'da bütün dersler kilitsiz ve 14 sandık bitmiş olarak geliyor; boş hesapta tamamlanma %12 çıkıyor. Test kalıntısı gibi duruyor.
 - **Günlük soru seçimi:** `dailyStableIndex` adına rağmen "TEST MODU" notuyla tamamen rastgele seçiyor.
-- **Reklam:** geçiş reklamı birimi hâlâ Google'ın paylaşımlı test kimliği.
 - **Puanlama isteği:** eşik "en az 1 ders" ("for testing" notuyla).
 - **Yaş onayı:** rıza yaşını geçen herkes (yetişkinler dahil) `TEEN` sayılıyor.
-- **Part 1, "10'luk Toplama - 3 Basamaklı":** 2. adımdan itibaren boş soru listesi alıyor (adım numaraları tutarsız: start 28, finish 31, stepCount 3).
+- **Part 1, "10'luk Toplama - 3 Basamaklı":** adımlar 28–30, ama tabloda 29 ve 30 dalı yok; üç adım da 28'in soru setine çözülüyor (aynı tür sorular üç kez).
 - **Kupa aralıkları:** `CupRuleEngine.RANGES` içinde 2400..2499 iki kez tanımlı; sonraki aralıklar bir kaymış olabilir. `BLINDING_MULTIPLICATION_RANGES` ilk satırı `3000..999999`, altındakileri gölgeliyor.
-- **Roket rozeti:** iki farklı kademe tablosu var (`[3,10,15,25,30]` ve `[3,5,10,15,25]`); aynı ilerlemede ton ve oran farklı çıkıyor.
 - **Takip:** `FollowersFollowingFragment` geri takipte adları çapraz yazıyor (`AddFriendFragment`'in tersi).
 - **Hesap silme:** `haveBead` / `haveFrame` alt koleksiyonlarını silmiyor.
 - **Bölme:** `AbacusFragment.stepAnswerAlgorithm` "/" işlecinde beklenen cevabı her zaman 1 alıyor.
-- **Satın alma:** boncuk renk özelliğinde Firestore yazımı başarısız olursa para iade edilmiyor.
 - **Uzun çıkarma dizileri:** dört üreteç ara toplam eksiye düşünce çöküyor; bugünkü çağrılarda (3–4 sayı) tetiklenmiyor.
 - **Rozet metinleri:** VOLCANO metni "Kasırga rozetini" diyor; "Keçi"/"Keço", "Şaho"/"Karti" tutarsız.
 - **Giriş hataları:** Google giriş hata mesajları kullanıcıya SHA-1 parmak izi ve Logcat yönlendirmesi gösteriyor.
 
 Tam liste ilgili ortak dosyaların başlık yorumlarında ve testlerde.
 
+Güncel Android'de (27.11.2026) düzeldiği için listeden çıkarılanlar: ders şablonunda kilitsiz dersler ve bitmiş 14 sandık (artık hiçbir sandık bitmiş gelmiyor), geçiş reklamında Google test kimliği (yayın sürümünde gerçek birim; test kimliği yalnızca hata ayıklama derlemesinde), roket rozetinin iki ayrı kademe tablosu, boncuk renk özelliği satın almasında kayıt başarısız olunca para iadesi yapılmaması. Ders geçme eşiği de değişti: abaküs dersi ve kör ders (part 4–5) için %10/%50 yerine %75.
+
 ## `tools/`
 
-- `ders-katalog/uret.js`, `testuret.js`: Android `GlobalLessonData.kt`'den `GlobalLessonDataKatalog.kt` ve test beklentilerini üretir. Android kataloğu değişince yeniden çalıştırılır.
+- `ders-katalog/uret.js`, `testuret.js`: Android `GlobalLessonData.kt` ve `values/strings_lessons.xml`'den `GlobalLessonDataKatalog.kt` ve test beklentilerini üretir. Android kataloğu değişince yeniden çalıştırılır.
+- `ders-katalog/ozet.js`: katalog + dal listesinden `DersAdimAltinVeri.kt` içindeki katalog özetini (`ALTIN_KATALOG_OZET`) üretir.
 - `ders-adim/uret.js`, `altin.js`: `MapFragment.kt`'den `LessonOperations.kt` ve altın veriyi üretir.
 
 `matematik` altın verisini üreten düzenek özgün Android dosyasının bir kopyasını içerdiği için depoya konmadı; yeniden gerekirse `MathOperationGenerator.kt` JVM'de referans olarak derlenip tohumlu kaynakla karşılaştırılır (yöntem `AltinVeriTest.kt` başlığında).

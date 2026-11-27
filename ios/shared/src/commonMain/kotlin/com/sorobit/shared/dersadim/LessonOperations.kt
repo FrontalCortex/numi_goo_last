@@ -1,6 +1,6 @@
 // KAYNAK: app/src/main/java/com/example/app/MapFragment.kt — companion object içindeki
 // getLessonOperations, resolveLessonOperationsId, resolveLessonOperationsBlindingId ve
-// getLessonOperationsBlinding (Android dosyasında satır 51-1134).
+// getLessonOperationsBlinding (Android dosyasında satır 57-1135).
 //
 // Bu dosya tek seferlik bir betikle, mekanik dönüştürmeyle üretildi: fonksiyon gövdeleri
 // Android'dekiyle KARAKTERİ KARAKTERİNE aynıdır (yalnızca bir girinti düzeyi azaltıldı, satır sonu
@@ -81,7 +81,12 @@ object LessonOperations {
             1010 -> MathOperationGenerator.generateRelatedNumbersList(6, 3, 3)
 
             1013 -> listOf(
-                MathOperationGenerator.generateRelatedNumbers(1, 1),
+                MathOperationGenerator.generateRelatedNumbers(4, 4),
+                MathOperationGenerator.generateRelatedNumbers(5, 5),
+                MathOperationGenerator.generateRelatedNumbers(4, 4),
+                MathOperationGenerator.generateRelatedNumbers(5, 5),
+                MathOperationGenerator.generateRelatedNumbers(4, 4),
+                MathOperationGenerator.generateRelatedNumbers(5, 5),
             )
             7 -> listOf(
                 MathOperationGenerator.generateRelatedNumbers0(1, 1),
@@ -159,16 +164,6 @@ object LessonOperations {
                 generateRelatedNumbers2(4, 5),
                 generateRelatedNumbers2(5, 5),
                 generateRelatedNumbers2(4, 4),
-                generateRelatedNumbers2(5, 4),
-                )
-            18 -> listOf(
-                generateRelatedNumbers2(5, 5),
-                generateRelatedNumbers2(5, 5),
-                generateRelatedNumbers2(5, 5),
-                generateRelatedNumbers2(5, 5),
-                generateRelatedNumbers2(5, 5),
-                generateRelatedNumbers2(5, 5),
-                generateRelatedNumbers2(5, 5),
                 )
             19 -> listOf(
                 generateRandomMathOperation1(),
@@ -985,7 +980,7 @@ object LessonOperations {
                 MathOperationGenerator.generalCollectionTwoDigits(4),
             )
             80 -> listOf(
-                MathOperationGenerator.generalCollectionTwoDigits(4), //3 adet 7 olarak güncellenecek
+                MathOperationGenerator.generalCollectionTwoDigits(4),
                 MathOperationGenerator.generalCollectionTwoDigits(4),
                 MathOperationGenerator.generalCollectionTwoDigits(4),
             )

@@ -18,6 +18,13 @@
 // Harita listesinin (RecyclerView adapter) görünümden bağımsız mantığı: bir dersin kilitli mi / bitmiş mi olduğu,
 // alt panelde hangi metin ve düğmenin çıkacağı, derse basınca hangi ekranın açılacağı, yıldız sırası vb.
 //
+// Güncel Android'de (soban-gamified-education) değişenler bu dosyaya işlendi: ders paneli artık "popover" (durum rengi:
+// açık/bitmiş/kilitli), düğme metinleri (Başla / Devam et / Gözden geçir / Tekrar dene / Kilitli), kilitli dersin
+// 1 anahtarla açılması, "Eğitimi tekrarla"nın da enerji harcaması, ilerleme anahtarının `{type}_{stableId}` olması,
+// sandık yıldızlarının hep 3'lü satır olması, kart "nefes alma" koşulu. Platform işi olanlar (ortak kopyada yok):
+// panelin karttan büyüyerek açılması, ekran/sistem şeridi karartması, ilerleme animasyonunun liste yenilenince kaldığı
+// yerden sürmesi (runningProgressIncreases), TeacherApprovalGate (onaysız öğretmen engeli), Analytics olayları.
+//
 // Android'den bilinçli farklar: View / animasyon / renk kodu yok; R.drawable ve R.color kimlikleri yerine kaynak
 // adları; metinler Android'deki sabit Türkçe metinlerle aynı (yerelleştirme anahtarına çevrilmedi çünkü Android'de
 // de koda gömülü).
@@ -48,16 +55,62 @@ object LessonAdapterLogic {
         val recordLayoutGone: Boolean,
         /** Rekor satırına tıklanınca liderlik tablosu (RecordFragment) açılır mı. */
         val recordClickable: Boolean,
-        /** Rekor satırındaki ateş animasyonu görünür mü. */
+        /** Rekor satırındaki ateş animasyonu görünür mü (yeni panelde ateş animasyonu yok → hep false). */
         val fireAnimVisible: Boolean,
+        /** Panel durumu (çerçeve/düğme rengi): açık mavi, bitmiş altın, kilitli gri. */
+        val panelState: PanelState = PanelState.OPEN,
+        /** Üst etiket: sandıkta "ÜNİTE MARATONU", derste "DERS". */
+        val kindText: String = TEXT_KIND_LESSON,
+        /** Panel ikonu: 1, 2, 3, 6. bölümlerde sandık "podium_ic2", diğerleri "profile_book_ic3". */
+        val iconName: String = ICON_BOOK,
+        /** Adım satırı (dilimli çubuk + "2/5") görünür mü: sandıkta ve kilitliyken gizli. */
+        val stepRowVisible: Boolean = true,
+        /** Adım satırındaki "dolu/toplam" sayıları. */
+        val doneSteps: Int = 0,
+        val stepCount: Int = 1,
+        /** Kilitli ders 1 anahtarla açılabilir mi (düğme açık mavi, anahtar simgeli; açıklama kilit-anahtar metni). */
+        val keyUnlockable: Boolean = false,
     )
 
-    const val TEXT_LOCKED_DESCRIPTION = "Bunun kilidini açmak için yukarıdaki düzeylerin tümünü tamamla!"
+    /** Ders panelinin durumu (Android: PanelState). */
+    enum class PanelState { OPEN, DONE, LOCKED }
+
+    const val TEXT_KIND_LESSON = "DERS"
+    const val TEXT_KIND_CHEST = "ÜNİTE MARATONU"
+    const val ICON_BOOK = "profile_book_ic3"
+    const val ICON_PODIUM = "podium_ic2"
+    const val TEXT_CONTINUE = "Devam et"
+    const val TEXT_UNLOCK_WITH_KEY = "1 anahtarla kilidi aç"
+    const val TEXT_UNLOCK_OFFER_DESCRIPTION = "Önceki dersleri tamamla ya da 1 anahtarla bu dersi hemen aç."
+    /** Yarış panelindeki başlat düğmesi (Android: ui_baslat; artık simgesiz). */
+    const val TEXT_RACE_START = "BAŞLAT"
+
+    /** Kilitli dersi açmanın anahtar bedeli (Android: LESSON_UNLOCK_KEY_COST). */
+    const val LESSON_UNLOCK_KEY_COST = 1
+
+    /**
+     * Kilitli bir item anahtarla açılabilir mi (Android: isKeyUnlockable): 1–6. bölümlerdeki ders ve ünite maratonu item'ları.
+     * 7–8'de kilit `raceBusyLevel` ile yönetilir.
+     */
+    fun isKeyUnlockable(item: LessonItem, globalPartId: Int = GlobalLessonData.globalPartId): Boolean =
+        !item.isCompleted && globalPartId in 1..6 &&
+            (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST)
+
+    /**
+     * Anahtar sunucuda düşüldükten SONRA yazılacak item (Android: unlockLessonWithKey): `isCompleted = true`. Can harcanmaz.
+     * Platform: güncel item'ı aynı stableId ile bulup üzerine yazar ([LessonManager.updateLessonItem]).
+     */
+    fun unlockedWithKey(item: LessonItem): LessonItem = item.copy(isCompleted = true)
+
+    /** Android: ui_kilidi_acmak_icin_onceki_dersleri_tamamla (eski metin: "Bunun kilidini açmak için yukarıdaki düzeylerin tümünü tamamla!"). */
+    const val TEXT_LOCKED_DESCRIPTION = "Kilidi açmak için önceki dersleri tamamla."
     const val TEXT_LESSON_DONE = "Ders Tamamlandı"
     const val TEXT_RETRY = "Tekrar dene"
     const val TEXT_REVIEW = "Gözden geçir"
-    const val TEXT_START = "BAŞLAT"
-    const val TEXT_LOCKED = "KİLİTLİ"
+    /** Ders panelinde düğme (Android: ui_basla; eskiden "BAŞLAT"). */
+    const val TEXT_START = "Başla"
+    /** Ders panelinde düğme (Android: ui_kilitli; eskiden "KİLİTLİ"). */
+    const val TEXT_LOCKED = "Kilitli"
 
     /** Rekor/liderlik satırını göstermeyen part'lar. */
     val RECORD_HIDDEN_PARTS: Set<Int> = setOf(4, 5)
@@ -65,74 +118,78 @@ object LessonAdapterLogic {
     /**
      * Haritada bir derse dokunulduğunda açılan alt panelin içeriği.
      *
-     * Android'deki tuhaflık aynen korunur: tamamlanmış sandıkta `record` null ise metin "Rekor: null" olur.
+     * Güncel Android: tamamlanmış sandıkta `record` null ise metin "Rekor: —" olur (eskiden "Rekor: null").
      */
     fun lessonBottomSheetState(
         item: LessonItem,
         globalPartId: Int = GlobalLessonData.globalPartId,
     ): LessonBottomSheetState {
-        val title = item.title
-        var description: String
-        var actionText = TEXT_REVIEW // yerleşimdeki varsayılan metin
-        var actionEnabled = true
-        var locked = false
+        val isChest = item.type == LessonItem.TYPE_CHEST
+        val stepCount = item.stepCount.coerceAtLeast(1)
+        val doneSteps = if (item.stepIsFinish) stepCount else item.stepCompletionStatus.count { it }.coerceIn(0, stepCount)
+        val panelState = when {
+            !item.isCompleted -> PanelState.LOCKED
+            item.stepIsFinish -> PanelState.DONE
+            else -> PanelState.OPEN
+        }
+        var description = ""
+        val actionText: String
+        val actionEnabled: Boolean
         var againTutorialVisible = false
         var recordText: String? = null
-        var recordLayoutGone = false
-        var fireAnimVisible = false
+        var recordLayoutGone = true // yeni panelde rekor satırı yalnızca bitmiş sandıkta görünür
+        var keyUnlockable = false
 
         if (item.isCompleted) {
             againTutorialVisible = item.tutorialNumber != 0 && item.tutorialIsFinish
             if (item.stepIsFinish) {
-                if (item.type == 2) {
-                    if (globalPartId in RECORD_HIDDEN_PARTS) {
-                        recordLayoutGone = true
-                    } else {
-                        recordText = "Rekor: ${item.record}"
-                        fireAnimVisible = true
+                if (isChest) {
+                    // Rekor satırı (4. ve 5. bölümde yok). Maraton rehberinin son adımı bunu gösterir.
+                    if (globalPartId !in RECORD_HIDDEN_PARTS) {
+                        recordLayoutGone = false
+                        recordText = "Rekor: ${item.record ?: "—"}"
                     }
                     actionText = TEXT_RETRY
-                    actionEnabled = true
                 } else {
                     actionText = TEXT_REVIEW
                 }
-                description = TEXT_LESSON_DONE
             } else {
-                description = "Ders: ${item.currentStep}/${item.stepCount}"
-                actionText = TEXT_START
-                actionEnabled = true
+                actionText = if (doneSteps > 0) TEXT_CONTINUE else TEXT_START
             }
+            actionEnabled = true
+        } else if (isKeyUnlockable(item, globalPartId)) {
+            // Kilitli ders 1 anahtarla açılabilir; düğme "açık" mavisinde (gri kalsaydı devre dışı sanılırdı).
+            keyUnlockable = true
+            description = TEXT_UNLOCK_OFFER_DESCRIPTION
+            actionText = TEXT_UNLOCK_WITH_KEY
+            actionEnabled = true
         } else {
             description = TEXT_LOCKED_DESCRIPTION
-            locked = true
-            againTutorialVisible = false
             actionText = TEXT_LOCKED
             actionEnabled = false
         }
 
-        val recordClickable: Boolean
-        if (item.type == LessonItem.TYPE_CHEST && item.stepIsFinish && item.record != null &&
+        val recordClickable = item.type == LessonItem.TYPE_CHEST && item.stepIsFinish && item.record != null &&
             globalPartId !in RECORD_HIDDEN_PARTS
-        ) {
-            recordClickable = true
-        } else {
-            recordClickable = false
-            if (globalPartId in RECORD_HIDDEN_PARTS) {
-                recordLayoutGone = true
-            }
-        }
 
         return LessonBottomSheetState(
-            title = title,
+            title = item.title,
             description = description,
             actionText = actionText,
             actionEnabled = actionEnabled,
-            locked = locked,
+            locked = panelState == PanelState.LOCKED && !keyUnlockable,
             againTutorialVisible = againTutorialVisible,
             recordText = recordText,
             recordLayoutGone = recordLayoutGone,
             recordClickable = recordClickable,
-            fireAnimVisible = fireAnimVisible,
+            fireAnimVisible = false,
+            panelState = panelState,
+            kindText = if (isChest) TEXT_KIND_CHEST else TEXT_KIND_LESSON,
+            iconName = if (isChest && globalPartId in setOf(1, 2, 3, 6)) ICON_PODIUM else ICON_BOOK,
+            stepRowVisible = !(isChest || panelState == PanelState.LOCKED),
+            doneSteps = doneSteps,
+            stepCount = stepCount,
+            keyUnlockable = keyUnlockable,
         )
     }
 
@@ -149,13 +206,27 @@ object LessonAdapterLogic {
 
         /** Sonsuz enerji (Pro/Premium plan veya onaylı öğretmen): enerji harcanmadan ders başlar. */
         START_WITHOUT_ENERGY,
+
+        /** Kilitli ama anahtarla açılabilir ders: 1 anahtar harcanır, item açılır ([unlockedWithKey]); anahtar yoksa mağaza. */
+        UNLOCK_WITH_KEY,
     }
 
     /** Bir dersin enerji maliyeti. */
     const val LESSON_ENERGY_COST = 1
 
-    fun actionButtonDecision(item: LessonItem, isInfiniteEnergy: Boolean, hasEnoughEnergy: Boolean): ActionButtonDecision {
-        if (!item.isCompleted) return ActionButtonDecision.LOCKED_COLLAPSE
+    /**
+     * Not: Android'de "Eğitimi tekrarla" bağlantısı da aynı enerji kararını kullanır (anlatım bitince doğrudan dersin testine
+     * geçtiği için bedavaya açan arka kapı olmasın): açık bir item için bu fonksiyonu çağırın.
+     */
+    fun actionButtonDecision(
+        item: LessonItem,
+        isInfiniteEnergy: Boolean,
+        hasEnoughEnergy: Boolean,
+        globalPartId: Int = GlobalLessonData.globalPartId,
+    ): ActionButtonDecision {
+        if (!item.isCompleted) {
+            return if (isKeyUnlockable(item, globalPartId)) ActionButtonDecision.UNLOCK_WITH_KEY else ActionButtonDecision.LOCKED_COLLAPSE
+        }
         if (!isInfiniteEnergy) {
             if (!hasEnoughEnergy) return ActionButtonDecision.NOT_ENOUGH_ENERGY
             return ActionButtonDecision.USE_ENERGY_AND_START
@@ -266,7 +337,7 @@ object LessonAdapterLogic {
         val actionText: String,
         /** Düğme metni tümü büyük harf mi (Android: isAllCaps). */
         val actionAllCaps: Boolean,
-        /** Düğmedeki simge kaynağı: kilitli "key", başlat "lighting__1_", tekrar dene null. */
+        /** Düğmedeki simge kaynağı: kilitli "key"; başlat ve tekrar dene null (başlat simgesi kaldırıldı). */
         val actionIcon: String?,
     )
 
@@ -279,7 +350,8 @@ object LessonAdapterLogic {
         } else {
             when (raceItem.raceBusyLevel) {
                 0 -> RaceLessonBottomSheetState(title, description, false, TEXT_RETRY, false, null)
-                else -> RaceLessonBottomSheetState(title, description, false, TEXT_START, true, "lighting__1_")
+                // Android: simge kaldırıldı (eskiden "lighting__1_"); metin ui_baslat (BAŞLAT, büyük harf).
+                else -> RaceLessonBottomSheetState(title, description, false, TEXT_RACE_START, true, null)
             }
         }
     }
@@ -347,16 +419,12 @@ object LessonAdapterLogic {
     const val SEGMENT_GAP_ANGLE = 16f
 
     /**
-     * Android adapter anahtarı: `item.mapFragmentIndex ?: bindingAdapterPosition`.
-     * (ChestFragment aynı biçimi `mapFragmentStepIndex` ile üretir; createLessonItems mapFragmentIndex = indeks
-     * atadığı için ikisi eşleşir.)
+     * Android yerel görsel durum anahtarı: `{type}_{stableId}` (ChestFragment aynı biçimi üretir). Eskiden `item.id`
+     * (hiç doldurulmuyordu) + başlık + liste sırası kullanılıyordu; araya ders eklenince kayıyordu. [adapterPosition]
+     * imza uyumu için duruyor, anahtara girmiyor.
      */
-    fun lessonProgressKey(item: LessonItem, adapterPosition: Int): String {
-        val stableId = item.id ?: -1
-        val part = item.partId ?: -1
-        val idx = item.mapFragmentIndex ?: adapterPosition
-        return "${item.type}_${stableId}_${part}_${item.title}_$idx"
-    }
+    @Suppress("UNUSED_PARAMETER")
+    fun lessonProgressKey(item: LessonItem, adapterPosition: Int): String = "${item.type}_${item.stableId}"
 
     /** [progressAnimationDecision] çıktısındaki eylem. */
     enum class ProgressAnimationAction {
@@ -488,8 +556,63 @@ object LessonAdapterLogic {
      * Kart bağlanırken "nefes alma" halka animasyonu başlatılır mı: altın bitiş görünümündeki (bitmiş + altın
      * animasyonu oynamış/kalıcı) kartlar hariç hepsinde evet.
      */
-    fun shouldStartBreathingAnimation(item: LessonItem, goldAnimationPlayed: Boolean): Boolean =
-        !((goldAnimationPlayed || item.finalGoldVisualUnlocked) && item.stepIsFinish)
+    fun shouldStartBreathingAnimation(item: LessonItem, goldAnimationPlayed: Boolean): Boolean {
+        val goldDone = (goldAnimationPlayed || item.finalGoldVisualUnlocked) && item.stepIsFinish
+        return item.isCompleted && !item.stepIsFinish && !goldDone
+    }
+
+    /** Ders/sandık kartının durumu (Android: LessonViewHolder): kilitli gri, açık mavi, bitmiş altın. */
+    enum class CardState { LOCKED, OPEN, DONE }
+
+    /**
+     * Kart durumu. Bitmiş kartın altın olması için halka dolum animasyonunun oynamış ya da kalıcı kaydedilmiş olması
+     * ([goldAnimationPlayed] / [LessonItem.finalGoldVisualUnlocked]) gerekir; ilerleme animasyonu sürerken kart hâlâ mavidir.
+     */
+    fun cardState(item: LessonItem, goldAnimationPlayed: Boolean = false): CardState = when {
+        !item.isCompleted -> CardState.LOCKED
+        item.stepIsFinish && (goldAnimationPlayed || item.finalGoldVisualUnlocked) -> CardState.DONE
+        else -> CardState.OPEN
+    }
+
+    /** Sandık kartındaki yıldız satırı (yeni kart tasarımı): hep 3 yuva; [earned] kadarı dolu. */
+    data class ChestCardStars(
+        /** Kazanılan yıldız sayısı (0..3). */
+        val earned: Int,
+        /** Kart açık mı (kilitli kartta boş yıldızlar soluk, alfa 0.55). */
+        val unlocked: Boolean,
+        /** Bitmiş (altın) kart: kazanılanlar koyu kahve dolu, kazanılmayanlar soluk (alfa 0.3). */
+        val done: Boolean,
+    ) {
+        /** Boş yıldızın şeffaflığı (Android: done → 0.3, açık → 1, kilitli → 0.55). */
+        val emptyStarAlpha: Float get() = if (done) 0.3f else if (unlocked) 1f else 0.55f
+    }
+
+    /**
+     * Sandığın kazandığı yıldız sayısı (Android: chestStarCount): bitmemişse 0; bitmişse stepCupIcon'a göre
+     * tier3/cup_ic3 → 3, tier2/cup_ic2 → 2, tier1/cup_ic → 1, diğer her şey 0 (tier0 dahil: tek ortada yıldız yok artık).
+     */
+    fun chestStarCount(item: LessonItem): Int {
+        if (!item.stepIsFinish) return 0
+        return when (item.stepCupIcon) {
+            ChestIcons.CHEST_STARS_TIER3, ChestIcons.CUP_IC3 -> 3
+            ChestIcons.CHEST_STARS_TIER2, ChestIcons.CUP_IC2 -> 2
+            ChestIcons.CHEST_STARS_TIER1, ChestIcons.CUP_IC -> 1
+            else -> 0
+        }
+    }
+
+    /**
+     * Sandık kartı bağlanırken yıldızlar (Android: LessonViewHolder.bind → bindChestStars). Eski kayıtlardaki boş
+     * ("0") görsel şablon varsayılanına (tier0) çekilir — Android'deki `if (stepCupIcon == 0) stepCupIcon = tier0` yan etkisi.
+     */
+    fun chestCardStars(item: LessonItem, goldDone: Boolean = false): ChestCardStars {
+        if (item.stepCupIcon.isEmpty()) item.stepCupIcon = ChestIcons.CHEST_STARS_TIER0
+        return ChestCardStars(earned = chestStarCount(item), unlocked = item.isCompleted, done = goldDone)
+    }
+
+    /** Kartın sol ikonu: 1, 2, 3, 6. bölümlerde sandık "podium_ic2", diğerleri "profile_book_ic3". */
+    fun cardIconName(item: LessonItem, globalPartId: Int = GlobalLessonData.globalPartId): String =
+        if (item.type == LessonItem.TYPE_CHEST && globalPartId in setOf(1, 2, 3, 6)) ICON_PODIUM else ICON_BOOK
 
     /** Sandık kartındaki tek bir yıldız yuvasının görünümü. */
     enum class ChestStarSlot {

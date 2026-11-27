@@ -25,7 +25,8 @@ class SonucEkraniKoprusuTest {
     @Test
     fun basarisizlikAciklamasi() {
         assertEquals("Puan 500'den düşük!", SonucEkraniKoprusu.basarisizlikAciklamasi(true))
-        assertEquals("Başarı oranı %80'den düşük!", SonucEkraniKoprusu.basarisizlikAciklamasi(false))
+        // Android strings_ui.xml: fragment_lesson_result_false_result_title_comment (eşik %75)
+        assertEquals("Başarı oranı %75'ten düşük!",SonucEkraniKoprusu.basarisizlikAciklamasi(false))
     }
 
     @Test

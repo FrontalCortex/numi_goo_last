@@ -124,7 +124,20 @@ object ShopFragmentLogic {
     fun purchaseAnimationIconResName(productId: String): String? = when (productId) {
         BillingCatalog.GOLD_SMALL, BillingCatalog.GOLD_MEDIUM, BillingCatalog.GOLD_LARGE -> "gold_ic"
         BillingCatalog.KEYS_SMALL, BillingCatalog.KEYS_MEDIUM, BillingCatalog.KEYS_LARGE -> "key"
+        BillingCatalog.CREDITS_SMALL, BillingCatalog.CREDITS_MEDIUM, BillingCatalog.CREDITS_LARGE,
+        BillingCatalog.SOBI_CREDITS_20, BillingCatalog.SOBI_CREDITS_50, BillingCatalog.SOBI_CREDITS_120 -> "chat_credit_ic3"
         else -> null
+    }
+
+    /**
+     * Android (güncel) animatePurchasedItem: fırlatılacak simge sayısı. Öğretmen kredisinde adede göre 1 / 5 / 10,
+     * diğer paketlerde [PURCHASE_ANIMATION_ITEM_COUNT]; paket değilse null.
+     */
+    fun purchaseAnimationItemCount(productId: String): Int? = when (productId) {
+        BillingCatalog.CREDITS_SMALL -> 1
+        BillingCatalog.CREDITS_MEDIUM -> 5
+        BillingCatalog.CREDITS_LARGE -> 10
+        else -> if (purchaseAnimationIconResName(productId) != null) PURCHASE_ANIMATION_ITEM_COUNT else null
     }
 
     // ── Can bölümü ────────────────────────────────────────────────────────────

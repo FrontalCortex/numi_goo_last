@@ -118,6 +118,31 @@ object CupPathLogic {
         return stepIsFinish.getOrNull(idx) == true
     }
 
+    /**
+     * Android (güncel) `cupPartActive`: onaylı öğretmende hepsi açık (dersleri tek seferde açılıyor ama sandıkları
+     * bitmiş sayılmıyor; bu kural olmasa kupa yolu öğretmene hiç açılmazdı), değilse [isCardActive] kuralı.
+     */
+    fun isCardActive(lessonItemTypes: List<Int>, stepIsFinish: List<Boolean>, isApprovedTeacher: Boolean): Boolean =
+        isApprovedTeacher || isCardActive(lessonItemTypes, stepIsFinish)
+
+    /** Kilitli kartın açılması için bitirilmesi gereken bölüm, kart sırasıyla (1..6). */
+    val CARD_UNLOCK_REQUIREMENTS: List<String> = listOf(
+        "Abaküsün Temeli ve Toplama",
+        "Abaküste Çıkarma",
+        "Abaküste Çarpma",
+        "Körleme Toplama",
+        "Körleme Çıkarma",
+        "Körleme Çarpma",
+    )
+
+    /** Kilitli karta dokunulunca uyarı ("%1$s" bölüm adıyla dolar). */
+    fun lockedCardHint(cardNumber: Int): String =
+        "Açmak için \"" + CARD_UNLOCK_REQUIREMENTS[cardNumber.coerceIn(1, CARD_UNLOCK_REQUIREMENTS.size) - 1] +
+            "\" bölümünün son ünite maratonunu bitir."
+
+    /** Kupa yolu paneli ikinci kez açılmasın diye bekleme (Android `CUP_PATH_PANEL_REOPEN_GUARD_MS`). */
+    const val PANEL_REOPEN_GUARD_MS = 600L
+
     /** Kartta gösterilen skor (Android: `score.coerceAtLeast(0).toString()`). */
     fun shownScore(score: Int): Int = score.coerceAtLeast(0)
 

@@ -15,7 +15,7 @@ class GlobalLessonDataKatalogTest {
 
     /** Betikteki `kanonik()` ile aynı alan sırası; null → "null". */
     private fun kanonik(it: LessonItem): String = listOf(
-        it.type, it.title, it.titleUnit, it.offset, it.isCompleted, it.stepCount, it.currentStep,
+        it.stableId, it.type, it.title, it.titleUnit, it.offset, it.isCompleted, it.stepCount, it.currentStep,
         it.finishStepNumber, it.startStepNumber, it.tutorialNumber, it.tutorialIsFinish, it.stepIsFinish,
         it.lessonHint, it.color, it.abacusGuideNumber, it.cupPoint1, it.cupPoint2, it.worstCupTime,
         it.isBlinding, it.blindingMultiplication, it.timePeriod, it.raceBusyLevel, it.raceTitle,
@@ -41,7 +41,7 @@ class GlobalLessonDataKatalogTest {
             )
             assertEquals(b.tur, tur, "part ${b.part} tür dağılımı")
         }
-        // Elle doğrulanan toplamlar (Android kaynağında 169 adet `LessonItem(`):
+        // Elle doğrulanan toplamlar (güncel Android kaynağında 169 adet `LessonItem(`):
         assertEquals(listOf(33, 20, 20, 25, 20, 20, 15, 15, 1), (1..9).map { GlobalLessonData.createLessonItems(it).size })
         assertEquals(169, (1..9).sumOf { GlobalLessonData.createLessonItems(it).size })
     }
@@ -115,6 +115,43 @@ class GlobalLessonDataKatalogTest {
     }
 
     @Test
+    fun stableIdHerItemdaDoluTekilVeKonumaGoreBicimli() {
+        val hepsi = mutableListOf<String>()
+        for (part in 1..9) {
+            val items = GlobalLessonData.createLessonItems(part)
+            val ids = items.map { it.stableId }
+            assertTrue(ids.none { it.isBlank() }, "part $part boş stableId")
+            assertEquals(ids.size, ids.toSet().size, "part $part yinelenen stableId")
+            // Android'de kimlikler "p{part}_i{sıra:2 hane}_{ad}" biçiminde verilmiş (şu anki sürümde sıra = konum)
+            ids.forEachIndexed { i, id ->
+                assertTrue(id.startsWith("p${part}_i${i.toString().padStart(2, '0')}_"), "part $part idx $i: $id")
+            }
+            hepsi += ids
+        }
+        assertEquals(169, hepsi.size)
+        assertEquals(169, hepsi.toSet().size, "part'lar arası da tekil")
+        assertEquals("p1_i04_unite_maratonu", GlobalLessonData.createLessonItems(1)[4].stableId)
+        assertEquals("p9_i00_kupa_modu", GlobalLessonData.createLessonItems(9)[0].stableId)
+        assertEquals("p1_i04_unite_maratonu", GlobalLessonData.stableIdAt(1, 4))
+        assertNull(GlobalLessonData.stableIdAt(1, 99))
+        assertNull(GlobalLessonData.stableIdAt(42, 0))
+    }
+
+    @Test
+    fun guncelAndroidKatalogu_yalnizcaIlkDersAcikVeBitisYok() {
+        // Android (commit 06d4f05): 1-6'da yalnızca part 1'in ilk dersi açık; sandıklardaki test bitişleri silindi.
+        for (part in 1..6) {
+            val items = GlobalLessonData.createLessonItems(part)
+            assertTrue(items.none { it.stepIsFinish }, "part $part: hiçbir item bitmiş gelmemeli")
+            val acik = items.indices.filter { items[it].isCompleted && items[it].type != LessonItem.TYPE_HEADER }
+            assertEquals(if (part == 1) listOf(1) else emptyList(), acik, "part $part açık dersler")
+        }
+        // Part 8'in ilk yarışı açık, 7'de hiçbiri açık değil (kilit raceBusyLevel ile)
+        assertEquals(true, GlobalLessonData.createLessonItems(8)[0].isCompleted)
+        assertTrue(GlobalLessonData.createLessonItems(7).none { it.isCompleted })
+    }
+
+    @Test
     fun varsayilanAlanlar() {
         // Katalogda ayarlanmayan alanlar Android varsayılanlarında kalır.
         for (part in 1..9) {
@@ -181,8 +218,8 @@ class GlobalLessonDataKatalogTest {
         assertEquals("Ünite Maratonu", sandik.title)
         assertEquals("Sayıları Abaküste Tanıma", sandik.titleUnit)
         assertEquals(6, sandik.abacusGuideNumber)
-        assertEquals(1013, sandik.finishStepNumber)
-        assertEquals(1013, sandik.startStepNumber)
+        assertEquals(1005, sandik.finishStepNumber)
+        assertEquals(1005, sandik.startStepNumber)
         assertEquals(true, sandik.tutorialIsFinish)
         assertEquals("Hatasız, en kısa sürede bitir.", sandik.lessonHint)
         assertEquals(1600, sandik.cupPoint1)
@@ -190,17 +227,18 @@ class GlobalLessonDataKatalogTest {
         assertEquals(150, sandik.worstCupTime)
         assertEquals(false, sandik.stepIsFinish)
 
-        // "5'lik Toplama" sandığı şablonda stepIsFinish = true ile gelir (Android'deki değer aynen).
+        // "5'lik Toplama" sandığı: eskiden şablonda stepIsFinish = true ile geliyordu; güncel Android'de silindi.
         val sandik3 = p1[15]
         assertEquals("5'lik Toplama", sandik3.titleUnit)
-        assertEquals(true, sandik3.stepIsFinish)
+        assertEquals(false, sandik3.stepIsFinish)
+        assertEquals(19, sandik3.startStepNumber)
         assertEquals(1400, sandik3.cupPoint1)
         assertEquals(1200, sandik3.cupPoint2)
         assertEquals(180, sandik3.worstCupTime)
 
-        // Kaynakta `"...5\\'lik kuralı..."` yazıyor: metinde ters eğik çizgi + kesme işareti bulunur.
+        // Metin artık strings_lessons.xml'den (kaçış çözülmüş): düz kesme işareti (eski kaynakta ters eğik çizgi de vardı).
         assertEquals(
-            "10 gelir adımını uygularken 5\\'lik kuralı kullanman gerekebilir.",
+            "10 gelir adımını uygularken 5'lik kuralı kullanman gerekebilir.",
             p1[31].lessonHint,
         )
         assertEquals("Boncuk Kuralı - 3, 4 Basamaklı", p1[31].title)
@@ -214,10 +252,10 @@ class GlobalLessonDataKatalogTest {
         assertEquals(68, p2[1].finishStepNumber)
         assertEquals(10, p2[1].tutorialNumber)
         assertEquals(3, p2[1].stepCount)
-        // İlk sandık: offset 60, stepIsFinish true
+        // İlk sandık: offset 60, stepIsFinish false (test bitişi silindi)
         assertEquals(LessonItem.TYPE_CHEST, p2[3].type)
         assertEquals(60, p2[3].offset)
-        assertEquals(true, p2[3].stepIsFinish)
+        assertEquals(false, p2[3].stepIsFinish)
         assertEquals(74, p2[3].startStepNumber)
         assertEquals(1400, p2[3].cupPoint1)
         assertEquals("lesson_header_green", p2[4].color)

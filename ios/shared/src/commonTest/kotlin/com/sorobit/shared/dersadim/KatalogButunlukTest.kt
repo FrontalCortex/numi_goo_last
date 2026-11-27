@@ -14,13 +14,11 @@ class KatalogButunlukTest {
     }
 
     @Test
-    fun herDersAdimiSoruUretirBilinenIstisnaHaric() {
-        // Android'deki tek boşluk: part 1, index 19 ("10'luk Toplama - 3 Basamaklı": start=28, finish=31,
-        // stepCount=3 → alt sınır 29). 29, 30 ve 31 abaküs tablosunda yok; geri adım 29'da durduğu için
-        // 28'e inemez ve soru listesi BOŞ gelir. Android'de de böyledir; aynen korunur.
-        val boslar = ALTIN_KATALOG_OZET.filter { it.contains("!") }
-        assertEquals(listOf("1|19|O|28-31|29|28>28,29>29!,30>29!,31>29!"), boslar)
-        assertEquals(boslar, KatalogButunluk.ozetSatirlari().filter { it.contains("!") })
+    fun herDersAdimiSoruUretir_istisnaYok() {
+        // Eski kopyadaki tek boşluk (part 1 "10'luk Toplama - 3 Basamaklı": start 28, finish 31, stepCount 3) güncel
+        // Android kataloğunda düzeltildi (finish 30): artık hiçbir item'ın çözülen kimliği boş tabloya düşmez.
+        assertEquals(emptyList(), ALTIN_KATALOG_OZET.filter { it.contains("!") })
+        assertEquals(emptyList(), KatalogButunluk.ozetSatirlari().filter { it.contains("!") })
     }
 
     @Test

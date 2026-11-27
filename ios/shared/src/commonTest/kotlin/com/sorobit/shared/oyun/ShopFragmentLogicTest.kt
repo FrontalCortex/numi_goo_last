@@ -13,16 +13,16 @@ class ShopFragmentLogicTest {
 
     @Test
     fun paketKartlari() {
-        assertEquals(listOf("gold_1200", "gold_7000", "gold_15000"), s.GOLD_CARDS.map { it.productId })
-        assertEquals(listOf("keys_10", "keys_50", "keys_100"), s.KEY_CARDS.map { it.productId })
+        assertEquals(listOf("gold_small", "gold_medium", "gold_large"), s.GOLD_CARDS.map { it.productId })
+        assertEquals(listOf("keys_small", "keys_medium", "keys_large"), s.KEY_CARDS.map { it.productId })
         assertEquals(listOf("shop_coin_ic1", "shop_coin_ic2", "shop_coin_ic3"), s.GOLD_CARDS.map { it.imageResName })
         assertTrue(s.KEY_CARDS.all { it.imageResName == "key" && it.currencyIconResName == "key" })
         assertEquals(listOf("1200", "7000", "15000"), s.GOLD_CARDS.map { it.amountLabel })
         assertEquals(listOf("10", "50", "100"), s.KEY_CARDS.map { it.amountLabel })
         assertEquals(listOf("₺20,99", "₺99,99", "₺204,99"), s.GOLD_CARDS.map { it.fallbackPrice })
 
-        // Kartlardaki kimlikler katalogdaki tüketilebilirlerin tamamıdır.
-        assertEquals(BillingCatalog.consumables, (s.GOLD_CARDS + s.KEY_CARDS).map { it.productId })
+        // Altın/anahtar kartlarının kimlikleri katalogdaki tüketilebilirlerin ilk altısıdır (devamı: öğretmen ve Sobi kredileri).
+        assertEquals(BillingCatalog.consumables.take(6), (s.GOLD_CARDS + s.KEY_CARDS).map { it.productId })
 
         assertEquals("₺20,99", s.priceLabel(s.GOLD_CARDS[0], null))
         assertEquals("$0.99", s.priceLabel(s.GOLD_CARDS[0], "$0.99"))
@@ -30,12 +30,14 @@ class ShopFragmentLogicTest {
 
     @Test
     fun urunTurleri() {
-        assertEquals(ShopFragmentLogic.ProductKind.CONSUMABLE, s.productKind("gold_1200"))
-        assertEquals(ShopFragmentLogic.ProductKind.CONSUMABLE, s.productKind("keys_100"))
+        assertEquals(ShopFragmentLogic.ProductKind.CONSUMABLE, s.productKind("gold_small"))
+        assertEquals(ShopFragmentLogic.ProductKind.CONSUMABLE, s.productKind("keys_large"))
         assertEquals(ShopFragmentLogic.ProductKind.SUBSCRIPTION, s.productKind("pro_monthly"))
         assertEquals(ShopFragmentLogic.ProductKind.SUBSCRIPTION, s.productKind("lite_monthly"))
         assertNull(s.productKind("bilinmeyen"))
-        assertEquals(8, s.allProductIds().size)
+        assertEquals(14, s.allProductIds().size)
+        assertEquals(ShopFragmentLogic.ProductKind.CONSUMABLE, s.productKind("credits_medium"))
+        assertEquals(ShopFragmentLogic.ProductKind.CONSUMABLE, s.productKind("sobi_credits_120"))
         assertEquals("pro_monthly", s.PRO_PRODUCT_ID)
     }
 
@@ -44,10 +46,16 @@ class ShopFragmentLogicTest {
         assertEquals("aylık ₺19,99", s.proPriceLabel(null))
         assertEquals("aylık $4.99", s.proPriceLabel("$4.99"))
 
-        assertEquals("gold_ic", s.purchaseAnimationIconResName("gold_7000"))
-        assertEquals("key", s.purchaseAnimationIconResName("keys_10"))
+        assertEquals("gold_ic", s.purchaseAnimationIconResName("gold_medium"))
+        assertEquals("key", s.purchaseAnimationIconResName("keys_small"))
         assertNull(s.purchaseAnimationIconResName("pro_monthly"))
         assertEquals(30, s.PURCHASE_ANIMATION_ITEM_COUNT)
+        assertEquals("chat_credit_ic3", s.purchaseAnimationIconResName("credits_small"))
+        assertEquals("chat_credit_ic3", s.purchaseAnimationIconResName("sobi_credits_20"))
+        assertEquals(listOf(1, 5, 10), listOf("credits_small", "credits_medium", "credits_large").map { s.purchaseAnimationItemCount(it) })
+        assertEquals(30, s.purchaseAnimationItemCount("gold_large"))
+        assertEquals(30, s.purchaseAnimationItemCount("sobi_credits_50"))
+        assertNull(s.purchaseAnimationItemCount("pro_monthly"))
     }
 
     @Test

@@ -99,8 +99,43 @@ class KorDersKoprusuTest {
         assertEquals(1, o.dogruSayisi)
         assertEquals(50f, o.basariOrani())
         assertEquals(250, o.dersPuani())
-        // 4. bölüm: başarı %50'nin altında değil → LESSON_RESULT
-        assertEquals("LESSON_RESULT", o.bitis("0:00"))
+        // 4. bölüm: güncel Android %75 sınırı; %50 < %75 → LESSON_RESULT_FALSE (eskiden %50 sınırıyla LESSON_RESULT)
+        assertEquals("LESSON_RESULT_FALSE", o.bitis("0:00"))
+    }
+
+    @Test
+    fun diziAtlamaVeKupaKapilari() {
+        val o = korDizi(listOf(4, 6, 1))
+        assertNull(o.diziAtla()) // gösterim başlamadan yok sayılır
+        o.diziBaslat()
+        val adim = o.diziAtla()!!
+        assertEquals("", adim.metin)
+        assertEquals(KorDersAdimi.ZAMANLAYICI_SAYI_GOSTER, adim.zamanlayici)
+        assertEquals(200L, adim.gecikmeMs)
+        assertNull(o.diziAtla()) // boşluk sürerken ikinci basış yok sayılır
+        assertEquals("6", o.sayiGosterAdimi().metin)
+
+        // Kapılar tur başına bir kez
+        assertTrue(o.dersBitisiHakkiAl()); assertFalse(o.dersBitisiHakkiAl())
+        assertTrue(o.basariOraniKapsaminda())
+        // korDizi korAyarla(true) ile kurar → isBlinding = true → Android cupModeName "blinding"
+        assertEquals("blinding", o.kupaModuAdi())
+
+        val kupa = KorDersKurucu(9, 0, false, 0).also { it.korAyarla(true); it.diziBaslat(); it.diziyeEkle(1) }.kur()
+        assertFalse(kupa.basariOraniKapsaminda()) // kupa modu telemetriye dahil değil
+        assertTrue(kupa.kupaCikisCezasiVerilmeli(dersBasladi = true))
+        assertFalse(kupa.kupaCikisCezasiVerilmeli(dersBasladi = false))
+        assertTrue(kupa.kupaSonucuHakkiAl())
+        assertFalse(kupa.kupaSonucuHakkiAl())
+        assertFalse(kupa.kupaCikisCezasiVerilmeli(dersBasladi = true)) // cevabını verdi, terk sayılmaz
+        assertTrue(kupa.kupaYarisLoguHakkiAl()); assertFalse(kupa.kupaYarisLoguHakkiAl())
+    }
+
+    @Test
+    fun boncukAnimasyonuHerDersteUcYuzMs() {
+        // Güncel Android: sandıkta da 300 ms (eskiden 50)
+        assertEquals(300L, KorDersKurucu(1, 2, false, 0).kur().boncukAnimasyonMs)
+        assertEquals(300L, KorDersKurucu(1, 0, false, 0).kur().boncukAnimasyonMs)
     }
 
     @Test

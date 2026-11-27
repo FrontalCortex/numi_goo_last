@@ -94,6 +94,13 @@ class AbacusBeadController(
     private var touchEnabled: Boolean = true
     private var resetInProgress: Boolean = false
 
+    /**
+     * Boncuk durumu (bottomCount / topDown) her yazıldığında çağrılır: dokunma, sürükleme,
+     * sıfırlama, değerden yerleştirme. Android: `onValueChanged` (ödev kural çözümlemesi dinliyor).
+     * Android her yazımın hemen ardından çağırır (değer değişmese de); aynı davranış korunmuştur.
+     */
+    var onValueChanged: (() -> Unit)? = null
+
     private var bottomMoveDistancePx: Float = bottomStepPx
     private var topMoveDistancePx: Float = topStepPx
 
@@ -230,22 +237,17 @@ class AbacusBeadController(
         val padded = value.coerceIn(0, 99999).toString().padStart(5, '0')
         for (rod in 0..4) {
             val digit = padded[rod].digitToInt()
-            bottomCount[rod] = digit % 5
-            topDown[rod] = digit >= 5
+            bottomCount[rod] = digit % 5; onValueChanged?.invoke()
+            topDown[rod] = digit >= 5; onValueChanged?.invoke()
         }
-        // DİKKAT (Android davranışı): Android'deki `when` dalları TutorialBeadDiagnostics.ENABLED
-        // tanılama bayrağına bağlıdır. Bayrak açıkken (Android'de şu an `true`) animasyon sürerken
-        // görünüm güncellemesi atlanır; kapatılırsa `applyAppearance = true` animasyon sürse bile
-        // günceller. `when` yapısı aynen korunmuştur.
+        // Koşullarda teşhis bayrağı ARANMAZ (Android'de kaldırıldı): applyAppearance = false iken ya da
+        // animasyon sürerken görünüm güncellenmez, aksi hâlde güncellenir.
         when {
-            !applyAppearance && tutorialBeadDiagnosticsEnabled -> Unit
-            shouldDeferAppearanceDuringSync() && tutorialBeadDiagnosticsEnabled -> Unit
-            applyAppearance -> updateAllAppearance()
+            !applyAppearance -> Unit
+            shouldDeferAppearanceDuringSync() -> Unit
+            else -> updateAllAppearance()
         }
     }
-
-    /** Android: `TutorialBeadDiagnostics.ENABLED` (şu an `true`); yalnızca yukarıdaki dalı etkiler. */
-    var tutorialBeadDiagnosticsEnabled: Boolean = true
 
     /** Alttan ardışık kaç alt boncuk yukarıda (soroban yığını; sync ile aynı kural). */
     fun countConsecutiveRaisedBottomBeads(rod: Int): Int {
@@ -299,12 +301,12 @@ class AbacusBeadController(
 
         for (rod in 0..4) {
             val count = countConsecutiveRaisedBottomBeads(rod)
-            bottomCount[rod] = count
+            bottomCount[rod] = count; onValueChanged?.invoke()
 
             // Üst boncuk durumu çizimden değil görsel konumdan çıkarılır.
             val top = topBeads[rod]
             val topByTranslation = top.translationY >= (topMoveDistancePx / 2f)
-            topDown[rod] = topByTranslation
+            topDown[rod] = topByTranslation; onValueChanged?.invoke()
         }
 
         if (!shouldDeferAppearanceDuringSync() && applyAppearance) {
@@ -406,7 +408,7 @@ class AbacusBeadController(
                 if (!session.isDragging && abs(dy) > touchSlopPx && progress > 0f) {
                     session.isDragging = true
                     // Geçici durum: tıklamadaki gibi görünüm hemen güncellenir.
-                    bottomCount[session.rod] = session.targetCount
+                    bottomCount[session.rod] = session.targetCount; onValueChanged?.invoke()
                     updateRodAppearance(session.rod)
 
                     // Süren animasyonları iptal et ve translation denetimini al.
@@ -455,7 +457,7 @@ class AbacusBeadController(
                         host.playBeadClick(activating = session.directionUp)
                         // Son durum: mantıksal sayı targetCount olsun, sonra fiziksel hareket.
                         if (!session.provisionalApplied) {
-                            bottomCount[session.rod] = session.targetCount
+                            bottomCount[session.rod] = session.targetCount; onValueChanged?.invoke()
                             updateRodAppearance(session.rod)
                         }
                         if (session.directionUp) {
@@ -466,7 +468,7 @@ class AbacusBeadController(
                     } else {
                         // Başa geri dön (margin değişmez; yalnızca translation 0'a döner).
                         if (session.provisionalApplied) {
-                            bottomCount[session.rod] = session.startCount
+                            bottomCount[session.rod] = session.startCount; onValueChanged?.invoke()
                             updateRodAppearance(session.rod)
                         }
 
@@ -543,7 +545,7 @@ class AbacusBeadController(
 
                 if (!session.isDragging && abs(dy) > touchSlopPx && progress > 0f) {
                     session.isDragging = true
-                    topDown[session.rod] = session.targetDown
+                    topDown[session.rod] = session.targetDown; onValueChanged?.invoke()
                     updateTopAppearance(session.rod)
                     host.cancelAnimation(session.bead)
                     animatingBeads.add(session.bead)
@@ -578,7 +580,7 @@ class AbacusBeadController(
                     if (commit) {
                         host.playBeadClick(activating = session.targetDown)
                         if (!session.provisionalApplied) {
-                            topDown[session.rod] = session.targetDown
+                            topDown[session.rod] = session.targetDown; onValueChanged?.invoke()
                             updateTopAppearance(session.rod)
                         }
                         if (session.targetDown) {
@@ -589,7 +591,7 @@ class AbacusBeadController(
                     } else {
                         // Başlangıç durumuna geri dön.
                         if (session.provisionalApplied) {
-                            topDown[session.rod] = session.startDown
+                            topDown[session.rod] = session.startDown; onValueChanged?.invoke()
                             updateTopAppearance(session.rod)
                         }
 
@@ -677,8 +679,8 @@ class AbacusBeadController(
         }
 
         for (i in 0..4) {
-            bottomCount[i] = 0
-            topDown[i] = false
+            bottomCount[i] = 0; onValueChanged?.invoke()
+            topDown[i] = false; onValueChanged?.invoke()
         }
         updateAllAppearance()
 
@@ -752,7 +754,7 @@ class AbacusBeadController(
         } else {
             animateBeadsDown(*affected)
         }
-        bottomCount[rod] = clampedTarget
+        bottomCount[rod] = clampedTarget; onValueChanged?.invoke()
         updateRodAppearance(rod)
     }
 
@@ -764,10 +766,10 @@ class AbacusBeadController(
         host.playBeadClick(activating = !topDown[rod])
         if (!topDown[rod]) {
             animateTopBeadDown(bead)
-            topDown[rod] = true
+            topDown[rod] = true; onValueChanged?.invoke()
         } else {
             animateTopBeadUp(bead)
-            topDown[rod] = false
+            topDown[rod] = false; onValueChanged?.invoke()
         }
         updateTopAppearance(rod)
     }
@@ -893,7 +895,7 @@ class AbacusBeadController(
             bead.translationY = 0f
         }
 
-        bottomCount[rod] = newCount
+        bottomCount[rod] = newCount; onValueChanged?.invoke()
         updateRodAppearance(rod)
     }
 
@@ -906,10 +908,10 @@ class AbacusBeadController(
         val halfStep = topMoveDistancePx / 2f
         if (bead.translationY >= halfStep) {
             bead.translationY = topMoveDistancePx
-            topDown[rod] = true
+            topDown[rod] = true; onValueChanged?.invoke()
         } else {
             bead.translationY = 0f
-            topDown[rod] = false
+            topDown[rod] = false; onValueChanged?.invoke()
         }
         updateTopAppearance(rod)
     }

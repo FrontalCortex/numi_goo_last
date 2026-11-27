@@ -2,15 +2,22 @@
 //   AbacusCupRepository.kt, ExtractionCupRepository.kt, ImpactCupRepository.kt,
 //   BlindingAdditionCupRepository.kt, BlindingExtractionCupRepository.kt, BlindingImpactCupRepository.kt
 // Altı dosya yalnızca FIELD sabitinde ayrışan aynı koddur. Firestore çağrıları taşınmadı; yol/alan adları ve
-// okuma (fetchCupScore) / yazma (updateCupScore) hesapları saf fonksiyonlara ayrıldı.
-// Nesne adları Android ile aynıdır.
+// okuma (fetchCupScore) hesabı saf fonksiyona ayrıldı. Nesne adları Android ile aynıdır.
+//
+// ANDROID (güncel): istemci artık kupa puanı YAZMAZ ve alan yoksa tohumlamaz. Kupa puanı bir musluk (kupa yolu
+// sandıkları ve kupa rozetleri ona bakar); `cupWayProgress` ve `cupHistory` istemciye yazmaya kapatıldı ve puanı
+// yalnızca sunucudaki `submitCupResult` değiştirir (bkz. [CupScoreService]). Android'de updateCupScore silindi.
+// [CupScoreRepositorySpec.computeUpdatedCupScore] yalnızca eski davranışın belgesi/testi olarak durur; kullanılmamalı.
 package com.sorobit.shared.kupa
 
 /** [CupScoreRepositorySpec.resolveFetchedCupScore] sonucu. */
 data class CupFetchResult(
     /** `onResult(score)` ile iletilecek skor. */
     val score: Int,
-    /** true ise alan yoktur: `set(mapOf(FIELD to score), SetOptions.merge())` ile seed edilmelidir. */
+    /**
+     * Android (güncel): HER ZAMAN false — alan yoksa varsayılan dönülür ama yazılmaz (doküman ilk ders sonucunda
+     * sunucuda oluşur). Alan, mevcut Swift çağrıları derlensin diye duruyor.
+     */
     val shouldSeed: Boolean,
 )
 
@@ -42,16 +49,16 @@ abstract class CupScoreRepositorySpec(
     fun progressDocumentPath(uid: String): String = "$COLLECTION/$uid/$SUBCOLLECTION/$DOCUMENT"
 
     /**
-     * Android `fetchCupScore` başarı dalı: `(doc?.get(FIELD) as? Number)?.toInt()`; alan yoksa (ya da sayı değilse)
-     * [DEFAULT_CUP_SCORE] ile seed edilir ve aynı değer döner.
+     * Android `fetchCupScore` başarı dalı: `(doc?.get(FIELD) as? Number)?.toInt() ?: DEFAULT_CUP_SCORE`; alan yoksa (ya da
+     * sayı değilse) [DEFAULT_CUP_SCORE] DÖNER ama YAZILMAZ (`shouldSeed` hep false).
      *
      * @param rawFieldValue dokümandaki [FIELD] değeri (doküman/alan yoksa null).
      */
     fun resolveFetchedCupScore(rawFieldValue: Any?): CupFetchResult {
         val raw = (rawFieldValue as? Number)?.toInt()
         return if (raw == null) {
-            // Alan yok → seed et
-            CupFetchResult(DEFAULT_CUP_SCORE, shouldSeed = true)
+            // Alan yok → varsayılan döner, yazılmaz (cupWayProgress istemciye kapalı)
+            CupFetchResult(DEFAULT_CUP_SCORE, shouldSeed = false)
         } else {
             CupFetchResult(raw, shouldSeed = false)
         }
@@ -61,7 +68,7 @@ abstract class CupScoreRepositorySpec(
     fun fetchFailureCupScore(): Int = DEFAULT_CUP_SCORE
 
     /**
-     * Android `updateCupScore` transaction gövdesi: skor [delta] kadar değişir, 0'ın altına düşemez.
+     * ESKİ Android `updateCupScore` transaction gövdesi (Android'de artık yok; puanı sunucu yazar — [CupScoreService]): skor [delta] kadar değişir, 0'ın altına düşemez.
      *
      * @param currentFieldValue transaction içinde okunan [FIELD] değeri (`snapshot.getLong(FIELD)`); yoksa null.
      */

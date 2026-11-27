@@ -46,11 +46,12 @@ class LessonResultLogicTest {
         assertTrue(d.tutorialIsFinish)
         // Bitmiş ders → haritaya, tekrar kaydı
         assertEquals(
-            LessonResultLogic.ClaimDecision(LessonResultLogic.ClaimBranch.SKIP_TO_MAP, recordItemReplay = true),
+            LessonResultLogic.ClaimDecision(LessonResultLogic.ClaimBranch.SKIP_TO_MAP, recordItemReplay = true, isLessonTypeReturn = true),
             LessonResultLogic.onClaim(ders().copy(stepIsFinish = true)),
         )
+        // Sandıkta haritaya dönüş "ders türü" dönüşü değildir (Android: isLessonTypeReturn = item.type == TYPE_LESSON)
         assertEquals(
-            LessonResultLogic.ClaimDecision(LessonResultLogic.ClaimBranch.SKIP_TO_MAP, recordItemReplay = true),
+            LessonResultLogic.ClaimDecision(LessonResultLogic.ClaimBranch.SKIP_TO_MAP, recordItemReplay = true, isLessonTypeReturn = false),
             LessonResultLogic.onClaim(sandik().copy(stepIsFinish = true)),
         )
         // Bitmiş ama ders/sandık olmayan tür → tekrar kaydı yok
@@ -75,6 +76,11 @@ class LessonResultLogicTest {
             LessonResultFalseLogic.FailRecord(1, 4, 1),
             LessonResultFalseLogic.failRecordFor(sandik(), 4, 1),
         )
+        // Güncel Android: başarısız denemenin başarı oranı da kayda gider (Analytics answerSuccessRatePercent)
+        assertEquals(
+            LessonResultFalseLogic.FailRecord(2, 3, 1, 60f),
+            LessonResultFalseLogic.failRecordFor(ders(), 3, 2, successRate = 60f),
+        )
         assertNull(LessonResultFalseLogic.failRecordFor(baslik(), 0, 1))
         assertNull(LessonResultFalseLogic.failRecordFor(null, 0, 1))
         // Varsayılan part: GlobalLessonData.globalPartId
@@ -82,7 +88,11 @@ class LessonResultLogicTest {
         assertEquals(5, LessonResultFalseLogic.failRecordFor(ders(), 1)?.partId)
 
         assertEquals("Puan 500'den düşük!", LessonResultFalseLogic.resultTitleComment(true))
-        assertEquals("Başarı oranı %80'den düşük!", LessonResultFalseLogic.resultTitleComment(false))
+        // Eşik %80'den %75'e indi (Android: ui_basari_orani_75_ten_dusuk)
+        assertEquals("Başarı oranı %75'ten düşük!", LessonResultFalseLogic.resultTitleComment(false))
+        assertTrue(LessonResultFalseLogic.isLessonTypeReturn(ders()))
+        assertFalse(LessonResultFalseLogic.isLessonTypeReturn(sandik()))
+        assertFalse(LessonResultFalseLogic.isLessonTypeReturn(null))
 
         assertTrue(LessonResultFalseLogic.shouldRedirectToLogin(1, isLoggedIn = false))
         assertFalse(LessonResultFalseLogic.shouldRedirectToLogin(1, isLoggedIn = true))
@@ -145,8 +155,12 @@ class ChestResultLogicTest {
 
     @Test
     fun replayFinishedChest_rekorVeYildizGuncellenir() {
-        // Part 1 idx 15: şablonda bitmiş sandık (cupPoint1 1400, cupPoint2 1200)
-        yukle(1) { it[15] = it[15].copy(record = 600, stepCupIcon = "chest_stars_tier1", leaderboardSeasonId = 2, leaderboardSeasonBest = 600) }
+        // Part 1 idx 15: bitmiş sandık (cupPoint1 1400, cupPoint2 1200). Güncel şablonda bitmiş gelmez → testte bitmiş yapılır.
+        yukle(1) {
+            it[15] = it[15].copy(
+                stepIsFinish = true, record = 600, stepCupIcon = "chest_stars_tier1", leaderboardSeasonId = 2, leaderboardSeasonBest = 600,
+            )
+        }
         val r = ChestResultLogic.replayFinishedChest(15, toplamPuan = 1250, season = 3)
         val g = GlobalLessonData.getLessonItem(15)!!
         assertEquals(g, r.updated)
@@ -157,13 +171,13 @@ class ChestResultLogicTest {
         assertEquals(1, r.gainedStars)
         assertFalse(r.shouldIncrementKarate)
         assertFalse(r.justFinishedChestForRating)
-        assertEquals(listOf("tek:15", "lb:15"), sink.sira)
-        assertEquals(GlobalLessonData.LeaderboardSubmit(1, 15, 1250, 3, "5'lik Toplama"), sink.gonderimler.single())
+        assertEquals(listOf("tek:${kimlik(1, 15)}", "lb:${kimlik(1, 15)}"), sink.sira)
+        assertEquals(GlobalLessonData.LeaderboardSubmit(1, "p1_i15_unite_maratonu", 1250, 3, "5'lik Toplama"), sink.gonderimler.single())
     }
 
     @Test
     fun replayFinishedChest_ilkKezUcYildiz_karate() {
-        yukle(1) { it[15] = it[15].copy(record = 600, stepCupIcon = "chest_stars_tier1") }
+        yukle(1) { it[15] = it[15].copy(stepIsFinish = true, record = 600, stepCupIcon = "chest_stars_tier1") }
         val r = ChestResultLogic.replayFinishedChest(15, 1400, 3)
         assertTrue(r.shouldIncrementKarate)
         assertEquals(2, r.gainedStars)
@@ -174,7 +188,7 @@ class ChestResultLogicTest {
     fun replayFinishedChest_dusukSkor_degisiklikYokAmaYazilir() {
         yukle(1) {
             it[15] = it[15].copy(
-                record = 1500, stepCupIcon = "chest_stars_tier3", leaderboardSeasonId = 3, leaderboardSeasonBest = 1500,
+                stepIsFinish = true, record = 1500, stepCupIcon = "chest_stars_tier3", leaderboardSeasonId = 3, leaderboardSeasonBest = 1500,
             )
         }
         val r = ChestResultLogic.replayFinishedChest(15, 300, 3)
@@ -183,7 +197,7 @@ class ChestResultLogicTest {
         assertEquals(1500, r.updated?.record)
         assertEquals("chest_stars_tier3", r.updated?.stepCupIcon)
         assertEquals(1500, r.updated?.leaderboardSeasonBest)
-        assertEquals(listOf("tek:15", "lb:15"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(1, 15)}", "lb:${kimlik(1, 15)}"), sink.sira)
     }
 
     @Test

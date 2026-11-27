@@ -321,6 +321,25 @@ object CupRuleEngine {
         return configs.map { it.digits }.distinct().sorted()
     }
 
+    /**
+     * Haftalık ilerleme kartı için (Android `configsFor`): puanın o an açtığı kurallar (abaküslü ya da körleme tablosu).
+     * BLINDING_RANGES özel (boş liste, kimliğiyle ayırt ediliyor) olduğu için dışarıdan doğru tabloyu seçmenin yolu bu.
+     */
+    fun configsFor(cupScore: Int, isBlinding: Boolean): List<DigitConfig> =
+        resolveConfigs(cupScore, if (isBlinding) BLINDING_RANGES else RANGES)
+
+    /** Haftalık kart için çarpma kupasının basamakları (1. sayı, 2. sayı); soru üretmeden (Android `multiplicationDigitsFor`). */
+    fun multiplicationDigitsFor(cupScore: Int, isBlinding: Boolean): Pair<Int, Int> =
+        if (isBlinding) {
+            val c = BLINDING_MULTIPLICATION_RANGES.firstOrNull { cupScore in it.minCup..it.maxCup }
+                ?: BLINDING_MULTIPLICATION_RANGES.last()
+            c.firstDigitCount to c.secondDigitCount
+        } else {
+            val c = MULTIPLICATION_RANGES.firstOrNull { cupScore in it.minCup..it.maxCup }
+                ?: MULTIPLICATION_RANGES.last()
+            c.firstDigitCount to c.secondDigitCount
+        }
+
     fun resolve(
         cupScore: Int,
         ranges: List<CupRange> = RANGES,

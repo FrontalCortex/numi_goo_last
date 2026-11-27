@@ -75,7 +75,8 @@ class PartSelectionLogicTest {
             val kapali = durum(id, p2 = true, p3 = true, pro = true)
             assertFalse(kapali.visualActive)
             assertFalse(kapali.functionalActive)
-            assertEquals("Abaküsün Temeli ve Toplama kısmını bitir.", kapali.inactiveMessage)
+            // Güncel Android: kapı önceki bölümün SON ünite maratonu ve uyarı bunu söyler
+            assertEquals("Açmak için \"Abaküsün Temeli ve Toplama\" bölümünün son ünite maratonunu bitir.", kapali.inactiveMessage)
             val acik = durum(id, p1 = true)
             assertTrue(acik.visualActive)
             assertTrue(acik.functionalActive)
@@ -86,10 +87,26 @@ class PartSelectionLogicTest {
     fun part5_part2ye_part6_part3e_bagli() {
         assertFalse(durum(5, p1 = true, p3 = true).functionalActive)
         assertTrue(durum(5, p2 = true).functionalActive)
-        assertEquals("Abaküste Çıkarma kısmını bitir.", durum(5).inactiveMessage)
+        assertEquals("Açmak için \"Abaküste Çıkarma\" bölümünün son ünite maratonunu bitir.", durum(5).inactiveMessage)
         assertFalse(durum(6, p1 = true, p2 = true).functionalActive)
         assertTrue(durum(6, p3 = true).functionalActive)
-        assertEquals("Abaküste Çarpma kısmını bitir.", durum(6).inactiveMessage)
+        assertEquals("Açmak için \"Abaküste Çarpma\" bölümünün son ünite maratonunu bitir.", durum(6).inactiveMessage)
+        assertEquals("Açmak için \"Abaküsün Temeli ve Toplama\" bölümünün son ünite maratonunu bitir.", PartSelectionLogic.marathonGateMessage(1))
+    }
+
+    @Test
+    fun onayliOgretmen_butunKartlarAcik() {
+        // Güncel Android: onaylı öğretmende bölüm sırası yok; sandıkları bitmiş sayılmasa da 1–8 açık
+        for (id in 1..8) {
+            val s = PartSelectionLogic.partState(id, hasProPlan = true, part1ChestComplete = false, part2ChestComplete = false, part3ChestComplete = false, teacherApproved = true)
+            assertTrue(s.visualActive, "part $id")
+            assertTrue(s.functionalActive, "part $id")
+            assertEquals("", s.inactiveMessage)
+        }
+        val satir = PartSelectionLogic.partStates(listOf(2, 5, 8), true, false, false, false, teacherApproved = true)
+        assertEquals(listOf(true, true, true), satir.map { it.functionalActive })
+        // Öğretmen değilse eskisi gibi kapalı
+        assertFalse(PartSelectionLogic.partState(2, true, false, false, false).functionalActive)
     }
 
     @Test
@@ -135,6 +152,8 @@ class PartSelectionLogicTest {
     fun sablonla_part1SonSandigiBitmisSayilir() {
         // Şablonda (boş hesap) part 1-3'ün son sandığının durumu ne ise kart durumu ondan türemeli.
         val p1 = PartSelectionLogic.lastChestComplete(GlobalLessonData.createLessonItems(1))
+        // Güncel Android şablonunda hiçbir sandık bitmiş gelmez (eskiden son sandık bitmiş geliyordu)
+        assertFalse(p1)
         val s2 = PartSelectionLogic.partState(2, false, p1, false, false)
         assertEquals(p1, s2.functionalActive)
     }

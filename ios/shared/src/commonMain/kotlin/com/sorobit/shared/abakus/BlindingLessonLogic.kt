@@ -76,6 +76,9 @@ object BlindingLessonRules {
     const val DEFAULT_CUP_LOSS_DELTA = 30
     const val DEFAULT_TIME_PERIOD_MS = 1000L
 
+    /** 4. ve 5. bölümde ders sonu "geçti" için gereken en az başarı (%). Güncel Android: `successRate < 75f` → başarısız (eskiden %50). */
+    const val PART_4_5_PASS_MIN_SUCCESS_RATE = 75f
+
     /** Dizide iki sayı arasında ekranın boş kaldığı süre (ms). */
     const val SEQUENCE_BLANK_MS = 200L
 
@@ -167,8 +170,8 @@ object BlindingLessonRules {
         }
         globalPartId in setOf(4, 5) -> {
             val successRate = AbacusLessonRules.successRate(correctAnswer, totalQuestions)
-            // Başarı %50'den düşükse başarısız ekranı
-            if (successRate < 50f) BlindingLessonOutcome.LESSON_RESULT_FALSE else BlindingLessonOutcome.LESSON_RESULT
+            // Başarı %75'ten düşükse başarısız ekranı (güncel Android; eskiden %50)
+            if (successRate < PART_4_5_PASS_MIN_SUCCESS_RATE) BlindingLessonOutcome.LESSON_RESULT_FALSE else BlindingLessonOutcome.LESSON_RESULT
         }
         else -> BlindingLessonOutcome.LESSON_RESULT
     }
@@ -182,6 +185,31 @@ object BlindingLessonRules {
         flags.raceBusyLevel == 0 -> ResultFalseAction.CLOSE
         else -> ResultFalseAction.SHOW_RESULT_FALSE
     }
+
+    /**
+     * Kupa modunda (bölüm 9) çıkışın "terk etti" sayılıp kupa kaybettirmesi ve enerji harcatması için:
+     * yarış başlamış VE bu tur için sonuç henüz gönderilmemiş olmalı. Cevabını verip ekranı geri tuşuyla
+     * kapatan kullanıcı ikinci kez cezalanmaz (Android: `globalPartId == 9 && lessonStarted && !cupResultSubmitted`).
+     */
+    fun shouldSubmitCupQuitResult(globalPartId: Int, lessonStarted: Boolean, cupResultSubmitted: Boolean): Boolean =
+        globalPartId == CUP_PART_ID && lessonStarted && !cupResultSubmitted
+
+    /** Kupa modunun ölçüm adı (Android: cupModeName); sıra [cupDeltaTarget] zinciriyle birebir aynıdır. */
+    fun cupModeName(flags: BlindingLessonFlags): String = when {
+        flags.isMultiplication == true && flags.isBlinding == true -> "blinding_multiplication"
+        flags.isMultiplication == true -> "multiplication"
+        flags.isExtraction == true && flags.isBlinding == true -> "blinding_extraction"
+        flags.isExtraction == true -> "extraction"
+        flags.isBlinding == true -> "blinding"
+        else -> "normal"
+    }
+
+    /**
+     * Ders başarı oranı (lessonSuccessRate) telemetrisine dahil mi (Android: isLessonSuccessRateScope).
+     * Günlük soru ve Kupa Modu (bölüm 9) hariç; yalnızca ders (0) ve sandık (2) adımları.
+     */
+    fun isLessonSuccessRateScope(isDailyQuestionMode: Boolean, globalPartId: Int, lessonType: Int): Boolean =
+        !isDailyQuestionMode && globalPartId != CUP_PART_ID && AbacusLessonRules.isLessonSuccessRateType(lessonType)
 
     /** Günlük soru oturumu yalnızca kart açılırken kilitlenen periyot hâlâ geçerliyse ödüllendirilir. */
     fun isDailyQuestionSessionPeriodValid(sessionPeriodKey: String?, currentPeriodKey: String): Boolean {
@@ -216,6 +244,13 @@ class BlindingSequencePlayback(private val timePeriod: Long?) {
     var currentSequence: List<Int> = emptyList()
         private set
 
+    /**
+     * Sayı az önce silindi ve sıradaki 200 ms içinde gelecek mi (Android: sequenceBlankPending).
+     * Atlama bu aralıkta yok sayılır; yoksa hızlı basışlarda ekran boş kalır.
+     */
+    var isBlankPending = false
+        private set
+
     private val period: Long get() = timePeriod ?: BlindingLessonRules.DEFAULT_TIME_PERIOD_MS
 
     /**
@@ -224,6 +259,7 @@ class BlindingSequencePlayback(private val timePeriod: Long?) {
      */
     fun start(sequence: List<Int>): Step {
         stop()
+        isBlankPending = false
         currentSequence = sequence
         if (currentSequence.isEmpty()) return Step()
 
@@ -241,11 +277,13 @@ class BlindingSequencePlayback(private val timePeriod: Long?) {
         if (currentSequenceIndex >= currentSequence.size) {
             return finish()
         }
+        isBlankPending = true
         return Step(display = "", schedule = Timer.SEQUENCE_REVEAL, delayMs = BlindingLessonRules.SEQUENCE_BLANK_MS)
     }
 
     /** Android: onSequenceRevealStep — sıradaki sayı gösterilir; son sayıysa gösterim biter. */
     fun onSequenceRevealStep(): Step {
+        isBlankPending = false
         if (!isShowingSequence) return Step()
         if (currentSequenceIndex >= currentSequence.size) {
             return finish()
@@ -260,9 +298,23 @@ class BlindingSequencePlayback(private val timePeriod: Long?) {
         }
     }
 
+    /**
+     * Android: skipToNextSequenceNumber (atlama düğmesi): süresini beklemeden sıradaki sayıya geçer.
+     * Kendiliğinden geçişle AYNI yoldan gider ([onShowNextNumberStep]: sayı silinir, 200 ms sonra
+     * sıradaki gelir). Dönüş null ise basış yok sayılmıştır (gösterim yok ya da boşluk sürüyor);
+     * null değilse platform bekleyen İKİ zamanlayıcıyı da iptal edip dönen adımı uygular.
+     * Düğme animasyonu gösterim sürerken (null dönse bile) oynatılır: [isShowingSequence].
+     */
+    fun skip(): Step? {
+        if (!isShowingSequence) return null
+        if (isBlankPending) return null
+        return onShowNextNumberStep()
+    }
+
     /** Android: stopSequencePlayback (zamanlayıcıları platform iptal eder). */
     fun stop() {
         isShowingSequence = false
+        isBlankPending = false
     }
 
     private fun finish(): Step {
@@ -297,6 +349,40 @@ class BlindingLessonSession(
         correctAnswerText = "Senin cevabın $controlNumber"
     }
 
+    /**
+     * Bu tur için kupa sonucu gönderildi mi (Android: cupResultSubmitted). Cevap, çıkış düğmesi ve geri
+     * tuşu aynı turun sonucunu göndermeye çalışabilir; yalnızca ilki kazanır ([claimCupResult]).
+     */
+    var cupResultSubmitted = false
+        private set
+
+    /** true → bu çağrı sonucu gönderme hakkını aldı; false → zaten gönderilmişti. */
+    fun claimCupResult(): Boolean {
+        if (cupResultSubmitted) return false
+        cupResultSubmitted = true
+        return true
+    }
+
+    /** Yarış sonucu analitiği bir kez (Android: cupResultLogged / logCupRaceResultOnce). */
+    var cupResultLogged = false
+        private set
+
+    fun claimCupRaceLog(): Boolean {
+        if (cupResultLogged) return false
+        cupResultLogged = true
+        return true
+    }
+
+    /** Ders bitişi bir kez başlasın (Android: lessonFinishStarted; ikinci çağrı ikinci sonuç ekranı açmasın). */
+    var lessonFinishStarted = false
+        private set
+
+    fun claimLessonFinish(): Boolean {
+        if (lessonFinishStarted) return false
+        lessonFinishStarted = true
+        return true
+    }
+
     /** Kontrol düğmesi akışının sonunda (ve sıfırla düğmesinde) `controlNumber = 0` yapılır. */
     fun clearControlNumber() {
         controlNumber = 0
@@ -316,7 +402,8 @@ class BlindingLessonSession(
      *    Android çöker (burada da istisna).
      */
     fun stepAnswerAlgorithm(inputText: String, abacusValue: Int, currentSequenceIndex: Int): Boolean {
-        if (operations.isEmpty()) {
+        // Dizin sınır dışıysa (son sorudan sonra gelen dokunuş) yanlış döner; Android çökmez (sürüm 21 düzeltmesi).
+        if (currentIndex !in operations.indices) {
             return false
         }
         val currentOperation = operations[currentIndex]

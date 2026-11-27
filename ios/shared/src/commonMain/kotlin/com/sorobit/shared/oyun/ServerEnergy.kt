@@ -23,6 +23,17 @@ object ServerEnergy {
     const val RESULT_ENERGY_FULL_TIME = "energyFullTime"
     const val RESULT_KEYS = "keys"
 
+    /**
+     * Android (güncel): `claimAdEnergy` SSV geri araması gecikirse sunucu UNAVAILABLE döner; en çok
+     * [AD_VERIFY_MAX_ATTEMPTS] kez [AD_VERIFY_RETRY_DELAY_MS] arayla yeniden denenir ([ServerRewards] ile aynı bütçe).
+     */
+    const val AD_VERIFY_MAX_ATTEMPTS = 10
+    const val AD_VERIFY_RETRY_DELAY_MS = 1500L
+
+    /** `claimAdEnergy` hata dalı: [attempt] (0 tabanlı) bütçenin altında ve hata UNAVAILABLE ise yeniden dene. */
+    fun shouldRetryClaimAdEnergy(isUnavailable: Boolean, attempt: Int): Boolean =
+        isUnavailable && attempt < AD_VERIFY_MAX_ATTEMPTS
+
     const val ERROR_CLAIM_AD_ENERGY_INVALID = "claimAdEnergy geçersiz yanıt döndü"
     const val ERROR_BUY_ENERGY_INVALID = "buyEnergyWithKeys geçersiz yanıt döndü"
 

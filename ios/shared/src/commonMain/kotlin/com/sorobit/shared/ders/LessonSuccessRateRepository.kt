@@ -1,104 +1,115 @@
 // KAYNAK: app/src/main/java/com/example/app/LessonSuccessRateRepository.kt
 //
-// Android'deki Firestore transaction gövdelerinin saf (hesap) kısmı: "okunan belge alanları → yazılacak alanlar".
-// Platform katmanı transaction'ı açar, belgeleri okuyup düz Map olarak verir ve dönen haritaları
-// `SetOptions.merge()` ile yazar. Alan adları ve yollar Android ile birebir aynıdır.
+// Güncel Android (soban-gamified-education dalı) mimarisi: küresel sayaçlar (`successRate/lessonSuccessRate/...`) KALDIRILDI
+// ve geçme/geçememe istatistikleri Firebase Analytics olaylarına taşındı. Firestore'da KALAN tek şey çift sayım koruması:
+// `users/{uid}/lessonSuccessRateState/{partId}_{stableId}_{step}` (`attempted`, `passed`, `failStreak`). Eski anahtar
+// biçimi `{partId}_{position}_{step}` okunurken hâlâ dikkate alınır ve ilk dokunuşta yeni anahtara taşınır (eskisi silinir).
+//
+// Bu dosya Android'deki transaction gövdelerinin saf (hesap) kısmıdır: "okunan belge alanları → yazılacak alanlar ve
+// Analytics'e gönderilecek failStreak". Platform katmanı transaction'ı açar, hedef ve eski belgeyi okuyup düz Map
+// verir (belge yoksa null), dönen alanları `SetOptions.merge()` ile yazar, eski belge varsa siler ve transaction
+// BAŞARIYLA bitince (lambda içinde değil) Analytics olayını gönderir.
 //
 // Android'den bilinçli farklar:
-//  - FirebaseAuth / FirebaseFirestore / Log çağrıları yok. Ön koşullar platformda korunmalı:
+//  - FirebaseAuth / FirebaseFirestore / AnalyticsLogger / Log çağrıları yok. Ön koşullar platformda korunmalı:
 //    `partId in 1..8` ([isTrackedPart]) ve giriş yapmış kullanıcı (uid != null); aksi halde hiçbir şey yapılmaz.
-//  - Android `getBoolean` / `getLong` alan türü uymazsa istisna atar (transaction başarısız olur, yalnızca loglanır);
-//    burada tür uymayan alan "yok" sayılır.
+//  - Android `getBoolean` / `getLong` alan türü uymazsa istisna atar; burada tür uymayan alan "yok" sayılır.
+//  - `recordItemFirstFinish`'in `LessonMilestones.recordFinish` (haftalık kart için bitiş tarihi/örnek işlem) çağrısı ve
+//    `AnalyticsLogger.logLesson*` olayları platform işidir; burada yalnızca olay parametreleri hesaplanır.
 package com.sorobit.shared.ders
 
-/**
- * Part 1-8'deki chest/lesson tipi [LessonItem]'lerin kullanıcı bazlı geçme/geçememe istatistikleri iki seviyede tutulur:
- *
- * - **Item seviyesi** — `successRate/lessonSuccessRate/part{partId}/{position}`: item'ın TÜMÜ ilk kez bittiğinde
- *   (`stepIsFinish` false->true) ve sonraki her tekrar çözülüşünde güncellenir.
- * - **Adım seviyesi** — `.../part{partId}/{position}/steps/{step}` (alt koleksiyon): her adımın kendi zorluk verisi.
- *
- * Çift sayımı önlemek için her kullanıcının adım bazındaki durumu
- * `users/{uid}/lessonSuccessRateState/{partId}_{position}_{step}` içinde tutulur (`attempted`, `passed`, `failStreak`).
- */
 object LessonSuccessRateRepository {
 
-    // --- Adım seviyesi alanları ---
     const val FIELD_ATTEMPTED = "attempted"
     const val FIELD_PASSED = "passed"
     const val FIELD_FAIL_STREAK = "failStreak"
 
-    const val FIELD_ATTEMPT_FAIL_TOTAL = "attemptFailTotal"
-    const val FIELD_ATTEMPT_USER_COUNT = "attemptUserCount"
-    const val FIELD_STEP_PASS_USER_COUNT = "passUserCount"
-    const val FIELD_PASS_FIRST_TRY = "passOnFirstTry"
-    const val FIELD_PASS_SECOND_TRY = "passOnSecondTry"
-    const val FIELD_PASS_THIRD_PLUS_TRY = "passOnThirdPlusTry"
-    const val FIELD_SUCCESS_RATE_PERCENT = "successRatePercent"
-    const val FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT = "firstTrySuccessRatePercent"
-
-    // --- Item seviyesi alanları ---
-    const val FIELD_ITEM_PASS_USER_COUNT = "passUserCount"
-    const val FIELD_TOTAL_COMPLETION_COUNT = "totalCompletionCount"
-    const val FIELD_AVG_REPLAY_COUNT = "avgReplayCount"
-
-    // Sadece TYPE_CHEST için: ilk tamamlamada kaç yıldızla geçildi.
-    const val FIELD_ONE_STAR_COUNT = "oneStarCount"
-    const val FIELD_TWO_STAR_COUNT = "twoStarCount"
-    const val FIELD_THREE_STAR_COUNT = "threeStarCount"
+    /** `users/{uid}/lessonSuccessRateState` koleksiyon yolu. */
+    fun stateCollectionPath(uid: String): String = "users/$uid/lessonSuccessRateState"
 
     /** İstatistik tutulan part'lar (Android: `if (partId !in 1..8) return`). */
     fun isTrackedPart(partId: Int): Boolean = partId in 1..8
 
-    /** `successRate/lessonSuccessRate/part{partId}` koleksiyon yolu. */
-    fun partCollectionPath(partId: Int): String = "successRate/lessonSuccessRate/part$partId"
+    /** Yeni biçim doküman yolu: `{partId}_{stableId}_{step}` ([step] en az 1'e yuvarlanır). */
+    fun userStepStatePath(uid: String, partId: Int, stableId: String, step: Int): String =
+        "${stateCollectionPath(uid)}/${partId}_${stableId}_${step.coerceAtLeast(1)}"
 
-    /** Item seviyesi doküman yolu. */
-    fun itemPath(partId: Int, position: Int): String = "${partCollectionPath(partId)}/$position"
+    /**
+     * ESKİ biçim doküman yolu: `{partId}_{position}_{step}`. Müfredata araya ders eklenince yanlış derse bağlanabildiği
+     * için yalnızca geçmişi kaybetmemek amacıyla okunur; hedef anahtar yokken kullanılır ve yazımda silinir.
+     */
+    fun legacyUserStepStatePath(uid: String, partId: Int, position: Int, step: Int): String =
+        "${stateCollectionPath(uid)}/${partId}_${position}_${step.coerceAtLeast(1)}"
 
-    /** Adım seviyesi doküman yolu ([step] en az 1'e yuvarlanır). */
-    fun stepPath(partId: Int, position: Int, step: Int): String =
-        "${itemPath(partId, position)}/steps/${step.coerceAtLeast(1)}"
+    /**
+     * [position]'daki dersin kalıcı kimliği (Android: stableIdOf). Şablon dışı konumda null → çağıran eski (sıra tabanlı)
+     * anahtarda kalır ("veri kaybetmektense eski biçimde tutmak yeğdir").
+     */
+    fun stableIdOf(partId: Int, position: Int): String? = GlobalLessonData.stableIdAt(partId, position)
 
-    /** Kullanıcının adım durumu doküman yolu ([step] en az 1'e yuvarlanır). */
-    fun userStepStatePath(uid: String, partId: Int, position: Int, step: Int): String =
-        "users/$uid/lessonSuccessRateState/${partId}_${position}_${step.coerceAtLeast(1)}"
+    /** Platform bir adım için hangi belgelere bakacak/yazacak. */
+    data class StateRefs(
+        /** Yazılacak belgenin yolu (stableId biliniyorsa yeni biçim, değilse eski). */
+        val targetPath: String,
+        /** Okunup (varsa) silinecek eski belgenin yolu; stableId bilinmiyorsa null. */
+        val legacyPath: String?,
+        /** Analytics `lessonId` parametresi (stableId; bilinmiyorsa null). */
+        val stableId: String?,
+    )
 
-    /** Adım seviyesi transaction çıktısı: iki belge de `merge` ile yazılır. */
+    fun stateRefs(uid: String, partId: Int, position: Int, step: Int): StateRefs {
+        val stableId = stableIdOf(partId, position)
+        return if (stableId != null) {
+            StateRefs(
+                targetPath = userStepStatePath(uid, partId, stableId, step),
+                legacyPath = legacyUserStepStatePath(uid, partId, position, step),
+                stableId = stableId,
+            )
+        } else {
+            StateRefs(
+                targetPath = legacyUserStepStatePath(uid, partId, position, step),
+                legacyPath = null,
+                stableId = null,
+            )
+        }
+    }
+
+    /** Transaction çıktısı. */
     data class StepWrite(
+        /** [StateRefs.targetPath]'e `merge` ile yazılacak alanlar. */
         val userState: Map<String, Any>,
-        val stepDoc: Map<String, Any>,
+        /** Analytics olayına giden başarısızlık serisi (fail: yeni değer; pass: geçişe kadarki başarısızlık sayısı, 0 = ilk denemede). */
+        val failStreak: Long,
+        /** Eski anahtarlı belgeden okunduysa (hedef yoktu, eski vardı) eski belge silinmeli. */
+        val deleteLegacy: Boolean,
     )
 
     private fun Map<String, Any?>.bool(key: String): Boolean = (this[key] as? Boolean) == true
     private fun Map<String, Any?>.long(key: String): Long? = (this[key] as? Number)?.toLong()
 
     /**
-     * Kullanıcı bu adımı bitiremeden dersten çıktığında (quiz veya chest skoru yetersiz).
-     * [userSnap]: kullanıcının adım durumu belgesi; [globalSnap]: adım istatistik belgesi (yoksa boş harita).
-     * @return yazılacak alanlar; kullanıcı bu adımı daha önce geçtiyse null (hiçbir şey yazılmaz).
+     * Android: `userSnap = if (targetSnap.exists()) targetSnap else legacySnap ?: targetSnap`. Belge yoksa null verilir;
+     * hiçbiri yoksa boş harita. Dönüş: (kullanılacak alanlar, eski belgeden mi okundu).
      */
-    fun recordFail(userSnap: Map<String, Any?>, globalSnap: Map<String, Any?>): StepWrite? {
-        if (userSnap.bool(FIELD_PASSED)) {
-            return null
+    fun pickUserSnap(target: Map<String, Any?>?, legacy: Map<String, Any?>?): Pair<Map<String, Any?>, Boolean> =
+        when {
+            target != null -> target to false
+            legacy != null -> legacy to true
+            else -> emptyMap<String, Any?>() to false
         }
-        val alreadyAttempted = userSnap.bool(FIELD_ATTEMPTED)
+
+    /**
+     * Kullanıcı bu adımı bitiremeden dersten çıktığında (quiz veya chest skoru yetersiz).
+     * @return yazılacak alanlar; kullanıcı bu adımı daha önce geçtiyse null (hiçbir şey yazılmaz, olay yok).
+     */
+    fun recordFail(target: Map<String, Any?>?, legacy: Map<String, Any?>? = null): StepWrite? {
+        val (userSnap, fromLegacy) = pickUserSnap(target, legacy)
+        if (userSnap.bool(FIELD_PASSED)) return null
         val newFailStreak = (userSnap.long(FIELD_FAIL_STREAK) ?: 0L) + 1
-
-        val attemptFailTotal = (globalSnap.long(FIELD_ATTEMPT_FAIL_TOTAL) ?: 0L) + 1
-        val attemptUserCount = (globalSnap.long(FIELD_ATTEMPT_USER_COUNT) ?: 0L) +
-            if (alreadyAttempted) 0L else 1L
-        val passUserCount = globalSnap.long(FIELD_STEP_PASS_USER_COUNT) ?: 0L
-        val passFirst = globalSnap.long(FIELD_PASS_FIRST_TRY) ?: 0L
-
         return StepWrite(
             userState = mapOf(FIELD_ATTEMPTED to true, FIELD_FAIL_STREAK to newFailStreak),
-            stepDoc = mapOf(
-                FIELD_ATTEMPT_FAIL_TOTAL to attemptFailTotal,
-                FIELD_ATTEMPT_USER_COUNT to attemptUserCount,
-                FIELD_SUCCESS_RATE_PERCENT to successRatePercent(passUserCount, attemptUserCount),
-                FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT to successRatePercent(passFirst, attemptUserCount),
-            ),
+            failStreak = newFailStreak,
+            deleteLegacy = fromLegacy,
         )
     }
 
@@ -106,90 +117,27 @@ object LessonSuccessRateRepository {
      * Kullanıcı bu adımı ilk kez başarıyla geçtiğinde (adım ilerlemesi veya item bitişi).
      * @return yazılacak alanlar; kullanıcı bu adımı daha önce geçtiyse null.
      */
-    fun recordPass(userSnap: Map<String, Any?>, globalSnap: Map<String, Any?>): StepWrite? {
-        if (userSnap.bool(FIELD_PASSED)) {
-            return null
-        }
-        val alreadyAttempted = userSnap.bool(FIELD_ATTEMPTED)
+    fun recordPass(target: Map<String, Any?>?, legacy: Map<String, Any?>? = null): StepWrite? {
+        val (userSnap, fromLegacy) = pickUserSnap(target, legacy)
+        if (userSnap.bool(FIELD_PASSED)) return null
         val failStreak = userSnap.long(FIELD_FAIL_STREAK) ?: 0L
-
-        val attemptUserCount = (globalSnap.long(FIELD_ATTEMPT_USER_COUNT) ?: 0L) +
-            if (alreadyAttempted) 0L else 1L
-        val passUserCount = (globalSnap.long(FIELD_STEP_PASS_USER_COUNT) ?: 0L) + 1
-        var passFirst = globalSnap.long(FIELD_PASS_FIRST_TRY) ?: 0L
-        var passSecond = globalSnap.long(FIELD_PASS_SECOND_TRY) ?: 0L
-        var passThirdPlus = globalSnap.long(FIELD_PASS_THIRD_PLUS_TRY) ?: 0L
-        when (failStreak) {
-            0L -> passFirst += 1
-            1L -> passSecond += 1
-            else -> passThirdPlus += 1
-        }
-
         return StepWrite(
             userState = mapOf(FIELD_ATTEMPTED to true, FIELD_PASSED to true),
-            stepDoc = mapOf(
-                FIELD_ATTEMPT_USER_COUNT to attemptUserCount,
-                FIELD_STEP_PASS_USER_COUNT to passUserCount,
-                FIELD_PASS_FIRST_TRY to passFirst,
-                FIELD_PASS_SECOND_TRY to passSecond,
-                FIELD_PASS_THIRD_PLUS_TRY to passThirdPlus,
-                FIELD_SUCCESS_RATE_PERCENT to successRatePercent(passUserCount, attemptUserCount),
-                FIELD_FIRST_TRY_SUCCESS_RATE_PERCENT to successRatePercent(passFirst, attemptUserCount),
-            ),
+            failStreak = failStreak,
+            deleteLegacy = fromLegacy,
         )
     }
 
     /**
-     * Item (tüm adımları dahil) ilk kez tamamen bittiğinde (`stepIsFinish` false->true).
-     * [chestStars] yalnızca TYPE_CHEST için verilir; 1/2/3 yıldız dağılımı sadece bu durumda güncellenir
-     * (0 yıldızda üç sayaç da mevcut değerleriyle yeniden yazılır).
-     * @return item belgesine `merge` ile yazılacak alanlar.
+     * `logLessonStepFail`'e giden `answerSuccessRatePercent`: yalnızca part 1–6 için anlamlı (7–8'de çağıran taraf
+     * anlamlı bir oran üretmiyor), aksi halde null.
      */
-    fun recordItemFirstFinish(globalSnap: Map<String, Any?>, chestStars: Int? = null): Map<String, Any> {
-        val totalCompletionCount = (globalSnap.long(FIELD_TOTAL_COMPLETION_COUNT) ?: 0L) + 1
-        val passUserCount = (globalSnap.long(FIELD_ITEM_PASS_USER_COUNT) ?: 0L) + 1
-
-        val updates = mutableMapOf<String, Any>(
-            FIELD_TOTAL_COMPLETION_COUNT to totalCompletionCount,
-            FIELD_ITEM_PASS_USER_COUNT to passUserCount,
-            FIELD_AVG_REPLAY_COUNT to avgReplayCount(totalCompletionCount, passUserCount),
-        )
-        if (chestStars != null) {
-            var oneStar = globalSnap.long(FIELD_ONE_STAR_COUNT) ?: 0L
-            var twoStar = globalSnap.long(FIELD_TWO_STAR_COUNT) ?: 0L
-            var threeStar = globalSnap.long(FIELD_THREE_STAR_COUNT) ?: 0L
-            when (chestStars) {
-                1 -> oneStar += 1
-                2 -> twoStar += 1
-                3 -> threeStar += 1
-            }
-            updates[FIELD_ONE_STAR_COUNT] = oneStar
-            updates[FIELD_TWO_STAR_COUNT] = twoStar
-            updates[FIELD_THREE_STAR_COUNT] = threeStar
-        }
-        return updates
-    }
+    fun answerSuccessRateForAnalytics(partId: Int, answerSuccessRatePercent: Float?): Float? =
+        answerSuccessRatePercent.takeIf { partId in 1..6 }
 
     /**
-     * Daha önce tamamen bitirilmiş (stepIsFinish=true) bir item tekrar çözülüp yeniden bittiğinde.
-     * Yıldız dağılımına dokunmaz, sadece toplam tamamlama sayısını ve ortalama tekrar oranını günceller.
+     * recordQuestionEntry / recordAbandonWithoutAnswer / recordItemFirstFinish / recordItemReplay yalnızca Analytics olayı
+     * gönderir (Firestore'a yazılmaz); koşul: izlenen part ve giriş yapmış kullanıcı. Olay `lessonId` = [stableIdOf].
      */
-    fun recordItemReplay(globalSnap: Map<String, Any?>): Map<String, Any> {
-        val totalCompletionCount = (globalSnap.long(FIELD_TOTAL_COMPLETION_COUNT) ?: 0L) + 1
-        val passUserCount = globalSnap.long(FIELD_ITEM_PASS_USER_COUNT) ?: 0L
-        return mapOf(
-            FIELD_TOTAL_COMPLETION_COUNT to totalCompletionCount,
-            FIELD_AVG_REPLAY_COUNT to avgReplayCount(totalCompletionCount, passUserCount),
-        )
-    }
-
-    fun successRatePercent(passUserCount: Long, attemptUserCount: Long): Float {
-        if (attemptUserCount <= 0L) return 0f
-        return (passUserCount.toFloat() / attemptUserCount.toFloat()) * 100f
-    }
-
-    fun avgReplayCount(totalCompletionCount: Long, passUserCount: Long): Float {
-        if (passUserCount <= 0L) return 0f
-        return totalCompletionCount.toFloat() / passUserCount.toFloat()
-    }
+    fun shouldLogEvent(partId: Int, isLoggedIn: Boolean): Boolean = isTrackedPart(partId) && isLoggedIn
 }

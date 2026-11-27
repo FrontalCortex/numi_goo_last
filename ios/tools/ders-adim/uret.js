@@ -76,4 +76,5 @@ const resolveBas = src.findIndex(l => l.includes('fun resolveLessonOperationsId'
 const o = dallar(bas, resolveBas), b = dallar(blind, son);
 const dup = a => a.filter((x, i) => a.indexOf(x) !== i);
 console.log('ops dal', o.length, 'tekrar', dup(o), '| blinding dal', b.length, 'tekrar', dup(b));
+fs.mkdirSync(path.join(hedef, '..', 'tools'), { recursive: true });
 fs.writeFileSync(path.join(hedef, '..', 'tools', 'dallar.json'), JSON.stringify({ o, b }));

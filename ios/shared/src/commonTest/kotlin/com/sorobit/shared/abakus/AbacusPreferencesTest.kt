@@ -519,6 +519,14 @@ class AbacusPurchasesTest {
         assertEquals("gold_ic", r.currencyIconResName(BeadType.BALL1))
         assertEquals("Yetersiz altın", r.notEnoughMessage(BeadType.BALL1))
         assertEquals(2000, r.COLOR_FEATURE_PRICE)
+        // Renk özelliği fiyatı boncuğun para birimini izler (güncel Android: getBeadColorFeaturePrice)
+        assertEquals(40, r.COLOR_FEATURE_KEY_PRICE)
+        assertEquals(40, r.getBeadColorFeaturePrice(BeadType.ANIMAL3))
+        assertEquals(40, r.getBeadColorFeaturePrice(BeadType.ANIMAL8))
+        assertEquals(2000, r.getBeadColorFeaturePrice(BeadType.BALL1))
+        assertEquals(2000, r.getBeadColorFeaturePrice(BeadType.SOROBAN))
+        assertEquals("key", r.colorFeatureCurrencyIconResName(BeadType.ANIMAL3))
+        assertEquals("gold_ic", r.colorFeatureCurrencyIconResName(BeadType.ANIMAL))
     }
 
     @Test

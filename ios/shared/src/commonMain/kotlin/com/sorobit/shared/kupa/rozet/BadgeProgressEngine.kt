@@ -43,8 +43,6 @@ data class UserBadgeProgress(
     val userEagleProgress: Int = 0,
     val userFlyProgress: Int = 0,
     val userTurtleProgress: Int = 0,
-    /** Eski alan; rozet mantığında kullanılmıyor, geriye dönük okuma için tutulabilir. */
-    val abacusLeaderboardRank: Int = Int.MAX_VALUE,
     val goldMedalPiece: List<MedalPieceRow> = emptyList(),
     val silverMedalPiece: List<MedalPieceRow> = emptyList(),
     val bronzeMedalPiece: List<MedalPieceRow> = emptyList(),
@@ -108,8 +106,12 @@ enum class BadgeLevelTone {
 }
 
 object BadgeProgressEngine {
+    // ── Kademe eşikleri ────────────────────────────────────────────
+    //
+    // Android (güncel): bir rozetin eşikleri YALNIZCA burada yazılıdır; dışarıya [levelSpec] ile açılır.
+    // Eskiden aynı listeler birkaç yerde tekrarlanıyordu (roket rozetinde gerçekten kaymıştı); artık tek kaynak.
     private val dartLevel = listOf(3, 10, 20, 30, 50)
-    private val golfLevel = listOf(5, 10, 20, 50, 100)
+    private val golfLevel = listOf(3, 5, 10, 15, 20)
     private val rocketLevel = listOf(3, 10, 15, 25, 30)
     private val bowlingLevel = listOf(5, 10, 20, 50, 100)
     private val fishingLevel = listOf(3, 5, 15, 25, 50)
@@ -135,6 +137,32 @@ object BadgeProgressEngine {
     private const val eagleLevelUp = 500
     private const val flyLevelUp = 500
     private const val turtleLevelUp = 500
+
+    /**
+     * Android `levelSpec(kind)`: bir rozetin kademe eşikleri ve son eşikten sonraki adım: `(eşikler, adım)`.
+     * Kademesi olmayan rozetlerde (kupa, madalyalar, siyah kuşak) null.
+     * `when` bilerek else'siz: yeni bir rozet türü eklenince derleyici burada hata verir.
+     */
+    fun levelSpec(kind: BadgeKind): Pair<List<Int>, Int>? = when (kind) {
+        BadgeKind.DART -> dartLevel to dartLevelUp
+        BadgeKind.FISHING -> fishingLevel to fishingLevelUp
+        BadgeKind.GOLF -> golfLevel to golfLevelUp
+        BadgeKind.ROCKET -> rocketLevel to rocketLevelUp
+        BadgeKind.BOWLING -> bowlingLevel to bowlingLevelUp
+        BadgeKind.TORNADO -> tornadoLevel to tornadoLevelUp
+        BadgeKind.VOLCANO -> volcanoLevel to volcanoLevelUp
+        BadgeKind.DINO -> dinoLevel to dinoLevelUp
+        BadgeKind.CROCODILE -> crocodileLevel to crocodileLevelUp
+        BadgeKind.GOAT -> goatLevel to goatLevelUp
+        BadgeKind.EAGLE -> eagleLevel to eagleLevelUp
+        BadgeKind.FLY -> flyLevel to flyLevelUp
+        BadgeKind.TURTLE -> turtleLevel to turtleLevelUp
+        BadgeKind.CUP, BadgeKind.GOLD, BadgeKind.SILVER, BadgeKind.BRONZE, BadgeKind.KARATE -> null
+    }
+
+    /** [levelSpec]'in animasyon moduyla çağrılan hâli. */
+    fun levelSpec(mode: BadgeAnimMode): Pair<List<Int>, Int>? =
+        BadgeKind.fromMode(mode)?.let { levelSpec(it) }
 
     /** Günlük soru serisi: en az bir periyot atlanmışsa 0; aksi halde [userFishingStreak]. */
     fun effectiveFishingStreak(
@@ -574,13 +602,13 @@ object BadgeProgressRepository {
     ): BadgeProgressWindow? {
         val kind = BadgeKind.fromMode(mode) ?: return null
         return when (kind) {
-            BadgeKind.DART -> leveledProgressWindow(currentUserProgress.userDartProgress, listOf(3, 10, 20, 30, 50), 5)
+            BadgeKind.DART -> leveledProgressWindow(currentUserProgress.userDartProgress, BadgeKind.DART)
             BadgeKind.FISHING -> {
                 val streak = BadgeProgressEngine.effectiveFishingStreak(currentUserProgress, currentPeriodKey)
                 val target = BadgeProgressEngine.fishingNextThreshold(currentUserProgress.userFishingProgress)
                 BadgeProgressWindow(current = streak, target = target)
             }
-            BadgeKind.GOLF -> leveledProgressWindow(currentUserProgress.userGolfProgress, listOf(5, 10, 20, 50, 100), 5)
+            BadgeKind.GOLF -> leveledProgressWindow(currentUserProgress.userGolfProgress, BadgeKind.GOLF)
             BadgeKind.TORNADO -> BadgeProgressEngine.tornadoProgressWindow(currentUserProgress.userTornadoProgress)
             BadgeKind.VOLCANO -> BadgeProgressEngine.volcanoProgressWindow(currentUserProgress.userVolcanoProgress)
             BadgeKind.DINO -> BadgeProgressEngine.dinoProgressWindow(currentUserProgress.userDinoProgress)
@@ -598,7 +626,7 @@ object BadgeProgressRepository {
                 val target = BadgeProgressEngine.rocketNextThreshold(currentUserProgress.userRocketProgress)
                 BadgeProgressWindow(current = daily, target = target)
             }
-            BadgeKind.BOWLING -> leveledProgressWindow(currentUserProgress.userBowlingProgress, listOf(5, 10, 20, 50, 100), 5)
+            BadgeKind.BOWLING -> leveledProgressWindow(currentUserProgress.userBowlingProgress, BadgeKind.BOWLING)
             else -> null
         }
     }
@@ -624,24 +652,12 @@ object BadgeProgressRepository {
         }
     }
 
-    fun getLevelSpecByMode(mode: BadgeAnimMode): Pair<List<Int>, Int>? {
-        return when (BadgeKind.fromMode(mode)) {
-            BadgeKind.DART -> listOf(3, 10, 20, 30, 50) to 5
-            BadgeKind.FISHING -> listOf(3, 5, 15, 25, 50) to 5
-            BadgeKind.GOLF -> listOf(5, 10, 20, 50, 100) to 5
-            BadgeKind.TORNADO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.VOLCANO -> listOf(1, 3, 5, 10, 15) to 3
-            BadgeKind.DINO -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.CROCODILE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.GOAT -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.EAGLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.FLY -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.TURTLE -> listOf(500, 1000, 1500, 2000, 2500) to 500
-            BadgeKind.ROCKET -> listOf(3, 5, 10, 15, 25) to 5
-            BadgeKind.BOWLING -> listOf(5, 10, 20, 50, 100) to 5
-            else -> null
-        }
-    }
+    /**
+     * Eşikleri [BadgeProgressEngine.levelSpec]'ten alır (Android: eskiden kendi kopyasını tutuyordu; roket
+     * rozetinde rozet ızgarası ile kutlama/profil farklı tablolara bakıyordu — artık tek tablo [3,10,15,25,30], adım 10).
+     */
+    fun getLevelSpecByMode(mode: BadgeAnimMode): Pair<List<Int>, Int>? =
+        BadgeProgressEngine.levelSpec(mode)
 
     /**
      * Kademeli rozetler için "ulaşılan kademe / toplam kademe" (ör. golf ham 20 → 3/5).
@@ -685,6 +701,12 @@ object BadgeProgressRepository {
             shown <= levels[3] -> BadgeLevelTone.ORIGINAL
             else -> BadgeLevelTone.PURPLE
         }
+    }
+
+    /** Eşikleri tek kaynaktan alıp pencereyi hesaplar. */
+    private fun leveledProgressWindow(progress: Int, kind: BadgeKind): BadgeProgressWindow? {
+        val (levels, levelUpStep) = BadgeProgressEngine.levelSpec(kind) ?: return null
+        return leveledProgressWindow(progress, levels, levelUpStep)
     }
 
     private fun leveledProgressWindow(progress: Int, levels: List<Int>, levelUpStep: Int): BadgeProgressWindow {

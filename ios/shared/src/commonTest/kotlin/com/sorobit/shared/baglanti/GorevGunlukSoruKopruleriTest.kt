@@ -18,6 +18,14 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/**
+ * Güncel Android şablonunda hiçbir sandık bitmiş gelmez (eskiden part 1–6'da 14 tane vardı); günlük soru
+ * havuzu yalnızca bitmiş sandıklardan beslendiği için ilerlemiş bir kullanıcı taklit edilir.
+ */
+private fun sandiklariBitmisPart(partId: Int) = GlobalLessonData.loadLessonItemsForPart(partId, null).map {
+    if (it.type == com.sorobit.shared.ders.LessonItem.TYPE_CHEST) it.copy(stepIsFinish = true) else it
+}
+
 class GorevGunlukSoruKopruleriTest {
     @AfterTest
     fun temizle() = RastgeleKaynagi.varsayilanaDon()
@@ -140,9 +148,9 @@ class GorevGunlukSoruKopruleriTest {
 
     private fun kaynaklar(havuz: com.sorobit.shared.oyun.DailyQuestionPoolBuilder) = gunlukSoruKaynaklari(
         havuz,
-        GlobalLessonData.loadLessonItemsForPart(1, null),
-        GlobalLessonData.loadLessonItemsForPart(2, null),
-        GlobalLessonData.loadLessonItemsForPart(3, null),
+        sandiklariBitmisPart(1),
+        sandiklariBitmisPart(2),
+        sandiklariBitmisPart(3),
     )
 
     @Test
@@ -171,7 +179,7 @@ class GorevGunlukSoruKopruleriTest {
         val havuz = gunlukSoruHavuzuKur(Random(7))
         val hepsi = kaynaklar(havuz)
         val elle = (1..3).flatMap { part ->
-            havuz.buildSourcesForPart(GlobalLessonData.loadLessonItemsForPart(part, null).asOyunLessonItems(), part)
+            havuz.buildSourcesForPart(sandiklariBitmisPart(part).asOyunLessonItems(), part)
         }
         assertEquals(elle.map { it.partId to it.listIndex }, hepsi.map { it.partId to it.listIndex })
         assertTrue(hepsi.isNotEmpty())
@@ -351,9 +359,9 @@ class GunlukSoruCubukVeBaslatmaTest {
         val havuz = gunlukSoruHavuzuKur(Random(3))
         val kaynak = gunlukSoruKaynaklari(
             havuz,
-            GlobalLessonData.loadLessonItemsForPart(1, null),
-            GlobalLessonData.loadLessonItemsForPart(2, null),
-            GlobalLessonData.loadLessonItemsForPart(3, null),
+            sandiklariBitmisPart(1),
+            sandiklariBitmisPart(2),
+            sandiklariBitmisPart(3),
         )
         val depo = BellekIciGunlukSoruDeposu("u1", havuz, null) { gun0 }
         val kalp = bellekIciKalpDeposuKur("u1")

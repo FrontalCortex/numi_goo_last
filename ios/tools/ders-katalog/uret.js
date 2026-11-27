@@ -1,7 +1,33 @@
 // Android GlobalLessonData.kt içindeki kataloğu ortak koda çevirir ve test beklentilerini üretir.
-// Kullanım: node uret.js <GlobalLessonData.kt> <cikti-katalog.kt> <cikti-beklenti.json>
+// Kullanım: node uret.js <GlobalLessonData.kt> <values/strings_lessons.xml> <cikti-katalog.kt> <cikti-beklenti.json>
+//
+// 2026-11 (soban-gamified-education dalı): Android artık ders adlarını ve ipuçlarını
+// `str(R.string.lesson_...)` ile strings_lessons.xml'den okuyor ve her item'a `stableId` veriyor.
+// Bu betik str(R.string.x) çağrılarını varsayılan (Türkçe) values/strings_lessons.xml'deki metinle değiştirir;
+// böylece ortak katalog Türkçe sabit metin taşımaya devam eder. Android kaynak çözümlemesi uygulanır:
+// ters eğik çizgi + kesme → kesme, ters eğik çizgi + n → satır sonu, XML varlıkları.
 const fs = require('fs');
-const [, , kaynakYol, ciktiKt, ciktiJson] = process.argv;
+const [, , kaynakYol, stringsYol, ciktiKt, ciktiJson] = process.argv;
+function androidMetni(ham) {
+  return ham
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&')
+    .replace(/\\(u[0-9a-fA-F]{4}|[\s\S])/g, (m, c) =>
+      c.length === 5 && c[0] === 'u' ? String.fromCharCode(parseInt(c.slice(1), 16)) : c === 'n' ? '\n' : c === 't' ? '\t' : c);
+}
+const metinler = {};
+const stringsHam = fs.readFileSync(stringsYol, 'utf8').replace(/\r\n/g, '\n');
+for (const m of stringsHam.matchAll(/<string name="([A-Za-z0-9_]+)"[^>]*>([\s\S]*?)<\/string>/g)) {
+  metinler[m[1]] = androidMetni(m[2]);
+}
+function ktMetni(t) {
+  return '"' + t.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/\n/g, '\\n').replace(/\t/g, '\\t') + '"';
+}
+function strCoz(satir) {
+  return satir.replace(/str\(R\.string\.([A-Za-z0-9_]+)\)/g, (m, ad) => {
+    if (!(ad in metinler)) throw new Error('strings_lessons.xml içinde yok: ' + ad);
+    return ktMetni(metinler[ad]);
+  });
+}
 const satirlar = fs.readFileSync(kaynakYol, 'utf8').replace(/\r\n/g, '\n').split('\n');
 
 const basRe = /^ {12}(\d+) -> listOf\($/;
@@ -19,14 +45,15 @@ console.error('part başlangıçları:', baslar.map(b => `${b.part}@${b.satir + 
 let kt = '';
 kt += '// KAYNAK: app/src/main/java/com/example/app/GlobalLessonData.kt — createLessonItems() içindeki `when(partId)` dalları.\n';
 kt += '// Bu dosya Android kaynağından betikle (metin dönüşümü) üretildi; item sırası ve alan değerleri birebir aynıdır.\n';
-kt += '// Tek fark: `R.color.x` kaynak kimlikleri kaynak adını taşıyan String anahtarına ("x") çevrildi.\n';
-kt += '// Elle düzenleme: Android tarafında katalog değişirse aynı değişiklik burada da yapılmalı.\n';
+kt += '// Farklar: `R.color.x` kaynak kimlikleri kaynak adını taşıyan String anahtarına ("x") çevrildi; `str(R.string.x)`\n';
+kt += '// çağrıları varsayılan (Türkçe) values/strings_lessons.xml metniyle değiştirildi. Her item `stableId` taşır.\n';
+kt += '// Elle düzenleme: Android tarafında katalog değişirse bu dosya ios/tools/ders-katalog/uret.js ile yeniden üretilmeli.\n';
 kt += 'package com.sorobit.shared.ders\n\n';
 const bloklar = {};
 for (let b = 0; b < baslar.length; b++) {
   const bas = baslar[b].satir;
   const bit = b + 1 < baslar.length ? baslar[b + 1].satir : son;
-  const govde = satirlar.slice(bas + 1, bit);
+  const govde = satirlar.slice(bas + 1, bit).map(strCoz);
   // Sondaki boş satırları at
   while (govde.length && govde[govde.length - 1].trim() === '') govde.pop();
   bloklar[baslar[b].part] = govde.join('\n');
@@ -126,7 +153,7 @@ function degerCoz(v) {
   if (m) return m[1];
   throw new Error('çözülemeyen değer: ' + v);
 }
-const SIRA = ['type', 'title', 'titleUnit', 'offset', 'isCompleted', 'stepCount', 'currentStep', 'finishStepNumber',
+const SIRA = ['stableId', 'type', 'title', 'titleUnit', 'offset', 'isCompleted', 'stepCount', 'currentStep', 'finishStepNumber',
   'startStepNumber', 'tutorialNumber', 'tutorialIsFinish', 'stepIsFinish', 'lessonHint', 'color', 'abacusGuideNumber',
   'cupPoint1', 'cupPoint2', 'worstCupTime', 'isBlinding', 'blindingMultiplication', 'timePeriod', 'raceBusyLevel', 'raceTitle'];
 const VARSAYILAN = { currentStep: 0, tutorialNumber: 0, tutorialIsFinish: false, stepIsFinish: false };
@@ -160,6 +187,7 @@ for (const part of Object.keys(bloklar)) {
     ilkSandik: itemlar.findIndex(it => it.type === 2),
     bildirilenMapFragmentIndex: itemlar.map(it => it.mapFragmentIndex ?? null),
     basliklar: itemlar.map(it => it.title),
+    stableIdler: itemlar.map(it => it.stableId),
   };
 }
 const kaynakSayim = (satirlar.slice(baslar[0].satir, son).join('\n').match(/(?<![A-Za-z])LessonItem\(/g) || []).length;

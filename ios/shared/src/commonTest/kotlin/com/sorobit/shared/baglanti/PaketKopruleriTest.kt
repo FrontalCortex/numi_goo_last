@@ -61,7 +61,11 @@ class PaketKopruleriTest {
         val havuz = gunlukSoruHavuzuKur(Random(7))
         var toplam = 0
         for (part in 1..8) {
-            val itemlar = GlobalLessonData.createLessonItems(part)
+            // Güncel Android şablonunda hiçbir sandık bitmiş gelmez (eskiden part 1–6'da 14 tane vardı);
+            // ilerlemiş bir kullanıcıyı taklit etmek için bütün sandıklar bitmiş sayılır.
+            val itemlar = GlobalLessonData.createLessonItems(part).map {
+                if (it.type == LessonItem.TYPE_CHEST) it.copy(stepIsFinish = true) else it
+            }
             val kaynaklar = havuz.buildSourcesForPart(itemlar.asOyunLessonItems(), part)
             val sandikSayisi = itemlar.count { it.type == LessonItem.TYPE_CHEST }
             assertTrue(kaynaklar.size <= sandikSayisi, "part $part: kaynak sayısı sandık sayısını aşamaz")

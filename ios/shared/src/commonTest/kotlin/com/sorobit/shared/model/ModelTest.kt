@@ -260,7 +260,7 @@ class SessionDeviceRulesTest {
                 "missionProgress" to "state", "dailyQuestion" to "current"),
             a.SINGLE_DOC_SUBCOLLECTIONS,
         )
-        assertEquals(listOf("cupHistory", "lessonSuccessRateState"), a.LEAF_SUBCOLLECTIONS)
+        assertEquals(listOf("cupHistory", "lessonSuccessRateState", "weeklyStats", "lessonMilestones"), a.LEAF_SUBCOLLECTIONS)
         assertEquals(450, a.DELETE_BATCH_SIZE)
         assertEquals("users/o/following/ben", a.followingRefPath("o", "ben"))
         assertEquals("users/o/followers/ben", a.followerRefPath("o", "ben"))

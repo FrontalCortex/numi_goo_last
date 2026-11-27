@@ -7,6 +7,8 @@
 //    `object` durumu gibi).
 //  - `FirebaseFunctionsException.Code.UNAVAILABLE` denetimi → `isUnavailable` parametresi.
 //  - Log çağrıları kaldırıldı.
+//  - Android (güncel): kristal kırılma videosu akıştan kaldırıldı; [CrystalOutcome]'dan `videoName` çıktı (sunucu
+//    yanıtta göndermeye devam eder, istemci yok sayar). Kupa yolu sandığı için `claimCupPathChest` eklendi.
 // Android'deki hâliyle korunan not: `prefetchChest` sürerken farklı parametrelerle `openChest`
 // çağrılırsa parametreler karşılaştırılmaz; bekleyen ön-isteğin sonucu döner.
 package com.sorobit.shared.oyun
@@ -30,9 +32,11 @@ object ServerRewards {
         val rewardAmount: Int,
     )
 
-    /** `openCrystalReward` sonucu. [videoName] oynatılacak kristal videosudur. */
+    /**
+     * `openCrystalReward` sonucu. Sunucu yanıtındaki `videoName` alanı artık okunmaz (Android: kristal kırılma
+     * videosu akıştan kaldırıldı; ödül ekranları ödülü doğrudan gösterir).
+     */
     data class CrystalOutcome(
-        val videoName: String,
         val rewardType: String,
         val rewardAmount: Int,
     )
@@ -41,6 +45,11 @@ object ServerRewards {
     const val FUNCTION_OPEN_CHEST = "openChest"
     const val FUNCTION_OPEN_CRYSTAL_REWARD = "openCrystalReward"
 
+    /** Kupa yolunda hak edilmiş sandığı açan callable (sonuç biçimi `openChest` ile aynı). */
+    const val FUNCTION_CLAIM_CUP_PATH_CHEST = "claimCupPathChest"
+    const val PARAM_CUP_FIELD = "cupField"
+    const val PARAM_MILESTONE = "milestone"
+
     // ── İstek / yanıt alanları ──────────────────────────────────────────────
     const val PARAM_START_RARITY = "startRarity"
     const val PARAM_AD_NONCE = "adNonce"
@@ -48,6 +57,7 @@ object ServerRewards {
     const val RESULT_FINAL_RARITY = "finalRarity"
     const val RESULT_REWARD_TYPE = "rewardType"
     const val RESULT_REWARD_AMOUNT = "rewardAmount"
+    /** Sunucu yanıtında durur ama istemci artık okumaz (kristal videosu kaldırıldı). */
     const val RESULT_VIDEO_NAME = "videoName"
 
     const val REWARD_TYPE_GOLD = "GOLD"
@@ -55,9 +65,10 @@ object ServerRewards {
 
     const val ERROR_OPEN_CHEST_EMPTY = "openChest boş yanıt döndü"
     const val ERROR_OPEN_CRYSTAL_EMPTY = "openCrystalReward boş yanıt döndü"
+    const val ERROR_CLAIM_CUP_PATH_CHEST_EMPTY = "claimCupPathChest boş yanıt döndürdü"
 
-    /** SSV geri çağrısı gecikirse yeniden deneme sayısı ve aralığı. */
-    const val AD_VERIFY_MAX_ATTEMPTS = 4
+    /** SSV geri çağrısı gecikirse yeniden deneme sayısı ve aralığı (Android güncel: 10 x 1,5 sn = ~15 sn). */
+    const val AD_VERIFY_MAX_ATTEMPTS = 10
     const val AD_VERIFY_RETRY_DELAY_MS = 1500L
 
     /** `openChest` istek gövdesi; [adNonce] yalnızca reklamla kazanılan sandıklarda eklenir. */
@@ -65,6 +76,28 @@ object ServerRewards {
         val payload = hashMapOf<String, Any>(PARAM_START_RARITY to startRarity)
         if (adNonce != null) payload[PARAM_AD_NONCE] = adNonce
         return payload
+    }
+
+    /**
+     * `claimCupPathChest` istek gövdesi (Android `claimCupPathChest`). İstemci hangi yolun hangi eşiğini açtığını
+     * söyler; kupa puanını ve defteri sunucu kendisi okuyup doğrular. [milestone] tek tek gönderilir (biriken
+     * sandıklar sırayla alınmak zorunda değil). `prefetchChest` önbelleğine DOKUNULMAZ.
+     */
+    fun claimCupPathChestPayload(cupField: String, milestone: Int): Map<String, Any> =
+        hashMapOf(PARAM_CUP_FIELD to cupField, PARAM_MILESTONE to milestone)
+
+    /**
+     * `claimCupPathChest` yanıtı; Map değilse null (Android: "boş yanıt" hatası). Eksik alanlar:
+     * finalRarity "COMMON", rewardType "GOLD", rewardAmount 0 (rarityPath boş liste).
+     */
+    fun parseCupPathChestOutcome(data: Any?): ChestOutcome? {
+        val map = data as? Map<*, *> ?: return null
+        return ChestOutcome(
+            rarityPath = (map[RESULT_RARITY_PATH] as? List<*>)?.mapNotNull { it as? String }.orEmpty(),
+            finalRarity = map[RESULT_FINAL_RARITY] as? String ?: "COMMON",
+            rewardType = map[RESULT_REWARD_TYPE] as? String ?: REWARD_TYPE_GOLD,
+            rewardAmount = (map[RESULT_REWARD_AMOUNT] as? Number)?.toInt() ?: 0,
+        )
     }
 
     /** `openCrystalReward` istek gövdesi (boş). */
@@ -86,7 +119,6 @@ object ServerRewards {
     fun parseCrystalOutcome(data: Any?): CrystalOutcome? {
         val map = data as? Map<*, *> ?: return null
         return CrystalOutcome(
-            videoName = map[RESULT_VIDEO_NAME] as? String ?: ChestCrystalPolicy.FALLBACK_VIDEO,
             rewardType = map[RESULT_REWARD_TYPE] as? String ?: REWARD_TYPE_GOLD,
             rewardAmount = (map[RESULT_REWARD_AMOUNT] as? Number)?.toInt() ?: 0,
         )

@@ -81,8 +81,8 @@ class KupaDepoVeEkranTest {
     @Test
     fun resolveFetchedCupScore() {
         val d = AbacusCupRepository
-        assertEquals(CupFetchResult(200, shouldSeed = true), d.resolveFetchedCupScore(null))
-        assertEquals(CupFetchResult(200, shouldSeed = true), d.resolveFetchedCupScore("350"))
+        assertEquals(CupFetchResult(200, shouldSeed = false), d.resolveFetchedCupScore(null))
+        assertEquals(CupFetchResult(200, shouldSeed = false), d.resolveFetchedCupScore("350"))
         assertEquals(CupFetchResult(350, shouldSeed = false), d.resolveFetchedCupScore(350L))
         assertEquals(CupFetchResult(0, shouldSeed = false), d.resolveFetchedCupScore(0))
         assertEquals(CupFetchResult(349, shouldSeed = false), d.resolveFetchedCupScore(349.9))

@@ -3,6 +3,11 @@
 // Farklar: Firestore / FirebaseFunctions çağrıları platformda; SharedPreferences ("app_prefs") →
 // [OyunKeyValueStore]. `applyKeyDelta` / `applyCurrencyDelta` içindeki kullanılmayan `uid`
 // parametresi taşınmadı (sunucu kimliği oturumdan alır).
+// Android (güncel): UserWallet'a öğretmen danışma kredisi, Sobi kredisi ve geçerli plan eklendi; öğretmen hesabının
+// cüzdanı kipiyle görünür (onaysız: 0, onaylı: sınırsız) — kip önbellekte tutulur, önbellek GERÇEK değeri saklar ve kip
+// okurken uygulanır (bkz. [UserWalletFirestore.rememberMode]). Önbellek dosyası Android'de kullanıcıya özeldir
+// ("app_prefs_<uid|guest>"); hangi dosyanın verileceği [OyunKeyValueStore]'u kuran platformun işidir.
+// `itemId` (yalnızca ölçüm) taşınmadı.
 package com.sorobit.shared.oyun
 
 data class UserWallet(
@@ -16,6 +21,18 @@ data class UserWallet(
      * Kredi çağrılarında ve önbellekten okumalarda null'dır.
      */
     val rollbackToken: String? = null,
+    /**
+     * Öğretmen danışma kredisi. Sunucuya ait alan (istemci yazımına kapalı); yerel önbellekte tutulmaz, canlı
+     * dinleyiciden gelir.
+     */
+    val questionCredits: Int = 0,
+    /**
+     * Sobi kredisinin gösterim kopyası (users.sobiCredits); asıl bakiye sunucuda. Harcama kararı bu alandan verilmez.
+     * İade sonrası eksi olabilir. Önbellekte tutulmaz.
+     */
+    val sobiCredits: Int = 0,
+    /** Süre kontrolü uygulanmış GEÇERLİ plan ([PlanStatus.effectivePlan]); canlı dinleyiciden gelir. */
+    val plan: String = "Free",
 )
 
 /**
@@ -52,12 +69,51 @@ object UserWalletFirestore {
     const val COLLECTION_USERS = "users"
     const val FIELD_KEYS = "keys"
     const val FIELD_CURRENCY = "currency"
+    const val FIELD_QUESTION_CREDITS = "questionCredits"
+    const val FIELD_SOBI_CREDITS = "sobiCredits"
     const val DEFAULT_KEYS = 1
     const val DEFAULT_CURRENCY = 0
 
     const val PREFS_APP = "app_prefs"
     const val PREF_CURRENCY = "currency"
     const val PREF_CURRENCY_MIGRATED = "currency_migrated_to_firestore"
+
+    // ── Öğretmen kipi (Android güncel) ─────────────────────────────────────────
+    // - onaysız öğretmen: altın ve anahtar 0 (kayıtta verilmiş anahtarı da harcayamamalı);
+    // - onaylı öğretmen: sınırsız ([UNLIMITED_BALANCE]) — "yeter mi" kontrolleri kendiliğinden geçer.
+    // Sunucudaki bakiyeye dokunulmaz (onaylıda harcama sunucuda no-op, onaysızda reddedilir).
+    const val PREF_WALLET_MODE = "wallet_mode"
+    const val MODE_NORMAL = 0
+    const val MODE_LOCKED = 1
+    const val MODE_UNLIMITED = 2
+
+    /** Onaylı öğretmenin görünen bakiyesi. Hesaba yazılmaz; yalnızca karşılaştırmalar için. */
+    const val UNLIMITED_BALANCE = 9_999_999
+
+    /** Android `modeOf(doc)`: role "TEACHER" değilse normal; teacherApproved true ise sınırsız, değilse kilitli. */
+    fun modeOf(role: String?, teacherApproved: Boolean?): Int = when {
+        role != "TEACHER" -> MODE_NORMAL
+        teacherApproved == true -> MODE_UNLIMITED
+        else -> MODE_LOCKED
+    }
+
+    /** Android `rememberMode`: kipi önbelleğe yazar; platform kullanıcı belgesini okuyunca (yükleme/dinleme) çağırmalı. */
+    fun rememberMode(prefs: OyunKeyValueStore, role: String?, teacherApproved: Boolean?) {
+        prefs.putInt(PREF_WALLET_MODE, modeOf(role, teacherApproved))
+    }
+
+    /** Android `visible`: GERÇEK bakiyeye kayıtlı kip uygulanmış görünen değer. */
+    fun visible(prefs: OyunKeyValueStore, raw: Int): Int = when (prefs.getInt(PREF_WALLET_MODE, MODE_NORMAL)) {
+        MODE_LOCKED -> 0
+        MODE_UNLIMITED -> UNLIMITED_BALANCE
+        else -> raw
+    }
+
+    /** Bakiye sayı yerine "∞" ile gösterilmeli mi (onaylı öğretmen). */
+    fun isUnlimited(prefs: OyunKeyValueStore): Boolean = prefs.getInt(PREF_WALLET_MODE, MODE_NORMAL) == MODE_UNLIMITED
+
+    /** Android `displayText`: bakiyenin ekrandaki metni (onaylı öğretmende "∞"). */
+    fun displayText(prefs: OyunKeyValueStore, value: Int): String = if (isUnlimited(prefs)) "∞" else value.toString()
 
     // ── updateUserWallet callable ───────────────────────────────────────────
     const val FUNCTION_UPDATE_USER_WALLET = "updateUserWallet"
@@ -88,7 +144,7 @@ object UserWalletFirestore {
             patch[FIELD_CURRENCY] = currency
         }
         cacheLocally(prefs, keys, currency)
-        return WalletLoadResult(UserWallet(keys = keys, currency = currency), patch)
+        return WalletLoadResult(UserWallet(keys = visible(prefs, keys), currency = visible(prefs, currency)), patch)
     }
 
     /** `loadWallet` hata dalı: önbellekteki değerler döner. */
@@ -99,11 +155,27 @@ object UserWalletFirestore {
      * `listenToWallet`: anlık görüntü → cüzdan (önbelleğe de yazılır).
      * Hata / belge yok durumunda Android hiçbir şey yapmaz; çağıran bu fonksiyonu çağırmamalıdır.
      */
-    fun walletFromSnapshot(prefs: OyunKeyValueStore, docKeys: Int?, docCurrency: Int?): UserWallet {
+    fun walletFromSnapshot(
+        prefs: OyunKeyValueStore,
+        docKeys: Int?,
+        docCurrency: Int?,
+        /** `questionCredits` alanı (yoksa 0). */
+        questionCredits: Int = 0,
+        /** `sobiCredits` alanı (yoksa 0). */
+        sobiCredits: Int = 0,
+        /** [PlanStatus.effectivePlan] sonucu. */
+        plan: String = "Free",
+    ): UserWallet {
         val keys = docKeys ?: DEFAULT_KEYS
         val currency = docCurrency ?: resolveCurrencyForMigration(prefs)
         cacheLocally(prefs, keys, currency)
-        return UserWallet(keys, currency)
+        return UserWallet(
+            visible(prefs, keys),
+            visible(prefs, currency),
+            questionCredits = questionCredits,
+            sobiCredits = sobiCredits,
+            plan = plan,
+        )
     }
 
     /**
@@ -142,22 +214,33 @@ object UserWalletFirestore {
      */
     fun walletFromUpdateResult(prefs: OyunKeyValueStore, resultData: Any?): UserWallet {
         val map = resultData as? Map<*, *>
-        val keys = (map?.get(PARAM_KEYS) as? Number)?.toInt() ?: getCachedKeys(prefs)
-        val currency = (map?.get(PARAM_CURRENCY) as? Number)?.toInt() ?: getCachedCurrency(prefs)
+        // Sunucu GERÇEK bakiyeyi döndürür; önbelleğe o yazılır, ekrana kipiyle gider.
+        val rawKeys = (map?.get(PARAM_KEYS) as? Number)?.toInt() ?: rawCachedKeys(prefs)
+        val rawCurrency = (map?.get(PARAM_CURRENCY) as? Number)?.toInt() ?: rawCachedCurrency(prefs)
 
-        cacheLocally(prefs, keys, currency)
+        cacheLocally(prefs, rawKeys, rawCurrency)
         return UserWallet(
-            keys = keys,
-            currency = currency,
+            keys = visible(prefs, rawKeys),
+            currency = visible(prefs, rawCurrency),
             rollbackToken = map?.get(PARAM_ROLLBACK_TOKEN) as? String,
         )
     }
 
-    fun getCachedKeys(prefs: OyunKeyValueStore): Int =
-        prefs.getInt(FIELD_KEYS, DEFAULT_KEYS)
+    /** Görünen anahtar bakiyesi: öğretmen kipi uygulanmış. */
+    fun getCachedKeys(prefs: OyunKeyValueStore): Int = visible(prefs, rawCachedKeys(prefs))
 
-    fun getCachedCurrency(prefs: OyunKeyValueStore): Int =
-        prefs.getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
+    /** Görünen altın bakiyesi: öğretmen kipi uygulanmış. */
+    fun getCachedCurrency(prefs: OyunKeyValueStore): Int = visible(prefs, rawCachedCurrency(prefs))
+
+    private fun rawCachedKeys(prefs: OyunKeyValueStore): Int = prefs.getInt(FIELD_KEYS, DEFAULT_KEYS)
+
+    private fun rawCachedCurrency(prefs: OyunKeyValueStore): Int = prefs.getInt(PREF_CURRENCY, DEFAULT_CURRENCY)
+
+    /** Yalnızca altın bakiyesini önbelleğe yazar (Android `cacheCurrency`, MainActivity.saveCurrency için). */
+    fun cacheCurrency(prefs: OyunKeyValueStore, value: Int) = prefs.putInt(PREF_CURRENCY, value)
+
+    /** Yalnızca anahtar bakiyesini önbelleğe yazar (Android `cacheKeys`, MainActivity.saveKeys için). */
+    fun cacheKeys(prefs: OyunKeyValueStore, value: Int) = prefs.putInt(FIELD_KEYS, value)
 
     internal fun cacheLocally(prefs: OyunKeyValueStore, keys: Int, currency: Int) {
         prefs.putInt(FIELD_KEYS, keys)

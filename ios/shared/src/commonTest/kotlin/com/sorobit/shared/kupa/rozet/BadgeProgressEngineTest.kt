@@ -126,7 +126,7 @@ class BadgeProgressEngineTest {
         assertEquals(5, degerler[BadgeKind.BOWLING])
         assertEquals(3, degerler[BadgeKind.DART])
         assertEquals(3, degerler[BadgeKind.FISHING])
-        assertEquals(5, degerler[BadgeKind.GOLF])
+        assertEquals(3, degerler[BadgeKind.GOLF])
         assertEquals(3, degerler[BadgeKind.ROCKET])
         assertEquals(1, degerler[BadgeKind.TORNADO])
         assertEquals(1, degerler[BadgeKind.VOLCANO])
@@ -355,15 +355,15 @@ class BadgeProgressEngineTest {
     fun repositoryGetLevelSpecByMode() {
         assertEquals(listOf(3, 10, 20, 30, 50) to 5, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.DAILY_ONLY))
         assertEquals(listOf(3, 5, 15, 25, 50) to 5, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.FISHING_WITH_BASE))
-        assertEquals(listOf(5, 10, 20, 50, 100) to 5, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.GOLF_WITH_BASE))
+        assertEquals(listOf(3, 5, 10, 15, 20) to 5, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.GOLF_WITH_BASE))
         assertEquals(listOf(5, 10, 20, 50, 100) to 5, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.BOWLING_WITH_BASE))
         assertEquals(listOf(1, 3, 5, 10, 15) to 3, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.TORNADO))
         assertEquals(listOf(1, 3, 5, 10, 15) to 3, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.VOLCANO))
         for (m in listOf(BadgeAnimMode.DINO, BadgeAnimMode.CROCODILE, BadgeAnimMode.GOAT, BadgeAnimMode.EAGLE, BadgeAnimMode.FLY, BadgeAnimMode.TURTLE)) {
             assertEquals(listOf(500, 1000, 1500, 2000, 2500) to 500, BadgeProgressRepository.getLevelSpecByMode(m))
         }
-        // Android tutarsızlığı (aynen korunur): motor roket için [3,10,15,25,30]/10 kullanır, depo [3,5,10,15,25]/5.
-        assertEquals(listOf(3, 5, 10, 15, 25) to 5, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.ROCKET_WITH_BASE))
+        // Android güncel: roket için tek tablo (BadgeProgressEngine.levelSpec) [3,10,15,25,30], adım 10.
+        assertEquals(listOf(3, 10, 15, 25, 30) to 10, BadgeProgressRepository.getLevelSpecByMode(BadgeAnimMode.ROCKET_WITH_BASE))
         for (m in listOf(BadgeAnimMode.CUP_GOOGLE, BadgeAnimMode.KARATE, BadgeAnimMode.GOLD_MEDAL, BadgeAnimMode.SILVER_MEDAL, BadgeAnimMode.BRONZE_MEDAL)) {
             assertNull(BadgeProgressRepository.getLevelSpecByMode(m))
         }
@@ -376,16 +376,16 @@ class BadgeProgressEngineTest {
             return BadgeProgressRepository.formatLeveledTierRatio(BadgeAnimMode.GOLF_WITH_BASE)
         }
         assertEquals("0/5", golf(0))
-        assertEquals("0/5", golf(4))
-        assertEquals("1/5", golf(5))
-        assertEquals("3/5", golf(20))
-        assertEquals("3/5", golf(49))
+        assertEquals("1/5", golf(4))
+        assertEquals("2/5", golf(5))
+        assertEquals("5/5", golf(20))
+        assertEquals("5/5", golf(49))
         assertEquals("5/5", golf(100))
         assertEquals("5/5", golf(110))
 
         BadgeProgressRepository.update(UserBadgeProgress(userRocketProgress = 10, userKarateProgress = 3))
-        // Roket: depo listesi [3,5,10,15,25] → 10 için 3/5 (motor listesine göre 2/5 olurdu)
-        assertEquals("3/5", BadgeProgressRepository.formatLeveledTierRatio(BadgeAnimMode.ROCKET_WITH_BASE))
+        // Roket: tek tablo [3,10,15,25,30] → 10 için 2/5
+        assertEquals("2/5", BadgeProgressRepository.formatLeveledTierRatio(BadgeAnimMode.ROCKET_WITH_BASE))
         assertNull(BadgeProgressRepository.formatLeveledTierRatio(BadgeAnimMode.KARATE))
         assertNull(BadgeProgressRepository.formatLeveledTierRatio(BadgeAnimMode.GOLD_MEDAL))
         assertNull(BadgeProgressRepository.formatLeveledTierRatio(BadgeAnimMode.CUP_GOOGLE))
@@ -406,7 +406,7 @@ class BadgeProgressEngineTest {
         assertEquals(15, r.resolveShownValueByMode(BadgeAnimMode.TORNADO, 17))
         assertEquals(18, r.resolveShownValueByMode(BadgeAnimMode.TORNADO, 18))
         assertEquals(3000, r.resolveShownValueByMode(BadgeAnimMode.DINO, 3499))
-        // Roket (depo listesi [3,5,10,15,25], adım 5)
+        // Roket (tek tablo [3,10,15,25,30], adım 10)
         assertEquals(10, r.resolveShownValueByMode(BadgeAnimMode.ROCKET_WITH_BASE, 12))
         assertEquals(30, r.resolveShownValueByMode(BadgeAnimMode.ROCKET_WITH_BASE, 30))
         assertNull(r.resolveShownValueByMode(BadgeAnimMode.GOLD_MEDAL, 1))
@@ -427,9 +427,9 @@ class BadgeProgressEngineTest {
         assertEquals(BadgeLevelTone.ORIGINAL, r.resolveToneByMode(BadgeAnimMode.DAILY_ONLY, 30))
         assertEquals(BadgeLevelTone.PURPLE, r.resolveToneByMode(BadgeAnimMode.DAILY_ONLY, 50))
         assertEquals(BadgeLevelTone.PURPLE, r.resolveToneByMode(BadgeAnimMode.DAILY_ONLY, 500))
-        // Roket tutarsızlığı: depo listesine göre 25 → MOR; motorun calculate() sonucu aynı ilerlemede ORIGINAL.
-        assertEquals(BadgeLevelTone.PURPLE, r.resolveToneByMode(BadgeAnimMode.ROCKET_WITH_BASE, 25))
-        assertEquals(BadgeLevelTone.ORIGINAL, r.resolveToneByMode(BadgeAnimMode.ROCKET_WITH_BASE, 15))
+        // Roket: depo ve motor artık aynı tabloyu kullanır; aynı ilerlemede aynı ton.
+        assertEquals(BadgeLevelTone.ORIGINAL, r.resolveToneByMode(BadgeAnimMode.ROCKET_WITH_BASE, 25))
+        assertEquals(BadgeLevelTone.RED, r.resolveToneByMode(BadgeAnimMode.ROCKET_WITH_BASE, 15))
         assertEquals(
             BadgeLevelTone.ORIGINAL,
             BadgeProgressEngine.calculate(UserBadgeProgress(userRocketProgress = 25)).first { it.kind == BadgeKind.ROCKET }.levelTone,

@@ -293,7 +293,7 @@ class CupPathLogicTest {
         assertEquals("6 gün 23 sa", v.countdownText)
         // Bağlı sezon verilirse etiket onu gösterir
         assertEquals("s2", KupaEkranKoprusu.sezonVerisi(2, an).seasonLabel)
-        assertEquals("part_1_lesson_12_season_4", KupaEkranKoprusu.liderlikTahtaKimligi(1, 12, 4))
+        assertEquals("part_1_lesson_p1_i04_unite_maratonu_season_4", KupaEkranKoprusu.liderlikTahtaKimligi(1, "p1_i04_unite_maratonu", 4))
         assertEquals(100, KupaEkranKoprusu.liderlikSorguLimiti())
         assertEquals(1000L, KupaEkranKoprusu.sezonSayacAraligiMs())
     }
@@ -302,7 +302,7 @@ class CupPathLogicTest {
     fun liderSatirlariSiraRenkVeBenimSatirim() {
         val satirlar = KupaEkranKoprusu.liderSatirlari(
             listOf(
-                LiderHamKayit("a", 900, "Ada", "0:41", "https://ornek/a.png"),
+                LiderHamKayit("a", 900, "Ada", "0:41", "avatar-a"),
                 LiderHamKayit("b", 700, "", "0:55", ""),
                 LiderHamKayit("c", 700, "Can", "0:55", ""),
                 LiderHamKayit("d", 100, "Deniz", "2:10", ""),
@@ -320,8 +320,8 @@ class CupPathLogicTest {
             satirlar.map { it.rankBadgeDrawable },
         )
         assertEquals("Liderlik tablosu", satirlar[1].displayName)
-        assertTrue(satirlar[0].hasPhoto)
-        assertFalse(satirlar[1].hasPhoto)
+        assertTrue(satirlar[0].hasAvatar)
+        assertFalse(satirlar[1].hasAvatar)
         assertEquals(listOf(false, false, true, false), satirlar.map { it.isCurrentUser })
         assertEquals("white", satirlar[2].cardColorRes)
         assertEquals("black", satirlar[2].nameColorRes)

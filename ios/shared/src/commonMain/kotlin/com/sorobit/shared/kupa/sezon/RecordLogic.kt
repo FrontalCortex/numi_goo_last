@@ -80,8 +80,8 @@ object RecordLogic {
     fun displayNameOrFallback(displayName: String, fallback: String = TEXT_RECORD_LEADERBOARD_TITLE): String =
         displayName.ifBlank { fallback }
 
-    /** Avatar: `!url.isNullOrBlank()` ise resim yüklenir, değilse varsayılan ikon. */
-    fun hasPhoto(photoUrl: String?): Boolean = !photoUrl.isNullOrBlank()
+    /** Avatar: kayıtlı avatar varsa o çizilir, yoksa varsayılan avatar (Android `leaderboardAvatarBitmap`). */
+    fun hasAvatar(avatarConfig: String?): Boolean = !avatarConfig.isNullOrBlank()
 
     /**
      * Android `listenLeaderboard.onError` metni: yetki hatasında (PERMISSION_DENIED) her zaman genel hata metni;

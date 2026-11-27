@@ -17,14 +17,19 @@
 //    GlobalValues.pendingLessonProgressAnimations) doğrudan çağrılmaz; [ChestFragmentLogic.MapProgressResult]
 //    içinde "yapılacaklar" olarak döner. Platform katmanı bunları ilgili depolara uygular.
 //  - LessonProgressDiag logları kaldırıldı.
+//  - Android ChestFragment'in dersi bulamayınca (`getLessonItem` null) sandığı göstermeden haritaya dönmesi, hata
+//    sonrası kaldırma ve rozet/harita kilidi akışları platform işidir; burada yok.
 package com.sorobit.shared.ders
 
 object ChestFragmentLogic {
 
     /** Başarı oranı deposuna gönderilecek olay (Android: LessonSuccessRateRepository çağrıları). */
     sealed class SuccessRateEvent {
-        /** `LessonSuccessRateRepository.recordPass(partId, position, step)` */
-        data class Pass(val partId: Int, val position: Int, val step: Int) : SuccessRateEvent()
+        /**
+         * `LessonSuccessRateRepository.recordPass(partId, position, step, elapsedMs)`. [elapsedMs]: soru ekranına
+         * girişten bu yana geçen süre (Android: ChestFragment.questionElapsedMs; bilinmiyorsa null).
+         */
+        data class Pass(val partId: Int, val position: Int, val step: Int, val elapsedMs: Long? = null) : SuccessRateEvent()
 
         /** `LessonSuccessRateRepository.recordItemFirstFinish(partId, position, chestStars)` */
         data class ItemFirstFinish(val partId: Int, val position: Int, val chestStars: Int?) : SuccessRateEvent()
@@ -68,11 +73,17 @@ object ChestFragmentLogic {
         val pendingChestStarGainAmount: Int,
     )
 
-    fun lessonProgressKey(item: LessonItem, fallbackIndex: Int): String {
-        val stableId = item.id ?: -1
-        val part = item.partId ?: -1
-        return "${item.type}_${stableId}_${part}_${item.title}_$fallbackIndex"
-    }
+    /**
+     * Yerel görsel durum anahtarı — [LessonAdapterLogic.lessonProgressKey] ile AYNI biçimde: `{type}_{stableId}`.
+     * [fallbackIndex] imza uyumu için duruyor, anahtara girmiyor (Android'de de öyle).
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun lessonProgressKey(item: LessonItem, fallbackIndex: Int): String = "${item.type}_${item.stableId}"
+
+    /**
+     * Android: ders başarıyla bitince haritaya dönüş "ders türü" dönüşü mü (`isLessonTypeReturn`): item türü TYPE_LESSON.
+     */
+    fun isLessonTypeReturn(item: LessonItem?): Boolean = item?.type == LessonItem.TYPE_LESSON
 
     /**
      * Sandık (TYPE_CHEST) için rekora göre gösterilecek yıldız görselini ve kazanılan yıldız sayısını hesaplar.
@@ -117,11 +128,14 @@ object ChestFragmentLogic {
         lessonSuccessRate: Float,
         icon: String,
         season: Int,
+        questionElapsedMs: Long? = null,
     ): MapProgressResult {
         val globalPartId = GlobalLessonData.globalPartId
         val lessonItem = LessonManager.getLessonItem(mapFragmentStepIndex) // tıklanan indeksteki adım öğesi
+        // Açılacak item bir sonraki; başlıksa atlanır (sandıktan sonra hep başlık gelir). Eskiden "sandık mı" sorusu
+        // cupPoint1 ile soruluyordu; 4. ve 5. bölüm sandıklarında cupPoint1 olmadığı için kilidi başlık alıyordu.
         var index: Int = mapFragmentStepIndex + 1
-        if (lessonItem?.cupPoint1 != null) {
+        if (LessonManager.getLessonItem(index)?.type == LessonItem.TYPE_HEADER) {
             index += 1
         }
         val lessonItem2 = LessonManager.getLessonItem(index)
@@ -139,12 +153,20 @@ object ChestFragmentLogic {
                 1 -> {
                     // Yarış dersi bitti: kendisi TAMAMLANDI (0) olur, sıradaki kilitli yarış açılır.
                     val updatedItem = item.copy(raceBusyLevel = 0)
+                    if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
+                        successRateEvents.add(SuccessRateEvent.Pass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs))
+                        successRateEvents.add(SuccessRateEvent.ItemFirstFinish(globalPartId, mapFragmentStepIndex, null))
+                    }
                     LessonManager.updateRaceItem(mapFragmentStepIndex, updatedItem, season)
                     unlockNextRaceItemSkippingCompleted(mapFragmentStepIndex, season)
                 }
                 2 -> {
                     // İleri sar: yalnızca kendisi TAMAMLANDI olur, sıradaki değişmez.
                     val updatedItem = item.copy(raceBusyLevel = 0)
+                    if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
+                        successRateEvents.add(SuccessRateEvent.Pass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs))
+                        successRateEvents.add(SuccessRateEvent.ItemFirstFinish(globalPartId, mapFragmentStepIndex, null))
+                    }
                     LessonManager.updateRaceItem(mapFragmentStepIndex, updatedItem, season)
                 }
             }
@@ -179,7 +201,7 @@ object ChestFragmentLogic {
                     if (!item.stepIsFinish && updatedItem.stepIsFinish &&
                         (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST)
                     ) {
-                        successRateEvents.add(SuccessRateEvent.Pass(globalPartId, mapFragmentStepIndex, item.currentStep))
+                        successRateEvents.add(SuccessRateEvent.Pass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs))
                         val chestStars = if (updatedItem.type == LessonItem.TYPE_CHEST) {
                             ChestTypeProgressHelper.starCountForChestIcon(updatedItem.stepCupIcon)
                         } else {
@@ -210,7 +232,7 @@ object ChestFragmentLogic {
                 } else {
                     // ARA ADIM dalı: currentStep bir artar, stepIsFinish false kalır.
                     if (item.type == LessonItem.TYPE_LESSON || item.type == LessonItem.TYPE_CHEST) {
-                        successRateEvents.add(SuccessRateEvent.Pass(globalPartId, mapFragmentStepIndex, item.currentStep))
+                        successRateEvents.add(SuccessRateEvent.Pass(globalPartId, mapFragmentStepIndex, item.currentStep, questionElapsedMs))
                     }
                     val updatedItem = item.copy(
                         stepCompletionStatus = newStepCompletionStatus,

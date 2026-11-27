@@ -8,14 +8,20 @@
 //     (Üreteçler ortak koddaki matematik paketidir; onların Android'le eşliği matematik/AltinVeri ile kanıtlı.)
 //     Ayrıca aynı referansla 25 tohum × (-20..3000) kimlik için tam metin karşılaştırması yapıldı: fark yok.
 //  3) Katalog özeti: ders kataloğundaki her item'ın adım kimlikleri için çözümleme sonucu (bkz. KatalogButunluk).
+//
+// GÜNCELLEME (soban-gamified-education dalına eşitleme): Android MapFragment tablosunda 3 değişiklik var — 1013 artık 6 soru
+// (4/5 basamak ilişkili sayılar), 17 artık 6 soru (sondaki bir soru kalktı), 18 dalı KALDIRILDI. Bu üç kimliğin altın satırları
+// (özet değerleri) JVM referansı çalıştırılamadığı için ÜRETİLEMEDİ ve çıkarıldı; ALTIN_ELLE_DALLAR içindeki kimlikler
+// LessonOperationsTest'te yapısal olarak sınanır. Diğer satırlar Android'le eşlenmiş eski altın veridir (o dallar değişmedi).
+// Katalog özeti (ALTIN_KATALOG_OZET) ise yeni katalogdan ve yeni dal kümesinden betikle (ios/tools/ders-katalog/ozet.js) yeniden üretildi.
 package com.sorobit.shared.dersadim
 
-/** getLessonOperations `when` dalları, Android dosyasındaki sırayla (70 dal). */
+/** getLessonOperations `when` dalları, Android dosyasındaki sırayla (69 dal). */
 val ANDROID_DALLAR_OPERATIONS: List<Int> = listOf(
-    1, 2, 1000, 1003, 1005, 4, 5, 1007, 1010, 1013, 7, 8, 9, 12, 13, 16, 17, 18, 19, 20,
-    21, 24, 28, 32, 36, 37, 38, 41, 44, 48, 52, 53, 54, 55, 57, 61, 65, 66, 70, 74,
-    75, 76, 79, 83, 87, 88, 89, 90, 91, 92, 96, 100, 104, 105, 106, 109, 113, 117, 118, 122,
-    126, 130, 131, 135, 139, 140, 144, 145, 149, 153,
+    1, 2, 1000, 1003, 1005, 4, 5, 1007, 1010, 1013, 7, 8, 9, 12, 13, 16, 17, 19, 20, 21,
+    24, 28, 32, 36, 37, 38, 41, 44, 48, 52, 53, 54, 55, 57, 61, 65, 66, 70, 74, 75,
+    76, 79, 83, 87, 88, 89, 90, 91, 92, 96, 100, 104, 105, 106, 109, 113, 117, 118, 122, 126,
+    130, 131, 135, 139, 140, 144, 145, 149, 153,
 )
 
 /** getLessonOperationsBlinding `when` dalları, Android dosyasındaki sırayla (55 dal). */
@@ -36,15 +42,12 @@ val ALTIN_DERS_ADIM: List<String> = listOf(
     "1|O|5|8|8f2f6c26",
     "1|O|1007|9|f81d0eae",
     "1|O|1010|6|9284ed10",
-    "1|O|1013|1|925e716d",
     "1|O|7|13|5b661fc7",
     "1|O|8|8|836a69a1",
     "1|O|9|10|7885ee13",
     "1|O|12|10|3dd7226d",
     "1|O|13|10|b39ca54e",
     "1|O|16|7|4ec2049d",
-    "1|O|17|7|92ada0c5",
-    "1|O|18|7|5b570045",
     "1|O|19|11|3569b63",
     "1|O|20|12|19e5d939",
     "1|O|21|9|4f834b78",
@@ -161,15 +164,12 @@ val ALTIN_DERS_ADIM: List<String> = listOf(
     "2|O|5|8|f5675741",
     "2|O|1007|9|14f7fec9",
     "2|O|1010|6|d568b840",
-    "2|O|1013|1|ae0df89f",
     "2|O|7|13|c9952d5d",
     "2|O|8|8|836a69a1",
     "2|O|9|10|753601ce",
     "2|O|12|10|5284f125",
     "2|O|13|10|d26e04ad",
     "2|O|16|7|7a3f87da",
-    "2|O|17|7|16ce56a1",
-    "2|O|18|7|b7ead2dc",
     "2|O|19|11|12dd15da",
     "2|O|20|12|19e5d939",
     "2|O|21|9|cafab583",
@@ -286,15 +286,12 @@ val ALTIN_DERS_ADIM: List<String> = listOf(
     "3|O|5|8|3bc7df6f",
     "3|O|1007|9|ac303bea",
     "3|O|1010|6|50389dac",
-    "3|O|1013|1|639a8e8f",
     "3|O|7|13|9a567fa7",
     "3|O|8|8|836a69a1",
     "3|O|9|10|7884c534",
     "3|O|12|10|fa8dff0f",
     "3|O|13|10|a971c3ca",
     "3|O|16|7|f262b9fd",
-    "3|O|17|7|78f7aa2b",
-    "3|O|18|7|8245247d",
     "3|O|19|11|d3d32f16",
     "3|O|20|12|19e5d939",
     "3|O|21|9|634ec9d8",
@@ -455,19 +452,19 @@ val ALTIN_KATALOG_OZET: List<String> = listOf(
     "1|1|O|1-2|1|1>1,2>2",
     "1|2|O|1000-1001|1000|1000>1000,1001>1000",
     "1|3|O|1003-1004|1003|1003>1003,1004>1003",
-    "1|4|O|1013-1013|1013|1013>1013",
+    "1|4|O|1005-1005|1005|1005>1005",
     "1|6|O|4-5|4|4>4,5>5",
     "1|7|O|1007-1007|1007|1007>1007",
     "1|8|O|1010-1011|1010|1010>1010,1011>1010",
     "1|9|O|1013-1014|1013|1013>1013,1014>1013",
-    "1|10|O|1013-1013|1013|1013>1013",
+    "1|10|O|7-7|7|7>7",
     "1|12|O|8-10|8|8>8,9>9,10>9",
     "1|13|O|12-14|12|12>12,13>13,14>13",
-    "1|14|O|16-18|16|16>16,17>17,18>18",
-    "1|15|O|1013-1013|1013|1013>1013",
+    "1|14|O|16-18|16|16>16,17>17,18>17",
+    "1|15|O|19-19|19|19>19",
     "1|17|O|20-22|20|20>20,21>21,22>21",
     "1|18|O|24-26|24|24>24,25>24,26>24",
-    "1|19|O|28-31|29|28>28,29>29!,30>29!,31>29!",
+    "1|19|O|28-30|28|28>28,29>28,30>28",
     "1|20|O|32-34|32|32>32,33>32,34>32",
     "1|21|O|36-36|36|36>36",
     "1|23|O|37-38|36|37>37,38>38",
@@ -478,7 +475,7 @@ val ALTIN_KATALOG_OZET: List<String> = listOf(
     "1|29|O|53-56|53|53>53,54>54,55>55,56>55",
     "1|30|O|57-59|57|57>57,58>57,59>57",
     "1|31|O|61-63|61|61>61,62>61,63>61",
-    "1|32|O|1013-1013|1013|1013>1013",
+    "1|32|O|65-65|65|65>65",
     "2|1|O|66-68|66|66>66,67>66,68>66",
     "2|2|O|70-73|70|70>70,71>70,72>70,73>70",
     "2|3|O|74-74|74|74>74",

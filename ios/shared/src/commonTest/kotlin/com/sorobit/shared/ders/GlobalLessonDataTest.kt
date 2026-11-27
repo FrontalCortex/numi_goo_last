@@ -11,31 +11,46 @@ import kotlin.test.assertTrue
 
 /** Firestore yazmalarını ve liderlik gönderimlerini kaydeden sahte köprü. */
 internal class KayitSink : LessonProgressSink {
-    data class Tekli(val partId: Int, val position: Int, val fields: Map<String, Any?>)
-    data class Toplu(val partId: Int, val itemsFields: List<Map<String, Any?>>)
+    data class Tekli(val partId: Int, val stableId: String, val fields: Map<String, Any?>)
+    data class Toplu(val partId: Int, val stableIds: List<String>, val itemsFields: List<Map<String, Any?>>)
+    data class Goc(val partId: Int, val stableIds: List<String>, val itemsFields: List<Map<String, Any?>>, val eskiler: List<String>)
 
     val tekliler = mutableListOf<Tekli>()
     val toplular = mutableListOf<Toplu>()
+    val goculer = mutableListOf<Goc>()
     val gonderimler = mutableListOf<GlobalLessonData.LeaderboardSubmit>()
 
-    /** Çağrı sırasını izlemek için: "tek:4", "lb:4", "toplu:1". */
+    /** Çağrı sırasını izlemek için: "tek:<stableId>", "lb:<stableId>", "toplu:1", "goc:1". */
     val sira = mutableListOf<String>()
 
-    override fun writeSingleItem(partId: Int, position: Int, fields: Map<String, Any?>) {
-        tekliler.add(Tekli(partId, position, fields))
-        sira.add("tek:$position")
+    override fun writeSingleItem(partId: Int, stableId: String, fields: Map<String, Any?>) {
+        tekliler.add(Tekli(partId, stableId, fields))
+        sira.add("tek:$stableId")
     }
 
-    override fun writeAllItems(partId: Int, itemsFields: List<Map<String, Any?>>) {
-        toplular.add(Toplu(partId, itemsFields))
+    override fun writeAllItems(partId: Int, stableIds: List<String>, itemsFields: List<Map<String, Any?>>) {
+        toplular.add(Toplu(partId, stableIds, itemsFields))
         sira.add("toplu:$partId")
     }
 
-    override fun submitBestIfNeeded(partId: Int, lessonIndex: Int, score: Int, season: Int, titleUnit: String?) {
-        gonderimler.add(GlobalLessonData.LeaderboardSubmit(partId, lessonIndex, score, season, titleUnit))
-        sira.add("lb:$lessonIndex")
+    override fun migrateLegacyItemKeys(
+        partId: Int,
+        stableIds: List<String>,
+        itemsFields: List<Map<String, Any?>>,
+        legacyDocIds: List<String>,
+    ) {
+        goculer.add(Goc(partId, stableIds, itemsFields, legacyDocIds))
+        sira.add("goc:$partId")
+    }
+
+    override fun submitBestIfNeeded(partId: Int, lessonKey: String, score: Int, season: Int, titleUnit: String?) {
+        gonderimler.add(GlobalLessonData.LeaderboardSubmit(partId, lessonKey, score, season, titleUnit))
+        sira.add("lb:$lessonKey")
     }
 }
+
+/** Katalogdaki item kimliği (testlerde kısaltma). */
+internal fun kimlik(part: Int, index: Int): String = GlobalLessonData.createLessonItems(part)[index].stableId
 
 /** Harita / yarış listesi köprülerinin çağrılarını kaydeder. */
 internal class KayitAdapter(var racePanelAcik: Boolean = false) :
@@ -86,7 +101,9 @@ class GlobalLessonDataTest {
         assertEquals("lessonProgress", GlobalLessonData.FIRESTORE_LESSON_PROGRESS)
         assertEquals("items", GlobalLessonData.FIRESTORE_LESSON_ITEMS)
         assertEquals("users/U1/lessonProgress/3/items", GlobalLessonData.itemsCollectionPath("U1", 3))
-        assertEquals("users/U1/lessonProgress/3/items/17", GlobalLessonData.itemDocumentPath("U1", 3, 17))
+        assertEquals("users/U1/lessonProgress/3/items/p3_i04_unite_maratonu", GlobalLessonData.itemDocumentPath("U1", 3, "p3_i04_unite_maratonu"))
+        assertEquals("users/U1/lessonProgress/3/items/17", GlobalLessonData.legacyItemDocumentPath("U1", 3, 17))
+        assertEquals("teacherLessonsUnlocked", GlobalLessonData.FIELD_TEACHER_LESSONS_UNLOCKED)
         assertEquals(listOf(1, 2, 3, 4, 5, 6, 7, 8), GlobalLessonData.SEED_PART_IDS)
         assertEquals(1500L, GlobalLessonData.AUTH_WAIT_TIMEOUT_MS)
         assertEquals(setOf(1, 2, 3, 6, 7, 8), GlobalLessonData.LEADERBOARD_SUPPORTED_PARTS)
@@ -223,7 +240,9 @@ class GlobalLessonDataTest {
         )
         // Statik alanlar şablondan
         assertEquals("Ünite Maratonu", r.title)
-        assertEquals(1013, r.startStepNumber)
+        assertEquals(1005, r.startStepNumber)
+        // Kimlik şablondan gelir, belgeden değil
+        assertEquals("p1_i04_unite_maratonu", r.stableId)
     }
 
     @Test
@@ -327,6 +346,43 @@ class GlobalLessonDataTest {
     }
 
     @Test
+    fun mergeTemplateWithDocs_stableIdAnahtari_ustunlukVeEskiBicim() {
+        val sablon = GlobalLessonData.createLessonItems(1)
+        val docs = mapOf<String, Map<String, Any?>?>(
+            // Yeni biçim: belge kimliği = stableId
+            kimlik(1, 2) to mapOf("currentStep" to 2L),
+            // Eski biçim: belge kimliği = sıra ("3") → yalnızca stableId belgesi yoksa kullanılır
+            "3" to mapOf("currentStep" to 2L),
+            "2" to mapOf("currentStep" to 9L),          // idx 2'nin stableId belgesi var → eski "2" yok sayılır
+            "p1_i99_olmayan" to mapOf("currentStep" to 9L), // şablonda olmayan kimlik → yok sayılır
+        )
+        val r = GlobalLessonData.mergeTemplateWithDocs(1, docs)
+        assertEquals(33, r.size)
+        assertEquals(2, r[2].currentStep)             // stableId belgesi kazandı (9 değil)
+        assertEquals(2, r[3].currentStep)             // eski sıra anahtarı
+        assertEquals(sablon[1], r[1])
+        assertEquals(sablon.drop(4), r.drop(4))
+    }
+
+    @Test
+    fun legacyMigrationPlan_eskiBelgeVarsaYeniAnahtaraTasir() {
+        val docs = mapOf<String, Map<String, Any?>?>(
+            "1" to mapOf("currentStep" to 2L, "stepCompletionStatus" to listOf(true, false)),
+            "4" to mapOf("stepIsFinish" to true),
+            kimlik(1, 6) to mapOf("currentStep" to 2L), // zaten yeni biçim: göçe girmez
+        )
+        val merged = GlobalLessonData.lessonItemsFromFirestoreDocs(1, docs)!!
+        val plan = GlobalLessonData.legacyMigrationPlan(docs, merged)!!
+        assertEquals(listOf("1", "4"), plan.legacyDocIds.sorted())
+        assertEquals(listOf(kimlik(1, 1), kimlik(1, 4)), plan.writes.map { it.stableId })
+        assertEquals(GlobalLessonData.progressFieldsOf(merged[1]), plan.writes[0].fields)
+        assertEquals(2, plan.writes[0].fields["currentStep"])
+        // Eski anahtarlı belge yoksa plan yok
+        assertNull(GlobalLessonData.legacyMigrationPlan(mapOf(kimlik(1, 1) to mapOf("currentStep" to 2L)), merged))
+        assertNull(GlobalLessonData.legacyMigrationPlan(emptyMap(), merged))
+    }
+
+    @Test
     fun lessonItemsFromFirestoreDocs_bosKoleksiyonNull() {
         assertNull(GlobalLessonData.lessonItemsFromFirestoreDocs(1, emptyMap()))
         val r = GlobalLessonData.lessonItemsFromFirestoreDocs(2, mapOf("0" to mapOf("isCompleted" to true)))
@@ -353,7 +409,11 @@ class GlobalLessonDataTest {
         assertEquals(GlobalLessonData.FirestoreLoadStatus.NOT_FOUND, GlobalLessonData.onLoadFromFirestore(2, null, false))
         // Veri var → LOADED
         assertEquals(GlobalLessonData.FirestoreLoadStatus.LOADED, GlobalLessonData.onLoadFromFirestore(2, liste, false))
-        assertEquals(liste, GlobalLessonData.lessonItems)
+        // Android: yüklenen liste withDerivedUnlocks'tan geçer → part 2'nin ilk dersi (önceki yok) açılır
+        assertEquals(GlobalLessonData.withDerivedUnlocks(2, liste), GlobalLessonData.lessonItems)
+        assertEquals(false, liste[1].isCompleted)
+        assertEquals(true, GlobalLessonData.getLessonItem(1)?.isCompleted)
+        assertEquals(false, GlobalLessonData.getLessonItem(2)?.isCompleted)
     }
 
     @Test
@@ -372,6 +432,7 @@ class GlobalLessonDataTest {
         assertEquals(listOf("toplu:1"), sink.sira)
         assertEquals(1, sink.toplular[0].partId)
         assertEquals(33, sink.toplular[0].itemsFields.size)
+        assertEquals(GlobalLessonData.createLessonItems(1).map { it.stableId }, sink.toplular[0].stableIds)
         assertEquals(
             GlobalLessonData.createLessonItems(1).map { GlobalLessonData.progressFieldsOf(it) },
             sink.toplular[0].itemsFields,
@@ -431,6 +492,8 @@ class GlobalLessonDataTest {
         assertEquals(2, seed[1]["currentStep"])
         assertEquals(listOf(true, false, false), seed[1]["stepCompletionStatus"])
         assertEquals(15, GlobalLessonData.seedItemsForPart(8, false)?.size)
+        assertEquals(GlobalLessonData.createLessonItems(1).map { it.stableId }, GlobalLessonData.seedStableIdsForPart(1))
+        assertEquals(15, GlobalLessonData.seedStableIdsForPart(8).size)
         // Şablonu olmayan part atlanır
         assertNull(GlobalLessonData.seedItemsForPart(10, false))
     }
@@ -473,15 +536,15 @@ class GlobalLessonDataTest {
         assertEquals(2, GlobalLessonData.getLessonItem(1)?.currentStep)
         assertEquals(1, adapter.tumListeSayisi)
 
-        // Android davranışı: aynı snapshot İKİNCİ kez gelince birleştirme devreye girer ve şablonda
-        // stepIsFinish = true olup adım listesi [false] olan sandıkları (idx 15, 21, 27) [true]'ya normalleştirir;
-        // bu yüzden bir kez daha "değişti" sayılır.
-        assertEquals(listOf(false), GlobalLessonData.getLessonItem(15)?.stepCompletionStatus)
-        assertTrue(GlobalLessonData.onRealtimeSnapshot(1, docIlerlemis, 1))
-        assertEquals(listOf(true), GlobalLessonData.getLessonItem(15)?.stepCompletionStatus)
-        assertEquals(2, adapter.tumListeSayisi)
-        // Bundan sonra aynı durum tekrar gelirse yenileme yok
+        // Aynı snapshot ikinci kez gelince birleştirme sonucu değişmez → yenileme yok
+        // (eskiden şablondaki test bitişli sandıklar yüzünden bir kez daha "değişti" sayılıyordu; o bitişler silindi).
         assertFalse(GlobalLessonData.onRealtimeSnapshot(1, docIlerlemis, 1))
+        assertEquals(1, adapter.tumListeSayisi)
+
+        // Belge kimliği stableId olan (yeni biçim) snapshot da aynı şekilde işlenir
+        val docYeni = mapOf<String, Map<String, Any?>?>(kimlik(1, 3) to mapOf("currentStep" to 2L))
+        assertTrue(GlobalLessonData.onRealtimeSnapshot(1, docYeni, 1))
+        assertEquals(2, GlobalLessonData.getLessonItem(3)?.currentStep)
         assertEquals(2, adapter.tumListeSayisi)
 
         // Eski (geride kalmış) snapshot yerel ilerlemeyi geri almaz
@@ -493,8 +556,11 @@ class GlobalLessonDataTest {
         val docBitmis = mapOf<String, Map<String, Any?>?>(
             "1" to mapOf("currentStep" to 2L, "stepCompletionStatus" to listOf(true, true), "stepIsFinish" to true),
         )
+        assertEquals(false, GlobalLessonData.getLessonItem(2)?.isCompleted)
         assertTrue(GlobalLessonData.onRealtimeSnapshot(1, docBitmis, 1))
         assertEquals(true, GlobalLessonData.getLessonItem(1)?.stepIsFinish)
+        // Bitirilen dersin ardından gelen ders türetilmiş kilitle açılır (olay kaçmış olsa bile)
+        assertEquals(true, GlobalLessonData.getLessonItem(2)?.isCompleted)
         assertEquals(3, adapter.tumListeSayisi)
     }
 
@@ -524,8 +590,9 @@ class GlobalLessonDataTest {
         // partId null olan item kabul edilir
         assertTrue(GlobalLessonData.updateLessonItem(1, item.copy(partId = null, currentStep = 2), 1))
         assertEquals(2, GlobalLessonData.getLessonItem(1)?.currentStep)
-        assertEquals(listOf("tek:1"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(1, 1)}"), sink.sira)
         assertEquals(1, sink.tekliler[0].partId)
+        assertEquals(kimlik(1, 1), sink.tekliler[0].stableId)
         assertEquals(2, sink.tekliler[0].fields["currentStep"])
     }
 
@@ -545,9 +612,10 @@ class GlobalLessonDataTest {
             stepIsFinish = true, record = 1700, leaderboardSeasonId = 7, leaderboardSeasonBest = 1650,
         )
         assertTrue(GlobalLessonData.updateLessonItem(4, s, season = 7))
-        assertEquals(listOf("tek:4", "lb:4"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(1, 4)}", "lb:${kimlik(1, 4)}"), sink.sira)
+        // Tahta kimliği artık konum değil stableId (part_1_lesson_p1_i04_unite_maratonu_season_7)
         assertEquals(
-            GlobalLessonData.LeaderboardSubmit(1, 4, 1650, 7, "Sayıları Abaküste Tanıma"),
+            GlobalLessonData.LeaderboardSubmit(1, "p1_i04_unite_maratonu", 1650, 7, "Sayıları Abaküste Tanıma"),
             sink.gonderimler.single(),
         )
     }
@@ -557,7 +625,7 @@ class GlobalLessonDataTest {
         val s = sandik().copy(stepIsFinish = true, leaderboardSeasonId = 7, leaderboardSeasonBest = 900, titleUnit = "  Ünite  ")
         // Geçerli: titleUnit kırpılır
         assertEquals(
-            GlobalLessonData.LeaderboardSubmit(2, 9, 900, 7, "Ünite"),
+            GlobalLessonData.LeaderboardSubmit(2, "test_sandik", 900, 7, "Ünite"),
             GlobalLessonData.leaderboardSubmitFor(2, 9, s, 7),
         )
         // Desteklenmeyen part'lar (4, 5, 9)
@@ -620,7 +688,7 @@ class GlobalLessonDataTest {
         )
         val liste = listOf(baslik(), tamam, ders())
         assertEquals(
-            GlobalLessonData.LeaderboardSubmit(3, 1, 800, 7, "T"),
+            GlobalLessonData.LeaderboardSubmit(3, "test_sandik", 800, 7, "T"),
             GlobalLessonData.backfillLeaderboardSubmit(3, 1, liste, 7),
         )
         // Liste yok
@@ -656,18 +724,9 @@ class GlobalLessonDataTest {
 
     @Test
     fun getFinishedChestItemsAcrossParts() {
-        // Bulut yok → şablonlarda stepIsFinish = true olan sandıklar (Android şablonundaki değerler)
+        // Bulut yok → güncel Android şablonlarında hiçbir sandık bitmiş gelmez (test bitişleri silindi)
         val r = GlobalLessonData.getFinishedChestItemsAcrossParts(emptyMap())
-        assertEquals(
-            listOf(
-                1 to 15, 1 to 21, 1 to 27,
-                2 to 3, 2 to 8, 2 to 14, 2 to 19,
-                3 to 4, 3 to 9, 3 to 14, 3 to 19,
-                4 to 24, 5 to 19, 6 to 19,
-            ),
-            r.map { it.partId to it.index },
-        )
-        assertTrue(r.all { it.item.type == LessonItem.TYPE_CHEST && it.item.stepIsFinish })
+        assertTrue(r.isEmpty())
         // Bulut listesi şablonun yerine geçer; bitmiş ders sayılmaz, part 9 taranmaz
         val bulut = mapOf<Int, List<LessonItem>?>(
             7 to listOf(ders().copy(stepIsFinish = true), sandik().copy(stepIsFinish = true), sandik()),
@@ -675,7 +734,7 @@ class GlobalLessonDataTest {
             1 to emptyList(),
         )
         val r2 = GlobalLessonData.getFinishedChestItemsAcrossParts(bulut)
-        assertEquals(11 + 1, r2.size)
+        assertEquals(1, r2.size)
         assertEquals(7 to 1, r2.last().let { it.partId to it.index })
         assertTrue(r2.none { it.partId == 1 || it.partId == 9 })
     }
@@ -686,9 +745,9 @@ class GlobalLessonDataTest {
         assertEquals(111, GlobalLessonData.totalValidItemsForCompletion())
         // Hiç veri yok → 0
         assertEquals(0, GlobalLessonData.calculateGlobalCompletionPercentage(emptyMap()))
-        // Şablonların kendisi: 3 + 4 + 4 + 1 + 1 + 1 = 14 bitmiş → 14/111 = %12,6 → 12
+        // Şablonların kendisi: güncel Android'de hiçbir item bitmiş gelmez (eskiden 14 bitmişti → %12) → 0
         val sablonlar = (1..6).associateWith<Int, List<LessonItem>?> { GlobalLessonData.createLessonItems(it) }
-        assertEquals(12, GlobalLessonData.calculateGlobalCompletionPercentage(sablonlar))
+        assertEquals(0, GlobalLessonData.calculateGlobalCompletionPercentage(sablonlar))
         // Hepsi bitmiş → 100
         val hepsi = (1..6).associateWith<Int, List<LessonItem>?> { p ->
             GlobalLessonData.createLessonItems(p).map { it.copy(stepIsFinish = true) }
@@ -701,6 +760,111 @@ class GlobalLessonDataTest {
             7 to GlobalLessonData.createLessonItems(7).map { it.copy(stepIsFinish = true) },
         )
         assertEquals(24, GlobalLessonData.calculateGlobalCompletionPercentage(yalniz1))
+    }
+
+    // ---- Kilit türetme / öğretmen açması / kimlik köprüleri ----
+
+    @Test
+    fun withDerivedUnlocks_kurallar() {
+        val liste = listOf(
+            baslik(),
+            ders(isCompleted = false),                                  // ilk oynanabilir: her zaman açık
+            ders(isCompleted = false),                                  // öncekinin bitmesine bağlı
+            ders(isCompleted = false).copy(stepIsFinish = true),        // kilitli ama BİTMİŞ (eski veri): bitişi geri alınmaz
+            baslik(),
+            ders(isCompleted = false),                                  // başlık zincirde şeffaf: öncesi bitmiş → açılır
+            ders(isCompleted = false),
+        )
+        val r = GlobalLessonData.withDerivedUnlocks(1, liste)
+        assertEquals(listOf(false, true, false, false, false, true, false), r.map { it.isCompleted }.let {
+            // idx 3 bitmiş ama kendisi kilitliydi: önceki (idx 2) bitmediği için açılmaz
+            it
+        })
+        // Bir önceki bitince sonraki açılır
+        val r2 = GlobalLessonData.withDerivedUnlocks(
+            2,
+            listOf(baslik(), ders(isCompleted = true).copy(stepIsFinish = true), ders(isCompleted = false), ders(isCompleted = false)),
+        )
+        assertEquals(listOf(false, true, true, false), r2.map { it.isCompleted })
+        // ASLA kilitlemez: açık ders açık kalır
+        val acik = listOf(ders(isCompleted = true), ders(isCompleted = true))
+        assertEquals(listOf(true, true), GlobalLessonData.withDerivedUnlocks(1, acik).map { it.isCompleted })
+        // Yalnızca 1–6: yarış part'larında dokunulmaz
+        val yaris = listOf(ders(isCompleted = false), ders(isCompleted = false))
+        assertEquals(yaris, GlobalLessonData.withDerivedUnlocks(7, yaris))
+        assertEquals(yaris, GlobalLessonData.withDerivedUnlocks(9, yaris))
+        // Girdi değişmez (yeni liste döner)
+        assertEquals(false, liste[1].isCompleted)
+    }
+
+    @Test
+    fun withDerivedUnlocks_katalogSablonu() {
+        // Part 2–6'nın şablonunda ilk ders kilitli gelir; yüklemede türetme ilkini açar
+        for (part in 2..6) {
+            val r = GlobalLessonData.withDerivedUnlocks(part, GlobalLessonData.createLessonItems(part))
+            assertEquals(true, r[1].isCompleted, "part $part ilk ders")
+            assertEquals(false, r[2].isCompleted, "part $part ikinci ders")
+        }
+    }
+
+    @Test
+    fun withTeacherUnlocks_kurallar() {
+        val p1 = GlobalLessonData.createLessonItems(1)
+        val a1 = GlobalLessonData.withTeacherUnlocks(1, p1)
+        // Ders ve sandık hep açılır, başlığa dokunulmaz
+        for (i in p1.indices) {
+            val oynanabilir = p1[i].type == LessonItem.TYPE_LESSON || p1[i].type == LessonItem.TYPE_CHEST
+            assertEquals(if (oynanabilir) true else p1[i].isCompleted, a1[i].isCompleted, "idx $i")
+        }
+        // Yarış part'ları: kilitli (2) → BAŞLAT (1); çözülmüş (0) ve 1 değişmez
+        val yaris = listOf(ders().copy(raceBusyLevel = 2), ders().copy(raceBusyLevel = 0), ders().copy(raceBusyLevel = 1))
+        assertEquals(listOf(1, 0, 1), GlobalLessonData.withTeacherUnlocks(7, yaris).map { it.raceBusyLevel })
+        assertEquals(listOf(1, 0, 1), GlobalLessonData.withTeacherUnlocks(8, yaris).map { it.raceBusyLevel })
+        // Diğer part'lar (9) dokunulmaz
+        assertEquals(yaris, GlobalLessonData.withTeacherUnlocks(9, yaris))
+    }
+
+    @Test
+    fun teacherUnlockPlan_bosBulutTumListeDoluBulutYalnizcaDegisenler() {
+        // Hiç oynanmamış bölüm: bütün liste (açılmış hâli) yazılır
+        val bos = GlobalLessonData.teacherUnlockPlan(3, null)
+        assertEquals(20, bos.size)
+        assertEquals(GlobalLessonData.createLessonItems(3).map { it.stableId }, bos.map { it.stableId })
+        assertEquals(true, bos[1].fields["isCompleted"])
+        assertEquals(false, bos[0].fields["isCompleted"]) // başlık
+        // Dolu bulut: yalnızca değişen item'lar
+        val bulut = GlobalLessonData.createLessonItems(3).map { if (it.type == LessonItem.TYPE_CHEST) it.copy(isCompleted = true) else it }
+        val plan = GlobalLessonData.teacherUnlockPlan(3, bulut)
+        // Sandıklar zaten açık → yazılmaz; geri kalan oynanabilir (ders) item'lar yazılır
+        assertEquals(12, plan.size)
+        assertTrue(plan.all { it.fields["isCompleted"] == true })
+        // Her şey zaten açıksa plan boş
+        val hepsiAcik = GlobalLessonData.withTeacherUnlocks(3, GlobalLessonData.createLessonItems(3))
+        assertTrue(GlobalLessonData.teacherUnlockPlan(3, hepsiAcik).isEmpty())
+        // Part 7: kilitli yarışlar 1'e çekilir
+        val p7 = GlobalLessonData.teacherUnlockPlan(7, GlobalLessonData.createLessonItems(7))
+        assertEquals(14, p7.size)
+        assertTrue(p7.all { it.fields["raceBusyLevel"] == 1 })
+    }
+
+    @Test
+    fun applyTeacherUnlocksToMemory() {
+        assertFalse(GlobalLessonData.applyTeacherUnlocksToMemory()) // bellek boş
+        val adapter = KayitAdapter()
+        LessonManager.setAdapter(adapter)
+        yukle(2)
+        assertTrue(GlobalLessonData.applyTeacherUnlocksToMemory())
+        assertTrue(GlobalLessonData.lessonItems.filter { it.type != LessonItem.TYPE_HEADER }.all { it.isCompleted })
+        assertEquals(1, adapter.tumListeSayisi)
+    }
+
+    @Test
+    fun turkishItem_stableIdAt_localize() {
+        assertEquals("Ünite Maratonu", GlobalLessonData.turkishItem(1, "p1_i04_unite_maratonu")?.title)
+        assertEquals("Sayıları Abaküste Tanıma", GlobalLessonData.turkishItem(1, "p1_i04_unite_maratonu")?.titleUnit)
+        assertNull(GlobalLessonData.turkishItem(1, "yok"))
+        assertEquals(GlobalLessonData.createLessonItems(2), GlobalLessonData.createLessonItemsInTurkish(2))
+        assertEquals("Merhaba", GlobalLessonData.localizeLessonText("Merhaba"))
     }
 
     // ---- Yerel önbellek göçü ----
@@ -806,7 +970,7 @@ class LessonManagerTest {
         LessonManager.updateLessonItem(1, yeni, 1)
         assertEquals(2, GlobalLessonData.getLessonItem(1)?.currentStep)
         assertEquals(listOf(1 to yeni), adapter.guncellenen)
-        assertEquals(listOf("tek:1"), sink.sira)
+        assertEquals(listOf("tek:${kimlik(1, 1)}"), sink.sira)
         // Başka part'ın item'ı: ne global ne adapter güncellenir
         LessonManager.updateLessonItem(2, yeni.copy(partId = 5), 1)
         assertEquals(1, adapter.guncellenen.size)

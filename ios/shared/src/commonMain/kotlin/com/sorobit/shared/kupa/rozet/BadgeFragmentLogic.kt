@@ -26,21 +26,21 @@ object BadgeFragmentLogic {
      * unlocked=true olduğunda gösterilecek metinler.
      */
     val unlockedDetailTextOverrides = mapOf(
-        BadgeAnimMode.DAILY_ONLY to "x dersi hatasız tamamlayarak Kusursuz Odak rozetini kazandın.",
-        BadgeAnimMode.ROCKET_WITH_BASE to "x dersi 1 günde tamamlayarak Sınır Tanımaz rozetini kazandın.",
-        BadgeAnimMode.BOWLING_WITH_BASE to "x günlük görev tamamlayarak Strike Ustası rozetini kazandın.",
-        BadgeAnimMode.GOLF_WITH_BASE to "x kere eğitmene danışarak Nokta Atışı rozetini kazandın.",
-        BadgeAnimMode.FISHING_WITH_BASE to "x gün üst üste Günlük Soru mücadelesini tamamlayarak Derin Avcı rozetini kazandın.",
-        BadgeAnimMode.DINO to "Toplama Kupa Yolunda x kupa kazanarak Dino rozetini kazandın.",
-        BadgeAnimMode.TORNADO to "x Toplama Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.",
-        BadgeAnimMode.VOLCANO to "x Çıkarma Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.",
-        BadgeAnimMode.CROCODILE to "Çıkarma Kupa Yolunda x kupa kazanarak Timo rozetini kazandın.",
-        BadgeAnimMode.GOAT to "Çarpma Kupa Yolunda x kupa kazanarak Keço rozetini kazandın.",
-        BadgeAnimMode.EAGLE to "Toplama Kupa Yolu - Körleme'de x kupa kazanarak Karti rozetini kazandın.",
-        BadgeAnimMode.FLY to "Çıkarma Kupa Yolu - Körleme'de x kupa kazanarak Sino rozetini kazandın.",
-        BadgeAnimMode.TURTLE to "Çarpma Kupa Yolu - Körleme'de x kupa kazanarak Kapi rozetini kazandın.",
-        BadgeAnimMode.CUP_GOOGLE to "Ünite Maratonunda x. olarak Elit Seviye kupasını kazandın.",
-        BadgeAnimMode.KARATE to "x Ünite Maratonunu 3 yıldız ile tamamlayarak Siyah Kuşak rozetini kazandın.",
+        BadgeAnimMode.DAILY_ONLY to "%1\$s dersi hatasız tamamlayarak Kusursuz Odak rozetini kazandın.",
+        BadgeAnimMode.ROCKET_WITH_BASE to "%1\$s dersi 1 günde tamamlayarak Sınır Tanımaz rozetini kazandın.",
+        BadgeAnimMode.BOWLING_WITH_BASE to "%1\$s günlük görev tamamlayarak Strike Ustası rozetini kazandın.",
+        BadgeAnimMode.GOLF_WITH_BASE to "%1\$s kere eğitmene danışarak Nokta Atışı rozetini kazandın.",
+        BadgeAnimMode.FISHING_WITH_BASE to "%1\$s gün üst üste Günlük Soru mücadelesini tamamlayarak Derin Avcı rozetini kazandın.",
+        BadgeAnimMode.DINO to "Toplama Kupa Yolunda %1\$s kupa kazanarak Dino rozetini kazandın.",
+        BadgeAnimMode.TORNADO to "%1\$s Toplama Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.",
+        BadgeAnimMode.VOLCANO to "%1\$s Çıkarma Ustalık Yolu adımını tamamlayarak Kasırga rozetini kazandın.",
+        BadgeAnimMode.CROCODILE to "Çıkarma Kupa Yolunda %1\$s kupa kazanarak Timo rozetini kazandın.",
+        BadgeAnimMode.GOAT to "Çarpma Kupa Yolunda %1\$s kupa kazanarak Keço rozetini kazandın.",
+        BadgeAnimMode.EAGLE to "Toplama Kupa Yolu - Körleme'de %1\$s kupa kazanarak Karti rozetini kazandın.",
+        BadgeAnimMode.FLY to "Çıkarma Kupa Yolu - Körleme'de %1\$s kupa kazanarak Sino rozetini kazandın.",
+        BadgeAnimMode.TURTLE to "Çarpma Kupa Yolu - Körleme'de %1\$s kupa kazanarak Kapi rozetini kazandın.",
+        BadgeAnimMode.CUP_GOOGLE to "Ünite Maratonunda %1\$s. olarak Elit Seviye kupasını kazandın.",
+        BadgeAnimMode.KARATE to "%1\$s Ünite Maratonunu 3 yıldız ile tamamlayarak Siyah Kuşak rozetini kazandın.",
         BadgeAnimMode.GOLD_MEDAL to "Ünite maratonunda 1. olarak Altın Madalya kazandın.",
         BadgeAnimMode.SILVER_MEDAL to "Ünite maratonunda 2. olarak Gümüş Madalya kazandın.",
         BadgeAnimMode.BRONZE_MEDAL to "Ünite maratonunda 3. olarak Bronz Madalya kazandın.",
@@ -53,7 +53,7 @@ object BadgeFragmentLogic {
         BadgeAnimMode.DAILY_ONLY to "Bu rozeti kazanmak için 3 dersi hatasız tamamlayarak başarı elde et.",
         BadgeAnimMode.ROCKET_WITH_BASE to "Bu rozeti kazanmak için 3 dersi 1 günde tamamlayarak başarı elde et.",
         BadgeAnimMode.BOWLING_WITH_BASE to "Bu rozeti kazanmak için 5 günlük görevi tamamlayarak başarı elde et.",
-        BadgeAnimMode.GOLF_WITH_BASE to "Bu rozeti kazanmak için 5 kere öğretmene danış.",
+        BadgeAnimMode.GOLF_WITH_BASE to "Bu rozeti kazanmak için 3 kere öğretmene danış.",
         BadgeAnimMode.FISHING_WITH_BASE to "Bu rozeti kazanmak için 3 gün üst üste Günlük Soru mücadelesini çözerek başarı elde et.",
         BadgeAnimMode.DINO to "Bu rozeti kazanmak için Toplama Kupa Yolunda 500 kupaya ulaş.",
         BadgeAnimMode.TORNADO to "Bu rozeti kazanmak için Toplama Ustalık Yolunda 1 adımı tamamla.",
@@ -149,8 +149,8 @@ object BadgeFragmentLogic {
     )
 
     /**
-     * Android `formatUnlockedDetailText`: şablondaki HER "x" harfi ilerleme değeriyle değiştirilir
-     * (`template.replace("x", ...)`; şablonlarda başka "x" bulunmadığı varsayılır).
+     * Android `formatUnlockedDetailText`: şablondaki "%1\$s" yer tutucusu ilerleme değeriyle değiştirilir
+     * (Android güncel: eskiden "x" harfiydi).
      *
      * @param celebrateTarget kutlama akışındaysa ve ARG_CELEBRATE_TARGET varsa o değer; yoksa null
      *   (o zaman [BadgeProgressRepository.getProgressValueByMode] kullanılır; o da null ise şablon aynen döner).
@@ -162,7 +162,7 @@ object BadgeFragmentLogic {
     ): String {
         if (mode !in modesWithDynamicProgress) return template
         val progress = celebrateTarget ?: BadgeProgressRepository.getProgressValueByMode(mode) ?: return template
-        return template.replace("x", progress.toString())
+        return template.replace("%1\$s", progress.toString())
     }
 
     /** Android `applyBadgeDetailText` metni. */

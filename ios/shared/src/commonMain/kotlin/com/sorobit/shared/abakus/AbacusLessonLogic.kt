@@ -24,8 +24,11 @@ data class AbacusOperation(
 
 /** AbacusFragment ve BlindingLessonFragment'in ortak saf kuralları. */
 object AbacusLessonRules {
-    /** LessonItem.TYPE_CHEST (sandık; süre tutulur, boncuk animasyonu 50 ms). */
+    /** LessonItem.TYPE_CHEST (sandık; süre tutulur). */
     const val TYPE_CHEST = 2
+
+    /** Ders başarı oranı telemetrisi kapsamı: yalnızca ders (0) ve sandık (2) adımları (Android: isLessonSuccessRateScope). */
+    fun isLessonSuccessRateType(lessonType: Int): Boolean = lessonType == 0 || lessonType == TYPE_CHEST
 
     /** Kontrol düğmesine ardışık basışlar arasında gereken en az süre (ms). */
     const val CONTROL_DEBOUNCE_MS = 100L
@@ -50,8 +53,15 @@ object AbacusLessonRules {
     const val PROGRESS_COLOR_DARK_RED = 0xFF990000.toInt()
     const val PROGRESS_ANIMATION_MS = 700L
 
-    /** Boncuk animasyon süresi: sandık dersinde 50 ms, diğerlerinde 300 ms. */
-    fun beadAnimationDurationMs(lessonType: Int): Long = if (lessonType == 2) 50L else 300L
+    /** Sandık olmayan derste ders sonu "geçti" için gereken en az başarı (%). Güncel Android: `successRate < 75f` → başarısız ekranı (eskiden %10). */
+    const val LESSON_PASS_MIN_SUCCESS_RATE = 75f
+
+    /**
+     * Boncuk animasyon süresi: her ders türünde 300 ms (güncel Android: BEAD_ANIMATION_MS; eskiden
+     * sandık dersinde 50 ms idi). [lessonType] imza uyumu için korundu, yok sayılır.
+     */
+    @Suppress("UNUSED_PARAMETER")
+    fun beadAnimationDurationMs(lessonType: Int): Long = 300L
 
     /** Android: `String.format("%d:%02d", minutes, secs)`. */
     fun formatTimer(seconds: Int): String {
@@ -270,7 +280,7 @@ class AbacusLessonSession(
     fun currentOperation(): AbacusOperation? = operations.getOrNull(currentIndex)
 
     /**
-     * Cevabı denetler (Android: stepAnswerAlgorithm). [abacusValue] = denetleyicinin o anki değeri.
+     * Cevabı denetler (Android: stepAnswerAlgorithm). Dizin sınır dışındaysa false. [abacusValue] = denetleyicinin o anki değeri.
      *
      * - İki sayı da null ise beklenen cevap `operator` metninin sayı değeridir (yoksa 0).
      * - "+", "-", "x" → işlem sonucu.
@@ -282,6 +292,8 @@ class AbacusLessonSession(
         if (operations.isEmpty()) {
             return false
         }
+        // Son sorudan sonra gelen dokunuş: Android çökmek yerine yanlış döner (sürüm 21 düzeltmesi).
+        if (currentIndex !in operations.indices) return false
 
         val op = operations[currentIndex]
         if (op.secondNumber == null && op.firstNumber == null) {
@@ -372,7 +384,7 @@ class AbacusLessonSession(
      * Ders sonu soru paneli kapandıktan sonraki yönlendirme (Android: showQuestionPanel'deki
      * sonuç dinleyicisi + showLessonResult).
      * - Sandık: toplam puan < 500 → başarısız (isChestFailure), değilse sandık sonucu.
-     * - Diğer: başarı < %10 → başarısız ekranı, değilse ders sonucu.
+     * - Diğer: başarı < %75 ([AbacusLessonRules.LESSON_PASS_MIN_SUCCESS_RATE]) → başarısız ekranı, değilse ders sonucu.
      */
     fun outcome(worstCupTime: Int): AbacusLessonOutcome {
         val successRate = currentSuccessRate()
@@ -380,7 +392,7 @@ class AbacusLessonSession(
             val (_, toplamPuan) = AbacusLessonRules.calculateChestScore(successRate, currentTime, worstCupTime)
             if (toplamPuan < AbacusLessonRules.CHEST_MIN_TOTAL_SCORE) AbacusLessonOutcome.CHEST_FAILURE else AbacusLessonOutcome.CHEST_RESULT
         } else {
-            if (successRate < 10) AbacusLessonOutcome.LESSON_RESULT_FALSE else AbacusLessonOutcome.LESSON_RESULT
+            if (successRate < AbacusLessonRules.LESSON_PASS_MIN_SUCCESS_RATE) AbacusLessonOutcome.LESSON_RESULT_FALSE else AbacusLessonOutcome.LESSON_RESULT
         }
     }
 }

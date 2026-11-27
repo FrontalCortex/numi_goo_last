@@ -1,12 +1,14 @@
 // KAYNAK: app/src/main/java/com/example/app/GlobalLessonData.kt — createLessonItems() içindeki `when(partId)` dalları.
 // Bu dosya Android kaynağından betikle (metin dönüşümü) üretildi; item sırası ve alan değerleri birebir aynıdır.
-// Tek fark: `R.color.x` kaynak kimlikleri kaynak adını taşıyan String anahtarına ("x") çevrildi.
-// Elle düzenleme: Android tarafında katalog değişirse aynı değişiklik burada da yapılmalı.
+// Farklar: `R.color.x` kaynak kimlikleri kaynak adını taşıyan String anahtarına ("x") çevrildi; `str(R.string.x)`
+// çağrıları varsayılan (Türkçe) values/strings_lessons.xml metniyle değiştirildi. Her item `stableId` taşır.
+// Elle düzenleme: Android tarafında katalog değişirse bu dosya ios/tools/ders-katalog/uret.js ile yeniden üretilmeli.
 package com.sorobit.shared.ders
 
 /** Part 1 kataloğu (Android: `1 -> listOf(...)`). */
 internal fun katalogPart1(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p1_i00_sayilari_abakuste_tanima",
         type = LessonItem.TYPE_HEADER,
         title = "Sayıları Abaküste Tanıma",
         offset = 0,
@@ -16,6 +18,7 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
         color = "lesson_header_blue"
     ),
     LessonItem(
+        stableId = "p1_i01_sayilari_abakuste_tanima",
         type = LessonItem.TYPE_LESSON,
         title = "Sayıları Abaküste Tanıma",
         offset = -30,
@@ -25,47 +28,46 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
         finishStepNumber = 2,
         tutorialNumber = 1,
         startStepNumber = 1,
-        mapFragmentIndex = 1,
         lessonHint = "En sağdaki sütunu kullan. Aşağıda boncuklar birlik, yukarıdaki beşlik değere sahip."
     ),
     LessonItem(
+        stableId = "p1_i02_2_basamakli_sayilar",
         type = LessonItem.TYPE_LESSON,
         title = "2 Basamaklı Sayılar",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         finishStepNumber = 1001,
         tutorialNumber = 100,
         startStepNumber = 1000,
-        mapFragmentIndex = 2,
         lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
     ),
     LessonItem(
+        stableId = "p1_i03_3_4_5_basamakli_sayilar",
         type = LessonItem.TYPE_LESSON,
         title = "3-4-5 Basamaklı Sayılar",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         finishStepNumber = 1004,
         tutorialNumber = 101,
         startStepNumber = 1003,
-        mapFragmentIndex = 3,
         lessonHint = "Sayıları abaküse en büyük basamaktan başlayarak yaz."
     ),
     LessonItem(
+        stableId = "p1_i04_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "Sayıları Abaküste Tanıma",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 4,
         abacusGuideNumber = 6,
-        finishStepNumber = 1013, //1005 yapılacak
-        startStepNumber = 1013,
+        finishStepNumber = 1005, //1005 yapılacak
+        startStepNumber = 1005,
         tutorialIsFinish = true,
         lessonHint = "Hatasız, en kısa sürede bitir.",
         cupPoint1 = 1600,
@@ -73,6 +75,7 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
         worstCupTime = 150 //1 yıldız alması için min kaç saniyede bitirmeli.
     ),
     LessonItem(
+        stableId = "p1_i05_kuralsiz_toplama",
         type = LessonItem.TYPE_HEADER,
         title = "Kuralsız toplama",
         offset = 0,
@@ -83,66 +86,66 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p1_i06_kuralsiz_toplama_1_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Toplama - 1 Basamaklı",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         tutorialNumber = 2,
         startStepNumber = 4,
-        mapFragmentIndex = 6,
         finishStepNumber = 5,
         lessonHint = "İlk sayıyı yaz. Toplanacak sayı değerinde boncuk ekle.",
         abacusGuideNumber = 1
     ),LessonItem(
+        stableId = "p1_i07_kuralsiz_toplama_2_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Toplama - 2 Basamaklı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
         tutorialNumber = 102,
         startStepNumber = 1007,
-        mapFragmentIndex = 7,
         finishStepNumber = 1007,
         lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
     ),LessonItem(
+        stableId = "p1_i08_kuralsiz_toplama_3_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Toplama - 3 Basamaklı",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         tutorialNumber = 103,
         startStepNumber = 1010,
-        mapFragmentIndex = 8,
         finishStepNumber = 1011,
         lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
     ),LessonItem(
+        stableId = "p1_i09_kuralsiz_toplama_4_5_basamak",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Toplama - 4, 5 Basamaklı",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         tutorialIsFinish = true,
         startStepNumber = 1013,
-        mapFragmentIndex = 9,
         finishStepNumber = 1014,
         lessonHint = "Toplanacak sayıyı en büyük basamaktan başlayarak ekle.",
     ),
     LessonItem(
+        stableId = "p1_i10_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "Kuralsız Toplama",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 10,
-        finishStepNumber = 1013, //7 yapılacak
-        startStepNumber = 1013,
+        finishStepNumber = 7, //7 yapılacak
+        startStepNumber = 7,
         tutorialIsFinish = true,
         lessonHint = "Hatasız, en kısa sürede bitir.",
         cupPoint1 = 1300,
@@ -151,6 +154,7 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p1_i11_5_lik_toplama",
         type = LessonItem.TYPE_HEADER,
         title = "5'lik Toplama",
         offset = 0,
@@ -161,65 +165,65 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p1_i12_5_lik_toplama_kurallar",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Toplama - Kurallar",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialNumber = 3,
         startStepNumber = 8,
-        mapFragmentIndex = 12,
         finishStepNumber = 10,
         lessonHint = "5 gelir. Eklenecek sayının kardeşi gider.",
         abacusGuideNumber = 2
     ),
     LessonItem(
+        stableId = "p1_i13_5_lik_toplama_kuralsiz_topla",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Toplama - Kuralsız Toplama Farkı",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 12,
-        mapFragmentIndex = 13,
         finishStepNumber = 14,
         tutorialNumber = 4,
         lessonHint = "Önce doğrudan eklemeyi dene. Olmuyorsa 5'lik kuralı kullan.",
 
         ),
     LessonItem(
+        stableId = "p1_i14_5_lik_toplama_3_4_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Toplama - 3, 4 Basamaklı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 16,
-        mapFragmentIndex = 14,
         finishStepNumber = 18,
         tutorialIsFinish = true,
         lessonHint = "Önce doğrudan eklemeyi dene. Olmuyorsa 5'lik kuralı kullan.",
     ),
     LessonItem(
+        stableId = "p1_i15_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "5'lik Toplama",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
         tutorialIsFinish = true,
-        mapFragmentIndex = 15,
-        startStepNumber = 1013, //19 yapılacak
-        finishStepNumber = 1013,
+        startStepNumber = 19, //19 yapılacak
+        finishStepNumber = 19,
         cupPoint1 = 1400,
         cupPoint2 = 1200,
         worstCupTime = 180,
         lessonHint = "5 gelir. Eklenecek sayının kardeşi gider.",
         ),
     LessonItem(
+        stableId = "p1_i16_10_luk_toplama_1_2_3_4_5",
         type = LessonItem.TYPE_HEADER,
         title = "10'luk Toplama 1-2-3-4-5",
         offset = 0,
@@ -230,14 +234,14 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p1_i17_10_luk_toplama_kurallar",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - Kurallar",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 20,
-        mapFragmentIndex = 17,
         finishStepNumber = 22,
         tutorialNumber = 5,
         lessonHint = "10 gelir. Büyük kardeş gider.",
@@ -245,55 +249,54 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p1_i18_10_luk_toplama_elde_mantigi",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk toplama - Elde Mantığı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 24,
-        mapFragmentIndex = 18,
         finishStepNumber = 26,
         tutorialNumber = 6,
         lessonHint = "'10 gelir' adımını uygularken 5'lik veya 10'luk kuralı kullan."
 
     ),
     LessonItem(
+        stableId = "p1_i19_10_luk_toplama_3_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 3 Basamaklı",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 28,
-        mapFragmentIndex = 19,
-        finishStepNumber = 31,
+        finishStepNumber = 30,
         tutorialIsFinish = true,
         lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
     ),LessonItem(
+        stableId = "p1_i20_10_luk_toplama_3_4_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 3, 4 Basamaklı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 32,
-        mapFragmentIndex = 20,
         finishStepNumber = 34,
         tutorialIsFinish = true,
         lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan."
 
     ),LessonItem(
+        stableId = "p1_i21_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "10'luk Toplama 1-2-3-4-5",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
         tutorialIsFinish = true,
-        mapFragmentIndex = 21,
         startStepNumber = 36,
         finishStepNumber = 36,
         lessonHint = "Kuralsız, 5'lik toplama ve 10'luk toplama kurallarını kullan.",
@@ -303,6 +306,7 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p1_i22_10_luk_toplama_6_7_8_9",
         type = LessonItem.TYPE_HEADER,
         title = "10'luk Toplama 6-7-8-9",
         offset = 0,
@@ -313,70 +317,69 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p1_i23_10_luk_toplama_kurallar",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - Kurallar",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 37,
-        mapFragmentIndex = 23,
         finishStepNumber = 38,
         tutorialNumber = 7,
         lessonHint = "10 gelir. Kardeş gider."
 
     ),
     LessonItem(
+        stableId = "p1_i24_10_luk_toplama_elde_mantigi",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - Elde Mantığı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 41,
-        mapFragmentIndex = 24,
         finishStepNumber = 43,
         tutorialNumber = 105,
         lessonHint = "'10 gelir' adımını uygularken 5'lik veya 10'luk kuralı kullan."
     ),
     LessonItem(
+        stableId = "p1_i25_10_luk_toplama_3_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 3 Basamaklı",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 44,
-        mapFragmentIndex = 25,
         finishStepNumber = 46,
         tutorialIsFinish = true,
         lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
 
     ),
     LessonItem(
+        stableId = "p1_i26_10_luk_toplama_3_4_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 3, 4 Basamaklı",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 48,
-        mapFragmentIndex = 26,
         finishStepNumber = 50,
         tutorialIsFinish = true,
         lessonHint = "İlk sayıyı yaz. Toplamaya 2. sayının en büyük basamağından başla."
     ),
     LessonItem(
+        stableId = "p1_i27_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "10'luk Toplama 6-7-8-9",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
         tutorialIsFinish = true,
-        mapFragmentIndex = 27,
         startStepNumber = 52,
         finishStepNumber = 52,
         cupPoint1 = 1350,
@@ -385,6 +388,7 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p1_i28_boncuk_kurali",
         type = LessonItem.TYPE_HEADER,
         title = "Boncuk kuralı",
         offset = 0,
@@ -394,59 +398,59 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
         color = "lesson_header_red"
     ),
     LessonItem(
+        stableId = "p1_i29_boncuk_kurali_kurallar",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Kuralı - Kurallar",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 4,
         currentStep = 1,
         startStepNumber = 53,
-        mapFragmentIndex = 29,
         finishStepNumber = 56,
         tutorialNumber = 8,
         lessonHint = "Kuralsız ve 10'luk kural ile ekleyemediğinde boncuk kuralını kullan"
 
     ),
     LessonItem(
+        stableId = "p1_i30_boncuk_kurali_onluk_kural_fa",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Kuralı - Onluk Kural Farkı",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 57,
-        mapFragmentIndex = 30,
         finishStepNumber = 59,
         tutorialNumber = 9,
         lessonHint = "10 gelir adımını uygularken 5'lik kuralı kullanman gerekebilir."
 
     ),
     LessonItem(
+        stableId = "p1_i31_boncuk_kurali_3_4_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Kuralı - 3, 4 Basamaklı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 61,
-        mapFragmentIndex = 31,
         finishStepNumber = 63,
         tutorialIsFinish = true,
-        lessonHint = "10 gelir adımını uygularken 5\\'lik kuralı kullanman gerekebilir."
+        lessonHint = "10 gelir adımını uygularken 5'lik kuralı kullanman gerekebilir."
 
     ),
     LessonItem(
+        stableId = "p1_i32_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "Boncuk Kuralı",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
         tutorialIsFinish = true,
-        mapFragmentIndex = 32,
-        startStepNumber = 1013, //65 ile değiştirilecek
-        finishStepNumber = 1013,
+        startStepNumber = 65, //65 ile değiştirilecek
+        finishStepNumber = 65,
         cupPoint1 = 1350,
         cupPoint2 = 1000,
         worstCupTime = 180,
@@ -457,6 +461,7 @@ internal fun katalogPart1(): List<LessonItem> = listOf(
 /** Part 2 kataloğu (Android: `2 -> listOf(...)`). */
 internal fun katalogPart2(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p2_i00_kuralsiz_cikarma",
         type = LessonItem.TYPE_HEADER,
         title = "Kuralsız Çıkarma",
         offset = 0,
@@ -467,42 +472,41 @@ internal fun katalogPart2(): List<LessonItem> = listOf(
     ),
 
     LessonItem(
+        stableId = "p2_i01_kuralsiz_cikarma_temeli",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Çıkarma - Temeli",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 66,
-        mapFragmentIndex = 2,
         finishStepNumber = 68,
         tutorialNumber = 10,
         lessonHint = "İlk sayıyı yaz. Çıkarmaya 2. sayının en büyük basamağından başla."
 
     ),
     LessonItem(
+        stableId = "p2_i02_kuralsiz_cikarma_3_4_5_basam",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Çıkarma - 3,4,5 basamaklı",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 4,
         currentStep = 1,
         tutorialIsFinish = true,
         startStepNumber = 70,
-        mapFragmentIndex = 3,
         finishStepNumber = 73,
         lessonHint = "İlk sayıyı yaz. Çıkarmaya 2. sayının en büyük basamağından başla."
     ),
     LessonItem(
+        stableId = "p2_i03_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "Kuralsız Çıkarma",
         offset = 60,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 4,
         finishStepNumber = 74,
         startStepNumber = 74,
         tutorialIsFinish = true,
@@ -513,6 +517,7 @@ internal fun katalogPart2(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p2_i04_5_lik_cikarma",
         type = LessonItem.TYPE_HEADER,
         title = "5'lik Çıkarma",
         offset = 0,
@@ -522,54 +527,53 @@ internal fun katalogPart2(): List<LessonItem> = listOf(
         color = "lesson_header_green"
     ),
     LessonItem(
+        stableId = "p2_i05_5_lik_cikarma_kurallar",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Çıkarma - Kurallar",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialNumber = 11,
         startStepNumber = 75,
-        mapFragmentIndex = 6,
         finishStepNumber = 77,
         lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
     ),
     LessonItem(
+        stableId = "p2_i06_5_lik_cikarma_3_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Çıkarma - 3 Basamaklı",
         offset = 60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialIsFinish = true,
         startStepNumber = 79,
-        mapFragmentIndex = 7,
         finishStepNumber = 81,
         lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
     ),
     LessonItem(
+        stableId = "p2_i07_5_lik_cikarma_kuralli_kurals",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Çıkarma - Kurallı,Kuralsız Çıkarma",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 83,
         tutorialNumber = 1100,
-        mapFragmentIndex = 8,
         finishStepNumber = 85,
         lessonHint = "Çıkarmaya büyük basamaktan başla. 5 gider. Kardeş gelir."
     ),
     LessonItem(
+        stableId = "p2_i08_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "5'lik Çıkarma",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 9,
         finishStepNumber = 87,
         startStepNumber = 87,
         tutorialIsFinish = true,
@@ -579,6 +583,7 @@ internal fun katalogPart2(): List<LessonItem> = listOf(
         worstCupTime = 180
     ),
     LessonItem(
+        stableId = "p2_i09_10_luk_cikarma",
         type = LessonItem.TYPE_HEADER,
         title = "10'luk Çıkarma",
         offset = 0,
@@ -588,67 +593,66 @@ internal fun katalogPart2(): List<LessonItem> = listOf(
         color = "lesson_header_blue"
     ),
     LessonItem(
+        stableId = "p2_i10_10_luk_cikarma_kurallar",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Çıkarma - Kurallar",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialNumber = 12,
         startStepNumber = 88,
-        mapFragmentIndex = 11,
         finishStepNumber = 90,
         lessonHint = "10 gider. Kardeş gelir."
     ),
     LessonItem(
+        stableId = "p2_i11_10_luk_cikarma_2_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Çıkarma - 2 basamaklı",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialNumber = 13,
         startStepNumber = 92,
-        mapFragmentIndex = 12,
         finishStepNumber = 94,
         lessonHint = "10 gider. Kardeş gelir."
     ),
     LessonItem(
+        stableId = "p2_i12_10_luk_cikarma_komsu_mantigi",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Çıkarma - Komşu Mantığı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialNumber = 14,
         startStepNumber = 96,
-        mapFragmentIndex = 13,
         finishStepNumber = 98,
         lessonHint = "10 gider adımını yaparken 5'lik olmazsa 10'luk çıkarma kuralı kullan."
     ),
     LessonItem(
+        stableId = "p2_i13_10_luk_cikarma_ileri_seviye",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Çıkarma - İleri Seviye",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialNumber = 15,
         startStepNumber = 100,
-        mapFragmentIndex = 14,
         finishStepNumber = 102,
         lessonHint = "İlk kuralsız çıkarmayı dene. Olmuyorsa 5'lik çıkarma. Olmuyorsa 10'luk çıkarma."
     ),
     LessonItem(
+        stableId = "p2_i14_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "10'luk Çıkarma",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 15,
         finishStepNumber = 104,
         startStepNumber = 104,
         tutorialIsFinish = true,
@@ -658,6 +662,7 @@ internal fun katalogPart2(): List<LessonItem> = listOf(
         worstCupTime = 180
     ),
     LessonItem(
+        stableId = "p2_i15_boncuk_cikarma",
         type = LessonItem.TYPE_HEADER,
         title = "Boncuk Çıkarma",
         offset = 0,
@@ -667,54 +672,53 @@ internal fun katalogPart2(): List<LessonItem> = listOf(
         color = "lesson_header_yellow"
     ),
     LessonItem(
+        stableId = "p2_i16_boncuk_cikarma_kurallar",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Çıkarma - Kurallar",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialNumber = 16,
         startStepNumber = 105,
-        mapFragmentIndex = 17,
         finishStepNumber = 107,
         lessonHint = "Kardeş gelirken 5'lik kural uygula."
     ),
     LessonItem(
+        stableId = "p2_i17_boncuk_cikarma_3_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Çıkarma - 3 Basamaklı",
         offset = 60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialNumber = 17,
         startStepNumber = 109,
-        mapFragmentIndex = 18,
         finishStepNumber = 111,
         lessonHint = "Kardeş gelirken 5'lik kural uygula."
     ),
     LessonItem(
+        stableId = "p2_i18_boncuk_cikarma_ileri_seviye",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Çıkarma - İleri Seviye",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         tutorialIsFinish = true,
         startStepNumber = 113,
-        mapFragmentIndex = 19,
         finishStepNumber = 115,
         lessonHint = "Kardeş gelirken 5'lik kural uygula."
     ),
     LessonItem(
+        stableId = "p2_i19_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "Boncuk Çıkarma",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 20,
         finishStepNumber = 117, //117 ile değişecek
         startStepNumber = 117,
         tutorialIsFinish = true,
@@ -729,6 +733,7 @@ internal fun katalogPart2(): List<LessonItem> = listOf(
 /** Part 3 kataloğu (Android: `3 -> listOf(...)`). */
 internal fun katalogPart3(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p3_i00_2_ye_1_carpma",
         type = LessonItem.TYPE_HEADER,
         title = "2'ye 1 Çarpma",
         offset = 0,
@@ -739,56 +744,55 @@ internal fun katalogPart3(): List<LessonItem> = listOf(
     ),
 
     LessonItem(
+        stableId = "p3_i01_2_ye_1_carpma_kuralsiz",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma - Kuralsız",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 118,
-        mapFragmentIndex = 2,
         finishStepNumber = 120,
         tutorialNumber = 18,
         abacusGuideNumber = 4,
         lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i02_2_ye_1_carpma_kuralli",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma - Kurallı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 122,
-        mapFragmentIndex = 3,
         finishStepNumber = 124,
         tutorialNumber = 19,
         lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i03_2_ye_1_carpma_genel",
         //Bu 2 adım ve 8 soru olsun. Genel çarpmayı kullanalım.
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma - Genel",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         startStepNumber = 126,
-        mapFragmentIndex = 4,
         finishStepNumber = 127,
         tutorialIsFinish = true,
         lessonHint = "Birler ile onlar basamağı çarpılınca sonuç onlar basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i04_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "2'ye 1 Çarpma",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 5,
         finishStepNumber = 130,
         startStepNumber = 130,
         tutorialIsFinish = true,
@@ -798,6 +802,7 @@ internal fun katalogPart3(): List<LessonItem> = listOf(
         worstCupTime = 90
     ),
     LessonItem(
+        stableId = "p3_i05_2_ye_2_carpma",
         type = LessonItem.TYPE_HEADER,
         title = "2'ye 2 Çarpma",
         offset = 0,
@@ -807,54 +812,53 @@ internal fun katalogPart3(): List<LessonItem> = listOf(
         color = "lesson_header_blue"
     ),
     LessonItem(
+        stableId = "p3_i06_2_ye_2_carpma_temel",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 çarpma - Temel",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 131,
-        mapFragmentIndex = 7,
         finishStepNumber = 133,
         tutorialNumber = 20,
         lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i07_2_ye_2_carpma_genel",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 çarpma - Genel",
         offset = 60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 135,
-        mapFragmentIndex = 8,
         finishStepNumber = 137,
         tutorialIsFinish = true,
         lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i08_2_ye_2_carpma_genel",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 çarpma - Genel",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 135,
-        mapFragmentIndex = 9,
         finishStepNumber = 137,
         tutorialIsFinish = true,
         lessonHint = "Onlar ile onlar basamağı çarpılınca sonuç yüzler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i09_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "2'ye 2 Çarpma",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 10,
         finishStepNumber = 139,
         startStepNumber = 139,
         tutorialIsFinish = true,
@@ -864,6 +868,7 @@ internal fun katalogPart3(): List<LessonItem> = listOf(
         worstCupTime = 160
     ),
     LessonItem(
+        stableId = "p3_i10_3_e_1_carpma",
         type = LessonItem.TYPE_HEADER,
         title = "3'e 1 Çarpma",
         offset = 0,
@@ -873,54 +878,53 @@ internal fun katalogPart3(): List<LessonItem> = listOf(
         color = "lesson_header_orange"
     ),
     LessonItem(
+        stableId = "p3_i11_3_e_1_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "3'e 1 Çarpma",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 140,
-        mapFragmentIndex = 12,
         finishStepNumber = 142,
         tutorialNumber = 21,
         lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i12_3_e_1_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "3'e 1 Çarpma",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         startStepNumber = 140,
-        mapFragmentIndex = 13,
         finishStepNumber = 141,
         tutorialIsFinish = true,
         lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i13_3_e_1_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "3'e 1 Çarpma",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         startStepNumber = 140,
-        mapFragmentIndex = 14,
         finishStepNumber = 141,
         tutorialIsFinish = true,
         lessonHint = "Yüzler ile birler basamağı çarpılınca sonuç yüzler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i14_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "3'e 1 Çarpma",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 15,
         finishStepNumber = 144,
         startStepNumber = 144,
         tutorialIsFinish = true,
@@ -930,6 +934,7 @@ internal fun katalogPart3(): List<LessonItem> = listOf(
         worstCupTime = 160
     ),
     LessonItem(
+        stableId = "p3_i15_3_e_2_carpma",
         type = LessonItem.TYPE_HEADER,
         title = "3'e 2 Çarpma",
         offset = 0,
@@ -939,54 +944,53 @@ internal fun katalogPart3(): List<LessonItem> = listOf(
         color = "lesson_header_pink"
     ),
     LessonItem(
+        stableId = "p3_i16_3_e_2_carpma_temel",
         type = LessonItem.TYPE_LESSON,
         title = "3'e 2 Çarpma - Temel",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 145,
-        mapFragmentIndex = 17,
         finishStepNumber = 147,
         tutorialNumber = 22,
         lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i17_3_e_2_carpma_genel",
         type = LessonItem.TYPE_LESSON,
         title = "3'e 2 Çarpma - Genel",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         startStepNumber = 149,
-        mapFragmentIndex = 18,
         finishStepNumber = 150,
         tutorialNumber = 23,
         lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i18_3_e_2_carpma_genel",
         type = LessonItem.TYPE_LESSON,
         title = "3'e 2 Çarpma - Genel",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 2,
         currentStep = 1,
         tutorialIsFinish = true,
         startStepNumber = 149,
-        mapFragmentIndex = 19,
         finishStepNumber = 150,
         lessonHint = "Yüzler ile onlar basamağı çarpılınca sonuç binler basamağına yazılır."
     ),
     LessonItem(
+        stableId = "p3_i19_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         titleUnit = "3'e 2 Çarpma",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 20,
         finishStepNumber = 153,
         startStepNumber = 153,
         tutorialIsFinish = true,
@@ -1001,6 +1005,7 @@ internal fun katalogPart3(): List<LessonItem> = listOf(
 /** Part 4 kataloğu (Android: `4 -> listOf(...)`). */
 internal fun katalogPart4(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p4_i00_kuralsiz_toplama",
         type = LessonItem.TYPE_HEADER,
         title = "Kuralsız Toplama",
         offset = 0,
@@ -1011,14 +1016,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
     ),
 
     LessonItem(
+        stableId = "p4_i01_kuralsiz_toplama_3_saniye_ar",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Toplama - 3 Saniye Arayla",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 1,
-        mapFragmentIndex = 2,
         finishStepNumber = 3,
         isBlinding = true,
         tutorialNumber = 24,
@@ -1026,14 +1031,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p4_i02_kuralsiz_toplama_2_5_saniye",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Toplama - 2,5 Saniye Arayla",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 5,
-        mapFragmentIndex = 3,
         finishStepNumber = 7,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1041,14 +1046,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p4_i03_kuralsiz_toplama_2_saniye_ar",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Toplama - 2 Saniye Arayla",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 9,
-        mapFragmentIndex = 4,
         finishStepNumber = 11,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1056,13 +1061,13 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p4_i04_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 5,
         finishStepNumber = 13,
         startStepNumber = 13,
         isBlinding = true,
@@ -1071,6 +1076,7 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "Hatasız, en kısa sürede bitir.",
     ),
     LessonItem(
+        stableId = "p4_i05_5_lik_toplama",
         type = LessonItem.TYPE_HEADER,
         title = "5'lik Toplama",
         offset = 0,
@@ -1080,14 +1086,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         color = "lesson_header_blue"
     ),
     LessonItem(
+        stableId = "p4_i06_5_lik_toplama_3_saniye_arayl",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Toplama - 3 Saniye Arayla",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 14,
-        mapFragmentIndex = 7,
         finishStepNumber = 16,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1095,14 +1101,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5 gelir. Kardeş gider."
     ),
     LessonItem(
+        stableId = "p4_i07_5_lik_toplama_2_5_saniye_ara",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Toplama - 2,5 Saniye Arayla",
         offset = 60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 14,
-        mapFragmentIndex = 8,
         finishStepNumber = 16,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1110,14 +1116,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5 gelir. Kardeş gider."
     ),
     LessonItem(
+        stableId = "p4_i08_5_lik_toplama_2_saniye_arayl",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Toplama - 2 Saniye Arayla",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 14,
-        mapFragmentIndex = 9,
         finishStepNumber = 16,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1125,13 +1131,13 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5 gelir. Kardeş gider."
     ),
     LessonItem(
+        stableId = "p4_i09_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 10,
         finishStepNumber = 14,
         startStepNumber = 14,
         isBlinding = true,
@@ -1140,6 +1146,7 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         timePeriod = 2000,
     ),
     LessonItem(
+        stableId = "p4_i10_10_luk_toplama_1_2_3_4_5",
         type = LessonItem.TYPE_HEADER,
         title = "10'luk Toplama 1-2-3-4-5",
         offset = 0,
@@ -1149,14 +1156,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         color = "lesson_header_blue"
     ),
     LessonItem(
+        stableId = "p4_i11_10_luk_toplama_1_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 1 Basamaklı",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 4,
         currentStep = 1,
         startStepNumber = 22,
-        mapFragmentIndex = 12,
         finishStepNumber = 22,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1164,14 +1171,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik kuralı uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p4_i12_10_luk_toplama_2_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 2 Basamaklı",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 19,
-        mapFragmentIndex = 13,
         finishStepNumber = 21,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1179,14 +1186,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik kuralı uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p4_i13_10_luk_toplama_2_basamakli_h",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 2 Basamaklı Hızlı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 19,
-        mapFragmentIndex = 14,
         finishStepNumber = 21,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1194,13 +1201,13 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik kuralı uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p4_i14_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 15,
         finishStepNumber = 23,
         startStepNumber = 23,
         isBlinding = true,
@@ -1209,6 +1216,7 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         timePeriod = 2000,
     ),
     LessonItem(
+        stableId = "p4_i15_10_luk_toplama_6_7_8_9",
         type = LessonItem.TYPE_HEADER,
         title = "10'luk Toplama 6,7,8,9",
         offset = 30,
@@ -1218,14 +1226,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         color = "lesson_header_red"
     ),
     LessonItem(
+        stableId = "p4_i16_10_luk_toplama_1_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 1 Basamaklı",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 4,
         currentStep = 1,
         startStepNumber = 1024,
-        mapFragmentIndex = 17,
         finishStepNumber = 1027,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1233,14 +1241,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik kuralı uygulaman gerekebilir.",
     ),
     LessonItem(
+        stableId = "p4_i17_10_luk_toplama_2_basamakli",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 2 Basamaklı",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 24,
-        mapFragmentIndex = 18,
         finishStepNumber = 26,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1248,14 +1256,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik kuralı uygulaman gerekebilir.",
     ),
     LessonItem(
+        stableId = "p4_i18_10_luk_toplama_2_basamakli_h",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Toplama - 2 Basamaklı Hızlı",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 24,
-        mapFragmentIndex = 19,
         finishStepNumber = 26,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1263,13 +1271,13 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik kuralı uygulaman gerekebilir.",
     ),
     LessonItem(
+        stableId = "p4_i19_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 20,
         finishStepNumber = 28,
         startStepNumber = 28,
         isBlinding = true,
@@ -1278,6 +1286,7 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         timePeriod = 2000,
     ),
     LessonItem(
+        stableId = "p4_i20_boncuk_kurali",
         type = LessonItem.TYPE_HEADER,
         title = "Boncuk Kuralı",
         offset = 0,
@@ -1287,14 +1296,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         color = "lesson_header_green"
     ),
     LessonItem(
+        stableId = "p4_i21_boncuk_toplama_3_saniye_aray",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Toplama - 3 Saniye Arayla",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 29,
-        mapFragmentIndex = 22,
         finishStepNumber = 31,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1302,14 +1311,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p4_i22_boncuk_toplama_2_5_saniye_ar",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Toplama - 2,5 Saniye Arayla",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 29,
-        mapFragmentIndex = 23,
         finishStepNumber = 31,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1317,14 +1326,14 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p4_i23_boncuk_toplama_2_saniye_aray",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Toplama - 2 Saniye Arayla",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 29,
-        mapFragmentIndex = 24,
         finishStepNumber = 31,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1332,14 +1341,13 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
         lessonHint = "5'lik uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p4_i24_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 25,
         finishStepNumber = 29, //29 ile değişecek
         startStepNumber = 29,
         isBlinding = true,
@@ -1354,6 +1362,7 @@ internal fun katalogPart4(): List<LessonItem> = listOf(
 /** Part 5 kataloğu (Android: `5 -> listOf(...)`). */
 internal fun katalogPart5(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p5_i00_kuralsiz_cikarma",
         type = LessonItem.TYPE_HEADER,
         title = "Kuralsız Çıkarma",
         offset = 0,
@@ -1364,14 +1373,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
     ),
 
     LessonItem(
+        stableId = "p5_i01_kuralsiz_cikarma_3_saniye_ar",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Çıkarma - 3 Saniye Arayla",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 34,
-        mapFragmentIndex = 2,
         finishStepNumber = 36,
         isBlinding = true,
         tutorialNumber = 25,
@@ -1379,14 +1388,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
     ),
     LessonItem(
+        stableId = "p5_i02_kuralsiz_cikarma_2_5_saniye",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Çıkarma - 2,5 Saniye Arayla",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 34,
-        mapFragmentIndex = 3,
         finishStepNumber = 36,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1394,14 +1403,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
     ),
     LessonItem(
+        stableId = "p5_i03_kuralsiz_cikarma_2_saniye_ar",
         type = LessonItem.TYPE_LESSON,
         title = "Kuralsız Çıkarma - 2 Saniye Arayla",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 34,
-        mapFragmentIndex = 4,
         finishStepNumber = 36,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1409,13 +1418,13 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
     ),
     LessonItem(
+        stableId = "p5_i04_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 5,
         finishStepNumber = 34,
         startStepNumber = 34,
         isBlinding = true,
@@ -1424,6 +1433,7 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         timePeriod = 2000,
     ),
     LessonItem(
+        stableId = "p5_i05_5_lik_cikarma",
         type = LessonItem.TYPE_HEADER,
         title = "5'lik Çıkarma",
         offset = 0,
@@ -1433,14 +1443,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         color = "lesson_header_red"
     ),
     LessonItem(
+        stableId = "p5_i06_5_lik_cikarma_3_saniye_arayl",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Çıkarma - 3 Saniye Arayla",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 39,
-        mapFragmentIndex = 7,
         finishStepNumber = 41,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1448,14 +1458,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
     ),
     LessonItem(
+        stableId = "p5_i07_5_lik_cikarma_2_5_saniye_ara",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Çıkarma - 2,5 Saniye Arayla",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 39,
-        mapFragmentIndex = 8,
         finishStepNumber = 41,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1463,14 +1473,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
     ),
     LessonItem(
+        stableId = "p5_i08_5_lik_cikarma_2_saniye_arayl",
         type = LessonItem.TYPE_LESSON,
         title = "5'lik Çıkarma - 2 Saniye Arayla",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 39,
-        mapFragmentIndex = 9,
         finishStepNumber = 41,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1478,13 +1488,13 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi deneyebilirsin."
     ),
     LessonItem(
+        stableId = "p5_i09_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 10,
         finishStepNumber = 39,
         startStepNumber = 39,
         isBlinding = true,
@@ -1493,6 +1503,7 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         timePeriod = 2000,
     ),
     LessonItem(
+        stableId = "p5_i10_10_luk_cikarma",
         type = LessonItem.TYPE_HEADER,
         title = "10'luk Çıkarma",
         offset = 0,
@@ -1502,14 +1513,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         color = "lesson_header_red"
     ),
     LessonItem(
+        stableId = "p5_i11_10_luk_cikarma_3_saniye_aray",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Çıkarma - 3 Saniye Arayla",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 44,
-        mapFragmentIndex = 12,
         finishStepNumber = 46,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1517,14 +1528,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "5'lik çıkarma uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p5_i12_10_luk_cikarma_2_5_saniye_ar",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Çıkarma - 2,5 Saniye Arayla",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 44,
-        mapFragmentIndex = 13,
         finishStepNumber = 46,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1532,14 +1543,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "5'lik çıkarma uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p5_i13_10_luk_cikarma_2_saniye_aray",
         type = LessonItem.TYPE_LESSON,
         title = "10'luk Çıkarma - 2 Saniye Arayla",
         offset = 60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 44,
-        mapFragmentIndex = 14,
         finishStepNumber = 46,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1547,13 +1558,13 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "5'lik çıkarma uygulaman gerekebilir."
     ),
     LessonItem(
+        stableId = "p5_i14_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 15,
         finishStepNumber = 44,
         startStepNumber = 44,
         isBlinding = true,
@@ -1562,6 +1573,7 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         timePeriod = 2000,
     ),
     LessonItem(
+        stableId = "p5_i15_boncuk_cikarma",
         type = LessonItem.TYPE_HEADER,
         title = "Boncuk Çıkarma",
         offset = 0,
@@ -1571,14 +1583,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         color = "lesson_header_red"
     ),
     LessonItem(
+        stableId = "p5_i16_boncuk_cikarma_3_saniye_aray",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Çıkarma - 3 Saniye Arayla",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 49,
-        mapFragmentIndex = 17,
         finishStepNumber = 51,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1586,14 +1598,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
     ),
     LessonItem(
+        stableId = "p5_i17_boncuk_cikarma_2_5_saniye_ar",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Çıkarma - 2,5 Saniye Arayla",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 49,
-        mapFragmentIndex = 18,
         finishStepNumber = 51,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1601,14 +1613,14 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
     ),
     LessonItem(
+        stableId = "p5_i18_boncuk_cikarma_2_saniye_aray",
         type = LessonItem.TYPE_LESSON,
         title = "Boncuk Çıkarma - 2 Saniye Arayla",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 49,
-        mapFragmentIndex = 19,
         finishStepNumber = 51,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1616,14 +1628,13 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
         lessonHint = "5'lik çıkarma uygulaman gerekebilir.",
     ),
     LessonItem(
+        stableId = "p5_i19_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 20,
         finishStepNumber = 49,
         startStepNumber = 49,
         isBlinding = true,
@@ -1637,6 +1648,7 @@ internal fun katalogPart5(): List<LessonItem> = listOf(
 /** Part 6 kataloğu (Android: `6 -> listOf(...)`). */
 internal fun katalogPart6(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p6_i00_2_ye_1_carpma_kolay",
         type = LessonItem.TYPE_HEADER,
         title = "2'ye 1 Çarpma - Kolay",
         offset = 0,
@@ -1647,14 +1659,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
     ),
 
     LessonItem(
+        stableId = "p6_i01_2_ye_1_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 54,
-        mapFragmentIndex = 2,
         finishStepNumber = 56,
         isBlinding = true,
         tutorialNumber = 26,
@@ -1662,14 +1674,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i02_2_ye_1_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma",
         offset = 60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 54,
-        mapFragmentIndex = 3,
         finishStepNumber = 56,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1677,14 +1689,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i03_2_ye_1_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 54,
-        mapFragmentIndex = 4,
         finishStepNumber = 56,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1692,13 +1704,13 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i04_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 5,
         finishStepNumber = 1054,
         startStepNumber = 1054,
         blindingMultiplication = true,
@@ -1710,6 +1722,7 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         worstCupTime = 60
     ),
     LessonItem(
+        stableId = "p6_i05_2_ye_1_carpma_zor",
         type = LessonItem.TYPE_HEADER,
         title = "2'ye 1 Çarpma - Zor",
         offset = 0,
@@ -1719,14 +1732,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         color = "lesson_header_red"
     ),
     LessonItem(
+        stableId = "p6_i06_2_ye_1_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 63,
-        mapFragmentIndex = 7,
         finishStepNumber = 65,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1734,14 +1747,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i07_2_ye_1_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 63,
-        mapFragmentIndex = 8,
         finishStepNumber = 65,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1749,14 +1762,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i08_2_ye_1_carpma_imkansiz",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 1 Çarpma - İmkansız",
         offset = -60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 58,
-        mapFragmentIndex = 9,
         finishStepNumber = 58,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1764,13 +1777,13 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i09_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 10,
         finishStepNumber = 58,
         startStepNumber = 58,
         blindingMultiplication = true,
@@ -1782,6 +1795,7 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         worstCupTime = 90
     ),
     LessonItem(
+        stableId = "p6_i10_2_ye_2_carpma_kolay",
         type = LessonItem.TYPE_HEADER,
         title = "2'ye 2 Çarpma - Kolay",
         offset = 0,
@@ -1791,14 +1805,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         color = "lesson_header_red"
     ),
     LessonItem(
+        stableId = "p6_i11_2_ye_2_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 Çarpma",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 68,
-        mapFragmentIndex = 12,
         finishStepNumber = 70,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1806,14 +1820,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i12_2_ye_2_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 Çarpma",
         offset = 60,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 68,
-        mapFragmentIndex = 13,
         finishStepNumber = 70,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1821,14 +1835,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i13_2_ye_2_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 Çarpma",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 68,
-        mapFragmentIndex = 14,
         finishStepNumber = 70,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1836,13 +1850,13 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i14_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 15,
         finishStepNumber = 72,
         startStepNumber = 72,
         blindingMultiplication = true,
@@ -1854,6 +1868,7 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         worstCupTime = 120
     ),
     LessonItem(
+        stableId = "p6_i15_2_ye_2_carpma_zor",
         type = LessonItem.TYPE_HEADER,
         title = "2'ye 2 Çarpma - Zor",
         offset = 0,
@@ -1863,14 +1878,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         color = "lesson_header_red"
     ),
     LessonItem(
+        stableId = "p6_i16_2_ye_2_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 Çarpma",
         offset = -30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 73,
-        mapFragmentIndex = 17,
         finishStepNumber = 75,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1878,14 +1893,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i17_2_ye_2_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 Çarpma",
         offset = 0,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 73,
-        mapFragmentIndex = 18,
         finishStepNumber = 75,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1893,14 +1908,14 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i18_2_ye_2_carpma",
         type = LessonItem.TYPE_LESSON,
         title = "2'ye 2 Çarpma",
         offset = 30,
-        isCompleted = true,
+        isCompleted = false,
         stepCount = 3,
         currentStep = 1,
         startStepNumber = 73,
-        mapFragmentIndex = 19,
         finishStepNumber = 75,
         isBlinding = true,
         tutorialIsFinish = true,
@@ -1908,14 +1923,13 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
         lessonHint = "Hayali abaküsü parmaklarınla hareket ettirmeyi dene."
     ),
     LessonItem(
+        stableId = "p6_i19_unite_maratonu",
         type = LessonItem.TYPE_CHEST,
         title = "Ünite Maratonu",
         offset = 0,
-        isCompleted = true,
-        stepIsFinish = true,
+        isCompleted = false,
         stepCount = 1,
         currentStep = 1,
-        mapFragmentIndex = 20,
         finishStepNumber = 77,
         startStepNumber = 77,
         blindingMultiplication = true,
@@ -1931,6 +1945,7 @@ internal fun katalogPart6(): List<LessonItem> = listOf(
 /** Part 7 kataloğu (Android: `7 -> listOf(...)`). */
 internal fun katalogPart7(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p7_i00_acemi_cirak",
         type = LessonItem.TYPE_LESSON,
         title = "Acemi Çırak",
         offset = 0,
@@ -1938,7 +1953,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 78,
-        mapFragmentIndex = 0,
         finishStepNumber = 78,
         tutorialIsFinish = true,
         timePeriod = 3000,
@@ -1946,6 +1960,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "1 basamaklı 4 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i01_baslangic_ustasi",
         type = LessonItem.TYPE_LESSON,
         title = "Başlangıç Ustası",
         offset = 0,
@@ -1953,7 +1968,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 78,
-        mapFragmentIndex = 1,
         finishStepNumber = 78,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -1961,6 +1975,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "1 basamaklı 4 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i02_bilgi_avcisi",
         type = LessonItem.TYPE_LESSON,
         title = "Bilgi Avcısı",
         offset = 0,
@@ -1968,7 +1983,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 78,
-        mapFragmentIndex = 2,
         finishStepNumber = 78,
         tutorialIsFinish = true,
         timePeriod = 1000,
@@ -1976,6 +1990,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "1 basamaklı 4 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i03_ogrenme_ustasi",
         type = LessonItem.TYPE_LESSON,
         title = "Öğrenme Ustası",
         offset = 0,
@@ -1983,7 +1998,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1000,
-        mapFragmentIndex = 3,
         finishStepNumber = 1000,
         tutorialIsFinish = true,
         timePeriod = 1000,
@@ -1991,6 +2005,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "1 basamaklı 6 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i04_zihin_kasifi",
         type = LessonItem.TYPE_LESSON,
         title = "Zihin Kaşifi",
         offset = 0,
@@ -1998,7 +2013,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 80,
-        mapFragmentIndex = 4,
         finishStepNumber = 80,
         tutorialIsFinish = true,
         timePeriod = 3000,
@@ -2006,6 +2020,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "2 basamaklı 4 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i05_bilgelik_ustasi",
         type = LessonItem.TYPE_LESSON,
         title = "Bilgelik Ustası",
         offset = 0,
@@ -2013,7 +2028,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 80,
-        mapFragmentIndex = 5,
         finishStepNumber = 80,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -2021,6 +2035,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "2 basamaklı 4 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i06_zeka_kasifi",
         type = LessonItem.TYPE_LESSON,
         title = "Zeka Kaşifi",
         offset = 0,
@@ -2028,7 +2043,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1001,
-        mapFragmentIndex = 6,
         finishStepNumber = 1001,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -2036,6 +2050,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "2 basamaklı 6 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i07_beyin_muhendisi",
         type = LessonItem.TYPE_LESSON,
         title = "Beyin Mühendisi",
         offset = 0,
@@ -2043,7 +2058,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 81,
-        mapFragmentIndex = 7,
         finishStepNumber = 81,
         tutorialIsFinish = true,
         timePeriod = 4000,
@@ -2051,6 +2065,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "3 basamaklı 4 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i08_mantik_ustadi",
         type = LessonItem.TYPE_LESSON,
         title = "Mantık Üstadı",
         offset = 0,
@@ -2058,7 +2073,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 81,
-        mapFragmentIndex = 8,
         finishStepNumber = 81,
         tutorialIsFinish = true,
         timePeriod = 3000,
@@ -2066,6 +2080,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "3 basamaklı 4 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i09_deha",
         type = LessonItem.TYPE_LESSON,
         title = "Deha",
         offset = 0,
@@ -2073,7 +2088,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1002,
-        mapFragmentIndex = 9,
         finishStepNumber = 1002,
         tutorialIsFinish = true,
         timePeriod = 3000,
@@ -2081,6 +2095,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "3 basamaklı 6 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i10_ust_zihin",
         type = LessonItem.TYPE_LESSON,
         title = "Üst Zihin",
         offset = 0,
@@ -2088,7 +2103,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1, //burdayız bra
         startStepNumber = 1003,
-        mapFragmentIndex = 10,
         finishStepNumber = 1003,
         tutorialIsFinish = true,
         timePeriod = 1000,
@@ -2096,6 +2110,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "1 basamaklı 15 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i11_bilge_sampiyon",
         type = LessonItem.TYPE_LESSON,
         title = "Bilge Şampiyon",
         offset = 0,
@@ -2103,7 +2118,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1004,
-        mapFragmentIndex = 11,
         finishStepNumber = 1004,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -2111,6 +2125,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "2 basamaklı 10 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i12_zeka_mimari",
         type = LessonItem.TYPE_LESSON,
         title = "Zeka Mimarı",
         offset = 0,
@@ -2118,7 +2133,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1005,
-        mapFragmentIndex = 12,
         finishStepNumber = 1005,
         tutorialIsFinish = true,
         timePeriod = 2500,
@@ -2126,6 +2140,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "3 basamaklı 10 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i13_ustalik_efendisi",
         type = LessonItem.TYPE_LESSON,
         title = "Ustalık Efendisi",
         offset = 0,
@@ -2133,7 +2148,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1006,
-        mapFragmentIndex = 13,
         finishStepNumber = 1006,
         tutorialIsFinish = true,
         timePeriod = 750,
@@ -2141,6 +2155,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         raceTitle = "1 basamaklı 20 adet sayı"
     ),
     LessonItem(
+        stableId = "p7_i14_efsanevi_bilge",
         type = LessonItem.TYPE_LESSON,
         title = "Efsanevi Bilge",
         offset = 0,
@@ -2148,7 +2163,6 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 84,
-        mapFragmentIndex = 14,
         finishStepNumber = 84,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -2160,6 +2174,7 @@ internal fun katalogPart7(): List<LessonItem> = listOf(
 /** Part 8 kataloğu (Android: `8 -> listOf(...)`). */
 internal fun katalogPart8(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p8_i00_acemi_cirak",
         type = LessonItem.TYPE_LESSON,
         title = "Acemi Çırak",
         offset = 0,
@@ -2167,7 +2182,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 85,
-        mapFragmentIndex = 0,
         finishStepNumber = 85,
         tutorialIsFinish = true,
         timePeriod = 3000,
@@ -2176,6 +2190,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i01_baslangic_ustasi",
         type = LessonItem.TYPE_LESSON,
         title = "Başlangıç Ustası",
         offset = 0,
@@ -2183,7 +2198,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 85,
-        mapFragmentIndex = 1,
         finishStepNumber = 85,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -2192,6 +2206,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i02_bilgi_avcisi",
         type = LessonItem.TYPE_LESSON,
         title = "Bilgi Avcısı",
         offset = 0,
@@ -2199,7 +2214,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 85,
-        mapFragmentIndex = 2,
         finishStepNumber = 85,
         tutorialIsFinish = true,
         timePeriod = 1000,
@@ -2208,6 +2222,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i03_ogrenme_ustasi",
         type = LessonItem.TYPE_LESSON,
         title = "Öğrenme Ustası",
         offset = 0,
@@ -2215,7 +2230,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1007,
-        mapFragmentIndex = 3,
         finishStepNumber = 1007,
         tutorialIsFinish = true,
         timePeriod = 1000,
@@ -2224,6 +2238,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i04_zihin_kasifi",
         type = LessonItem.TYPE_LESSON,
         title = "Zihin Kaşifi",
         offset = 0,
@@ -2231,7 +2246,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 86,
-        mapFragmentIndex = 4,
         finishStepNumber = 86,
         tutorialIsFinish = true,
         timePeriod = 3000,
@@ -2240,6 +2254,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i05_bilgelik_ustasi",
         type = LessonItem.TYPE_LESSON,
         title = "Bilgelik Ustası",
         offset = 0,
@@ -2247,7 +2262,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 86,
-        mapFragmentIndex = 5,
         finishStepNumber = 86,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -2256,6 +2270,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i06_zeka_kasifi",
         type = LessonItem.TYPE_LESSON,
         title = "Zeka Kaşifi",
         offset = 0,
@@ -2263,7 +2278,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1008,
-        mapFragmentIndex = 6,
         finishStepNumber = 1008,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -2272,6 +2286,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i07_beyin_muhendisi",
         type = LessonItem.TYPE_LESSON,
         title = "Beyin Mühendisi",
         offset = 0,
@@ -2279,7 +2294,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 88,
-        mapFragmentIndex = 7,
         finishStepNumber = 88,
         tutorialIsFinish = true,
         timePeriod = 4000,
@@ -2288,6 +2302,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i08_mantik_ustadi",
         type = LessonItem.TYPE_LESSON,
         title = "Mantık Üstadı",
         offset = 0,
@@ -2295,7 +2310,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 89,
-        mapFragmentIndex = 8,
         finishStepNumber = 89,
         tutorialIsFinish = true,
         timePeriod = 3000,
@@ -2305,6 +2319,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p8_i09_deha",
         type = LessonItem.TYPE_LESSON,
         title = "Deha",
         offset = 0,
@@ -2312,7 +2327,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 89,
-        mapFragmentIndex = 9,
         finishStepNumber = 89,
         tutorialIsFinish = true,
         timePeriod = 3000,
@@ -2322,6 +2336,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
     ),
     LessonItem(
+        stableId = "p8_i10_ust_zihin",
         type = LessonItem.TYPE_LESSON,
         title = "Üst Zihin",
         offset = 0,
@@ -2329,7 +2344,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1, //burdayız bra
         startStepNumber = 1009,
-        mapFragmentIndex = 10,
         finishStepNumber = 1009,
         tutorialIsFinish = true,
         timePeriod = 1000,
@@ -2339,6 +2353,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         //1 15 2 10 3 10 1 20 4 10
         ),
     LessonItem(
+        stableId = "p8_i11_bilge_sampiyon",
         type = LessonItem.TYPE_LESSON,
         title = "Bilge Şampiyon",
         offset = 0,
@@ -2346,7 +2361,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1010,
-        mapFragmentIndex = 11,
         finishStepNumber = 1010,
         tutorialIsFinish = true,
         timePeriod = 2000,
@@ -2355,6 +2369,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i12_zeka_mimari",
         type = LessonItem.TYPE_LESSON,
         title = "Zeka Mimarı",
         offset = 0,
@@ -2362,7 +2377,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 90,
-        mapFragmentIndex = 12,
         finishStepNumber = 90,
         tutorialIsFinish = true,
         timePeriod = 2500,
@@ -2371,6 +2385,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i13_ustalik_efendisi",
         type = LessonItem.TYPE_LESSON,
         title = "Ustalık Efendisi",
         offset = 0,
@@ -2378,7 +2393,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 91,
-        mapFragmentIndex = 13,
         finishStepNumber = 91,
         tutorialIsFinish = true,
         timePeriod = 800,
@@ -2387,6 +2401,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 
         ),
     LessonItem(
+        stableId = "p8_i14_efsanevi_bilge",
         type = LessonItem.TYPE_LESSON,
         title = "Efsanevi Bilge",
         offset = 0,
@@ -2394,7 +2409,6 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
         stepCount = 1,
         currentStep = 1,
         startStepNumber = 1011,
-        mapFragmentIndex = 14,
         finishStepNumber = 1011,
         tutorialIsFinish = true,
         timePeriod = 2500,
@@ -2414,6 +2428,7 @@ internal fun katalogPart8(): List<LessonItem> = listOf(
 /** Part 9 kataloğu (Android: `9 -> listOf(...)`). */
 internal fun katalogPart9(): List<LessonItem> = listOf(
     LessonItem(
+        stableId = "p9_i00_kupa_modu",
         type = LessonItem.TYPE_LESSON,
         title = "Kupa Modu",
         offset = 0,

@@ -769,7 +769,7 @@ class ServerRewardsTest {
     fun adlarVeGovdeler() {
         assertEquals("openChest", ServerRewards.FUNCTION_OPEN_CHEST)
         assertEquals("openCrystalReward", ServerRewards.FUNCTION_OPEN_CRYSTAL_REWARD)
-        assertEquals(4, ServerRewards.AD_VERIFY_MAX_ATTEMPTS)
+        assertEquals(10, ServerRewards.AD_VERIFY_MAX_ATTEMPTS)
         assertEquals(1500L, ServerRewards.AD_VERIFY_RETRY_DELAY_MS)
         assertEquals(mapOf<String, Any>("startRarity" to "RARE"), ServerRewards.openChestPayload("RARE"))
         assertEquals(mapOf<String, Any>("startRarity" to "COMMON", "adNonce" to "n"), ServerRewards.openChestPayload("COMMON", "n"))
@@ -798,22 +798,43 @@ class ServerRewardsTest {
     @Test
     fun kristalYanitiAyristirma() {
         assertEquals(
-            ServerRewards.CrystalOutcome("crystal_red_yellow", "KEY", 1),
+            ServerRewards.CrystalOutcome("KEY", 1),
             ServerRewards.parseCrystalOutcome(mapOf("videoName" to "crystal_red_yellow", "rewardType" to "KEY", "rewardAmount" to 1)),
         )
         assertEquals(
-            ServerRewards.CrystalOutcome("crystal_blue_blue", "GOLD", 0),
+            ServerRewards.CrystalOutcome("GOLD", 0),
             ServerRewards.parseCrystalOutcome(emptyMap<String, Any>()),
         )
         assertNull(ServerRewards.parseCrystalOutcome(null))
     }
 
     @Test
+    fun kupaYoluSandigi() {
+        assertEquals("claimCupPathChest", ServerRewards.FUNCTION_CLAIM_CUP_PATH_CHEST)
+        assertEquals(
+            mapOf<String, Any>("cupField" to "addition_abacus_cup", "milestone" to 500),
+            ServerRewards.claimCupPathChestPayload("addition_abacus_cup", 500),
+        )
+        assertEquals(
+            ServerRewards.ChestOutcome(listOf("COMMON", "RARE"), "RARE", "KEY", 2),
+            ServerRewards.parseCupPathChestOutcome(
+                mapOf("rarityPath" to listOf("COMMON", 5, "RARE"), "finalRarity" to "RARE", "rewardType" to "KEY", "rewardAmount" to 2L),
+            ),
+        )
+        // Eksik alanlar: boş yol, COMMON, GOLD, 0
+        assertEquals(
+            ServerRewards.ChestOutcome(emptyList(), "COMMON", "GOLD", 0),
+            ServerRewards.parseCupPathChestOutcome(emptyMap<String, Any>()),
+        )
+        assertNull(ServerRewards.parseCupPathChestOutcome(null))
+    }
+
+    @Test
     fun yenidenDenemeKurali() {
-        // Yalnızca UNAVAILABLE hatasında ve 4 yeniden denemeye kadar (deneme 0..3 → yeniden dene)
+        // Yalnızca UNAVAILABLE hatasında ve 10 yeniden denemeye kadar (deneme 0..9 → yeniden dene)
         assertTrue(ServerRewards.shouldRetryOpenChest(isUnavailable = true, attempt = 0))
-        assertTrue(ServerRewards.shouldRetryOpenChest(isUnavailable = true, attempt = 3))
-        assertFalse(ServerRewards.shouldRetryOpenChest(isUnavailable = true, attempt = 4))
+        assertTrue(ServerRewards.shouldRetryOpenChest(isUnavailable = true, attempt = 9))
+        assertFalse(ServerRewards.shouldRetryOpenChest(isUnavailable = true, attempt = 10))
         assertFalse(ServerRewards.shouldRetryOpenChest(isUnavailable = false, attempt = 0))
     }
 

@@ -23,8 +23,9 @@
 // Android'deki hâliyle korunan davranışlar:
 //  - Karta dokununca genel boncuk tipi, satın alınmamış olsa bile HEMEN yazılır.
 //  - İlk satın alma panelinde 25 üst sınırı denetlenmez; yalnızca yuva panelindeki düğme denetler.
-//  - Boncuk renk özelliğinde sahiplik kaydı başarısız olursa harcanan altın İADE EDİLMEZ
-//    ([BEAD_COLOR_FEATURE_PANEL].rollbackOnSaveFailure = false). Diğer dört akışta iade edilir.
+//  - Boncuk renk özelliği: güncel Android sahiplik kaydı başarısız olursa harcananı İADE EDER
+//    (eski sürümde etmiyordu); fiyat boncuğun para birimindedir (ANIMAL3/ANIMAL8: 40 anahtar,
+//    diğerleri 2000 altın; bkz. [checkBeadColorFeaturePurchase]). Beş akışın hepsinde iade vardır.
 //  - 1. sekmedeki kart sırası PAID_BEAD_INFO sırasından farklıdır (ANIMAL9 üçüncü hayvan,
 //    ANIMAL3 sonuncu); kart adlarında yinelenenler var ("Futbol", "Bowling", "Tenis", "Basketbol").
 package com.sorobit.shared.abakus
@@ -246,11 +247,11 @@ object AbacusCustomizationUiLogic {
         rollbackOnSaveFailure = true,
     )
 
-    /** showColorFeaturePurchasePanel — DİKKAT: Android iade etmez. */
+    /** showColorFeaturePurchasePanel — güncel Android sahiplik kaydı başarısız olunca iade eder. */
     val BEAD_COLOR_FEATURE_PANEL = PurchasePanelRules(
         AbacusCustomizationRules.MESSAGE_ERROR,
         AbacusCustomizationRules.MESSAGE_ERROR,
-        rollbackOnSaveFailure = false,
+        rollbackOnSaveFailure = true,
     )
 
     /** showFramePurchasePanel ve showFrameColorFeaturePurchasePanel. */
@@ -299,6 +300,22 @@ object AbacusCustomizationUiLogic {
             )
         }
         return checkBeadPurchase(beadType, cachedKeys, cachedCurrency)
+    }
+
+    /**
+     * showColorFeaturePurchasePanel ön denetimi: fiyat ve para birimi boncuğa bağlıdır
+     * (ANIMAL3 / ANIMAL8 → 40 anahtar, diğerleri → 2000 altın).
+     */
+    fun checkBeadColorFeaturePurchase(beadType: BeadType, cachedKeys: Int, cachedCurrency: Int): PurchaseCheck {
+        val price = AbacusCustomizationRules.getBeadColorFeaturePrice(beadType)
+        val isKey = AbacusCustomizationRules.isKeyCurrency(beadType)
+        val enough = if (isKey) cachedKeys >= price else cachedCurrency >= price
+        return PurchaseCheck(
+            allowed = enough,
+            message = if (enough) null else AbacusCustomizationRules.notEnoughMessage(beadType),
+            price = price,
+            isKeyCurrency = isKey,
+        )
     }
 
     /** Altınla ödenen sabit fiyatlı akışlar (renk özelliği, çerçeve). */

@@ -5,6 +5,10 @@
 //    yazımı → [TimeTrackerPlatform]. Zamanlayıcı her 10 saniyede [onPeriodicTick] çağırır.
 //  - `StateFlow<Long>` (kotlinx-coroutines bağımlılığı yok) → [unsyncedTime] + [onUnsyncedTimeChanged].
 //  - Log çağrıları kaldırıldı.
+// Android (güncel): her eşitleme günlük süre haritasını da (`dailyTimeSpent.<yyyyMMdd>`) aynı yazmaya bindirir ve
+// [TimeTracker.RETENTION_DAYS] gün öncesinin anahtarını siler (veli paneli okur). Ortak kod bunun saf kısmını verir
+// ([TimeTracker.buildSyncWrite], [TimeTracker.dayKey]); yazma [TimeTrackerPlatform.incrementTotalTimeSpent] içinde
+// platform tarafından bu üç alanla birlikte yapılmalıdır — arayüz imzası değişmedi.
 // Android'deki hâliyle korunan notlar:
 //  - Eşitlemede yerel sayaç, Firestore yazımı BAŞLATILIRKEN sıfırlanır; yazım başarısız olursa süre
 //    geri yüklenmez (Android, Firestore'un çevrimdışı kuyruğuna güvenir).
@@ -44,6 +48,56 @@ class TimeTracker(
         const val FIELD_TOTAL_TIME_SPENT = "totalTimeSpent"
 
         const val TICK_INTERVAL_SECONDS = 10L
+
+        /**
+         * Kullanıcı dokümanındaki gün→saniye haritası (ör. {"20260911": 1840}); `users/{uid}` üzerinde ALAN olarak,
+         * `totalTimeSpent` yazmasına biner (ek yazma maliyeti yok).
+         */
+        const val DAILY_FIELD = "dailyTimeSpent"
+
+        /** Harita kaç gün geriye kadar tutulur; her eşitlemede bu kadar eski anahtar silinir. */
+        const val RETENTION_DAYS = 14
+
+        /**
+         * Android `dayKey(offsetDays)`: "yyyyMMdd", cihazın YEREL saat diliminde ([offsetDays] negatifse geçmiş gün).
+         * Tire/iki nokta içermez: Firestore alan adı olarak kullanılır.
+         */
+        fun dayKey(
+            offsetDays: Int,
+            nowMs: Long = oyunSimdiMs(),
+            timeZone: kotlinx.datetime.TimeZone = kotlinx.datetime.TimeZone.currentSystemDefault(),
+        ): String {
+            val d = yerelTarih(nowMs, timeZone).gunEkle(offsetDays)
+            return d.year.toString().padStart(4, '0') +
+                d.monthNumber.toString().padStart(2, '0') +
+                d.dayOfMonth.toString().padStart(2, '0')
+        }
+
+        /** Bir eşitlemenin Firestore'a yazacağı alanlar (Android `syncToFirestore` içindeki `update(...)`). */
+        data class SyncWrite(
+            /** `totalTimeSpent` için `FieldValue.increment` miktarı. */
+            val totalIncrement: Long,
+            /** `FieldPath.of(DAILY_FIELD, bugün)` — aynı miktarla artırılır. */
+            val dailyFieldPath: List<String>,
+            val dailyIncrement: Long,
+            /** `FieldPath.of(DAILY_FIELD, bugün-14)` — `FieldValue.delete()`. */
+            val expiredFieldPath: List<String>,
+        )
+
+        /**
+         * Gün anahtarı senkronizasyon anına göre verilir: gece yarısını aşan bir oturumun tamamı ertesi güne yazılabilir
+         * (veli raporu için önemsiz sapma).
+         */
+        fun buildSyncWrite(
+            unsyncedSeconds: Long,
+            nowMs: Long = oyunSimdiMs(),
+            timeZone: kotlinx.datetime.TimeZone = kotlinx.datetime.TimeZone.currentSystemDefault(),
+        ): SyncWrite = SyncWrite(
+            totalIncrement = unsyncedSeconds,
+            dailyFieldPath = listOf(DAILY_FIELD, dayKey(0, nowMs, timeZone)),
+            dailyIncrement = unsyncedSeconds,
+            expiredFieldPath = listOf(DAILY_FIELD, dayKey(-RETENTION_DAYS, nowMs, timeZone)),
+        )
 
         /** Çökme kurtarmasında kabul edilen en uzun süre (saniye, hariç). */
         const val MAX_RECOVERABLE_SECONDS = 3600L

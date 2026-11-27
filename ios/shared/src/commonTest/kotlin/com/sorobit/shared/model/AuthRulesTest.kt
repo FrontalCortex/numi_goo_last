@@ -342,4 +342,29 @@ class OtpRulesTest {
         assertEquals(OtpRules.WrongAttemptResult(5, true, true), o.onVerifyFailed(1, "Çok fazla yanlış deneme. 15 dakika sonra tekrar deneyin."))
         assertEquals(OtpRules.WrongAttemptResult(5, true, true), o.onVerifyFailed(0, "15 dakika bekleyin"))
     }
+
+    @Test
+    fun veliOnayiKurallari() {
+        val r = AuthRules
+        // 13 yaş altı: bu yıl − doğum yılı <= 13 (UTC yılı)
+        assertTrue(r.requiresParentalConsent(2013, 2026))
+        assertFalse(r.requiresParentalConsent(2012, 2026))
+        assertTrue(r.requiresParentalConsent(2020, 2026))
+        assertFalse(r.requiresParentalConsent(null, 2026))
+        assertFalse(r.requiresParentalConsent(0, 2026))
+        assertEquals("register_parental", r.OTP_PURPOSE_REGISTER_PARENTAL)
+        assertEquals("confirmParentalConsent", r.FN_CONFIRM_PARENTAL_CONSENT)
+        assertEquals("PARENTAL_CONSENT_REQUIRED", r.ERROR_PARENTAL_CONSENT_REQUIRED)
+        assertEquals(
+            mapOf("email" to "c@x.co", "purpose" to "register_parental", "lang" to "tr", "parentEmail" to "v@x.co", "birthYear" to 2015, "acquisitionSource" to "TikTok"),
+            r.sendParentalRegistrationCodePayload(" C@X.co ", "V@x.co", 2015, "TikTok", "tr"),
+        )
+        assertFalse(r.sendParentalRegistrationCodePayload("c@x.co", "v@x.co", 2015, null, "tr").containsKey("acquisitionSource"))
+        assertEquals(true, r.requestGoogleParentalConsentPayload("c@x.co", "v@x.co", 2015, null, "en")["google"])
+        assertEquals(
+            mapOf("email" to "c@x.co", "code" to "123456", "birthYear" to 2015, "parentalStep" to true),
+            r.verifyChildEmailForParentalConsentPayload("c@x.co", "123456", 2015),
+        )
+        assertEquals(mapOf("code" to "1", "firstTutorialShown" to false), r.confirmParentalConsentPayload("1", false))
+    }
 }

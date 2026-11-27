@@ -1,5 +1,8 @@
 // Kaynak (Android): app/src/main/java/com/example/app/CupHistoryRepository.kt — saf kısım
-// (yollar, todayId, recordSnapshot'ın yazdığı harita, mapSnapshot). Firestore okuma/yazma çağrıları taşınmadı.
+// (yollar, todayId, mapSnapshot). Firestore okuma çağrıları taşınmadı.
+// ANDROID (güncel): yalnızca OKUMA kaldı; geçmiş kaydını kupa puanıyla aynı transaction'da sunucu yazar
+// (`submitCupResult`, günü istemci [todayId] ile bildirir). Android'de recordSnapshot ve todayId silindi;
+// ortak kodda todayId `dayId` için, recordSnapshot yalnızca eski davranışın belgesi olarak durur.
 package com.sorobit.shared.kupa
 
 import kotlinx.datetime.TimeZone

@@ -24,30 +24,73 @@ class LessonAdapterLogicTest {
     // ---- Ders alt paneli ----
 
     @Test
-    fun altPanel_kilitliDers() {
+    fun altPanel_kilitliDers_anahtarlaAcilabilir() {
+        // Güncel Android: 1–6. bölümlerdeki kilitli ders/sandık 1 anahtarla açılabilir (düğme açık mavi, tıklanabilir)
         val s = LessonAdapterLogic.lessonBottomSheetState(ders(isCompleted = false).copy(tutorialNumber = 3, tutorialIsFinish = true), 1)
         assertEquals("Ders", s.title)
-        assertEquals("Bunun kilidini açmak için yukarıdaki düzeylerin tümünü tamamla!", s.description)
-        assertEquals("KİLİTLİ", s.actionText)
-        assertFalse(s.actionEnabled)
-        assertTrue(s.locked)
+        assertEquals("Önceki dersleri tamamla ya da 1 anahtarla bu dersi hemen aç.", s.description)
+        assertEquals("1 anahtarla kilidi aç", s.actionText)
+        assertTrue(s.actionEnabled)
+        assertTrue(s.keyUnlockable)
+        assertFalse(s.locked)
+        assertEquals(LessonAdapterLogic.PanelState.LOCKED, s.panelState)
         assertFalse(s.againTutorialVisible)
         assertNull(s.recordText)
         assertFalse(s.recordClickable)
-        assertFalse(s.recordLayoutGone)
+        assertTrue(s.recordLayoutGone)
         assertFalse(s.fireAnimVisible)
+        assertFalse(s.stepRowVisible)
+        assertEquals(1, LessonAdapterLogic.LESSON_UNLOCK_KEY_COST)
+        // Sandık da açılabilir
+        assertTrue(LessonAdapterLogic.lessonBottomSheetState(sandik().copy(isCompleted = false), 2).keyUnlockable)
     }
 
     @Test
-    fun altPanel_devamEdenDers() {
-        val s = LessonAdapterLogic.lessonBottomSheetState(ders(stepCount = 3, currentStep = 2), 1)
-        assertEquals("Ders: 2/3", s.description)
-        assertEquals("BAŞLAT", s.actionText)
-        assertTrue(s.actionEnabled)
-        assertFalse(s.locked)
+    fun altPanel_kilitliDers_anahtarlaAcilamayan() {
+        // Yarış/kupa bölümlerinde (7, 8, 9) ve başlık/yarış türünde anahtar yolu yok
+        for (part in listOf(7, 8, 9)) {
+            val s = LessonAdapterLogic.lessonBottomSheetState(ders(isCompleted = false), part)
+            assertEquals("Kilidi açmak için önceki dersleri tamamla.", s.description, "part $part")
+            assertEquals("Kilitli", s.actionText)
+            assertFalse(s.actionEnabled)
+            assertTrue(s.locked)
+            assertFalse(s.keyUnlockable)
+        }
+        val yaris = ders(isCompleted = false).copy(type = LessonItem.TYPE_RACE)
+        assertFalse(LessonAdapterLogic.isKeyUnlockable(yaris, 1))
+        assertFalse(LessonAdapterLogic.isKeyUnlockable(baslik(), 1))
+        // Açık ders anahtarla "açılabilir" sayılmaz
+        assertFalse(LessonAdapterLogic.isKeyUnlockable(ders(), 1))
+        // Anahtarla açılan item yalnızca isCompleted = true olur
+        val acilmis = LessonAdapterLogic.unlockedWithKey(ders(isCompleted = false, currentStep = 1))
+        assertTrue(acilmis.isCompleted)
+        assertEquals(1, acilmis.currentStep)
+    }
+
+    @Test
+    fun altPanel_acikDers_baslaVeDevamEt() {
+        // Hiç adım bitmemiş → "Başla"
+        val s0 = LessonAdapterLogic.lessonBottomSheetState(ders(stepCount = 3, currentStep = 1), 1)
+        assertEquals("Başla", s0.actionText)
+        assertEquals("", s0.description)
+        assertTrue(s0.actionEnabled)
+        assertFalse(s0.locked)
+        assertEquals(LessonAdapterLogic.PanelState.OPEN, s0.panelState)
+        assertEquals("DERS", s0.kindText)
+        assertEquals("profile_book_ic3", s0.iconName)
+        assertTrue(s0.stepRowVisible)
+        assertEquals(0, s0.doneSteps)
+        assertEquals(3, s0.stepCount)
+        // Bir adım bitmiş → "Devam et", "1/3"
+        val s1 = LessonAdapterLogic.lessonBottomSheetState(
+            ders(stepCount = 3, currentStep = 2).copy(stepCompletionStatus = listOf(true, false, false)), 1,
+        )
+        assertEquals("Devam et", s1.actionText)
+        assertEquals(1, s1.doneSteps)
         // tutorialNumber 0 → "Eğitimi tekrarla" görünmez
-        assertFalse(s.againTutorialVisible)
-        assertNull(s.recordText)
+        assertFalse(s1.againTutorialVisible)
+        assertNull(s1.recordText)
+        assertTrue(s1.recordLayoutGone)
     }
 
     @Test
@@ -62,9 +105,13 @@ class LessonAdapterLogicTest {
     @Test
     fun altPanel_bitmisDers() {
         val s = LessonAdapterLogic.lessonBottomSheetState(ders().copy(stepIsFinish = true), 1)
-        assertEquals("Ders Tamamlandı", s.description)
+        assertEquals("", s.description)
         assertEquals("Gözden geçir", s.actionText)
         assertTrue(s.actionEnabled)
+        assertEquals(LessonAdapterLogic.PanelState.DONE, s.panelState)
+        // Bitmiş derste adım çubuğu tam dolu
+        assertEquals(3, s.doneSteps)
+        assertTrue(s.stepRowVisible)
         assertNull(s.recordText)
         assertFalse(s.recordClickable)
         assertFalse(s.fireAnimVisible)
@@ -73,17 +120,25 @@ class LessonAdapterLogicTest {
     @Test
     fun altPanel_bitmisSandik() {
         val s = LessonAdapterLogic.lessonBottomSheetState(sandik(record = 1450).copy(stepIsFinish = true), 1)
-        assertEquals("Ders Tamamlandı", s.description)
+        assertEquals("", s.description)
         assertEquals("Tekrar dene", s.actionText)
         assertTrue(s.actionEnabled)
         assertEquals("Rekor: 1450", s.recordText)
-        assertTrue(s.fireAnimVisible)
+        // Yeni panelde ateş animasyonu yok
+        assertFalse(s.fireAnimVisible)
         assertTrue(s.recordClickable)
         assertFalse(s.recordLayoutGone)
-        // Rekor null ise metin "Rekor: null" olur ve satır tıklanamaz (Android davranışı aynen)
+        assertEquals("ÜNİTE MARATONU", s.kindText)
+        assertEquals("podium_ic2", s.iconName)
+        assertFalse(s.stepRowVisible)
+        // Rekor null ise metin "Rekor: —" olur ve satır tıklanamaz
         val s2 = LessonAdapterLogic.lessonBottomSheetState(sandik(record = null).copy(stepIsFinish = true), 1)
-        assertEquals("Rekor: null", s2.recordText)
+        assertEquals("Rekor: —", s2.recordText)
         assertFalse(s2.recordClickable)
+        // Kürsü ikonu yalnızca 1, 2, 3, 6. bölümlerde; diğerlerinde kitap
+        assertEquals("profile_book_ic3", LessonAdapterLogic.lessonBottomSheetState(sandik(), 4).iconName)
+        assertEquals("podium_ic2", LessonAdapterLogic.lessonBottomSheetState(sandik(), 6).iconName)
+        assertEquals("profile_book_ic3", LessonAdapterLogic.lessonBottomSheetState(ders(), 1).iconName)
     }
 
     @Test
@@ -99,20 +154,30 @@ class LessonAdapterLogicTest {
             assertTrue(LessonAdapterLogic.lessonBottomSheetState(ders(), part).recordLayoutGone)
             assertTrue(LessonAdapterLogic.lessonBottomSheetState(ders(isCompleted = false), part).recordLayoutGone)
         }
-        assertFalse(LessonAdapterLogic.lessonBottomSheetState(ders(), 6).recordLayoutGone)
+        // Diğer bölümlerde satır yalnızca bitmiş sandıkta görünür
+        assertFalse(LessonAdapterLogic.lessonBottomSheetState(sandik(record = 900).copy(stepIsFinish = true), 6).recordLayoutGone)
+        assertTrue(LessonAdapterLogic.lessonBottomSheetState(ders(), 6).recordLayoutGone)
+        assertTrue(LessonAdapterLogic.lessonBottomSheetState(sandik(), 6).recordLayoutGone)
     }
 
     @Test
     fun altPanel_varsayilanPartGlobalden() {
+        val bitmisSandik = sandik(record = 900).copy(stepIsFinish = true)
         GlobalLessonData.globalPartId = 5
-        assertTrue(LessonAdapterLogic.lessonBottomSheetState(ders()).recordLayoutGone)
+        assertTrue(LessonAdapterLogic.lessonBottomSheetState(bitmisSandik).recordLayoutGone)
+        GlobalLessonData.globalPartId = 1
+        assertFalse(LessonAdapterLogic.lessonBottomSheetState(bitmisSandik).recordLayoutGone)
     }
 
     @Test
     fun actionButtonDecision() {
         val acik = ders()
         val kilitli = ders(isCompleted = false)
-        assertEquals(LessonAdapterLogic.ActionButtonDecision.LOCKED_COLLAPSE, LessonAdapterLogic.actionButtonDecision(kilitli, true, true))
+        // Anahtarla açılamayan kilitli (part 7): panel yalnızca daraltılır
+        assertEquals(LessonAdapterLogic.ActionButtonDecision.LOCKED_COLLAPSE, LessonAdapterLogic.actionButtonDecision(kilitli, true, true, 7))
+        // 1–6. bölümlerde kilitli ders anahtarla açılır
+        assertEquals(LessonAdapterLogic.ActionButtonDecision.UNLOCK_WITH_KEY, LessonAdapterLogic.actionButtonDecision(kilitli, true, true, 1))
+        assertEquals(LessonAdapterLogic.ActionButtonDecision.UNLOCK_WITH_KEY, LessonAdapterLogic.actionButtonDecision(kilitli, false, false, 6))
         assertEquals(LessonAdapterLogic.ActionButtonDecision.START_WITHOUT_ENERGY, LessonAdapterLogic.actionButtonDecision(acik, true, false))
         assertEquals(LessonAdapterLogic.ActionButtonDecision.NOT_ENOUGH_ENERGY, LessonAdapterLogic.actionButtonDecision(acik, false, false))
         assertEquals(LessonAdapterLogic.ActionButtonDecision.USE_ENERGY_AND_START, LessonAdapterLogic.actionButtonDecision(acik, false, true))
@@ -198,7 +263,8 @@ class LessonAdapterLogicTest {
         assertFalse(basla.isLockedRace)
         assertEquals("BAŞLAT", basla.actionText)
         assertTrue(basla.actionAllCaps)
-        assertEquals("lighting__1_", basla.actionIcon)
+        // Güncel Android: başlat düğmesinin simgesi kaldırıldı
+        assertNull(basla.actionIcon)
         // KİLİTLİ (2): anahtar simgeli, metinsiz düğme
         val kilitli = LessonAdapterLogic.raceLessonBottomSheetState(p7[1])
         assertTrue(kilitli.isLockedRace)
@@ -285,10 +351,10 @@ class LessonAdapterLogicTest {
     @Test
     fun lessonProgressKey_chestFragmentIleAyniBicim() {
         val item = GlobalLessonData.createLessonItems(1)[4]
-        assertEquals("2_-1_1_Ünite Maratonu_4", LessonAdapterLogic.lessonProgressKey(item, adapterPosition = 99))
+        // Güncel Android: `{type}_{stableId}`; konum ve başlık anahtara girmez
+        assertEquals("2_p1_i04_unite_maratonu", LessonAdapterLogic.lessonProgressKey(item, adapterPosition = 99))
         assertEquals(ChestFragmentLogic.lessonProgressKey(item, 4), LessonAdapterLogic.lessonProgressKey(item, 99))
-        // mapFragmentIndex yoksa adapter pozisyonu
-        assertEquals("0_-1_-1_Ders_6", LessonAdapterLogic.lessonProgressKey(ders(), 6))
+        assertEquals("0_test_ders", LessonAdapterLogic.lessonProgressKey(ders(), 6))
     }
 
     @Test
@@ -375,12 +441,59 @@ class LessonAdapterLogicTest {
     @Test
     fun shouldStartBreathingAnimation() {
         val bitmis = ders().copy(stepIsFinish = true)
+        // Güncel Android: yalnızca AÇIK ve BİTMEMİŞ kart ("sıradaki ders") nefes alır; kilitli ve bitmiş kart almaz
         assertTrue(LessonAdapterLogic.shouldStartBreathingAnimation(ders(), false))
-        assertTrue(LessonAdapterLogic.shouldStartBreathingAnimation(bitmis, false))
+        assertFalse(LessonAdapterLogic.shouldStartBreathingAnimation(ders(isCompleted = false), false))
+        assertFalse(LessonAdapterLogic.shouldStartBreathingAnimation(bitmis, false))
         assertFalse(LessonAdapterLogic.shouldStartBreathingAnimation(bitmis, true))
         assertFalse(LessonAdapterLogic.shouldStartBreathingAnimation(bitmis.copy(finalGoldVisualUnlocked = true), false))
         // Altın bayrağı var ama bitmemiş → nefes animasyonu sürer
         assertTrue(LessonAdapterLogic.shouldStartBreathingAnimation(ders().copy(finalGoldVisualUnlocked = true), true))
+    }
+
+    @Test
+    fun cardState_kilitliAcikAltin() {
+        assertEquals(LessonAdapterLogic.CardState.LOCKED, LessonAdapterLogic.cardState(ders(isCompleted = false)))
+        assertEquals(LessonAdapterLogic.CardState.OPEN, LessonAdapterLogic.cardState(ders()))
+        val bitmis = ders().copy(stepIsFinish = true)
+        // Bitmiş ama altın dönüşümü henüz oynamadı: kart hâlâ mavi (ilerleme animasyonu sürebilir)
+        assertEquals(LessonAdapterLogic.CardState.OPEN, LessonAdapterLogic.cardState(bitmis))
+        assertEquals(LessonAdapterLogic.CardState.DONE, LessonAdapterLogic.cardState(bitmis, goldAnimationPlayed = true))
+        assertEquals(LessonAdapterLogic.CardState.DONE, LessonAdapterLogic.cardState(bitmis.copy(finalGoldVisualUnlocked = true)))
+    }
+
+    @Test
+    fun sandikKartYildizlari_yeniTasarim() {
+        // Bitmemiş sandık: hiç yıldız yok
+        assertEquals(0, LessonAdapterLogic.chestStarCount(sandik().copy(stepCupIcon = "chest_stars_tier3")))
+        val b = { icon: String -> sandik().copy(stepIsFinish = true, stepCupIcon = icon) }
+        assertEquals(3, LessonAdapterLogic.chestStarCount(b("chest_stars_tier3")))
+        assertEquals(3, LessonAdapterLogic.chestStarCount(b("cup_ic3")))
+        assertEquals(2, LessonAdapterLogic.chestStarCount(b("chest_stars_tier2")))
+        assertEquals(2, LessonAdapterLogic.chestStarCount(b("cup_ic2")))
+        assertEquals(1, LessonAdapterLogic.chestStarCount(b("chest_stars_tier1")))
+        assertEquals(1, LessonAdapterLogic.chestStarCount(b("cup_ic")))
+        // tier0 ve bilinmeyen görsel (kör dersin star_on_ic'i dahil) → 0
+        assertEquals(0, LessonAdapterLogic.chestStarCount(b("chest_stars_tier0")))
+        assertEquals(0, LessonAdapterLogic.chestStarCount(b("star_on_ic")))
+        // chestCardStars: eski boş görsel tier0'a çekilir; açık/bitmiş/kilitli bayrakları
+        val bos = b("")
+        val k = LessonAdapterLogic.chestCardStars(bos)
+        assertEquals("chest_stars_tier0", bos.stepCupIcon)
+        assertEquals(LessonAdapterLogic.ChestCardStars(0, unlocked = true, done = false), k)
+        assertEquals(1f, k.emptyStarAlpha)
+        assertEquals(0.55f, LessonAdapterLogic.chestCardStars(b("chest_stars_tier2").copy(isCompleted = false)).emptyStarAlpha)
+        val altin = LessonAdapterLogic.chestCardStars(b("chest_stars_tier2"), goldDone = true)
+        assertEquals(2, altin.earned)
+        assertEquals(0.3f, altin.emptyStarAlpha)
+    }
+
+    @Test
+    fun kartIkonu() {
+        assertEquals("podium_ic2", LessonAdapterLogic.cardIconName(sandik(), 1))
+        assertEquals("podium_ic2", LessonAdapterLogic.cardIconName(sandik(), 6))
+        assertEquals("profile_book_ic3", LessonAdapterLogic.cardIconName(sandik(), 4))
+        assertEquals("profile_book_ic3", LessonAdapterLogic.cardIconName(ders(), 1))
     }
 
     @Test
@@ -520,9 +633,10 @@ class MapFragmentLogicTest {
         val d = marathonGuidePanelData()
         assertEquals(
             listOf(
-                GuidePanelData("teacher_emotes_gpt4", "Ünite maratonunda hatasız en hızlı çözümler kaydedilir."),
+                // Güncel Android: görsel kimliği yerine Sobi hâli (BunnyMascotView.Emote enum adı)
+                GuidePanelData("TEACH_TALK", "Ünite maratonunda hatasız en hızlı çözümler kaydedilir."),
                 GuidePanelData(
-                    "teacher_emotes_gpt3",
+                    "TEACH_POINT",
                     "Ünite maratonu panelindeki Rekor'a tıklayarak liderlik tablosunu ve kendi sıranı görebilirsin.",
                 ),
             ),

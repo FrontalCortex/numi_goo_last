@@ -53,7 +53,6 @@ class BadgeProgressFirestoreTest {
             "userGoatProgress" to 14L,
             "userEagleProgress" to 15L,
             "userFlyProgress" to 16L,
-            "abacusLeaderboardRank" to 17L,
             "goldMedalPiece" to listOf(mapOf("titleUnit" to "Ünite 1", "season" to 3L)),
             "silverMedalPiece" to listOf(listOf("Ünite 2", 4L)),
             "bronzeMedalPiece" to emptyList<Any>(),
@@ -80,7 +79,6 @@ class BadgeProgressFirestoreTest {
                 userEagleProgress = 15,
                 userFlyProgress = 16,
                 userTurtleProgress = 13,
-                abacusLeaderboardRank = 17,
                 goldMedalPiece = listOf(MedalPieceRow("Ünite 1", 3)),
                 silverMedalPiece = listOf(MedalPieceRow("Ünite 2", 4)),
                 bronzeMedalPiece = emptyList(),
@@ -101,14 +99,12 @@ class BadgeProgressFirestoreTest {
             "userFishingStreak" to null, // alan VAR (null) → geçiş yok
             "userFishingProgress" to 9L,
             "userFishingStreakPeriodKey" to 5L, // String değil → ""
-            "abacusLeaderboardRank" to null,
         )
         val p = F.userBadgeProgressFromStateSnapshot(doc, "period_5")
         assertEquals(0, p.userDartProgress)
         assertEquals(9, p.userFishingProgress)
         assertEquals(0, p.userFishingStreak)
         assertEquals("", p.userFishingStreakPeriodKey)
-        assertEquals(Int.MAX_VALUE, p.abacusLeaderboardRank)
         assertNull(p.pendingLeaderboardRewardSeason)
     }
 

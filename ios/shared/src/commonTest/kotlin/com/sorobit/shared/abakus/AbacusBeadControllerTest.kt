@@ -523,15 +523,37 @@ class AbacusBeadControllerTest {
         assertEquals(true, host.gorunum[c.bottomBeads[4][2]])
         assertEquals(false, host.gorunum[c.bottomBeads[4][3]])
 
-        // Tanılama bayrağı açıkken (Android'deki güncel durum) animasyon sırasında atlanır
+        // Animasyon sürerken görünüm güncellemesi atlanır (güncel Android'de bayrak koşulu yok)
         altDokun(0, 1)
         val once = host.gorunumCagriSayisi
         c.applyInternalStateFromValue(4, applyAppearance = true)
         assertEquals(once, host.gorunumCagriSayisi)
-        // Bayrak kapatılırsa animasyon sırasında da güncellenir
-        c.tutorialBeadDiagnosticsEnabled = false
+        // Animasyon bitince güncellenir
+        host.hepsiniBitir()
+        val sonra = host.gorunumCagriSayisi
         c.applyInternalStateFromValue(4, applyAppearance = true)
-        assertEquals(once + 25, host.gorunumCagriSayisi)
+        assertEquals(sonra + 25, host.gorunumCagriSayisi)
+    }
+
+    @Test
+    fun onValueChangedDurumDegistikceCagrilir() {
+        var n = 0
+        c.onValueChanged = { n++ }
+        altDokun(4, 2)
+        assertTrue(n > 0)
+        n = 0
+        ustDokun(1)
+        assertTrue(n > 0)
+        host.hepsiniBitir()
+        n = 0
+        c.applyInternalStateFromValue(12345)
+        assertEquals(10, n) // 5 çubuk × (alt + üst) yazımı
+        n = 0
+        c.reset(animate = false)
+        assertTrue(n >= 10)
+        // Dinleyici yokken çökmez
+        c.onValueChanged = null
+        altDokun(4, 1)
     }
 
     @Test

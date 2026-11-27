@@ -2,7 +2,7 @@
 //   onCreate (lessonItem + uploadLessonData), showCurrentOperation, controlButtonAnim,
 //   showResultPanel, setupQuitButton, showQuestionPanel, finishLessonAfterLastQuestion,
 //   showLessonResultFalse, showChestResult, resolveWorstCupTimeFallback, resetClickListener,
-//   setupSkipStepButton.
+//   setupSkipStepButton / skipToNextSequenceNumber, submitCupResultOnce, finishLesson.
 //
 // Android karşılığı tek bir sınıf değildir: Fragment'ın yukarıdaki fonksiyonlarında dağınık duran
 // ÇAĞRI SIRASINI, zaten taşınmış olan saf kurallara ([BlindingLessonSession],
@@ -294,6 +294,14 @@ class KorDersOturumu internal constructor(
         playback.stop()
     }
 
+    /**
+     * Android: skipToNextSequenceNumber (atlama düğmesi; güncel Android). Süresini beklemeden sıradaki
+     * sayıya geçer; kendiliğinden geçişle aynı yoldan gider (sayı silinir, 200 ms sonra sıradaki gelir).
+     * null → basış yok sayıldı (gösterim yok ya da boşluk sürüyor); null değilse platform bekleyen
+     * İKİ zamanlayıcıyı da iptal edip dönen adımı uygular.
+     */
+    fun diziAtla(): KorDersAdimi? = playback.skip()?.adima()
+
     /** Android: onRestartSequenceAfterReset. */
     fun diziYenidenBaslat(): KorDersAdimi = playback.start(playback.currentSequence).adima()
 
@@ -314,6 +322,32 @@ class KorDersOturumu internal constructor(
 
     /** Deltanın yazılacağı bekleyen alanın adı ([com.sorobit.shared.abakus.CupDeltaTarget]). */
     fun kupaDeltaHedefi(): String = BlindingLessonRules.cupDeltaTarget(flags).name
+
+    /** Android: cupModeName (kupa yarışı ölçüm adı). */
+    fun kupaModuAdi(): String = BlindingLessonRules.cupModeName(flags)
+
+    /**
+     * Android: submitCupResultOnce kapısı. true → bu çağrı kupa sonucunu gönderme hakkını aldı (deltayı
+     * yaz); false → bu tur için zaten gönderilmişti, yok say.
+     */
+    fun kupaSonucuHakkiAl(): Boolean = session.claimCupResult()
+
+    /** Android: logCupRaceResultOnce kapısı (yarış sonucu analitiği bir kez). */
+    fun kupaYarisLoguHakkiAl(): Boolean = session.claimCupRaceLog()
+
+    /**
+     * Android: çıkış düğmesi ve geri tuşundaki "terk etti" dalının koşulu (`globalPartId == 9 && lessonStarted
+     * && !cupResultSubmitted`). true ise kayıp deltası yazılır ([kupaSonucuHakkiAl] ile), enerji harcanır.
+     */
+    fun kupaCikisCezasiVerilmeli(dersBasladi: Boolean): Boolean =
+        BlindingLessonRules.shouldSubmitCupQuitResult(globalPartId, dersBasladi, session.cupResultSubmitted)
+
+    /** Android: finishLesson kapısı; true → sonuç akışını başlat, false → ikinci çağrı yok sayılır. */
+    fun dersBitisiHakkiAl(): Boolean = session.claimLessonFinish()
+
+    /** Android: isLessonSuccessRateScope (başarı oranı telemetrisine dahil mi). */
+    fun basariOraniKapsaminda(): Boolean =
+        BlindingLessonRules.isLessonSuccessRateScope(isDailyQuestionMode, globalPartId, flags.type)
 
     /** Android: showResultPanel(true) başı — doğru sayısı artar; dönüş: konfeti oynatılsın mı. */
     fun dogruIslendi(): Boolean {

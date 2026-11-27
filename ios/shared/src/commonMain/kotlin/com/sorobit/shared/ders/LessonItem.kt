@@ -10,6 +10,16 @@
 package com.sorobit.shared.ders
 
 data class LessonItem(
+    /**
+     * Bu dersin DEĞİŞMEZ kimliği (Android: `LessonItem.stableId`, ör. "p1_i04_unite_maratonu"). Firestore'da ilerleme
+     * dokümanları `items/{stableId}` anahtarıyla saklanır; liste sırası artık kimlik DEĞİLDİR. Bir kez verildikten
+     * sonra değişmez ve yeniden kullanılmaz.
+     *
+     * Android'den bilinçli fark: Android'de varsayılanı YOKTUR (derleyici zorlar). Ortak kopyada mevcut çağrı yerleri
+     * (kör ders köprüsü, testler) adlandırılmış argümanla [LessonItem] kurduğu için varsayılan "" bırakıldı; katalogdaki
+     * her item'ın kimliği dolu ve tekildir (testle sabitlendi). Kalıcı olmayan geçici item'lar "transient_" öneki taşır.
+     */
+    val stableId: String = "",
     val id: Int? = null,
     val type: Int,
     val title: String,
@@ -30,6 +40,7 @@ data class LessonItem(
     var stepCompletionStatus: List<Boolean> = List(stepCount) { false }, // Her adımın tamamlanma durumu
     var finishStepNumber: Int? = null,
     var startStepNumber: Int? = null,
+    /** Dersin listedeki 0-tabanlı konumu; [GlobalLessonData.createLessonItems] her item'a atar (elle verilen ezilir). Kalıcı kimlik için [stableId]. */
     var mapFragmentIndex: Int? = null,
     var stepIsFinish: Boolean = false,
     var finalGoldVisualUnlocked: Boolean = false,

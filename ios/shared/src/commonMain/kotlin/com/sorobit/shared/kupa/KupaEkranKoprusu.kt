@@ -54,8 +54,8 @@ data class LiderHamKayit(
     val recordScore: Int,
     val displayName: String,
     val recordLabel: String,
-    /** Boş = fotoğraf yok. */
-    val photoUrl: String,
+    /** Android avatarı (AvatarConfig.encode biçimi); boş = avatar yok. Eski `photoUrl` alanı kaldırıldı. */
+    val avatarConfig: String,
 )
 
 /** Liderlik tablosunun bir satırı (birinci dahil). */
@@ -68,8 +68,9 @@ data class LiderSatirVerisi(
     /** Boşsa "Liderlik tablosu" ile doldurulmuş ad. */
     val displayName: String,
     val recordLabel: String,
-    val photoUrl: String,
-    val hasPhoto: Boolean,
+    /** Boş = varsayılan avatar çizilir (Android `leaderboardAvatarBitmap`). */
+    val avatarConfig: String,
+    val hasAvatar: Boolean,
     val isCurrentUser: Boolean,
     /** Android drawable adı (bg_record_rank_gold / bg_record_rank_badge_purple …). */
     val rankBadgeDrawable: String,
@@ -198,8 +199,9 @@ object KupaEkranKoprusu {
     /** Sezon değişimi yoklama aralığı (ms). */
     fun sezonYoklamaAraligiMs(): Long = SeasonClock.SEASON_POLL_INTERVAL_MS
 
-    fun liderlikTahtaKimligi(partId: Int, lessonIndex: Int, season: Int): String =
-        LessonLeaderboardRepository.leaderboardDocumentId(partId, lessonIndex, season)
+    /** [lessonKey]: dersin kalıcı kimliği (Android `LessonItem.stableId`), liste konumu değil. */
+    fun liderlikTahtaKimligi(partId: Int, lessonKey: String, season: Int): String =
+        LessonLeaderboardRepository.leaderboardDocumentId(partId, lessonKey, season)
 
     fun liderlikSorguLimiti(): Int = LessonLeaderboardRepository.LEADERBOARD_LIST_QUERY_LIMIT.toInt()
 
@@ -216,9 +218,9 @@ object KupaEkranKoprusu {
                     LessonLeaderboardRepository.F_SCORE to it.recordScore,
                     LessonLeaderboardRepository.F_NAME to it.displayName,
                     LessonLeaderboardRepository.F_LABEL to it.recordLabel,
-                    LessonLeaderboardRepository.F_PHOTO to it.photoUrl,
                 )
             },
+            avatarCache = kayitlar.associate { it.userId to it.avatarConfig },
         )
         return entries.map { e ->
             val mine = RecordLogic.isCurrentUser(e.userId, currentUid.ifBlank { null })
@@ -229,8 +231,8 @@ object KupaEkranKoprusu {
                 rewardRank = e.rewardRank,
                 displayName = RecordLogic.displayNameOrFallback(e.displayName),
                 recordLabel = e.recordLabel,
-                photoUrl = e.photoUrl ?: "",
-                hasPhoto = RecordLogic.hasPhoto(e.photoUrl),
+                avatarConfig = e.avatarConfig ?: "",
+                hasAvatar = RecordLogic.hasAvatar(e.avatarConfig),
                 isCurrentUser = mine,
                 rankBadgeDrawable = RecordLogic.badgeDrawableForRank(e.rewardRank),
                 cardColorRes = colors.cardColor,

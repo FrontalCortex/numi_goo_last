@@ -77,6 +77,20 @@ object AgeConsentManager {
             AdRequestTags(childDirectedTreatment = false, underAgeOfConsent = false)
     }
 
+    /**
+     * Android (güncel) `setAnalyticsAdConsent`: Firebase Analytics reklam izni (AD_STORAGE, AD_USER_DATA,
+     * AD_PERSONALIZATION üçü birden) YALNIZCA muamele TEEN iken verilir; CHILD/UNSPECIFIED'da açıkça reddedilir
+     * (izin diskte kalıcı, önceki yetişkin oturumundan kalmasın). ANALYTICS_STORAGE'a dokunulmaz.
+     */
+    fun analyticsAdConsentGranted(treatment: AgeTreatment): Boolean = treatment == AgeTreatment.TEEN
+
+    /**
+     * Android `watchAccountChangesForAnalyticsConsent`: hesap değişince (çıkış, farklı hesap) izin kapatılmalı mı —
+     * [consentUid] iznin verildiği hesap (yoksa null); [currentUid] şimdiki oturum. İzin yalnızca aynı hesapta sürer.
+     */
+    fun shouldRevokeAnalyticsAdConsent(consentUid: String?, currentUid: String?): Boolean =
+        currentUid == null || currentUid != consentUid
+
     /** Rıza (UMP) isteğine verilen "rıza yaşının altında" bayrağı. */
     fun consentUnderAge(treatment: AgeTreatment): Boolean = treatment != AgeTreatment.TEEN
 

@@ -203,6 +203,25 @@ class CupRuleEngineTest {
     }
 
     @Test
+    fun configsForVeMultiplicationDigitsFor() {
+        // configsFor: abaküslü tablo = resolveConfigs(RANGES), körleme = resolveConfigs(BLINDING_RANGES)
+        for (skor in listOf(0, 250, 599, 1500, 3200)) {
+            assertEquals(CupRuleEngine.resolveConfigs(skor, CupRuleEngine.RANGES), CupRuleEngine.configsFor(skor, false))
+            assertEquals(CupRuleEngine.resolveConfigs(skor, blinding), CupRuleEngine.configsFor(skor, true))
+        }
+        assertEquals(listOf(1, 2), CupRuleEngine.configsFor(599, false).map { it.digits }.distinct().sorted())
+        // Çarpma basamakları: tablo aralığına göre; aralık dışı (çok büyük puan) son satıra düşer
+        for (skor in listOf(0, 350, 1200, 99999)) {
+            val normal = CupRuleEngine.MULTIPLICATION_RANGES.firstOrNull { skor in it.minCup..it.maxCup }
+                ?: CupRuleEngine.MULTIPLICATION_RANGES.last()
+            assertEquals(normal.firstDigitCount to normal.secondDigitCount, CupRuleEngine.multiplicationDigitsFor(skor, false))
+            val kor = CupRuleEngine.BLINDING_MULTIPLICATION_RANGES.firstOrNull { skor in it.minCup..it.maxCup }
+                ?: CupRuleEngine.BLINDING_MULTIPLICATION_RANGES.last()
+            assertEquals(kor.firstDigitCount to kor.secondDigitCount, CupRuleEngine.multiplicationDigitsFor(skor, true))
+        }
+    }
+
+    @Test
     fun getAvailableDigits() {
         assertEquals(listOf(1), CupRuleEngine.getAvailableDigits(0, false))
         assertEquals(listOf(1, 2), CupRuleEngine.getAvailableDigits(599, false))

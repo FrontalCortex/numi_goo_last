@@ -21,8 +21,10 @@ class LoginFlowRulesTest {
         assertEquals(SplashRules.Route.CHECK_SINGLE_DEVICE, r.route(isOnline = true, loginStartEverShown = true, hasExistingLogin = true))
         assertEquals(SplashRules.Route.CHECK_SINGLE_DEVICE, r.route(isOnline = true, loginStartEverShown = false, hasExistingLogin = true))
         assertEquals(SplashRules.Route.GUEST_MAIN, r.route(isOnline = true, loginStartEverShown = false, hasExistingLogin = false))
-        assertEquals(2000L, r.SPLASH_ANIMATION_MS)
-        assertEquals(8000L, r.SPLASH_MAX_EXTRA_WAIT_MS)
+        assertEquals(1200L, r.SPLASH_ANIMATION_MS) // güncel Android (eskiden 2000; Remote Config beklemesi kalktı)
+        assertEquals(450L, r.BRAND_REVEAL_MS)
+        assertEquals(1000L, r.FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS)
+        assertEquals(1500L, r.FORCE_UPDATE_MAX_WAIT_DEEP_LINK_MS)
         assertEquals("login_start_ever_shown", r.PREF_LOGIN_START_EVER_SHOWN)
     }
 
@@ -56,9 +58,60 @@ class LoginFlowRulesTest {
     @Test
     fun kaynakListesi() {
         assertEquals(
-            listOf("Facebook", "Instagram", "Youtube", "Google Araması", "Arkadaş/Aile", "TikTok", "Uygulama Mağazası", "Diğer"),
+            listOf(
+                "Facebook", "Instagram", "Youtube", "Google Araması", "Arkadaş/Aile", "Okul/Öğretmen", "Veli/WhatsApp",
+                "TikTok", "Uygulama Mağazası", "Diğer",
+            ),
             UserInfoRules.SOURCE_NAMES,
         )
+        assertEquals(UserInfoRules.SOURCE_NAMES.size, UserInfoRules.SOURCE_DISPLAY_NAMES_TR.size)
+        assertEquals("YouTube", UserInfoRules.SOURCE_DISPLAY_NAMES_TR[2]) // değer "Youtube", görünen ad "YouTube"
+    }
+
+    @Test
+    fun hesapGecmisiBayragi() {
+        val s = SplashRules
+        assertFalse(s.hasEverHadAccount(false, false, false))
+        assertTrue(s.showsFirstTutorial(false))
+        assertTrue(s.hasEverHadAccount(true, false, false))
+        assertTrue(s.hasEverHadAccount(false, true, false)) // oturum açıksa
+        assertTrue(s.hasEverHadAccount(false, false, true)) // eski bayrak
+        assertFalse(s.showsFirstTutorial(true))
+        assertTrue(s.shouldPersistAccountFlag(false, true, false))
+        assertTrue(s.shouldPersistAccountFlag(false, false, true))
+        assertFalse(s.shouldPersistAccountFlag(true, true, true)) // zaten yazılı
+        assertFalse(s.shouldPersistAccountFlag(false, false, false))
+    }
+
+    @Test
+    fun kayitAkisiAdimlari() {
+        val f = SignupFlowRules
+        // Öğretmen: yalnızca yaş ve kaynak
+        assertEquals(listOf(SignupFlowRules.Step.AGE, SignupFlowRules.Step.SOURCE), f.flowSteps(f.streakStepsEnabled(forceTeacher = true)))
+        assertEquals(50, f.progressFor(SignupFlowRules.Step.AGE, false))
+        assertEquals(100, f.progressFor(SignupFlowRules.Step.SOURCE, false))
+        // Öğrenci: 10 adım, 2 tanışma; sayılan 8 adım
+        val ogrenci = f.flowSteps(true)
+        assertEquals(10, ogrenci.size)
+        assertEquals(0, f.progressFor(SignupFlowRules.Step.MEET, true))
+        assertEquals(0, f.progressFor(SignupFlowRules.Step.BRIEF, true))
+        assertEquals(12, f.progressFor(SignupFlowRules.Step.AGE, true)) // 1*100/8
+        assertEquals(100, f.progressFor(SignupFlowRules.Step.REMINDER, true))
+        assertEquals(6, f.questionCount(true)) // AGE SOURCE SOROBAN GOAL CHALLENGE REMINDER
+        assertEquals(listOf(5, 10, 20), f.GOAL_OPTIONS)
+        assertEquals(listOf(3, 5, 7), f.CHALLENGE_OPTIONS)
+        assertEquals(19, f.DEFAULT_REMINDER_HOUR)
+        assertEquals(listOf("none", "some", "good"), f.SOROBAN_LEVELS)
+    }
+
+    @Test
+    fun gizlilikSayfasiDile() {
+        val t = LoginFlowTexts
+        assertEquals("https://numigo-new.web.app/privacy-policy-tr.html#tos-1", t.termsUrl("tr"))
+        assertEquals("https://numigo-new.web.app/privacy-policy-id.html#pp-1", t.privacyUrl("id"))
+        assertEquals("https://numigo-new.web.app/privacy-policy-ar.html#pp-1", t.privacyUrl("ar"))
+        assertEquals("https://numigo-new.web.app/privacy-policy.html#tos-1", t.termsUrl("en"))
+        assertEquals(120_000L, t.NEW_ACCOUNT_WINDOW_MS)
     }
 
     @Test
