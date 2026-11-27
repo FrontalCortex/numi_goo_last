@@ -18,6 +18,10 @@ ios/
 - **Hepsi sahte veriyle çalışıyor.** Firebase, StoreKit, reklam, ses, Lottie ve video bağlı değil; her biri bir Swift protokolünün arkasında yer tutucu.
 - Yazılmayanlar: öğretici (`TutorialFragment`), bildirimler/öğretmene soru, ders sonu soru özeti, yarış paneli, plan karşılaştırma, rozet kutlaması.
 - Doğrulanmayanlar: dokunma/sürükleme hissi ve animasyonlar (yalnızca durağan ekran görüntüsüne bakıldı), gerçek cihaz, küçük ekranlar, Android ile piksel karşılaştırması.
+- **İkinci tur (7. derleme, commit `50dd1f7`, 0 hata, 30 ekran görüntüsü):** her ekran Android layout'una karşı denetlendi ve düzeltildi. Lottie bağlandı (`lottie-ios` 4.6.1, `Ortak/LottieGorunumu.swift`, `iosApp/Lottie/` altında 54 dosya); kristal için video oynatıcı yazıldı ama `crystal_*.mp4` dosyaları depoda yok (`iosApp/Videolar/` altına konunca çalışır). Kısa ekranlar için abaküs/kör ders ölçeklemesi eklendi (simülatörde yalnızca büyük ekranda görüldü).
+- Bu turda kesinleşenler: gri boncuklar Android varsayılanıdır (soroban, `#737373`); Android'de misafir girişi yoktur (yalnızca hesapsız ilk öğretici); hesap silme iki platformda da Profili Düzenle'dedir; lider tablosundaki soluk daireler Android'de de vardır.
+- Android'den geldiği için bilerek aynı bırakılanlar: görevlerde ve rozet detayında ilerleme sayısının dolgu üstünde okunmaması (`#CCCCCC` yazı, mavi dolgu); hiç oynamamış kullanıcıda "Körleme Çıkarma/Çarpma"nın açık gelmesi (şablonda 2. ve 3. kısmın son sandığı `stepIsFinish = true`).
+- Yaklaşık kalanlar: kilitli rozet/kupa kartlarının düz gri boyanması ve kademe tonları (SwiftUI karışım kipleriyle), mor ton (Android OVERLAY).
 - Ekran galerisi: uygulama `-ekran <ad>` argümanıyla açılırsa o ekranı örnek veriyle gösterir (`Yonetim/EkranGalerisi.swift`); Codemagic her derlemede hepsinin görüntüsünü çıktı olarak bırakır.
 
 ## Durum (Aşama 1)
