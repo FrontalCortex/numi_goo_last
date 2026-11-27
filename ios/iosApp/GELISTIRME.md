@@ -52,6 +52,15 @@ LottieGorunumu("gold_medal_anim", dongu: false, hiz: 1.0, oynat: true, bitti: { 
 - Sarmalayıcı **dokunma almaz** (alttaki görünüme geçirir; tam ekran konfeti düğmeleri kilitlemez). `Button` etiketi ya da `onTapGesture` içinde kullanılıyorsa kapsayan görünüme `.contentShape(Rectangle())` ekleyin.
 - `lottie-ios` kütüphanesini ekran kodundan doğrudan `import` etmeyin; yalnızca sarmalayıcıyı kullanın.
 
+### Ortak SwiftUI bileşenleri
+
+| Bileşen | Kullanım |
+|---|---|
+| `SobiMaskotGorunumu` (`Maskot/`) | `SobiMaskotGorunumu(emote: String, animasyonlu: Bool = true)` — Android `BunnyMascotView`'ın SwiftUI `Canvas` karşılığı, 48 hâl. `emote` Android'deki hâl adıdır. Boyutu `.frame(...)` ile verin. |
+| `GocenDugmeStili` (`Ortak/`) | `ButtonStyle`: `.buttonStyle(GocenDugmeStili(zemin: Color, golge: Color, koseYaricapi: CGFloat = 16, derinlik: CGFloat = 4))` — Android'in iki katmanlı "göçen" düğmesi (yüz + dudak; basınca `derinlik` kadar iner). Yüksekliği düğmeye `.frame(height:)` ile verin. |
+| `AvatarGorunumu` (`Profil/Avatar/`) | `AvatarGorunumu(config: String)` (arka planlı daire, tam avatar) ya da `AvatarGorunumu(config: String, arkaPlan: Bool, yakinPlan: Bool)` — Personas avatarı; `config` avatar yapılandırma dizesi (Android `AvatarConfigLogic` biçimi). |
+| `LottieGorunumu` (`Ortak/`) | Yukarıda. |
+
 Görsellerin listesi: `ios/iosApp/iosApp/Assets.xcassets/Gorseller/`. Olmayan bir ada başvurmak çökertmez (boş çizilir) ama raporda belirtin.
 
 ## Ekran sözleşmesi
@@ -64,7 +73,7 @@ Görsellerin listesi: `ios/iosApp/iosApp/Assets.xcassets/Gorseller/`. Olmayan bi
 
 ## Kotlin → Swift adlandırma
 
-Ortak kodun Swift'e nasıl göründüğünün kesin kaynağı üretilen başlık dosyasıdır: **`ios/docs/Shared.h`** (Codemagic çıktısından alınır; varsa işi bitirmeden önce kullandığınız her adı orada `grep` ile doğrulayın). Genel kurallar:
+Ortak kodun Swift'e nasıl göründüğünün kesin kaynağı üretilen başlık dosyasıdır: **`ios/docs/Shared.h`** (Codemagic çıktısından alınır; son güncelleme 9. derlemeden, yani 27.11.2026 eşitlemesinden sonra eklenen ortak kod adları orada olmayabilir; varsa işi bitirmeden önce kullandığınız her adı orada `grep` ile doğrulayın). Genel kurallar:
 
 - `object X` → `X.shared`; `companion object` üyeleri → `X.companion.uye`.
 - `Int` → `Int32`, `Long` → `Int64`, `Float` → `Float`, `Double` → `Double`, `Boolean` → `Bool`.
