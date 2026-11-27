@@ -171,7 +171,10 @@
             android:gravity="center"
             android:outlineProvider="none"
             android:text="2/10"
-            android:textColor="@color/button_disabled"
+            android:shadowColor="#E6000000"
+            android:shadowDy="2"
+            android:shadowRadius="4"
+            android:textColor="@color/white"
             android:textSize="18sp" />
     </FrameLayout>
 

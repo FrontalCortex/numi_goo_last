@@ -148,17 +148,23 @@ class MissionsFragment : Fragment() {
         val gold = ContextCompat.getColor(ctx, R.color.missions_progress_complete)
         val titleNormal = ContextCompat.getColor(ctx, R.color.missions_quest_title_normal)
         val progressLabelDone = ContextCompat.getColor(ctx, R.color.background_color)
-        val progressLabelPending = ContextCompat.getColor(ctx, R.color.button_disabled)
+        // Süren görevde sayı beyaz + koyu gölge: mavi dolgu ve parlama şeridi üstünde okunur kalsın.
+        val progressLabelPending = ContextCompat.getColor(ctx, R.color.white)
+        val progressLabelShadow = 0xE6000000.toInt()
+        val shadowRadius = 2f * ctx.resources.displayMetrics.density
+        val shadowDy = 1f * ctx.resources.displayMetrics.density
         val progressLabelClaimed = ContextCompat.getColor(ctx, R.color.black)
 
         if (q.isClaimed) {
             title.setTextColor(titleNormal)
             progressText.text = ctx.getString(R.string.mission_reward_claimed_label)
             progressText.setTextColor(progressLabelClaimed)
+            progressText.setShadowLayer(0f, 0f, 0f, 0)
         } else if (done) {
             title.setTextColor(gold)
             progressText.text = ctx.getString(R.string.mission_completed_label)
             progressText.setTextColor(progressLabelDone)
+            progressText.setShadowLayer(0f, 0f, 0f, 0)
         } else {
             title.setTextColor(titleNormal)
             progressText.text = String.format(
@@ -168,6 +174,7 @@ class MissionsFragment : Fragment() {
                 q.target,
             )
             progressText.setTextColor(progressLabelPending)
+            progressText.setShadowLayer(shadowRadius, 0f, shadowDy, progressLabelShadow)
         }
 
         val canClaim = done && !q.isClaimed

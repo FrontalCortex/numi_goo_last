@@ -64,7 +64,7 @@
                 android:elevation="2dp"
                 android:gravity="center"
                 android:outlineProvider="none"
-                android:textColor="@color/button_disabled"
+                android:textColor="@color/white"
                 android:textSize="18sp"
                 tools:text="0 / 1" />
         </FrameLayout>
