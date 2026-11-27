@@ -45,13 +45,16 @@ struct YonetimSonucBaglami {
     let tekrar: () -> Void
 }
 
-/// Öğretici (TutorialFragment) henüz yazılmadı; yerine gösterilen yer tutucunun içeriği.
+/// Açılacak öğretici (TutorialFragment) ve ardından açılacak ders. İçeriği taşınmamış öğreticide
+/// eski yer tutucu gösterilir (bkz. OgreticiBaslangici.icerikVar).
 struct YonetimOgreticiHedefi {
     let baslik: String
     let ogreticiNo: Int
     let partId: Int32
     let sira: Int32
     let listeSirasi: Int
+    /// Hesapsız ilk açılış (Android isFirstRunTutorial): çıkış ve "Eğitimi atla" gizli.
+    var ilkAcilis: Bool = false
 }
 
 /// Henüz yazılmamış bir ekranın yer tutucusu.
@@ -103,6 +106,13 @@ final class UygulamaYoneticisi: ObservableObject {
     @Published private(set) var kupaSonucu: KupaDersSonucu? = nil
     /// Çıkıştan sonra giriş akışının sıfırdan kurulması için artırılır.
     @Published private(set) var girisKimligi: Int = 0
+    /// Android `GlobalValues.currentTutorialNumber == 1` (hesapsız): 1. öğretici oturumsuz açıldı;
+    /// arkasındaki ders bitince sandık yerine başlangıç (kayıt) ekranı açılır. Dersin çıkış düğmesi
+    /// de gizlenir (Android isFirstRunLesson).
+    @Published private(set) var ilkOgreticiAkisi: Bool = false
+    /// Oturum açılmadan kabuğa geçildi (GirisAkisi.misafirOlarakDevam). Kimlik servisi ana aktöre
+    /// bağlı olduğu için oturum durumu buradan izlenir (Android: FirebaseAuth.currentUser == null).
+    private var misafir: Bool = false
 
     /// Üst çubuğun durumu. Elmas ve anahtar mağaza/özelleştirmenin (sahte) cüzdanından, enerji
     /// mağazanın (sahte) can servisinden okunur; böylece üçü tek kaynağı gösterir.
@@ -160,18 +170,66 @@ final class UygulamaYoneticisi: ObservableObject {
 
     /// GirisAkisi.girisYapildi.
     func girisYapildi() {
+        misafir = false
         asama = .kabuk
         oturumuYenile()
     }
 
     /// GirisAkisi.misafirOlarakDevam: hesapsız ilk açılış (SplashRules.Route.GUEST_MAIN).
-    /// Android hesap geçmişi yoksa öğreticiye (START_DESTINATION_TUTORIAL), varsa haritaya gider;
-    /// ilk ders bitince başlangıç ekranı (kayıt) açılır.
-    /// YAPILACAK: öğretici (TutorialFragment) iOS'ta henüz yok; `.ogretici` de şimdilik doğrudan
-    /// haritaya (kabuğa) geçer. İlk ders sonrası kayda yönlendirme de henüz bağlı değil.
+    /// Android hesap geçmişi yoksa öğreticiye (START_DESTINATION_TUTORIAL), varsa haritaya gider.
+    /// Öğretici kısım 1'in 1. sırasındaki dersindir (MainActivity.showFirstTutorial →
+    /// renderFirstTutorial: harita tabanda, öğretici üstünde); öğretici → ders → sonuç → başlangıç
+    /// ekranı (ilkDerstenSonraGiriseGec).
     func misafirOlarakDevam(_ hedef: GirisMisafirHedefi) {
+        misafir = true
         asama = .kabuk
         oturumuYenile()
+        if case .ogretici = hedef {
+            ilkOgreticiyiAc()
+        }
+    }
+
+    /// MainActivity.showFirstTutorial: kısım 1'in ders listesi, `getLessonItem(1)`.
+    private func ilkOgreticiyiAc() {
+        guard let ilk = ilerleme.ilkOgreticiOgesi() else { return }
+        var hedef = YonetimOgreticiHedefi(
+            baslik: ilk.baslik,
+            ogreticiNo: ilk.ogreticiNo,
+            partId: 1,
+            sira: ilk.sira,
+            listeSirasi: 1
+        )
+        hedef.ilkAcilis = true
+        ogreticiAcildi(hedef)
+        ac(.ogretici(hedef))
+    }
+
+    /// Bir öğretici açılırken (Android TutorialFragment.onViewCreated: tutorialNumber == 1 ise
+    /// `GlobalValues.currentTutorialNumber = 1`; yönlendirme yalnızca oturum yokken yapılır).
+    func ogreticiAcildi(_ hedef: YonetimOgreticiHedefi) {
+        if hedef.ogreticiNo == 1 {
+            ilkOgreticiAkisi = misafir
+        }
+    }
+
+    /// İlk öğreticinin dersi bitti ve oturum yok: sandık yerine başlangıç ekranı (Android
+    /// ChestFragment.redirectToLoginForFirstTutorial / LessonResultFalse claim → LoginStartActivity,
+    /// EXTRA_BLOCK_BACK). `tutorial1_login_flow_pending`: girişten sonra kısım 1'in listesi 1. ders
+    /// geçilmiş olarak kurulur. Dönüş yok: katmanlar kapanır, giriş akışı başlangıçtan açılır.
+    /// - Returns: yönlendirildiyse true.
+    func ilkDerstenSonraGiriseGec() -> Bool {
+        if !ilerleme.ilkOgreticidenGiriseGecilir(ilkOgretici: ilkOgreticiAkisi, oturumAcik: !misafir) {
+            return false
+        }
+        ilkOgreticiAkisi = false
+        misafir = false
+        ilerleme.ilkOgreticiSonrasiListeyiKur()
+        haritaModeli.yenile()
+        katmanlar = []
+        kupaSonucu = nil
+        girisKimligi += 1
+        asama = .giris
+        return true
     }
 
     /// ProfilEkrani.cikisYapildi (Android: LoginStartActivity temiz görev yığınıyla açılır).

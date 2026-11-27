@@ -59,6 +59,11 @@ struct EkranGalerisi: View {
         "avatar",
         "avatar-duzenle",
         "yer-tutucu",
+        "ogretici-1",
+        "ogretici-2",
+        "ogretici-3",
+        "ogretici-4",
+        "ogretici-5",
         "yazi-tipi",
         "lottie",
         "maskot",
@@ -98,6 +103,8 @@ struct EkranGalerisi: View {
             dersEkranlari
         } else if EkranGalerisi.sekmeAdlari.contains(ad) {
             sekmeEkranlari
+        } else if let ogretici = EkranGalerisi.ogreticiOrnegi(ad) {
+            OgreticiEkrani(baslangic: ogretici, bitti: { _ in }, kapat: {})
         } else if let ornek = GirisOrnekAdimi(rawValue: ad) {
             // Giriş ve kayıt akışının adımları ("giris", "kayit", "giris-…", "kayit-…").
             GirisAkisi(servis: SahteKimlikServisi(), girisYapildi: {}, ornek: ornek)
@@ -110,6 +117,32 @@ struct EkranGalerisi: View {
         "abakus-ders", "abakus-sandik", "kor-ders", "sonuc-basarili", "sonuc-basarisiz",
         "sonuc-sandik-basarisiz", "sonuc-sandik", "sandik",
     ]
+
+    /// 1. öğreticinin farklı adım türleri (0'dan sayılır): giriş metni (hesapsız ilk açılış: çıkış ve
+    /// "Eğitimi atla" gizli, abaküs gizli), onlar sütununda odak çerçevesi, boncuk animasyonu
+    /// (abaküs 2'den başlar, üçüncü boncuk çıkar), abaküslü soru ("1" + Kontrol Et), son adım (Devam Et).
+    private static let ogreticiOrnekleri: [String: OgreticiBaslangici] = [
+        "ogretici-1": OgreticiBaslangici(ogreticiNo: 1, ilkAcilis: true, baslangicAdimi: 0),
+        "ogretici-2": OgreticiBaslangici(ogreticiNo: 1, ilkAcilis: false, baslangicAdimi: 6),
+        "ogretici-3": OgreticiBaslangici(ogreticiNo: 1, ilkAcilis: false, baslangicAdimi: 15),
+        "ogretici-4": OgreticiBaslangici(ogreticiNo: 1, ilkAcilis: false, baslangicAdimi: 24),
+        "ogretici-5": OgreticiBaslangici(ogreticiNo: 1, ilkAcilis: false, baslangicAdimi: 29),
+    ]
+
+    /// Yukarıdaki adlar ya da genel biçim `ogretici-<no>-<adım>` (ör. "ogretici-3-12": 3. öğretici,
+    /// 0'dan sayılan 12. adım). Genel biçim adlar listesinde yoktur; öğretici paketleri kendi
+    /// adımlarını Codemagic döngüsüne bu biçimle ekler.
+    static func ogreticiOrnegi(_ ad: String) -> OgreticiBaslangici? {
+        if let hazir = ogreticiOrnekleri[ad] {
+            return hazir
+        }
+        let parcalar: [String] = ad.split(separator: "-").map { String($0) }
+        guard parcalar.count == 3, parcalar[0] == "ogretici",
+              let no = Int(parcalar[1]), let adim = Int(parcalar[2]) else {
+            return nil
+        }
+        return OgreticiBaslangici(ogreticiNo: no, ilkAcilis: false, baslangicAdimi: adim)
+    }
 
     private static let sekmeAdlari: Set<String> = [
         "gorevler", "gorevler-yeni", "kupa", "kupa-gecmisi", "kupa-yolu-odul", "lider-tablosu",

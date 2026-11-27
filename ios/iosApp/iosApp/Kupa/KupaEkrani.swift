@@ -419,6 +419,9 @@ private struct KupaOdulSatiri: View {
                     Text(etiket)
                         .font(Tema.yazi(13))
                         .foregroundColor(.white)
+                        // Android'den BİLİNÇLİ SAPMA: Android'de etiket gölgesizdir ama altın/açık zemin
+                        // üstünde okunmuyor; görev çubuğundaki gibi koyu gölge eklendi.
+                        .shadow(color: Color.black.opacity(0.9), radius: 2, x: 0, y: 1)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
                         .padding(.trailing, 32)

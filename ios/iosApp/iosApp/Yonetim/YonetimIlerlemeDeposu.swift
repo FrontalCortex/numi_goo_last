@@ -178,4 +178,44 @@ final class YonetimIlerlemeDeposu: HaritaIlerlemeKaynagi {
         )
         bellektenAl()
     }
+
+    // MARK: Hesapsız ilk açılış (ilk öğretici)
+
+    /// Android: MainActivity.showFirstTutorial — kısım 1'in listesi, `GlobalLessonData.getLessonItem(1)`;
+    /// renderFirstTutorial `mapFragmentIndex`'i harita sırası yapar. Liste boşsa nil.
+    func ilkOgreticiOgesi() -> YonetimIlkOgretici? {
+        bellegeYukle(partId: 1)
+        guard let oge = dersOgesi(sira: 1) else { return nil }
+        return YonetimIlkOgretici(
+            baslik: oge.title,
+            ogreticiNo: Int(oge.tutorialNumber),
+            sira: haritaSirasi(oge, listeSirasi: 1)
+        )
+    }
+
+    /// Android: ChestFragmentLogic.shouldRedirectToLoginForFirstTutorial
+    /// (`GlobalValues.currentTutorialNumber == 1 && FirebaseAuth.currentUser == null`).
+    func ilkOgreticidenGiriseGecilir(ilkOgretici: Bool, oturumAcik: Bool) -> Bool {
+        let no: Int32 = ilkOgretici ? 1 : 0
+        return ChestFragmentLogic.shared.shouldRedirectToLoginForFirstTutorial(
+            currentTutorialNumber: no, isLoggedIn: oturumAcik
+        )
+    }
+
+    /// Android `tutorial1_login_flow_pending = true`: girişten sonra kısım 1'in varsayılan listesi,
+    /// 1. ders öğreticisi bitmiş ve 2. adımdan başlayacak biçimde kurulur
+    /// (GlobalLessonData.buildDefaultLessonItemsForPart(partId = 1, tutorial1Pending = true)).
+    func ilkOgreticiSonrasiListeyiKur() {
+        let liste: [LessonItem] = GlobalLessonData.shared.buildDefaultLessonItemsForPart(
+            partId: 1, tutorial1Pending: true
+        )
+        partlar[1] = liste
+    }
+}
+
+/// İlk açılışta açılacak öğretici ve dersi.
+struct YonetimIlkOgretici {
+    let baslik: String
+    let ogreticiNo: Int
+    let sira: Int32
 }

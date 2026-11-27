@@ -62,6 +62,34 @@ final class AbakusDenetleyici: ObservableObject {
         }
     }
 
+    // MARK: Öğretici kancaları (Ogretici/ kullanır)
+
+    /// Tek boncuğu öğretici animasyonuyla oynatır (Android BeadAnimation; `tur` 1...4). Görünüm
+    /// henüz bağlanmadıysa hiçbir şey oynamaz ve `bitti` hemen çağrılır.
+    func ogreticiBoncukOynat(cubuk: Int, ust: Bool, sira: Int, tur: Int, bitti: @escaping () -> Void) {
+        guard let tahta = tahta else {
+            bitti()
+            return
+        }
+        tahta.ogreticiBoncukOynat(cubuk: cubuk, ust: ust, sira: sira, tur: tur, bitti: bitti)
+    }
+
+    /// Sayıyı animasyonla yazar (Android writeAnswerNumber). Görünüm yoksa animasyonsuz yerleştirilir.
+    func ogreticiSayiyiYaz(_ yeni: Int, bitti: @escaping () -> Void) {
+        guard let tahta = tahta else {
+            degeriAyarla(yeni)
+            bitti()
+            return
+        }
+        tahta.ogreticiSayiyiYaz(yeni, bitti: bitti)
+    }
+
+    /// Öğretici boncuk animasyonu, sayı yazma ya da kullanıcı hareketi sürüyor mu.
+    var ogreticiMesgul: Bool {
+        guard let tahta = tahta else { return false }
+        return tahta.ogreticiAnimasyonVar || tahta.hareketEdiyor || tahta.sifirlaniyor
+    }
+
     fileprivate func bagla(_ yeniTahta: AbakusTahtaGorunumu) {
         tahta = yeniTahta
         if let bekleyen = bekleyenDeger {

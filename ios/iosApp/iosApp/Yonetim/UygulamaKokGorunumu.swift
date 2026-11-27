@@ -129,6 +129,8 @@ struct YonetimKatmanGorunumu: View {
         return AbakusDersEkrani(
             dersBaslangici: baslangic,
             sobiAnalizi: sobiAnalizBaglantisi(nesne),
+            // Android isFirstRunLesson: hesapsız ilk öğreticinin dersinde çıkış düğmesi gizli.
+            cikisGizli: nesne.ilkOgreticiAkisi,
             bitti: { sonuc in nesne.abakusDersiBitti(sonuc, baslangic: baslangic, katman: no) },
             kapat: { nesne.kapat(no) }
         )
@@ -247,9 +249,35 @@ struct YonetimKatmanGorunumu: View {
         )
     }
 
-    // MARK: Öğretici yer tutucusu
+    // MARK: Öğretici
 
+    /// İçeriği taşınmış öğretici OgreticiEkrani'yla, taşınmamışsa eski yer tutucuyla açılır.
+    @ViewBuilder
     private func ogretici(_ hedef: YonetimOgreticiHedefi) -> some View {
+        if OgreticiBaslangici.icerikVar(hedef.ogreticiNo) {
+            ogreticiEkrani(hedef)
+        } else {
+            ogreticiYerTutucusu(hedef)
+        }
+    }
+
+    private func ogreticiEkrani(_ hedef: YonetimOgreticiHedefi) -> some View {
+        let nesne: UygulamaYoneticisi = yonetici
+        let no: Int = katman.id
+        let baslangic = OgreticiBaslangici(
+            ogreticiNo: hedef.ogreticiNo,
+            ilkAcilis: hedef.ilkAcilis,
+            baslangicAdimi: 0,
+            baslik: hedef.baslik
+        )
+        return OgreticiEkrani(
+            baslangic: baslangic,
+            bitti: { _ in nesne.ogreticiGecildi(hedef, katman: no) },
+            kapat: { nesne.kapat(no) }
+        )
+    }
+
+    private func ogreticiYerTutucusu(_ hedef: YonetimOgreticiHedefi) -> some View {
         let nesne: UygulamaYoneticisi = yonetici
         let no: Int = katman.id
         return YonetimYerTutucuEkrani(

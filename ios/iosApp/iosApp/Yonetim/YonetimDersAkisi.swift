@@ -67,6 +67,7 @@ extension UygulamaYoneticisi {
                 sira: sira,
                 listeSirasi: panel.id
             )
+            ogreticiAcildi(ogretici)
             ac(.ogretici(ogretici))
             return
         }
@@ -75,7 +76,8 @@ extension UygulamaYoneticisi {
         }
     }
 
-    /// Öğretici yer tutucusundaki "Derse geç" (Android: öğretici bitince TutorialFragment dersi açar).
+    /// OgreticiEkrani.bitti ("Devam Et" / "Eğitimi atla") ya da öğretici yer tutucusundaki "Derse geç"
+    /// (Android: TutorialFragment dersi açar; isBlinding → BlindingLessonFragment, değilse AbacusFragment).
     func ogreticiGecildi(_ hedef: YonetimOgreticiHedefi, katman: Int) {
         if let ekran = dersEkrani(partId: hedef.partId, sira: hedef.sira, baslik: hedef.baslik) {
             degistir(katman, ekran)
@@ -207,6 +209,9 @@ extension UygulamaYoneticisi {
             // Android: LessonResult claim — ders zaten bitmişse sandık atlanır.
             if ilerleme.dersOduluAtlanir(sira: baglam.sira) {
                 haritayaDon(katman)
+            } else if ilkDerstenSonraGiriseGec() {
+                // Android ChestFragment.onViewCreated: ilk öğreticinin dersi, oturum yok → başlangıç ekranı.
+                return
             } else {
                 oduleGec(puan: baglam.dersPuani, baglam: baglam, katman: katman)
             }
@@ -219,6 +224,10 @@ extension UygulamaYoneticisi {
                 oduleGec(puan: baglam.toplamPuan, baglam: baglam, katman: katman)
             }
         case .dersBasarisiz, .sandikBasarisiz:
+            // Android LessonResultFalse claim: ilk öğreticinin dersi, oturum yok → başlangıç ekranı.
+            if ilkDerstenSonraGiriseGec() {
+                return
+            }
             haritayaDon(katman)
         }
     }

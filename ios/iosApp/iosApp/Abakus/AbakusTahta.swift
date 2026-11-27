@@ -422,6 +422,47 @@ final class AbakusTahtaGorunumu: UIView {
         degeriDenetle()
     }
 
+    // MARK: Öğretici kancaları (Ogretici/ kullanır; Android: BeadAnimation, writeAnswerNumber)
+
+    /// Tek boncuğu öğretici animasyonuyla oynatır (`tur`: 1 alt yukarı, 2 alt aşağı, 3 üst aşağı,
+    /// 4 üst yukarı). `bitti` animasyon sonunda (geçersiz girdide hemen) çağrılır.
+    @discardableResult
+    func ogreticiBoncukOynat(cubuk: Int, ust: Bool, sira: Int, tur: Int, bitti: @escaping () -> Void) -> Bool {
+        dokunmayiBirak()
+        let oynadi: Bool = OgreticiAbakusKoprusu.shared.oynat(
+            denetleyici: denetleyici, host: evSahibi,
+            cubuk: Int32(cubuk), ust: ust, sira: Int32(sira), tur: Int32(tur),
+            bitti: bitti
+        )
+        modeldenYerlestir()
+        return oynadi
+    }
+
+    /// Sayıyı (0...99999) animasyonla yazar; yalnızca yeri yanlış olan boncuklar oynar. `bitti`
+    /// boncuklar yerleşip iç durum sayıdan kurulunca çağrılır. Yazarken dokunma kapalıdır; sonra
+    /// kilit durumu geri verilir.
+    func ogreticiSayiyiYaz(_ deger: Int, bitti: @escaping () -> Void) {
+        dokunmayiBirak()
+        let sinirli: Int32 = Int32(min(max(deger, 0), 99999))
+        OgreticiAbakusKoprusu.shared.sayiyiYaz(
+            denetleyici: denetleyici, host: evSahibi, deger: sinirli,
+            bitti: { [weak self] in
+                if let tahta = self {
+                    tahta.denetleyici.setEnabled(enabled: !tahta.kilitli)
+                    tahta.modeldenYerlestir()
+                    tahta.degeriDenetle()
+                }
+                bitti()
+            }
+        )
+        modeldenYerlestir()
+    }
+
+    /// Öğretici animasyonu ya da sayı yazma sürüyor mu (host'ta bekleyen animasyon var mı).
+    var ogreticiAnimasyonVar: Bool {
+        return evSahibi.animasyonVar
+    }
+
     // MARK: Çizim
 
     private func resimleriHazirla() {
