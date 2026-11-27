@@ -5,6 +5,8 @@
 //   node ios/tools/metin-donustur/donustur.js            -> üretir + doğrular
 //   node ios/tools/metin-donustur/donustur.js --kontrol  -> yazmaz; diskteki dosyalar güncel mi diye bakar
 //   node ios/tools/metin-donustur/donustur.js --dil tr   -> varsayılan values/ klasörünün dili (öntanımlı: tr)
+//   node ios/tools/metin-donustur/donustur.js --diller tr,en,id -> yalnızca bu dilleri üretir (öntanımlı: yalnızca --dil'in değeri, yani tr)
+//   node ios/tools/metin-donustur/donustur.js --diller hepsi    -> values-* klasörlerinin hepsini üretir (en, id, ar ...)
 //
 // Girdi : app/src/main/res/values*/ altındaki bütün .xml dosyalarındaki
 //         <string>, <plurals>, <string-array> öğeleri (Android tarafı yalnızca okunur).
@@ -33,6 +35,11 @@ const args = process.argv.slice(2);
 const YALNIZ_KONTROL = args.includes('--kontrol');
 const dilSirasi = args.indexOf('--dil');
 const VARSAYILAN_DIL = dilSirasi >= 0 && args[dilSirasi + 1] ? args[dilSirasi + 1] : 'tr';
+// Hangi dillerin .lproj'u üretilsin? Öntanımlı: yalnızca varsayılan dil (başka .lproj eklenmez).
+const dillerSirasi = args.indexOf('--diller');
+const DILLER_ARG = dillerSirasi >= 0 && args[dillerSirasi + 1] ? args[dillerSirasi + 1] : VARSAYILAN_DIL;
+const TUM_DILLER = DILLER_ARG === 'hepsi';
+const ISTENEN_DILLER = new Set(DILLER_ARG.split(',').map((x) => x.trim()).filter(Boolean));
 
 // ---------------------------------------------------------------------------
 // XML belirteçleyici (yalnızca kaynak dosyalarının gerektirdiği kadar)
@@ -440,6 +447,7 @@ function main() {
   for (const klasor of klasorler) {
     const dil = klasordenDil(klasor);
     if (!dil) continue;
+    if (!TUM_DILLER && !ISTENEN_DILLER.has(dil)) continue;
     const hedef = { metinler: [], diziler: [], cogullar: [] };
     const uyarilar = [];
     const dosyalar = fs
