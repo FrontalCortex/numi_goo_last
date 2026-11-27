@@ -77,6 +77,36 @@ final class GirisYerelDepo {
         uzunYaz(simdiMs, on + "saved_at")
     }
 
+    /// Bekleyen seri cevapları; yoksa nil (Android: StreakRepository.applyPendingSignup'ın okuduğu
+    /// "streak_signup_pending" alanları). Veli onayı işareti (markAccountCreated) iOS'ta yazılmıyor: boş.
+    func seriCevaplari() -> StreakPendingSignup? {
+        let on = GirisYerelDepo.seriOnEki
+        let kayitMs: Int64 = uzunOku(on + "saved_at")
+        if kayitMs == 0 {
+            return nil
+        }
+        let hedef: Int = depo.integer(forKey: on + "goal_minutes")
+        let meydan: Int = depo.integer(forKey: on + "challenge_days")
+        let saat: Int = depo.object(forKey: on + "reminder_hour") == nil ? -1 : depo.integer(forKey: on + "reminder_hour")
+        return StreakPendingSignup(
+            goalMinutes: Int32(hedef),
+            challengeDays: Int32(meydan),
+            reminderHour: Int32(saat),
+            savedAtMs: kayitMs,
+            createdUid: nil,
+            createdAtMs: 0
+        )
+    }
+
+    /// Bekleyen seri cevaplarını siler (Android: applyPendingSignup → pending.edit().clear()).
+    func seriCevaplariniSil() {
+        let on = GirisYerelDepo.seriOnEki
+        depo.removeObject(forKey: on + "goal_minutes")
+        depo.removeObject(forKey: on + "challenge_days")
+        depo.removeObject(forKey: on + "reminder_hour")
+        depo.removeObject(forKey: on + "saved_at")
+    }
+
     /// Android: SorobanLevel.savePending (SignupFlowRules.SOROBAN_LEVELS değerlerinden biri).
     func abakusSeviyesiniKaydet(_ seviye: String, simdiMs: Int64) {
         let on = GirisYerelDepo.abakusOnEki

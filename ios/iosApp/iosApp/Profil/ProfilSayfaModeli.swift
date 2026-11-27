@@ -194,8 +194,10 @@ final class ProfilSayfaModeli: ObservableObject {
         }
         toplamSure = ProfilOrtak.sureMetni(sure)
 
-        // En uzun günlük seri: dokümandan (başkasının profilinde publicProfiles aynası).
-        enUzunSeri = ProfilOrtak.enUzunSeriMetni(profil.enUzunSeri)
+        // En uzun günlük seri: dokümandan (başkasının profilinde publicProfiles aynası). Kendi profilinde
+        // seri servisinden (sahte sunucunun `users/{uid}.longestStreak` karşılığı; tek doğruluk kaynağı).
+        let enUzun: Int64 = baskasi ? profil.enUzunSeri : Int64(SeriOrtak.servis.profilEnUzunSeri)
+        enUzunSeri = ProfilOrtak.enUzunSeriMetni(enUzun)
 
         takipciSayisi = String(profil.takipciSayisi)
         takipSayisi = String(profil.takipSayisi)

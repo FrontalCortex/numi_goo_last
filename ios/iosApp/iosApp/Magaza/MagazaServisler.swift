@@ -193,7 +193,9 @@ struct MagazaBagimliliklar {
             cuzdan: cuzdan,
             enerji: enerji,
             reklam: MagazaSahteReklamServisi(),
-            seri: MagazaSahteSeriServisi(cuzdan: cuzdan)
+            // Seri dondurma kartı uygulamanın tek seri kaynağından beslenir (Seri/SahteSeriServisi;
+            // SeriOrtak.servis bu nesnedir).
+            seri: SahteSeriServisi(cuzdan: cuzdan)
         )
     }()
 }

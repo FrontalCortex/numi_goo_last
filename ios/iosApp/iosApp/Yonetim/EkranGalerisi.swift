@@ -69,7 +69,7 @@ struct EkranGalerisi: View {
         "maskot",
         "maskot-2",
         "maskot-3",
-    ]
+    ] + SeriGaleri.adlar
 
     /// `-ekran <ad>` ile istenen ekran; argüman yoksa nil (uygulama olağan akışla açılır).
     nonisolated static var istenenAd: String? {
@@ -108,6 +108,9 @@ struct EkranGalerisi: View {
         } else if let ornek = GirisOrnekAdimi(rawValue: ad) {
             // Giriş ve kayıt akışının adımları ("giris", "kayit", "giris-…", "kayit-…").
             GirisAkisi(servis: SahteKimlikServisi(), girisYapildi: {}, ornek: ornek)
+        } else if SeriGaleri.adlar.contains(ad) {
+            // Günlük seri ekranları ("seri", "seri-…"; Seri/SeriGaleri.swift).
+            SeriGaleriEkrani(ad: ad)
         } else {
             digerEkranlar
         }

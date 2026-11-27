@@ -6,6 +6,8 @@ import SwiftUI
 @MainActor
 struct UygulamaKokGorunumu: View {
     @StateObject private var yonetici: UygulamaYoneticisi
+    /// Seri sayacı yalnızca uygulama öndeyken çalışır (Android: StudyTimeTracker, arkaya geçince null ekran).
+    @Environment(\.scenePhase) private var sahneEvresi
 
     /// - Parameter girisAtla: true ise giriş akışı atlanır, doğrudan kabuk açılır (ekran galerisi).
     init(girisAtla: Bool = false) {
@@ -26,6 +28,13 @@ struct UygulamaKokGorunumu: View {
         .animation(.easeInOut(duration: 0.25), value: yonetici.katmanKimlikleri)
         // Uygulama sistem temasından bağımsız hep koyudur (Android: Theme.NumiGoo).
         .preferredColorScheme(.dark)
+        // Günlük seri: önde ders ekranı varken çalışma süresi sayılır (YonetimSeriAkisi.swift).
+        .onChange(of: yonetici.katmanKimlikleri) { _ in
+            yonetici.seriCalismaEkraniniGuncelle(aktif: sahneEvresi == .active)
+        }
+        .onChange(of: sahneEvresi) { evre in
+            yonetici.seriCalismaEkraniniGuncelle(aktif: evre == .active)
+        }
     }
 
     /// Katmanın giriş/çıkış geçişi. Ders akışı ekranları (abaküs, kör ders, sonuç, sandık) sağdan
@@ -35,8 +44,11 @@ struct UygulamaKokGorunumu: View {
             return AnyTransition.opacity
         }
         switch ekran {
-        case .abakusDers, .korDers, .sonuc, .sandik:
+        case .abakusDers, .korDers, .sonuc, .sandik, .seri(.yeniSeri):
             return SonucGecisi.sagdanGirSolaCik
+        case .seri(.seri):
+            // Android: openStreakFragment → slide_down / slide_up.
+            return AnyTransition.move(edge: .top)
         default:
             return AnyTransition.move(edge: .trailing)
         }
@@ -113,6 +125,8 @@ struct YonetimKatmanGorunumu: View {
             KupaLiderTablosuEkrani(partId: partId, dersAnahtari: dersAnahtari, dersBasligi: baslik, kapat: { kapat() })
         case .ogretici(let hedef):
             ogretici(hedef)
+        case .seri(let tur):
+            seriKatmani(tur)
         case .yerTutucu(let veri):
             YonetimYerTutucuEkrani(
                 baslik: veri.baslik, aciklama: veri.aciklama, ayrintilar: veri.ayrintilar,
@@ -272,6 +286,7 @@ struct YonetimKatmanGorunumu: View {
         )
         return OgreticiEkrani(
             baslangic: baslangic,
+            ses: OgreticiGercekSesCalici(),
             bitti: { _ in nesne.ogreticiGecildi(hedef, katman: no) },
             kapat: { nesne.kapat(no) }
         )

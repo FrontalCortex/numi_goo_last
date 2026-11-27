@@ -81,6 +81,8 @@ enum YonetimEkrani {
     case liderTablosu(partId: Int, dersAnahtari: String, baslik: String)
     case ogretici(YonetimOgreticiHedefi)
     case yerTutucu(YonetimYerTutucu)
+    /// Günlük seri ekranları (Seri/; bağlantılar YonetimSeriAkisi.swift).
+    case seri(YonetimSeriKatmani)
 
     /// Altındaki ekran görünür kalır mı (Kupa Yolu alttan açılan paneldir).
     var saydam: Bool {
@@ -90,6 +92,7 @@ enum YonetimEkrani {
 
     var magazaMi: Bool {
         if case .magaza = self { return true }
+        if case .seri(.dondurmaMagazasi) = self { return true }
         return false
     }
 }
@@ -149,6 +152,7 @@ final class UygulamaYoneticisi: ObservableObject {
         haritaModeli.ilerlemeKaynagi = ilerleme
         haritayiDinle()
         cuzdaniBagla()
+        seriyiBagla()
     }
 
     deinit {
@@ -310,6 +314,8 @@ final class UygulamaYoneticisi: ObservableObject {
         // Haritadaki "başla" düğmesinin enerji kararı da aynı kaynağa bakar.
         haritaModeli.sonsuzEnerji = enerji.sonsuz
         haritaModeli.enerjiYeterli = enerji.sonsuz || enerji.enerji >= ilerleme.dersEnerjiBedeli
+        // Günlük seri (Android: MainActivity.refreshStreakUi).
+        seriyiYenile()
     }
 
     // MARK: Mağaza
@@ -430,6 +436,8 @@ final class UygulamaYoneticisi: ObservableObject {
                 kupaSonucu = KupaDersSonucu(kartNo: kartNo, delta: delta)
             }
             kapat(katman)
+            // Android: TasksFragment → requestNewStreakPromptOnTasks (kupa testi dönüşü).
+            seriSorusunuDene()
         case .gunlukSoru(let bildir):
             if sonuc.yonlendirme == .gunlukSoruTamam {
                 bildir(true)
@@ -437,6 +445,8 @@ final class UygulamaYoneticisi: ObservableObject {
                 bildir(false)
             }
             kapat(katman)
+            // Android: günlük soru dönüşü de yeni seri sorusunu dener (requestNewStreakPromptOnTasks).
+            seriSorusunuDene()
         }
     }
 

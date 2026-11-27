@@ -43,7 +43,7 @@ final class OturumDurumu: ObservableObject {
 
     // Günlük seri (gün sayısı).
     // Android: StreakRepository.refresh(context).current → MainActivity.refreshStreakUi
-    // (binding.streakText); 0 iken alev söner. Seri altyapısı iOS'ta henüz yok: hep 0.
+    // (binding.streakText); 0 iken alev söner. Yönetici yazar (YonetimSeriAkisi.seriyiYenile; kaynak Seri/ servisi).
     @Published var seri: Int = 0
 
     // Kalbin üstünde "∞" rozeti gösterilir mi (Android: EnergyDisplay.apply, isInfinite =

@@ -32,6 +32,8 @@ struct AnaKabuk: View {
         VStack(spacing: 0) {
             ustKisim
             icerik
+                // Günlük hedef kutlama şeridi ve seri dondurma bildirimi (Android: streakCelebration, Toast).
+                .overlay { seriKatmani }
             altKisim
         }
         // Arka plan çentiğin ve alt ana ekran çizgisinin altına kadar uzanır;
@@ -40,7 +42,11 @@ struct AnaKabuk: View {
         // Uygulama sistem temasından bağımsız hep koyudur (Android: Theme.NumiGoo).
         .preferredColorScheme(.dark)
         .environmentObject(yonetici.oturum)
-        .onAppear { yonetici.oturumuYenile() }
+        // Seri yerel verisi oturumdaki hesaba bağlanır, kayıt cevapları uygulanır (Android: refreshStreakUi).
+        .onAppear {
+            yonetici.seriHesabiniBagla()
+            yonetici.oturumuYenile()
+        }
         .onChange(of: secili) { _ in
             // Android: sekme seçilince closeBottomSheet() (açık ders paneli kapanır).
             yonetici.haritaModeli.paneliKapat()
@@ -84,12 +90,18 @@ struct AnaKabuk: View {
         .overlay { KabukKarartma(harita: nesne.haritaModeli, aktif: secili == .harita, kenar: .bottom) }
     }
 
-    /// Android: streakContainer → openStreakFragment. Seri ekranı (StreakFragment) henüz yazılmadı.
+    /// Android: streakContainer → openStreakFragment (Seri/SeriEkrani).
     private static func seriEkraniniAc(_ yonetici: UygulamaYoneticisi) {
-        yonetici.yerTutucuAc(
-            Metin.al("activity_main_streak_icon_desc"),
-            "Seri ekranı",
-            ["Android: StreakFragment"]
+        yonetici.seriAc()
+    }
+
+    /// Kutlama şeridi yalnızca üst çubuğun göründüğü sekmelerde (Android: currencyPanel görünürken).
+    private var seriKatmani: some View {
+        let nesne: UygulamaYoneticisi = yonetici
+        return SeriKabukKatmani(
+            durum: SeriAkisDurumu.ortak,
+            seritGorunur: secili.ustCubukGorunur,
+            seriAc: { nesne.seriAc() }
         )
     }
 

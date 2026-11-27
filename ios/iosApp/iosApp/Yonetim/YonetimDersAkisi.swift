@@ -198,10 +198,10 @@ extension UygulamaYoneticisi {
 
     /// SonucEkrani.devam ("Devam et" / "Çıkış").
     ///
-    /// SERİ AKIŞI YOK (henüz yazılmadı): güncel Android'de sonuç → sandık → rozet → SERİ ekranı
-    /// (NewStreakFragment / seri kutlama şeridi) → reklam tek öncelik kuyruğundan geçer
-    /// (MainActivity.pumpPostLessonQueue, finalizeMapReturnAfterLessonClaim(isLessonTypeReturn)).
-    /// Seri ekranı yazılınca `haritayaDon` ve sandığın `kapandi` dönüşünden önce sıraya girecek.
+    /// Seri: Android'de sonuç → sandık → (reklam, sezon kapısı, rozet) → YENİ SERİ sorusu → … tek öncelik
+    /// kuyruğundan geçer (MainActivity.pumpPostLessonQueue, finalizeMapReturnAfterLessonClaim). iOS'ta
+    /// haritaya dönülürken (`haritayaDon` ve sandığın `kapandi` dönüşü) `seriSorusunuDene` çağrılır
+    /// (YonetimSeriAkisi.swift); kutlama şeridi katman kalmayınca `oturumuYenile`'den açılır.
     func sonucDevam(_ girdi: SonucGirdisi, baglam: YonetimSonucBaglami, katman: Int) {
         ilerleme.bellegeYukle(partId: baglam.partId)
         switch girdi.tur {
@@ -242,11 +242,16 @@ extension UygulamaYoneticisi {
     private func oduleGec(puan: Int, baglam: YonetimSonucBaglami, katman: Int) {
         ilerleme.ilerlet(sira: baglam.sira, puan: puan, basariOrani: baglam.basariOrani)
         haritaModeli.yenile()
-        degistir(katman, .sandik(SandikGirdisi(baslangicNadirligi: "COMMON"), kapandi: { _ in }))
+        degistir(katman, .sandik(SandikGirdisi(baslangicNadirligi: "COMMON"), kapandi: { [weak self] _ in
+            // Ders sonrası kuyruğun "yeni seri" adımı (sandık katmanı hemen ardından kapanır).
+            self?.seriSorusunuDene()
+        }))
     }
 
     private func haritayaDon(_ katman: Int) {
         haritaModeli.yenile()
         kapat(katman)
+        // Ders sonrası kuyruğun "yeni seri" adımı (Android: showNewStreakStep).
+        seriSorusunuDene()
     }
 }

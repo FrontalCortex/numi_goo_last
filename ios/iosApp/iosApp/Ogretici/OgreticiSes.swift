@@ -7,8 +7,8 @@ import Foundation
 // 0.3 ses düzeyiyle, incorrect_answer_sound). Ayar: AppPrefs "tutorial_sound_enabled" ve "sound_enabled".
 // Ses akışı ilerletmez: adımlar dokunmayla geçer; ses yoksa sessiz geçilir.
 //
-// Ses dosyaları henüz pakete kopyalanmadı; gerçek çalıcı (AVAudioPlayer) yazılınca `anahtar`
-// res/raw adıdır ("tutorial1_1").
+// Ses dosyaları Sesler/Ogretici/ altındadır; gerçek çalıcı OgreticiSesCalar.swift'te
+// (OgreticiGercekSesCalici). `anahtar` res/raw adıdır ("tutorial1_1").
 
 protocol OgreticiSesCalici: AnyObject {
     /// Adımın sesini çalar; önceki ses susturulur. `anahtar` nil ise yalnızca susturur.
