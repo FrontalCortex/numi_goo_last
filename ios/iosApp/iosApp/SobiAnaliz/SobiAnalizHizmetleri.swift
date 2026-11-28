@@ -82,6 +82,19 @@ final class SahteSobiAnalizSesEfektleri: SobiAnalizSesEfektleri {
     func yanlisSesi() {}
 }
 
+/// Gerçek sesler: ortak çalıcı (Ortak/SesCalar.swift; "sound_enabled" kapalıysa ve galeri kipinde
+/// çalmaz). Dosyalar: correct_answer_sound.wav, incorrect_answer_sound.mp3 (Sesler/Ogretici/).
+/// Düzeyler MistakeReviewDialog.kt:576 (0.3) ve :594 (varsayılan 1.0).
+final class GercekSobiAnalizSesEfektleri: SobiAnalizSesEfektleri {
+    func dogruSesi() {
+        SesCalar.ortak.cal(ad: "correct_answer_sound", sesDuzeyi: 0.3)
+    }
+
+    func yanlisSesi() {
+        SesCalar.ortak.cal(ad: "incorrect_answer_sound", sesDuzeyi: 1.0)
+    }
+}
+
 // MARK: - Kural istatistikleri
 
 /// Android SobiRuleStats.recordMove: analiz ekranındaki her Kontrol Et, hamlenin kurallarına doğru ya da
@@ -135,6 +148,16 @@ struct SobiAnalizHizmetleri {
         return SobiAnalizHizmetleri(
             seslendirici: SahteSobiAnalizSeslendirici(),
             sesler: SahteSobiAnalizSesEfektleri(),
+            kurallar: SahteSobiAnalizKuralDeposu.ortak,
+            odeme: SahteSobiAnalizOrnekOdemesi()
+        )
+    }
+
+    /// Uygulamanın gerçek akışı: sesler gerçek, gerisi henüz sahte (sesli okuma, istatistik, ödeme).
+    static func gercek() -> SobiAnalizHizmetleri {
+        return SobiAnalizHizmetleri(
+            seslendirici: SahteSobiAnalizSeslendirici(),
+            sesler: GercekSobiAnalizSesEfektleri(),
             kurallar: SahteSobiAnalizKuralDeposu.ortak,
             odeme: SahteSobiAnalizOrnekOdemesi()
         )

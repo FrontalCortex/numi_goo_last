@@ -336,6 +336,7 @@ private struct PlanKarsilastirmaSatiri: View {
             Text(satir.metin)
                 .font(Tema.yazi(14))
                 .foregroundColor(PlanStil.ikincilYazi)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.leading, 32)
                 .padding(.trailing, 16)

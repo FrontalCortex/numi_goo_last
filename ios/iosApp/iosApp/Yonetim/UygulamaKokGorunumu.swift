@@ -175,6 +175,7 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return SobiAnalizEkrani(
             istek: istek,
+            hizmetler: SobiAnalizHizmetleri.gercek(),
             kapat: {
                 istek.kapandi()
                 nesne.kapat(no)

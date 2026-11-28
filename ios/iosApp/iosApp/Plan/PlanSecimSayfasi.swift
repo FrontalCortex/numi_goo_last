@@ -59,7 +59,7 @@ struct PlanSecimSayfasi: View {
                     .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
-                    .padding(12)
+                    .padding(8)
                     .frame(width: 48, height: 48)
                     .foregroundColor(PlanStil.ikincilYazi)
                     .contentShape(Rectangle())
@@ -136,6 +136,7 @@ struct PlanSecimSayfasi: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 4)
+                    .padding(.bottom, 8)
             }
             .padding(.horizontal, 16)
             .padding(.top, 14)
@@ -265,11 +266,8 @@ private struct PlanAltCubuk: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(Metin.al("fragment_plan_tv_footer_text2"))
-                .font(Tema.yazi(14))
-                .foregroundColor(PlanStil.ikincilYazi)
-                .multilineTextAlignment(.center)
-                .padding(.bottom, 16)
+            // Android'deki kısa "otomatik yenilenir" cümlesi (fragment_plan_tv_footer_text2) kaydırılan
+            // yenileme açıklamasıyla aynı şeyi söylediği için burada tekrarlanmaz.
             dugme
             PlanYasalSatiri(model: model)
                 .padding(.top, 6)
