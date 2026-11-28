@@ -142,7 +142,8 @@ struct AnaKabuk: View {
             gorevlerSekmesi
         case .magaza:
             // Android'de 4. sekme mağaza değil abaküs özelleştirmedir (AbacusCustomizationFragment).
-            OzellestirmeEkrani(magazaAc: { yonetici.magazaAc() })
+            // Sahiplik kayıtları ve kimlik oturumdaki hesaptan (misafirde satın alma paneli açılmaz).
+            OzellestirmeEkrani(magazaAc: { yonetici.magazaAc() }, servisler: yonetici.ozellestirmeServisleri)
         case .bildirim:
             KabukSohbetSekmesi(oturum: yonetici.oturum)
         case .kesfet:
@@ -156,7 +157,9 @@ struct AnaKabuk: View {
             kupaAc: { secim in nesne.profilKupasiniAc(secim) },
             rozetlerAc: { nesne.rozetleriAc() },
             magazaAc: { nesne.magazaAc() },
-            cikisYapildi: { nesne.cikisYapildi() }
+            cikisYapildi: { nesne.cikisYapildi() },
+            // Oturum boyunca tek depo: sekme değişince profil değişiklikleri kaybolmaz.
+            depo: nesne.profilDeposu
         )
     }
 

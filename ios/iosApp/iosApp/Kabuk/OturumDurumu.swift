@@ -32,6 +32,11 @@ final class OturumDurumu: ObservableObject {
     // (`users/{uid}.plan`, `planExpiresAt`, `teacherApproved`).
     @Published var sonsuzEnerji: Bool = false
 
+    // Pro/Premium plan mı (kalp `heart_pro_ic` çizilir).
+    // Android: PlanStatus.isProPlan(energyManager.getUserPlan()) → EnergyDisplay.apply(isPremium = …).
+    // Sonsuz enerjiden AYRI tutulur (onaylı öğretmen sonsuz enerjili ama Pro değildir). Yönetici yazar.
+    @Published var proPlan: Bool = false
+
     // Enerji engeli.
     // Android: EnergyManager.isEnergyBlocked() - onaylanmamış öğretmen hesabı; enerji hep 0.
     @Published var enerjiEngelli: Bool = false

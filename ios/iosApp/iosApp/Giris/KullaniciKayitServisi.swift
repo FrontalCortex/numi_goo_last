@@ -143,6 +143,11 @@ final class SahteKullaniciKayitServisi: KullaniciKayitServisi {
         belgeler[uid] = alanlar
     }
 
+    /// Belgeyi beklemeden siler (sahte hesap silme; Android: AccountDeletionHelper `users/{uid}` silinir).
+    func anlikSil(uid: String) {
+        belgeler[uid] = nil
+    }
+
     private func bekle() async throws {
         if gecikmeSaniye > 0 {
             let nanosaniye = UInt64(gecikmeSaniye * 1_000_000_000)

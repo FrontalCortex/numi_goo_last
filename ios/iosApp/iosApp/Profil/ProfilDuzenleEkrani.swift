@@ -98,7 +98,7 @@ final class ProfilDuzenleModeli: ObservableObject {
                     self.parola = ""
                 } catch ProfilHata.yenidenGirisGerekli {
                     gezinme.bildir(Metin.al("ui_guvenlik_nedeniyle_parolayi_degistirmek_icin"), uzun: true)
-                    self.cikVeYonlendir(gezinme: gezinme)
+                    self.cikVeYonlendir(gezinme: gezinme, uzun: true)
                     return
                 } catch {
                     gezinme.bildir(Metin.al("ui_parola_guncellenemedi_x", ProfilSayfaModeli.hataMetni(error)))
@@ -124,7 +124,7 @@ final class ProfilDuzenleModeli: ObservableObject {
         let simdiMs = Int64(Date().timeIntervalSince1970 * 1000)
         if ProfilOrtak.yenidenGirisGerekli(sonGirisMs: oturum.sonGirisMs, simdiMs: simdiMs) {
             gezinme.bildir(Metin.al("ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen"), uzun: true)
-            cikVeYonlendir(gezinme: gezinme)
+            cikVeYonlendir(gezinme: gezinme, uzun: true)
             return
         }
         siliniyor = true
@@ -137,7 +137,7 @@ final class ProfilDuzenleModeli: ObservableObject {
                 self.cikVeYonlendir(gezinme: gezinme)
             case .yenidenGirisGerekli:
                 gezinme.bildir(Metin.al("ui_guvenlik_nedeniyle_hesabi_silmek_icin_lutfen"), uzun: true)
-                self.cikVeYonlendir(gezinme: gezinme)
+                self.cikVeYonlendir(gezinme: gezinme, uzun: true)
             case .hata(let mesaj):
                 gezinme.bildir(Metin.al("ui_hata_x", mesaj), uzun: true)
             }
@@ -145,9 +145,16 @@ final class ProfilDuzenleModeli: ObservableObject {
     }
 
     /// Android: logoutAndRedirect — auth.signOut() + LoginStartActivity.
-    private func cikVeYonlendir(gezinme: ProfilGezinme) {
+    /// Android'de Toast ekran değişse de görünür kalır (sistem Toast'ı). iOS'ta bildirim balonu ProfilEkrani'na
+    /// bağlıdır ve oturum kapanınca ekranla birlikte yok olurdu; kullanıcı "Hesabınız silindi" onayını görsün diye
+    /// giriş ekranına geçiş balon süresi (kısa 2 sn, uzun 3,5 sn) kadar bekletilir. Çıkış (signOut) hemen yapılır.
+    private func cikVeYonlendir(gezinme: ProfilGezinme, uzun: Bool = false) {
         depo.cikisYap()
-        gezinme.oturumKapandi()
+        let bekleme: UInt64 = uzun ? 3_500_000_000 : 2_000_000_000
+        Task {
+            try? await Task.sleep(nanoseconds: bekleme)
+            gezinme.oturumKapandi()
+        }
     }
 }
 

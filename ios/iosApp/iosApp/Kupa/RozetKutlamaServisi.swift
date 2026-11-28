@@ -109,6 +109,42 @@ final class SahteRozetKazanimServisi: RozetKazanimServisi {
         }
     }
 
+    /// Kupa dersi sonrası hayvan rozeti (Dino/Timsah/Keçi/Kartal/Sinek/Kaplumbağa) senkronu.
+    /// Android: BadgeProgressFirestore.sync{Dino,...}ProgressAndDetectLevelUp — transaction gövdesi
+    /// `computeCupBadgeProgressSync` (yeni puan kayıtlı ilerlemeden büyükse alan yazılır), kutlama zinciri
+    /// `resolveCupBadgeLevelUpChain`. Sonuç "MODE|from|to|target" kuyruğudur (hiç yoksa boş dizi).
+    func kupaRozetiniSenkronla(mod: BadgeAnimMode, yeniSkor: Int, tamam: @escaping ([String]) -> Void) {
+        let firestore = BadgeProgressFirestore.shared
+        guard let alan: String = firestore.cupBadgeProgressField(mode: mod) else {
+            DispatchQueue.main.async {
+                tamam([])
+            }
+            return
+        }
+        let depo: SahteKupaRozetDeposu? = KupaOrtami.sahte.rozetDeposu as? SahteKupaRozetDeposu
+        var belge: [String: Any] = depo?.dokuman ?? [:]
+        let sonuc: CupBadgeSyncResult = firestore.computeCupBadgeProgressSync(
+            field: alan, snapshot: belge, newCupScore: Int32(max(0, yeniSkor))
+        )
+        if let yazilacak = sonuc.updateMap {
+            for (ad, deger) in yazilacak {
+                belge[ad] = deger
+            }
+            depo?.dokuman = belge
+        }
+        let yukler: [BadgeLevelUpPayload] = firestore.resolveCupBadgeLevelUpChain(
+            mode: mod, before: sonuc.before, after: sonuc.after
+        )
+        var kuyruk: [String] = []
+        for yuk in yukler {
+            kuyruk.append(firestore.payloadToQueueItem(payload: yuk))
+        }
+        // Ağ gecikmesini taklit eder (Android: Firestore round-trip).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            tamam(kuyruk)
+        }
+    }
+
     /// Android `MissionsProgressStore.calendarDayId()` / `kupaCalendarDayId`: "yıl-yılınGünü" (sıfır dolgusuz,
     /// ör. "2026-332"); roket rozetinin günlük sayacı bu anahtarla sıfırlanır.
     private static func gunKimligi() -> String {

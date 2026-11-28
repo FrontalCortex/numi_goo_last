@@ -49,6 +49,9 @@ struct UygulamaKokGorunumu: View {
         case .seri(.seri):
             // Android: openStreakFragment → slide_down / slide_up.
             return AnyTransition.move(edge: .top)
+        case .yarisPaneli:
+            // Android: yarış paneli alttan yukarı açılan sayfadır (BottomSheetBehavior).
+            return AnyTransition.move(edge: .bottom)
         default:
             return AnyTransition.move(edge: .trailing)
         }
@@ -133,6 +136,11 @@ struct YonetimKatmanGorunumu: View {
             rozetKutlamaKatmani(kuyruk, bitti)
         case .sobiAnaliz(let istek):
             sobiAnalizKatmani(istek)
+        case .yarisPaneli(let girdi):
+            YarisKatmaniGorunumu(girdi: girdi, katman: katman.id, yonetici: yonetici)
+        case .sobiTest(let tur):
+            // Sobi'nin günlük testi (SobiTest/; bağlantı YonetimSobiTestAkisi.swift).
+            sobiTestKatmani(tur)
         case .yerTutucu(let veri):
             YonetimYerTutucuEkrani(
                 baslik: veri.baslik, aciklama: veri.aciklama, ayrintilar: veri.ayrintilar,
@@ -149,9 +157,12 @@ struct YonetimKatmanGorunumu: View {
         return AbakusDersEkrani(
             dersBaslangici: baslangic,
             hizmetler: GercekAbakusDersHizmetleri(),
+            // Android applyCustomization (onResume): kullanıcının seçtiği boncuk ve çerçeve.
+            stil: OzellestirmeAbakusStili.mevcut(),
             sobiAnalizi: sobiAnalizBaglantisi(nesne),
-            // Android isFirstRunLesson: hesapsız ilk öğreticinin dersinde çıkış düğmesi gizli.
-            cikisGizli: nesne.ilkOgreticiAkisi,
+            // Android isFirstRunLesson = currentUser == null: hesapsız HER abaküs dersinde çıkış ve kural
+            // düğmeleri gizli (yalnızca ilk öğreticinin dersinde değil).
+            cikisGizli: nesne.misafirMi,
             bitti: { sonuc in nesne.abakusDersiBitti(sonuc, baslangic: baslangic, katman: no) },
             kapat: { nesne.kapat(no) }
         )
@@ -189,12 +200,15 @@ struct YonetimKatmanGorunumu: View {
         return KorDersEkrani(
             baslangic: baslangic,
             kayit: SahteKorDersKayitServisi(),
-            enerji: SahteKorDersEnerjiServisi(),
+            // Kupa kipindeki can harcaması (yanlış cevap / terk) ana can servisine (SahteOrtam).
+            enerji: SahteOrtam.ortak.korDersEnerjisi,
             ses: GercekKorDersSesServisi(),
             sobiAnalizi: sobiAnalizBaglantisi(nesne),
             bitti: { sonuc in nesne.korDersBitti(sonuc, kaynak: kaynak, baslangic: baslangic, katman: no) },
             kapat: { nesne.kapat(no) }
         )
+        // Android BlindingLessonFragment.applyCustomization: abaküsle cevaplanan kör derslerde tercih uygulanır.
+        .abakusStili(OzellestirmeAbakusStili.mevcut())
     }
 
     private func sonuc(_ girdi: SonucGirdisi, _ baglam: YonetimSonucBaglami) -> some View {
@@ -213,7 +227,8 @@ struct YonetimKatmanGorunumu: View {
         let no: Int = katman.id
         return SandikEkrani(
             girdi: girdi,
-            odulServisi: SahteSandikOdulServisi(),
+            // Ödül ana cüzdana, kupa yolu sandığı kupa defterine yazılır (SahteOrtam).
+            odulServisi: SahteOrtam.ortak.sandikOdulServisi,
             ses: GercekSandikSesCalar(),
             kapat: { sonuc in
                 kapandi(sonuc)
@@ -245,7 +260,18 @@ struct YonetimKatmanGorunumu: View {
             // Android: karttaki çubuk/sandık panelden CupPathRoadFragment'ı ya da kupa yolu sandığını
             // (NewChestFragment) açar; panel kapanmış olur (KupaEkrani kapat'ı önce çağırır).
             yolAc: { alan in nesne.ac(.kupaYoluOdul(kupaAlani: alan)) },
-            sandikAc: { girdi in nesne.ac(.sandik(girdi, kapandi: { _ in })) }
+            sandikAc: { girdi in nesne.ac(.sandik(girdi, kapandi: { _ in })) },
+            // Android openCupBadgeCelebrationAfterAnimation: panel kapanır, rozet kutlaması açılır. Çocuk bu arada
+            // başka bir ekrana geçtiyse (panel artık en üstte değilse) kutlama onun üstüne açılmaz.
+            rozetAc: { kuyruk in
+                if nesne.katmanlar.last?.id != no {
+                    return
+                }
+                nesne.kapat(no)
+                nesne.rozetKutlamasiniAc(kuyruk, bitti: {})
+            },
+            // Kupa depoları + ana can servisi (can göstergesi ve BAŞLAT kararı tek kaynaktan).
+            ortam: SahteOrtam.ortak.kupa
         )
     }
 
@@ -256,7 +282,15 @@ struct YonetimKatmanGorunumu: View {
         return KupaYoluOdulEkrani(
             kupaAlani: kupaAlani,
             kapat: { nesne.kapat(no) },
-            sandikAc: { girdi, kapandi in nesne.ac(.sandik(girdi, kapandi: kapandi)) }
+            sandikAc: { girdi, kapandi in
+                // Android: sandık `replace` ile aynı kaba konur, hızlı çift dokunuş ikinci bir katman açmaz;
+                // iOS'ta katmanlar üst üste bindiği için üstte zaten bir sandık varsa yenisi açılmaz.
+                if let ust = nesne.katmanlar.last, case .sandik = ust.ekran {
+                    return
+                }
+                nesne.ac(.sandik(girdi, kapandi: kapandi))
+            },
+            ortam: SahteOrtam.ortak.kupa
         )
     }
 

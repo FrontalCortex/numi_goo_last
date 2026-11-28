@@ -135,6 +135,13 @@ struct MagazaEnerjiDurumu: Equatable {
 /// kullanılmalı; sunucu yanıtındaki `energyFullTime` `adoptServerFullTime` ile benimsenmelidir.
 protocol MagazaEnerjiServisi: AnyObject {
     func durum() -> MagazaEnerjiDurumu
+    /// `adet` can harcar (Android: EnergyManager.useEnergy(amount) — iyimser yerel düşüm, ardından
+    /// Cloud Function `spendEnergy`, gövde ServerEnergy.spendEnergyPayload; yanıttaki `energyFullTime`
+    /// benimsenir). `tamam(true)`: harcandı ya da can sonsuz (Pro/onaylı öğretmen; düşülmez).
+    /// `tamam(false)`: can yetmiyor ya da onaysız öğretmen; hiçbir şey düşülmez (Android: mağaza açılır).
+    /// Karar yerel kurala göre hemen verilir; sahte uygulama `tamam`'ı aynı çağrının içinde çağırır,
+    /// gerçek uygulama da sunucuyu beklemeden çağırmalıdır (Android useEnergy eşzamanlıdır).
+    func harca(adet: Int, tamam: @escaping (Bool) -> Void)
     /// Reklam izlenerek 1 can (Cloud Function `claimAdEnergy`, gövde: ServerEnergy.claimAdEnergyPayload).
     func reklamlaCanAl(reklamNonce: String, tamam: @escaping (Bool) -> Void)
     /// Anahtar karşılığı 1 can (Cloud Function `buyEnergyWithKeys`).
@@ -184,10 +191,12 @@ struct MagazaBagimliliklar {
     let reklam: MagazaReklamServisi
     let seri: MagazaSeriServisi
 
-    /// Bütün uygulamada paylaşılan sahte servisler (cüzdan Özelleştirme ekranıyla ortaktır).
+    /// Bütün uygulamada paylaşılan sahte servisler (cüzdan Özelleştirme ekranıyla ortaktır). Cüzdan ve can
+    /// oturum boyunca tek nesnedir (`MagazaSahteCuzdanServisi.ortak`, `MagazaSahteEnerjiServisi.ortak`);
+    /// uygulamanın sahte ortamı (Yonetim/SahteOrtam.swift) da bunları kullanır.
     static let sahte: MagazaBagimliliklar = {
-        let cuzdan = MagazaSahteCuzdanServisi()
-        let enerji = MagazaSahteEnerjiServisi(cuzdan: cuzdan)
+        let cuzdan: MagazaSahteCuzdanServisi = MagazaSahteCuzdanServisi.ortak
+        let enerji: MagazaSahteEnerjiServisi = MagazaSahteEnerjiServisi.ortak
         return MagazaBagimliliklar(
             odeme: MagazaSahteOdemeServisi(cuzdan: cuzdan, enerji: enerji),
             cuzdan: cuzdan,
@@ -204,6 +213,10 @@ struct MagazaBagimliliklar {
 
 /// Bellekte tutulan cüzdan. Başlangıç bakiyesi satın alma akışları denenebilsin diye yüksektir.
 final class MagazaSahteCuzdanServisi: MagazaCuzdanServisi {
+    /// Uygulamanın tek sahte cüzdanı (Android: `users/{uid}` belgesindeki currency/keys/plan tek kaynaktır).
+    /// Galeri ekranları kendi örneklerini kurabilir.
+    static let ortak: MagazaSahteCuzdanServisi = MagazaSahteCuzdanServisi()
+
     private(set) var cuzdan = MagazaCuzdan(
         altin: 12_000,
         anahtar: 45,
@@ -276,6 +289,12 @@ final class MagazaSahteCuzdanServisi: MagazaCuzdanServisi {
         yaz(yeni)
     }
 
+    /// Hesap değişince (giriş/çıkış) o hesabın bakiyesi yüklenir; dinleyiciler (üst çubuk, mağaza) haber alır.
+    /// Android: listenToWallet yeni uid'nin `users/{uid}` belgesini dinlemeye başlar.
+    func hesabinCuzdaniniYukle(_ yeni: MagazaCuzdan) {
+        yaz(yeni)
+    }
+
     private func yaz(_ yeni: MagazaCuzdan) {
         cuzdan = yeni
         for dinleyici in dinleyiciler.values {
@@ -284,36 +303,129 @@ final class MagazaSahteCuzdanServisi: MagazaCuzdanServisi {
     }
 }
 
-/// Bellekte tutulan can durumu: 5 canın 3'ü dolu, sıradaki can 10 dakikalık sayaçla gelir.
-/// Yalnızca ekranı denemek içindir; gerçek kural ortak koddaki EnergyManager'dadır.
+/// Hesap değişince saklanıp geri yüklenen can durumu (Android: `users/{uid}.energy_full_time`).
+struct MagazaSahteEnerjiKaydi {
+    /// Canın tam dolacağı an (epoch ms); geçmişte ya da şimdi = dolu.
+    let tamDolumMs: Int64
+    /// O gün anahtarla alınan can sayısı (sunucu sayacı).
+    let gunlukAnahtarCani: Int
+}
+
+/// EnergyManager'ın platform kapısı. Zamanlayıcı yok (üst çubuk ve mağaza kendi saatleriyle `durum()`
+/// okur); "oturum yok" denir ki ortak kod sunucu çağrısı (`spendEnergy`, belge okuma) istemesin — sahte
+/// serviste yerel değer yetkilidir.
+final class MagazaSahteEnerjiPlatformu: NSObject, EnergyPlatform {
+    func callSpendEnergy(payload: [String: Any]) {}
+
+    func cancelTick() {}
+
+    func isSignedIn() -> Bool {
+        return false
+    }
+
+    func loadUserDoc() {}
+
+    func scheduleTick(delayMs: Int64) {}
+}
+
+/// Bellekte tutulan can durumu. Kural ortak koddaki `EnergyManager`'dır (Android ile aynı: en çok 5 can,
+/// Lite'ta 10; yenilenme 10 dk, Lite'ta 7; Pro/Premium ve onaylı öğretmende sonsuz; onaysız öğretmende 0).
+/// Başlangıç örneği: 5 canın 3'ü dolu, sıradaki can 2 dk 5 sn sonra.
 final class MagazaSahteEnerjiServisi: MagazaEnerjiServisi {
+    /// Uygulamanın tek sahte can servisi (cüzdanı `MagazaSahteCuzdanServisi.ortak`).
+    static let ortak: MagazaSahteEnerjiServisi = MagazaSahteEnerjiServisi(cuzdan: MagazaSahteCuzdanServisi.ortak)
+
     private let cuzdan: MagazaSahteCuzdanServisi
-    private var enerji: Int = 3
-    private let azami: Int = 5
-    private var sonrakiCanZamani = Date().addingTimeInterval(125)
-    private let yenilenmeSuresi: TimeInterval = 600
+    private let platform: MagazaSahteEnerjiPlatformu
+    /// Android: "energy_prefs" SharedPreferences.
+    private let depo: InMemoryKeyValueStore
+    private let yonetici: EnergyManager
     /// Bugün anahtarla alınan can sayısı (sunucu günde en çok 5 can satar).
     private var gunlukAnahtarCani: Int = 0
-    /// Sahte Pro aboneliği alınınca `true` olur.
-    var sonsuz: Bool = false
+
+    /// Sonsuz can (Android: MainActivity.isInfiniteEnergy). Sahte Pro aboneliği alınınca `true` yapılır;
+    /// yazınca EnergyManager'ın planı değişir (true → "Pro", false → "Free").
+    var sonsuz: Bool {
+        get {
+            return yonetici.isInfiniteEnergy()
+        }
+        set {
+            let plan: String = newValue ? EnergyManager.companion.PLAN_PRO : EnergyManager.companion.PLAN_FREE
+            yonetici.setUserPlan(plan: plan)
+        }
+    }
 
     init(cuzdan: MagazaSahteCuzdanServisi) {
         self.cuzdan = cuzdan
+        let platform = MagazaSahteEnerjiPlatformu()
+        let depo = InMemoryKeyValueStore()
+        self.platform = platform
+        self.depo = depo
+        self.yonetici = EnergyManager(
+            prefs: depo,
+            platform: platform,
+            nowMs: { () -> KotlinLong in
+                return KotlinLong(longLong: MagazaSahteEnerjiServisi.simdiMs())
+            }
+        )
+        // Örnek: 2 can eksik, sıradaki can 125 sn sonra (dolum = şimdi + 125 sn + 1 dilim).
+        let ornekDolum: Int64 = MagazaSahteEnerjiServisi.simdiMs() + 125_000 + yonetici.getEnergyRefreshMillis()
+        yonetici.adoptServerFullTime(fullTime: ornekDolum)
+    }
+
+    private static func simdiMs() -> Int64 {
+        return Int64(Date().timeIntervalSince1970 * 1000.0)
+    }
+
+    /// Yerelde saklanan dolum anı (EnergyManager.KEY_ENERGY_FULL_TIME; yoksa şimdi = dolu).
+    private func tamDolumMs() -> Int64 {
+        let simdi: Int64 = MagazaSahteEnerjiServisi.simdiMs()
+        return depo.getLong(key: EnergyManager.companion.KEY_ENERGY_FULL_TIME, defaultValue: simdi)
     }
 
     func durum() -> MagazaEnerjiDurumu {
-        // Sayaç dolduysa can ekle.
-        while enerji < azami && sonrakiCanZamani <= Date() {
-            enerji += 1
-            sonrakiCanZamani = sonrakiCanZamani.addingTimeInterval(yenilenmeSuresi)
-        }
-        let kalanSaniye: TimeInterval = enerji < azami ? max(0, sonrakiCanZamani.timeIntervalSinceNow) : 0
+        let su: Int = Int(yonetici.getCurrentEnergy())
+        let azami: Int = Int(yonetici.getMaxEnergy())
+        let kalan: Int64 = yonetici.getTimeUntilNextEnergy()
         return MagazaEnerjiDurumu(
-            enerji: enerji,
+            enerji: su,
             azami: azami,
-            sonsuz: sonsuz,
-            sonrakiCanaKalanMs: Int64(kalanSaniye * 1000)
+            sonsuz: yonetici.isInfiniteEnergy(),
+            sonrakiCanaKalanMs: kalan
         )
+    }
+
+    func harca(adet: Int, tamam: @escaping (Bool) -> Void) {
+        // Android EnergyManager.useEnergy: sonsuzda düşmeden true, yetmezse false, yoksa dolum anı uzar.
+        let verildi: Bool = yonetici.useEnergy(amount: Int32(adet))
+        tamam(verildi)
+    }
+
+    // MARK: Hesap (Yonetim/SahteOrtam.swift)
+
+    /// Plan değişince (Android: EnergyManager.setUserPlan, `users/{uid}.plan` dinleyicisinden).
+    func planiUygula(_ plan: String) {
+        yonetici.setUserPlan(plan: plan)
+    }
+
+    /// Android: EnergyManager.setUserRoleApproval (`users/{uid}.role` / `teacherApproved`).
+    func rolUygula(rol: String, ogretmenOnayli: Bool) {
+        yonetici.setUserRoleApproval(role: rol, teacherApproved: ogretmenOnayli)
+    }
+
+    func hesapKaydi() -> MagazaSahteEnerjiKaydi {
+        return MagazaSahteEnerjiKaydi(tamDolumMs: tamDolumMs(), gunlukAnahtarCani: gunlukAnahtarCani)
+    }
+
+    /// Saklanan hesabın canı geri yüklenir (dolum anı mutlak olduğu için aradaki süre de sayılır).
+    func hesapKaydiniYukle(_ kayit: MagazaSahteEnerjiKaydi) {
+        gunlukAnahtarCani = kayit.gunlukAnahtarCani
+        yonetici.adoptServerFullTime(fullTime: kayit.tamDolumMs)
+    }
+
+    /// Yeni hesap: can dolu (Android: belgede `energy_full_time` yoksa EnergyManager dolu başlar).
+    static func yeniHesapKaydi() -> MagazaSahteEnerjiKaydi {
+        return MagazaSahteEnerjiKaydi(tamDolumMs: MagazaSahteEnerjiServisi.simdiMs(), gunlukAnahtarCani: 0)
     }
 
     func reklamlaCanAl(reklamNonce: String, tamam: @escaping (Bool) -> Void) {
@@ -342,10 +454,17 @@ final class MagazaSahteEnerjiServisi: MagazaEnerjiServisi {
         }
     }
 
+    /// Sunucunun 1 can eklemesi (claimAdEnergy / buyEnergyWithKeys): dolum anı bir dilim geri çekilir, şimdiden
+    /// geriye gitmez; can zaten doluysa değişmez. Sonuç EnergyManager'a sunucu yanıtı gibi verilir
+    /// (Android: ServerEnergy yanıtındaki `energyFullTime` → adoptServerFullTime).
     private func canEkle() {
-        if enerji < azami {
-            enerji += 1
+        let simdi: Int64 = MagazaSahteEnerjiServisi.simdiMs()
+        let dolum: Int64 = tamDolumMs()
+        if dolum <= simdi {
+            return
         }
+        let yeni: Int64 = max(simdi, dolum - yonetici.getEnergyRefreshMillis())
+        yonetici.adoptServerFullTime(fullTime: yeni)
     }
 }
 
@@ -411,8 +530,9 @@ final class MagazaSahteOdemeServisi: MagazaOdemeServisi {
             if let odul = self.oduller[urunKimligi] {
                 self.cuzdan.sunucuDegistirdi(altinFarki: odul.altin, anahtarFarki: odul.anahtar, sobiFarki: odul.sobi)
             } else if urunKimligi == BillingCatalog.shared.SUB_PRO {
-                self.enerji.sonsuz = true
+                // Plan tek kaynaktır: cüzdandaki plan (Ayarlar, harita, profil okur) ve EnergyManager'ın planı.
                 self.cuzdan.planiDegistir("Pro", sobiUcretsizSinir: 20)
+                self.enerji.sonsuz = true
             }
             tamam(.verildi)
         }

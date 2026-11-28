@@ -267,7 +267,17 @@ final class GunlukSoruModeli: ObservableObject {
         kalpNesli += 1
         let nesil: Int = kalpNesli
         let periyot: String = durum.periodKey
-        switch GunlukSoruMantik.kalpEylemi(durum, kalp: depo.kalpDeposu) {
+        let eylem: GunlukSoruKalpEylemi = GunlukSoruMantik.kalpEylemi(durum, kalp: depo.kalpDeposu)
+        // İyileşme beklenirken kart başka bir içerikle yeniden bağlanırsa eski zamanlayıcının nesli eskir ve
+        // `iyilesmeSonrasi` hiç çağrılmaz (anahtar harcanmış, soru başlamamış, dokunma kilidi açılmaz).
+        // Yeni bağlama iyileşme istemiyorsa bekleyen soru hemen başlatılır.
+        if eylem != .iyiles, let bekleyen = iyilesmeSonrasi {
+            iyilesmeSonrasi = nil
+            DispatchQueue.main.async {
+                bekleyen()
+            }
+        }
+        switch eylem {
         case .ilkKare:
             kalp = .saglam
         case .kirikDur:

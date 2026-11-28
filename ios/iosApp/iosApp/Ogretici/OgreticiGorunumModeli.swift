@@ -49,6 +49,9 @@ final class OgreticiGorunumModeli: ObservableObject {
     /// Android resetAbacus: 400 ms boyunca dokunmalar yutulur.
     private var dokunmaKilidiBitisi: Date = Date.distantPast
     private var daktiloZamanlayici: Timer? = nil
+    /// Geçerli adımın harf aralığı (sn) ve arka plana geçerken daktilonun durdurulduğu bilgisi.
+    private var daktiloAraligi: Double = 0.05
+    private var daktiloYasamDongusuyleDurdu: Bool = false
     private var uyariIsi: DispatchWorkItem? = nil
     private var basladi: Bool = false
     private var cikildi: Bool = false
@@ -293,6 +296,7 @@ final class OgreticiGorunumModeli: ObservableObject {
 
     private func daktiloyuBaslat(_ veri: OgreticiAdimVerisi) {
         daktiloyuDurdur()
+        daktiloYasamDongusuyleDurdu = false
         let toplam: Int = veri.metin.count
         if !veri.daktilo || toplam == 0 {
             gorunenHarf = toplam
@@ -300,11 +304,31 @@ final class OgreticiGorunumModeli: ObservableObject {
         }
         gorunenHarf = 0
         let aralik: Double = Double(max(veri.daktiloHiziMs, 1)) / 1000.0
+        daktiloAraligi = aralik
+        daktiloZamanlayiciyiKur(aralik: aralik)
+    }
+
+    private func daktiloZamanlayiciyiKur(aralik: Double) {
         let zamanlayici = Timer(timeInterval: aralik, repeats: true) { [weak self] _ in
             self?.daktiloAdimi()
         }
         RunLoop.main.add(zamanlayici, forMode: .common)
         daktiloZamanlayici = zamanlayici
+    }
+
+    /// Uygulama arka plana geçiyor (Android TutorialFragment.onPause): daktilo kaldığı harfte durur.
+    func arkaPlanaGecildi() {
+        if daktiloZamanlayici == nil { return }
+        daktiloyuDurdur()
+        daktiloYasamDongusuyleDurdu = true
+    }
+
+    /// Uygulama öne döndü (Android onResume → resumeTypewriter): daktilo kaldığı harften sürer.
+    func onPlanaDonuldu() {
+        if !daktiloYasamDongusuyleDurdu { return }
+        daktiloYasamDongusuyleDurdu = false
+        if cikildi || daktiloZamanlayici != nil || gorunenHarf >= adim.metin.count { return }
+        daktiloZamanlayiciyiKur(aralik: daktiloAraligi)
     }
 
     private func daktiloAdimi() {

@@ -120,7 +120,7 @@ struct UstCubuk: View {
         Button(action: magazaAc) {
             HStack(spacing: KabukOlculeri.gostergeYaziBosluk) {
                 ZStack {
-                    Image("heart_ic")
+                    Image(durum.proPlan ? "heart_pro_ic" : "heart_ic")
                         .renderingMode(.original)
                         .resizable()
                         .scaledToFit()

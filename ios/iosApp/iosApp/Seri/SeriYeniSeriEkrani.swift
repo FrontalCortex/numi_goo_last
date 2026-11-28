@@ -41,7 +41,32 @@ struct SeriYeniSeriEkrani: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color("background_color").ignoresSafeArea())
         .preferredColorScheme(.dark)
+        .overlay(alignment: .topLeading) {
+            kapatDugmesi
+        }
         .onAppear { model.acildi() }
+    }
+
+    /// Android'de NewStreakFragment bir DialogFragment'tır ve iptal edilebilir: sistem geri tuşu ekranı kapatır
+    /// (onDismiss → ders sonrası kuyruk sürer). iOS'ta donanım geri tuşu yoktur; bunun karşılığı sol üstte bir
+    /// kapat düğmesidir (Android'de görsel karşılığı yok). `bitti` çağrılır; seçim yazılmaz, soru bugün için
+    /// zaten sorulmuş sayıldığından yeniden sorulmaz.
+    private var kapatDugmesi: some View {
+        Button {
+            bitti()
+        } label: {
+            Image("ic_close_black")
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(Color.white)
+                .frame(width: 24, height: 24)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .padding(.leading, 8)
+        .padding(.top, 8)
     }
 
     /// newStreakContinue: 56dp, yanlardan 10dp, alttan 24dp, köşe 8dp, 18sp kalın; açıkken dark_primary,

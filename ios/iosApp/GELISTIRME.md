@@ -60,6 +60,8 @@ LottieGorunumu("gold_medal_anim", dongu: false, hiz: 1.0, oynat: true, bitti: { 
 | `GocenDugmeStili` (`Ortak/`) | `ButtonStyle`: `.buttonStyle(GocenDugmeStili(zemin: Color, golge: Color, koseYaricapi: CGFloat = 16, derinlik: CGFloat = 4))` — Android'in iki katmanlı "göçen" düğmesi (yüz + dudak; basınca `derinlik` kadar iner). Yüksekliği düğmeye `.frame(height:)` ile verin. |
 | `AvatarGorunumu` (`Profil/Avatar/`) | `AvatarGorunumu(config: String)` (arka planlı daire, tam avatar) ya da `AvatarGorunumu(config: String, arkaPlan: Bool, yakinPlan: Bool)` — Personas avatarı; `config` avatar yapılandırma dizesi (Android `AvatarConfigLogic` biçimi). |
 | `LottieGorunumu` (`Ortak/`) | Yukarıda. |
+| `SesCalar` (`Ortak/SesCalar.swift`) | `SesCalar.ortak.cal(ad: String, sesDuzeyi: Float = 1.0, hiz: Float = 1.0, ayarAnahtari: String = SesCalar.sesAcikAnahtari)` — ses efekti çalar (ad: paket kökündeki dosya, uzantısız; `Sesler/Efektler/`). `ayarAnahtari` kapalıysa (varsayılan `sound_enabled`) çalmaz; dosya yoksa sessiz geçer. Ek: `hazirla(ad:)` önceden yükler, `sustur(ad:)` susturur, `ayarAcikMi(_:)` ayar okur. Ana iş parçacığı dışından çağrılabilir; ekran galerisi kipinde çalmaz. |
+| `Titresim` (`Ortak/Titresim.swift`) | `Titresim.tik()` — Android `Haptics.click` (hafif dokunma titreşimi); `vibration_enabled` kapalıysa titretmez. Yalnızca Android'in titrettiği yerlerde kullanılır (alt çubuk sekmesi, avatar seçimi, rozet ayrıntısı). `Titresim.acikMi()` ayarı okur. |
 
 Görsellerin listesi: `ios/iosApp/iosApp/Assets.xcassets/Gorseller/`. Olmayan bir ada başvurmak çökertmez (boş çizilir) ama raporda belirtin.
 
@@ -68,12 +70,13 @@ Görsellerin listesi: `ios/iosApp/iosApp/Assets.xcassets/Gorseller/`. Olmayan bi
 - Her ekran kendi klasöründe, tek bir giriş görünümüyle dışa açılır (`struct XEkrani: View`). Girdiler yalın değerlerdir; çıkışlar kapanışlardır (`kapat: () -> Void`, `bitti: (Sonuc) -> Void`).
 - Durum bir `ObservableObject` görünüm modelinde tutulur.
 - **Firebase henüz yok.** Ağ/Firestore/giriş gerektiren her şey bir Swift `protocol`'ünün arkasına konur ve örnek veri döndüren sahte bir uygulamasıyla (`Sahte…`) birlikte yazılır. Android'de verinin hangi koleksiyon/alandan geldiği yorumla belirtilir.
+- **Tek sahte ortam.** Uygulamanın gerçek akışında ekranlar sahte servislerini `Yonetim/SahteOrtam.swift`'teki oturum ömürlü ortamdan alır (kimlik + kayıt deposu, cüzdan `MagazaSahteCuzdanServisi.ortak`, can `MagazaSahteEnerjiServisi.ortak`, profil deposu, kupa depoları, sahiplik kayıtları). Başka ekranın da okuduğu veriyi (altın, anahtar, can, plan, profil, kupa, rozet) yeni bir sahte nesnede tutmayın; ortamdakini kullanın ya da onu saran ince bir uyarlayıcı yazın. Hesap değişince ortam hesaba bağlı durumu değiştirir (`SahteOrtam.hesabaGec`). Ekran galerisi kendi örnek nesnelerini kullanabilir.
 - Ses, titreşim, reklam, ödeme SDK çağrıları da şimdilik protokol arkasında boş bırakılır.
 - Başka ekranı doğrudan çağırmayın; geçişi kapanışla dışarı verin. Ekranları birbirine yönetici oturum bağlar.
 
 ## Kotlin → Swift adlandırma
 
-Ortak kodun Swift'e nasıl göründüğünün kesin kaynağı üretilen başlık dosyasıdır: **`ios/docs/Shared.h`** (Codemagic çıktısından alınır; son güncelleme 13. derlemeden; sonradan eklenen ortak kod adları orada olmayabilir, işi bitirmeden önce kullandığınız her adı orada `grep` ile doğrulayın). Genel kurallar:
+Ortak kodun Swift'e nasıl göründüğünün kesin kaynağı üretilen başlık dosyasıdır: **`ios/docs/Shared.h`** (Codemagic çıktısından alınır; son güncelleme 14. derlemeden; sonradan eklenen ortak kod adları orada olmayabilir, işi bitirmeden önce kullandığınız her adı orada `grep` ile doğrulayın). Genel kurallar:
 
 - `object X` → `X.shared`; `companion object` üyeleri → `X.companion.uye`.
 - `Int` → `Int32`, `Long` → `Int64`, `Float` → `Float`, `Double` → `Double`, `Boolean` → `Bool`.

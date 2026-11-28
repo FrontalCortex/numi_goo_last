@@ -65,7 +65,19 @@ final class SahteKimlikServisi: KimlikServisi {
 
     let kayit: SahteKullaniciKayitServisi
 
-    private var oturum: GirisOturumu?
+    private var oturum: GirisOturumu? {
+        didSet {
+            // Son giriş zamanı (Android: FirebaseUser.metadata.lastSignInTimestamp; hesap silmenin
+            // "yakın zamanda giriş" denetimi bunu okur). Kurucudaki atama gözlemciyi tetiklemez.
+            if let yeni = oturum, yeni.uid != oldValue?.uid {
+                oturumAcilisMs = GirisYerelDepo.simdiMs()
+            } else if oturum == nil {
+                oturumAcilisMs = nil
+            }
+        }
+    }
+    /// Açık oturumun açıldığı an (epoch ms); oturum yoksa nil.
+    private(set) var oturumAcilisMs: Int64? = nil
     private var sifreler: [String: String]
     /// Gönderilmiş kodun amacı (e-posta → amaç); sunucudaki `studentVerificationCodes` karşılığı.
     private var gonderilenKodlar: [String: String]
@@ -176,6 +188,31 @@ final class SahteKimlikServisi: KimlikServisi {
 
     func cikisYap() async {
         oturum = nil
+    }
+
+    /// Beklemeden oturumu kapatır (Android: AuthManager.logout → auth.signOut). Kayıtlı hesaplar, şifreler
+    /// ve belgeler KALIR; aynı hesapla yeniden giriş yapılabilir.
+    func oturumuKapat() {
+        oturum = nil
+    }
+
+    /// Sahte hesap silme (Android: AccountDeletionHelper → `users/{uid}` ve Auth kaydı silinir): belge,
+    /// şifre ve bekleyen kodlar gider, açık oturumsa kapanır. Aynı e-postayla artık giriş yapılamaz
+    /// ("kayıtlı değil"); yeniden kayıt olunabilir.
+    func hesabiSil(uid: String) {
+        hazirla()
+        let kurallar = AuthRules.shared
+        if let belge = kayit.anlikBelge(uid: uid), let eposta = belge[kurallar.FIELD_EMAIL] as? String {
+            let normal: String = kurallar.normalizeEmail(email: eposta)
+            sifreler[eposta] = nil
+            sifreler[normal] = nil
+            gonderilenKodlar[normal] = nil
+            yanlisDenemeler[normal] = nil
+        }
+        kayit.anlikSil(uid: uid)
+        if oturum?.uid == uid {
+            oturum = nil
+        }
     }
 
     // MARK: E-posta + doğrulama kodu

@@ -74,7 +74,7 @@ struct EkranGalerisi: View {
         "maskot-2",
         "maskot-3",
     ] + SeriGaleri.adlar + KuralGaleri.adlar + PlanGaleri.adlar + RozetKutlamaGaleri.adlar
-        + SobiAnalizGaleri.adlar
+        + SobiAnalizGaleri.adlar + YarisGaleri.adlar + SobiTestGaleri.adlar
 
     /// `-ekran <ad>` ile istenen ekran; argüman yoksa nil (uygulama olağan akışla açılır).
     nonisolated static var istenenAd: String? {
@@ -131,6 +131,13 @@ struct EkranGalerisi: View {
         } else if SobiAnalizGaleri.adlar.contains(ad) {
             // "Sobi ile analiz et" ("sobi-analiz", "sobi-analiz-2"; SobiAnaliz/SobiAnalizGaleri.swift).
             SobiAnalizGaleriEkrani(ad: ad)
+        } else if SobiTestGaleri.adlar.contains(ad) {
+            // Sobi'nin günlük testi ("sobi-test", "sobi-test-kilitli", "sobi-test-sonuc", "sobi-test-oynatici";
+            // SobiTest/SobiTestGaleri.swift).
+            SobiTestGaleriEkrani(ad: ad)
+        } else if YarisGaleri.adlar.contains(ad) {
+            // Yarış paneli ("yaris-…"; Yaris/YarisGaleri.swift).
+            YarisGaleriEkrani(ad: ad)
         } else {
             digerEkranlar
         }

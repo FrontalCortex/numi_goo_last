@@ -43,6 +43,10 @@ struct KupaDersBaslangici: Equatable {
 /// Kupa dersinden dönüş: hangi kartın skoru ne kadar değişti.
 /// Android: `GlobalValues.pending*CupDelta` + `consumePendingCupDelta`.
 struct KupaDersSonucu: Equatable {
+    /// Her dersin sonucuna özgü kimlik: aynı kartta art arda gelen aynı delta'lı iki sonuç eşit
+    /// sayılıp ikincisi yutulmasın (Android'de eşitlik karşılaştırması yok; her dönüşte alan okunup sıfırlanır).
+    /// Başlangıç değeri olan `let` üyelik başlatıcısına girmez; her `KupaDersSonucu(kartNo:delta:)` yeni kimlik alır.
+    let kimlik: UUID = UUID()
     let kartNo: Int
     /// Dersin kupa değişimi (+kazanç / −kayıp).
     let delta: Int
@@ -325,6 +329,56 @@ final class SahteKupaDeposu: KupaSkorDeposu, KupaYolBelgeDeposu, KupaKilitKaynag
         DispatchQueue.main.asyncAfter(deadline: .now() + gecikme) {
             tamam(skor)
         }
+    }
+
+    /// Sahte `claimCupPathChest`: eşik alınabiliyorsa defterde alınmış sayar ve nil döner; alınamıyorsa
+    /// hiçbir şey yazmadan sunucunun hata metnini döner. Kural functions/index.js'teki gibidir:
+    /// eşik 300, 400, … 10000 olmalı; `lastClaimed`'e kadar ya da `claimed` içinde olan eşik "zaten alındı";
+    /// kupa puanı eşiğin altındaysa "yeterli kupa yok"; alınınca su seviyesinin hemen üstündeki ardışık
+    /// eşikler seviyeye katılır (compactCupPathEntry). Gerçek uygulamada bu iş sunucudadır.
+    func kupaYoluSandiginiAl(alan: String, esik: Int) -> String? {
+        let kurallar = CupPathRewardRepository.shared
+        let baslangic: Int = Int(kurallar.START)
+        let adim: Int = Int(kurallar.STEP)
+        let azami: Int = Int(kurallar.MAX)
+        let gecerli: Bool = esik > baslangic && esik <= azami && (esik - baslangic) % adim == 0
+        if !gecerli {
+            return "Bu kupa yolunun bütün sandıkları alındı."
+        }
+        let kayit: [String: Any] = (defter[alan] as? [String: Any]) ?? [:]
+        var seviye: Int = (kayit[kurallar.F_LAST_CLAIMED] as? NSNumber)?.intValue ?? baslangic
+        var alinanlar: Set<Int> = []
+        if let liste = kayit[kurallar.F_CLAIMED] as? [Any] {
+            for deger in liste {
+                if let sayi = deger as? NSNumber {
+                    alinanlar.insert(sayi.intValue)
+                }
+            }
+        }
+        if esik <= seviye || alinanlar.contains(esik) {
+            return "Bu sandığı zaten aldın."
+        }
+        let puan: Int = skorlar[alan] ?? baslangic
+        if puan < esik {
+            return "Bu sandık için yeterli kupan yok."
+        }
+        alinanlar.insert(esik)
+        // Su seviyesinin hemen üstü dolduysa seviye yükselir, o eşikler listeden çıkar.
+        while true {
+            let taban: Int = seviye > baslangic ? seviye : baslangic
+            let sonraki: Int = taban + adim
+            if sonraki > azami || !alinanlar.contains(sonraki) {
+                break
+            }
+            alinanlar.remove(sonraki)
+            seviye = sonraki
+        }
+        let sirali: [Int] = alinanlar.sorted()
+        var yeniKayit: [String: Any] = [:]
+        yeniKayit[kurallar.F_LAST_CLAIMED] = seviye
+        yeniKayit[kurallar.F_CLAIMED] = sirali as [Any]
+        defter[alan] = yeniKayit
+        return nil
     }
 
     /// Örnek defter: toplama yolunda 500'e kadar alınmış (600 hazır), körleme toplamada 3000'e kadar

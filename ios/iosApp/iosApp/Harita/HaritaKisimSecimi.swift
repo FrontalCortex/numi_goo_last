@@ -24,9 +24,15 @@ struct HaritaKisimSecimi: View {
             }
             .padding(.top, 16)
             // fragment_part_selection.xml: paddingBottom 88dp (Sobi testi düğmesinin altından son kartlar
-            // kaydırılıp çıkarılabilsin diye; düğme iOS'ta henüz yok, boşluk Android'le aynı tutuldu).
+            // kaydırılıp çıkarılabilsin diye).
             .padding(.bottom, 88)
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        // Sobi'nin günlük testi düğmesi: sağ alt köşe, 16 / 16 (Android MapSobiTestButton, anchor yok; SobiTest/).
+        .overlay(alignment: .bottomTrailing) {
+            SobiTestHaritaDugmesi()
+                .padding(.trailing, 16)
+                .padding(.bottom, 16)
         }
         .background(Color("background_color"))
     }

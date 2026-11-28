@@ -38,7 +38,8 @@ extension UygulamaYoneticisi {
             }
             return
         case .yarisPaneli:
-            yerTutucuAc(hedef.baslik, hedef.aciklama, hedef.ayrintilar)
+            // Android: LessonAdapter.showRacePanel (Yaris/YarisAkisi.swift).
+            yarisPaneliniAc(hedef)
             return
         case .abakusDersi, .korDers, .ogretici, .ogreticiTekrari:
             break
@@ -49,7 +50,32 @@ extension UygulamaYoneticisi {
             return
         }
         let tekrar: Bool = hedef.tur == .ogreticiTekrari
-        haritaDersiniBaslat(acik, ogreticiIstendi: tekrar)
+        // Android: LessonAdapter.spendLessonEnergyThen — Başla/Devam et/Gözden geçir ve "Eğitimi tekrarla"
+        // dersi açmadan önce 1 can harcar; Pro/sonsuz canda harcanmaz; yetmezse mağaza açılır.
+        dersIcinEnerjiHarca { [weak self] verildi in
+            if verildi {
+                self?.haritaDersiniBaslat(acik, ogreticiIstendi: tekrar)
+            }
+        }
+    }
+
+    /// Android: LessonAdapter.spendLessonEnergyThen. Enerji harcamanın TEK noktası (harita dersi).
+    /// Sonsuz canda harcama yapılmaz (`MagazaEnerjiServisi.harca`); can yoksa mağaza açılır ve `tamam(false)` döner.
+    /// (Abaküs/kör dersin kendi `enerjiDus` çağrıları bilerek boştur: Android'de can haritada düşer.)
+    func dersIcinEnerjiHarca(tamam: @escaping (Bool) -> Void) {
+        let bedel: Int = ilerleme.dersEnerjiBedeli
+        // Karar (sonsuz can / yetersiz can / düşüm) ana enerji servisindedir; `tamam` aynı çağrıda döner.
+        MagazaBagimliliklar.sahte.enerji.harca(adet: bedel) { [weak self] verildi in
+            guard let ben = self else { return }
+            if verildi {
+                ben.oturumuYenile()
+                tamam(true)
+            } else {
+                // Android: panel kapanır, mağaza açılır; ders açılmaz.
+                ben.magazaAc()
+                tamam(false)
+            }
+        }
     }
 
     /// Android: LessonAdapter.continueWithLesson. Açılacak ekranı ortak kural seçer.

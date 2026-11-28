@@ -65,6 +65,10 @@ final class ProfilGezinme: ObservableObject {
     func geri() {
         if !yigin.isEmpty {
             yigin.removeLast()
+            // Android: geri dönünce ProfileFragment yeniden kurulur ve loadUserData çalışır; iOS'ta kök profil
+            // bellekte kaldığı için `onAppear` bir daha çalışmaz. Alt ekranda takip edilip bırakılmış olabilir
+            // (başkasının profili, takip listesi, arkadaş arama): kök profilin sayaçları yenilensin.
+            yenilemeSayaci += 1
         }
     }
 

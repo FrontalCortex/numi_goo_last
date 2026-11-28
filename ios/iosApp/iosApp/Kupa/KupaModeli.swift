@@ -123,6 +123,12 @@ final class KupaModeli: ObservableObject {
     private var yuklendi: Bool = false
     private var sonKartTiklamasi: Date = Date.distantPast
     private var islenenSonuc: KupaDersSonucu? = nil
+    /// Kupa dersinin sonucu işlenip sayaç başladığı an (Android: panelShownAtMs); rozet kutlaması
+    /// sayaç animasyonu bitmeden açılmasın diye gecikme bundan hesaplanır.
+    private var sonucIslemeZamani: Date = Date.distantPast
+    /// Rozet kazanılınca kutlama kuyruğuyla çağrılır (Android: openCupBadgeCelebrationAfterAnimation →
+    /// BadgeProgressFirestore.openBadgeCelebration). Dışarıdan (yönetici) verilir; nil ise kutlama yoktur.
+    var rozetKutlamasi: (([String]) -> Void)? = nil
     /// Kart → ders başlarken okunan skor (Android GlobalValues.currentLessonOldCupScore).
     private var dersOncesiSkor: [Int: Int] = [:]
     /// Kart → ders başlarken seçilen zorluk (submitCupResult `difficultyLevel`).
@@ -416,6 +422,7 @@ final class KupaModeli: ObservableObject {
     func sonucuIsle(_ sonuc: KupaDersSonucu?) {
         guard let sonuc = sonuc, sonuc != islenenSonuc else { return }
         islenenSonuc = sonuc
+        sonucIslemeZamani = Date()
         enerjiyiYenile()
         kilitleriOku()
         skorlariOku(atlanacakKart: sonuc.kartNo)
@@ -467,6 +474,33 @@ final class KupaModeli: ObservableObject {
         }
         // Defter (hangi eşik alındı) ve puan sunucudan yeniden okunur.
         odulleriOku()
+        rozetleriSenkronla(kart: kartlar[i], yeniSkor: yanit.yeniSkor)
+    }
+
+    /// Android: BadgePrecalcHelper.executeCupDeltaUpdateAsync → sunucudan dönen yeni puanla ilgili hayvan rozetinin
+    /// senkronu (`sync{Dino,...}ProgressAndDetectLevelUp`) → `awaitCupBadgePayloads` → kutlama. Hangi hayvan rozeti
+    /// olduğunu `BadgePrecalcHelper.resolveCupPathKind` (CupPathKind.badgeMode) söyler; kademe hesabı ortak koddadır.
+    /// Kutlama, sayaç animasyonu (1 sn) + 350 ms boşluk dolduktan sonra açılır (Android CUP_SCORE_ANIM_MS +
+    /// CUP_CELEBRATION_GAP_MS); panel bu arada kapandıysa (model yok olduysa) kutlama oynamaz, rozet yine kazanılmış olur.
+    private func rozetleriSenkronla(kart: KupaKartDurumu, yeniSkor: Int) {
+        let tur: CupPathKind = BadgePrecalcHelper.shared.resolveCupPathKind(
+            isMultiplication: KotlinBoolean(bool: kart.carpma),
+            isExtraction: KotlinBoolean(bool: kart.cikarma),
+            isBlinding: KotlinBoolean(bool: kart.korleme)
+        )
+        let islemZamani: Date = sonucIslemeZamani
+        SahteRozetKazanimServisi.ortak.kupaRozetiniSenkronla(mod: tur.badgeMode, yeniSkor: yeniSkor) { [weak self] kuyruk in
+            if kuyruk.isEmpty {
+                return
+            }
+            let animasyonSonu: TimeInterval = Double(CupPathLogic.shared.SCORE_ANIMATION_MS) / 1000.0 + 0.35
+            let gecen: TimeInterval = Date().timeIntervalSince(islemZamani)
+            let bekleme: TimeInterval = max(0, animasyonSonu - gecen)
+            DispatchQueue.main.asyncAfter(deadline: .now() + bekleme) { [weak self] in
+                guard let self = self else { return }
+                self.rozetKutlamasi?(kuyruk)
+            }
+        }
     }
 
     /// Yerel saat diliminde "yyyy-MM-dd" (Android CupHistoryRepository.todayId; geçmiş grafiği günü).

@@ -92,10 +92,22 @@ protocol SandikOdulServisi {
     )
 }
 
+/// Sahte sunucunun reddettiği sandık (Android: HttpsError; ekran "sandık açılamadı" gösterir).
+struct SahteSandikHatasi: Error {
+    let mesaj: String
+}
+
 /// Örnek sonuç döndüren sahte sunucu.
+///
+/// `cuzdan` verilirse ödül o cüzdana yazılır (sunucu `openChest` / `claimCupPathChest` ödülü bakiyeye
+/// kendisi yazar). `kupaDeposu` verilirse kupa yolu sandığı oradaki defterde alınmış sayılır; aynı eşik
+/// ikinci kez ya da puan yetmeden açılamaz (sunucu: already-exists / failed-precondition). İkisi de
+/// verilmezse (ekran galerisi) hiçbir yere yazmaz.
 final class SahteSandikOdulServisi: SandikOdulServisi {
     private let sonuc: SandikSunucuSonucu
     private let gecikme: Double
+    private let cuzdan: MagazaSahteCuzdanServisi?
+    private let kupaDeposu: SahteKupaDeposu?
 
     init(
         sonuc: SandikSunucuSonucu = SandikSunucuSonucu(
@@ -104,10 +116,14 @@ final class SahteSandikOdulServisi: SandikOdulServisi {
             odulTuru: "GOLD",
             odulMiktari: 150
         ),
-        gecikme: Double = 0.4
+        gecikme: Double = 0.4,
+        cuzdan: MagazaSahteCuzdanServisi? = nil,
+        kupaDeposu: SahteKupaDeposu? = nil
     ) {
         self.sonuc = sonuc
         self.gecikme = gecikme
+        self.cuzdan = cuzdan
+        self.kupaDeposu = kupaDeposu
     }
 
     func sandikAc(
@@ -123,11 +139,26 @@ final class SahteSandikOdulServisi: SandikOdulServisi {
         esik: Int,
         tamamla: @escaping (Result<SandikSunucuSonucu, Error>) -> Void
     ) {
+        if let depo = kupaDeposu, let hata = depo.kupaYoluSandiginiAl(alan: kupaAlani, esik: esik) {
+            let gecikmeSuresi: Double = gecikme
+            DispatchQueue.main.asyncAfter(deadline: .now() + gecikmeSuresi) {
+                tamamla(.failure(SahteSandikHatasi(mesaj: hata)))
+            }
+            return
+        }
         yanitla(tamamla)
     }
 
     private func yanitla(_ tamamla: @escaping (Result<SandikSunucuSonucu, Error>) -> Void) {
         let yanit: SandikSunucuSonucu = sonuc
+        // Sunucu ödülü aynı işlemde bakiyeye yazar (ServerRewards.openChest; rewardType "GOLD" / "KEY").
+        if let hedef = cuzdan {
+            let altin: Int = yanit.odulTuru == "GOLD" ? yanit.odulMiktari : 0
+            let anahtar: Int = yanit.odulTuru == "KEY" ? yanit.odulMiktari : 0
+            if altin != 0 || anahtar != 0 {
+                hedef.sunucuDegistirdi(altinFarki: altin, anahtarFarki: anahtar, sobiFarki: 0)
+            }
+        }
         DispatchQueue.main.asyncAfter(deadline: .now() + gecikme) {
             tamamla(.success(yanit))
         }

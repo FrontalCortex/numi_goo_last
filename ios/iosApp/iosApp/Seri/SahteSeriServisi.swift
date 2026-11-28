@@ -31,6 +31,8 @@ final class SahteSeriServisi: SeriServisi {
 
     private var dinleyiciler: [UUID: () -> Void] = [:]
     private var bagliUid: String? = nil
+    /// Sahte sunucu "dokümanının" sahibi; çıkışta da hatırlanır.
+    private var sunucuSahibi: String? = nil
     private var acikDersEkrani: String? = nil
     /// Android: StreakSyncService.syncing (aynı anda tek gönderim).
     private var gonderiliyor: Bool = false
@@ -90,11 +92,14 @@ final class SahteSeriServisi: SeriServisi {
             return StreakSignupResult.noPending
         }
         if bagliUid != kimlik {
-            // Sahte sunucu da hesap başınadır: başka hesaba geçilince "doküman" sıfırlanır.
-            if bagliUid != nil {
+            // Sahte sunucu da hesap başınadır: başka hesaba geçilince "doküman" sıfırlanır (çıkıştan sonra
+            // aynı hesaba dönülürse sıfırlanmaz).
+            let onceki: String? = bagliUid ?? sunucuSahibi
+            if let eski = onceki, eski != kimlik {
                 sunucu.reset()
             }
             bagliUid = kimlik
+            sunucuSahibi = kimlik
         }
         depo.bindToUser(uid: kimlik)
         let acilis: KotlinLong? = hesapAcilisMs.map { KotlinLong(longLong: $0) }
@@ -103,6 +108,13 @@ final class SahteSeriServisi: SeriServisi {
             hatirlatma.saatAyarlandi(Int(depo.reminderHour()))
         }
         return sonuc
+    }
+
+    /// Oturum kapandı (Android: auth.signOut sonrası uid yok): eşitleme, ödül ve dondurma çağrıları
+    /// "giriş yap" der. Yerel seri, sahibinin uid'sine bağlı kalır; başka hesap bağlanınca ortak kod
+    /// (StreakRepository.bindToUser) onu siler — Android ile aynı.
+    func hesaptanAyril() {
+        bagliUid = nil
     }
 
     // MARK: Çalışma süresi

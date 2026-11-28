@@ -56,6 +56,24 @@ final class YonetimIlerlemeDeposu: HaritaIlerlemeKaynagi {
         partlar[veri.globalPartId] = veri.lessonItems
     }
 
+    // MARK: Hesap değişimi
+
+    /// Bu hesabın bellekteki ilerlemesi (hesap değişince saklanır; Yonetim/SahteOrtam.swift).
+    var hesapPartlari: [Int32: [LessonItem]] {
+        return partlar
+    }
+
+    /// Hesap değişti (giriş / çıkış / misafir): önbellek yeni hesabınkiyle değişir, ortak kodun bellek
+    /// listesi boşaltılır. Android: ilerleme hesap başına ayrı dosyadadır (`PREFS_PREFIX + uid`, misafirde
+    /// `guest`) ve girişte GlobalLessonData.initialize yeni uid'nin listesini okur; çıkışta önceki hesabın
+    /// listesi bellekte kalmaz (clearCurrentUserLessonData'nın bellek kısmı).
+    func hesabaGec(partlar yeni: [Int32: [LessonItem]]) {
+        partlar = yeni
+        let veri = GlobalLessonData.shared
+        _ = veri.clearCurrentUserLessonData(uid: nil)
+        veri.globalPartId = 1
+    }
+
     /// Android: LessonManager.getLessonItem(mapFragmentStepIndex).
     func dersOgesi(sira: Int32) -> LessonItem? {
         return LessonManager.shared.getLessonItem(position: sira)

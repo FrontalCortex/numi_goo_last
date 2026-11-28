@@ -23,6 +23,7 @@ struct KupaEkrani: View {
     private let sonuc: KupaDersSonucu?
     private let yolAc: ((String) -> Void)?
     private let sandikAc: ((SandikGirdisi) -> Void)?
+    private let rozetAc: (([String]) -> Void)?
 
     @StateObject private var model: KupaModeli
     /// Giriş animasyonu: panel alttan kayarak gelir.
@@ -39,6 +40,8 @@ struct KupaEkrani: View {
     ///     çağrılır; kupa alanı verilir (Android: openCupPathRoad → CupPathRoadFragment). Ekran: `KupaYoluOdulEkrani`.
     ///   - sandikAc: hazır sandığa dokununca, panel kapandıktan sonra çağrılır (Android: NewChestFragment
     ///     kupa yolu sandığı kipi). Girdi `Sandik/` ekranına verilir.
+    ///   - rozetAc: kupa dersi bir hayvan rozetinin seviyesini atlattığında, sayaç animasyonu bittikten sonra
+    ///     kutlama kuyruğuyla ("MODE|from|to|target") çağrılır (Android: openCupBadgeCelebrationAfterAnimation).
     ///   - ortam: veri servisleri (varsayılan: örnek veri).
     init(
         kapat: (() -> Void)?,
@@ -47,8 +50,10 @@ struct KupaEkrani: View {
         sonuc: KupaDersSonucu? = nil,
         yolAc: ((String) -> Void)? = nil,
         sandikAc: ((SandikGirdisi) -> Void)? = nil,
+        rozetAc: (([String]) -> Void)? = nil,
         ortam: KupaOrtami = KupaOrtami.sahte
     ) {
+        self.rozetAc = rozetAc
         self.kapat = kapat
         self.kupaDersiBaslat = kupaDersiBaslat
         self.magazaAc = magazaAc
@@ -82,6 +87,7 @@ struct KupaEkrani: View {
         .animation(.linear(duration: 0.3), value: model.zorlukPaneli != nil)
         .animation(.easeInOut(duration: 0.2), value: model.kilitIpucu != nil)
         .onAppear {
+            model.rozetKutlamasi = rozetAc
             model.yukle()
             model.sonucuIsle(sonuc)
             // Android BottomSheetDialog: panel alttan kayarak gelir.

@@ -89,10 +89,16 @@ enum YonetimEkrani {
     case rozetKutlama(kuyruk: [String], bitti: () -> Void)
     /// "Sobi ile analiz et" penceresi (Android MistakeReviewDialog; SobiAnaliz/). Kapanınca `istek.kapandi`.
     case sobiAnaliz(AbakusSobiAnalizIstegi)
+    /// Yarış paneli "Ustalık Yolu" (Android LessonAdapter.showRacePanel; Yaris/; bağlantı Yaris/YarisAkisi.swift).
+    case yarisPaneli(YarisPaneliGirdisi)
+    /// Sobi'nin günlük testi: panel ve oynatıcı (Android SobiTestSheet + HomeworkPlayerFragment; SobiTest/;
+    /// bağlantı YonetimSobiTestAkisi.swift).
+    case sobiTest(YonetimSobiTestKatmani)
 
     /// Altındaki ekran görünür kalır mı (Kupa Yolu alttan açılan paneldir).
     var saydam: Bool {
         if case .kupa = self { return true }
+        if case .sobiTest(.sayfa) = self { return true }
         return false
     }
 
@@ -122,13 +128,26 @@ final class UygulamaYoneticisi: ObservableObject {
     /// Oturum açılmadan kabuğa geçildi (GirisAkisi.misafirOlarakDevam). Kimlik servisi ana aktöre
     /// bağlı olduğu için oturum durumu buradan izlenir (Android: FirebaseAuth.currentUser == null).
     private var misafir: Bool = false
+    /// Android `tutorial1_login_flow_pending`: hesapsız 1. öğreticiden sonra giriş ekranına geçildi; girişte
+    /// misafirin ders ilerlemesi (1. ders öğreticisi geçilmiş kısım 1 listesi) yeni hesaba taşınır.
+    private var ilkOgreticiIlerlemesiBekliyor: Bool = false
+    /// Oturum yok mu (Android AbacusFragment.isFirstRunLesson: FirebaseAuth.currentUser == null).
+    /// Hesapsız her abaküs dersinde çıkış ve kural düğmeleri gizlenir.
+    var misafirMi: Bool {
+        return misafir
+    }
 
     /// Üst çubuğun durumu. Elmas ve anahtar mağaza/özelleştirmenin (sahte) cüzdanından, enerji
     /// mağazanın (sahte) can servisinden okunur; böylece üçü tek kaynağı gösterir.
     let oturum = OturumDurumu()
     /// Harita modeli burada tutulur: hedefi okumak ve ders bitince listeyi yenilemek için.
     let haritaModeli = HaritaModeli()
-    private(set) var kimlikServisi: SahteKimlikServisi
+    /// Oturum boyunca tek kimlik servisi (kayıt deposuyla birlikte; Yonetim/SahteOrtam.swift). Çıkışta
+    /// yeniden kurulmaz: yalnızca oturum kapanır, bu oturumda açılan hesaplarla yeniden giriş yapılabilir.
+    let kimlikServisi: SahteKimlikServisi
+    /// Ekran galerisi kipi (`girisAtla`): ekranlar sahte ortam yerine kendi örnek verileriyle kurulur
+    /// ve hesap değişimi işlenmez.
+    let ornekKipi: Bool
 
     let ilerleme = YonetimIlerlemeDeposu()
 
@@ -152,13 +171,14 @@ final class UygulamaYoneticisi: ObservableObject {
     /// oturumu açık sayılır ve giriş akışı kendi tek cihaz denetiminden sonra kabuğa geçer.
     init(girisAtla: Bool = false) {
         asama = girisAtla ? .kabuk : .giris
-        kimlikServisi = UygulamaYoneticisi.yeniKimlikServisi(
-            oturumAcik: UserDefaults.standard.string(forKey: "oturum") == "acik"
-        )
+        ornekKipi = girisAtla
+        // `-oturum acik` argümanı SahteOrtam'da okunur (hazır öğrenci hesabının oturumu açık başlar).
+        kimlikServisi = SahteOrtam.ortak.kimlik
         haritaModeli.ilerlemeKaynagi = ilerleme
         haritayiDinle()
         cuzdaniBagla()
         seriyiBagla()
+        sobiTestiBagla()
     }
 
     deinit {
@@ -167,22 +187,37 @@ final class UygulamaYoneticisi: ObservableObject {
         }
     }
 
-    private static func yeniKimlikServisi(oturumAcik: Bool) -> SahteKimlikServisi {
-        var ayarlar = SahteKimlikAyarlari()
-        if oturumAcik {
-            // SahteKimlikServisi'nin hazır öğrenci hesabı.
-            ayarlar.acilistaOturumEposta = "ogrenci@sorobit.test"
-        }
-        return SahteKimlikServisi(ayarlar: ayarlar)
-    }
-
     // MARK: Giriş / çıkış
 
     /// GirisAkisi.girisYapildi.
+    @MainActor
     func girisYapildi() {
         misafir = false
+        hesabaGec(kimlikServisi.mevcutOturum?.uid)
+        ilkOgreticiIlerlemesiBekliyor = false
         asama = .kabuk
         oturumuYenile()
+    }
+
+    /// Hesap değişti (giriş, misafir, çıkış): hesaba bağlı bellek durumu (cüzdan, can, plan, kupa,
+    /// rozet belgesi, ders ilerlemesi) yeni hesabınkiyle değişir; önceki hesabın rozet kuyruğu atılır.
+    /// Android: çıkışta LoginStartActivity temiz görev yığınıyla açılır, girişte GlobalLessonData.initialize
+    /// ve cüzdan/enerji dinleyicileri yeni uid'nin belgelerini okur.
+    @MainActor
+    private func hesabaGec(_ uid: String?) {
+        if ornekKipi {
+            return
+        }
+        let degisti: Bool = SahteOrtam.ortak.hesabaGec(
+            uid: uid,
+            ilerleme: ilerleme,
+            misafirIlerlemesiniTasi: ilkOgreticiIlerlemesiBekliyor
+        )
+        if !degisti {
+            return
+        }
+        YonetimRozetKuyrugu.ortak.bekleyen = []
+        haritaModeli.yenile()
     }
 
     /// GirisAkisi.misafirOlarakDevam: hesapsız ilk açılış (SplashRules.Route.GUEST_MAIN).
@@ -190,8 +225,10 @@ final class UygulamaYoneticisi: ObservableObject {
     /// Öğretici kısım 1'in 1. sırasındaki dersindir (MainActivity.showFirstTutorial →
     /// renderFirstTutorial: harita tabanda, öğretici üstünde); öğretici → ders → sonuç → başlangıç
     /// ekranı (ilkDerstenSonraGiriseGec).
+    @MainActor
     func misafirOlarakDevam(_ hedef: GirisMisafirHedefi) {
         misafir = true
+        hesabaGec(nil)
         asama = .kabuk
         oturumuYenile()
         if case .ogretici = hedef {
@@ -233,6 +270,7 @@ final class UygulamaYoneticisi: ObservableObject {
         }
         ilkOgreticiAkisi = false
         misafir = false
+        ilkOgreticiIlerlemesiBekliyor = true
         ilerleme.ilkOgreticiSonrasiListeyiKur()
         haritaModeli.yenile()
         katmanlar = []
@@ -242,14 +280,22 @@ final class UygulamaYoneticisi: ObservableObject {
         return true
     }
 
-    /// ProfilEkrani.cikisYapildi (Android: LoginStartActivity temiz görev yığınıyla açılır).
+    /// ProfilEkrani.cikisYapildi (Android: AuthManager.logout → auth.signOut, LoginStartActivity temiz
+    /// görev yığınıyla açılır).
+    @MainActor
     func cikisYapildi() {
         katmanlar = []
         kupaSonucu = nil
         haritaModeli.kisimSeciminDon()
-        // Profilin sahte deposu ile sahte kimlik servisi ayrı nesnelerdir; servisteki oturum da
-        // kapansın diye servis yeniden kurulur (oturum kapalı başlar).
-        kimlikServisi = UygulamaYoneticisi.yeniKimlikServisi(oturumAcik: false)
+        // Kimlik servisi (ve kayıt deposu) yeniden KURULMAZ; yalnızca oturum kapanır (profil deposu da
+        // aynı servisi kapatır; ikinci çağrı zararsızdır).
+        kimlikServisi.oturumuKapat()
+        // Hesaba bağlı bellek durumu: öğretici bayrağı, seri bağlantısı, cüzdan/ilerleme/rozet kuyruğu.
+        ilkOgreticiAkisi = false
+        misafir = false
+        ilkOgreticiIlerlemesiBekliyor = false
+        seri.hesaptanAyril()
+        hesabaGec(nil)
         girisKimligi += 1
         asama = .giris
     }
@@ -320,6 +366,17 @@ final class UygulamaYoneticisi: ObservableObject {
         // Haritadaki "başla" düğmesinin enerji kararı da aynı kaynağa bakar.
         haritaModeli.sonsuzEnerji = enerji.sonsuz
         haritaModeli.enerjiYeterli = enerji.sonsuz || enerji.enerji >= ilerleme.dersEnerjiBedeli
+        // Pro kilidi: kısım 7/8 (yarış paneli) kartları planı buradan okur (Android: PlanStatus.effectivePlan).
+        let guncelPlan: String = MagazaBagimliliklar.sahte.cuzdan.cuzdan.plan
+        if haritaModeli.plan != guncelPlan {
+            haritaModeli.plan = guncelPlan
+            haritaModeli.yenile()
+        }
+        // Üst çubuktaki kalp: Pro/Premium planda `heart_pro_ic` (Android: EnergyDisplay.apply isPremium).
+        let proPlan: Bool = PlanStatus.shared.isProPlan(plan: guncelPlan)
+        if oturum.proPlan != proPlan {
+            oturum.proPlan = proPlan
+        }
         // Günlük seri (Android: MainActivity.refreshStreakUi).
         seriyiYenile()
     }

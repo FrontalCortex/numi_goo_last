@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // Öğretici ekranı (dersin önündeki anlatım).
 //
@@ -87,6 +88,14 @@ struct OgreticiEkrani: View {
         }
         .onAppear { model.gorundu() }
         .onDisappear { model.kayboldu() }
+        // Android TutorialFragment.onPause / onResume: daktilo arka planda durur, dönünce kaldığı yerden sürer
+        // (adım sesinin duraklatılması OgreticiGercekSesCalici'dadır).
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)) { (_: Notification) in
+            model.arkaPlanaGecildi()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { (_: Notification) in
+            model.onPlanaDonuldu()
+        }
     }
 }
 

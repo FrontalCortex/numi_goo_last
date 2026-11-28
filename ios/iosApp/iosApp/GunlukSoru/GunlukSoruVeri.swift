@@ -240,15 +240,30 @@ final class SahteGunlukSoruDeposu: GunlukSoruDeposu {
     }
 }
 
-/// Cüzdan bağlanana dek: bellekte duran örnek anahtar bakiyesi.
+/// Ana cüzdanı saran ince uyarlayıcı: anahtar uygulamanın tek sahte cüzdanından düşülür, üst çubuk ve
+/// mağaza aynı bakiyeyi görür (Android: MainActivity.spendKeys → `users/{uid}.keys`).
+/// `anaCuzdan` verilmezse bellekte kendi örnek bakiyesini tutar (yalnızca bağımsız denemeler için).
 final class SahteGunlukSoruCuzdani: GunlukSoruCuzdani {
-    static let ortak = SahteGunlukSoruCuzdani()
+    static let ortak = SahteGunlukSoruCuzdani(anaCuzdan: MagazaSahteCuzdanServisi.ortak)
 
-    /// Örnek bakiye (Android varsayılanı UserWalletFirestore.DEFAULT_KEYS = 1; denemek için 3).
+    private let anaCuzdan: MagazaSahteCuzdanServisi?
+    /// Ana cüzdan yokken kullanılan örnek bakiye (Android varsayılanı UserWalletFirestore.DEFAULT_KEYS = 1; denemek için 3).
     private var anahtar: Int = 3
+
+    init(anaCuzdan: MagazaSahteCuzdanServisi? = nil) {
+        self.anaCuzdan = anaCuzdan
+    }
 
     func anahtarHarca(_ adet: Int) -> Bool {
         if adet <= 0 {
+            return true
+        }
+        if let ana = anaCuzdan {
+            // Sunucu eksiye düşen harcamayı reddeder; yetiyorsa aynı anda düşer (sahte updateUserWallet).
+            if ana.cuzdan.anahtar < adet {
+                return false
+            }
+            ana.sunucuDegistirdi(altinFarki: 0, anahtarFarki: -adet, sobiFarki: 0)
             return true
         }
         if anahtar < adet {

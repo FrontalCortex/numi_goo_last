@@ -146,6 +146,12 @@ struct HaritaHedefi: Identifiable {
     let baslik: String
     let aciklama: String
     let ayrintilar: [String]
+    /// Yalnızca `.yarisPaneli`: açılacak yarış kısmı (Android: item.racePartId; 7 ya da 8).
+    var yarisPartId: Int32? = nil
+    /// Yalnızca `.yarisPaneli`: kısım seçiminden mi açıldı (Android: isFromPartSelection).
+    var yarisPartSecimindenMi: Bool = false
+    /// Yalnızca `.yarisPaneli`: haritadaki bayraktan açıldıysa kapanınca dönülecek kısım (Android: item.backRaceId).
+    var yarisGeriPartId: Int32? = nil
 }
 
 /// Kısa süreli bilgi balonu. `uzun`: Android LockedHint (Snackbar, LENGTH_LONG, 5 satıra kadar);
@@ -495,13 +501,15 @@ final class HaritaModeli: ObservableObject {
             return
         }
         if kisimMantigi.opensRacePanel(partId: kart.partId) {
-            // Android burada harita yerine yarış panelini açar; panel henüz yazılmadı.
+            // Android burada harita yerine yarış panelini açar (Yaris/YarisPaneli.swift).
             let baslik: String = kart.partId == 7 ? Metin.al("ui_toplama_ustaligi") : Metin.al("ui_cikarma_ustaligi")
             hedef = HaritaHedefi(
                 tur: .yarisPaneli,
                 baslik: baslik,
                 aciklama: "Yarış paneli",
-                ayrintilar: ["Kısım: \(kart.partId)"]
+                ayrintilar: ["Kısım: \(kart.partId)"],
+                yarisPartId: kart.partId,
+                yarisPartSecimindenMi: true
             )
             return
         }
@@ -533,7 +541,10 @@ final class HaritaModeli: ObservableObject {
                     tur: .yarisPaneli,
                     baslik: o.baslik,
                     aciklama: "Yarış paneli",
-                    ayrintilar: ["Harita sırası: \(o.id)"]
+                    ayrintilar: ["Harita sırası: \(o.id)"],
+                    yarisPartId: o.oge.racePartId?.int32Value ?? 7,
+                    yarisPartSecimindenMi: false,
+                    yarisGeriPartId: o.oge.backRaceId?.int32Value
                 )
             }
         case .ders, .sandik:

@@ -78,12 +78,29 @@ extension UygulamaYoneticisi {
         if girdi.bosMu {
             return
         }
-        SahteRozetKazanimServisi.ortak.sayaclariArtir(girdi) { kuyruk in
+        SahteRozetKazanimServisi.ortak.sayaclariArtir(girdi) { [weak self] kuyruk in
             if kuyruk.isEmpty {
                 return
             }
             YonetimRozetKuyrugu.ortak.bekleyen.append(contentsOf: kuyruk)
+            // Android: enqueuePendingBadgePayloads her gelişte kuyruğu dürter (pumpPostLessonQueue). Sunucu yanıtı
+            // sandık kapandıktan SONRA gelirse rozet bir sonraki derse kadar beklemesin.
+            self?.gecKalanRozetiDene()
         }
+    }
+
+    /// Rozet yükü, ders sonrası kuyruğun ilk turundan sonra geldiyse kuyruğu yeniden dürter. Üstte ders, sonuç,
+    /// sandık ya da başka bir kutlama varsa dokunmaz: onların kapanışı kuyruğu zaten işler.
+    private func gecKalanRozetiDene() {
+        if let ust = katmanlar.last {
+            switch ust.ekran {
+            case .abakusDers, .korDers, .ogretici, .sonuc, .sandik, .rozetKutlama:
+                return
+            default:
+                break
+            }
+        }
+        dersSonrasiKuyruguIsle()
     }
 
     /// Ders sonrası kuyruğun bir turu (Android: MainActivity.runPostLessonQueue): önce rozet kutlaması, yoksa

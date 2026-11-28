@@ -17,6 +17,13 @@ struct HaritaDersListesi: View {
 
     var body: some View {
         liste
+            // Sobi'nin günlük testi düğmesi (Android MapSobiTestButton; SobiTest/): "Öğretmene sor" gizli,
+            // onun yerinde: alttan 16, sağdan 16 + (60 − 56) / 2. Ders panelinin altında kalır.
+            .overlay(alignment: .bottomTrailing) {
+                SobiTestHaritaDugmesi()
+                    .padding(.trailing, 18)
+                    .padding(.bottom, 16)
+            }
             .overlayPreferenceValue(HaritaKartKonumAnahtari.self) { konumlar in
                 GeometryReader { geo in
                     panelKatmani(konumlar: konumlar, geo: geo)
