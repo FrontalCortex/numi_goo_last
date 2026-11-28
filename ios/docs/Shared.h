@@ -6,7 +6,7 @@
 #import <Foundation/NSString.h>
 #import <Foundation/NSValue.h>
 
-@class SharedAbacusBead, SharedAbacusBeadController, SharedAbacusBeadMetrics, SharedAbacusBeadMetricsMoveDistancesPx, SharedAbacusBeadMetricsRodMeasurement, SharedAbacusBeadRenderer, SharedAbacusBeadRendererBeadRenderKind, SharedAbacusBeadRendererSoroban2Geometry, SharedAbacusCupRepository, SharedAbacusCustomizationFirestore, SharedAbacusCustomizationRules, SharedAbacusCustomizationRulesPlaceResult, SharedAbacusCustomizationSnapshot, SharedAbacusCustomizationUiLogic, SharedAbacusCustomizationUiLogicBeadCard, SharedAbacusCustomizationUiLogicBeadCardState, SharedAbacusCustomizationUiLogicBeadPaint, SharedAbacusCustomizationUiLogicColorRow, SharedAbacusCustomizationUiLogicFrameCard, SharedAbacusCustomizationUiLogicFrameCardState, SharedAbacusCustomizationUiLogicFrameLayer, SharedAbacusCustomizationUiLogicFramePaint, SharedAbacusCustomizationUiLogicPillGeometry, SharedAbacusCustomizationUiLogicPlaceOutcome, SharedAbacusCustomizationUiLogicPurchaseCheck, SharedAbacusCustomizationUiLogicPurchasePanelRules, SharedAbacusCustomizationUiLogicSlotBead, SharedAbacusCustomizationUiLogicSlotPanelState, SharedAbacusFrameRenderer, SharedAbacusFrameRendererRoundRectLayer, SharedAbacusLessonOutcome, SharedAbacusLessonRules, SharedAbacusLessonSessionControlResult, SharedAbacusLessonSessionControlResultAnswered, SharedAbacusLessonSessionControlResultIgnored, SharedAbacusLessonSessionControlResultOffline, SharedAbacusMoves, SharedAbacusOperation, SharedAbacusPracticeLogic, SharedAbacusPracticeLogicKontrolResult, SharedAbacusPreferences, SharedAbacusPreferencesBeadColorSpec, SharedAbacusPreferencesBeadType, SharedAbacusPreferencesFrameType, SharedAbacusPreviewMetrics, SharedAbacusRule, SharedAbacusRuleCompanion, SharedAbacusSoundPlayer, SharedAbacusTouchAction, SharedAbacusUiSettings, SharedAbakusBoncukKoprusu, SharedAbakusDersAkisi, SharedAbakusDersBitisi, SharedAbakusDersGirdisi, SharedAbakusDersKoprusu, SharedAbakusKontrolSonucu, SharedAbakusKontrolSonucuCompanion, SharedAbakusSoruListesi, SharedAccountDeletionRules, SharedAccountSettingsRules, SharedAdRules, SharedAdRulesAdSkipPolicyCompanion, SharedAgeConsentManager, SharedAgeConsentManagerAdRequestTags, SharedAgeConsentManagerAgeTreatment, SharedAnimatedQuest, SharedAppRatingManagerCompanion, SharedAuthRules, SharedAuthRulesGoogleLoginFailureAction, SharedAuthRulesPendingRegistration, SharedAuthRulesStudentEmailFlow, SharedAvatarConfig, SharedAvatarConfigCompanion, SharedAvatarParts, SharedAvatarPartsCompanion, SharedAvatarRect, SharedAvatarRules, SharedAvatarStyle, SharedAvatarStyleCompanion, SharedAvatarTab, SharedAvatarTabCompanion, SharedBadgeAnimMode, SharedBadgeDetailLogic, SharedBadgeDetailLogicBadgeDetailUiState, SharedBadgeDetailLogicBadgeRenderConfig, SharedBadgeFragmentLogic, SharedBadgeFragmentLogicCelebrationQueueItem, SharedBadgeFragmentLogicLevelUpAnimConfig, SharedBadgeFragmentLogicLevelUpCelebrationPlan, SharedBadgeFragmentLogicPieceCountBadge, SharedBadgeFragmentLogicProgressUi, SharedBadgeIncrementTransactionResult, SharedBadgeKind, SharedBadgeKindCompanion, SharedBadgeLevelTone, SharedBadgeLevelUpPayload, SharedBadgePieceLeaderboardSync, SharedBadgePrecalcHelper, SharedBadgeProgressEngine, SharedBadgeProgressFirestore, SharedBadgeProgressRepository, SharedBadgeProgressWindow, SharedBadgeState, SharedBeadAnimationCompanion, SharedBeadAnimationPlan, SharedBeadData, SharedBeadMoveDistances, SharedBeadPurchaseFirestore, SharedBeadsBehavior, SharedBellekIciGunlukSoruDeposu, SharedBillingCatalog, SharedBlindingAdditionCupRepository, SharedBlindingExtractionCupRepository, SharedBlindingImpactCupRepository, SharedBlindingLessonFlags, SharedBlindingLessonOutcome, SharedBlindingLessonRules, SharedBlindingLessonRulesResultFalseAction, SharedBlindingOperation, SharedBlindingOperationMath, SharedBlindingOperationOther, SharedBlindingOperationSequence, SharedBlindingSequencePlaybackStep, SharedBlindingSequencePlaybackTimer, SharedBlindingWrongAnswerNext, SharedChestCrystalPolicy, SharedChestFragmentLogic, SharedChestFragmentLogicCupIconChange, SharedChestFragmentLogicMapProgressResult, SharedChestFragmentLogicPendingLessonProgressAnimation, SharedChestFragmentLogicSuccessRateEvent, SharedChestFragmentLogicSuccessRateEventItemFirstFinish, SharedChestFragmentLogicSuccessRateEventPass, SharedChestIcons, SharedChestRarity, SharedChestRarityCompanion, SharedChestResultLogic, SharedChestResultLogicReplayResult, SharedChestResultLogic_, SharedChestRewardDisplay, SharedChestRewardOutcome, SharedChestRewardType, SharedChestStepIndicator, SharedChestTapAction, SharedChestTapResult, SharedChestTypeProgressHelper, SharedChestTypeProgressHelper_, SharedCrystalBreakLogic, SharedCrystalRarityBehavior, SharedCrystalRarityTier, SharedCrystalTapAction, SharedCrystalTapResult, SharedCrystalTickResult, SharedCupBadgeSyncResult, SharedCupDeltaPrecalc, SharedCupDeltaTarget, SharedCupFetchResult, SharedCupFragmentLogic, SharedCupHistoryLogic, SharedCupHistoryLogicRangeTab, SharedCupHistoryRepository, SharedCupIconChange, SharedCupLessonLaunch, SharedCupMathOperation, SharedCupPathCard, SharedCupPathKind, SharedCupPathLogic, SharedCupPathRewardRepository, SharedCupPathRewardRepositoryCupPathState, SharedCupPathRewardRepositoryMilestone, SharedCupPathRewardRepositoryMilestoneStatus, SharedCupPieceRow, SharedCupRuleEngine, SharedCupRuleEngineBlindingMultiplicationConfig, SharedCupRuleEngineCupLessonItemOverride, SharedCupRuleEngineCupRange, SharedCupRuleEngineDigitConfig, SharedCupRuleEngineMultiplicationConfig, SharedCupScoreRepositorySpec, SharedCupScoreService, SharedCupScoreServiceCupScoreResult, SharedCupTier, SharedCupUpdateResult, SharedDailyQuestionBrokenHeartAction, SharedDailyQuestionBrokenHeartStore, SharedDailyQuestionBrokenHeartStoreCompanion, SharedDailyQuestionCardClickAction, SharedDailyQuestionCardLogic, SharedDailyQuestionCardProgressAnimStore, SharedDailyQuestionCardProgressAnimStoreCompanion, SharedDailyQuestionCardUiState, SharedDailyQuestionChallenge, SharedDailyQuestionChallengeClickAction, SharedDailyQuestionPeriod, SharedDailyQuestionPoolBuilder, SharedDailyQuestionPoolBuilderCompanion, SharedDailyQuestionProgressPlan, SharedDailyQuestionRepository, SharedDailyQuestionSlot, SharedDailyQuestionSource, SharedEditProfileRules, SharedEnergyManagerCompanion, SharedExamplePicker, SharedExtractionCupRepository, SharedFcmRules, SharedFcmRulesIncoming, SharedFeedbackGate, SharedFeedbackRules, SharedFirstTutorialShownStoreCompanion, SharedFirstTutorialShownStoreResolution, SharedFishingStreakPeriod, SharedFollowRules, SharedFollowRulesFriendSearchResult, SharedFrameData, SharedFramePurchaseFirestore, SharedFriendSearchRules, SharedGlobalLessonData, SharedGlobalLessonDataChestLessonRef, SharedGlobalLessonDataFirestoreLoadStatus, SharedGlobalLessonDataItemWrite, SharedGlobalLessonDataLeaderboardSubmit, SharedGlobalLessonDataLegacyMigrationPlan, SharedGlobalValues, SharedGorevEkraniDurumu, SharedGuidePanelData, SharedGunlukSoruBaslatma, SharedGunlukSoruCubukGorunumu, SharedGunlukSoruCubukModu, SharedHomeworkOp, SharedHomeworkOpCompanion, SharedImpactCupRepository, SharedJavaRandom, SharedKorDersAdimi, SharedKorDersAdimiCompanion, SharedKorDersOturumu, SharedKotlinArray<T>, SharedKotlinByteArray, SharedKotlinByteIterator, SharedKotlinEnum<E>, SharedKotlinEnumCompanion, SharedKotlinException, SharedKotlinFloatArray, SharedKotlinFloatIterator, SharedKotlinIntArray, SharedKotlinIntIterator, SharedKotlinNothing, SharedKotlinPair<__covariant A, __covariant B>, SharedKotlinRandom, SharedKotlinRandomDefault, SharedKotlinThrowable, SharedKotlinTriple<__covariant A, __covariant B, __covariant C>, SharedKotlinUnit, SharedKotlinx_datetimeDayOfWeek, SharedKotlinx_datetimeDayOfWeekNames, SharedKotlinx_datetimeDayOfWeekNamesCompanion, SharedKotlinx_datetimeFixedOffsetTimeZone, SharedKotlinx_datetimeFixedOffsetTimeZoneCompanion, SharedKotlinx_datetimeInstant, SharedKotlinx_datetimeInstantCompanion, SharedKotlinx_datetimeLocalDate, SharedKotlinx_datetimeLocalDateCompanion, SharedKotlinx_datetimeLocalDateTime, SharedKotlinx_datetimeLocalDateTimeCompanion, SharedKotlinx_datetimeLocalTime, SharedKotlinx_datetimeLocalTimeCompanion, SharedKotlinx_datetimeMonth, SharedKotlinx_datetimeMonthNames, SharedKotlinx_datetimeMonthNamesCompanion, SharedKotlinx_datetimePadding, SharedKotlinx_datetimeTimeZone, SharedKotlinx_datetimeTimeZoneCompanion, SharedKotlinx_datetimeUtcOffset, SharedKotlinx_datetimeUtcOffsetCompanion, SharedKotlinx_serialization_coreSerialKind, SharedKotlinx_serialization_coreSerializersModule, SharedKupaEkranKoprusu, SharedKupaGecmisNoktasi, SharedKupaGrafikNoktasi, SharedKupaGrafikVerisi, SharedLessonAdapterLogic, SharedLessonAdapterLogicActionButtonDecision, SharedLessonAdapterLogicCardState, SharedLessonAdapterLogicChestCardStars, SharedLessonAdapterLogicChestStarSlot, SharedLessonAdapterLogicChestStarsRow, SharedLessonAdapterLogicLessonBottomSheetState, SharedLessonAdapterLogicLessonStartGlobals, SharedLessonAdapterLogicLessonStartTarget, SharedLessonAdapterLogicPanelState, SharedLessonAdapterLogicProgressAnimationAction, SharedLessonAdapterLogicProgressAnimationDecision, SharedLessonAdapterLogicRaceLessonBottomSheetState, SharedLessonAdapterLogicRaceRowStatus, SharedLessonAdapterLogicStepSegments, SharedLessonDataManager, SharedLessonEndMascotDraw, SharedLessonEndMascotLogic, SharedLessonItem, SharedLessonItemCompanion, SharedLessonLeaderboardRepository, SharedLessonLeaderboardRepositoryLeaderboardEntry, SharedLessonManager, SharedLessonOperations, SharedLessonProgressMerge, SharedLessonResultFalseLogic, SharedLessonResultFalseLogicFailRecord, SharedLessonResultLogic, SharedLessonResultLogicClaimBranch, SharedLessonResultLogicClaimDecision, SharedLessonSuccessRateRepository, SharedLessonSuccessRateRepositoryStateRefs, SharedLessonSuccessRateRepositoryStepWrite, SharedLiderHamKayit, SharedLiderSatirVerisi, SharedLoginFlowTexts, SharedMapFragmentLogic, SharedMapFragmentLogicStickyHeader, SharedMapLayoutLogic, SharedMarathonGuideLogic, SharedMarathonGuideStoreCompanion, SharedMatematikDailyQuestionGenerators, SharedMathOperation, SharedMathOperationGenerator, SharedMathOperation_, SharedMedalPieceRow, SharedMessageReport, SharedMessageReportCompanion, SharedMissionCountdownLabel, SharedMissionCounterType, SharedMissionProgressOverlay, SharedMissionQuestCatalog, SharedMissionQuestData, SharedMissionQuestDefinition, SharedMissionQuestState, SharedMissionUiLogic, SharedMissionWindow, SharedMissionsProgressStore, SharedMissionsProgressStoreCompanion, SharedMissionsProgressStoreSnapshot, SharedMistakeAnalyzer, SharedMistakeAnalyzerDiagnosis, SharedMistakeAnalyzerKind, SharedMistakeAnalyzerSequenceMistake, SharedNewChestLogic, SharedNewChestLogicCloseRoute, SharedOgreticiAbakusKoprusu, SharedOgreticiAdimi, SharedOgreticiBoncukHareketi, SharedOgreticiEtki, SharedOgreticiEtkiCompanion, SharedOgreticiGorunurluk, SharedOgreticiIcerigi, SharedOgreticiKatalogu, SharedOgreticiKurallari, SharedOgreticiOdakIslemi, SharedOgreticiOynatici, SharedOgreticiRenkliHarf, SharedOgreticiSabit, SharedOgreticiSahnesi, SharedOtpRules, SharedOtpRulesWrongAttemptResult, SharedOyunLessonItemCompanion, SharedOyunLessonItemData, SharedPartSelectionLogic, SharedPartState, SharedPendingUploadMeta, SharedPlanStatus, SharedProfileBadgeRenderConfig, SharedProfileBadgeSlotUi, SharedProfileCupCard, SharedProfileFragmentLogic, SharedProfileHeaderColors, SharedQuestionMessage, SharedQuestionMessageCompanion, SharedRarityTheme, SharedRastgeleKaynagi, SharedRatingPromptDecision, SharedRecordLogic, SharedRecordLogicLeaderboardSections, SharedRecordLogicRowColors, SharedRecordLogicSeasonCountdown, SharedRecordTimeUtils, SharedRestrictedUser, SharedRestrictedUserCompanion, SharedRestrictedUserRestrictionUpdate, SharedRozetEkranVerisi, SharedRozetKutuVerisi, SharedRozetParcaVerisi, SharedScoreBarColorBlend, SharedSeasonClock, SharedSeasonLeaderboardRewardPayloads, SharedServerEnergy, SharedServerEnergyBuyWithKeysResult, SharedServerRewards, SharedServerRewardsChestOutcome, SharedServerRewardsCrystalOutcome, SharedSessionDeviceRules, SharedSessionDeviceRulesDecision, SharedSezonVerisi, SharedShopFragmentLogic, SharedShopFragmentLogicEnergySectionState, SharedShopFragmentLogicPackCard, SharedShopFragmentLogicProductKind, SharedSignupFlowRules, SharedSignupFlowRulesStep, SharedSignupStreakRules, SharedSobiAbakusOynatici, SharedSobiAnalizAdimlari, SharedSobiAnalizBalonu, SharedSobiAnalizMesaji, SharedSobiBalonSonucu, SharedSobiGosterim, SharedSobiKontrolSonucu, SharedSobiOrnekHazirligi, SharedSobiOynatmaKaresi, SharedSobiOynatmaPlani, SharedSobiRuleStatEntry, SharedSobiRuleStats, SharedSobiRuleTallyPayload, SharedSonucEkraniKoprusu, SharedSplashRules, SharedSplashRulesRoute, SharedStepExplainer, SharedStepExplainerColumnMove, SharedStepExplainerExplanation, SharedStepExplainerRole, SharedStepExplainerStep, SharedStreakChallengeUi, SharedStreakClaimResult, SharedStreakDays, SharedStreakErrorText, SharedStreakFreezeBuyResult, SharedStreakFreezeNotice, SharedStreakFreezeRules, SharedStreakFreezeRulesSettled, SharedStreakMilestoneRowUi, SharedStreakMilestones, SharedStreakMilestonesReward, SharedStreakOptionRowUi, SharedStreakPendingSignup, SharedStreakRepository, SharedStreakRepositoryCompanion, SharedStreakRules, SharedStreakScreenLogic, SharedStreakScreenUi, SharedStreakServerError, SharedStreakServerModelCompanion, SharedStreakServerState, SharedStreakServerStateCompanion, SharedStreakSignupResult, SharedStreakState, SharedStreakSubmitRequest, SharedStreakSync, SharedStreakText, SharedStreakWeekDayUi, SharedStudentQuestion, SharedStudentQuestionCompanion, SharedStudyTimeTracker, SharedStudyTimeTrackerCompanion, SharedSubStepExplainer, SharedSurum, SharedTeacherLoginRules, SharedTimeTrackerCompanion, SharedTimeTrackerCompanionSyncWrite, SharedTrustedClockCompanion, SharedTrustedClockRules, SharedTrustedClockRulesAnchor, SharedUploadLessonDataLogic, SharedUploadLessonDataLogicYuklenenDers<T>, SharedUserAskQuestionRestriction, SharedUserBadgeProgress, SharedUserIdRules, SharedUserInfoRules, SharedUserWallet, SharedUserWalletFirestore, SharedWalletLoadResult, SharedWalletReason;
+@class SharedAbacusBead, SharedAbacusBeadController, SharedAbacusBeadMetrics, SharedAbacusBeadMetricsMoveDistancesPx, SharedAbacusBeadMetricsRodMeasurement, SharedAbacusBeadRenderer, SharedAbacusBeadRendererBeadRenderKind, SharedAbacusBeadRendererSoroban2Geometry, SharedAbacusCupRepository, SharedAbacusCustomizationFirestore, SharedAbacusCustomizationRules, SharedAbacusCustomizationRulesPlaceResult, SharedAbacusCustomizationSnapshot, SharedAbacusCustomizationUiLogic, SharedAbacusCustomizationUiLogicBeadCard, SharedAbacusCustomizationUiLogicBeadCardState, SharedAbacusCustomizationUiLogicBeadPaint, SharedAbacusCustomizationUiLogicColorRow, SharedAbacusCustomizationUiLogicFrameCard, SharedAbacusCustomizationUiLogicFrameCardState, SharedAbacusCustomizationUiLogicFrameLayer, SharedAbacusCustomizationUiLogicFramePaint, SharedAbacusCustomizationUiLogicPillGeometry, SharedAbacusCustomizationUiLogicPlaceOutcome, SharedAbacusCustomizationUiLogicPurchaseCheck, SharedAbacusCustomizationUiLogicPurchasePanelRules, SharedAbacusCustomizationUiLogicSlotBead, SharedAbacusCustomizationUiLogicSlotPanelState, SharedAbacusFrameRenderer, SharedAbacusFrameRendererRoundRectLayer, SharedAbacusLessonOutcome, SharedAbacusLessonRules, SharedAbacusLessonSessionControlResult, SharedAbacusLessonSessionControlResultAnswered, SharedAbacusLessonSessionControlResultIgnored, SharedAbacusLessonSessionControlResultOffline, SharedAbacusMoves, SharedAbacusOperation, SharedAbacusPracticeLogic, SharedAbacusPracticeLogicKontrolResult, SharedAbacusPreferences, SharedAbacusPreferencesBeadColorSpec, SharedAbacusPreferencesBeadType, SharedAbacusPreferencesFrameType, SharedAbacusPreviewMetrics, SharedAbacusRule, SharedAbacusRuleCompanion, SharedAbacusSoundPlayer, SharedAbacusTouchAction, SharedAbacusUiSettings, SharedAbakusBoncukKoprusu, SharedAbakusDersAkisi, SharedAbakusDersBitisi, SharedAbakusDersGirdisi, SharedAbakusDersKoprusu, SharedAbakusKontrolSonucu, SharedAbakusKontrolSonucuCompanion, SharedAbakusSoruListesi, SharedAccountDeletionRules, SharedAccountSettingsRules, SharedAdRules, SharedAdRulesAdSkipPolicyCompanion, SharedAgeConsentManager, SharedAgeConsentManagerAdRequestTags, SharedAgeConsentManagerAgeTreatment, SharedAnimatedQuest, SharedAppRatingManagerCompanion, SharedAuthRules, SharedAuthRulesGoogleLoginFailureAction, SharedAuthRulesPendingRegistration, SharedAuthRulesStudentEmailFlow, SharedAvatarConfig, SharedAvatarConfigCompanion, SharedAvatarParts, SharedAvatarPartsCompanion, SharedAvatarRect, SharedAvatarRules, SharedAvatarStyle, SharedAvatarStyleCompanion, SharedAvatarTab, SharedAvatarTabCompanion, SharedBadgeAnimMode, SharedBadgeDetailLogic, SharedBadgeDetailLogicBadgeDetailUiState, SharedBadgeDetailLogicBadgeRenderConfig, SharedBadgeFragmentLogic, SharedBadgeFragmentLogicCelebrationQueueItem, SharedBadgeFragmentLogicLevelUpAnimConfig, SharedBadgeFragmentLogicLevelUpCelebrationPlan, SharedBadgeFragmentLogicPieceCountBadge, SharedBadgeFragmentLogicProgressUi, SharedBadgeIncrementTransactionResult, SharedBadgeKind, SharedBadgeKindCompanion, SharedBadgeLevelTone, SharedBadgeLevelUpPayload, SharedBadgePieceLeaderboardSync, SharedBadgePrecalcHelper, SharedBadgeProgressEngine, SharedBadgeProgressFirestore, SharedBadgeProgressRepository, SharedBadgeProgressWindow, SharedBadgeState, SharedBeadAnimationCompanion, SharedBeadAnimationPlan, SharedBeadData, SharedBeadMoveDistances, SharedBeadPurchaseFirestore, SharedBeadsBehavior, SharedBellekIciGunlukSoruDeposu, SharedBillingCatalog, SharedBlindingAdditionCupRepository, SharedBlindingExtractionCupRepository, SharedBlindingImpactCupRepository, SharedBlindingLessonFlags, SharedBlindingLessonOutcome, SharedBlindingLessonRules, SharedBlindingLessonRulesResultFalseAction, SharedBlindingOperation, SharedBlindingOperationMath, SharedBlindingOperationOther, SharedBlindingOperationSequence, SharedBlindingSequencePlaybackStep, SharedBlindingSequencePlaybackTimer, SharedBlindingWrongAnswerNext, SharedChestCrystalPolicy, SharedChestFragmentLogic, SharedChestFragmentLogicCupIconChange, SharedChestFragmentLogicMapProgressResult, SharedChestFragmentLogicPendingLessonProgressAnimation, SharedChestFragmentLogicSuccessRateEvent, SharedChestFragmentLogicSuccessRateEventItemFirstFinish, SharedChestFragmentLogicSuccessRateEventPass, SharedChestIcons, SharedChestRarity, SharedChestRarityCompanion, SharedChestResultLogic, SharedChestResultLogicReplayResult, SharedChestResultLogic_, SharedChestRewardDisplay, SharedChestRewardOutcome, SharedChestRewardType, SharedChestStepIndicator, SharedChestTapAction, SharedChestTapResult, SharedChestTypeProgressHelper, SharedChestTypeProgressHelper_, SharedCrystalBreakLogic, SharedCrystalRarityBehavior, SharedCrystalRarityTier, SharedCrystalTapAction, SharedCrystalTapResult, SharedCrystalTickResult, SharedCupBadgeSyncResult, SharedCupDeltaPrecalc, SharedCupDeltaTarget, SharedCupFetchResult, SharedCupFragmentLogic, SharedCupHistoryLogic, SharedCupHistoryLogicRangeTab, SharedCupHistoryRepository, SharedCupIconChange, SharedCupLessonLaunch, SharedCupMathOperation, SharedCupPathCard, SharedCupPathKind, SharedCupPathLogic, SharedCupPathRewardRepository, SharedCupPathRewardRepositoryCupPathState, SharedCupPathRewardRepositoryMilestone, SharedCupPathRewardRepositoryMilestoneStatus, SharedCupPieceRow, SharedCupRuleEngine, SharedCupRuleEngineBlindingMultiplicationConfig, SharedCupRuleEngineCupLessonItemOverride, SharedCupRuleEngineCupRange, SharedCupRuleEngineDigitConfig, SharedCupRuleEngineMultiplicationConfig, SharedCupScoreRepositorySpec, SharedCupScoreService, SharedCupScoreServiceCupScoreResult, SharedCupTier, SharedCupUpdateResult, SharedDailyQuestionBrokenHeartAction, SharedDailyQuestionBrokenHeartStore, SharedDailyQuestionBrokenHeartStoreCompanion, SharedDailyQuestionCardClickAction, SharedDailyQuestionCardLogic, SharedDailyQuestionCardProgressAnimStore, SharedDailyQuestionCardProgressAnimStoreCompanion, SharedDailyQuestionCardUiState, SharedDailyQuestionChallenge, SharedDailyQuestionChallengeClickAction, SharedDailyQuestionPeriod, SharedDailyQuestionPoolBuilder, SharedDailyQuestionPoolBuilderCompanion, SharedDailyQuestionProgressPlan, SharedDailyQuestionRepository, SharedDailyQuestionSlot, SharedDailyQuestionSource, SharedDifficultyOption, SharedEditProfileRules, SharedEnergyManagerCompanion, SharedExamplePicker, SharedExtractionCupRepository, SharedFcmRules, SharedFcmRulesIncoming, SharedFeedbackGate, SharedFeedbackRules, SharedFirstTutorialShownStoreCompanion, SharedFirstTutorialShownStoreResolution, SharedFishingStreakPeriod, SharedFollowRules, SharedFollowRulesFriendSearchResult, SharedFrameData, SharedFramePurchaseFirestore, SharedFriendSearchRules, SharedGlobalLessonData, SharedGlobalLessonDataChestLessonRef, SharedGlobalLessonDataFirestoreLoadStatus, SharedGlobalLessonDataItemWrite, SharedGlobalLessonDataLeaderboardSubmit, SharedGlobalLessonDataLegacyMigrationPlan, SharedGlobalValues, SharedGorevEkraniDurumu, SharedGuidePanelData, SharedGunlukSoruBaslatma, SharedGunlukSoruCubukGorunumu, SharedGunlukSoruCubukModu, SharedHomeworkConfig, SharedHomeworkEngine, SharedHomeworkOp, SharedHomeworkOpCompanion, SharedHomeworkQuestion, SharedImpactCupRepository, SharedJavaRandom, SharedKorDersAdimi, SharedKorDersAdimiCompanion, SharedKorDersOturumu, SharedKotlinArray<T>, SharedKotlinByteArray, SharedKotlinByteIterator, SharedKotlinEnum<E>, SharedKotlinEnumCompanion, SharedKotlinException, SharedKotlinFloatArray, SharedKotlinFloatIterator, SharedKotlinIntArray, SharedKotlinIntIterator, SharedKotlinNothing, SharedKotlinPair<__covariant A, __covariant B>, SharedKotlinRandom, SharedKotlinRandomDefault, SharedKotlinThrowable, SharedKotlinTriple<__covariant A, __covariant B, __covariant C>, SharedKotlinUnit, SharedKotlinx_datetimeDayOfWeek, SharedKotlinx_datetimeDayOfWeekNames, SharedKotlinx_datetimeDayOfWeekNamesCompanion, SharedKotlinx_datetimeFixedOffsetTimeZone, SharedKotlinx_datetimeFixedOffsetTimeZoneCompanion, SharedKotlinx_datetimeInstant, SharedKotlinx_datetimeInstantCompanion, SharedKotlinx_datetimeLocalDate, SharedKotlinx_datetimeLocalDateCompanion, SharedKotlinx_datetimeLocalDateTime, SharedKotlinx_datetimeLocalDateTimeCompanion, SharedKotlinx_datetimeLocalTime, SharedKotlinx_datetimeLocalTimeCompanion, SharedKotlinx_datetimeMonth, SharedKotlinx_datetimeMonthNames, SharedKotlinx_datetimeMonthNamesCompanion, SharedKotlinx_datetimePadding, SharedKotlinx_datetimeTimeZone, SharedKotlinx_datetimeTimeZoneCompanion, SharedKotlinx_datetimeUtcOffset, SharedKotlinx_datetimeUtcOffsetCompanion, SharedKotlinx_serialization_coreSerialKind, SharedKotlinx_serialization_coreSerializersModule, SharedKupaEkranKoprusu, SharedKupaGecmisNoktasi, SharedKupaGrafikNoktasi, SharedKupaGrafikVerisi, SharedLessonAdapterLogic, SharedLessonAdapterLogicActionButtonDecision, SharedLessonAdapterLogicCardState, SharedLessonAdapterLogicChestCardStars, SharedLessonAdapterLogicChestStarSlot, SharedLessonAdapterLogicChestStarsRow, SharedLessonAdapterLogicLessonBottomSheetState, SharedLessonAdapterLogicLessonStartGlobals, SharedLessonAdapterLogicLessonStartTarget, SharedLessonAdapterLogicPanelState, SharedLessonAdapterLogicProgressAnimationAction, SharedLessonAdapterLogicProgressAnimationDecision, SharedLessonAdapterLogicRaceLessonBottomSheetState, SharedLessonAdapterLogicRaceRowStatus, SharedLessonAdapterLogicStepSegments, SharedLessonDataManager, SharedLessonEndMascotDraw, SharedLessonEndMascotLogic, SharedLessonItem, SharedLessonItemCompanion, SharedLessonLeaderboardRepository, SharedLessonLeaderboardRepositoryLeaderboardEntry, SharedLessonManager, SharedLessonOperations, SharedLessonProgressMerge, SharedLessonResultFalseLogic, SharedLessonResultFalseLogicFailRecord, SharedLessonResultLogic, SharedLessonResultLogicClaimBranch, SharedLessonResultLogicClaimDecision, SharedLessonSuccessRateRepository, SharedLessonSuccessRateRepositoryStateRefs, SharedLessonSuccessRateRepositoryStepWrite, SharedLiderHamKayit, SharedLiderSatirVerisi, SharedLoginFlowTexts, SharedMapFragmentLogic, SharedMapFragmentLogicStickyHeader, SharedMapLayoutLogic, SharedMarathonGuideLogic, SharedMarathonGuideStoreCompanion, SharedMatematikDailyQuestionGenerators, SharedMathOperation, SharedMathOperationGenerator, SharedMathOperation_, SharedMedalPieceRow, SharedMessageReport, SharedMessageReportCompanion, SharedMissionCountdownLabel, SharedMissionCounterType, SharedMissionProgressOverlay, SharedMissionQuestCatalog, SharedMissionQuestData, SharedMissionQuestDefinition, SharedMissionQuestState, SharedMissionUiLogic, SharedMissionWindow, SharedMissionsProgressStore, SharedMissionsProgressStoreCompanion, SharedMissionsProgressStoreSnapshot, SharedMistakeAnalyzer, SharedMistakeAnalyzerDiagnosis, SharedMistakeAnalyzerKind, SharedMistakeAnalyzerSequenceMistake, SharedNewChestLogic, SharedNewChestLogicCloseRoute, SharedOgreticiAbakusKoprusu, SharedOgreticiAdimi, SharedOgreticiBoncukHareketi, SharedOgreticiEtki, SharedOgreticiEtkiCompanion, SharedOgreticiGorunurluk, SharedOgreticiIcerigi, SharedOgreticiKatalogu, SharedOgreticiKurallari, SharedOgreticiOdakIslemi, SharedOgreticiOynatici, SharedOgreticiRenkliHarf, SharedOgreticiSabit, SharedOgreticiSahnesi, SharedOtpRules, SharedOtpRulesWrongAttemptResult, SharedOyunLessonItemCompanion, SharedOyunLessonItemData, SharedPartSelectionLogic, SharedPartState, SharedPendingUploadMeta, SharedPlanStatus, SharedProfileBadgeRenderConfig, SharedProfileBadgeSlotUi, SharedProfileCupCard, SharedProfileFragmentLogic, SharedProfileHeaderColors, SharedQuestionMessage, SharedQuestionMessageCompanion, SharedRarityTheme, SharedRastgeleKaynagi, SharedRatingPromptDecision, SharedRecordLogic, SharedRecordLogicLeaderboardSections, SharedRecordLogicRowColors, SharedRecordLogicSeasonCountdown, SharedRecordTimeUtils, SharedRestrictedUser, SharedRestrictedUserCompanion, SharedRestrictedUserRestrictionUpdate, SharedRozetEkranVerisi, SharedRozetKutuVerisi, SharedRozetParcaVerisi, SharedRuleAnalysis, SharedRuleAnalysisAttempt, SharedRuleAnalysisSample, SharedRuleRow, SharedScoreBarColorBlend, SharedSeasonClock, SharedSeasonLeaderboardRewardPayloads, SharedServerEnergy, SharedServerEnergyBuyWithKeysResult, SharedServerRewards, SharedServerRewardsChestOutcome, SharedServerRewardsCrystalOutcome, SharedSessionDeviceRules, SharedSessionDeviceRulesDecision, SharedSezonVerisi, SharedShopFragmentLogic, SharedShopFragmentLogicEnergySectionState, SharedShopFragmentLogicPackCard, SharedShopFragmentLogicProductKind, SharedSignupFlowRules, SharedSignupFlowRulesStep, SharedSignupStreakRules, SharedSobiAbakusOynatici, SharedSobiAnalizAdimlari, SharedSobiAnalizBalonu, SharedSobiAnalizMesaji, SharedSobiBalonSonucu, SharedSobiDailyTest, SharedSobiDailyTestInfo, SharedSobiGosterim, SharedSobiKontrolSonucu, SharedSobiOrnekHazirligi, SharedSobiOynatmaKaresi, SharedSobiOynatmaPlani, SharedSobiRuleStatEntry, SharedSobiRuleStats, SharedSobiRuleStatsStore, SharedSobiRuleTallyPayload, SharedSobiTestInceleme, SharedSobiTestLevels, SharedSobiTestLevelsSpec, SharedSobiTestOturumuCompanion, SharedSobiTestPlanner, SharedSobiTestPlannerChoice, SharedSobiTestPlannerLessonMark, SharedSobiTestPlannerPlan, SharedSobiTestPlannerQuestion, SharedSobiTestPlannerRuleScore, SharedSobiTestSonucu, SharedSonucEkraniKoprusu, SharedSplashRules, SharedSplashRulesRoute, SharedStepExplainer, SharedStepExplainerColumnMove, SharedStepExplainerExplanation, SharedStepExplainerRole, SharedStepExplainerStep, SharedStreakChallengeUi, SharedStreakClaimResult, SharedStreakDays, SharedStreakErrorText, SharedStreakFreezeBuyResult, SharedStreakFreezeNotice, SharedStreakFreezeRules, SharedStreakFreezeRulesSettled, SharedStreakMilestoneRowUi, SharedStreakMilestones, SharedStreakMilestonesReward, SharedStreakOptionRowUi, SharedStreakPendingSignup, SharedStreakRepository, SharedStreakRepositoryCompanion, SharedStreakRules, SharedStreakScreenLogic, SharedStreakScreenUi, SharedStreakServerError, SharedStreakServerModelCompanion, SharedStreakServerState, SharedStreakServerStateCompanion, SharedStreakSignupResult, SharedStreakState, SharedStreakSubmitRequest, SharedStreakSync, SharedStreakText, SharedStreakWeekDayUi, SharedStudentQuestion, SharedStudentQuestionCompanion, SharedStudyTimeTracker, SharedStudyTimeTrackerCompanion, SharedSubStepExplainer, SharedSurum, SharedTeacherLoginRules, SharedTimeTrackerCompanion, SharedTimeTrackerCompanionSyncWrite, SharedTrustedClockCompanion, SharedTrustedClockRules, SharedTrustedClockRulesAnchor, SharedUploadLessonDataLogic, SharedUploadLessonDataLogicYuklenenDers<T>, SharedUserAskQuestionRestriction, SharedUserBadgeProgress, SharedUserIdRules, SharedUserInfoRules, SharedUserWallet, SharedUserWalletFirestore, SharedWalletLoadResult, SharedWalletReason;
 
 @protocol SharedAbacusBeadHost, SharedAbacusPrefsStore, SharedDailyQuestionChallengeCache, SharedDailyQuestionGenerators, SharedEnergyPlatform, SharedKotlinAnnotation, SharedKotlinAppendable, SharedKotlinComparable, SharedKotlinIterator, SharedKotlinKAnnotatedElement, SharedKotlinKClass, SharedKotlinKClassifier, SharedKotlinKDeclarationContainer, SharedKotlinx_datetimeDateTimeFormat, SharedKotlinx_datetimeDateTimeFormatBuilder, SharedKotlinx_datetimeDateTimeFormatBuilderWithDate, SharedKotlinx_datetimeDateTimeFormatBuilderWithDateTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithTime, SharedKotlinx_datetimeDateTimeFormatBuilderWithUtcOffset, SharedKotlinx_serialization_coreCompositeDecoder, SharedKotlinx_serialization_coreCompositeEncoder, SharedKotlinx_serialization_coreDecoder, SharedKotlinx_serialization_coreDeserializationStrategy, SharedKotlinx_serialization_coreEncoder, SharedKotlinx_serialization_coreKSerializer, SharedKotlinx_serialization_coreSerialDescriptor, SharedKotlinx_serialization_coreSerializationStrategy, SharedKotlinx_serialization_coreSerializersModuleCollector, SharedLessonManagerLessonAdapterBridge, SharedLessonManagerRaceAdapterBridge, SharedLessonProgressSink, SharedMissionCloudGateway, SharedOyunKeyValueStore, SharedOyunLessonItem, SharedServerRewardsChestCaller, SharedSobiMetinCozucu, SharedStreakClock, SharedTimeTrackerPlatform;
 
@@ -8965,6 +8965,411 @@ __attribute__((swift_name("SubStepExplainer")))
 - (BOOL)hasPartsM:(SharedStepExplainerColumnMove *)m __attribute__((swift_name("hasParts(m:)")));
 - (NSString *)questionS:(SharedStepExplainerStep *)s m:(SharedStepExplainerColumnMove *)m __attribute__((swift_name("question(s:m:)")));
 - (NSString *)whyRuleM:(SharedStepExplainerColumnMove *)m __attribute__((swift_name("whyRule(m:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("DifficultyOption")))
+@interface SharedDifficultyOption : SharedBase
+- (instancetype)initWithOffset:(int32_t)offset titleResource:(NSString *)titleResource level:(int32_t)level __attribute__((swift_name("init(offset:titleResource:level:)"))) __attribute__((objc_designated_initializer));
+- (SharedDifficultyOption *)doCopyOffset:(int32_t)offset titleResource:(NSString *)titleResource level:(int32_t)level __attribute__((swift_name("doCopy(offset:titleResource:level:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t level __attribute__((swift_name("level")));
+@property (readonly) int32_t offset __attribute__((swift_name("offset")));
+@property (readonly) NSString *titleResource __attribute__((swift_name("titleResource")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("HomeworkConfig")))
+@interface SharedHomeworkConfig : SharedBase
+- (instancetype)initWithOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules withAbacus:(BOOL)withAbacus digits:(int32_t)digits digits2:(int32_t)digits2 numberCount:(int32_t)numberCount intervalMs:(int64_t)intervalMs questionCount:(int32_t)questionCount ruleDigits:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)ruleDigits mulDigits1:(NSDictionary<SharedInt *, NSSet<SharedInt *> *> *)mulDigits1 mulDigits2:(NSDictionary<SharedInt *, NSSet<SharedInt *> *> *)mulDigits2 __attribute__((swift_name("init(op:rules:withAbacus:digits:digits2:numberCount:intervalMs:questionCount:ruleDigits:mulDigits1:mulDigits2:)"))) __attribute__((objc_designated_initializer));
+- (SharedHomeworkConfig *)doCopyOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules withAbacus:(BOOL)withAbacus digits:(int32_t)digits digits2:(int32_t)digits2 numberCount:(int32_t)numberCount intervalMs:(int64_t)intervalMs questionCount:(int32_t)questionCount ruleDigits:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)ruleDigits mulDigits1:(NSDictionary<SharedInt *, NSSet<SharedInt *> *> *)mulDigits1 mulDigits2:(NSDictionary<SharedInt *, NSSet<SharedInt *> *> *)mulDigits2 __attribute__((swift_name("doCopy(op:rules:withAbacus:digits:digits2:numberCount:intervalMs:questionCount:ruleDigits:mulDigits1:mulDigits2:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t digits __attribute__((swift_name("digits")));
+@property (readonly) int32_t digits2 __attribute__((swift_name("digits2")));
+@property (readonly) int64_t intervalMs __attribute__((swift_name("intervalMs")));
+@property (readonly) NSDictionary<SharedInt *, NSSet<SharedInt *> *> *mulDigits1 __attribute__((swift_name("mulDigits1")));
+@property (readonly) NSDictionary<SharedInt *, NSSet<SharedInt *> *> *mulDigits2 __attribute__((swift_name("mulDigits2")));
+@property (readonly) int32_t numberCount __attribute__((swift_name("numberCount")));
+@property (readonly) SharedHomeworkOp *op __attribute__((swift_name("op")));
+@property (readonly) int32_t questionCount __attribute__((swift_name("questionCount")));
+@property (readonly) NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *ruleDigits __attribute__((swift_name("ruleDigits")));
+@property (readonly) NSSet<SharedAbacusRule *> *rules __attribute__((swift_name("rules")));
+@property (readonly) BOOL withAbacus __attribute__((swift_name("withAbacus")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("HomeworkEngine")))
+@interface SharedHomeworkEngine : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)homeworkEngine __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedHomeworkEngine *shared __attribute__((swift_name("shared")));
+- (int32_t)blockCountQuestionCount:(int32_t)questionCount __attribute__((swift_name("blockCount(questionCount:)")));
+- (int32_t)blockSizeQuestionCount:(int32_t)questionCount blockIndex:(int32_t)blockIndex __attribute__((swift_name("blockSize(questionCount:blockIndex:)")));
+- (SharedInt * _Nullable)cachedCarryMaxOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules ruleDigits:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)ruleDigits digits:(int32_t)digits withAbacus:(BOOL)withAbacus __attribute__((swift_name("cachedCarryMax(op:rules:ruleDigits:digits:withAbacus:)")));
+- (int32_t)capacityDigitsWithAbacus:(BOOL)withAbacus __attribute__((swift_name("capacityDigits(withAbacus:)")));
+- (NSArray<SharedInt *> * _Nullable)forcedPatternOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules numberCount:(int32_t)numberCount ruleDigits:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)ruleDigits __attribute__((swift_name("forcedPattern(op:rules:numberCount:ruleDigits:)")));
+- (NSArray<SharedHomeworkQuestion *> *)generateBlockCfg:(SharedHomeworkConfig *)cfg blockIndex:(int32_t)blockIndex rng:(SharedKotlinRandom *)rng __attribute__((swift_name("generateBlock(cfg:blockIndex:rng:)")));
+- (SharedHomeworkQuestion *)generateQuestionCfg:(SharedHomeworkConfig *)cfg rng:(SharedKotlinRandom *)rng __attribute__((swift_name("generateQuestion(cfg:rng:)")));
+- (int32_t)maxDigitsWithAbacus:(BOOL)withAbacus __attribute__((swift_name("maxDigits(withAbacus:)")));
+- (int32_t)maxNumberCountOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules digits:(int32_t)digits withAbacus:(BOOL)withAbacus ruleDigits:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)ruleDigits __attribute__((swift_name("maxNumberCount(op:rules:digits:withAbacus:ruleDigits:)")));
+- (int32_t)measureCarryMaxOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules ruleDigits:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)ruleDigits digits:(int32_t)digits withAbacus:(BOOL)withAbacus __attribute__((swift_name("measureCarryMax(op:rules:ruleDigits:digits:withAbacus:)")));
+- (int32_t)minNumberCountOp:(SharedHomeworkOp *)op __attribute__((swift_name("minNumberCount(op:)")));
+- (NSArray<SharedInt *> *)mulDigitOptionsDigits:(int32_t)digits position:(int32_t)position __attribute__((swift_name("mulDigitOptions(digits:position:)")));
+- (BOOL)needsMeasuredMaxOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules ruleDigits:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)ruleDigits __attribute__((swift_name("needsMeasuredMax(op:rules:ruleDigits:)")));
+- (NSDictionary<SharedInt *, NSSet<SharedInt *> *> *)normalizeMulDigitsDigits:(int32_t)digits raw:(NSDictionary<SharedInt *, NSSet<SharedInt *> *> *)raw __attribute__((swift_name("normalizeMulDigits(digits:raw:)")));
+- (NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)normalizeRuleDigitsOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules raw:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)raw __attribute__((swift_name("normalizeRuleDigits(op:rules:raw:)")));
+- (SharedHomeworkConfig *)normalizedCfg:(SharedHomeworkConfig *)cfg __attribute__((swift_name("normalized(cfg:)")));
+- (SharedInt * _Nullable)recommendedNumberCountOp:(SharedHomeworkOp *)op rules:(NSSet<SharedAbacusRule *> *)rules ruleDigits:(NSDictionary<SharedAbacusRule *, NSSet<SharedInt *> *> *)ruleDigits __attribute__((swift_name("recommendedNumberCount(op:rules:ruleDigits:)")));
+- (NSArray<SharedInt *> *)ruleDigitOptionsOp:(SharedHomeworkOp *)op rule:(SharedAbacusRule *)rule __attribute__((swift_name("ruleDigitOptions(op:rule:)")));
+- (BOOL)usesCarryRules:(NSSet<SharedAbacusRule *> *)rules __attribute__((swift_name("usesCarry(rules:)")));
+- (NSString * _Nullable)validateCfg:(SharedHomeworkConfig *)cfg __attribute__((swift_name("validate(cfg:)")));
+@property (readonly) int32_t BLOCK_SIZE __attribute__((swift_name("BLOCK_SIZE")));
+@property (readonly) int64_t MAX_INTERVAL_MS __attribute__((swift_name("MAX_INTERVAL_MS")));
+@property (readonly) int32_t MAX_NUMBER_COUNT __attribute__((swift_name("MAX_NUMBER_COUNT")));
+@property (readonly) int32_t MAX_QUESTIONS __attribute__((swift_name("MAX_QUESTIONS")));
+@property (readonly) int64_t MIN_INTERVAL_MS __attribute__((swift_name("MIN_INTERVAL_MS")));
+@property (readonly) int32_t MIN_QUESTIONS __attribute__((swift_name("MIN_QUESTIONS")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("HomeworkQuestion")))
+@interface SharedHomeworkQuestion : SharedBase
+- (instancetype)initWithOp:(SharedHomeworkOp *)op numbers:(NSArray<SharedLong *> *)numbers __attribute__((swift_name("init(op:numbers:)"))) __attribute__((objc_designated_initializer));
+- (SharedHomeworkQuestion *)doCopyOp:(SharedHomeworkOp *)op numbers:(NSArray<SharedLong *> *)numbers __attribute__((swift_name("doCopy(op:numbers:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int64_t answer __attribute__((swift_name("answer")));
+@property (readonly) NSArray<SharedLong *> *numbers __attribute__((swift_name("numbers")));
+@property (readonly) SharedHomeworkOp *op __attribute__((swift_name("op")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("RuleAnalysis")))
+@interface SharedRuleAnalysis : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)ruleAnalysis __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedRuleAnalysis *shared __attribute__((swift_name("shared")));
+- (NSArray<SharedRuleAnalysisAttempt *> *)abacusQ:(SharedHomeworkQuestion *)q log:(NSArray<SharedRuleAnalysisSample *> *)log shownAtMs:(NSArray<SharedLong *> *)shownAtMs answer:(int64_t)answer capacity:(int32_t)capacity __attribute__((swift_name("abacus(q:log:shownAtMs:answer:capacity:)")));
+- (NSString *)mulKeyWithAbacus:(BOOL)withAbacus digits1:(int32_t)digits1 digits2:(int32_t)digits2 __attribute__((swift_name("mulKey(withAbacus:digits1:digits2:)")));
+- (NSArray<SharedRuleAnalysisAttempt *> *)multiplicationCfg:(SharedHomeworkConfig *)cfg correct:(BOOL)correct __attribute__((swift_name("multiplication(cfg:correct:)")));
+- (NSString *)ruleKeyOp:(SharedHomeworkOp *)op rule:(SharedAbacusRule *)rule __attribute__((swift_name("ruleKey(op:rule:)")));
+- (NSDictionary<NSString *, SharedKotlinIntArray *> *)tallyAttempts:(NSArray<SharedRuleAnalysisAttempt *> *)attempts __attribute__((swift_name("tally(attempts:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("RuleAnalysis.Attempt")))
+@interface SharedRuleAnalysisAttempt : SharedBase
+- (instancetype)initWithKey:(NSString *)key correct:(BOOL)correct __attribute__((swift_name("init(key:correct:)"))) __attribute__((objc_designated_initializer));
+- (SharedRuleAnalysisAttempt *)doCopyKey:(NSString *)key correct:(BOOL)correct __attribute__((swift_name("doCopy(key:correct:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) BOOL correct __attribute__((swift_name("correct")));
+@property (readonly) NSString *key __attribute__((swift_name("key")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("RuleAnalysis.Sample")))
+@interface SharedRuleAnalysisSample : SharedBase
+- (instancetype)initWithTMs:(int64_t)tMs value:(int64_t)value __attribute__((swift_name("init(tMs:value:)"))) __attribute__((objc_designated_initializer));
+- (SharedRuleAnalysisSample *)doCopyTMs:(int64_t)tMs value:(int64_t)value __attribute__((swift_name("doCopy(tMs:value:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int64_t tMs __attribute__((swift_name("tMs")));
+@property (readonly) int64_t value __attribute__((swift_name("value")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("RuleRow")))
+@interface SharedRuleRow : SharedBase
+- (instancetype)initWithKey:(NSString *)key label:(NSString *)label level:(SharedInt * _Nullable)level __attribute__((swift_name("init(key:label:level:)"))) __attribute__((objc_designated_initializer));
+- (SharedRuleRow *)doCopyKey:(NSString *)key label:(NSString *)label level:(SharedInt * _Nullable)level __attribute__((swift_name("doCopy(key:label:level:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSString *key __attribute__((swift_name("key")));
+@property (readonly) NSString *label __attribute__((swift_name("label")));
+@property (readonly) SharedInt * _Nullable level __attribute__((swift_name("level")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiDailyTest")))
+@interface SharedSobiDailyTest : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)sobiDailyTest __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedSobiDailyTest *shared __attribute__((swift_name("shared")));
+- (BOOL)allLessonRulesSeenCached:(NSSet<NSString *> *)cached __attribute__((swift_name("allLessonRulesSeen(cached:)")));
+- (SharedSobiTestPlannerChoice * _Nullable)chooseInfo:(SharedSobiDailyTestInfo *)info __attribute__((swift_name("choose(info:)")));
+- (NSArray<SharedDifficultyOption *> *)difficultyOptionsChoice:(SharedSobiTestPlannerChoice *)choice __attribute__((swift_name("difficultyOptions(choice:)")));
+- (BOOL)isUnlockedFromPart1Items:(NSArray<SharedLessonItem *> *)part1Items __attribute__((swift_name("isUnlockedFrom(part1Items:)")));
+- (NSDictionary<NSString *, SharedInt *> *)levelsOfData:(NSDictionary<NSString *, id> * _Nullable)data __attribute__((swift_name("levelsOf(data:)")));
+- (NSDictionary<NSString *, SharedInt *> *)mergeLevelsLocal:(NSDictionary<NSString *, SharedInt *> *)local server:(NSDictionary<NSString *, SharedInt *> *)server __attribute__((swift_name("mergeLevels(local:server:)")));
+- (NSArray<SharedSobiTestPlannerRuleScore *> *)pickScoresServer:(NSArray<SharedSobiTestPlannerRuleScore *> *)server local:(NSArray<SharedSobiTestPlannerRuleScore *> *)local __attribute__((swift_name("pickScores(server:local:)")));
+- (SharedSobiTestPlannerPlan * _Nullable)planInfo:(SharedSobiDailyTestInfo *)info offset:(int32_t)offset seed:(int32_t)seed __attribute__((swift_name("plan(info:offset:seed:)")));
+- (NSString *)ruleLabelKey:(NSString *)key metin:(id<SharedSobiMetinCozucu>)metin __attribute__((swift_name("ruleLabel(key:metin:)")));
+- (NSArray<SharedRuleRow *> *)ruleRowsChoice:(SharedSobiTestPlannerChoice *)choice metin:(id<SharedSobiMetinCozucu>)metin __attribute__((swift_name("ruleRows(choice:metin:)")));
+- (NSArray<SharedSobiTestPlannerRuleScore *> *)scoresFromEntriesEntries:(NSArray<SharedSobiRuleStatEntry *> *)entries __attribute__((swift_name("scoresFromEntries(entries:)")));
+- (NSArray<SharedSobiTestPlannerRuleScore *> *)scoresOfData:(NSDictionary<NSString *, id> * _Nullable)data __attribute__((swift_name("scoresOf(data:)")));
+- (NSString *)secondsTextIntervalMs:(int64_t)intervalMs __attribute__((swift_name("secondsText(intervalMs:)")));
+- (int32_t)seedToday:(NSString *)today testsToday:(int32_t)testsToday offset:(int32_t)offset __attribute__((swift_name("seed(today:testsToday:offset:)")));
+- (NSSet<NSString *> *)seenFromItemsItems:(NSArray<SharedLessonItem *> *)items __attribute__((swift_name("seenFromItems(items:)")));
+- (NSString *)specTextLevel:(int32_t)level metin:(id<SharedSobiMetinCozucu>)metin __attribute__((swift_name("specText(level:metin:)")));
+- (NSString *)todayNowMs:(int64_t)nowMs __attribute__((swift_name("today(nowMs:)")));
+- (NSDictionary<NSString *, SharedInt *> *)unsentLevelsLocal:(NSDictionary<NSString *, SharedInt *> *)local server:(NSDictionary<NSString *, SharedInt *> *)server __attribute__((swift_name("unsentLevels(local:server:)")));
+@property (readonly) int32_t EXTRA_TEST_KEYS __attribute__((swift_name("EXTRA_TEST_KEYS")));
+@property (readonly) NSString *FUNCTION_RECORD_LEVELS __attribute__((swift_name("FUNCTION_RECORD_LEVELS")));
+@property (readonly) NSString *FUNCTION_START_EXTRA_TEST __attribute__((swift_name("FUNCTION_START_EXTRA_TEST")));
+@property (readonly) NSString *KEY_COUNT __attribute__((swift_name("KEY_COUNT")));
+@property (readonly) NSString *KEY_DAY __attribute__((swift_name("KEY_DAY")));
+@property (readonly) NSString *KEY_LESSON_SEEN __attribute__((swift_name("KEY_LESSON_SEEN")));
+@property (readonly) NSString *KEY_LEVEL __attribute__((swift_name("KEY_LEVEL")));
+@property (readonly) NSString *KEY_NUDGE_DAY __attribute__((swift_name("KEY_NUDGE_DAY")));
+@property (readonly) NSString *KEY_PAID_DAY __attribute__((swift_name("KEY_PAID_DAY")));
+@property (readonly) NSString *KEY_PAID_INDEX __attribute__((swift_name("KEY_PAID_INDEX")));
+@property (readonly) NSString *KEY_UNLOCKED __attribute__((swift_name("KEY_UNLOCKED")));
+@property (readonly) NSArray<SharedInt *> *LESSON_PARTS __attribute__((swift_name("LESSON_PARTS")));
+@property (readonly) NSString *LEVEL_FIELD __attribute__((swift_name("LEVEL_FIELD")));
+@property (readonly) NSArray<NSString *> *LEVEL_KEYS __attribute__((swift_name("LEVEL_KEYS")));
+@property (readonly) NSString *PREFS __attribute__((swift_name("PREFS")));
+@property (readonly) NSString *RULE_STATS_COLLECTION __attribute__((swift_name("RULE_STATS_COLLECTION")));
+@property (readonly) int32_t UNLOCK_INDEX __attribute__((swift_name("UNLOCK_INDEX")));
+@property (readonly) int32_t UNLOCK_PART __attribute__((swift_name("UNLOCK_PART")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiDailyTest.Info")))
+@interface SharedSobiDailyTestInfo : SharedBase
+- (instancetype)initWithScores:(NSArray<SharedSobiTestPlannerRuleScore *> *)scores levels:(NSDictionary<NSString *, SharedInt *> *)levels lessonSeen:(NSSet<NSString *> *)lessonSeen __attribute__((swift_name("init(scores:levels:lessonSeen:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiDailyTestInfo *)doCopyScores:(NSArray<SharedSobiTestPlannerRuleScore *> *)scores levels:(NSDictionary<NSString *, SharedInt *> *)levels lessonSeen:(NSSet<NSString *> *)lessonSeen __attribute__((swift_name("doCopy(scores:levels:lessonSeen:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSSet<NSString *> *lessonSeen __attribute__((swift_name("lessonSeen")));
+@property (readonly) NSDictionary<NSString *, SharedInt *> *levels __attribute__((swift_name("levels")));
+@property (readonly) NSArray<SharedSobiTestPlannerRuleScore *> *scores __attribute__((swift_name("scores")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiDailyTestStore")))
+@interface SharedSobiDailyTestStore : SharedBase
+- (instancetype)initWithPrefs:(id<SharedOyunKeyValueStore>)prefs __attribute__((swift_name("init(prefs:)"))) __attribute__((objc_designated_initializer));
+- (NSSet<NSString *> *)cachedLessonSeenUid:(NSString * _Nullable)uid __attribute__((swift_name("cachedLessonSeen(uid:)")));
+- (BOOL)checkUnlockedUid:(NSString * _Nullable)uid part1Items:(NSArray<SharedLessonItem *> *)part1Items __attribute__((swift_name("checkUnlocked(uid:part1Items:)")));
+- (int32_t)extraTestCostToday:(NSString *)today isPro:(BOOL)isPro isApprovedTeacher:(BOOL)isApprovedTeacher __attribute__((swift_name("extraTestCost(today:isPro:isApprovedTeacher:)")));
+- (BOOL)isDoneTodayToday:(NSString *)today __attribute__((swift_name("isDoneToday(today:)")));
+- (BOOL)isUnlockedCachedUid:(NSString * _Nullable)uid __attribute__((swift_name("isUnlockedCached(uid:)")));
+- (NSSet<NSString *> *)lessonSeenUid:(NSString * _Nullable)uid partItems:(NSArray<NSArray<SharedLessonItem *> *> *)partItems __attribute__((swift_name("lessonSeen(uid:partItems:)")));
+- (NSDictionary<NSString *, SharedInt *> *)localLevels __attribute__((swift_name("localLevels()")));
+- (void)markDoneToday:(NSString *)today __attribute__((swift_name("markDone(today:)")));
+- (void)markExtraPaidToday:(NSString *)today __attribute__((swift_name("markExtraPaid(today:)")));
+- (void)saveLevelsLevels:(NSDictionary<NSString *, SharedInt *> *)levels __attribute__((swift_name("saveLevels(levels:)")));
+- (BOOL)shouldNudgeTodayToday:(NSString *)today __attribute__((swift_name("shouldNudgeToday(today:)")));
+- (int32_t)testsTodayToday:(NSString *)today __attribute__((swift_name("testsToday(today:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestInceleme")))
+@interface SharedSobiTestInceleme : SharedBase
+- (instancetype)initWithValues:(NSArray<SharedInt *> *)values marks:(NSArray<SharedInt *> *)marks __attribute__((swift_name("init(values:marks:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiTestInceleme *)doCopyValues:(NSArray<SharedInt *> *)values marks:(NSArray<SharedInt *> *)marks __attribute__((swift_name("doCopy(values:marks:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSArray<SharedInt *> *marks __attribute__((swift_name("marks")));
+@property (readonly) NSArray<SharedInt *> *values __attribute__((swift_name("values")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestLevels")))
+@interface SharedSobiTestLevels : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)sobiTestLevels __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedSobiTestLevels *shared __attribute__((swift_name("shared")));
+- (int32_t)initialPercent:(int32_t)percent __attribute__((swift_name("initial(percent:)")));
+- (int32_t)nextCurrent:(int32_t)current played:(int32_t)played percent:(int32_t)percent __attribute__((swift_name("next(current:played:percent:)")));
+- (SharedSobiTestLevelsSpec *)specLevel:(int32_t)level __attribute__((swift_name("spec(level:)")));
+@property (readonly) int32_t DOWN_PCT __attribute__((swift_name("DOWN_PCT")));
+@property (readonly) int32_t MAX __attribute__((swift_name("MAX")));
+@property (readonly) int32_t UP_PCT __attribute__((swift_name("UP_PCT")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestLevels.Spec")))
+@interface SharedSobiTestLevelsSpec : SharedBase
+- (instancetype)initWithDigits:(int32_t)digits count:(int32_t)count intervalMs:(int64_t)intervalMs __attribute__((swift_name("init(digits:count:intervalMs:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiTestLevelsSpec *)doCopyDigits:(int32_t)digits count:(int32_t)count intervalMs:(int64_t)intervalMs __attribute__((swift_name("doCopy(digits:count:intervalMs:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t count __attribute__((swift_name("count")));
+@property (readonly) int32_t digits __attribute__((swift_name("digits")));
+@property (readonly) int64_t intervalMs __attribute__((swift_name("intervalMs")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestOturumu")))
+@interface SharedSobiTestOturumu : SharedBase
+- (instancetype)initWithPlan:(SharedSobiTestPlannerPlan *)plan stats:(SharedSobiRuleStatsStore * _Nullable)stats __attribute__((swift_name("init(plan:stats:)"))) __attribute__((objc_designated_initializer));
+@property (class, readonly, getter=companion) SharedSobiTestOturumuCompanion *companion __attribute__((swift_name("companion")));
+- (int64_t)answerIndex:(int32_t)index __attribute__((swift_name("answer(index:)")));
+- (BOOL)canReviewIndex:(int32_t)index correct:(BOOL)correct __attribute__((swift_name("canReview(index:correct:)")));
+- (SharedSobiTestSonucu *)finishMetin:(id<SharedSobiMetinCozucu>)metin __attribute__((swift_name("finish(metin:)")));
+- (NSArray<NSString *> *)flashLabelsIndex:(int32_t)index __attribute__((swift_name("flashLabels(index:)")));
+- (NSString *)fullLineIndex:(int32_t)index __attribute__((swift_name("fullLine(index:)")));
+- (int64_t)intervalMsIndex:(int32_t)index __attribute__((swift_name("intervalMs(index:)")));
+- (BOOL)isMultiplicationIndex:(int32_t)index __attribute__((swift_name("isMultiplication(index:)")));
+- (BOOL)isSubtractionIndex:(int32_t)index __attribute__((swift_name("isSubtraction(index:)")));
+- (NSArray<SharedLong *> *)numbersIndex:(int32_t)index __attribute__((swift_name("numbers(index:)")));
+- (NSString *)questionLineIndex:(int32_t)index __attribute__((swift_name("questionLine(index:)")));
+- (NSString *)revealTextIndex:(int32_t)index __attribute__((swift_name("revealText(index:)")));
+- (SharedSobiTestInceleme *)reviewIndex:(int32_t)index logTimesMs:(NSArray<SharedLong *> *)logTimesMs logValues:(NSArray<SharedLong *> *)logValues shownAtMs:(NSArray<SharedLong *> *)shownAtMs __attribute__((swift_name("review(index:logTimesMs:logValues:shownAtMs:)")));
+- (NSArray<SharedInt *> *)reviewNumbersIndex:(int32_t)index __attribute__((swift_name("reviewNumbers(index:)")));
+- (BOOL)submitIndex:(int32_t)index given:(int64_t)given logTimesMs:(NSArray<SharedLong *> *)logTimesMs logValues:(NSArray<SharedLong *> *)logValues shownAtMs:(NSArray<SharedLong *> *)shownAtMs __attribute__((swift_name("submit(index:given:logTimesMs:logValues:shownAtMs:)")));
+- (BOOL)withAbacusIndex:(int32_t)index __attribute__((swift_name("withAbacus(index:)")));
+@property (readonly) int32_t answeredCount __attribute__((swift_name("answeredCount")));
+@property (readonly) int32_t correctCount __attribute__((swift_name("correctCount")));
+@property (readonly) SharedSobiTestPlannerPlan *plan __attribute__((swift_name("plan")));
+@property (readonly) int32_t questionCount __attribute__((swift_name("questionCount")));
+@property (readonly) NSArray<NSString *> *weakKeys __attribute__((swift_name("weakKeys")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestOturumu.Companion")))
+@interface SharedSobiTestOturumuCompanion : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)companion __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedSobiTestOturumuCompanion *shared __attribute__((swift_name("shared")));
+- (NSString *)questionLineOfQ:(SharedHomeworkQuestion *)q __attribute__((swift_name("questionLineOf(q:)")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestPlanner")))
+@interface SharedSobiTestPlanner : SharedBase
++ (instancetype)alloc __attribute__((unavailable));
++ (instancetype)allocWithZone:(struct _NSZone *)zone __attribute__((unavailable));
++ (instancetype)sobiTestPlanner __attribute__((swift_name("init()")));
+@property (class, readonly, getter=shared) SharedSobiTestPlanner *shared __attribute__((swift_name("shared")));
+- (NSString *)baseKeyKey:(NSString *)key __attribute__((swift_name("baseKey(key:)")));
+- (SharedSobiTestPlannerChoice * _Nullable)chooseScores:(NSArray<SharedSobiTestPlannerRuleScore *> *)scores levels:(NSDictionary<NSString *, SharedInt *> *)levels lessonSeen:(NSSet<NSString *> *)lessonSeen __attribute__((swift_name("choose(scores:levels:lessonSeen:)")));
+- (BOOL)hasLevelKey:(NSString *)key __attribute__((swift_name("hasLevel(key:)")));
+- (BOOL)isMentalKeyKey:(NSString *)key __attribute__((swift_name("isMentalKey(key:)")));
+- (BOOL)isMulKeyKey:(NSString *)key __attribute__((swift_name("isMulKey(key:)")));
+- (int32_t)levelOfScore:(SharedSobiTestPlannerRuleScore *)score levels:(NSDictionary<NSString *, SharedInt *> *)levels __attribute__((swift_name("levelOf(score:levels:)")));
+- (NSString *)mentalKeyRule:(NSString *)rule __attribute__((swift_name("mentalKey(rule:)")));
+- (SharedKotlinPair<SharedInt *, SharedInt *> * _Nullable)mulDigitsKey:(NSString *)key __attribute__((swift_name("mulDigits(key:)")));
+- (NSString *)mulKeyOfA:(int64_t)a b:(int64_t)b withAbacus:(BOOL)withAbacus __attribute__((swift_name("mulKeyOf(a:b:withAbacus:)")));
+- (SharedSobiTestPlannerQuestion * _Nullable)mulQuestionKey:(NSString *)key rnd:(SharedKotlinRandom *)rnd __attribute__((swift_name("mulQuestion(key:rnd:)")));
+- (SharedSobiTestPlannerPlan * _Nullable)planScores:(NSArray<SharedSobiTestPlannerRuleScore *> *)scores levels:(NSDictionary<NSString *, SharedInt *> *)levels offset:(int32_t)offset seed:(int32_t)seed lessonSeen:(NSSet<NSString *> *)lessonSeen __attribute__((swift_name("plan(scores:levels:offset:seed:lessonSeen:)")));
+- (SharedSobiTestPlannerQuestion * _Nullable)questionKey:(NSString *)key level:(int32_t)level allowed:(NSSet<NSString *> *)allowed rnd:(SharedKotlinRandom *)rnd withAbacus:(BOOL)withAbacus __attribute__((swift_name("question(key:level:allowed:rnd:withAbacus:)")));
+- (NSSet<NSString *> *)rulesOfQ:(SharedHomeworkQuestion *)q __attribute__((swift_name("rulesOf(q:)")));
+- (NSSet<NSString *> *)seenFromLessonsItems:(NSArray<SharedSobiTestPlannerLessonMark *> *)items __attribute__((swift_name("seenFromLessons(items:)")));
+@property (readonly) NSSet<NSString *> *LESSON_RULES __attribute__((swift_name("LESSON_RULES")));
+@property (readonly) NSDictionary<NSString *, NSString *> *LESSON_SECTIONS __attribute__((swift_name("LESSON_SECTIONS")));
+@property (readonly) NSString *MENTAL_PREFIX __attribute__((swift_name("MENTAL_PREFIX")));
+@property (readonly) int32_t MIN_OPS __attribute__((swift_name("MIN_OPS")));
+@property (readonly) int32_t QUESTION_COUNT __attribute__((swift_name("QUESTION_COUNT")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestPlanner.Choice")))
+@interface SharedSobiTestPlannerChoice : SharedBase
+- (instancetype)initWithWeak:(NSArray<SharedSobiTestPlannerRuleScore *> *)weak strong:(NSArray<SharedSobiTestPlannerRuleScore *> *)strong allowed:(NSSet<NSString *> *)allowed current:(NSDictionary<NSString *, SharedInt *> *)current mentalWeak:(NSArray<SharedSobiTestPlannerRuleScore *> *)mentalWeak mentalAllowed:(NSSet<NSString *> *)mentalAllowed mentalSlots:(int32_t)mentalSlots __attribute__((swift_name("init(weak:strong:allowed:current:mentalWeak:mentalAllowed:mentalSlots:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiTestPlannerChoice *)doCopyWeak:(NSArray<SharedSobiTestPlannerRuleScore *> *)weak strong:(NSArray<SharedSobiTestPlannerRuleScore *> *)strong allowed:(NSSet<NSString *> *)allowed current:(NSDictionary<NSString *, SharedInt *> *)current mentalWeak:(NSArray<SharedSobiTestPlannerRuleScore *> *)mentalWeak mentalAllowed:(NSSet<NSString *> *)mentalAllowed mentalSlots:(int32_t)mentalSlots __attribute__((swift_name("doCopy(weak:strong:allowed:current:mentalWeak:mentalAllowed:mentalSlots:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSSet<NSString *> *allowed __attribute__((swift_name("allowed")));
+@property (readonly) NSDictionary<NSString *, SharedInt *> *current __attribute__((swift_name("current")));
+@property (readonly) NSSet<NSString *> *mentalAllowed __attribute__((swift_name("mentalAllowed")));
+@property (readonly) int32_t mentalSlots __attribute__((swift_name("mentalSlots")));
+@property (readonly) NSArray<SharedSobiTestPlannerRuleScore *> *mentalWeak __attribute__((swift_name("mentalWeak")));
+@property (readonly) NSArray<SharedSobiTestPlannerRuleScore *> *strong __attribute__((swift_name("strong")));
+@property (readonly) NSArray<SharedSobiTestPlannerRuleScore *> *weak __attribute__((swift_name("weak")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestPlanner.LessonMark")))
+@interface SharedSobiTestPlannerLessonMark : SharedBase
+- (instancetype)initWithStableId:(NSString *)stableId isHeader:(BOOL)isHeader finished:(BOOL)finished __attribute__((swift_name("init(stableId:isHeader:finished:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiTestPlannerLessonMark *)doCopyStableId:(NSString *)stableId isHeader:(BOOL)isHeader finished:(BOOL)finished __attribute__((swift_name("doCopy(stableId:isHeader:finished:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) BOOL finished __attribute__((swift_name("finished")));
+@property (readonly) BOOL isHeader __attribute__((swift_name("isHeader")));
+@property (readonly) NSString *stableId __attribute__((swift_name("stableId")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestPlanner.Plan")))
+@interface SharedSobiTestPlannerPlan : SharedBase
+- (instancetype)initWithWeak:(NSArray<SharedSobiTestPlannerRuleScore *> *)weak current:(NSDictionary<NSString *, SharedInt *> *)current played:(NSDictionary<NSString *, SharedInt *> *)played questions:(NSArray<SharedSobiTestPlannerQuestion *> *)questions mentalWeak:(NSArray<SharedSobiTestPlannerRuleScore *> *)mentalWeak __attribute__((swift_name("init(weak:current:played:questions:mentalWeak:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiTestPlannerPlan *)doCopyWeak:(NSArray<SharedSobiTestPlannerRuleScore *> *)weak current:(NSDictionary<NSString *, SharedInt *> *)current played:(NSDictionary<NSString *, SharedInt *> *)played questions:(NSArray<SharedSobiTestPlannerQuestion *> *)questions mentalWeak:(NSArray<SharedSobiTestPlannerRuleScore *> *)mentalWeak __attribute__((swift_name("doCopy(weak:current:played:questions:mentalWeak:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) NSDictionary<NSString *, SharedInt *> *current __attribute__((swift_name("current")));
+@property (readonly) NSArray<SharedSobiTestPlannerRuleScore *> *mentalWeak __attribute__((swift_name("mentalWeak")));
+@property (readonly) NSDictionary<NSString *, SharedInt *> *played __attribute__((swift_name("played")));
+@property (readonly) NSArray<SharedSobiTestPlannerQuestion *> *questions __attribute__((swift_name("questions")));
+@property (readonly) NSArray<SharedSobiTestPlannerRuleScore *> *weak __attribute__((swift_name("weak")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestPlanner.Question")))
+@interface SharedSobiTestPlannerQuestion : SharedBase
+- (instancetype)initWithQuestion:(SharedHomeworkQuestion *)question rule:(NSString *)rule level:(int32_t)level mental:(BOOL)mental __attribute__((swift_name("init(question:rule:level:mental:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiTestPlannerQuestion *)doCopyQuestion:(SharedHomeworkQuestion *)question rule:(NSString *)rule level:(int32_t)level mental:(BOOL)mental __attribute__((swift_name("doCopy(question:rule:level:mental:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int64_t intervalMs __attribute__((swift_name("intervalMs")));
+@property (readonly) int32_t level __attribute__((swift_name("level")));
+@property (readonly) BOOL mental __attribute__((swift_name("mental")));
+@property (readonly) SharedHomeworkQuestion *question __attribute__((swift_name("question")));
+@property (readonly) NSString *rule __attribute__((swift_name("rule")));
+@property (readonly) NSString *statKey __attribute__((swift_name("statKey")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestPlanner.RuleScore")))
+@interface SharedSobiTestPlannerRuleScore : SharedBase
+- (instancetype)initWithKey:(NSString *)key correct:(int32_t)correct wrong:(int32_t)wrong __attribute__((swift_name("init(key:correct:wrong:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiTestPlannerRuleScore *)doCopyKey:(NSString *)key correct:(int32_t)correct wrong:(int32_t)wrong __attribute__((swift_name("doCopy(key:correct:wrong:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t correct __attribute__((swift_name("correct")));
+@property (readonly) NSString *key __attribute__((swift_name("key")));
+@property (readonly) int32_t percent __attribute__((swift_name("percent")));
+@property (readonly) int32_t total __attribute__((swift_name("total")));
+@property (readonly) int32_t wrong __attribute__((swift_name("wrong")));
+@end
+
+__attribute__((objc_subclassing_restricted))
+__attribute__((swift_name("SobiTestSonucu")))
+@interface SharedSobiTestSonucu : SharedBase
+- (instancetype)initWithCorrect:(int32_t)correct total:(int32_t)total message:(NSString *)message newLevels:(NSDictionary<NSString *, SharedInt *> *)newLevels perfect:(BOOL)perfect __attribute__((swift_name("init(correct:total:message:newLevels:perfect:)"))) __attribute__((objc_designated_initializer));
+- (SharedSobiTestSonucu *)doCopyCorrect:(int32_t)correct total:(int32_t)total message:(NSString *)message newLevels:(NSDictionary<NSString *, SharedInt *> *)newLevels perfect:(BOOL)perfect __attribute__((swift_name("doCopy(correct:total:message:newLevels:perfect:)")));
+- (BOOL)isEqual:(id _Nullable)other __attribute__((swift_name("isEqual(_:)")));
+- (NSUInteger)hash __attribute__((swift_name("hash()")));
+- (NSString *)description __attribute__((swift_name("description()")));
+@property (readonly) int32_t correct __attribute__((swift_name("correct")));
+@property (readonly) NSString *message __attribute__((swift_name("message")));
+@property (readonly, getter=doNewLevels) NSDictionary<NSString *, SharedInt *> *newLevels __attribute__((swift_name("newLevels")));
+@property (readonly) BOOL perfect __attribute__((swift_name("perfect")));
+@property (readonly) int32_t total __attribute__((swift_name("total")));
 @end
 
 @interface SharedLessonItem (Extensions)

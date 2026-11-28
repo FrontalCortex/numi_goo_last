@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import Shared
 import SwiftUI
 
 // Uygulamanın yöneticisi: ekranları birbirine bağlar.
