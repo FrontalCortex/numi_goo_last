@@ -67,7 +67,7 @@ struct RozetKutlamaVerisi: Equatable {
         let aciklama: String = RozetMetni.aciklama(
             turkce: turkceAciklama,
             anahtar: mantik.badgeDetailKey(mode: oge.mode, unlocked: true),
-            deger: ilerleme.map { String($0.intValue) } ?: ""
+            deger: ilerleme.map { String($0.intValue) } ?? ""
         )
         let ad: String = oge.mode.name
         let karate: Bool = ad == "KARATE"
