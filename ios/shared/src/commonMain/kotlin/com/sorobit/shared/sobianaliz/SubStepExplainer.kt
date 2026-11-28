@@ -1,6 +1,6 @@
 // Kaynak: app/src/main/java/com/example/app/abacus/SubStepExplainer.kt — Türkçe dalı birebir.
 // Dil: Android AppLanguage.textLanguage()'a bakıp İngilizceyi SubStepExplainerEn'e yönlendiriyor; ortak
-// kodda uygulama dili yok, onun yerine [language] var (iOS: Metin.diliAyarla atar). Yalnızca İngilizce
+// kodda uygulama dili yok, onun yerine [SobiAnalizDili.language] var (iOS: Metin.diliAyarla atar). Yalnızca İngilizce
 // taşındı ([SubStepExplainerEn]); Endonezce/Arapça (SubStepExplainerId/Ar) ŞİMDİLİK taşınmadı, o dillerde
 // Türkçe döner. Metinler Kotlin içinde gömülü olduğu için aynen kopyalandı.
 package com.sorobit.shared.sobianaliz
@@ -17,10 +17,8 @@ import kotlin.math.abs
  */
 object SubStepExplainer {
 
-    /** Anlatım dili ("tr", "en" …; Android: AppLanguage.textLanguage()). "en" dışındaki her değer Türkçe. */
-    var language: String = "tr"
-
-    private fun english(): Boolean = language == "en"
+    /** Anlatım dili ortak ayardan ([SobiAnalizDili]); "en" dışındaki her değer Türkçe. */
+    private fun english(): Boolean = SobiAnalizDili.english()
 
     /** Parçanın balon etiketi: “10 gelir” ne demek? */
     fun question(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String =

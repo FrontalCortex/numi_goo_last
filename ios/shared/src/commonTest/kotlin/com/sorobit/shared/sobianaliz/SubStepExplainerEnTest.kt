@@ -1,6 +1,6 @@
 // SubStepExplainer'ın İngilizce dalı (SubStepExplainerEn; Android app/.../abacus/SubStepExplainerEn.kt kopyası).
 // Beklenen cümleler Android kodundan elle türetildi; Android'de bu dalın testi yok.
-// Gradle ile henüz doğrulanmadı (28.11.2026).
+// jvmTest ile doğrulandı (28.11.2026).
 package com.sorobit.shared.sobianaliz
 
 import kotlin.test.Test
@@ -11,13 +11,13 @@ class SubStepExplainerEnTest {
 
     private fun move(base: Long, op: HomeworkOp, n: Long) = StepExplainer.explain(base, op, n)!!.moves.single()
 
-    /** [SubStepExplainer.language] nesne düzeyinde; her test sonunda Türkçe'ye geri alınır. */
+    /** [SobiAnalizDili.language] nesne düzeyinde; her test sonunda Türkçe'ye geri alınır. */
     private fun <T> ingilizce(blok: () -> T): T {
-        SubStepExplainer.language = "en"
+        SobiAnalizDili.language = "en"
         try {
             return blok()
         } finally {
-            SubStepExplainer.language = "tr"
+            SobiAnalizDili.language = "tr"
         }
     }
 
@@ -45,11 +45,11 @@ class SubStepExplainerEnTest {
     fun diger_diller_turkce_kalir() {
         val m = move(1953, HomeworkOp.ADD, 70)
         val ten = m.steps.first { it.role == StepExplainer.Role.TEN }
-        SubStepExplainer.language = "id"
+        SobiAnalizDili.language = "id"
         try {
             assertEquals("“10 gelir” ne demek?", SubStepExplainer.question(ten, m))
         } finally {
-            SubStepExplainer.language = "tr"
+            SobiAnalizDili.language = "tr"
         }
         assertEquals("“10 gelir” ne demek?", SubStepExplainer.question(ten, m))
     }

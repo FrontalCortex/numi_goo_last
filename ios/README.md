@@ -52,9 +52,9 @@ ios/
   - İlerleme çubuğu etiketleri iOS'ta beyaz yazı + koyu gölge; Android'de gölgesiz beyaz (bilinçli sapma, okunurluk). 13. derlemeden kalan etiket düzeltmesi 14. derlemede görüntüyle doğrulandı.
   - **Eksikler:** boşta kalma sınırı işlemiyor; sahte serviste ders kapanınca +300 sn ekleniyor; bildirim/hatırlatma gerçek değil (sunucuda `sendStreakReminders` FCM ile gönderir, iOS için APNs gerekecek); maskot alevi güne göre büyümüyor.
 - **Sobi hata analizi (14. derlemede derlendi, 0 hata, durağan görüntü alındı):**
-  - Ortak kod `shared/.../sobianaliz/`: Android `MistakeAnalyzer`, `StepExplainer`, `SubStepExplainer` (Türkçe), `ExamplePicker` ve `SobiRuleStats` kopyası; testli.
+  - Ortak kod `shared/.../sobianaliz/`: Android `MistakeAnalyzer`, `StepExplainer`, `SubStepExplainer`, `ExamplePicker` ve `SobiRuleStats` kopyası; testli. Teşhis, sütun/kural adları ve alt adım açıklamaları Türkçe ve İngilizce (`SobiAnalizDili.language`, `Metin.diliAyarla` atar; 28.11.2026, derlenmedi). Endonezce/Arapça dalları taşınmadı.
   - `iosApp/SobiAnaliz/` penceresi; dersteki "Sobi ile analiz et" düğmesine bağlı (artık yer tutucuya gitmiyor). 14. derlemeden sonra pencereye gerçek doğru/yanlış sesi eklendi (derlenmedi).
-  - Yazılmayanlar: yapay zekâya bağlı kısımlar (Sobi'ye yazma, öneriler), çeviriler, gerçek sesli okuma (TTS), kural istatistiklerinin sunucuya gönderimi.
+  - Yazılmayanlar: yapay zekâya bağlı kısımlar (Sobi'ye yazma, öneriler), Endonezce/Arapça çeviriler, gerçek sesli okuma (TTS), kural istatistiklerinin sunucuya gönderimi.
 - **Kural kitabı ve ders içi rehber (14. derlemede derlendi, durağan görüntü alındı):**
   - `Kurallar/`: kural kitabı, ders içi kural paneli, 1x–9x çarpım tabloları; kitap ve sihirli değnek düğmeleri. Kural seçimi mantığı ortak koddadır (`abakus/LessonRulesLogic.kt`); `KuralKurallari.swift` yalnızca Swift türlerine çevirir (28.11.2026 taşındı, derlenmedi).
   - `Rehber/`: altı ders rehberi + haritada maraton rehberi. Sayfa içeriği ve açılma kuralları ortak koddadır (`ders/GuideHelper.kt`); `RehberIcerigi.swift` / `RehberOrtak.swift` yalnızca çevirir ve kayıt deposunu okur (28.11.2026 taşındı, derlenmedi). "Gösterildi" kaydı (rehber 5) yerelde tutuluyor; Android'de Firestore `skip_step_tutorial_shown`.

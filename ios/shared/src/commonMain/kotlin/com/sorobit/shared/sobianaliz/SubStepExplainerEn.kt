@@ -1,8 +1,7 @@
 // Kaynak: app/src/main/java/com/example/app/abacus/SubStepExplainerEn.kt — birebir (yalnızca `Math.abs` → `abs`).
-// Bilinçli fark: Android sütun adını ve adım sözünü dile göre dallanan MistakeAnalyzer.columnName /
-// stepPhrase'den alıyor; ortak MistakeAnalyzer şimdilik yalnızca Türkçe olduğu için İngilizce dalları
-// (app/.../abacus/MistakeAnalyzer.kt: COLUMN_NAMES_EN, stepPhrase EN dalı) bu dosyaya özel kopyalandı.
-// MistakeAnalyzer çok dilli olunca [columnName] ve [stepPhrase] ona devredilmeli.
+// Android sütun adını ve adım sözünü dile göre dallanan MistakeAnalyzer.columnName / stepPhrase'den
+// alıyor; burada doğrudan MistakeAnalyzer'ın İngilizce dalı (columnNameEn / stepPhraseEn) çağrılıyor:
+// bu nesne yalnızca İngilizcede kullanıldığı için sonuç aynı, ortak dil ayarına da bağlı kalmıyor.
 package com.sorobit.shared.sobianaliz
 
 import kotlin.math.abs
@@ -13,24 +12,11 @@ import kotlin.math.abs
  */
 internal object SubStepExplainerEn {
 
-    private val COLUMN_NAMES_EN = listOf("ones", "tens", "hundreds", "thousands", "ten thousands")
-
     /** Android MistakeAnalyzer.columnName, EN dalı. */
-    fun columnName(col: Int): String = COLUMN_NAMES_EN.getOrElse(col) { "column ${col + 1}" }
+    fun columnName(col: Int): String = MistakeAnalyzer.columnNameEn(col)
 
     /** Android MistakeAnalyzer.stepPhrase, EN dalı. */
-    fun stepPhrase(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String {
-        val add = m.op == HomeworkOp.ADD
-        val amount = abs(s.upper) * 5 + abs(s.lower)
-        return when (s.role) {
-            StepExplainer.Role.DIRECT -> "${if (s.upper + s.lower > 0) "add" else "take away"} $amount"
-            StepExplainer.Role.FIVE -> if (s.upper > 0) "add 5" else "take away 5"
-            StepExplainer.Role.FRIEND -> "${if (s.lower > 0) "add" else "take away"} its friend ${abs(s.lower)}"
-            StepExplainer.Role.BIG_FRIEND -> if (add) "take away its big friend $amount" else "add its friend $amount"
-            StepExplainer.Role.BEADS -> "add ${s.lower} beads"
-            StepExplainer.Role.TEN -> if (add) "add 10" else "take away 10"
-        }
-    }
+    fun stepPhrase(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String = MistakeAnalyzer.stepPhraseEn(s, m)
 
     /** Android SubStepExplainer.question, EN dalı. */
     fun question(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String =
