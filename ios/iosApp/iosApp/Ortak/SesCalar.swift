@@ -21,12 +21,35 @@ import Foundation
 /// çalıyor (telefonun zil sessizliğinden etkilenmez) ve başka uygulamanın müziğini kesmiyor; iOS
 /// karşılığı: `.playback` kategorisi (sessiz anahtar çalmayı engellemez) + `.mixWithOthers`.
 /// Birden çok çalıcı çağırabilir; kurulum yalnızca bir kez yapılır.
+///
+/// Ana iş parçacığını BEKLETMEZ: `setActive` ses sunucusuyla (coreaudiod) eşzamanlı konuşur ve
+/// simülatörde/ilk açılışta saniyelerce sürebilir (Apple da oturumu ana iş parçacığı dışında etkinleştirmeyi
+/// önerir). Kurulum `kuyruk` üzerinde sırayla yapılır; aynı kuyrukta çalan çalıcılar (öğretici) kurulumdan
+/// sonra çalar, ana iş parçacığındaki çalıcılar (SesCalar) ilk seste varsayılan oturumla çalabilir.
 enum SesOturumu {
+    /// Ses işlerinin seri kuyruğu (oturum kurulumu + öğretici çalıcısı).
+    static let kuyruk: DispatchQueue = DispatchQueue(label: "com.sorobit.app.ses", qos: .userInitiated)
+    /// Yalnızca `kuyruk` üzerinde okunur/yazılır.
     private static var kuruldu: Bool = false
 
+    /// Kurulumu ses kuyruğuna sıraya koyar; çağıran beklemez (SesCalar ana iş parçacığından çağırır).
     static func kur() {
+        SesOturumu.kuyruk.async {
+            SesOturumu.kurIc()
+        }
+    }
+
+    /// Yalnızca `kuyruk` üzerinde çalışan bir işin içinden (öğretici çalıcısı): kurulumu sıraya koymadan
+    /// hemen yapar; böylece aynı işte hemen ardından gelen çalma kurulmuş oturumla çalar.
+    static func kuyruktaKur() {
+        dispatchPrecondition(condition: .onQueue(SesOturumu.kuyruk))
+        SesOturumu.kurIc()
+    }
+
+    private static func kurIc() {
         if kuruldu { return }
         kuruldu = true
+        let baslangic: Date = Date()
         let oturum: AVAudioSession = AVAudioSession.sharedInstance()
         do {
             try oturum.setCategory(.playback, mode: .default, options: [.mixWithOthers])
@@ -34,6 +57,8 @@ enum SesOturumu {
         } catch {
             // Oturum kurulamazsa varsayılan oturumla denenir; hata sessizce geçilir.
         }
+        let sureMs: Int = Int(Date().timeIntervalSince(baslangic) * 1000.0)
+        YonetimGunlugu.yaz("ses oturumu kuruldu (\(sureMs) ms)")
     }
 }
 

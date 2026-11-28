@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import os
 import Shared
 import SwiftUI
 
@@ -15,6 +16,19 @@ import SwiftUI
 // kupa dersi bitince Kupa Yolu paneli, rozet ayrıntısı kapanınca rozet listesi olduğu gibi durur.
 //
 // Ortak Kotlin koduna yapılan çağrıların hepsi YonetimIlerlemeDeposu'ndadır.
+
+/// Açılış akışının teşhis günlüğü (birleşik günlük, alt sistem `com.sorobit.app`, kategori `akis`).
+/// Codemagic `ios-app-build` açılıştan sonra `log show` ile `build/ilk-acilis.log` dosyasına alır.
+/// Yalnızca birkaç satır yazılır (açılış, yönlendirme, katman, öğretici adımı, ses süresi); her iş
+/// parçacığından çağrılabilir.
+enum YonetimGunlugu {
+    private static let kayit: os.Logger = os.Logger(subsystem: "com.sorobit.app", category: "akis")
+
+    static func yaz(_ mesaj: String) {
+        let ana: String = Thread.isMainThread ? "ana" : "arka"
+        kayit.notice("[sorobit] \(mesaj, privacy: .public) (\(ana, privacy: .public))")
+    }
+}
 
 /// Tabanda ne var.
 enum UygulamaAsamasi {
@@ -180,6 +194,7 @@ final class UygulamaYoneticisi: ObservableObject {
         cuzdaniBagla()
         seriyiBagla()
         sobiTestiBagla()
+        YonetimGunlugu.yaz("yonetici kuruldu (girisAtla \(girisAtla))")
     }
 
     deinit {
@@ -193,6 +208,7 @@ final class UygulamaYoneticisi: ObservableObject {
     /// GirisAkisi.girisYapildi.
     @MainActor
     func girisYapildi() {
+        YonetimGunlugu.yaz("giris yapildi -> kabuk")
         misafir = false
         hesabaGec(kimlikServisi.mevcutOturum?.uid)
         ilkOgreticiIlerlemesiBekliyor = false
@@ -228,6 +244,7 @@ final class UygulamaYoneticisi: ObservableObject {
     /// ekranı (ilkDerstenSonraGiriseGec).
     @MainActor
     func misafirOlarakDevam(_ hedef: GirisMisafirHedefi) {
+        YonetimGunlugu.yaz("misafir olarak devam (hedef \(String(describing: hedef)))")
         misafir = true
         hesabaGec(nil)
         asama = .kabuk
@@ -239,7 +256,10 @@ final class UygulamaYoneticisi: ObservableObject {
 
     /// MainActivity.showFirstTutorial: kısım 1'in ders listesi, `getLessonItem(1)`.
     private func ilkOgreticiyiAc() {
-        guard let ilk = ilerleme.ilkOgreticiOgesi() else { return }
+        guard let ilk = ilerleme.ilkOgreticiOgesi() else {
+            YonetimGunlugu.yaz("ilk ogretici ogesi bulunamadi: ogretici acilmadi")
+            return
+        }
         var hedef = YonetimOgreticiHedefi(
             baslik: ilk.baslik,
             ogreticiNo: ilk.ogreticiNo,
@@ -250,6 +270,7 @@ final class UygulamaYoneticisi: ObservableObject {
         hedef.ilkAcilis = true
         ogreticiAcildi(hedef)
         ac(.ogretici(hedef))
+        YonetimGunlugu.yaz("ilk ogretici katmani acildi (no \(ilk.ogreticiNo), katman sayisi \(katmanlar.count))")
     }
 
     /// Bir öğretici açılırken (Android TutorialFragment.onViewCreated: tutorialNumber == 1 ise

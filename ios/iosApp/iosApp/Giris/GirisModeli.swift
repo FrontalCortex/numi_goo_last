@@ -254,6 +254,7 @@ final class GirisModeli: ObservableObject {
         surumServisi.cekmeyiBaslat()
         let bekleme: Int64 = SplashRules.shared.SPLASH_ANIMATION_MS
         try? await Task.sleep(nanoseconds: UInt64(bekleme) * 1_000_000)
+        YonetimGunlugu.yaz("acilis bekleme bitti (ekran \(String(describing: ekran)))")
         guard ekran == .acilis else { return }
         let azami: Int64 = SplashRules.shared.FORCE_UPDATE_MAX_WAIT_AFTER_SPLASH_MS
         if await surumServisi.kilitliMi(azamiBeklemeMs: azami) {
@@ -273,6 +274,7 @@ final class GirisModeli: ObservableObject {
             loginStartEverShown: depo.baslangicGosterildi,
             hasExistingLogin: oturumVar
         )
+        YonetimGunlugu.yaz("acilis yonlendirmesi: \(yol.name) (oturum \(oturumVar))")
         if yol == SplashRules.Route.checkSingleDevice {
             await tekCihazDenetimi()
         } else if yol == SplashRules.Route.guestMain {

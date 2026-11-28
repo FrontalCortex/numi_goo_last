@@ -19,8 +19,13 @@ import UIKit
 // kategorisi (sessiz anahtar çalmayı engellemez) + `.mixWithOthers` (başkasının sesini kesmez).
 // Ses oturumu ilk çalmada kurulur (çalıcının kurulması ucuzdur).
 //
-// İş parçacığı: protokol yöntemleri ana iş parçacığından çağrılır; başka iş parçacığından
-// gelirse ana iş parçacığına aktarılır.
+// İş parçacığı: protokol yöntemleri ana iş parçacığından çağrılır ama ses işleri (oturum kurulumu,
+// AVAudioPlayer kurma/hazırlama/çalma) ANA İŞ PARÇACIĞINDA YAPILMAZ: `SesOturumu.kuyruk` seri
+// kuyruğuna aktarılır, çağıran hemen döner. Neden: 13. derlemeden beri gerçek akışta ilk öğreticinin
+// ilk adımı daktiloyu başlattıktan hemen sonra bu çalıcıyı çağırıyordu; çalıcı ana iş parçacığında
+// `AVAudioSession.setActive` + `AVAudioPlayer(contentsOf:)` + `prepareToPlay` yapıyordu. Ses sunucusu
+// yavaş yanıt verirse (simülatörde ilk açılış) ana iş parçacığı bekler, daktilo zamanlayıcısı hiç
+// çalışmaz ve ekran 0 harfle (boş) kalır. Bütün durum (`calici`, bayraklar) yalnızca kuyrukta değişir.
 
 final class OgreticiGercekSesCalici: OgreticiSesCalici {
     /// Ayar anahtarları (Android AppPrefs ile aynı adlar). Ayar ekranı yazılınca bu anahtarlar yazılır.
@@ -31,6 +36,9 @@ final class OgreticiGercekSesCalici: OgreticiSesCalici {
     private static let uzantilar: [String] = ["mp3", "wav", "m4a", "flac"]
 
     private let ayarlar: UserDefaults
+    /// Ses işlerinin kuyruğu (oturum kurulumuyla aynı: kurulum ilk çalmadan önce biter).
+    private let kuyruk: DispatchQueue = SesOturumu.kuyruk
+    /// Yalnızca `kuyruk` üzerinde okunur/yazılır.
     private var calici: AVAudioPlayer? = nil
     private var oturumKuruldu: Bool = false
     /// Arka plana geçerken biz duraklattık mı (Android wasPausedByLifecycle).
@@ -43,12 +51,12 @@ final class OgreticiGercekSesCalici: OgreticiSesCalici {
         let birakirken: NSObjectProtocol = merkez.addObserver(
             forName: UIApplication.willResignActiveNotification, object: nil, queue: OperationQueue.main
         ) { [weak self] (_: Notification) in
-            self?.arkaPlanaGecildi()
+            self?.yasamDongusuOlayi(arkaPlan: true)
         }
         let donerken: NSObjectProtocol = merkez.addObserver(
             forName: UIApplication.didBecomeActiveNotification, object: nil, queue: OperationQueue.main
         ) { [weak self] (_: Notification) in
-            self?.onPlanaDonuldu()
+            self?.yasamDongusuOlayi(arkaPlan: false)
         }
         gozlemciler = [birakirken, donerken]
     }
@@ -57,13 +65,18 @@ final class OgreticiGercekSesCalici: OgreticiSesCalici {
         for g in gozlemciler {
             NotificationCenter.default.removeObserver(g)
         }
-        calici?.stop()
+        // Çalan ses nesneyle birlikte susar; durdurma kuyruğa aktarılır (nesne artık yok, çalıcı taşınır).
+        if let c = calici {
+            kuyruk.async {
+                c.stop()
+            }
+        }
     }
 
     // MARK: OgreticiSesCalici
 
     func adimSesiniCal(anahtar: String?, uzakYol: String?) {
-        anaIsParcacigindaCalistir { [weak self] in
+        kuyrukta { [weak self] in
             guard let self = self else { return }
             // Android: önce önceki ses bırakılır, sonra ayar ve kaynak denetlenir (ses yoksa sessiz kalınır).
             self.sustur()
@@ -74,7 +87,7 @@ final class OgreticiGercekSesCalici: OgreticiSesCalici {
     }
 
     func sonucSesiniCal(dogru: Bool) {
-        anaIsParcacigindaCalistir { [weak self] in
+        kuyrukta { [weak self] in
             guard let self = self else { return }
             guard self.ayarAcikMi(OgreticiGercekSesCalici.sesAcikAnahtari) else { return }
             // Android: correct_answer_sound 0.3, incorrect_answer_sound 1.0.
@@ -88,19 +101,16 @@ final class OgreticiGercekSesCalici: OgreticiSesCalici {
     }
 
     func durdur() {
-        anaIsParcacigindaCalistir { [weak self] in
+        kuyrukta { [weak self] in
             self?.sustur()
         }
     }
 
     // MARK: İç işler
 
-    private func anaIsParcacigindaCalistir(_ isi: @escaping () -> Void) {
-        if Thread.isMainThread {
-            isi()
-        } else {
-            DispatchQueue.main.async(execute: isi)
-        }
+    /// İşi ses kuyruğuna aktarır; çağıran (ana iş parçacığı) beklemez.
+    private func kuyrukta(_ isi: @escaping () -> Void) {
+        kuyruk.async(execute: isi)
     }
 
     /// Anahtar yoksa varsayılan açık (Android getBoolean(…, true)).
@@ -126,16 +136,22 @@ final class OgreticiGercekSesCalici: OgreticiSesCalici {
         return nil
     }
 
+    /// Ortak kurulum (Ortak/SesCalar.swift): `.playback` + `.mixWithOthers`, bir kez. Zaten ses
+    /// kuyruğundayız: kurulum burada, çalmadan önce yapılır.
     private func oturumuKur() {
         if oturumKuruldu { return }
         oturumKuruldu = true
-        // Ortak kurulum (Ortak/SesCalar.swift): `.playback` + `.mixWithOthers`, bir kez.
-        SesOturumu.kur()
+        SesOturumu.kuyruktaKur()
     }
 
+    /// Kuyrukta çalışır (sustur → kur → çal tek iş içinde, sıra bozulmaz).
     private func cal(ad: String, sesDuzeyi: Float) {
-        guard let adres = dosyaAdresi(ad) else { return }
+        guard let adres = dosyaAdresi(ad) else {
+            YonetimGunlugu.yaz("ogretici sesi bulunamadi: \(ad)")
+            return
+        }
         oturumuKur()
+        let baslangic: Date = Date()
         do {
             let yeni: AVAudioPlayer = try AVAudioPlayer(contentsOf: adres)
             yeni.volume = sesDuzeyi
@@ -147,9 +163,23 @@ final class OgreticiGercekSesCalici: OgreticiSesCalici {
             // Çözülemeyen dosya: sessiz geç (Android'de de hata yalnızca günlüğe yazılır).
             calici = nil
         }
+        let sureMs: Int = Int(Date().timeIntervalSince(baslangic) * 1000.0)
+        YonetimGunlugu.yaz("ogretici sesi calindi: \(ad) (\(sureMs) ms)")
     }
 
     // MARK: Yaşam döngüsü (Android onPause / onResume)
+
+    /// Bildirim ana iş parçacığında gelir; iş ses kuyruğunda yapılır.
+    private func yasamDongusuOlayi(arkaPlan: Bool) {
+        kuyrukta { [weak self] in
+            guard let self = self else { return }
+            if arkaPlan {
+                self.arkaPlanaGecildi()
+            } else {
+                self.onPlanaDonuldu()
+            }
+        }
+    }
 
     private func arkaPlanaGecildi() {
         guard let c = calici, c.isPlaying else { return }

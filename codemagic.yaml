@@ -82,10 +82,25 @@ workflows:
           xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
           xcrun simctl install "$UDID" build/dd/Build/Products/Debug-iphonesimulator/iosApp.app
-          # Açılış ekranı (giriş akışı).
+          # Açılış (argümansız, gerçek akış): 3., 8. (ekran.png) ve 15. saniyede kare; 8. saniyede ana
+          # iş parçacığının yığın örneği (takıldıysa nerede); sonra uygulamanın birleşik günlüğü
+          # (YonetimGunlugu satırları "[sorobit]" ile başlar).
           xcrun simctl launch "$UDID" com.sorobit.app
+          sleep 3
+          xcrun simctl io "$UDID" screenshot build/ekran-03.png || true
+          sleep 5
+          xcrun simctl io "$UDID" screenshot build/ekran.png || true
+          UYG_PID=$(pgrep -f "iosApp.app/iosApp" | head -1)
+          echo "Uygulama süreci: $UYG_PID"
+          if [ -n "$UYG_PID" ]; then sample "$UYG_PID" 2 -file build/ilk-acilis-ornek.txt || true; fi
+          sleep 5
+          xcrun simctl io "$UDID" screenshot build/ekran-15.png || true
+          xcrun simctl spawn "$UDID" log show --last 1m --style compact --predicate 'process == "iosApp"' > build/ilk-acilis.log 2>&1 || true
+          xcrun simctl terminate "$UDID" com.sorobit.app || true
+          # Hesaplı açılış: `-oturum acik` hazır öğrenci hesabının oturumunu açık başlatır (Yonetim/SahteOrtam.swift).
+          xcrun simctl launch "$UDID" com.sorobit.app -oturum acik || true
           sleep 8
-          xcrun simctl io "$UDID" screenshot build/ekran.png
+          xcrun simctl io "$UDID" screenshot build/ekran-oturum.png || true
           xcrun simctl terminate "$UDID" com.sorobit.app || true
           # Ekran galerisi: her ekran -ekran <ad> ile tek tek açılıp görüntülenir
           # (adlar: iosApp/Yonetim/EkranGalerisi.swift içindeki EkranGalerisi.adlar).
@@ -98,7 +113,9 @@ workflows:
           done
     # Yollar tam verilir: göreli yollar working_directory nedeniyle bulunamadı.
     artifacts:
-      - $CM_BUILD_DIR/ios/iosApp/build/ekran.png
+      - $CM_BUILD_DIR/ios/iosApp/build/ekran*.png
+      - $CM_BUILD_DIR/ios/iosApp/build/ilk-acilis.log
+      - $CM_BUILD_DIR/ios/iosApp/build/ilk-acilis-ornek.txt
       - $CM_BUILD_DIR/ios/iosApp/build/ekranlar/*.png
       - $CM_BUILD_DIR/ios/iosApp/build/xcodebuild.log
       # Ortak Kotlin kodunun Swift'e görünen adları (derleme hatası ayıklamak için).

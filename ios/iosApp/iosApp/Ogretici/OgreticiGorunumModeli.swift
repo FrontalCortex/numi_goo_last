@@ -88,8 +88,18 @@ final class OgreticiGorunumModeli: ObservableObject {
 
     /// Ekran göründü: ilk adım bir sonraki turda gösterilir (abaküs görünümü bağlansın diye).
     func gorundu() {
-        if basladi { return }
+        if basladi {
+            // Görünüm kaybolup yeniden göründü: `kayboldu` daktiloyu durdurmuştu, kaldığı harften sürer
+            // (yoksa metin yarım/boş kalırdı; `basladi` ilk gösterimi bir daha çalıştırmaz).
+            YonetimGunlugu.yaz("ogretici yeniden gorundu (harf \(gorunenHarf)/\(adim.metin.count))")
+            let yarim: Bool = gorunenHarf < adim.metin.count
+            if !cikildi && adim.daktilo && yarim && daktiloZamanlayici == nil && !daktiloYasamDongusuyleDurdu {
+                daktiloZamanlayiciyiKur(aralik: daktiloAraligi)
+            }
+            return
+        }
         basladi = true
+        YonetimGunlugu.yaz("ogretici gorundu (no \(baslangic.ogreticiNo), ilk acilis \(baslangic.ilkAcilis))")
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let k = self.kopru else { return }
             self.calistir(k.basla())
@@ -97,6 +107,7 @@ final class OgreticiGorunumModeli: ObservableObject {
     }
 
     func kayboldu() {
+        YonetimGunlugu.yaz("ogretici kayboldu (harf \(gorunenHarf)/\(adim.metin.count))")
         daktiloyuDurdur()
         ses.durdur()
     }
@@ -265,6 +276,8 @@ final class OgreticiGorunumModeli: ObservableObject {
         adim = veri
         secilenSecenekler = []
         daktiloyuBaslat(veri)
+        YonetimGunlugu.yaz("ogretici adimi gosterildi (\(veri.metin.count) harf, daktilo \(veri.daktilo), ses \(veri.sesAnahtari ?? "-"))")
+        // Ses çalıcısı beklemeden döner (gerçek çalıcı işi ses kuyruğunda yapar; OgreticiSesCalar.swift).
         ses.adimSesiniCal(anahtar: veri.sesAnahtari, uzakYol: veri.uzakSes)
         if hareketler.isEmpty { return }
         // Süren animasyonu abaküs kendisi bildirir (ogreticiMesgul); bir animasyonun yerini başkası
@@ -318,6 +331,7 @@ final class OgreticiGorunumModeli: ObservableObject {
 
     /// Uygulama arka plana geçiyor (Android TutorialFragment.onPause): daktilo kaldığı harfte durur.
     func arkaPlanaGecildi() {
+        YonetimGunlugu.yaz("ogretici arka plana gecti (harf \(gorunenHarf)/\(adim.metin.count))")
         if daktiloZamanlayici == nil { return }
         daktiloyuDurdur()
         daktiloYasamDongusuyleDurdu = true
@@ -335,6 +349,7 @@ final class OgreticiGorunumModeli: ObservableObject {
         let toplam: Int = adim.metin.count
         if gorunenHarf >= toplam {
             daktiloyuDurdur()
+            YonetimGunlugu.yaz("ogretici daktilosu bitti (\(toplam) harf)")
             return
         }
         gorunenHarf += 1
