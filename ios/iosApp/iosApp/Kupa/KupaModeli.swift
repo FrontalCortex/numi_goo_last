@@ -503,14 +503,11 @@ final class KupaModeli: ObservableObject {
         }
     }
 
-    /// Yerel saat diliminde "yyyy-MM-dd" (Android CupHistoryRepository.todayId; geçmiş grafiği günü).
+    /// Yerel saat diliminde "yyyy-MM-dd" (ortak: CupHistoryRepository.todayId; Android CupScoreService.buildSubmitPayload
+    /// varsayılanı, geçmiş grafiği günü).
     private static func bugunKimligi() -> String {
-        let bicim = DateFormatter()
-        bicim.calendar = Calendar(identifier: .gregorian)
-        bicim.locale = Locale(identifier: "en_US_POSIX")
-        bicim.timeZone = TimeZone.current
-        bicim.dateFormat = "yyyy-MM-dd"
-        return bicim.string(from: Date())
+        let dilim: Kotlinx_datetimeTimeZone = Kotlinx_datetimeTimeZone.companion.currentSystemDefault()
+        return CupHistoryRepository.shared.todayId(nowMs: KupaZamanKt.kupaNowMs(), timeZone: dilim)
     }
 
     /// Android animateCupScore: 1 saniyede eski skordan yenisine sayar, bitince delta metnini gizler.

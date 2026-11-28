@@ -116,11 +116,11 @@ struct ProfilHesapAyarlariEkrani: View {
                     eylem: { gezinme.ac(.sesAyarlari) }
                 )
                 ProfilStil.ayarAyirici.frame(height: 1)
-                // Dil (Android: AppLanguage; seçim uygulamayı yeniden başlatır). Çoklu dil iOS'ta henüz açılmadı:
-                // satır Android'deki yerinde, değer "Türkçe"; seçicide yalnızca Türkçe etkin.
+                // Dil (Android: AppLanguage; seçim uygulamayı yeniden başlatır, iOS'ta kök görünüm yeniden
+                // kurulur). Değer kayıtlı seçimin adı (Android: languageLabel(AppLanguage.choice)).
                 ProfilAyarSatiri(
                     metin: Metin.al("settings_language"),
-                    deger: Metin.al("settings_language_tr"),
+                    deger: ProfilDilSecici.etiket(Metin.secim),
                     eylem: { dilSeciciAcik = true }
                 )
             }
@@ -156,7 +156,7 @@ struct ProfilHesapAyarlariEkrani: View {
             UIApplication.shared.open(adres)
         } else {
             // Android: `ui_play_store_acilamadi` ("Play Store açılamadı"); iOS karşılığı metinlerde yok.
-            gezinme.bildir("App Store açılamadı")
+            gezinme.bildir(Metin.al("ios_profil_app_store_acilamadi"))
         }
     }
 
@@ -169,10 +169,19 @@ struct ProfilHesapAyarlariEkrani: View {
 
 /// Dil seçimi (Android: showLanguagePicker — başlık "Dil", tek seçimli liste, "Vazgeç").
 /// Seçenekler Android'deki sırayla: Telefonun dili, Türkçe, English, Bahasa Indonesia, العربية
-/// (dil adları kendi dillerinde). ÇOKLU DİL HENÜZ AÇILMADI: yalnızca Türkçe seçili ve etkin, diğerleri soluk ve
-/// dokunulmaz. Dil açılınca `Metin.diliAyarla(_:)` çağrılmalı ve seçim saklanmalı (Android: AppLanguage.apply).
+/// (dil adları kendi dillerinde). Etkin olanlar: Telefonun dili ve `Metin.acikDiller` (bu sürümde Türkçe ve
+/// English); açılmamış diller soluk ve dokunulmaz. Seçim `Metin.secimiUygula` ile saklanır ve uygulanır
+/// (Android: AppLanguage.apply); aynı seçenek seçilirse yalnızca pencere kapanır.
 struct ProfilDilSecici: View {
     let kapat: () -> Void
+
+    /// Seçimin görünen adı (Android: AccountSettingsFragment.languageLabel).
+    static func etiket(_ secim: String) -> String {
+        if secim == Metin.sistemSecimi {
+            return Metin.al("settings_language_system")
+        }
+        return Metin.al("settings_language_" + secim)
+    }
 
     private struct Secenek: Identifiable {
         let id: String
@@ -181,13 +190,18 @@ struct ProfilDilSecici: View {
     }
 
     private var secenekler: [Secenek] {
-        return [
-            Secenek(id: "system", etiket: Metin.al("settings_language_system"), etkin: false),
-            Secenek(id: "tr", etiket: Metin.al("settings_language_tr"), etkin: true),
-            Secenek(id: "en", etiket: Metin.al("settings_language_en"), etkin: false),
-            Secenek(id: "id", etiket: Metin.al("settings_language_id"), etkin: false),
-            Secenek(id: "ar", etiket: Metin.al("settings_language_ar"), etkin: false),
+        var liste: [Secenek] = [
+            Secenek(id: Metin.sistemSecimi, etiket: ProfilDilSecici.etiket(Metin.sistemSecimi), etkin: true)
         ]
+        for kod in Metin.tumDiller {
+            liste.append(Secenek(id: kod, etiket: ProfilDilSecici.etiket(kod), etkin: Metin.acikDiller.contains(kod)))
+        }
+        return liste
+    }
+
+    private func sec(_ kod: String) {
+        kapat()
+        Metin.secimiUygula(kod)
     }
 
     var body: some View {
@@ -209,7 +223,12 @@ struct ProfilDilSecici: View {
                 .padding(.top, 20)
                 .padding(.bottom, 8)
             ForEach(secenekler) { secenek in
-                ProfilDilSatiri(etiket: secenek.etiket, secili: secenek.id == "tr", etkin: secenek.etkin, sec: kapat)
+                ProfilDilSatiri(
+                    etiket: secenek.etiket,
+                    secili: secenek.id == Metin.secim,
+                    etkin: secenek.etkin,
+                    sec: { sec(secenek.id) }
+                )
             }
             HStack(spacing: 0) {
                 Spacer(minLength: 0)

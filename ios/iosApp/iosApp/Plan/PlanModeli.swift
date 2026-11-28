@@ -230,19 +230,11 @@ final class PlanModeli: ObservableObject {
         ctaYenile()
     }
 
-    /// Android: SubscriptionCta.apply — deneme yalnızca uygun kullanıcıya vaat edilir.
+    /// Android: SubscriptionCta.apply — deneme yalnızca uygun kullanıcıya vaat edilir
+    /// (kural ortak koddadır: SubscriptionCta.label; Swift tarafı MagazaAbonelikCta).
     private func ctaYenile() {
-        let lite: Bool = seciliPlan == "Lite"
-        guard let gun = denemeGunu else {
-            ctaMetni = Metin.al(lite ? "sub_cta_no_trial_lite" : "sub_cta_no_trial_pro")
-            return
-        }
-        // 7, 14, 21… gün "1 hafta / 2 hafta" olarak daha doğal okunuyor.
-        if gun % 7 == 0 {
-            ctaMetni = Metin.al("sub_cta_trial_weeks", gun / 7)
-        } else {
-            ctaMetni = Metin.al("sub_cta_trial_days", gun)
-        }
+        // Android: SubscriptionCta.apply(billing, btn, BillingCatalog.subscriptionForPlanName(selectedPlan)).
+        ctaMetni = MagazaAbonelikCta.metin(denemeGunu: denemeGunu, urunKimligi: seciliKimlik)
     }
 
     private func bildir(_ metin: String) {

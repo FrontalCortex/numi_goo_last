@@ -97,7 +97,7 @@ struct GirisSifremiUnuttumGorunumu: View {
                     GirisMetinAlani(ipucu: Metin.al("fragment_teacher_forgot_password_email_et_email_hint"), metin: $model.sifirlamaEposta, tur: .eposta)
                         .padding(.top, 16)
                     GirisDoluDugme(
-                        metin: model.sifirlamaGonderiliyor ? metinler.BUTTON_SENDING : metinler.BUTTON_CONTINUE,
+                        metin: Metin.cevir(model.sifirlamaGonderiliyor ? metinler.BUTTON_SENDING : metinler.BUTTON_CONTINUE),
                         etkin: !model.sifirlamaGonderiliyor
                     ) {
                         GirisStil.klavyeyiKapat()
@@ -143,7 +143,7 @@ struct GirisYeniSifreGorunumu: View {
                     GirisMetinAlani(ipucu: Metin.al("fragment_teacher_new_password_et_new_password_confirm_hint"), metin: $model.yeniSifreTekrar, tur: .sifre)
                         .padding(.top, 12)
                     GirisDoluDugme(
-                        metin: model.yeniSifreGuncelleniyor ? metinler.BUTTON_UPDATING : metinler.BUTTON_UPDATE_PASSWORD,
+                        metin: Metin.cevir(model.yeniSifreGuncelleniyor ? metinler.BUTTON_UPDATING : metinler.BUTTON_UPDATE_PASSWORD),
                         etkin: !model.yeniSifreGuncelleniyor
                     ) {
                         GirisStil.klavyeyiKapat()

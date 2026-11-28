@@ -1,4 +1,5 @@
 import Foundation
+import Shared
 
 // Uygulama metinleri.
 //
@@ -7,20 +8,45 @@ import Foundation
 //   Android: getString(R.string.otp_resend_cooldown, 30)  -> Metin.al("otp_resend_cooldown", 30)
 //
 // Kaynak dosyalar `<dil>.lproj/Localizable.strings` içindedir ve elle düzenlenmez; üretici:
-//   node ios/tools/metin-donustur/donustur.js
+//   node ios/tools/metin-donustur/donustur.js --diller tr,en
+// Android'de karşılığı olmayan, iOS'a özgü metinler (`ios_` önekli) elle yazılan
+// `<dil>.lproj/IosOzel.strings` dosyasındadır; araç bu dosyaya dokunmaz. Arama sırası:
+// etkin dilin Localizable'ı, etkin dilin IosOzel'i, sonra aynı ikisi varsayılan dilde (Türkçe).
 //
-// Dil seçimi: uygulama şimdilik Türkçe'ye sabittir. Paket yalnızca `tr.lproj` içerirken
-// geliştirme bölgesi `en` olduğundan, `Bundle.main` üzerinden yapılan olağan arama
-// (NSLocalizedString) telefonun dili Türkçe değilse `tr.lproj`'u seçmeyebilir ve anahtarın
-// kendisini döndürür. Bu yüzden burada `tr.lproj` paketi açıkça yüklenir. İleride İngilizce ve
-// Endonezce `.lproj` klasörleri eklendiğinde `diliAyarla` ile dil değiştirilebilir.
+// Dil seçimi (Android: AppLanguage). Uygulama içi seçici Profil > Hesap Ayarları > Dil'dedir;
+// seçim UserDefaults'ta saklanır, varsayılan "Telefonun dili"dir. Telefonun dili açık dillerden
+// biri değilse İngilizce seçilir (Android: AppLanguage.supported). Eksik anahtar Türkçe'den okunur
+// (Android: values-en'de olmayan anahtar varsayılan values/'tan gelir). Etkin dilin paketi
+// `Bundle(path:)` ile açıkça yüklenir; `Bundle.main` üzerinden olağan arama (NSLocalizedString)
+// telefonun diline göre seçim yaptığı için kullanılmaz. Dil değişince kök görünüm yeniden kurulur
+// (`MetinDilDurumu`, `MetinDilKoku`; Android uygulamayı yeniden başlatır).
 //
 // Biçimlendirme `String(format:)`'a doğrudan bırakılmaz: Android'de `%s` her türden değeri
 // kabul eder (sayı dahil), iOS'ta ise `%@` yerine sayı verilirse uygulama çöker. Buradaki
 // biçimleyici değerin türüne bakar; yanlış türde ya da eksik değer çökertmez.
 enum Metin {
-    /// Uygulamanın sabitlendiği dil.
+    /// Varsayılan dil: eksik anahtarlar bu dilden okunur (Android: values/ Türkçe).
     static let varsayilanDil = "tr"
+
+    /// Uygulamanın bütün dilleri, seçicideki sırayla (Android: AppLanguage.CHOICES, "system" hariç).
+    static let tumDiller: [String] = ["tr", "en", "id", "ar"]
+
+    /// Bu sürümde açık diller: `.lproj`'u pakette olan ve seçicide etkin görünenler. Endonezce ve
+    /// Arapça açılırken buraya eklenir ve `donustur.js --diller tr,en,id,ar` çalıştırılır
+    /// (Arapça için ayrıca sağdan sola düzen ve yazı tipi gerekir).
+    static let acikDiller: [String] = ["tr", "en"]
+
+    /// "Telefonun dili" seçimi (Android: AppLanguage.SYSTEM).
+    static let sistemSecimi = "system"
+
+    /// Seçimin UserDefaults anahtarı (Android: SharedPreferences "app_language" / "choice").
+    static let secimAnahtari = "app_language_choice"
+
+    /// Ekran galerisi için başlatma argümanı: `-dil en` seçimi kaydetmeden o dili açar.
+    static let dilArgumani = "-dil"
+
+    /// iOS'a özgü metinlerin tablosu (`<dil>.lproj/IosOzel.strings`).
+    private static let iosOzelTablo = "IosOzel"
 
     /// Şu an kullanılan dil kodu ("tr", "en", "id" …).
     private(set) static var dil: String = varsayilanDil
@@ -93,13 +119,123 @@ enum Metin {
         return ara(ad) != nil
     }
 
+    /// Ortak katalogdaki Türkçe ders metnini (ad, ünite adı, yarış adı, ipucu) seçili dile çevirir
+    /// (Android: GlobalLessonData.localizeLessonText). Tablo `DersMetinAnahtarlari.swift`'tedir
+    /// (ios/tools/ders-katalog/uret.js üretir). Tanınmayan metin `cevir` ile denenir, o da
+    /// bulamazsa olduğu gibi döner. Ders adları kayıtlarda kimlik olarak Türkçe kalır; yalnızca
+    /// gösterirken çağrılmalıdır.
+    static func ders(_ turkce: String) -> String {
+        if dil == varsayilanDil || turkce.isEmpty {
+            return turkce
+        }
+        if let anahtar = DersMetinAnahtarlari.tablo[turkce], let deger = ara(anahtar) {
+            return deger
+        }
+        return cevir(turkce)
+    }
+
+    /// Ortak koddan gelen Türkçe sabit metni (Android'de bir string anahtarından okunan) seçili dile
+    /// çevirir: metin `tr.lproj/Localizable.strings`'te bir anahtarın değeriyse o anahtarın etkin
+    /// dildeki karşılığı döner, değilse metnin kendisi. Biçimli (`%1$@` içeren) kalıplar bu yolla
+    /// bulunmaz. Aynı Türkçe metni taşıyan birden çok anahtar varsa herhangi biri seçilir.
+    static func cevir(_ turkce: String) -> String {
+        if dil == varsayilanDil || turkce.isEmpty {
+            return turkce
+        }
+        guard let anahtar = turkceTers[turkce], let deger = ara(anahtar) else {
+            return turkce
+        }
+        return deger
+    }
+
+    /// Türkçe değer → anahtar (ilk kullanımda varsayılan dilin dosyasından bir kez kurulur).
+    private static let turkceTers: [String: String] = tersTabloKur()
+
+    private static func tersTabloKur() -> [String: String] {
+        var sonuc: [String: String] = [:]
+        for tablo in ["Localizable", iosOzelTablo] {
+            guard let yol = yedekPaket.path(forResource: tablo, ofType: "strings"),
+                  let sozluk = NSDictionary(contentsOfFile: yol) as? [String: String] else {
+                continue
+            }
+            for (anahtar, deger) in sozluk where !anahtar.contains("#") {
+                if sonuc[deger] == nil {
+                    sonuc[deger] = anahtar
+                }
+            }
+        }
+        return sonuc
+    }
+
     // MARK: - Dil
 
+    /// Kayıtlı seçim: `sistemSecimi` ya da açık dillerden biri (Android: AppLanguage.choice).
+    static var secim: String {
+        let kayitli: String = UserDefaults.standard.string(forKey: secimAnahtari) ?? sistemSecimi
+        if kayitli == sistemSecimi || acikDiller.contains(kayitli) {
+            return kayitli
+        }
+        return sistemSecimi
+    }
+
+    /// Uygulama açılırken bir kez çağrılır (SorobitApp.init): `-dil <kod>` başlatma argümanı varsa o dil
+    /// (kaydedilmez; ekran galerisi), yoksa kayıtlı seçim uygulanır.
+    static func baslat() {
+        let argumanlar: [String] = ProcessInfo.processInfo.arguments
+        if let i = argumanlar.firstIndex(of: dilArgumani), i + 1 < argumanlar.count {
+            diliAyarla(cozumle(argumanlar[i + 1]))
+            return
+        }
+        diliAyarla(cozumle(secim))
+    }
+
+    /// Seçimi kaydeder, dili değiştirir ve kök görünümü yeniden kurdurur (Android: AppLanguage.apply —
+    /// kaydedip uygulamayı baştan açar). Seçim değişmediyse hiçbir şey yapmaz. Ana iş parçacığından.
+    static func secimiUygula(_ yeni: String) {
+        if yeni == secim {
+            return
+        }
+        UserDefaults.standard.set(yeni, forKey: secimAnahtari)
+        diliAyarla(cozumle(yeni))
+        MetinDilDurumu.ortak.yenile()
+    }
+
+    /// Seçimi dil koduna çevirir (Android: AppLanguage.resolve / supported): açık bir dil olduğu gibi;
+    /// "system" (ya da tanınmayan değer) telefonun ilk tercih ettiği dile göre: açık dillerden biriyse
+    /// o, değilse İngilizce (açıksa). Endonezcenin eski kodu "in" "id" sayılır.
+    static func cozumle(_ secilen: String) -> String {
+        if acikDiller.contains(secilen) {
+            return secilen
+        }
+        let telefon: String = Locale.preferredLanguages.first ?? varsayilanDil
+        var kod: String = telefon
+        if let tire = telefon.firstIndex(where: { $0 == "-" || $0 == "_" }) {
+            kod = String(telefon[..<tire])
+        }
+        kod = kod.lowercased()
+        if kod == "in" {
+            kod = "id"
+        }
+        if acikDiller.contains(kod) {
+            return kod
+        }
+        return acikDiller.contains("en") ? "en" : varsayilanDil
+    }
+
+    /// Seçili dilin yereli: tarih, sayı ve büyük harf dönüşümleri için (Android: Locale.getDefault(),
+    /// AppLanguage.wrap ayarlar). Arapça Batı rakamlı (Android: ar-u-nu-latn).
+    static var yerel: Locale {
+        if dil == "ar" {
+            return Locale(identifier: "ar@numbers=latn")
+        }
+        return Locale(identifier: dil)
+    }
+
     /// Uygulama dilini değiştirir. Paketi olmayan bir dil verilirse varsayılan dile düşer.
-    /// `nil` verilirse telefonun dil tercihine göre paketteki en uygun dil seçilir.
-    /// Ana iş parçacığından çağrılmalıdır; açık ekranlar kendiliğinden yenilenmez.
+    /// `nil` verilirse kayıtlı seçim çözülür. Ana iş parçacığından çağrılmalıdır; açık ekranlar
+    /// kendiliğinden yenilenmez (bkz. `secimiUygula`).
     static func diliAyarla(_ kod: String?) {
-        let istenen: String = kod ?? (Bundle.main.preferredLocalizations.first ?? varsayilanDil)
+        let istenen: String = kod ?? cozumle(secim)
         if let paket = paketBul(istenen) {
             etkinPaket = paket
             dil = istenen
@@ -107,6 +243,8 @@ enum Metin {
             etkinPaket = yedekPaket
             dil = varsayilanDil
         }
+        // Ortak kodda cümleyi kendisi kuran anlatıcı (Android: AppLanguage.textLanguage()).
+        SubStepExplainer.shared.language = dil
     }
 
     /// `<kod>.lproj` klasörünü paket olarak açar; "en-GB" bulunamazsa "en" denenir.
@@ -123,16 +261,20 @@ enum Metin {
         return nil
     }
 
-    /// Sırasıyla etkin dil, varsayılan dil ve ana pakette arar; yoksa `nil`.
+    /// Sırasıyla etkin dil, varsayılan dil ve ana pakette arar (her pakette önce Localizable, sonra
+    /// IosOzel); yoksa `nil`.
     private static func ara(_ anahtar: String) -> String? {
         if anahtar.isEmpty {
             return nil
         }
         let paketler: [Bundle] = [etkinPaket, yedekPaket, Bundle.main]
+        let tablolar: [String?] = [nil, iosOzelTablo]
         for paket in paketler {
-            let deger = paket.localizedString(forKey: anahtar, value: yokIsareti, table: nil)
-            if deger != yokIsareti {
-                return deger
+            for tablo in tablolar {
+                let deger = paket.localizedString(forKey: anahtar, value: yokIsareti, table: tablo)
+                if deger != yokIsareti {
+                    return deger
+                }
             }
         }
         return nil

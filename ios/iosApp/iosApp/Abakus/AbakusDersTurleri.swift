@@ -131,8 +131,8 @@ struct AbakusDersBaslangici: Equatable {
             dersTuru: Int(girdi.lessonType),
             korMu: girdi.isBlinding,
             dersAdimi: Int(girdi.lessonStep),
-            baslik: girdi.title,
-            ipucu: girdi.lessonHint,
+            baslik: Metin.ders(girdi.title),
+            ipucu: Metin.ders(girdi.lessonHint),
             enKotuKupaSuresi: Int(girdi.worstCupTime),
             soruKaynagi: kaynak
         )

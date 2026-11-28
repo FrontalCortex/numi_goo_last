@@ -1,5 +1,10 @@
 // Android GlobalLessonData.kt içindeki kataloğu ortak koda çevirir ve test beklentilerini üretir.
-// Kullanım: node uret.js <GlobalLessonData.kt> <values/strings_lessons.xml> <cikti-katalog.kt> <cikti-beklenti.json>
+// Kullanım: node uret.js <GlobalLessonData.kt> <values/strings_lessons.xml> <cikti-katalog.kt> <cikti-beklenti.json> [<cikti-anahtar.swift>]
+//
+// 5. argüman (isteğe bağlı): Türkçe ders metni → strings_lessons.xml anahtarı (lesson_*) tablosunu Swift
+// dosyası olarak yazar (ios/iosApp/iosApp/Metin/DersMetinAnahtarlari.swift). iOS gösterirken
+// `Metin.ders(turkce)` ile seçili dile çevirir (Android: GlobalLessonData.localizeLessonText). Ortak
+// katalog Türkçe kalır: ders adları kayıtlarda kimlik olarak da kullanılıyor (Android'de de Türkçe yazılır).
 //
 // 2026-11 (soban-gamified-education dalı): Android artık ders adlarını ve ipuçlarını
 // `str(R.string.lesson_...)` ile strings_lessons.xml'den okuyor ve her item'a `stableId` veriyor.
@@ -7,7 +12,7 @@
 // böylece ortak katalog Türkçe sabit metin taşımaya devam eder. Android kaynak çözümlemesi uygulanır:
 // ters eğik çizgi + kesme → kesme, ters eğik çizgi + n → satır sonu, XML varlıkları.
 const fs = require('fs');
-const [, , kaynakYol, stringsYol, ciktiKt, ciktiJson] = process.argv;
+const [, , kaynakYol, stringsYol, ciktiKt, ciktiJson, ciktiSwift] = process.argv;
 function androidMetni(ham) {
   return ham
     .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&')
@@ -22,9 +27,12 @@ for (const m of stringsHam.matchAll(/<string name="([A-Za-z0-9_]+)"[^>]*>([\s\S]
 function ktMetni(t) {
   return '"' + t.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/\n/g, '\\n').replace(/\t/g, '\\t') + '"';
 }
+// Türkçe metin → anahtar (ilk görülen; aynı Türkçe metnin anahtarlarının İngilizcesi de aynı — 28.11.2026'da denetlendi).
+const anahtarlar = new Map();
 function strCoz(satir) {
   return satir.replace(/str\(R\.string\.([A-Za-z0-9_]+)\)/g, (m, ad) => {
     if (!(ad in metinler)) throw new Error('strings_lessons.xml içinde yok: ' + ad);
+    if (!anahtarlar.has(metinler[ad])) anahtarlar.set(metinler[ad], ad);
     return ktMetni(metinler[ad]);
   });
 }
@@ -67,6 +75,28 @@ for (let b = 0; b < baslar.length; b++) {
   kt += `internal fun katalogPart${baslar[b].part}(): List<LessonItem> = listOf(\n${donusmus}\n\n`;
 }
 fs.writeFileSync(ciktiKt, kt.replace(/\n+$/, '\n'));
+
+// ---- 1b) Swift anahtar tablosu (isteğe bağlı) ----
+if (ciktiSwift) {
+  const swMetni = (t) =>
+    '"' + t.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\t/g, '\\t').replace(/\r/g, '\\r') + '"';
+  const sw = [
+    '// ÜRETİLDİ: ios/tools/ders-katalog/uret.js (5. argüman) — elle düzenlemeyin.',
+    '// KAYNAK: app/src/main/java/com/example/app/GlobalLessonData.kt içindeki str(R.string.x) çağrıları ve',
+    '// app/src/main/res/values/strings_lessons.xml (Türkçe). Ortak katalogdaki (GlobalLessonDataKatalog.kt) Türkçe',
+    '// ders metnini (ad, ünite adı, yarış adı, ipucu) strings_lessons.xml anahtarına eşler; çeviri `Metin.ders(_:)`',
+    '// ile seçili dilin Localizable.strings dosyasından okunur (Android: GlobalLessonData.localizeLessonText).',
+    'enum DersMetinAnahtarlari {',
+    '    /// ' + anahtarlar.size + ' Türkçe metin.',
+    '    static let tablo: [String: String] = [',
+    ...[...anahtarlar].map(([tr, ad]) => '        ' + swMetni(tr) + ': ' + swMetni(ad) + ','),
+    '    ]',
+    '}',
+    '',
+  ].join('\n');
+  fs.writeFileSync(ciktiSwift, sw);
+  console.error('Swift anahtar tablosu:', anahtarlar.size, 'metin ->', ciktiSwift);
+}
 
 // ---- 2) Bağımsız ayrıştırıcı: LessonItem(...) çağrılarını oku ----
 function yorumsuz(metin) {

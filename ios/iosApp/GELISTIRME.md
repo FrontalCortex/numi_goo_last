@@ -32,7 +32,7 @@ Bu belge `ios/iosApp/` altında SwiftUI ekranı yazan herkes (insan ya da alt ot
 | Görsel | `Image("android_drawable_adi")` — Android `R.drawable` adıyla aynı. Ortak kodun String olarak verdiği kaynak adları doğrudan verilir. Kodla renklendirilen simgelerde `.renderingMode(.template)` + `.foregroundColor`. |
 | Renk | `Color("android_renk_adi")` — `colors.xml` adıyla aynı. |
 | Yazı tipi | `Tema.yazi(_ boyut: CGFloat, kalin: Bool = true) -> Font` (Baloo 2). Android teması bütün metinleri kalın çizer. |
-| Metin | `Metin.al("android_string_adi")` ve biçimli olanlar için `Metin.al("ad", arg1, arg2)` — `strings.xml` adıyla aynı. Android'de karşılığı olmayan metin gerekiyorsa Swift'te Türkçe sabit yazın ve raporda listeleyin. |
+| Metin | `Metin.al("android_string_adi")` ve biçimli olanlar için `Metin.al("ad", arg1, arg2)` — `strings.xml` adıyla aynı. Android'de karşılığı olmayan metin gerekiyorsa `ios_` önekli anahtarı `tr.lproj/IosOzel.strings` ve `en.lproj/IosOzel.strings`'e ekleyin (Türkçe sabit yazmayın). Metni `static let` içinde saklamayın (dil değişince eskir; hesaplanan özellik kullanın). Ortak katalogdan gelen ders adı/ipucu gösterilirken `Metin.ders(...)`, ortak koddan gelen Türkçe sabit mesaj `Metin.cevir(...)`. Tarih/sayı/büyük harf için `Metin.yerel`. |
 | Şekil arka planları | Android `shape`/`selector`/`ripple` drawable'ları asset olarak **yoktur**; SwiftUI'da çizilir. Çözülmüş renk ve köşe değerleri `ios/tools/gorsel-donustur/rapor.json` içindedir. |
 
 ### Lottie animasyonları

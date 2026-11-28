@@ -75,16 +75,17 @@ struct PlanProRozeti: View {
 
 /// Android'de karşılığı olmayan iOS metinleri. App Store kuralları (3.1.2) abonelik ekranında fiyatı ve
 /// dönemi, otomatik yenilemeyi, Kullanım Şartları ve Gizlilik Politikası bağlantılarını ve satın alımları
-/// geri yükleme yolunu ister; Android'de (Play) bunlar yoktur. Hepsi Türkçe sabittir.
+/// geri yükleme yolunu ister; Android'de (Play) bunlar yoktur. Metinler `<dil>.lproj/IosOzel.strings`
+/// içindedir (`ios_` önekli anahtarlar); dil değişiminde yeniden okunsun diye hesaplanan özelliklerdir.
 enum PlanMetin {
-    static let proAktif: String = "PRO ÜYELİĞİN AKTİF"
-    static let aboneligiYonet: String = "Aboneliği yönet"
-    static let kullanimSartlari: String = "Kullanım Şartları"
-    static let gizlilikPolitikasi: String = "Gizlilik Politikası"
-    static let geriYukle: String = "Satın alımları geri yükle"
-    static let geriYuklendi: String = "Satın alımların geri yüklendi."
-    static let geriYuklenecekYok: String = "Geri yüklenecek satın alım bulunamadı."
-    static let zatenSahip: String = "Bu plana zaten sahipsin."
+    static var proAktif: String { Metin.al("ios_plan_pro_aktif") }
+    static var aboneligiYonet: String { Metin.al("ios_plan_aboneligi_yonet") }
+    static var kullanimSartlari: String { Metin.al("ios_plan_kullanim_sartlari") }
+    static var gizlilikPolitikasi: String { Metin.al("ios_plan_gizlilik_politikasi") }
+    static var geriYukle: String { Metin.al("ios_magaza_geri_yukle") }
+    static var geriYuklendi: String { Metin.al("ios_magaza_geri_yuklendi") }
+    static var geriYuklenecekYok: String { Metin.al("ios_magaza_geri_yuklenecek_yok") }
+    static var zatenSahip: String { Metin.al("ios_plan_zaten_sahip") }
     /// Apple'ın abonelik yönetim sayfası (Ayarlar > Apple Kimliği > Abonelikler ile aynı yer).
     static let abonelikYonetimAdresi: String = "https://apps.apple.com/account/subscriptions"
 
@@ -95,20 +96,16 @@ enum PlanMetin {
     static func yenilemeAciklamasi(fiyat: String?, denemeGunu: Int?) -> String {
         var parcalar: [String] = []
         if let gun = denemeGunu {
-            let sure: String = gun % 7 == 0 ? "\(gun / 7) haftalık" : "\(gun) günlük"
-            let tutar: String = fiyat ?? "abonelik ücreti"
-            parcalar.append("\(sure) ücretsiz denemenin ardından abonelik, ayda \(tutar) üzerinden başlar.")
+            let sure: String = gun % 7 == 0
+                ? Metin.al("ios_plan_deneme_haftalik", gun / 7)
+                : Metin.al("ios_plan_deneme_gunluk", gun)
+            let tutar: String = fiyat ?? Metin.al("ios_plan_abonelik_ucreti")
+            parcalar.append(Metin.al("ios_plan_deneme_sonrasi", sure, tutar))
         } else if let tutar = fiyat {
-            parcalar.append("Abonelik ücreti: ayda \(tutar).")
+            parcalar.append(Metin.al("ios_plan_abonelik_ucreti_ayda", tutar))
         }
-        parcalar.append(
-            "Abonelik, geçerli dönem bitiminden en az 24 saat önce iptal edilmezse her ay otomatik olarak yenilenir. "
-                + "Ödeme, satın alma onayında Apple Kimliği hesabından alınır; yenileme ücreti dönem bitiminden önceki "
-                + "24 saat içinde hesabından tahsil edilir."
-        )
-        parcalar.append(
-            "Aboneliğini Ayarlar > Apple Kimliği > Abonelikler bölümünden yönetebilir ve istediğin zaman iptal edebilirsin."
-        )
+        parcalar.append(Metin.al("ios_plan_otomatik_yenileme"))
+        parcalar.append(Metin.al("ios_plan_iptal"))
         return parcalar.joined(separator: " ")
     }
 }

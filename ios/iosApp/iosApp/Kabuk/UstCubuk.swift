@@ -112,7 +112,7 @@ struct UstCubuk: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Altın: " + String(durum.elmas)))
+        .accessibilityLabel(Text(Metin.al("ios_erisim_altin", String(durum.elmas))))
     }
 
     /// energyIconFrame: kalp ve sonsuz enerjide üstünde "∞" (13pt, beyaz); o zaman sayı boşalır.
@@ -137,7 +137,7 @@ struct UstCubuk: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Enerji: " + (durum.sonsuzRozeti ? "∞" : durum.enerjiMetni)))
+        .accessibilityLabel(Text(Metin.al("ios_erisim_enerji", durum.sonsuzRozeti ? "∞" : durum.enerjiMetni)))
     }
 
     private var anahtarGostergesi: some View {
@@ -154,7 +154,7 @@ struct UstCubuk: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Anahtar: " + String(durum.anahtar)))
+        .accessibilityLabel(Text(Metin.al("ios_erisim_anahtar", String(durum.anahtar))))
     }
 
     private func gostergeYazisi(_ metin: String, renk: Color) -> some View {

@@ -1,7 +1,7 @@
 // Kaynak (yalnızca gömülü saf hesaplar; görünüm/animasyon kodu taşınmadı):
 //  - ChestResult.kt: record (rekor kırma görevi bayrağı), updateScoreProgressBar (oran + renk geçişi
 //    seçimi), resolveScoreCap, resolveCupPoint2Threshold, placeStarMarker (oran), maybeTriggerStarMarkers,
-//    playStarSoundForTier (ton), parseTimeToSeconds, formatSeconds, animasyon dosya listesi
+//    playStarSoundForTier (ton), parseTimeToSeconds, formatSeconds
 //  - ChestFragment.kt: changeCupIcon, starCountForChestIcon, lessonProgressKey
 //  - ChestTypeProgressHelper.kt (tamamı): resolvedChestIcon, starCountForChestIcon,
 //    shouldIncrementKarateForFirstThreeStars
@@ -14,7 +14,7 @@
 //    bu yüzden o sandıklar yıldız kazanma görevini ve karate rozetini ilerletmez.
 //  - `resolvedChestIcon` skoru 0'ın altına düşürmez; `changeCupIcon` ise ham rekoru kullanır
 //    (negatif rekor yalnızca eşikler negatifse fark yaratır).
-//  - Animasyon dosya adlarındaki yazım ("animaton_two.json" vb.) varlık adlarıyla aynıdır; düzeltilmedi.
+// Güncel Android'de sonuç ekranının rastgele Lottie listesi (animations) kaldırıldı; burada da silindi (28.11.2026).
 package com.sorobit.shared.oyun
 
 import kotlin.math.max
@@ -95,22 +95,6 @@ object ChestResultLogic {
     const val COLOR_GREEN = "#7CFC00"
     const val COLOR_YELLOW = "#FFFF99"
     const val COLOR_DARK_RED = "#990000"
-
-    /** Sonuç ekranında rastgele oynatılan Lottie dosyaları (adlar varlıklardaki yazımla aynı). */
-    val animations = listOf(
-        "animation_one.json",
-        "animaton_two.json",
-        "animaton_three.json",
-        "animaton_four.json",
-        "animaton_five.json",
-        "animaton_six.json",
-        "animaton_eight.json",
-        "animaton_nine.json",
-        "animaton_ten.json",
-        "animaton_eleven.json",
-        "animaton_twelve.json",
-        "animaton_thirteen.json",
-    )
 
     /**
      * `ChestResult.record`: rekor kırma görevi ilerlesin mi?

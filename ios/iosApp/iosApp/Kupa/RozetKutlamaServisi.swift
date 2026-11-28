@@ -146,12 +146,9 @@ final class SahteRozetKazanimServisi: RozetKazanimServisi {
     }
 
     /// Android `MissionsProgressStore.calendarDayId()` / `kupaCalendarDayId`: "yıl-yılınGünü" (sıfır dolgusuz,
-    /// ör. "2026-332"); roket rozetinin günlük sayacı bu anahtarla sıfırlanır.
+    /// ör. "2026-332"); roket rozetinin günlük sayacı bu anahtarla sıfırlanır. Kural ortak koddadır (KupaZaman.kt).
     private static func gunKimligi() -> String {
-        let takvim = Calendar(identifier: Calendar.Identifier.gregorian)
-        let simdi = Date()
-        let yil: Int = takvim.component(Calendar.Component.year, from: simdi)
-        let gun: Int = takvim.ordinality(of: Calendar.Component.day, in: Calendar.Component.year, for: simdi) ?? 1
-        return "\(yil)-\(gun)"
+        let dilim: Kotlinx_datetimeTimeZone = Kotlinx_datetimeTimeZone.companion.currentSystemDefault()
+        return KupaZamanKt.kupaCalendarDayId(nowMs: KupaZamanKt.kupaNowMs(), timeZone: dilim)
     }
 }

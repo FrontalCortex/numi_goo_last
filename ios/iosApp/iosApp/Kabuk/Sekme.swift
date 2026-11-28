@@ -31,10 +31,10 @@ enum Sekme: Int, CaseIterable, Identifiable {
     /// ve erişilebilirlik etiketinde kullanılır.
     func ad(ogretmen: Bool) -> String {
         switch self {
-        case .harita: return "Harita"
-        case .profil: return "Profil"
-        case .gorevler: return "Görevler"
-        case .magaza: return "Abaküs"
+        case .harita: return Metin.al("ios_sekme_harita")
+        case .profil: return Metin.al("ios_sekme_profil")
+        case .gorevler: return Metin.al("ios_sekme_gorevler")
+        case .magaza: return Metin.al("ios_sekme_abakus")
         // Android: öğrencide contentDescription sobi_tab_title, öğretmende class_list_title.
         case .bildirim: return ogretmen ? Metin.al("class_list_title") : Metin.al("sobi_tab_title")
         case .kesfet: return Metin.al("ui_kupa_yolu")

@@ -299,7 +299,7 @@ final class HaritaModeli: ObservableObject {
             let kilitsiz: Bool = tur == .yaris ? mantik.raceFlagClickAllowed(item: oge) : true
             let renk: String = tur == .yaris ? mantik.raceCardColor(item: oge) : ""
             return HaritaOgesi(
-                id: sira, oge: oge, tur: tur, baslik: oge.title, kilitsiz: kilitsiz,
+                id: sira, oge: oge, tur: tur, baslik: Metin.ders(oge.title), kilitsiz: kilitsiz,
                 durum: kilitsiz ? .acik : .kilitli, altinGecisi: false, simge: "",
                 dilimSayisi: 1, doluDilim: 0, yildizOnce: nil, yildizSonra: nil, nefes: false,
                 yarisRengi: renk
@@ -334,7 +334,7 @@ final class HaritaModeli: ObservableObject {
         }
 
         return HaritaOgesi(
-            id: sira, oge: oge, tur: tur, baslik: oge.title,
+            id: sira, oge: oge, tur: tur, baslik: Metin.ders(oge.title),
             kilitsiz: oge.isCompleted,
             durum: durum,
             altinGecisi: altinGecisi,
@@ -564,7 +564,7 @@ final class HaritaModeli: ObservableObject {
         return HaritaPanelDurumu(
             id: o.id,
             oge: o,
-            baslik: d.title,
+            baslik: Metin.ders(d.title),
             turMetni: yerel(d.kindText),
             renk: kartDurumu(d.panelState.name),
             simge: d.iconName,

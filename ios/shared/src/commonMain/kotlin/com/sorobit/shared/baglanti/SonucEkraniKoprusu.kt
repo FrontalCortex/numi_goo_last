@@ -7,13 +7,12 @@
 // çözüldüğüne bağlı kalmaz. Ayrıca Swift'e taşınmayan varsayılan parametreler burada doldurulur.
 //
 // Kaynak kurallar: ders/LessonResultLogic.kt (LessonResultLogic, LessonResultFalseLogic, ChestResultLogic)
-// ve oyun/ChestResultLogic.kt (animasyon listesi, çubuk rengi, yıldız oranı, yıldız sesi).
+// ve oyun/ChestResultLogic.kt (çubuk rengi, yıldız oranı, yıldız sesi).
 package com.sorobit.shared.baglanti
 
 import com.sorobit.shared.ders.GlobalLessonData
 import com.sorobit.shared.ders.LessonResultFalseLogic
 import com.sorobit.shared.ders.LessonResultLogic
-import com.sorobit.shared.matematik.RastgeleKaynagi
 import com.sorobit.shared.oyun.ScoreBarColorBlend
 import com.sorobit.shared.ders.ChestResultLogic as DersChestResultLogic
 import com.sorobit.shared.oyun.ChestResultLogic as OyunChestResultLogic
@@ -31,14 +30,6 @@ object SonucEkraniKoprusu {
     /** Başarısız sonuç ekranındaki neden satırı. */
     fun basarisizlikAciklamasi(sandikBasarisizligi: Boolean): String =
         LessonResultFalseLogic.resultTitleComment(sandikBasarisizligi)
-
-    // ── Lottie ──────────────────────────────────────────────────────────────
-
-    /** Sonuç ekranlarının üstünde rastgele oynatılan Lottie dosyaları (assets içindeki adlarıyla). */
-    fun animasyonlar(): List<String> = OyunChestResultLogic.animations
-
-    /** `showRandomAnimation`: listeden rastgele bir dosya adı. */
-    fun rastgeleAnimasyon(): String = OyunChestResultLogic.animations.random(RastgeleKaynagi.rastgele)
 
     // ── ChestResult ─────────────────────────────────────────────────────────
 

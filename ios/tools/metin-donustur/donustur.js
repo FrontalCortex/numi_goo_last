@@ -302,6 +302,8 @@ function dosyayiOku(yol, hedef, uyarilar) {
         ham: d.ham,
         dosya: dosyaAdi,
         cevrilmez: t.nitelik.translatable === 'false',
+        // formatted="false": Android bu metni biçimlemez ("%20" / "20% BONUS" düz yüzde); belirteç çevrilmez.
+        bicimsiz: t.nitelik.formatted === 'false',
       });
     } else if (t.tur === 'ac' && (t.ad === 'string-array' || t.ad === 'plurals') && t.nitelik.name) {
       const ad = t.nitelik.name;
@@ -468,11 +470,17 @@ function main() {
     }
 
     const girdiler = [];
-    const ekle = (anahtar, android, dosya) => {
+    const ekle = (anahtar, android, dosya, bicimsiz) => {
       const uyar = (mesaj) => uyarilar.push({ dosya, anahtar, mesaj });
+      // Biçimlenmeyen metin olduğu gibi yazılır (Metin.al argümansız çağrıda biçimlemez); belirteç
+      // denetimi de atlanır (turetilmis), çünkü içindeki "%" belirteç değil düz yüzde işaretidir.
+      if (bicimsiz) {
+        girdiler.push({ anahtar, android, deger: android, turetilmis: true });
+        return;
+      }
       girdiler.push({ anahtar, android, deger: bicimCevir(android, uyar) });
     };
-    for (const m of hedef.metinler) ekle(m.ad, m.android, m.dosya);
+    for (const m of hedef.metinler) ekle(m.ad, m.android, m.dosya, m.bicimsiz);
     for (const d of hedef.diziler) {
       girdiler.push({ anahtar: d.ad + '#adet', android: String(d.ogeler.length), deger: String(d.ogeler.length), turetilmis: true });
       d.ogeler.forEach((o, s) => ekle(d.ad + '#' + s, o.android, d.dosya));

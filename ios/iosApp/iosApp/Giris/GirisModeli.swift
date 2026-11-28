@@ -213,8 +213,10 @@ final class GirisModeli: ObservableObject {
     // MARK: Bildirim
 
     /// Android Toast süreleri: kısa 2 sn, uzun 3,5 sn.
+    /// Ortak koddan gelen Türkçe sabit mesajlar (AuthRules, TeacherLoginRules; Android'de anahtarlı)
+    /// `Metin.cevir` ile seçili dile çevrilir; Türkçe'de ya da tanınmayan metinde aynen kalır.
     func bildir(_ metin: String, uzun: Bool = false) {
-        let yeni = GirisBildirim(id: UUID(), metin: metin)
+        let yeni = GirisBildirim(id: UUID(), metin: Metin.cevir(metin))
         bildirim = yeni
         let sure: UInt64 = uzun ? 3_500_000_000 : 2_000_000_000
         Task { [weak self] in
@@ -527,16 +529,17 @@ enum GirisMetin {
         return Metin.al("otp_wrong_cooldown_btn", dakika, saniye)
     }
 
-    // Android'de koda gömülü Türkçe metinler (strings.xml'de karşılığı yok).
+    // Android'de koda gömülü Türkçe metinler (strings.xml'de karşılığı yok; Android İngilizce'de de
+    // Türkçe gösterir). iOS'ta IosOzel.strings'e alındı ve İngilizcesi yazıldı.
     /// UserInfoFragment.bindStep: meydan okuma adımının düğmesi.
-    static let hedefimiOnayla = "Hedefimi onayla"
+    static var hedefimiOnayla: String { Metin.al("ios_giris_hedefimi_onayla") }
     /// StreakViews.reminderHourLabel(16) / (20).
-    static let okuldanSonra = "Okuldan sonra"
-    static let yemektenSonra = "Yemekten sonra"
+    static var okuldanSonra: String { Metin.al("ios_giris_okuldan_sonra") }
+    static var yemektenSonra: String { Metin.al("ios_giris_yemekten_sonra") }
 
-    // Android'de karşılığı olmayan metinler (Apple ile giriş yalnızca iOS'ta var).
-    static let appleIleGirisYap = "Apple ile Giriş Yap"
-    static let appleIleKayitOl = "Apple ile Kayıt Ol"
-    static let appleGirisBasarisiz = "Apple girişi başarısız"
-    static let appleKayitBasarisiz = "Apple kaydı başarısız"
+    // Android'de karşılığı olmayan metinler (Apple ile giriş yalnızca iOS'ta var; IosOzel.strings).
+    static var appleIleGirisYap: String { Metin.al("ios_giris_apple_ile_giris_yap") }
+    static var appleIleKayitOl: String { Metin.al("ios_giris_apple_ile_kayit_ol") }
+    static var appleGirisBasarisiz: String { Metin.al("ios_giris_apple_girisi_basarisiz") }
+    static var appleKayitBasarisiz: String { Metin.al("ios_giris_apple_kaydi_basarisiz") }
 }

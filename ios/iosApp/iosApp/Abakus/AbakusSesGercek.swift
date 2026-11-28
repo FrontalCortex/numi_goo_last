@@ -67,12 +67,19 @@ final class GercekAbakusDersHizmetleri: AbakusDersHizmetleri {
     private let temel: AbakusDersHizmetleri
     private let boncuk: GercekAbakusBoncukSesi
 
+    /// Ön yükleme süreç boyunca bir kez yapılır (katman görünümü her yeniden çizimde yeni hizmet kurar;
+    /// `static let` tembel ve tek seferliktir). Sonradan seçilen boncuk sesi `sec` ile zaten çalınıp yüklenir.
+    private static let onYukleme: Bool = {
+        GercekAbakusBoncukSesi.ortak.hazirla()
+        SesCalar.ortak.hazirla(ad: "correct_answer_sound")
+        SesCalar.ortak.hazirla(ad: "incorrect_answer_sound")
+        return true
+    }()
+
     init(temel: AbakusDersHizmetleri = SahteAbakusDersHizmetleri()) {
         self.temel = temel
         self.boncuk = GercekAbakusBoncukSesi.ortak
-        self.boncuk.hazirla()
-        SesCalar.ortak.hazirla(ad: "correct_answer_sound")
-        SesCalar.ortak.hazirla(ad: "incorrect_answer_sound")
+        _ = GercekAbakusDersHizmetleri.onYukleme
     }
 
     var cevrimici: Bool {

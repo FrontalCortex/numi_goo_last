@@ -524,7 +524,7 @@ final class MagazaSahteOdemeServisi: MagazaOdemeServisi {
     func satinAl(urunKimligi: String, tamam: @escaping (MagazaSatinAlmaSonucu) -> Void) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             guard self.fiyatlar[urunKimligi] != nil else {
-                tamam(.hata(ShopFragmentLogic.shared.MESSAGE_PRODUCT_UNAVAILABLE))
+                tamam(.hata(Metin.cevir(ShopFragmentLogic.shared.MESSAGE_PRODUCT_UNAVAILABLE)))
                 return
             }
             if let odul = self.oduller[urunKimligi] {

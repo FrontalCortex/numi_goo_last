@@ -15,5 +15,7 @@ node ios/tools/metin-donustur/donustur.js --kontrol          # yazmaz; diskteki 
 - Öntanımlı çalıştırma başka `.lproj` ÜRETMEZ. Çoklu dil eklerken `--diller` ile açıkça isteyin; ayrıca `project.yml` / `Metin.swift` tarafındaki dil seçimi ayrı bir karardır (simülatör İngilizce ise `en.lproj` varlığı uygulamayı İngilizceye çevirir).
 - Bir klasördeki bütün `*.xml` dosyaları okunur (`strings.xml`, `strings_lessons.xml` ...). `<string>`, `<plurals>` ve `<string-array>` desteklenir:
   `ad`, `ad#one`/`ad#other`, `ad#adet` + `ad#0`, `ad#1` ... (`Metin.al`, `Metin.cogul`, `Metin.dizi` okur).
+- `formatted="false"` metinler biçimlenmez, olduğu gibi yazılır ("20% BONUS" gibi düz yüzde).
+- `IosOzel.strings` (iOS'a özgü, elle yazılan) bu araçla üretilmez ve araç ona dokunmaz.
 - Biçim belirteçleri `%s`->`%@`, `%1$s`->`%1$@`, `%d`/`%%` aynen; kaçışlar, tırnaklar, `\uXXXX`, varlıklar (`&amp;`) Android (aapt2) kurallarıyla çözülür. HTML etiketleri atılır (içerik korunur) ve raporda uyarı olur.
 - Çıktı: `ios/iosApp/iosApp/<dil>.lproj/Localizable.strings` (UTF-8, LF) ve `rapor.json` (sayılar, uyarılar, hatalar). Üretimden sonra dosya yeniden ayrıştırılıp kaynağa karşı doğrulanır; hata varsa çıkış kodu 1.

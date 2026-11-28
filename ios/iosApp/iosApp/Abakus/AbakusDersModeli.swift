@@ -145,7 +145,7 @@ final class AbakusDersModeli: ObservableObject {
         if basladi { return }
         basladi = true
         guard let akis = akis else {
-            bildir("Bu dersin soruları açılamadı.")
+            bildir(Metin.al("ios_abakus_sorular_acilamadi"))
             return
         }
         // Android: onCreate → LessonSuccessRateRepository.recordQuestionEntry (ders ve sandık).

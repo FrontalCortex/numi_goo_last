@@ -28,6 +28,10 @@ import UIKit
 // çalışmaz ve ekran 0 harfle (boş) kalır. Bütün durum (`calici`, bayraklar) yalnızca kuyrukta değişir.
 
 final class OgreticiGercekSesCalici: OgreticiSesCalici {
+    /// Paylaşılan örnek: katman görünümü her yeniden çizimde yeni çalıcı (ve gözlemci) kurmasın.
+    /// Ekran kapanırken `durdur()` çağrılır; durum her adımda `sustur()` ile sıfırlanır.
+    static let ortak: OgreticiGercekSesCalici = OgreticiGercekSesCalici()
+
     /// Ayar anahtarları (Android AppPrefs ile aynı adlar). Ayar ekranı yazılınca bu anahtarlar yazılır.
     static let ogreticiSesiAnahtari: String = "tutorial_sound_enabled"
     static let sesAcikAnahtari: String = "sound_enabled"

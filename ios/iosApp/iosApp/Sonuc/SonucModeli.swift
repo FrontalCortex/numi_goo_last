@@ -387,6 +387,6 @@ final class SonucModeli: ObservableObject {
 
     /// Android: "x" + String.format("%.2f", değer) — cihaz yereline göre ondalık ayırıcı.
     static func carpanYazisi(_ deger: Double) -> String {
-        return String(format: "x%.2f", locale: Locale.current, deger)
+        return String(format: "x%.2f", locale: Metin.yerel, deger)
     }
 }

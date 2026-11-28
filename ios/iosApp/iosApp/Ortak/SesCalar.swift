@@ -14,8 +14,12 @@ import Foundation
 // Perde notu: Android SoundPool rate hem hızı hem perdeyi değiştirir; AVAudioPlayer `rate` (enableRate)
 // hızı değiştirir ve sistem perdeyi korumaya çalışabilir. Bu fark cihazda dinlenmeden doğrulanamaz.
 //
-// İş parçacığı: yöntemler ana iş parçacığından çağrılır; başka iş parçacığından gelirse ana iş
-// parçacığına aktarılır (AVAudioPlayer durumu yalnızca orada değişir).
+// İş parçacığı: yöntemler her iş parçacığından çağrılabilir ve ateşle-ve-unutturur (çağıran beklemez).
+// Bütün AVFoundation işleri (oturum kurulumu, oynatıcı kurma/hazırlama/çalma/susturma, havuz) seri
+// `SesOturumu.kuyruk` üzerinde yapılır; havuz ve adres önbelleği yalnızca orada okunur/yazılır.
+// Neden: `AVAudioSession.setActive` ve `AVAudioPlayer(contentsOf:)` ses sunucusuyla eşzamanlı konuşur ve
+// ana iş parçacığını saniyelerce bekletebilir (bkz. öğretici çalıcısı, 13.-16. derlemelerde boş ekran).
+// Ayar okuma (UserDefaults) ve galeri kipi denetimi ucuz olduğundan çağıran tarafta kalır.
 
 /// Ses oturumunu kuran tek yer. Android MediaPlayer/SoundPool ses odağı istemiyor, medya akışından
 /// çalıyor (telefonun zil sessizliğinden etkilenmez) ve başka uygulamanın müziğini kesmiyor; iOS
@@ -24,8 +28,8 @@ import Foundation
 ///
 /// Ana iş parçacığını BEKLETMEZ: `setActive` ses sunucusuyla (coreaudiod) eşzamanlı konuşur ve
 /// simülatörde/ilk açılışta saniyelerce sürebilir (Apple da oturumu ana iş parçacığı dışında etkinleştirmeyi
-/// önerir). Kurulum `kuyruk` üzerinde sırayla yapılır; aynı kuyrukta çalan çalıcılar (öğretici) kurulumdan
-/// sonra çalar, ana iş parçacığındaki çalıcılar (SesCalar) ilk seste varsayılan oturumla çalabilir.
+/// önerir). Kurulum `kuyruk` üzerinde sırayla yapılır; bütün çalıcılar (öğretici ve SesCalar) aynı
+/// kuyrukta çalar ve ilk çalmadan önce kurulumu yapar.
 enum SesOturumu {
     /// Ses işlerinin seri kuyruğu (oturum kurulumu + öğretici çalıcısı).
     static let kuyruk: DispatchQueue = DispatchQueue(label: "com.sorobit.app.ses", qos: .userInitiated)
@@ -75,9 +79,12 @@ final class SesCalar {
     private static let havuzSiniri: Int = 4
 
     private let ayarlar: UserDefaults
+    // Aşağıdaki üç durum ve `ilkKurulumYazildi` YALNIZCA `SesOturumu.kuyruk` üzerinde okunur/yazılır.
     private var havuzlar: [String: [AVAudioPlayer]] = [:]
     private var adresler: [String: URL] = [:]
     private var bulunamayanlar: Set<String> = []
+    /// İlk oynatıcı kurulum süresi günlüğe bir kez yazılır.
+    private var ilkKurulumYazildi: Bool = false
     /// Ekran galerisi (`-ekran <ad>`) kipinde ses çalınmaz: galeri sahte uygulamalarla çalışır.
     private let galeriKipi: Bool = EkranGalerisi.istenenAd != nil
 
@@ -95,12 +102,12 @@ final class SesCalar {
 
     /// Sesi önceden yükler (Android preload): ilk çalmada gecikme olmasın.
     func hazirla(ad: String) {
-        anaIsParcacigindaCalistir { [weak self] in
+        SesOturumu.kuyruk.async { [weak self] in
             guard let self = self else { return }
             guard let adres = self.dosyaAdresi(ad) else { return }
-            SesOturumu.kur()
+            SesOturumu.kuyruktaKur()
             let mevcut: [AVAudioPlayer] = self.havuzlar[ad] ?? []
-            if mevcut.isEmpty, let yeni = SesCalar.yeniCalici(adres) {
+            if mevcut.isEmpty, let yeni = self.yeniCalici(adres) {
                 self.havuzlar[ad] = [yeni]
             }
         }
@@ -114,14 +121,17 @@ final class SesCalar {
         hiz: Float = 1.0,
         ayarAnahtari: String = SesCalar.sesAcikAnahtari
     ) {
-        anaIsParcacigindaCalistir { [weak self] in
-            self?.calIc(ad: ad, sesDuzeyi: sesDuzeyi, hiz: hiz, ayarAnahtari: ayarAnahtari)
+        // Ucuz denetimler çağıran tarafta: kapalıysa kuyruğa hiç iş konmaz.
+        if galeriKipi { return }
+        guard ayarAcikMi(ayarAnahtari) else { return }
+        SesOturumu.kuyruk.async { [weak self] in
+            self?.calKuyrukta(ad: ad, sesDuzeyi: sesDuzeyi, hiz: hiz)
         }
     }
 
     /// Ad başına çalan bütün sesleri susturur.
     func sustur(ad: String) {
-        anaIsParcacigindaCalistir { [weak self] in
+        SesOturumu.kuyruk.async { [weak self] in
             guard let havuz = self?.havuzlar[ad] else { return }
             for c in havuz {
                 c.stop()
@@ -129,13 +139,12 @@ final class SesCalar {
         }
     }
 
-    // MARK: İç işler
+    // MARK: İç işler (hepsi `SesOturumu.kuyruk` üzerinde çalışır)
 
-    private func calIc(ad: String, sesDuzeyi: Float, hiz: Float, ayarAnahtari: String) {
-        if galeriKipi { return }
-        guard ayarAcikMi(ayarAnahtari) else { return }
+    private func calKuyrukta(ad: String, sesDuzeyi: Float, hiz: Float) {
         guard let adres = dosyaAdresi(ad) else { return }
-        SesOturumu.kur()
+        // Oturum, aynı kuyrukta ilk çalmadan önce kurulur (öğretici çalıcısıyla aynı sıra güvencesi).
+        SesOturumu.kuyruktaKur()
         guard let c = bosCalici(ad: ad, adres: adres) else { return }
         c.volume = min(max(sesDuzeyi, 0.0), 1.0)
         c.rate = min(max(hiz, 0.5), 2.0)
@@ -150,7 +159,7 @@ final class SesCalar {
                 return c
             }
         }
-        if havuz.count < SesCalar.havuzSiniri, let yeni = SesCalar.yeniCalici(adres) {
+        if havuz.count < SesCalar.havuzSiniri, let yeni = yeniCalici(adres) {
             havuz.append(yeni)
             havuzlar[ad] = havuz
             return yeni
@@ -161,11 +170,17 @@ final class SesCalar {
         })
     }
 
-    private static func yeniCalici(_ adres: URL) -> AVAudioPlayer? {
+    private func yeniCalici(_ adres: URL) -> AVAudioPlayer? {
+        let baslangic: Date = Date()
         do {
             let c: AVAudioPlayer = try AVAudioPlayer(contentsOf: adres)
             c.enableRate = true
             c.prepareToPlay()
+            if !ilkKurulumYazildi {
+                ilkKurulumYazildi = true
+                let sureMs: Int = Int(Date().timeIntervalSince(baslangic) * 1000.0)
+                YonetimGunlugu.yaz("ses calici (SesCalar) ilk oynatici kuruldu (\(sureMs) ms)")
+            }
             return c
         } catch {
             // Çözülemeyen dosya: sessiz geç (Android'de de hata yalnızca günlüğe yazılır).
@@ -188,13 +203,5 @@ final class SesCalar {
         }
         bulunamayanlar.insert(ad)
         return nil
-    }
-
-    private func anaIsParcacigindaCalistir(_ isi: @escaping () -> Void) {
-        if Thread.isMainThread {
-            isi()
-        } else {
-            DispatchQueue.main.async(execute: isi)
-        }
     }
 }

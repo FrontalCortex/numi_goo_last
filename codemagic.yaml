@@ -111,6 +111,13 @@ workflows:
             xcrun simctl io "$UDID" screenshot "build/ekranlar/$AD.png" || true
             xcrun simctl terminate "$UDID" com.sorobit.app || true
           done
+          # Aynı galeri İngilizce (-dil en: seçim kaydedilmez, Metin/Metin.swift); dosya adı <ad>@en.png.
+          for AD in giris kayit-hedef harita-ders abakus-ders sonuc-basarili magaza plan-secim profil seri ogretici-3; do
+            xcrun simctl launch "$UDID" com.sorobit.app -ekran "$AD" -dil en || true
+            sleep 5
+            xcrun simctl io "$UDID" screenshot "build/ekranlar/$AD@en.png" || true
+            xcrun simctl terminate "$UDID" com.sorobit.app || true
+          done
     # Yollar tam verilir: göreli yollar working_directory nedeniyle bulunamadı.
     artifacts:
       - $CM_BUILD_DIR/ios/iosApp/build/ekran*.png

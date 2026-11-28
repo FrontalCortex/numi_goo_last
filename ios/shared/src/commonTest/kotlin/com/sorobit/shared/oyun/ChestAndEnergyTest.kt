@@ -377,12 +377,7 @@ class ChestResultLogicTest {
     }
 
     @Test
-    fun animasyonListesiVeIlerlemeAnahtari() {
-        assertEquals(12, ChestResultLogic.animations.size)
-        assertEquals("animation_one.json", ChestResultLogic.animations.first())
-        assertEquals("animaton_thirteen.json", ChestResultLogic.animations.last())
-        // "seven" Android listesinde de yok
-        assertFalse(ChestResultLogic.animations.any { it.contains("seven") })
+    fun ilerlemeAnahtari() {
         assertEquals("2_7_1_Maraton_4", ChestResultLogic.lessonProgressKey(2, 7, 1, "Maraton", 4))
         assertEquals("0_-1_-1_Ders_0", ChestResultLogic.lessonProgressKey(0, null, null, "Ders", 0))
     }

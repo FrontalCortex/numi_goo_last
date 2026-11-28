@@ -8,9 +8,9 @@ import SwiftUI
 // görünümler yalnızca aşağıdaki Swift yapılarını okur. Kurallar ortak koddadır:
 // ShopFragmentLogic (ios/shared/.../oyun/ShopFragmentLogic.kt), BillingCatalog ve PlanStatus.
 //
-// Ortak koddan ALINMAYANLAR (ShopFragmentLogic Android'in eski hâlinde kaldığı için Swift'te
-// güncel Android değerleriyle tutulur): can bedeli (1 anahtar), altın/anahtar kartlarındaki
-// miktar ve yedek fiyatlar (fragment_shop.xml), seri dondurma bedeli (4000 altın).
+// Kart katalogları (ShopFragmentLogic.GOLD_CARDS / KEY_CARDS / SOBI_CREDIT_CARDS), can bedeli
+// (LIFE_KEY_COST), seri dondurma bedeli (StreakRules.FREEZE_COST_GOLD) ve Süper düğmesinin metni
+// (SubscriptionCta) de ortak koddan okunur; Swift'te sabit tutulmaz.
 
 /// Mağazanın açılışta kaydırılacağı yer (Android: ARG_FOCUS_STREAK_FREEZE / ARG_FOCUS_SOBI_CREDITS).
 enum MagazaOdak: Hashable {
@@ -68,35 +68,40 @@ private struct MagazaKartTanimi {
     let yedekFiyat: String
 }
 
-/// Kartların sabit listeleri. Miktarlar yalnızca etikettir; verilecek miktarı sunucu belirler
-/// (functions/index.js → PLAY_PRODUCT_CATALOG).
+/// Kartların listeleri (ortak: ShopFragmentLogic). Miktarlar yalnızca etikettir; verilecek miktarı sunucu
+/// belirler (functions/index.js → PLAY_PRODUCT_CATALOG).
 private enum MagazaKatalog {
     static func altin() -> [MagazaKartTanimi] {
-        let katalog = BillingCatalog.shared
-        return [
-            MagazaKartTanimi(urunKimligi: katalog.GOLD_SMALL, gorselAdi: "shop_coin_ic1", birimSimgeAdi: "gold_ic", miktarMetni: "5 000", yedekFiyat: "₺39,00"),
-            MagazaKartTanimi(urunKimligi: katalog.GOLD_MEDIUM, gorselAdi: "shop_coin_ic2", birimSimgeAdi: "gold_ic", miktarMetni: "20 000", yedekFiyat: "₺120,00"),
-            MagazaKartTanimi(urunKimligi: katalog.GOLD_LARGE, gorselAdi: "shop_coin_ic3", birimSimgeAdi: "gold_ic", miktarMetni: "100 000", yedekFiyat: "₺500,00"),
-        ]
+        return tanimlar(ShopFragmentLogic.shared.GOLD_CARDS)
     }
 
     static func anahtar() -> [MagazaKartTanimi] {
-        let katalog = BillingCatalog.shared
-        return [
-            MagazaKartTanimi(urunKimligi: katalog.KEYS_SMALL, gorselAdi: "key", birimSimgeAdi: "key", miktarMetni: "10", yedekFiyat: "₺29,00"),
-            MagazaKartTanimi(urunKimligi: katalog.KEYS_MEDIUM, gorselAdi: "key", birimSimgeAdi: "key", miktarMetni: "50", yedekFiyat: "₺119,00"),
-            MagazaKartTanimi(urunKimligi: katalog.KEYS_LARGE, gorselAdi: "key", birimSimgeAdi: "key", miktarMetni: "200", yedekFiyat: "₺429,00"),
-        ]
+        return tanimlar(ShopFragmentLogic.shared.KEY_CARDS)
+    }
+
+    private static func tanimlar(_ kartlar: [ShopFragmentLogic.PackCard]) -> [MagazaKartTanimi] {
+        var sonuc: [MagazaKartTanimi] = []
+        for kart in kartlar {
+            sonuc.append(
+                MagazaKartTanimi(
+                    urunKimligi: kart.productId,
+                    gorselAdi: kart.imageResName,
+                    birimSimgeAdi: kart.currencyIconResName,
+                    miktarMetni: kart.amountLabel,
+                    yedekFiyat: kart.fallbackPrice
+                )
+            )
+        }
+        return sonuc
     }
 
     /// Sobi kredisi paketleri: (ürün, miktar metni anahtarı, yedek fiyat).
     static func sobi() -> [(urunKimligi: String, miktarAnahtari: String, yedekFiyat: String)] {
-        let katalog = BillingCatalog.shared
-        return [
-            (urunKimligi: katalog.SOBI_CREDITS_20, miktarAnahtari: "shop_sobi_credit_amount_20", yedekFiyat: "₺12,99"),
-            (urunKimligi: katalog.SOBI_CREDITS_50, miktarAnahtari: "shop_sobi_credit_amount_50", yedekFiyat: "₺24,99"),
-            (urunKimligi: katalog.SOBI_CREDITS_120, miktarAnahtari: "shop_sobi_credit_amount_120", yedekFiyat: "₺49,99"),
-        ]
+        var sonuc: [(urunKimligi: String, miktarAnahtari: String, yedekFiyat: String)] = []
+        for kart in ShopFragmentLogic.shared.SOBI_CREDIT_CARDS {
+            sonuc.append((urunKimligi: kart.productId, miktarAnahtari: kart.amountTextKey, yedekFiyat: kart.fallbackPrice))
+        }
+        return sonuc
     }
 
     /// Mağazadan fiyatı sorgulanacak ürünler: ekranda kartı olanlar (Öğretmene sor kredileri ve
@@ -384,7 +389,7 @@ final class MagazaModeli: ObservableObject {
             self.satinAlmaSuruyor = false
             self.canBolumunuYenile()
             self.cuzdaniYaz(self.servisler.cuzdan.cuzdan)
-            self.bildir(bulundu ? "Satın alımların geri yüklendi." : "Geri yüklenecek satın alım bulunamadı.")
+            self.bildir(bulundu ? Metin.al("ios_magaza_geri_yuklendi") : Metin.al("ios_magaza_geri_yuklenecek_yok"))
         }
     }
 
@@ -494,7 +499,7 @@ final class MagazaModeli: ObservableObject {
         } else {
             proMetni = Metin.al("fragment_shop_shop_pro_price_text")
         }
-        proFiyatMetni = proMetni.uppercased(with: Locale(identifier: "tr_TR"))
+        proFiyatMetni = proMetni.uppercased(with: Metin.yerel)
     }
 
     private func paketKarti(_ tanim: MagazaKartTanimi) -> MagazaPaketKarti {
@@ -508,19 +513,11 @@ final class MagazaModeli: ObservableObject {
         )
     }
 
-    /// Android: SubscriptionCta.apply. Ücretsiz deneme yoksa ya da kullanıcı uygun değilse deneme
-    /// vaat edilmez; 7, 14, 21 … gün "1 hafta / 2 hafta" olarak yazılır.
+    /// Android: SubscriptionCta.apply (ortak: SubscriptionCta.label).
     private func superDugmesiniYaz() {
-        let gun: Int? = servisler.odeme.ucretsizDenemeGunu(urunKimligi: ShopFragmentLogic.shared.PRO_PRODUCT_ID)
-        guard let gun = gun else {
-            superDugmeMetni = Metin.al("sub_cta_no_trial_pro")
-            return
-        }
-        if gun % 7 == 0 {
-            superDugmeMetni = Metin.al("sub_cta_trial_weeks", gun / 7)
-        } else {
-            superDugmeMetni = Metin.al("sub_cta_trial_days", gun)
-        }
+        let urun: String = ShopFragmentLogic.shared.PRO_PRODUCT_ID
+        let gun: Int? = servisler.odeme.ucretsizDenemeGunu(urunKimligi: urun)
+        superDugmeMetni = MagazaAbonelikCta.metin(denemeGunu: gun, urunKimligi: urun)
     }
 
     private func canBolumunuYenile() {
@@ -542,8 +539,7 @@ final class MagazaModeli: ObservableObject {
             dugmeYaziRengi: MagazaStil.renk(argb: d.buyTextColor),
             dugmeSimgeOpakligi: Double(d.buyIconAlpha),
             reklamOpakligi: Double(d.watchAdAlpha),
-            // Ortak koddaki bedel (3) eski; Android'de 1.
-            bedelMetni: String(MagazaStil.canAnahtarBedeli)
+            bedelMetni: d.buyCostText
         )
         if yeni != canBolumu {
             canBolumu = yeni
@@ -558,5 +554,24 @@ final class MagazaModeli: ObservableObject {
             guard let self = self, self.bildirimSirasi == sira else { return }
             self.bildirim = nil
         }
+    }
+}
+
+/// Abonelik düğmesinin metni (Android: SubscriptionCta.apply; kural ortak koddadır: SubscriptionCta.label).
+/// Mağazadaki Süper kartı ve plan ekranı birlikte kullanır.
+enum MagazaAbonelikCta {
+    /// - Parameters:
+    ///   - denemeGunu: ödeme servisinin verdiği ücretsiz deneme günü; teklif yoksa ya da kullanıcı uygun değilse nil.
+    ///   - urunKimligi: abonelik ürünü (BillingCatalog.SUB_PRO / SUB_LITE).
+    static func metin(denemeGunu: Int?, urunKimligi: String) -> String {
+        var gun: KotlinInt? = nil
+        if let g = denemeGunu {
+            gun = KotlinInt(int: Int32(g))
+        }
+        let etiket: SubscriptionCtaLabel = SubscriptionCta.shared.label(freeTrialDays: gun, productId: urunKimligi)
+        if let arguman = etiket.formatArg {
+            return Metin.al(etiket.textKey, Int(arguman.intValue))
+        }
+        return Metin.al(etiket.textKey)
     }
 }

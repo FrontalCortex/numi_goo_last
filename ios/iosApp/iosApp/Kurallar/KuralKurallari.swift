@@ -4,17 +4,10 @@ import Shared
 // Kural kitabı ve ders içi kural paneli: hangi dersin hangi tabloyu gösterdiği, düğmelerin görünürlüğü,
 // kitabın hangi tabloları açtığı.
 //
-// DİKKAT (ortak koda taşınmalı): Bu dosyadaki kurallar Android'in Fragment'larında kalmış saf
-// `when`/`if` tablolarının BİREBİR KOPYASIDIR; ortak Kotlin'de (ios/shared) karşılıkları yoktur
-// (yalnızca BlindingLessonRules.usesRulesTablePicker vardır, o doğrudan çağrılır). Android'de bir kural
-// değişirse buradaki değişiklik elle yapılmalıdır. Kaynaklar (app/src/main/java/com/example/app/):
-//  - AbacusFragment.kt: updateActiveRulesPanelTable (1302), applyRulesPanelFiveText (1354),
-//    rulesBookVisibility (1405), rulesBookSetup (1430), applyRulesDividersVisibility (1490),
-//    changeRulesTableText (1518), onRulesPanelButtonClicked (1262)
-//  - BlindingLessonFragment.kt: updateActiveRulesPanelTable (1116), rulesPanelFiveIsSubtraction (1138),
-//    rulesBookVisibility (1150), rulesBookSetup (1167), applyRulesDividersVisibility (1204),
-//    onRulesPanelButtonClicked (1094)
-//  - abacus/LessonRulesPanel.kt (panel durumu), model/RulesFragment.kt (kitap).
+// Kuralların kendisi ortak koddadır: `abakus/LessonRulesLogic.kt` (`LessonRulesLesson`; Android
+// AbacusFragment / BlindingLessonFragment / LessonRulesPanel / RulesFragment kopyası). Bu dosya yalnızca
+// ortak türleri Swift türlerine çevirir; kural burada yazılmaz. Panel dokunuşu (onRulesPanelButtonClicked)
+// KuralModeli.swift'tedir.
 //
 // Sözlük: "sıra" = LessonItem.mapFragmentIndex (haritadaki sıra); "bölüm" = GlobalLessonData.globalPartId.
 
@@ -111,67 +104,46 @@ struct KuralDersBilgisi: Equatable {
         return gunlukPartId != nil
     }
 
+    /// Ortak koddaki kural girdisi.
+    var ortakDers: LessonRulesLesson {
+        let gunluk: Int = gunlukPartId ?? 0
+        return LessonRulesLesson(
+            globalPartId: Int32(partId),
+            mapFragmentIndex: Int32(sira),
+            isBlinding: korMu,
+            isDailyQuestionMode: gunlukMu,
+            dailyQuestionPartId: Int32(gunluk),
+            signedOut: hesapsiz
+        )
+    }
+
     /// Kitaptan tablo seçilerek mi çalışıyor (panel tablosu derse göre değil, çocuğun seçimine göre).
-    /// Android: kör derste usesRulesTablePicker (bölüm 4..9 ya da günlük soru), abaküste globalPartId == 3.
     var seciciVar: Bool {
-        if korMu {
-            return BlindingLessonRules.shared.usesRulesTablePicker(
-                globalPartId: Int32(partId), isDailyQuestionMode: gunlukMu
-            )
-        }
-        return partId == 3
+        return ortakDers.usesRulesTablePicker()
     }
 
     // MARK: Düğmeler
 
-    /// rulesBookButton. Abaküs: AbacusFragment.rulesBookVisibility; kör: yalnızca seçici varsa görünür.
+    /// rulesBookButton.
     var kitapDugmesi: KuralGorunurluk {
-        if korMu {
-            return seciciVar ? .gorunur : .yok
-        }
-        if hesapsiz { return .yok }
-        if partId == 1 && sira < 12 { return .yok }
-        if partId == 1 && sira < 17 { return .gizli }
-        if partId == 2 && sira < 5 { return .yok }
-        return .gorunur
+        return KuralDersBilgisi.gorunurluk(ortakDers.rulesBookButtonVisibility())
     }
 
     /// rulesPanelButton (sihirli değnek).
     var panelDugmesi: KuralGorunurluk {
-        if korMu {
-            return seciciVar ? .gorunur : .yok
-        }
-        if hesapsiz { return .yok }
-        if partId == 1 && sira < 12 { return .yok }
-        if partId == 2 && sira < 5 { return .yok }
-        return .gorunur
+        return KuralDersBilgisi.gorunurluk(ortakDers.rulesPanelButtonVisibility())
     }
 
     // MARK: Panel
 
     /// Android: updateActiveRulesPanelTable (seçici yokken dersin sırasına göre tablo).
-    /// Kör derste bölüm 2'nin boncuk çıkarma dalı yoktur (Android'de de böyle).
     func siraninPanelTablosu() -> KuralTablosu {
-        let i: Int = sira
-        if partId == 1 {
-            if i > 28 { return .boncuk }
-            if i > 22 { return .on }
-            if i > 16 { return .onBes }
-            if i >= 12 { return .bes }
-            return .yok
-        }
-        if partId == 2 {
-            if !korMu && i > 15 { return .boncukCikarma }
-            if i > 10 { return .onCikarma }
-            if i > 5 { return .bes }
-        }
-        return .yok
+        return KuralDersBilgisi.tablo(ortakDers.activeRulesPanelTable())
     }
 
     /// 5'li tablonun başlığı çıkarma diliyle mi ("Çıkarılacak sayı / 5 gider. Kardeş gelir.").
-    /// Android: applyRulesPanelFiveText / rulesPanelFiveIsSubtraction.
     var besCikarmaMi: Bool {
-        return (partId == 2 && sira > 5) || partId == 5
+        return ortakDers.rulesPanelFiveIsSubtraction()
     }
 
     /// Panel tablolarının metin anahtarı öneki: abaküs fragment_abacus_*, kör ders fragment_blinding_lesson_*.
@@ -181,94 +153,45 @@ struct KuralDersBilgisi: Equatable {
 
     // MARK: Kitap
 
-    /// Kitabın bu derste açacağı tablolar. Android: rulesBookSetup + applyRulesDividersVisibility +
-    /// changeRulesTableText.
+    /// Kitabın bu derste açacağı tablolar (ortak: LessonRulesLesson.rulesBookSetup).
     func kitapAyari() -> KuralKitabiAyari {
-        var ayar: KuralKitabiAyari = korMu ? korKitapAyari() : abakusKitapAyari()
+        let k: LessonRulesBookSetup = ortakDers.rulesBookSetup()
+        var a: KuralKitabiAyari = KuralKitabiAyari()
+        a.bolum = k.section == LessonRulesSection.extraction ? .cikarma : .toplama
+        a.bes = k.fiveTable
+        a.onBes = k.tenFiveTable
+        a.on = k.tenTable
+        a.boncuk = k.beadTable
+        a.cikarmaBes = k.extractionFiveTable
+        a.onCikarma = k.tenExtractionTable
+        a.boncukCikarma = k.beadExtractionTable
+        a.carpim = k.multiplicationTables
+        a.bolucu1 = KuralDersBilgisi.gorunurluk(k.divider1)
+        a.bolucu2 = KuralDersBilgisi.gorunurluk(k.divider2)
+        a.bolucu3 = KuralDersBilgisi.gorunurluk(k.divider3)
+        a.tabloSecici = k.tablePickerEnabled
         // changeRulesTableText: applyRulesTableHeaderTexts(globalPartId == 2)
-        ayar.etiket = partId == 2 ? Metin.al("ui_cikarilacak_sayi") : Metin.al("ui_eklenecek_sayi_2")
-        return ayar
-    }
-
-    private func abakusKitapAyari() -> KuralKitabiAyari {
-        var a: KuralKitabiAyari = KuralKitabiAyari()
-        let p: Int = partId
-        let i: Int = sira
-        if p == 1 && i > 16 {
-            a.bolum = .toplama
-            a.on = false
-            a.boncuk = false
-        }
-        if p == 1 && i > 22 { a.on = true }
-        if p == 1 && i > 28 { a.boncuk = true }
-        if p == 2 && i > 5 {
-            a.bolum = .cikarma
-            a.onCikarma = false
-            a.boncukCikarma = false
-        }
-        if p == 2 && i > 10 { a.onCikarma = true }
-        if p == 2 && i > 15 { a.boncukCikarma = true }
-        if p == 3 {
-            a.bolum = .toplama
-            a.carpim = true
-            a.tabloSecici = true
-        }
-        let b: (KuralGorunurluk, KuralGorunurluk, KuralGorunurluk) = siraBolucular()
-        a.bolucu1 = b.0
-        a.bolucu2 = b.1
-        a.bolucu3 = b.2
+        a.etiket = k.subtractionHeaderTexts ? Metin.al("ui_cikarilacak_sayi") : Metin.al("ui_eklenecek_sayi_2")
         return a
     }
 
-    private func korKitapAyari() -> KuralKitabiAyari {
-        var a: KuralKitabiAyari = KuralKitabiAyari()
-        let p: Int = partId
-        let gunluk: Int? = gunlukPartId
-        if seciciVar {
-            // enableTablePicker: toplama tabloları açık, çarpım kapalı, bölücüler hep görünür.
-            a.tabloSecici = true
-            a.bolucu1 = .gorunur
-            a.bolucu2 = .gorunur
-            a.bolucu3 = .gorunur
-        } else {
-            let b: (KuralGorunurluk, KuralGorunurluk, KuralGorunurluk) = siraBolucular()
-            a.bolucu1 = b.0
-            a.bolucu2 = b.1
-            a.bolucu3 = b.2
-        }
-        if p == 5 || p == 8 || (gunluk != nil && gunluk == 2) {
-            a.bolum = .cikarma
-        }
-        if p == 6 || (gunluk != nil && (gunluk == 1 || gunluk == 3)) {
-            a.bolum = .toplama
-            a.carpim = true
-            a.bolucu1 = .gorunur
-            a.bolucu2 = .gorunur
-            a.bolucu3 = .gorunur
-        }
-        return a
+    // MARK: Ortak türlerden çeviri
+
+    private static func gorunurluk(_ g: LessonRulesVisibility) -> KuralGorunurluk {
+        if g == LessonRulesVisibility.visible { return .gorunur }
+        if g == LessonRulesVisibility.invisible { return .gizli }
+        return .yok
     }
 
-    /// Android: applyRulesDividersVisibility (view1, view2, view3).
-    private func siraBolucular() -> (KuralGorunurluk, KuralGorunurluk, KuralGorunurluk) {
-        let p: Int = partId
-        let i: Int = sira
-        if p == 1 && i > 11 {
-            let g1: KuralGorunurluk = i > 16 ? .gorunur : .gizli
-            let g2: KuralGorunurluk = i > 22 ? .gorunur : .gizli
-            let g3: KuralGorunurluk = i > 28 ? .gorunur : .gizli
-            return (g1, g2, g3)
-        }
-        if p == 2 && i >= 11 && i <= 15 {
-            return (.gorunur, .gorunur, .gizli)
-        }
-        if p == 2 && i >= 16 && i <= 20 {
-            return (.gorunur, .gorunur, .gorunur)
-        }
-        if !korMu && p == 3 {
-            return (.gorunur, .gorunur, .gorunur)
-        }
-        return (.gizli, .gizli, .gizli)
+    private static func tablo(_ t: LessonRulesTable) -> KuralTablosu {
+        if t == LessonRulesTable.five { return .bes }
+        if t == LessonRulesTable.tenFive { return .onBes }
+        if t == LessonRulesTable.ten { return .on }
+        if t == LessonRulesTable.bead { return .boncuk }
+        if t == LessonRulesTable.beadExtraction { return .boncukCikarma }
+        if t == LessonRulesTable.tenExtraction { return .onCikarma }
+        if t == LessonRulesTable.multiplication { return .carpim }
+        return .yok
     }
 }
 

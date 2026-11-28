@@ -16,6 +16,17 @@
         "settings_language_ar"
       ],
       "bosDeger": []
+    },
+    "en": {
+      "kaynak": "app/src/main/res/values-en",
+      "cikti": "ios/iosApp/iosApp/en.lproj/Localizable.strings",
+      "metin": 3377,
+      "dizi": 3,
+      "cogul": 19,
+      "toplamAnahtar": 3457,
+      "bicimliAnahtar": 324,
+      "cevrilmezIsaretli": [],
+      "bosDeger": []
     }
   },
   "uyarilar": [],

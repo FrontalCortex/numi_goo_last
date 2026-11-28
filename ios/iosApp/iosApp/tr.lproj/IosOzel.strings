@@ -1,0 +1,47 @@
+/* iOS'a özgü metinler (Android strings.xml'de karşılığı yok). Elle yazılır; metin-donustur aracı
+   bu dosyaya DOKUNMAZ. Anahtarlar `ios_` önekli; her dil klasöründe aynı anahtarlar bulunmalı.
+   Okuma: Metin.al("ios_...") — önce Localizable.strings, sonra bu tablo (Metin/Metin.swift). */
+
+/* Giriş: Apple ile giriş yalnızca iOS'ta. */
+"ios_giris_apple_ile_giris_yap" = "Apple ile Giriş Yap";
+"ios_giris_apple_ile_kayit_ol" = "Apple ile Kayıt Ol";
+"ios_giris_apple_girisi_basarisiz" = "Apple girişi başarısız";
+"ios_giris_apple_kaydi_basarisiz" = "Apple kaydı başarısız";
+
+/* Giriş: Android'de koda gömülü Türkçe (UserInfoFragment.bindStep, StreakViews.reminderHourLabel). */
+"ios_giris_hedefimi_onayla" = "Hedefimi onayla";
+"ios_giris_okuldan_sonra" = "Okuldan sonra";
+"ios_giris_yemekten_sonra" = "Yemekten sonra";
+
+/* Mağaza / plan: App Store kuralları (3.1.1, 3.1.2). */
+"ios_magaza_geri_yukle" = "Satın alımları geri yükle";
+"ios_magaza_geri_yuklendi" = "Satın alımların geri yüklendi.";
+"ios_magaza_geri_yuklenecek_yok" = "Geri yüklenecek satın alım bulunamadı.";
+"ios_plan_pro_aktif" = "PRO ÜYELİĞİN AKTİF";
+"ios_plan_aboneligi_yonet" = "Aboneliği yönet";
+"ios_plan_kullanim_sartlari" = "Kullanım Şartları";
+"ios_plan_gizlilik_politikasi" = "Gizlilik Politikası";
+"ios_plan_zaten_sahip" = "Bu plana zaten sahipsin.";
+"ios_plan_deneme_haftalik" = "%1$d haftalık";
+"ios_plan_deneme_gunluk" = "%1$d günlük";
+"ios_plan_abonelik_ucreti" = "abonelik ücreti";
+"ios_plan_deneme_sonrasi" = "%1$@ ücretsiz denemenin ardından abonelik, ayda %2$@ üzerinden başlar.";
+"ios_plan_abonelik_ucreti_ayda" = "Abonelik ücreti: ayda %1$@.";
+"ios_plan_otomatik_yenileme" = "Abonelik, geçerli dönem bitiminden en az 24 saat önce iptal edilmezse her ay otomatik olarak yenilenir. Ödeme, satın alma onayında Apple Kimliği hesabından alınır; yenileme ücreti dönem bitiminden önceki 24 saat içinde hesabından tahsil edilir.";
+"ios_plan_iptal" = "Aboneliğini Ayarlar > Apple Kimliği > Abonelikler bölümünden yönetebilir ve istediğin zaman iptal edebilirsin.";
+
+/* Profil: Android "Play Store açılamadı" (ui_play_store_acilamadi) karşılığı. */
+"ios_profil_app_store_acilamadi" = "App Store açılamadı";
+
+/* Ders: soru listesi kurulamadı (Android'de bu durum yok). */
+"ios_abakus_sorular_acilamadi" = "Bu dersin soruları açılamadı.";
+
+/* Kabuk: erişilebilirlik etiketleri ve sekme adları (Android menüsünde başlık yok). */
+"ios_erisim_altin" = "Altın: %1$@";
+"ios_erisim_enerji" = "Enerji: %1$@";
+"ios_erisim_anahtar" = "Anahtar: %1$@";
+"ios_sekme_harita" = "Harita";
+"ios_sekme_profil" = "Profil";
+"ios_sekme_gorevler" = "Görevler";
+"ios_sekme_abakus" = "Abaküs";
+"ios_yakinda" = "Yakında";

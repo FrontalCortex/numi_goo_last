@@ -220,7 +220,7 @@ struct GorevlerBolumBasligi: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
-            Text(baslik.uppercased(with: Locale(identifier: "tr")))
+            Text(baslik.uppercased(with: Metin.yerel))
                 .font(Tema.yazi(13))
                 .foregroundColor(Color("missions_header_muted"))
                 .frame(maxWidth: .infinity, alignment: .leading)

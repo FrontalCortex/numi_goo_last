@@ -15,15 +15,19 @@
 //    türü ayrıca bilinmelidir).
 //
 // Android'deki hâliyle korunan notlar:
-//  - Karttaki miktar (1200, 7000, …) yalnızca ETİKETTİR; verilecek miktarı sunucu belirler.
+//  - Karttaki miktar (5 000, 20 000, …) yalnızca ETİKETTİR; verilecek miktarı sunucu belirler.
 //  - Yedek ₺ fiyatları yalnızca mağaza fiyatı gelene kadar görünür.
 //  - "Lite" aboneliği katalogda vardır ama mağaza ekranında kartı yoktur.
+//
+// 28.11.2026 güncel Android'e eşitlendi: LIFE_KEY_COST 3 → 1 (ShopFragment.kt companion),
+// altın/anahtar kartlarının miktar ve yedek fiyatları ile Pro yedek fiyatı (fragment_shop.xml,
+// strings_ui.xml fragment_shop_shop_pro_price_text); Sobi kredisi kartları eklendi.
 package com.sorobit.shared.oyun
 
 object ShopFragmentLogic {
 
     /** 1 can satın almanın anahtar bedeli. Arayüzdeki etiket de bu değerden yazılır. */
-    const val LIFE_KEY_COST = 3
+    const val LIFE_KEY_COST = 1
 
     /** Satın alma sonrası fırlatılan ikon sayısı (yalnızca görsel). */
     const val PURCHASE_ANIMATION_ITEM_COUNT = 30
@@ -92,16 +96,34 @@ object ShopFragmentLogic {
     const val TITLE_GOLD = "Altın"
     const val TITLE_KEYS = "Anahtar"
 
+    /** fragment_shop.xml shopGoldCard1..3 (miktar etiketi ve shopGoldPrice1..3 yedek fiyatı). */
     val GOLD_CARDS: List<PackCard> = listOf(
-        PackCard(BillingCatalog.GOLD_SMALL, "shop_coin_ic1", "gold_ic", "1200", "₺20,99"),
-        PackCard(BillingCatalog.GOLD_MEDIUM, "shop_coin_ic2", "gold_ic", "7000", "₺99,99"),
-        PackCard(BillingCatalog.GOLD_LARGE, "shop_coin_ic3", "gold_ic", "15000", "₺204,99"),
+        PackCard(BillingCatalog.GOLD_SMALL, "shop_coin_ic1", "gold_ic", "5 000", "₺39,00"),
+        PackCard(BillingCatalog.GOLD_MEDIUM, "shop_coin_ic2", "gold_ic", "20 000", "₺120,00"),
+        PackCard(BillingCatalog.GOLD_LARGE, "shop_coin_ic3", "gold_ic", "100 000", "₺500,00"),
     )
 
+    /** fragment_shop.xml shopKeyCard1..3 (miktar etiketi ve shopKeyPrice1..3 yedek fiyatı). */
     val KEY_CARDS: List<PackCard> = listOf(
-        PackCard(BillingCatalog.KEYS_SMALL, "key", "key", "10", "₺20,99"),
-        PackCard(BillingCatalog.KEYS_MEDIUM, "key", "key", "50", "₺99,99"),
-        PackCard(BillingCatalog.KEYS_LARGE, "key", "key", "100", "₺204,99"),
+        PackCard(BillingCatalog.KEYS_SMALL, "key", "key", "10", "₺29,00"),
+        PackCard(BillingCatalog.KEYS_MEDIUM, "key", "key", "50", "₺119,00"),
+        PackCard(BillingCatalog.KEYS_LARGE, "key", "key", "200", "₺429,00"),
+    )
+
+    /**
+     * Sobi kredisi paketi kartı (fragment_shop.xml shopSobiCreditCard1..3).
+     * @property amountTextKey miktar metninin strings.xml anahtarı (Android: @string/shop_sobi_credit_amount_N).
+     */
+    data class SobiCreditCard(
+        val productId: String,
+        val amountTextKey: String,
+        val fallbackPrice: String,
+    )
+
+    val SOBI_CREDIT_CARDS: List<SobiCreditCard> = listOf(
+        SobiCreditCard(BillingCatalog.SOBI_CREDITS_20, "shop_sobi_credit_amount_20", "₺12,99"),
+        SobiCreditCard(BillingCatalog.SOBI_CREDITS_50, "shop_sobi_credit_amount_50", "₺24,99"),
+        SobiCreditCard(BillingCatalog.SOBI_CREDITS_120, "shop_sobi_credit_amount_120", "₺49,99"),
     )
 
     /** Karttaki fiyat: mağaza fiyatı geldiyse o, gelmediyse yedek. */
@@ -110,8 +132,8 @@ object ShopFragmentLogic {
     /** Pro kartının ürünü. */
     const val PRO_PRODUCT_ID = BillingCatalog.SUB_PRO
 
-    /** Pro kartının yedek fiyat etiketi (fragment_shop.xml). */
-    const val PRO_FALLBACK_PRICE_LABEL = "aylık ₺19,99"
+    /** Pro kartının yedek fiyat etiketi (strings_ui.xml fragment_shop_shop_pro_price_text, Türkçe). */
+    const val PRO_FALLBACK_PRICE_LABEL = "aylık ₺99,00"
 
     /** applyStorePrices: "aylık $price". Ekranda textAllCaps ile büyük harfe çevrilir. */
     fun proPriceLabel(storePrice: String?): String =

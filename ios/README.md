@@ -17,7 +17,7 @@ ios/
 ### Ortak kod (`shared/`)
 
 - Yaklaşık 155 Kotlin dosyası `commonMain` içinde, testlerle birlikte `shared/src` altında yaklaşık 227 (toplam yaklaşık 73 bin satır; bunun yaklaşık 16,3 bin satırı üretilmiş öğretici içeriği, `ogretici/icerik/`). Paketler: `abakus`, `baglanti`, `ders`, `dersadim`, `kupa`, `matematik`, `model`, `ogretici`, `oyun`, `profil`, `seri`, `sobianaliz`.
-- **JVM'de 1056 test, Kotlin/Native (mingwX64) 1050 test, ikisinde de 0 hata** (sayılar `shared/build/test-results/<hedef>/*.xml` dosyalarından toplandı; son tam çalıştırma, Sobi hata analizi paketi `sobianaliz/` eklendikten sonra). JVM'deki 6 fazlalık yalnızca JVM'de koşan testlerden (`java.util.Random` karşılaştırması, avatar paketi dosyası vb.) gelir.
+- **JVM'de 1104 test, Kotlin/Native (mingwX64) 1098 test, ikisinde de 0 hata** (sayılar `shared/build/test-results/<hedef>/*.xml` dosyalarından toplandı; son tam çalıştırma 28.11.2026, kural/rehber/mağaza ortak koda taşınıp İngilizce eklendikten sonra). JVM'deki 6 fazlalık yalnızca JVM'de koşan testlerden (`java.util.Random` karşılaştırması, avatar paketi dosyası vb.) gelir.
 - `commonMain` içinde `java.*`, `android.*`, Firebase, Gson yok. Bağımlılıklar: Kotlin stdlib, kotlinx-datetime 0.6.1, kotlin-test.
 - **iOS hedefleri bu bilgisayarda derlenemez** (Windows). Ortak kod gerçek iOS hedefinde Codemagic'te derlendi ve simülatör testleri geçti (26.11.2026, eşitlemeden önceki kodla); eşitlenmiş kod için iOS hedefli test çalıştırması yapılmadı, yalnızca uygulamanın derlemesi (aşağıda) ortak kodu iOS framework'ü olarak kullandı.
 
@@ -56,8 +56,8 @@ ios/
   - `iosApp/SobiAnaliz/` penceresi; dersteki "Sobi ile analiz et" düğmesine bağlı (artık yer tutucuya gitmiyor). 14. derlemeden sonra pencereye gerçek doğru/yanlış sesi eklendi (derlenmedi).
   - Yazılmayanlar: yapay zekâya bağlı kısımlar (Sobi'ye yazma, öneriler), çeviriler, gerçek sesli okuma (TTS), kural istatistiklerinin sunucuya gönderimi.
 - **Kural kitabı ve ders içi rehber (14. derlemede derlendi, durağan görüntü alındı):**
-  - `Kurallar/`: kural kitabı, ders içi kural paneli, 1x–9x çarpım tabloları; kitap ve sihirli değnek düğmeleri. Kural seçimi mantığı (`KuralKurallari.swift`) Swift'te Android'in kopyasıdır ("Ortak koda taşınması gerekenler"e bakın).
-  - `Rehber/`: altı ders rehberi + haritada maraton rehberi. Sayfa içeriği ve açılma kuralları (`RehberIcerigi.swift`, `RehberOrtak.swift`) Android `GuideHelper.kt`'nin Swift kopyasıdır. "Gösterildi" kaydı (rehber 5) yerelde tutuluyor; Android'de Firestore `skip_step_tutorial_shown`.
+  - `Kurallar/`: kural kitabı, ders içi kural paneli, 1x–9x çarpım tabloları; kitap ve sihirli değnek düğmeleri. Kural seçimi mantığı ortak koddadır (`abakus/LessonRulesLogic.kt`); `KuralKurallari.swift` yalnızca Swift türlerine çevirir (28.11.2026 taşındı, derlenmedi).
+  - `Rehber/`: altı ders rehberi + haritada maraton rehberi. Sayfa içeriği ve açılma kuralları ortak koddadır (`ders/GuideHelper.kt`); `RehberIcerigi.swift` / `RehberOrtak.swift` yalnızca çevirir ve kayıt deposunu okur (28.11.2026 taşındı, derlenmedi). "Gösterildi" kaydı (rehber 5) yerelde tutuluyor; Android'de Firestore `skip_step_tutorial_shown`.
 - **Ses efektleri ve titreşim (14. derlemede derlendi; hiçbiri dinlenmedi/hissedilmedi):**
   - `Ortak/SesCalar.swift` (`AVAudioPlayer` havuzu) ve gerçek uygulamalar: boncuk tık sesi (5 seçenek), doğru/yanlış, sandık, rozet, ders sonucu, yıldız. `Sesler/Efektler/` altında 10 dosya (yaklaşık 0,75 MB).
   - `Ortak/Titresim.swift`: Android'deki üç yerde (alt çubuk sekmesi, avatar seçimi, rozet ayrıntısı).
@@ -79,7 +79,7 @@ Android'de var, iOS'ta yok:
 - **Öğreticide yazılmayanlar:** Sobi düğmesi ve dürtmeleri, ölçüm, öğretici sonu anketi, ipucu paneli, kısa ekran ölçeklemesi (öğretici ve seri artık buradan çıktı; durumları "Uygulama" bölümünde).
 - **Sobi sohbeti** (sunucuya bağlı; Sobi analizindeki yapay zekâ kısımları, gerçek sesli okuma ve kural istatistiği gönderimi de aynı sebeple yok).
 - **Günlük Sobi testi ve yarış paneli:** yazılıyor (yukarıda "Sürüyor"), tamamlanmadı.
-- **Çoklu dil:** metinler yalnızca Türkçe. Araç `tr` dışı `.lproj` üretebilir ama açılmadı; Arapça için ayrı yazı tipi ve sağdan-sola düzen de gerekir.
+- **Çoklu dil (28.11.2026, henüz derlenmedi):** Türkçe + İngilizce açık (`Metin.acikDiller`). `tr.lproj` ve `en.lproj` (`donustur.js --diller tr,en`; en 3457 anahtar, eksik 152'si dilden bağımsız, çalışırken Türkçe'ye düşer) + elle yazılan `IosOzel.strings` (`ios_` önekli iOS'a özgü metinler). Seçici Profil > Hesap Ayarları > Dil (varsayılan telefonun dili; desteklenmeyen dil → İngilizce), seçim UserDefaults `app_language_choice`, değişince kök görünüm yeniden kurulur (`Metin/MetinDilDurumu.swift`). Ders kataloğu Türkçe kalır, gösterirken `Metin.ders` çevirir (`Metin/DersMetinAnahtarlari.swift`, `tools/ders-katalog/uret.js` 5. argümanla üretir); ortak koddan gelen Türkçe sabitler için `Metin.cevir` (tr.lproj'dan ters arama). Galeri `-dil en` alır. Endonezce/Arapça: `acikDiller`'e ekle + `--diller` ile üret; Arapça için ayrıca sağdan-sola düzen ve yazı tipi.
 
 İlk iOS sürümünün dışında bırakılanlar (kapsam kararı): haftalık kart, ödev/sınıf/kurs/öğretmen, veli paneli, davet, Hata Avcısı.
 
@@ -100,13 +100,12 @@ Hepsi protokol + `Sahte…` uygulaması olarak duruyor; gerçek bağlantı için
 
 Şu an Swift'te kopya olarak duran ya da ortak kodda eski kalan şeyler; Android değişirse iki yerde güncellemek gerekir:
 
-- **`Kurallar/`:** kural seçimi mantığı (`KuralKurallari.swift`) Android'in Swift kopyası.
-- **`Rehber/`:** sayfa içeriği ve açılma kuralları (`RehberIcerigi.swift`, `RehberOrtak.swift`) Android `GuideHelper.kt`'nin Swift kopyası.
-- **Mağazadaki eski sabitler:** ortak kodda `ShopFragmentLogic.LIFE_KEY_COST` 3 (Android'de 1; Swift tarafı `MagazaStil.canAnahtarBedeli` ile ayrı tutuyor). Ayrıca `GOLD_CARDS` / `KEY_CARDS` miktar ve fiyatları, `PRO_FALLBACK_PRICE_LABEL` Android'le karşılaştırılıp düzeltilmeli.
-- **Seri dondurma bedeli:** `MagazaStil.dondurmaBedeli` (4000) Swift'te sabit; Android `StreakRepository.FREEZE_COST_GOLD`, ortak kodda yok.
-- **`SubscriptionCta` etiketi** (Süper/Pro düğme metni ve deneme uygunluğu): Android `SubscriptionCta.apply` mantığı `Magaza/MagazaModeli.swift` ve `Plan/PlanModeli.swift` içinde ayrı ayrı yazılmış.
-- **Gün kimliği:** `Kupa/KupaModeli.swift` `bugunKimligi()` ile yerel "yyyy-MM-dd" üretiyor; seri ise ortak koddaki `StreakDays`'i kullanıyor. Tek yere indirilmeli.
-- Diğer eski kalanlar: `LessonAdapterLogic.lessonBottomSheetState.fireAnimVisible` hep false (Android alt panelde ateşi gösteriyor); ölü olanlar: `CrystalBreakLogic`, `ServerRewards.CrystalOutcome`, `ChestResultLogic.animations`.
+- **`LessonAdapterLogic.lessonBottomSheetState.fireAnimVisible`** hep false; Android'de ateş Lottie'si rekor satırının çocuğu, satır görünürken görünür (`recordText != null && !recordLayoutGone` karşılığı). Swift bu alanı okumuyor, ateşi rekor satırıyla birlikte çiziyor; yani davranış doğru, alan yanıltıcı. Dosya Türkçe metin ürettiği için çeviri oturumu bitmeden dokunulmadı.
+- **`MagazaStil.gunlukAnahtarCanSiniri`** (5): sunucu sabiti `ENERGY_KEY_BUY_DAILY_LIMIT`, yalnızca sahte enerji servisinde kullanılıyor; Android istemcisinde karşılığı yok (sunucu bildiriyor), ortak koda alınacak bir istemci kuralı değil.
+
+28.11.2026'da taşınanlar (Swift kopyaları silindi; Swift tarafı derlenmedi): kural paneli/kitabı (`abakus/LessonRulesLogic.kt`), ders içi rehber sayfaları ve açılma koşulları (`ders/GuideHelper.kt`), `SubscriptionCta` etiketi (`oyun/SubscriptionCta.kt`; mağaza ve plan ekranı `MagazaAbonelikCta` üzerinden), mağaza sabitleri güncel Android'e eşitlendi (`ShopFragmentLogic`: can bedeli 1, kart miktar/yedek fiyatları, Pro yedek fiyatı, yeni `SOBI_CREDIT_CARDS`; seri dondurma bedeli `StreakRules.FREEZE_COST_GOLD`), gün kimlikleri ortak koddan (`CupHistoryRepository.todayId`, `kupaCalendarDayId`). Silinen ölü kod: `CrystalBreakLogic`, `ChestResultLogic.animations`, `SonucEkraniKoprusu.animasyonlar/rastgeleAnimasyon`. `ServerRewards.CrystalOutcome` ölü DEĞİL: Android görev ödülü (`MissionRewardRevealDialogFragment` → `ServerRewards.openCrystal`) hâlâ kullanıyor; Firebase bağlanınca iOS'ta da gerekecek.
+
+Gün kimliği notu: iki ayrı biçim var ve tek kurala inmez — `yyyy-MM-dd` (`CupHistoryRepository.todayId` = `StreakDays.dayId(…, 0)`; `submitCupResult` ve seri) ile `yıl-yılınGünü` (`kupaCalendarDayId`, Android `MissionsProgressStore.calendarDayId`; roket rozetinin günlük sayacı Firestore'a bu biçimde yazılıyor). İkisi de ortak kodda; Swift artık kendisi üretmiyor.
 
 ### Kullanıcıdan beklenenler
 
@@ -154,6 +153,7 @@ Paket başlıklarındaki test sayıları JVM'de, 27.11.2026 eşitlemesinden sonr
 | `GlobalLessonData.kt` | `GlobalLessonData.kt`'nin geri kalanı (varsayılanlar, Firestore alanları ↔ model, `updateLessonItem`, backfill, tamamlanma yüzdesi, `stableId` ile doküman yolları ve konum anahtarlı eski dokümanlardan taşıma planı, öğretmen kilit açmaları) + `LessonDataManager.kt` anahtarları |
 | `LessonProgressMerge.kt`, `ChestTypeProgressHelper.kt`, `LessonManager.kt` | aynı adlı dosyalar — tamamı |
 | `GuidePanelData.kt` | `model/GuidePanelData.kt` + `MapFragment.showGuidePanel` verisi |
+| `GuideHelper.kt` | `GuideHelper.kt` (`getGuideContentsForNumber`, `GuideShowTracker` sınırı) + `AbacusFragment` / `BlindingLessonFragment` rehber açılış koşulları ve `optimizeBeadIdsForReverse` |
 | `LessonSuccessRateRepository.kt` | kullanıcı adım durumu (`users/{uid}/lessonSuccessRateState`, `stableId` anahtarlı; eski konum anahtarlı yoldan okuma), analitik kararları. Android'de genel başarı oranı toplamları artık istemcide hesaplanmıyor. |
 | `ChestFragmentLogic.kt` | `ChestFragment.kt` — `updateMapProgress`, kilit açma, `changeCupIcon` |
 | `LessonResultLogic.kt` | `LessonResult.kt`, `LessonResultFalse.kt`, `ChestResult.kt` hesapları |
@@ -198,6 +198,7 @@ Altın veri (`DersAdimAltinVeri.kt`): değişen 17 ve 1013 dallarının tohumlu 
 | `ChestCrystalPolicy.kt`, `NewChestLogic.kt`, `ChestResultLogic.kt` | `ChestCrystalPolicy.kt`, `NewChestFragment.kt`, `ChestResult.kt` |
 | `EnergyManager.kt`, `ServerEnergy.kt`, `ServerRewards.kt`, `UserWalletFirestore.kt`, `TimeTracker.kt`, `BillingCatalog.kt` | aynı adlı dosyalar |
 | `AgeConsentManager.kt`, `AppRatingManager.kt`, `AdRules.kt`, `GuideStores.kt` | `AgeConsentManager.kt`, `AppRatingManager.kt`, `AdManager.kt`, `MarathonGuideStore.kt`, `FirstTutorialShownStore.kt` — kural kısmı |
+| `SubscriptionCta.kt` | `SubscriptionCta.kt` — deneme günü → düğme metni anahtarı |
 | `PlanStatus.kt`, `TrustedClock.kt` | `PlanStatus.kt`, `TrustedClock.kt` + `TrustedClockRules.kt` — saf kısım |
 | `OyunKeyValueStore.kt`, `OyunSaat.kt`, `OyunBagimliliklari.kt` | Android karşılığı yok: SharedPreferences karşılığı arayüz, saat, geçici bağımlılık türleri |
 
@@ -211,6 +212,7 @@ Altın veri (`DersAdimAltinVeri.kt`): değişen 17 ve 1013 dallarının tohumlu 
 | `abakus/AbacusCustomizationFirestore.kt`, `abakus/AbacusPurchases.kt` | `AbacusCustomizationFirestore.kt`, `BeadPurchaseFirestore.kt`, `FramePurchaseFirestore.kt`, `AbacusCustomizationFragment.kt` fiyat/stok kuralları, `AbacusSoundPlayer.kt` ses seçimi |
 | `abakus/AbacusLessonLogic.kt` | `AbacusFragment.kt`, `AbacusPracticeFragment.kt` — cevap doğrulama, sayaç, puan, ders sonu yönlendirmesi |
 | `abakus/BlindingLessonLogic.kt` | `BlindingLessonFragment.kt` — cevap doğrulama, kupa deltası, sayı dizisi durum makinesi |
+| `abakus/LessonRulesLogic.kt` | `AbacusFragment.kt`, `BlindingLessonFragment.kt`, `abacus/LessonRulesPanel.kt`, `model/RulesFragment.kt` — kural paneli tablosu, kitap/değnek düğmeleri, kitabın tabloları ve bölücüleri |
 | `model/StudentQuestion.kt`, `model/MessageReport.kt` | `model/StudentQuestion.kt`, `model/MessageReport.kt`, `model/RestrictedUser.kt`, `UserAskQuestionRestriction.kt`, `NotificationFragment.kt` yazımları |
 | `model/AuthRules.kt` | `auth/AuthManager.kt`, `RegisterActivity.kt`, `LoginActivity.kt`, `EditProfileFragment.kt`, `OtpVerificationFragment.kt` — doğrulama kuralları, kullanıcı dokümanı alanları, Cloud Function adları ve gövdeleri |
 | `model/SessionDeviceRules.kt` | `SessionDeviceManager.kt`, `AccountDeletionHelper.kt`, `MyFirebaseMessagingService.kt`, `AddFriendFragment.kt`, `FollowersFollowingFragment.kt` |

@@ -1,3 +1,4 @@
+import Shared
 import SwiftUI
 
 // Mağaza klasörünün ortak görsel yardımcıları: fragment_shop.xml'de doğrudan yazılmış
@@ -68,11 +69,14 @@ enum MagazaStil {
 
     // MARK: Sabitler
 
-    /// 1 can satın almanın anahtar bedeli. Android: ShopFragment.LIFE_KEY_COST = 1.
-    /// Ortak koddaki ShopFragmentLogic.LIFE_KEY_COST eski değerde (3) kaldığı için burada ayrı tutulur.
-    static let canAnahtarBedeli: Int = 1
-    /// Seri dondurmanın altın bedeli. Android: StreakRepository.FREEZE_COST_GOLD = 4000 (ortak kodda yok).
-    static let dondurmaBedeli: Int = 4000
+    /// 1 can satın almanın anahtar bedeli (ortak: ShopFragmentLogic.LIFE_KEY_COST; Android ShopFragment).
+    static var canAnahtarBedeli: Int {
+        return Int(ShopFragmentLogic.shared.LIFE_KEY_COST)
+    }
+    /// Seri dondurmanın altın bedeli (ortak: StreakRules.FREEZE_COST_GOLD; Android StreakRepository).
+    static var dondurmaBedeli: Int {
+        return Int(StreakRules.shared.FREEZE_COST_GOLD)
+    }
     /// Anahtarla günde en çok alınabilen can (sunucu: ENERGY_KEY_BUY_DAILY_LIMIT).
     static let gunlukAnahtarCanSiniri: Int = 5
 

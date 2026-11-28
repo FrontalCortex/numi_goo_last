@@ -81,7 +81,7 @@ final class RozetDetayModeli: ObservableObject {
         let v: RozetEkranVerisi = kopru.rozetEkrani(modeName: modAdi)
         var parcalar: [RozetParcaDurumu] = []
         for (sira, p) in v.pieceRows.enumerated() {
-            parcalar.append(RozetParcaDurumu(sira: sira, unite: p.titleUnit, derece: p.rankText, sezon: p.seasonText))
+            parcalar.append(RozetParcaDurumu(sira: sira, unite: Metin.ders(p.titleUnit), derece: p.rankText, sezon: p.seasonText))
         }
         durum = RozetDetayDurumu(
             modAdi: v.modeName,

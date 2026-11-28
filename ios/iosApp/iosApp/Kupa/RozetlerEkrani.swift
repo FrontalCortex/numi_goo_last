@@ -80,8 +80,8 @@ final class RozetlerModeli: ObservableObject {
     private static func durum(_ v: RozetKutuVerisi) -> RozetKutuDurumu {
         return RozetKutuDurumu(
             modAdi: v.modeName,
-            baslik: v.title,
-            altYazi: v.subtext,
+            baslik: Metin.cevir(v.title),
+            altYazi: Metin.cevir(v.subtext),
             degerMetni: v.valueText,
             degerGorunur: v.showCount,
             acik: v.unlocked,

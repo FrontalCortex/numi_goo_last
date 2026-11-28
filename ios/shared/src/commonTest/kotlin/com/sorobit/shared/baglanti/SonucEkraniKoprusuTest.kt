@@ -2,8 +2,6 @@ package com.sorobit.shared.baglanti
 
 import com.sorobit.shared.ders.GlobalLessonData
 import com.sorobit.shared.ders.LessonResultLogic
-import com.sorobit.shared.matematik.RastgeleKaynagi
-import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -29,17 +27,6 @@ class SonucEkraniKoprusuTest {
         assertEquals("Başarı oranı %75'ten düşük!",SonucEkraniKoprusu.basarisizlikAciklamasi(false))
     }
 
-    @Test
-    fun animasyonlar() {
-        assertEquals(12, SonucEkraniKoprusu.animasyonlar().size)
-        assertEquals("animation_one.json", SonucEkraniKoprusu.animasyonlar().first())
-        RastgeleKaynagi.rastgele = Random(3)
-        try {
-            repeat(50) { assertTrue(SonucEkraniKoprusu.rastgeleAnimasyon() in SonucEkraniKoprusu.animasyonlar()) }
-        } finally {
-            RastgeleKaynagi.varsayilanaDon()
-        }
-    }
 
     @Test
     fun sure() {

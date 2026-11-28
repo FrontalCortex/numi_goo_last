@@ -25,7 +25,7 @@ struct YakindaEkrani: View {
             Text(baslik)
                 .font(Tema.yazi(24))
                 .foregroundColor(Color.white)
-            Text("Yakında")
+            Text(Metin.al("ios_yakinda"))
                 .font(Tema.yazi(17))
                 .foregroundColor(Color.white.opacity(0.6))
             Text("Android: " + androidKarsiligi)

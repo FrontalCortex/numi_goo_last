@@ -10,8 +10,8 @@ import SwiftUI
 //   GuideShowTracker (GuideHelper.kt)                       → gosterilebilir / gosterildi
 //   MarathonGuideStore.scheduleIfEligible (ChestFragment.claim) → maratonuPlanla
 //
-// NOT (ortak koda taşınmalı): abaküs ve kör ders rehberinin açılma koşulları Android'de iki Fragment'ın
-// içinde. Burada birebir kopya olarak tek yerde duruyor; sayfa içeriği için bkz. RehberIcerigi.swift.
+// Açılma koşulları ve gösterim sınırı ortak koddadır (ders/GuideHelper.kt → GuideHelper); burada yalnızca
+// kayıt deposu okunur/yazılır. Sayfa içeriği için bkz. RehberIcerigi.swift.
 // Maraton rehberinin uygunluk kuralı ve metinleri zaten ortak kodda (MarathonGuideLogic, marathonGuidePanelData).
 
 /// Başlatılacak bir rehberin hazır hâli.
@@ -29,17 +29,12 @@ enum RehberOrtak {
     /// Haritadaki maraton rehberi (harita ekranı ve yönetici ortak kullanır).
     static let maraton: RehberMaratonDurumu = RehberMaratonDurumu()
 
-    /// GuideShowTracker.MAX_SHOW_COUNT.
-    static let enCokGosterim: Int = 2
-
     // MARK: Gösterim sınırı
 
-    /// GuideShowTracker.canShow: yalnızca rehber 6 (abaküs boyutu ipucu) en çok iki kez gösterilir.
+    /// GuideShowTracker.canShow: yalnızca rehber 6 (abaküs boyutu ipucu) en çok iki kez gösterilir
+    /// (ortak: GuideHelper.canShow).
     static func gosterilebilir(rehberNo: Int) -> Bool {
-        if rehberNo == 6 {
-            return depo.gosterimSayisi(rehberNo: rehberNo) < enCokGosterim
-        }
-        return true
+        return GuideHelper.shared.canShow(guideNumber: Int32(rehberNo), guide6ShownCount: rehber6Gosterimi())
     }
 
     /// Rehber panel kaymaya başlarken çağrılır (Android: showGuidePanelWithAnimation'dan sonraki kayıt satırları).
@@ -47,47 +42,60 @@ enum RehberOrtak {
         if baslatma.atlaOgreticisi {
             depo.atlaOgreticisiniIsaretle()
         }
-        if baslatma.rehberNo == 6 {
-            depo.gosterimiKaydet(rehberNo: 6)
+        if GuideHelper.shared.recordsShown(guideNumber: Int32(baslatma.rehberNo)) {
+            depo.gosterimiKaydet(rehberNo: baslatma.rehberNo)
         }
     }
 
     // MARK: Abaküs dersi
 
-    /// AbacusFragment.setupGuidePanel: `abacusGuideNumber` yoksa ya da ders adımı 1 değilse rehber yok;
-    /// rehber 6 ikiden fazla gösterilmez.
+    /// AbacusFragment.setupGuidePanel (ortak: GuideHelper.abacusLessonGuideNumber). `ilkAdim`:
+    /// LessonItem.currentStep == 1.
     static func abakusDersiRehberi(rehberNo: Int?, ilkAdim: Bool) -> RehberBaslatma? {
-        guard let no = rehberNo, ilkAdim, gosterilebilir(rehberNo: no) else {
+        let adim: Int32 = ilkAdim ? 1 : 0
+        let secilen: KotlinInt? = GuideHelper.shared.abacusLessonGuideNumber(
+            abacusGuideNumber: kutula(rehberNo), currentStep: adim, guide6ShownCount: rehber6Gosterimi()
+        )
+        guard let no = secilen else {
             return nil
         }
-        let adimlar: [RehberAdimi] = RehberIcerigi.adimlar(rehberNo: no)
-        if adimlar.isEmpty {
-            return nil
-        }
-        return RehberBaslatma(rehberNo: no, adimlar: adimlar, atlaOgreticisi: false)
+        let rehber: Int = Int(no.intValue)
+        return RehberBaslatma(rehberNo: rehber, adimlar: RehberIcerigi.adimlar(rehberNo: rehber), atlaOgreticisi: false)
     }
 
     // MARK: Kör ders
 
-    /// BlindingLessonFragment.initializeGuideSystem: "sayıyı geç" düğmesi görünüyorsa ve öğretici daha önce
-    /// gösterilmediyse rehber 5; aksi hâlde dersin kendi rehberi (5 hariç, yalnızca ders adımı 1'de).
+    /// BlindingLessonFragment.initializeGuideSystem (ortak: GuideHelper.blindingLessonGuideNumber): "sayıyı geç"
+    /// düğmesi görünüyorsa ve öğretici daha önce gösterilmediyse rehber 5; aksi hâlde dersin kendi rehberi
+    /// (5 hariç, yalnızca ders adımı 1'de).
     static func korDersiRehberi(rehberNo: Int?, ilkAdim: Bool, adimAtlaGorunur: Bool) -> RehberBaslatma? {
-        var secilen: Int? = nil
-        var atla: Bool = false
-        if adimAtlaGorunur && !depo.atlaOgreticisiGosterildi() {
-            secilen = 5
-            atla = true
-        } else if let no = rehberNo, no != 5, ilkAdim {
-            secilen = no
-        }
-        guard let no = secilen, gosterilebilir(rehberNo: no) else {
+        let adim: Int32 = ilkAdim ? 1 : 0
+        let secilen: KotlinInt? = GuideHelper.shared.blindingLessonGuideNumber(
+            abacusGuideNumber: kutula(rehberNo),
+            currentStep: adim,
+            skipStepButtonVisible: adimAtlaGorunur,
+            skipStepTutorialShown: depo.atlaOgreticisiGosterildi(),
+            guide6ShownCount: rehber6Gosterimi()
+        )
+        guard let no = secilen else {
             return nil
         }
-        let adimlar: [RehberAdimi] = RehberIcerigi.adimlar(rehberNo: no)
-        if adimlar.isEmpty {
+        let rehber: Int = Int(no.intValue)
+        // Normal yol 5'i açmaz: 5 her zaman atlama öğreticisi yolundan gelir.
+        let atla: Bool = rehber == Int(GuideHelper.shared.SKIP_STEP_GUIDE_NUMBER)
+        return RehberBaslatma(rehberNo: rehber, adimlar: RehberIcerigi.adimlar(rehberNo: rehber), atlaOgreticisi: atla)
+    }
+
+    private static func rehber6Gosterimi() -> Int32 {
+        let no: Int = Int(GuideHelper.shared.LIMITED_GUIDE_NUMBER)
+        return Int32(depo.gosterimSayisi(rehberNo: no))
+    }
+
+    private static func kutula(_ deger: Int?) -> KotlinInt? {
+        guard let d = deger else {
             return nil
         }
-        return RehberBaslatma(rehberNo: no, adimlar: adimlar, atlaOgreticisi: atla)
+        return KotlinInt(int: Int32(d))
     }
 
     // MARK: Maraton

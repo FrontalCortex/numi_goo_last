@@ -339,7 +339,7 @@ struct YonetimKatmanGorunumu: View {
         )
         return OgreticiEkrani(
             baslangic: baslangic,
-            ses: OgreticiGercekSesCalici(),
+            ses: OgreticiGercekSesCalici.ortak,
             bitti: { _ in nesne.ogreticiGecildi(hedef, katman: no) },
             kapat: { nesne.kapat(no) }
         )

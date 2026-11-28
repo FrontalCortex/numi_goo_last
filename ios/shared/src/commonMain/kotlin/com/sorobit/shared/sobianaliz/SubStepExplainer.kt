@@ -1,7 +1,8 @@
 // Kaynak: app/src/main/java/com/example/app/abacus/SubStepExplainer.kt — Türkçe dalı birebir.
-// Bilinçli fark: Android İngilizce/Endonezce/Arapça'yı SubStepExplainerEn/Id/Ar'a yönlendiriyor; o
-// çeviriler ŞİMDİLİK taşınmadı (iOS uygulaması Türkçe'ye sabit). Metinler Kotlin içinde gömülü
-// olduğu için aynen kopyalandı.
+// Dil: Android AppLanguage.textLanguage()'a bakıp İngilizceyi SubStepExplainerEn'e yönlendiriyor; ortak
+// kodda uygulama dili yok, onun yerine [language] var (iOS: Metin.diliAyarla atar). Yalnızca İngilizce
+// taşındı ([SubStepExplainerEn]); Endonezce/Arapça (SubStepExplainerId/Ar) ŞİMDİLİK taşınmadı, o dillerde
+// Türkçe döner. Metinler Kotlin içinde gömülü olduğu için aynen kopyalandı.
 package com.sorobit.shared.sobianaliz
 
 import kotlin.math.abs
@@ -16,14 +17,20 @@ import kotlin.math.abs
  */
 object SubStepExplainer {
 
+    /** Anlatım dili ("tr", "en" …; Android: AppLanguage.textLanguage()). "en" dışındaki her değer Türkçe. */
+    var language: String = "tr"
+
+    private fun english(): Boolean = language == "en"
+
     /** Parçanın balon etiketi: “10 gelir” ne demek? */
     fun question(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String =
-        "“${MistakeAnalyzer.stepPhrase(s, m)}” ne demek?"
+        if (english()) SubStepExplainerEn.question(s, m) else "“${MistakeAnalyzer.stepPhrase(s, m)}” ne demek?"
 
     /** Hamlenin parçaları balona değer mi: kuralsız tek parça kendini anlatıyor. */
     fun hasParts(m: StepExplainer.ColumnMove): Boolean = m.rule != AbacusRule.DIRECT
 
     fun explain(s: StepExplainer.Step, m: StepExplainer.ColumnMove): String {
+        if (english()) return SubStepExplainerEn.explain(s, m)
         val phrase = "“${MistakeAnalyzer.stepPhrase(s, m)}”"
         val col = MistakeAnalyzer.columnName(m.col)
         return when (s.role) {
@@ -62,6 +69,7 @@ object SubStepExplainer {
 
     /** "Neden bu kural?": neden doğrudan olmuyor ve kural neden işe yarıyor (derslerin gerekçesi). */
     fun whyRule(m: StepExplainer.ColumnMove): String {
+        if (english()) return SubStepExplainerEn.whyRule(m)
         val d = m.digitBefore
         val x = m.x
         val where = "${cap(locative(MistakeAnalyzer.columnName(m.col)))} $d var"

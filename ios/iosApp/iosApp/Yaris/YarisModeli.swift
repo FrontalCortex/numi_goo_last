@@ -139,7 +139,7 @@ final class YarisPaneliModeli: ObservableObject {
             id: sira,
             oge: oge,
             seviye: seviye,
-            ad: oge.title,
+            ad: Metin.ders(oge.title),
             durumMetni: durumMetniniCevir(durum.statusText),
             kilitGorunur: durum.lockVisible,
             durumEtkin: durum.statusEnabled
@@ -167,7 +167,7 @@ final class YarisPaneliModeli: ObservableObject {
         let d = mantik.raceLessonBottomSheetState(raceItem: satir.oge)
         altPanel = YarisAltPanel(
             satir: satir,
-            baslik: d.title,
+            baslik: Metin.ders(d.title),
             aciklama: d.description_,
             kilitli: d.isLockedRace,
             eylemMetni: eylemMetniniCevir(d.actionText)

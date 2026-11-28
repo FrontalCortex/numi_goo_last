@@ -116,7 +116,7 @@ enum ProfilOrtak {
         let kartlar: [ProfileCupCard] = mantik.CUP_CARDS
         return kartlar.map { kart in
             ProfilKupaKartTanimi(
-                baslik: kart.title,
+                baslik: Metin.cevir(kart.title),
                 animasyonDosyasi: kart.animFile,
                 yasakSimgesi: kart.showForbiddenIcon,
                 alan: kart.field

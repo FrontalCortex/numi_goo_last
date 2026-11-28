@@ -1,0 +1,46 @@
+/* iOS-only texts (no counterpart in Android strings.xml). Hand-written; the metin-donustur tool
+   does NOT touch this file. Keys are prefixed `ios_` and must match tr.lproj/IosOzel.strings. */
+
+/* Sign in with Apple (iOS only). */
+"ios_giris_apple_ile_giris_yap" = "Sign in with Apple";
+"ios_giris_apple_ile_kayit_ol" = "Sign up with Apple";
+"ios_giris_apple_girisi_basarisiz" = "Apple sign-in failed";
+"ios_giris_apple_kaydi_basarisiz" = "Apple sign-up failed";
+
+/* Sign-up: hard-coded Turkish on Android. */
+"ios_giris_hedefimi_onayla" = "Confirm my goal";
+"ios_giris_okuldan_sonra" = "After school";
+"ios_giris_yemekten_sonra" = "After dinner";
+
+/* Shop / plan: App Store rules (3.1.1, 3.1.2). */
+"ios_magaza_geri_yukle" = "Restore purchases";
+"ios_magaza_geri_yuklendi" = "Your purchases have been restored.";
+"ios_magaza_geri_yuklenecek_yok" = "No purchases to restore.";
+"ios_plan_pro_aktif" = "YOUR PRO MEMBERSHIP IS ACTIVE";
+"ios_plan_aboneligi_yonet" = "Manage subscription";
+"ios_plan_kullanim_sartlari" = "Terms of Use";
+"ios_plan_gizlilik_politikasi" = "Privacy Policy";
+"ios_plan_zaten_sahip" = "You already have this plan.";
+"ios_plan_deneme_haftalik" = "%1$d-week";
+"ios_plan_deneme_gunluk" = "%1$d-day";
+"ios_plan_abonelik_ucreti" = "the subscription price";
+"ios_plan_deneme_sonrasi" = "After the %1$@ free trial, the subscription starts at %2$@ per month.";
+"ios_plan_abonelik_ucreti_ayda" = "Subscription price: %1$@ per month.";
+"ios_plan_otomatik_yenileme" = "The subscription renews automatically every month unless it is cancelled at least 24 hours before the end of the current period. Payment is charged to your Apple ID account at confirmation of purchase; the renewal is charged to your account within 24 hours before the end of the period.";
+"ios_plan_iptal" = "You can manage your subscription and cancel it anytime in Settings > Apple ID > Subscriptions.";
+
+/* Profile. */
+"ios_profil_app_store_acilamadi" = "Couldn't open the App Store";
+
+/* Lesson. */
+"ios_abakus_sorular_acilamadi" = "Couldn't load the questions for this lesson.";
+
+/* Shell: accessibility labels and tab names. */
+"ios_erisim_altin" = "Gold: %1$@";
+"ios_erisim_enerji" = "Energy: %1$@";
+"ios_erisim_anahtar" = "Keys: %1$@";
+"ios_sekme_harita" = "Map";
+"ios_sekme_profil" = "Profile";
+"ios_sekme_gorevler" = "Quests";
+"ios_sekme_abakus" = "Abacus";
+"ios_yakinda" = "Coming soon";

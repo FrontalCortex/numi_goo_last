@@ -500,7 +500,7 @@ final class GunlukSoruModeli: ObservableObject {
         if let sec = cikislar.kartSecildi {
             sec(secilen)
         } else {
-            bildir("Yakında")
+            bildir(Metin.al("ios_yakinda"))
         }
     }
 }

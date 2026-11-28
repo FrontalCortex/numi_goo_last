@@ -355,7 +355,7 @@ private struct MagazaGeriYukleDugmesi: View {
 
     var body: some View {
         Button(action: eylem) {
-            Text("Satın alımları geri yükle")
+            Text(Metin.al("ios_magaza_geri_yukle"))
                 .font(Tema.yazi(13))
                 .foregroundColor(MagazaStil.aciklamaRengi)
                 .padding(.vertical, 8)
