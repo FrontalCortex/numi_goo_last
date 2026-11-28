@@ -98,7 +98,9 @@ workflows:
           xcrun simctl spawn "$UDID" log show --last 1m --style compact --predicate 'process == "iosApp"' > build/ilk-acilis.log 2>&1 || true
           xcrun simctl terminate "$UDID" com.sorobit.app || true
           # Hesaplı açılış: `-oturum acik` hazır öğrenci hesabının oturumunu açık başlatır (Yonetim/SahteOrtam.swift).
-          xcrun simctl launch "$UDID" com.sorobit.app -oturum acik || true
+          # Simülatörün dili İngilizce: "Telefonun dili" seçimiyle argümansız açılış İngilizce gelir.
+          # Hesaplı açılış ve Türkçe galeri bu yüzden -dil tr ile açılır.
+          xcrun simctl launch "$UDID" com.sorobit.app -oturum acik -dil tr || true
           sleep 8
           xcrun simctl io "$UDID" screenshot build/ekran-oturum.png || true
           xcrun simctl terminate "$UDID" com.sorobit.app || true
@@ -106,7 +108,7 @@ workflows:
           # (adlar: iosApp/Yonetim/EkranGalerisi.swift içindeki EkranGalerisi.adlar).
           mkdir -p build/ekranlar
           for AD in giris giris-acilis giris-tanisma giris-eposta kayit kayit-yas kayit-kaynak kayit-abakus kayit-hedef kayit-yol kayit-meydan-okuma kayit-hatirlatma kayit-veli-onayi kayit-kod kabuk harita-kisim harita-ders harita-popover harita-kilitli-popover abakus-ders abakus-sandik kor-ders rehber-ders rehber-kor-ders rehber-maraton sonuc-basarili sonuc-basarisiz sonuc-sandik-basarisiz sonuc-sandik sandik gorevler gorevler-yeni kupa kupa-gecmisi kupa-yolu-odul lider-tablosu rozetler rozet-detay ozellestirme magaza magaza-alt profil profil-duzenle ses-ayarlari avatar avatar-duzenle yer-tutucu ogretici-1 ogretici-2 ogretici-3 ogretici-4 ogretici-5 ogretici-101-20 ogretici-22-34 ogretici-24-6 ogretici-24-14 ogretici-3-5 ogretici-5-10 ogretici-6-6 ogretici-105-4 ogretici-8-43 ogretici-11-1 ogretici-12-1 ogretici-17-1 maskot seri seri-kirik seri-meydan-okuma seri-kutlama seri-yeni seri-yeni-soru seri-hedef seri-hatirlatma kural-kitabi kural-kitabi-2 kural-paneli kural-paneli-carpim plan plan-secim plan-pro rozet-kutlama sobi-analiz sobi-analiz-2 yaris-paneli yaris-paneli-kilitli yaris-ders yaris-paneli-alt yaris-paneli-ileri-sar sobi-test sobi-test-kilitli sobi-test-sonuc sobi-test-oynatici; do
-            xcrun simctl launch "$UDID" com.sorobit.app -ekran "$AD" || true
+            xcrun simctl launch "$UDID" com.sorobit.app -ekran "$AD" -dil tr || true
             sleep 5
             xcrun simctl io "$UDID" screenshot "build/ekranlar/$AD.png" || true
             xcrun simctl terminate "$UDID" com.sorobit.app || true
