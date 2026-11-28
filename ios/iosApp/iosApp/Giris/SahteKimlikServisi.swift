@@ -158,7 +158,7 @@ final class SahteKimlikServisi: KimlikServisi {
             try? await Task.sleep(nanoseconds: nanosaniye)
         }
         if ayarlar.agHatasi {
-            throw GirisHatasi("Ağ bağlantı hatası. İnternet bağlantınızı kontrol edin.")
+            throw GirisHatasi(Metin.al("ui_ag_baglanti_hatasi_internet_baglantinizi_kon"))
         }
     }
 
@@ -277,7 +277,7 @@ final class SahteKimlikServisi: KimlikServisi {
             throw GirisHatasi("Geçersiz kod")
         }
         if !amaclar.contains(gonderilen) {
-            throw GirisHatasi("Geçersiz veya süresi dolmuş kod")
+            throw GirisHatasi(Metin.al("ui_gecersiz_veya_suresi_dolmus_kod"))
         }
         yanlisDenemeler[eposta] = 0
     }

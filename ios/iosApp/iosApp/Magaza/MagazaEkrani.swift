@@ -82,7 +82,7 @@ private struct MagazaUstCubuk: View {
             }
             .buttonStyle(MagazaBasmaStili())
             .padding(.leading, 8)
-            .accessibilityLabel(Text("Kapat"))
+            .accessibilityLabel(Text(Metin.al("ios_erisim_kapat")))
 
             Spacer(minLength: 0)
 

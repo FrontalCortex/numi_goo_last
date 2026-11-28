@@ -243,9 +243,9 @@ enum Metin {
             etkinPaket = yedekPaket
             dil = varsayilanDil
         }
-        // Ortak kodda cümleyi kendisi kuran Sobi hata analizi: teşhis, sütun/kural adları ve alt adım
-        // açıklamaları (Android: AppLanguage.textLanguage()).
-        SobiAnalizDili.shared.language = dil
+        // Ortak kodun tek dil ayarı (Android: AppLanguage.textLanguage() / Locale.getDefault()): cümleyi
+        // kendisi kuran Sobi hata analizi (SobiAnalizDili buna bağlıdır) ve ondalık ayırıcı (Sobi testi saniyesi).
+        OrtakDil.shared.language = dil
     }
 
     /// `<kod>.lproj` klasörünü paket olarak açar; "en-GB" bulunamazsa "en" denenir.

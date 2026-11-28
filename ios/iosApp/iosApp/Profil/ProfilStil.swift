@@ -92,7 +92,7 @@ struct ProfilUstCubuk: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(Text("Geri"))
+            .accessibilityLabel(Text(Metin.al("ios_erisim_geri")))
             Text(baslik)
                 .font(ProfilStil.yazi(yaziBoyu))
                 .foregroundColor(Color.white)

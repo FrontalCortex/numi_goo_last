@@ -35,6 +35,21 @@ class BadgeEkranMantigiTest {
         assertTrue(B.unlockedDetailTemplate(BadgeAnimMode.EAGLE).contains("Karti"))
     }
 
+    /** iOS çevirisi için Android string kaynak adları ve "%1$s" yerine konan değer. */
+    @Test
+    fun aciklamaAnahtarlariVeDegeri() {
+        assertEquals(BadgeAnimMode.entries.toSet(), B.unlockedDetailTextKeys.keys)
+        assertEquals(BadgeAnimMode.entries.toSet(), B.lockedDetailTextKeys.keys)
+        assertEquals("ui_x_dersi_hatasiz_tamamlayarak_kusursuz_odak", B.badgeDetailKey(BadgeAnimMode.DAILY_ONLY))
+        assertEquals("ui_bu_rozeti_kazanmak_icin_toplama_kupa", B.badgeDetailKey(BadgeAnimMode.DINO, unlocked = false))
+        BadgeProgressRepository.update(UserBadgeProgress(userGolfProgress = 20))
+        assertEquals(20, B.badgeDetailProgress(BadgeAnimMode.GOLF_WITH_BASE))
+        assertEquals(5, B.badgeDetailProgress(BadgeAnimMode.GOLF_WITH_BASE, celebrateTarget = 5))
+        assertNull(B.badgeDetailProgress(BadgeAnimMode.GOLF_WITH_BASE, unlocked = false))
+        assertNull(B.badgeDetailProgress(BadgeAnimMode.SILVER_MEDAL, celebrateTarget = 9))
+        BadgeProgressRepository.update(UserBadgeProgress())
+    }
+
     @Test
     fun formatUnlockedDetailText() {
         BadgeProgressRepository.update(

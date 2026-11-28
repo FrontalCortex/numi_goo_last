@@ -2,6 +2,7 @@
 // Android kaynağının davranışından: SobiDailyTest.kt, SobiTestSheet.fill, HomeworkPlayerFragment.finishSobiTest).
 package com.sorobit.shared.sobitest
 
+import com.sorobit.shared.OrtakDil
 import com.sorobit.shared.ders.GlobalLessonData
 import com.sorobit.shared.ders.LessonItem
 import com.sorobit.shared.oyun.InMemoryKeyValueStore
@@ -167,6 +168,22 @@ class SobiDailyTestTest {
         assertEquals("sobi_test_rule_mental(sobi_test_rule_sub_five)", SobiDailyTest.ruleLabel("m_sub_five", metin))
         assertEquals("sobi_test_rule_mul(2|1)", SobiDailyTest.ruleLabel("mulA_2x1", metin))
         assertEquals("sobi_test_rule_mental(sobi_test_rule_mul(2|2))", SobiDailyTest.ruleLabel("mulM_2x2", metin))
+    }
+
+    /** Android: String.format(Locale.getDefault(), "%.1f") — İngilizcede ondalık ayırıcı nokta. */
+    @Test
+    fun saniyeMetniIngilizce() {
+        try {
+            OrtakDil.language = OrtakDil.ENGLISH
+            assertEquals("2.4", SobiDailyTest.secondsText(2400))
+            assertEquals("3", SobiDailyTest.secondsText(3000))
+            assertEquals("sobi_test_spec(2|3|2.4)", SobiDailyTest.specText(5, metin))
+            // Sobi analizinin dil adı aynı ayara bağlı.
+            assertEquals(OrtakDil.ENGLISH, com.sorobit.shared.sobianaliz.SobiAnalizDili.language)
+        } finally {
+            OrtakDil.language = OrtakDil.TURKISH
+        }
+        assertEquals("2,4", SobiDailyTest.secondsText(2400))
     }
 
     @Test

@@ -3,6 +3,8 @@
 // okuyor; ortak kodda uygulama dili yok, onun yerine bu tek ayar var. iOS: Metin.diliAyarla atar.
 package com.sorobit.shared.sobianaliz
 
+import com.sorobit.shared.OrtakDil
+
 /**
  * Sobi hata analizinin metin dili: [MistakeAnalyzer] (teşhis, sütun ve kural adları) ile
  * [SubStepExplainer] (alt adım açıklamaları) buna bakar.
@@ -14,8 +16,12 @@ object SobiAnalizDili {
     const val TURKISH = "tr"
     const val ENGLISH = "en"
 
-    /** Dil kodu ("tr", "en" …; Android: AppLanguage.textLanguage()). */
-    var language: String = TURKISH
+    /** Dil kodu ("tr", "en" …; Android: AppLanguage.textLanguage()). Genel ayar [OrtakDil]'dedir; bu ad ona bağlıdır. */
+    var language: String
+        get() = OrtakDil.language
+        set(value) {
+            OrtakDil.language = value
+        }
 
     internal fun english(): Boolean = language == ENGLISH
 }

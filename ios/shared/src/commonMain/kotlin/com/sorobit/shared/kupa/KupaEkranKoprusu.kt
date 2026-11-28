@@ -38,6 +38,13 @@ data class KupaGrafikVerisi(
     val axisMax: Int,
     /** x ekseninde gösterilecek en çok etiket sayısı. */
     val xAxisLabelCount: Int,
+    /**
+     * [points] ile aynı sırada, her noktanın "yyyy-MM-dd" tarih kimliği. iOS, Türkçe dışındaki dillerde
+     * etiketi bu tarihten seçili dilin yereliyle yeniden biçimler (Android: Locale.getDefault()).
+     */
+    val dateIds: List<String> = emptyList(),
+    /** Etiketin tarih kalıbı ([CupHistoryLogic.labelPattern]: "d MMM" ya da "MMM yy"); boş grafikte boş. */
+    val labelPattern: String = "",
 )
 
 /** Sezon başlığı: indeks, "s14" etiketi ve geri sayım metni. */
@@ -134,6 +141,10 @@ data class RozetEkranVerisi(
     val pieceAsset: String,
     /** Açık rozette ekrana dokununca üst animasyon yeniden oynar. */
     val replayOnTap: Boolean,
+    /** [detailText]'in Android string kaynak adı ([BadgeFragmentLogic.badgeDetailKey]); iOS çevirisi için. */
+    val detailKey: String = "",
+    /** [detailText]'te "%1\$s" yerine konan değer; şablon değişmiyorsa boş. */
+    val detailValue: String = "",
 )
 
 object KupaEkranKoprusu {
@@ -173,6 +184,8 @@ object KupaEkranKoprusu {
             axisMin = axisMin,
             axisMax = axisMax,
             xAxisLabelCount = CupHistoryLogic.xAxisLabelCount(bucketed.size),
+            dateIds = bucketed.map { it.first },
+            labelPattern = CupHistoryLogic.labelPattern(t),
         )
     }
 
@@ -397,6 +410,8 @@ object KupaEkranKoprusu {
             pieceRows = pieceRows,
             pieceAsset = pieceAsset,
             replayOnTap = unlocked,
+            detailKey = BadgeFragmentLogic.badgeDetailKey(mode, unlocked),
+            detailValue = BadgeFragmentLogic.badgeDetailProgress(mode, unlocked)?.toString() ?: "",
         )
     }
 }

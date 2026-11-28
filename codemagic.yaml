@@ -114,7 +114,7 @@ workflows:
             xcrun simctl terminate "$UDID" com.sorobit.app || true
           done
           # Aynı galeri İngilizce (-dil en: seçim kaydedilmez, Metin/Metin.swift); dosya adı <ad>@en.png.
-          for AD in giris kayit-hedef harita-ders abakus-ders sonuc-basarili magaza plan-secim profil seri ogretici-3 sobi-analiz sobi-analiz-2; do
+          for AD in giris kayit-hedef harita-ders abakus-ders sonuc-basarili magaza plan-secim profil seri ogretici-3 sobi-analiz sobi-analiz-2 rozet-detay rozet-kutlama ozellestirme kupa kupa-gecmisi yaris-paneli sobi-test-sonuc; do
             xcrun simctl launch "$UDID" com.sorobit.app -ekran "$AD" -dil en || true
             sleep 5
             xcrun simctl io "$UDID" screenshot "build/ekranlar/$AD@en.png" || true

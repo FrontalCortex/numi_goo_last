@@ -278,13 +278,14 @@ final class OzellestirmeModeli: ObservableObject {
         // Android kalınlığı ham piksel olarak verir; 3x yoğunlukta pt karşılığı üçte biridir.
         seciliCerceveKalinligi = CGFloat(AbacusCustomizationRules.shared.SELECTED_STROKE_WIDTH) / 3.0
         renkOzelligiFiyatMetni = String(AbacusCustomizationRules.shared.COLOR_FEATURE_PRICE)
-        boncukTipiBasligi = ui.TITLE_BEAD_TYPE
-        cerceveTipiBasligi = ui.TITLE_FRAME_TYPE
-        yuvaPaneliBasligi = ui.TITLE_SLOT_PANEL
-        normalEtiketi = ui.LABEL_NORMAL
-        seciliEtiketi = ui.LABEL_SELECTED
-        tonEtiketi = ui.LABEL_HUE
-        parlaklikEtiketi = ui.LABEL_LIGHTNESS
+        // Ortak koddaki Türkçe sabitler Android'deki string kaynaklarının değeridir; seçili dile çevrilir.
+        boncukTipiBasligi = Metin.cevir(ui.TITLE_BEAD_TYPE)
+        cerceveTipiBasligi = Metin.cevir(ui.TITLE_FRAME_TYPE)
+        yuvaPaneliBasligi = Metin.cevir(ui.TITLE_SLOT_PANEL)
+        normalEtiketi = Metin.cevir(ui.LABEL_NORMAL)
+        seciliEtiketi = Metin.cevir(ui.LABEL_SELECTED)
+        tonEtiketi = Metin.cevir(ui.LABEL_HUE)
+        parlaklikEtiketi = Metin.cevir(ui.LABEL_LIGHTNESS)
         boncukSatirSayisi = Int(ui.BEAD_CARDS_PER_ROW)
         cerceveSatirSayisi = Int(ui.FRAME_CARDS_PER_ROW)
         satinAlmaPaneliGenislikOrani = CGFloat(ui.PURCHASE_PANEL_WIDTH_RATIO)
@@ -778,7 +779,7 @@ final class OzellestirmeModeli: ObservableObject {
                 OzellestirmeBoncukKarti(
                     tipAdi: durum.card.beadType.name,
                     gorselAdi: durum.card.imageResName,
-                    ad: durum.card.label,
+                    ad: Metin.cevir(durum.card.label),
                     gorselGenisligi: CGFloat(durum.card.imageWidthDp),
                     gorselYuksekligi: CGFloat(durum.card.imageHeightDp),
                     adUstBoslugu: CGFloat(durum.card.labelMarginTopDp),
@@ -800,7 +801,7 @@ final class OzellestirmeModeli: ObservableObject {
                 OzellestirmeCerceveKarti(
                     tipAdi: durum.card.frameType.name,
                     gorselAdi: durum.card.imageResName,
-                    ad: durum.card.label,
+                    ad: Metin.cevir(durum.card.label),
                     secili: durum.selected,
                     kilitli: durum.locked,
                     fiyatMetni: String(durum.card.price)
@@ -853,7 +854,7 @@ final class OzellestirmeModeli: ObservableObject {
     private func satiraCevir(_ satir: AbacusCustomizationUiLogic.ColorRow) -> OzellestirmeRenkSatiri {
         OzellestirmeRenkSatiri(
             sira: Int(satir.index),
-            etiket: satir.label,
+            etiket: OzellestirmeModeli.renkEtiketi(satir.label),
             renk: OzellestirmeStil.renk(argb: satir.color),
             ton: Int(satir.hue),
             parlaklik: Int(satir.lightness),
@@ -1020,13 +1021,25 @@ final class OzellestirmeModeli: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + gecikme, execute: is_)
     }
 
+    /// Ortak koddan gelen Türkçe hata metni (Android: appString ile okunan kaynaklar) seçili dilde gösterilir.
     private func bildir(_ metin: String) {
         bildirimSirasi += 1
         let sira: Int = bildirimSirasi
-        bildirim = metin
+        bildirim = Metin.cevir(metin)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             guard let self = self, self.bildirimSirasi == sira else { return }
             self.bildirim = nil
         }
+    }
+
+    /// Renk satırı etiketi (ortak AbacusPreferences / AbacusCustomizationUiLogic, Türkçe). Android'deki
+    /// karşılıklar `appString(R.string.ui_...)` ile okunur; "Renk 1"… ve "Kalp rengi" Android'de koda
+    /// gömülü Türkçedir, iOS'ta `ios_ozellestirme_` anahtarlarıyla çevrilir.
+    static func renkEtiketi(_ turkce: String) -> String {
+        let onek: String = "Renk "
+        if turkce.hasPrefix(onek), let sira = Int(turkce.dropFirst(onek.count)) {
+            return Metin.al("ios_ozellestirme_renk_sirali", sira)
+        }
+        return Metin.cevir(turkce)
     }
 }

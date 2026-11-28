@@ -311,9 +311,17 @@ object LessonAdapterLogic {
      * Android `String.format(Locale.US, "%.1f")` (HALF_UP yuvarlama) kullanır; burada aynı sonuç tam sayı aritmetiğiyle
      * üretilir (ms değeri 1000'e tam bölünmüyorsa onda birlik basamağa en yakın, yarımlar yukarı).
      */
-    fun formatRaceTimePeriodDescription(timePeriodMs: Long?): String {
+    fun formatRaceTimePeriodDescription(timePeriodMs: Long?): String =
+        "Sayı gösterilme periyodu ${formatRaceTimePeriodSeconds(timePeriodMs)} saniye"
+
+    /**
+     * [formatRaceTimePeriodDescription] metnindeki saniye ("3", "2,5"). Android'de bu değer
+     * `ui_sayi_gosterilme_periyodu_x_saniye` kaynağına verilir; ondalık ayırıcı her dilde virgüldür
+     * (`replace('.', ',')`). iOS, metni seçili dilde bu değerle kurar.
+     */
+    fun formatRaceTimePeriodSeconds(timePeriodMs: Long?): String {
         val ms = timePeriodMs ?: 1000L
-        val secondsText = if (ms % 1000L == 0L) {
+        return if (ms % 1000L == 0L) {
             // Android: seconds.toInt() (Double → Int, Int sınırlarına sıkıştırılır)
             (ms / 1000.0).toInt().toString()
         } else {
@@ -325,7 +333,6 @@ object LessonAdapterLogic {
             val kesir = ondaBir % 10L
             (if (negatif) "-" else "") + "$tam,$kesir"
         }
-        return "Sayı gösterilme periyodu $secondsText saniye"
     }
 
     data class RaceLessonBottomSheetState(

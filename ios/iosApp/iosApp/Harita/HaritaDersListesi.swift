@@ -118,7 +118,7 @@ struct HaritaDersListesi: View {
             .buttonStyle(.plain)
             .padding(.leading, 12)
             .padding(.top, 6)
-            .accessibilityLabel(Text("Geri"))
+            .accessibilityLabel(Text(Metin.al("ios_erisim_geri")))
         }
     }
 

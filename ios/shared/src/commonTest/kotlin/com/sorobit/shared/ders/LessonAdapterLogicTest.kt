@@ -238,6 +238,9 @@ class LessonAdapterLogicTest {
     fun formatRaceTimePeriodDescription() {
         assertEquals("Sayı gösterilme periyodu 1 saniye", LessonAdapterLogic.formatRaceTimePeriodDescription(null))
         assertEquals("Sayı gösterilme periyodu 3 saniye", LessonAdapterLogic.formatRaceTimePeriodDescription(3000))
+        // iOS metni seçili dilde ui_sayi_gosterilme_periyodu_x_saniye ile kurar; Android gibi ayırıcı her dilde virgül.
+        assertEquals("1", LessonAdapterLogic.formatRaceTimePeriodSeconds(null))
+        assertEquals("2,5", LessonAdapterLogic.formatRaceTimePeriodSeconds(2500))
         assertEquals("Sayı gösterilme periyodu 2,5 saniye", LessonAdapterLogic.formatRaceTimePeriodDescription(2500))
         // Katalogdaki diğer değerler: 750 → 0.75 → "%.1f" (yarım yukarı) → 0,8
         assertEquals("Sayı gösterilme periyodu 0,8 saniye", LessonAdapterLogic.formatRaceTimePeriodDescription(750))

@@ -44,3 +44,16 @@
 "ios_sekme_gorevler" = "Quests";
 "ios_sekme_abakus" = "Abacus";
 "ios_yakinda" = "Coming soon";
+
+/* Accessibility labels: these buttons have no contentDescription on Android (@null). */
+"ios_erisim_kapat" = "Close";
+"ios_erisim_geri" = "Back";
+"ios_erisim_sifirla" = "Reset";
+
+/* Abacus customization: color labels hard-coded in Turkish on Android (AbacusCustomizationFragment). */
+"ios_ozellestirme_kalp_rengi" = "Heart color";
+"ios_ozellestirme_renk_sirali" = "Color %1$d";
+
+/* Cup path digit choice: hard-coded Turkish on Android (TasksFragment, "Rastgele" / "$it Basamak"). */
+"ios_kupa_rastgele" = "Random";
+"ios_kupa_basamak" = "%1$d-digit";

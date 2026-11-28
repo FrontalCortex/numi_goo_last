@@ -86,14 +86,42 @@ final class KupaGecmisModeli: ObservableObject {
             KupaGecmisNoktasi(dateId: $0.tarihKimligi, value: Int32($0.deger))
         }
         let v: KupaGrafikVerisi = kopru.gecmisGrafigi(tabIndex: Int32(sekme), noktalar: noktalar)
+        let tarihler: [String] = v.dateIds
+        var grafikNoktalari: [KupaGrafikNoktaDurumu] = []
+        for (sira, nokta) in v.points.enumerated() {
+            let tarih: String = sira < tarihler.count ? tarihler[sira] : ""
+            let etiket: String = KupaGecmisModeli.etiket(turkce: nokta.label, tarih: tarih, kalip: v.labelPattern)
+            grafikNoktalari.append(KupaGrafikNoktaDurumu(etiket: etiket, deger: Int(nokta.value)))
+        }
         grafik = KupaGrafikDurumu(
             bos: v.isEmpty,
             tekNokta: v.isSinglePoint,
-            noktalar: v.points.map { KupaGrafikNoktaDurumu(etiket: $0.label, deger: Int($0.value)) },
+            noktalar: grafikNoktalari,
             eksenAlt: Int(v.axisMin),
             eksenUst: Int(v.axisMax),
             xEtiketSayisi: Int(v.xAxisLabelCount)
         )
+    }
+
+    /// x ekseni etiketi (Android: SimpleDateFormat("d MMM" / "MMM yy", Locale.getDefault())). Türkçede ortak
+    /// kodun etiketi olduğu gibi kullanılır; diğer dillerde "yyyy-MM-dd" tarih kimliği seçili dilin yereliyle
+    /// aynı kalıpla biçimlenir. Tarih ayrıştırılamazsa Türkçe etiket kalır.
+    static func etiket(turkce: String, tarih: String, kalip: String) -> String {
+        if Metin.dil == Metin.varsayilanDil || tarih.isEmpty || kalip.isEmpty {
+            return turkce
+        }
+        let okuyucu = DateFormatter()
+        okuyucu.locale = Locale(identifier: "en_US_POSIX")
+        okuyucu.timeZone = TimeZone(identifier: "UTC")
+        okuyucu.dateFormat = "yyyy-MM-dd"
+        guard let gun = okuyucu.date(from: tarih) else {
+            return turkce
+        }
+        let yazici = DateFormatter()
+        yazici.locale = Metin.yerel
+        yazici.timeZone = TimeZone(identifier: "UTC")
+        yazici.dateFormat = kalip
+        return yazici.string(from: gun)
     }
 }
 

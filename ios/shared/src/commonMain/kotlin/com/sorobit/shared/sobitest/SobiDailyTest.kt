@@ -9,6 +9,7 @@
 // sabit +3 kullanılıyor (aynı sonuç; Native hedefte saat dilimi veritabanına bağlı kalınmıyor).
 package com.sorobit.shared.sobitest
 
+import com.sorobit.shared.OrtakDil
 import com.sorobit.shared.ders.LessonItem
 import com.sorobit.shared.oyun.OyunKeyValueStore
 import com.sorobit.shared.oyun.oyunSimdiMs
@@ -169,12 +170,15 @@ object SobiDailyTest {
     private fun baseRuleLabel(key: String, metin: SobiMetinCozucu): String =
         if (key in KEYS) metin.metin("sobi_test_rule_$key", emptyList()) else key
 
-    /** Saniye metni: "2,4" (Android: "%.1f" Türkçe yerelde, ",0" atılır). Aralıklar 100 ms'nin katı. */
+    /**
+     * Saniye metni: "2,4" (Android: String.format(Locale.getDefault(), "%.1f"), ",0"/".0" atılır). Ondalık
+     * ayırıcı seçili dilden ([OrtakDil.decimalSeparator]: Türkçede virgül, İngilizcede nokta). Aralıklar 100 ms'nin katı.
+     */
     fun secondsText(intervalMs: Long): String {
         val tenths = (intervalMs + 50) / 100
         val whole = tenths / 10
         val frac = tenths % 10
-        return if (frac == 0L) whole.toString() else "$whole,$frac"
+        return if (frac == 0L) whole.toString() else "$whole${OrtakDil.decimalSeparator()}$frac"
     }
 
     /** "2 basamaklı 3 sayı, 2,4 sn" */

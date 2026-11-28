@@ -260,6 +260,9 @@ class CupPathLogicTest {
         assertFalse(tek.isEmpty)
         assertTrue(tek.isSinglePoint)
         assertEquals(listOf(KupaGrafikNoktasi("5 Kas", 215)), tek.points)
+        // iOS, Türkçe dışındaki dillerde etiketi tarih kimliği ve kalıpla yeniden biçimler.
+        assertEquals(listOf("2026-11-05"), tek.dateIds)
+        assertEquals("d MMM", tek.labelPattern)
         assertEquals(190, tek.axisMin)
         assertEquals(240, tek.axisMax)
         assertEquals(1, tek.xAxisLabelCount)
@@ -274,6 +277,8 @@ class CupPathLogicTest {
         )
         // Yıllık sekme aya göre gruplar ve ayın SON değerini tutar
         assertEquals(listOf(KupaGrafikNoktasi("Eki 26", 260), KupaGrafikNoktasi("Kas 26", 300)), yillik.points)
+        assertEquals(yillik.points.size, yillik.dateIds.size)
+        assertEquals("MMM yy", yillik.labelPattern)
         assertFalse(yillik.isSinglePoint)
         assertEquals(2, yillik.xAxisLabelCount)
         val (altSinir, ustSinir) = CupHistoryLogic.niceAxisRange(listOf(260, 300))

@@ -233,7 +233,7 @@ private struct OzellestirmeRenkSutunu: View {
             }
             .buttonStyle(OzellestirmeBasmaStili())
             .padding(.top, 8)
-            .accessibilityLabel(Text("Sıfırla"))
+            .accessibilityLabel(Text(Metin.al("ios_erisim_sifirla")))
         }
         .frame(maxWidth: .infinity)
     }
@@ -376,7 +376,7 @@ struct OzellestirmeCerceveRengiSekmesi: View {
                     }
                     .buttonStyle(OzellestirmeBasmaStili())
                     .padding(.top, 12)
-                    .accessibilityLabel(Text("Sıfırla"))
+                    .accessibilityLabel(Text(Metin.al("ios_erisim_sifirla")))
                 }
                 .padding(16)
             }

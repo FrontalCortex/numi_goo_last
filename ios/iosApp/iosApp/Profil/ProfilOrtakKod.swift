@@ -71,9 +71,20 @@ enum ProfilOrtak {
 
     static var tamamlanmaBekleme: String { Metin.al("ui_hesaplaniyor") }
 
-    /// Android: updateTotalTimeDisplay (gün / saat / dakika ayrımı ortak kodda; metinler Türkçede aynı).
+    /// Android: updateTotalTimeDisplay — gün / saat / dakika ayrımı Android ile aynı, metinler string
+    /// kaynaklarından (ui_x_gun_x_saat_x_dakika, ui_x_saat_x_dakika, plurals ui_x_dakika). Türkçe çıktı
+    /// ortak koddaki `totalTimeText` ile aynıdır.
     static func sureMetni(_ saniye: Int64) -> String {
-        return mantik.totalTimeText(totalSeconds: saniye)
+        let gun: Int64 = saniye / 86400
+        let saat: Int64 = (saniye % 86400) / 3600
+        let dakika: Int64 = (saniye % 3600) / 60
+        if gun > 0 {
+            return Metin.al("ui_x_gun_x_saat_x_dakika", gun, saat, dakika)
+        }
+        if saat > 0 {
+            return Metin.al("ui_x_saat_x_dakika", saat, dakika)
+        }
+        return Metin.cogul("ui_x_dakika", Int(clamping: dakika), dakika)
     }
 
     /// "En uzun seri: 7 gün" (Android: appPlural(R.plurals.ui_en_uzun_seri_x_gun, n, n)).

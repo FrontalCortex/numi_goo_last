@@ -97,7 +97,7 @@ private struct OzellestirmeUstSatir: View {
             }
             .buttonStyle(OzellestirmeBasmaStili())
             .padding(.trailing, 16)
-            .accessibilityLabel(Text("Altın: " + String(model.altin)))
+            .accessibilityLabel(Text(Metin.al("ios_erisim_altin", String(model.altin))))
             Button(action: magazaAc) {
                 HStack(spacing: 4) {
                     OzellestirmeGorsel(ad: "key", genislik: 22, yukseklik: 22)
@@ -110,7 +110,7 @@ private struct OzellestirmeUstSatir: View {
             }
             .buttonStyle(OzellestirmeBasmaStili())
             .padding(.trailing, 16)
-            .accessibilityLabel(Text("Anahtar: " + String(model.anahtar)))
+            .accessibilityLabel(Text(Metin.al("ios_erisim_anahtar", String(model.anahtar))))
         }
         .frame(height: 60)
     }
@@ -125,7 +125,7 @@ private struct OzellestirmeUstSatir: View {
             }
             .buttonStyle(OzellestirmeBasmaStili())
             .padding(.leading, 10)
-            .accessibilityLabel(Text("Kapat"))
+            .accessibilityLabel(Text(Metin.al("ios_erisim_kapat")))
         } else {
             Color.clear
                 .frame(width: 40, height: 40)

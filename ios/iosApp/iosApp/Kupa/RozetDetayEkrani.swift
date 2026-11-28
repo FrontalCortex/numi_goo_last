@@ -88,7 +88,7 @@ final class RozetDetayModeli: ObservableObject {
             acik: v.unlocked,
             sayiMetni: v.rewardAmountText,
             sayiGorunur: v.showRewardAmount,
-            aciklama: v.detailText,
+            aciklama: RozetMetni.aciklama(turkce: v.detailText, anahtar: v.detailKey, deger: v.detailValue),
             ton: v.toneName,
             tabanDosyasi: v.baseAsset,
             ustDosyasi: v.topAsset,
@@ -106,6 +106,21 @@ final class RozetDetayModeli: ObservableObject {
         if parcalar.isEmpty {
             parcaPaneliAcik = false
         }
+    }
+}
+
+/// Rozet açıklaması seçili dilde (Android: BadgeFragment.applyBadgeDetailText — metin
+/// `appString(R.string.…)` ile okunur, "%1$s" ilerleme değeriyle değişir). Ortak kod Türkçe metni,
+/// kaynak adını ve yerine konan değeri verir; Türkçede ortak kodun metni olduğu gibi kullanılır.
+enum RozetMetni {
+    static func aciklama(turkce: String, anahtar: String, deger: String) -> String {
+        if Metin.dil == Metin.varsayilanDil || anahtar.isEmpty || !Metin.varMi(anahtar) {
+            return turkce
+        }
+        if deger.isEmpty {
+            return Metin.al(anahtar)
+        }
+        return Metin.al(anahtar, deger)
     }
 }
 

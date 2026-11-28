@@ -71,6 +71,66 @@ object BadgeFragmentLogic {
     )
 
 
+    /**
+     * Android'de [unlockedDetailTextOverrides] metinlerinin okunduğu string kaynak adları
+     * (`appString(R.string.…)`). iOS, Türkçe dışındaki dillerde metni bu adla seçili dilden okur.
+     */
+    val unlockedDetailTextKeys = mapOf(
+        BadgeAnimMode.DAILY_ONLY to "ui_x_dersi_hatasiz_tamamlayarak_kusursuz_odak",
+        BadgeAnimMode.ROCKET_WITH_BASE to "ui_x_dersi_1_gunde_tamamlayarak_sinir",
+        BadgeAnimMode.BOWLING_WITH_BASE to "ui_x_gunluk_gorev_tamamlayarak_strike_ustasi",
+        BadgeAnimMode.GOLF_WITH_BASE to "ui_x_kere_egitmene_danisarak_nokta_atisi",
+        BadgeAnimMode.FISHING_WITH_BASE to "ui_x_gun_ust_uste_gunluk_soru",
+        BadgeAnimMode.DINO to "ui_toplama_kupa_yolunda_x_kupa_kazanarak",
+        BadgeAnimMode.TORNADO to "ui_x_toplama_ustalik_yolu_adimini_tamamlayarak",
+        BadgeAnimMode.VOLCANO to "ui_x_cikarma_ustalik_yolu_adimini_tamamlayarak",
+        BadgeAnimMode.CROCODILE to "ui_cikarma_kupa_yolunda_x_kupa_kazanarak",
+        BadgeAnimMode.GOAT to "ui_carpma_kupa_yolunda_x_kupa_kazanarak",
+        BadgeAnimMode.EAGLE to "ui_toplama_kupa_yolu_korleme_de_x",
+        BadgeAnimMode.FLY to "ui_cikarma_kupa_yolu_korleme_de_x",
+        BadgeAnimMode.TURTLE to "ui_carpma_kupa_yolu_korleme_de_x",
+        BadgeAnimMode.CUP_GOOGLE to "ui_unite_maratonunda_x_olarak_elit_seviye",
+        BadgeAnimMode.KARATE to "ui_x_unite_maratonunu_3_yildiz_ile",
+        BadgeAnimMode.GOLD_MEDAL to "ui_unite_maratonunda_1_olarak_altin_madalya",
+        BadgeAnimMode.SILVER_MEDAL to "ui_unite_maratonunda_2_olarak_gumus_madalya",
+        BadgeAnimMode.BRONZE_MEDAL to "ui_unite_maratonunda_3_olarak_bronz_madalya",
+    )
+
+    /** [lockedDetailTextOverrides] metinlerinin Android string kaynak adları. */
+    val lockedDetailTextKeys = mapOf(
+        BadgeAnimMode.DAILY_ONLY to "ui_bu_rozeti_kazanmak_icin_3_dersi",
+        BadgeAnimMode.ROCKET_WITH_BASE to "ui_bu_rozeti_kazanmak_icin_3_dersi_2",
+        BadgeAnimMode.BOWLING_WITH_BASE to "ui_bu_rozeti_kazanmak_icin_5_gunluk",
+        BadgeAnimMode.GOLF_WITH_BASE to "ui_bu_rozeti_kazanmak_icin_3_kere",
+        BadgeAnimMode.FISHING_WITH_BASE to "ui_bu_rozeti_kazanmak_icin_3_gun",
+        BadgeAnimMode.DINO to "ui_bu_rozeti_kazanmak_icin_toplama_kupa",
+        BadgeAnimMode.TORNADO to "ui_bu_rozeti_kazanmak_icin_toplama_ustalik",
+        BadgeAnimMode.VOLCANO to "ui_bu_rozeti_kazanmak_icin_cikarma_ustalik",
+        BadgeAnimMode.CROCODILE to "ui_bu_rozeti_kazanmak_icin_cikarma_kupa",
+        BadgeAnimMode.GOAT to "ui_bu_rozeti_kazanmak_icin_carpma_kupa",
+        BadgeAnimMode.EAGLE to "ui_bu_rozeti_kazanmak_icin_toplama_kupa_2",
+        BadgeAnimMode.FLY to "ui_bu_rozeti_kazanmak_icin_cikarma_kupa_2",
+        BadgeAnimMode.TURTLE to "ui_bu_rozeti_kazanmak_icin_carpma_kupa_2",
+        BadgeAnimMode.CUP_GOOGLE to "ui_bu_kupayi_kazanmak_icin_unite_maratonunda",
+        BadgeAnimMode.KARATE to "ui_bu_rozeti_kazanmak_icin_unite_maratonunu",
+        BadgeAnimMode.GOLD_MEDAL to "ui_bu_madalyayi_kazanmak_icin_bir_unite",
+        BadgeAnimMode.SILVER_MEDAL to "ui_bu_madalyayi_kazanmak_icin_bir_unite_2",
+        BadgeAnimMode.BRONZE_MEDAL to "ui_bu_madalyayi_kazanmak_icin_bir_unite_3",
+    )
+
+    /** [badgeDetailText] metninin Android string kaynak adı; bilinmiyorsa boş. */
+    fun badgeDetailKey(mode: BadgeAnimMode, unlocked: Boolean = true): String =
+        (if (unlocked) unlockedDetailTextKeys else lockedDetailTextKeys)[mode].orEmpty()
+
+    /**
+     * [badgeDetailText]'in şablondaki "%1\$s" yerine koyduğu ilerleme değeri ([formatUnlockedDetailText] ile aynı
+     * kural); şablon değişmeden kalacaksa null (kilitli rozet, sabit metinli mod ya da ilerleme yok).
+     */
+    fun badgeDetailProgress(mode: BadgeAnimMode, unlocked: Boolean = true, celebrateTarget: Int? = null): Int? {
+        if (!unlocked || mode !in modesWithDynamicProgress) return null
+        return celebrateTarget ?: BadgeProgressRepository.getProgressValueByMode(mode)
+    }
+
     /** Android: `unlockedDetailTextOverrides[mode].orEmpty()` şablonu ("x" yer tutucusu ilerleme ile değişir). */
     fun unlockedDetailTemplate(mode: BadgeAnimMode): String = unlockedDetailTextOverrides[mode].orEmpty()
 

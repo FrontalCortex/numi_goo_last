@@ -72,7 +72,7 @@ private struct OzellestirmePanelKapatDugmesi: View {
         }
         .buttonStyle(OzellestirmeBasmaStili())
         .disabled(!etkin)
-        .accessibilityLabel(Text("Kapat"))
+        .accessibilityLabel(Text(Metin.al("ios_erisim_kapat")))
     }
 }
 

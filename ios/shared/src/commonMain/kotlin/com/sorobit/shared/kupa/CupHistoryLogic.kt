@@ -92,6 +92,15 @@ object CupHistoryLogic {
         listOf("Oca", "Şub", "Mar", "Nis", "May", "Haz", "Tem", "Ağu", "Eyl", "Eki", "Kas", "Ara")
 
     /**
+     * [formatLabel] kalıbı (Android `SimpleDateFormat` deseni): Haftalık/Aylık "d MMM", Yıllık/Tüm Zamanlar
+     * "MMM yy". iOS, Türkçe dışındaki dillerde etiketi bu kalıpla ve seçili dilin yereliyle biçimler.
+     */
+    fun labelPattern(tab: RangeTab): String = when (tab) {
+        RangeTab.WEEKLY, RangeTab.MONTHLY -> "d MMM"
+        RangeTab.YEARLY, RangeTab.ALL -> "MMM yy"
+    }
+
+    /**
      * Android `formatLabel`: Haftalık/Aylık → "d MMM" (ör. "5 Kas"), Yıllık/Tüm Zamanlar → "MMM yy" (ör. "Kas 26"),
      * Türkçe yerel.
      *

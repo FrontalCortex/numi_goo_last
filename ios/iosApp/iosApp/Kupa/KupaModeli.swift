@@ -174,8 +174,9 @@ final class KupaModeli: ObservableObject {
     var zorlukIletisi: String { Metin.al("panel_cup_difficulty_cup_difficulty_message") }
     /// panel_cup_difficulty.xml "Basamak Sayısı:".
     var basamakEtiketi: String { Metin.al("panel_cup_difficulty_text") }
-    /// Android bu etiketi koda gömmüştür ("Rastgele"); ortak koddan gelir.
-    var rastgeleEtiketi: String { mantik.DIGIT_RANDOM_LABEL }
+    /// Android bu etiketi koda gömmüştür ("Rastgele"; ortak kodda DIGIT_RANDOM_LABEL). iOS'ta
+    /// `ios_kupa_rastgele` anahtarından okunur, Türkçesi aynıdır.
+    var rastgeleEtiketi: String { Metin.al("ios_kupa_rastgele") }
     /// panel_cup_difficulty.xml BAŞLAT.
     var baslatEtiketi: String { Metin.al("panel_cup_difficulty_cup_difficulty_start_button") }
     var kaydiriciEnBuyuk: Double { Double(mantik.DIFFICULTY_SEEKBAR_MAX) }
@@ -188,7 +189,8 @@ final class KupaModeli: ObservableObject {
 
     func basamakSecenekEtiketi(_ basamak: Int) -> String {
         if basamak <= 0 { return rastgeleEtiketi }
-        return mantik.digitOptionLabel(digits: Int32(basamak))
+        // Android: "$it Basamak" (koda gömülü; ortak kodda digitOptionLabel).
+        return Metin.al("ios_kupa_basamak", basamak)
     }
 
     // MARK: - Yükleme

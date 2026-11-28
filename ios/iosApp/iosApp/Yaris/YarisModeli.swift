@@ -168,7 +168,12 @@ final class YarisPaneliModeli: ObservableObject {
         altPanel = YarisAltPanel(
             satir: satir,
             baslik: Metin.ders(d.title),
-            aciklama: d.description_,
+            // Android: appString(R.string.ui_sayi_gosterilme_periyodu_x_saniye, secondsText); Türkçesi
+            // ortak koddaki description ile aynıdır.
+            aciklama: Metin.al(
+                "ui_sayi_gosterilme_periyodu_x_saniye",
+                mantik.formatRaceTimePeriodSeconds(timePeriodMs: satir.oge.timePeriod)
+            ),
             kilitli: d.isLockedRace,
             eylemMetni: eylemMetniniCevir(d.actionText)
         )

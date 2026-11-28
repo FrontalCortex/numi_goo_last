@@ -45,3 +45,16 @@
 "ios_sekme_gorevler" = "Görevler";
 "ios_sekme_abakus" = "Abaküs";
 "ios_yakinda" = "Yakında";
+
+/* Erişilebilirlik etiketleri: Android'de bu düğmelerin contentDescription'ı yok (@null). */
+"ios_erisim_kapat" = "Kapat";
+"ios_erisim_geri" = "Geri";
+"ios_erisim_sifirla" = "Sıfırla";
+
+/* Abaküs özelleştirme: Android'de koda gömülü Türkçe renk etiketleri (AbacusCustomizationFragment). */
+"ios_ozellestirme_kalp_rengi" = "Kalp rengi";
+"ios_ozellestirme_renk_sirali" = "Renk %1$d";
+
+/* Kupa yolu basamak seçimi: Android'de koda gömülü Türkçe (TasksFragment, "Rastgele" / "$it Basamak"). */
+"ios_kupa_rastgele" = "Rastgele";
+"ios_kupa_basamak" = "%1$d Basamak";

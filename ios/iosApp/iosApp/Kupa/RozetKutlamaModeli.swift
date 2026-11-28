@@ -62,7 +62,13 @@ struct RozetKutlamaVerisi: Equatable {
         )
         let ayar = mantik.levelUpAnimConfig(mode: oge.mode)
         let hedefDegeri: KotlinInt = KotlinInt(int: oge.target)
-        let aciklama: String = mantik.badgeDetailText(mode: oge.mode, unlocked: true, celebrateTarget: hedefDegeri)
+        let turkceAciklama: String = mantik.badgeDetailText(mode: oge.mode, unlocked: true, celebrateTarget: hedefDegeri)
+        let ilerleme: KotlinInt? = mantik.badgeDetailProgress(mode: oge.mode, unlocked: true, celebrateTarget: hedefDegeri)
+        let aciklama: String = RozetMetni.aciklama(
+            turkce: turkceAciklama,
+            anahtar: mantik.badgeDetailKey(mode: oge.mode, unlocked: true),
+            deger: ilerleme.map { String($0.intValue) } ?: ""
+        )
         let ad: String = oge.mode.name
         let karate: Bool = ad == "KARATE"
         // Android: onViewCreated — kutlama yalnızca ilerleme çubuklu modlarda ve karatede çalışır.

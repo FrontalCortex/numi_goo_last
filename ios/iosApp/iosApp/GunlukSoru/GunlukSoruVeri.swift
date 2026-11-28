@@ -393,10 +393,34 @@ enum GunlukSoruMantik {
     }
 
     static func gorunum(_ kart: DailyQuestionCardUiState) -> GunlukSoruKartGorunumu {
+        // Android (TasksFragment): kayıttaki ünite adı ve zorluk Türkçe kimliktir; ekranda uygulamanın
+        // dilinde (DailyQuestionPoolBuilder.displayTitleUnit / displayDifficulty, ui_basari_x).
         return GunlukSoruKartGorunumu(
-            uniteBasligi: kart.titleUnit,
-            odakMetni: DailyQuestionCardLogic.shared.focusLabelArgument(state: kart)
+            uniteBasligi: Metin.ders(kart.titleUnit),
+            odakMetni: odakMetni(kart)
         )
+    }
+
+    /// Android: focusLabel metni (ortak kodda focusLabelArgument; Türkçe çıktısı aynıdır).
+    private static func odakMetni(_ kart: DailyQuestionCardUiState) -> String? {
+        if kart.isComplete || kart.difficulty.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return nil
+        }
+        var oran: String = ""
+        if let basari = kart.globalSuccessRate {
+            oran = Metin.al("ui_basari_x", Int(basari.int32Value))
+        }
+        return zorlukMetni(kart.difficulty) + oran
+    }
+
+    /// Android: DailyQuestionPoolBuilder.displayDifficulty — kayıttaki "Kolay"/"Orta"/"Zor" seçili dilde.
+    static func zorlukMetni(_ kayitli: String) -> String {
+        switch kayitli {
+        case "Kolay": return Metin.al("daily_question_difficulty_easy")
+        case "Orta": return Metin.al("daily_question_difficulty_medium")
+        case "Zor": return Metin.al("daily_question_difficulty_hard")
+        default: return kayitli
+        }
     }
 
     // -- Tıklama kararları --
